@@ -2,7 +2,9 @@
 
 namespace App\Providers;
 
+use App\Models\Organization;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\ServiceProvider;
 
@@ -13,7 +15,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->bind(Organization::class, function ($app) {
+            return $app->make(Request::class)->user()?->currentOrganization;
+        });
     }
 
     /**

@@ -27,6 +27,10 @@ return new class extends Migration
             $table->unique(['organization_id', 'user_id']);
             $table->index('user_id');
         });
+
+        Schema::table('users', function (Blueprint $table) {
+            $table->foreignId('current_organization_id')->nullable()->constrained('organizations');
+        });
     }
 
     /**
@@ -34,6 +38,12 @@ return new class extends Migration
      */
     public function down(): void
     {
+        Schema::table('users', function (Blueprint $table) {
+            if (Schema::hasColumn('users', 'current_organization_id')) {
+                $table->dropForeign(['current_organization_id']);
+                $table->dropColumn('current_organization_id');
+            }
+        });
         Schema::dropIfExists('organization_users');
         Schema::dropIfExists('organizations');
     }

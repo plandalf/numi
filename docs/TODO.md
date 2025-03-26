@@ -1,5 +1,4 @@
 
-- add offers
 - offer variants
 - design 
 - link plans 

@@ -4,6 +4,7 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
@@ -21,6 +22,7 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'current_organization_id'
     ];
 
     /**
@@ -43,6 +45,29 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'current_organization_id' => 'integer',
         ];
+    }
+
+    public function organizations(): BelongsToMany
+    {
+        return $this
+            ->belongsToMany(Organization::class, 'organization_users')
+            ->withTimestamps();
+    }
+
+    public function currentOrganization()
+    {
+        return $this->belongsTo(Organization::class, 'current_organization_id');
+    }
+
+    public function switchOrganization(Organization $organization): void
+    {
+        if (!$organization->users()->where('organization_users.user_id', $this->id)->exists()) {
+            throw new \Exception('User does not belong to this organization');
+        }
+
+        $this->current_organization_id = $organization->id;
+        $this->save();
     }
 }

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Models\Organization;
 use App\Models\Store\Offer;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -18,12 +19,12 @@ class OffersController extends Controller
         ]);
     }
 
-    public function store(Request $request)
+    public function store(Request $request, Organization $organization)
     {
         $offer = Offer::create([
             'name' => null,
             'status' => 'draft',
-            'organization_id' => 1, // TODO: fix
+            'organization_id' => $organization->id,
         ]);
 
         return redirect()
