@@ -15,21 +15,21 @@ import {
     EdgeTypes,
     XYPosition,
     OnConnectStartParams,
-    ConnectStartEvent
+    OnConnectStart,
+    OnConnectEnd,
+    Handle,
+    Position,
+    useOnViewportChange
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import { Flag, Plus } from 'lucide-react';
+import { Flag, Plus, ArrowRight, ArrowRightToLine } from 'lucide-react';
 import { type Page, type OfferView, type PageType } from '@/types/offer';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import PageTypeDialog from './page-type-dialog';
-import { 
-    QueryBuilder, 
-    type Field, 
-    type RuleGroupType,
-    type RuleType
-} from 'react-querybuilder';
-import 'react-querybuilder/dist/query-builder.css';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
     Dialog,
     DialogContent,
@@ -50,75 +50,211 @@ const NODE_WIDTH = 250;
 const NODE_HEIGHT = 150;
 const GRID_SPACING = 20;
 
-function PageNode({ data }: { data: { page: Page; isStart?: boolean } }) {
+function PageNode({ data, id }: { data: { page: Page; isStart?: boolean }; id: string }) {
     const { page, isStart } = data;
+    const { setNodes, setEdges, getNode } = useReactFlow();
+    const [showAddBranch, setShowAddBranch] = useState(false);
+
+    const handleAddBranch = useCallback(() => {
+        const node = getNode(id);
+        if (node) {
+            const branchIndex = (page.next_page.branches?.length || 0);
+            const newHandle = {
+                id: `branch-${branchIndex}`,
+                type: 'source',
+                position: Position.Right,
+                className: "w-3 h-3 bg-secondary border-2 border-background",
+                style: { top: `${(branchIndex + 2) * 25}%` }
+            };
+
+            // Update the page with a new empty branch
+            const updatedPage = {
+                ...page,
+                next_page: {
+                    ...page.next_page,
+                    branches: [
+                        ...(page.next_page.branches || []),
+                        { next_page: null, condition: { field: '', operator: '', value: '' } }
+                    ]
+                }
+            };
+
+            // Update the node
+            setNodes(nodes => nodes.map(n => 
+                n.id === id ? { ...n, data: { ...n.data, page: updatedPage } } : n
+            ));
+        }
+        setShowAddBranch(false);
+    }, [id, page, getNode, setNodes]);
+
+    const getBranchLabel = (condition: any) => {
+        if (!condition.field || !condition.operator || !condition.value) {
+            return "Set condition...";
+        }
+        return `${condition.field} ${condition.operator} ${condition.value}`;
+    };
 
     return (
-        <div className="bg-card border border-border rounded-lg shadow-sm p-4 w-[250px]">
-            <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2">
-                    {isStart && <Flag className="w-4 h-4 text-primary" />}
-                    <h3 className="font-medium">{page.name}</h3>
+        <>
+            {/* Default connection handle */}
+            {page.type !== 'ending' && (
+                <div className="absolute right-0 top-1/2 -translate-y-1/2 -translate-x-1/2">
+                    <Handle
+                        type="source"
+                        position={Position.Right}
+                        id="default"
+                        className="w-4 h-4 !bg-primary !border-2 !border-background flex items-center justify-center"
+                    >
+                        <ArrowRight className="w-3 h-3 text-background" />
+                    </Handle>
                 </div>
-                <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded">
-                    {page.type}
-                </span>
+            )}
+
+            {/* Branch connection handles */}
+            {page.type !== 'ending' && page.next_page.branches?.map((branch, index) => (
+                <div
+                    key={`branch-${index}`}
+                    className="absolute right-0"
+                    style={{ top: `${(index + 2) * 25}%` }}
+                >
+                    <Handle
+                        type="source"
+                        position={Position.Right}
+                        id={`branch-${index}`}
+                        className="w-4 h-4 !bg-secondary !border-2 !border-background flex items-center justify-center"
+                    >
+                        <Plus className="w-3 h-3 text-background" />
+                    </Handle>
+                </div>
+            ))}
+
+            {/* Target connection handle */}
+            <div className="absolute left-0 top-1/2 translate-x-1/2 -translate-y-1/2">
+                <Handle
+                    type="target"
+                    position={Position.Left}
+                    className="w-4 h-4 !bg-primary !border-2 !border-background flex items-center justify-center"
+                >
+                    <Plus className="w-3 h-3 text-background" />
+                </Handle>
             </div>
-            
-            <div className="space-y-2">
-                <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Layout:</span>
-                    <span>{page.layout.sm}</span>
+
+            <div className="bg-card border border-border rounded-lg shadow-sm p-4 w-[250px]">
+                <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-2">
+                        {isStart && <Flag className="w-4 h-4 text-primary" />}
+                        <h3 className="font-medium">{page.name}</h3>
+                    </div>
+                    <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded">
+                        {page.type}
+                    </span>
                 </div>
                 
-                {page.provides.length > 0 && (
-                    <div className="flex flex-wrap gap-1">
-                        {page.provides.map(provide => (
-                            <span 
-                                key={provide}
-                                className="bg-secondary px-2 py-0.5 rounded text-xs"
-                            >
-                                {provide}
-                            </span>
-                        ))}
+                <div className="space-y-2">
+                    <div className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground">Layout:</span>
+                        <span>{page.layout.sm}</span>
                     </div>
-                )}
+                    
+                    {page.provides.length > 0 && (
+                        <div className="flex flex-wrap gap-1">
+                            {page.provides.map(provide => (
+                                <span 
+                                    key={provide}
+                                    className="bg-secondary px-2 py-0.5 rounded text-xs"
+                                >
+                                    {provide}
+                                </span>
+                            ))}
+                        </div>
+                    )}
 
-                {page.type !== 'ending' && (
-                    <Button 
-                        variant="outline" 
-                        size="sm" 
-                        className="w-full mt-2"
-                        onClick={() => console.log('Add branch')}
-                    >
-                        <Plus className="w-3 h-3 mr-1" />
-                        Add Branch
-                    </Button>
-                )}
+                    {/* Branch List */}
+                    {page.next_page.branches && page.next_page.branches.length > 0 && (
+                        <div className="mt-4 space-y-2">
+                            <h4 className="text-sm font-medium">Branches</h4>
+                            <div className="space-y-1">
+                                {page.next_page.branches.map((branch, index) => (
+                                    <div 
+                                        key={index}
+                                        className="text-xs p-2 bg-muted rounded-sm flex items-center justify-between"
+                                    >
+                                        <span className="text-muted-foreground">
+                                            {getBranchLabel(branch.condition)}
+                                        </span>
+                                        <button 
+                                            onClick={() => {/* TODO: Edit branch condition */}}
+                                            className="text-primary hover:text-primary/80"
+                                        >
+                                            Edit
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Add Branch button - only show if there are existing branches */}
+                    {page.type !== 'ending' && page.next_page.branches && page.next_page.branches.length > 0 && (
+                        <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="w-full mt-2"
+                            onClick={handleAddBranch}
+                        >
+                            <Plus className="w-3 h-3 mr-1" />
+                            Add Branch
+                        </Button>
+                    )}
+
+                    {/* Initial Add Branch button - only show if no branches exist */}
+                    {page.type !== 'ending' && (!page.next_page.branches || page.next_page.branches.length === 0) && (
+                        <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="w-full mt-2"
+                            onClick={handleAddBranch}
+                        >
+                            <Plus className="w-3 h-3 mr-1" />
+                            Add First Branch
+                        </Button>
+                    )}
+                </div>
             </div>
-        </div>
+        </>
     );
 }
 
-type CustomRuleGroupType = RuleGroupType;
-type CustomRuleType = RuleType;
+interface BranchCondition {
+    field: string;
+    operator: string;
+    value: string;
+}
 
 interface BranchDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    onSave: (condition: CustomRuleGroupType) => void;
+    onSave: (condition: BranchCondition) => void;
 }
 
 function BranchDialog({ open, onOpenChange, onSave }: BranchDialogProps) {
-    const [query, setQuery] = useState<CustomRuleGroupType>({
-        combinator: 'and',
-        rules: [],
+    const [condition, setCondition] = useState<BranchCondition>({
+        field: 'email',
+        operator: 'equals',
+        value: ''
     });
 
-    const fields: Field[] = [
-        { name: 'email', label: 'Email' },
-        { name: 'name', label: 'Name' },
-        { name: 'age', label: 'Age' },
+    const fields = [
+        { value: 'email', label: 'Email' },
+        { value: 'name', label: 'Name' },
+        { value: 'age', label: 'Age' }
+    ];
+
+    const operators = [
+        { value: 'equals', label: 'Equals' },
+        { value: 'contains', label: 'Contains' },
+        { value: 'greater_than', label: 'Greater Than' },
+        { value: 'less_than', label: 'Less Than' }
     ];
 
     return (
@@ -131,14 +267,56 @@ function BranchDialog({ open, onOpenChange, onSave }: BranchDialogProps) {
                     </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4">
-                    <QueryBuilder<CustomRuleGroupType, CustomRuleType>
-                        fields={fields}
-                        query={query}
-                        onQueryChange={(q: CustomRuleGroupType) => setQuery(q)}
-                    />
+                    <div className="space-y-2">
+                        <Label>Field</Label>
+                        <Select
+                            value={condition.field}
+                            onValueChange={(value) => setCondition(c => ({ ...c, field: value }))}
+                        >
+                            <SelectTrigger>
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {fields.map(field => (
+                                    <SelectItem key={field.value} value={field.value}>
+                                        {field.label}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                        <Label>Operator</Label>
+                        <Select
+                            value={condition.operator}
+                            onValueChange={(value) => setCondition(c => ({ ...c, operator: value }))}
+                        >
+                            <SelectTrigger>
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {operators.map(op => (
+                                    <SelectItem key={op.value} value={op.value}>
+                                        {op.label}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                        <Label>Value</Label>
+                        <Input
+                            value={condition.value}
+                            onChange={(e) => setCondition(c => ({ ...c, value: e.target.value }))}
+                            placeholder="Enter value"
+                        />
+                    </div>
+
                     <div className="flex justify-end">
                         <Button onClick={() => {
-                            onSave(query);
+                            onSave(condition);
                             onOpenChange(false);
                         }}>
                             Save Condition
@@ -155,6 +333,7 @@ export default function PageFlowEditor({ view, onUpdateFlow }: PageFlowEditorPro
     const [showBranchDialog, setShowBranchDialog] = useState(false);
     const [pendingConnection, setPendingConnection] = useState<Connection | null>(null);
     const [pendingPosition, setPendingPosition] = useState<XYPosition | null>(null);
+    const [dragPreviewPosition, setDragPreviewPosition] = useState<XYPosition | null>(null);
 
     const initialNodes = useMemo(() => {
         const nodes: Node[] = [];
@@ -254,27 +433,46 @@ export default function PageFlowEditor({ view, onUpdateFlow }: PageFlowEditorPro
             }
         };
 
-        if (pendingConnection) {
-            const sourceNode = nodes.find(n => n.id === pendingConnection.source);
-            if (sourceNode) {
-                const sourcePage = view.pages[sourceNode.id];
-                if (pendingConnection.sourceHandle === 'branch') {
-                    // Add as a branch
-                    sourcePage.next_page.branches = [
-                        ...(sourcePage.next_page.branches || []),
-                        { next_page: id, condition: {} }
-                    ];
-                } else {
-                    // Set as default next page
-                    sourcePage.next_page.default_next_page = id;
-                }
-            }
-        }
-
         const updatedPages = {
             ...view.pages,
             [id]: newPage
         };
+
+        // If we have a pending connection, update the source page
+        if (pendingConnection?.source) {
+            const sourcePage = view.pages[pendingConnection.source];
+            if (sourcePage) {
+                if (pendingConnection.sourceHandle?.startsWith('branch-')) {
+                    // Add as a branch
+                    sourcePage.next_page.branches = [
+                        ...(sourcePage.next_page.branches || []),
+                        { next_page: id, condition: { field: '', operator: '', value: '' } }
+                    ];
+                    
+                    // Show branch condition dialog
+                    setPendingConnection({
+                        ...pendingConnection,
+                        target: id
+                    });
+                    setShowBranchDialog(true);
+                } else {
+                    // Set as default next page
+                    sourcePage.next_page.default_next_page = id;
+                    
+                    // Add the edge
+                    setEdges(eds => addEdge({
+                        id: `${pendingConnection.source}-${id}`,
+                        source: pendingConnection.source,
+                        target: id,
+                        type: 'smoothstep',
+                        animated: true,
+                        data: { type: 'default' }
+                    }, eds));
+                }
+
+                updatedPages[pendingConnection.source] = sourcePage;
+            }
+        }
 
         onUpdateFlow({
             pages: updatedPages,
@@ -291,48 +489,21 @@ export default function PageFlowEditor({ view, onUpdateFlow }: PageFlowEditorPro
             }
         ]);
 
-        setPendingConnection(null);
-        setPendingPosition(null);
-    }, [nodes, pendingConnection, pendingPosition, view.pages, onUpdateFlow, setNodes]);
+        if (!pendingConnection?.sourceHandle?.startsWith('branch-')) {
+            setPendingConnection(null);
+            setPendingPosition(null);
+        }
+    }, [pendingConnection, pendingPosition, view.pages, onUpdateFlow, setNodes, setEdges]);
 
-    const onConnect = useCallback(
-        (connection: Connection) => {
-            const sourceNode = nodes.find(n => n.id === connection.source);
-            const targetNode = nodes.find(n => n.id === connection.target);
-            
-            if (sourceNode && targetNode) {
-                const sourcePage = view.pages[sourceNode.id];
-                const targetId = targetNode.id;
-
-                if (connection.sourceHandle === 'branch') {
-                    setShowBranchDialog(true);
-                    setPendingConnection(connection);
-                } else {
-                    // Update default next page
-                    sourcePage.next_page.default_next_page = targetId;
-                    onUpdateFlow({
-                        pages: {
-                            ...view.pages,
-                            [sourceNode.id]: sourcePage
-                        },
-                        first_page: view.first_page
-                    });
-                    setEdges(eds => addEdge(connection, eds));
-                }
-            }
-        },
-        [nodes, view.pages, onUpdateFlow, setEdges]
-    );
-
-    const onConnectStart = useCallback(
-        (event: React.MouseEvent | React.TouchEvent, params: OnConnectStartParams) => {
+    const onConnectStart: OnConnectStart = useCallback(
+        (event, params) => {
             console.log('Connection started:', params.nodeId, params.handleId);
         },
         []
     );
 
-    const onConnectEnd = useCallback(
-        (event: MouseEvent | TouchEvent) => {
+    const onConnectEnd: OnConnectEnd = useCallback(
+        (event) => {
             const targetIsPane = (event.target as Element).classList.contains('react-flow__pane');
 
             if (targetIsPane && event instanceof MouseEvent) {
@@ -345,11 +516,25 @@ export default function PageFlowEditor({ view, onUpdateFlow }: PageFlowEditorPro
                 setPendingPosition(position);
                 setShowPageTypeDialog(true);
             }
+            setDragPreviewPosition(null);
         },
         []
     );
 
-    const handleSaveBranchCondition = useCallback((condition: CustomRuleGroupType) => {
+    // Add viewport change handler to update preview position
+    useOnViewportChange({
+        onChange: (viewport) => {
+            if (dragPreviewPosition) {
+                // Update preview position based on viewport change
+                setDragPreviewPosition(pos => pos ? {
+                    x: pos.x * viewport.zoom + viewport.x,
+                    y: pos.y * viewport.zoom + viewport.y
+                } : null);
+            }
+        }
+    });
+
+    const handleSaveBranchCondition = useCallback((condition: BranchCondition) => {
         if (pendingConnection) {
             const sourceNode = nodes.find(n => n.id === pendingConnection.source);
             const targetNode = nodes.find(n => n.id === pendingConnection.target);
@@ -358,28 +543,85 @@ export default function PageFlowEditor({ view, onUpdateFlow }: PageFlowEditorPro
                 const sourcePage = view.pages[sourceNode.id];
                 const targetId = targetNode.id;
 
-                sourcePage.next_page.branches = [
-                    ...(sourcePage.next_page.branches || []),
-                    { next_page: targetId, condition }
-                ];
+                // Add the branch with condition
+                const updatedPage = {
+                    ...sourcePage,
+                    next_page: {
+                        ...sourcePage.next_page,
+                        branches: [
+                            ...(sourcePage.next_page.branches || []),
+                            { next_page: targetId, condition }
+                        ]
+                    }
+                };
 
+                // Update the view
                 onUpdateFlow({
                     pages: {
                         ...view.pages,
-                        [sourceNode.id]: sourcePage
+                        [sourceNode.id]: updatedPage
                     },
                     first_page: view.first_page
                 });
 
+                // Add the edge
+                const branchIndex = updatedPage.next_page.branches.length - 1;
                 setEdges(eds => addEdge({
                     ...pendingConnection,
-                    label: 'Branch',
+                    id: `${sourceNode.id}-${targetId}-branch-${branchIndex}`,
+                    type: 'smoothstep',
+                    animated: true,
+                    label: `${condition.field} ${condition.operator} ${condition.value}`,
                     data: { type: 'branch', condition }
                 }, eds));
             }
         }
         setPendingConnection(null);
     }, [nodes, pendingConnection, view.pages, onUpdateFlow, setEdges]);
+
+    const onConnect = useCallback(
+        (connection: Connection) => {
+            const sourceNode = nodes.find(n => n.id === connection.source);
+            const targetNode = nodes.find(n => n.id === connection.target);
+            
+            if (sourceNode && targetNode) {
+                const sourcePage = view.pages[sourceNode.id];
+                const targetId = targetNode.id;
+
+                if (connection.sourceHandle?.startsWith('branch-')) {
+                    // Show branch condition dialog
+                    setShowBranchDialog(true);
+                    setPendingConnection(connection);
+                } else {
+                    // Update default next page
+                    const updatedPage = {
+                        ...sourcePage,
+                        next_page: {
+                            ...sourcePage.next_page,
+                            default_next_page: targetId
+                        }
+                    };
+
+                    onUpdateFlow({
+                        pages: {
+                            ...view.pages,
+                            [sourceNode.id]: updatedPage
+                        },
+                        first_page: view.first_page
+                    });
+
+                    setEdges(eds => addEdge({
+                        ...connection,
+                        id: `${sourceNode.id}-${targetId}`,
+                        type: 'smoothstep',
+                        animated: true,
+                        data: { type: 'default' }
+                    }, eds));
+                }
+            }
+        },
+        [nodes, view.pages, onUpdateFlow, setEdges]
+    );
 
     const nodeTypes = useMemo<NodeTypes>(() => ({
         pageNode: PageNode
@@ -395,12 +637,33 @@ export default function PageFlowEditor({ view, onUpdateFlow }: PageFlowEditorPro
                 onConnect={onConnect}
                 onConnectStart={onConnectStart}
                 onConnectEnd={onConnectEnd}
+                onMouseMove={(event) => {
+                    if (event.buttons === 1) { // Left mouse button is pressed
+                        const bounds = event.currentTarget.getBoundingClientRect();
+                        setDragPreviewPosition({
+                            x: event.clientX - bounds.left,
+                            y: event.clientY - bounds.top,
+                        });
+                    }
+                }}
                 nodeTypes={nodeTypes}
                 fitView
                 className="bg-background"
             >
                 <Background />
                 <Controls />
+                
+                {/* Preview Node */}
+                {dragPreviewPosition && (
+                    <div 
+                        className="absolute pointer-events-none border-2 border-dashed border-primary rounded-lg w-[250px] h-[150px] bg-primary/10"
+                        style={{
+                            left: dragPreviewPosition.x - 125,
+                            top: dragPreviewPosition.y - 75,
+                        }}
+                    />
+                )}
+
                 <Panel position="top-right" className="bg-background border border-border rounded-lg shadow-sm p-4">
                     <div className="space-y-2">
                         <Button 

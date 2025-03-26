@@ -22,6 +22,7 @@ import { cn } from '@/lib/utils';
 import { MoreVertical, ArrowRightToLine, FileText, CheckSquare, Share2 } from 'lucide-react';
 import PagePreview from '@/components/offers/page-preview';
 import PageFlowEditor from '@/components/offers/page-flow-editor';
+import { ReactFlowProvider } from '@xyflow/react';
 
 interface Offer {
     id: number;
@@ -129,7 +130,7 @@ export default function Edit({ offer, showNameDialog }: Props) {
         let currentPageId: string | null = view.first_page;
         
         while (currentPageId && view.pages[currentPageId]) {
-            const currentPage = view.pages[currentPageId];
+            const currentPage: Page = view.pages[currentPageId];
             orderedPages.push([currentPageId, currentPage]);
             currentPageId = currentPage.next_page?.default_next_page ?? null;
         }
@@ -324,7 +325,7 @@ export default function Edit({ offer, showNameDialog }: Props) {
 
             {/* Page Logic Dialog */}
             <Dialog open={showPageLogic} onOpenChange={setShowPageLogic}>
-                <DialogContent className="max-w-none w-screen h-screen flex flex-col p-0 m-0">
+                <DialogContent className="w-screen h-screen flex flex-col p-0 m-0 rounded-none sm:max-w-none">
                     <div className="border-b border-border p-6">
                         <DialogHeader>
                             <DialogTitle>Page Logic</DialogTitle>
@@ -334,13 +335,15 @@ export default function Edit({ offer, showNameDialog }: Props) {
                         </DialogHeader>
                     </div>
                     <div className="flex-1">
-                        <PageFlowEditor 
-                            view={offer.view} 
-                            onUpdateFlow={(changes) => {
-                                // TODO: Implement update logic
-                                console.log('Update flow:', changes);
-                            }} 
-                        />
+                        <ReactFlowProvider>
+                            <PageFlowEditor 
+                                view={offer.view} 
+                                onUpdateFlow={(changes) => {
+                                    // TODO: Implement update logic
+                                    console.log('Update flow:', changes);
+                                }} 
+                            />
+                        </ReactFlowProvider>
                     </div>
                 </DialogContent>
             </Dialog>

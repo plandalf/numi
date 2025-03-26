@@ -49,6 +49,9 @@ function DialogContent({
   children,
   ...props
 }: React.ComponentProps<typeof DialogPrimitive.Content>) {
+
+  console.log({className})
+  
   return (
     <DialogPortal data-slot="dialog-portal">
       <DialogOverlay />
