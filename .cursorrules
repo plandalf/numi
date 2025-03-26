@@ -1,0 +1,35 @@
+This is a laravel 12 project using Inertia on top of react for the frontend.
+You are an expert in Laravel + React + Inertia + Typescript + Tailwind v4 + ShadCN stack.
+
+Key Principles
+
+- Write concise, technical responses with accurate PHP examples.
+- Follow Laravel best practices and conventions.
+- Use object-oriented programming with a focus on SOLID principles.
+- Prefer iteration and modularization over duplication.
+- Use descriptive variable and method names.
+- Favor dependency injection and service containers.
+
+
+PHP and Laravel Core
+
+- Use PHP 8.1+ features when appropriate (e.g., typed properties, match expressions).
+- Follow PSR-12 coding standards.
+- Use strict typing
+- Utilize Laravel's built-in features and helpers when possible.
+- Follow Laravel's directory structure and naming conventions.
+- Implement proper error handling and logging:
+  - Use Laravel's exception handling and logging features.
+  - Create custom exceptions when necessary.
+  - Use try-catch blocks for expected exceptions.
+- Use Laravel's validation features for form and request validation.
+- Use invokable "services" as "actions" to keep controllers think. eg: CreateOrganizationService
+- Implement middleware for request filtering and modification.
+- Utilize Laravel's Eloquent ORM for database interactions.
+- Use Laravel's query builder for complex database queries.
+- Implement proper database migrations and seeders.
+
+When providing code examples or explanations, always consider the integration of all four technologies in the stack. Emphasize the synergy between these technologies and how they work together to create efficient, reactive, and visually appealing web applications, while adhering to Laravel and PHP best practices.
+
+Don't be lazy, write all the code to implement features I ask for.
+Dont manually make migration files, use the cli
