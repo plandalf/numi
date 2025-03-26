@@ -2,6 +2,13 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
 import SettingsLayout from '@/layouts/settings-layout';
 import { type Organization } from '@/types';
 import { Head, router } from '@inertiajs/react';
@@ -16,12 +23,24 @@ const breadcrumbs = [
     { title: 'General', href: route('organizations.settings.general') },
 ];
 
+const AVAILABLE_CURRENCIES = {
+    USD: 'US Dollar',
+    EUR: 'Euro',
+    GBP: 'British Pound',
+    CAD: 'Canadian Dollar',
+    AUD: 'Australian Dollar',
+} as const;
+
 export default function General({ organization }: Props) {
     const [name, setName] = useState(organization.name);
+    const [defaultCurrency, setDefaultCurrency] = useState(organization.default_currency);
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        router.put(route('organizations.update', organization.id), { name });
+        router.put(route('organizations.update', organization.id), { 
+            name,
+            default_currency: defaultCurrency,
+        });
     };
 
     return (
@@ -45,6 +64,24 @@ export default function General({ organization }: Props) {
                                     onChange={(e) => setName(e.target.value)}
                                     placeholder="Acme Corp"
                                 />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="currency">Default Currency</Label>
+                                <Select
+                                    value={defaultCurrency}
+                                    onValueChange={setDefaultCurrency}
+                                >
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select currency" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {Object.entries(AVAILABLE_CURRENCIES).map(([code, name]) => (
+                                            <SelectItem key={code} value={code}>
+                                                {code} - {name}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
                             </div>
                             <Button type="submit">Save changes</Button>
                         </form>

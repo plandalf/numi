@@ -15,15 +15,29 @@ return new class extends Migration
             $table->id();
             $table->bigInteger('organization_id');
 
+            
+            // Product Information
+            $table->foreignId('product_image_id')->nullable();
             $table->string('name')->nullable();
-            $table->string('status', 16)->default('draft'); // or published
+            $table->text('description')->nullable();
+            $table->string('status', 16)->default('draft'); // draft, published, archived
 
-            $table->jsonb('view')->nullable();
-            $table->jsonb('properties')->nullable();
-
+            // Product Settings
+            $table->string('default_currency', 3)->default('USD');
+            $table->boolean('is_subscription_enabled')->default(false);
+            $table->boolean('is_one_time_enabled')->default(true);
+            
+            // Additional Configuration
+            $table->jsonb('view')->nullable(); // UI/display settings
+            $table->jsonb('properties')->nullable(); // Additional product properties
             $table->text('transaction_webhook_url')->nullable();
 
+            // Timestamps and Soft Delete
             $table->timestamps();
+            $table->softDeletes();
+
+            // Indexes
+            $table->index(['organization_id', 'status']);
         });
     }
 

@@ -1,0 +1,676 @@
+{
+    "id": "view_wvbifzq",
+    "pages": {
+        "page_ierhele": {
+            "id": "page_ierhele",
+            "name": "Page 2",
+            "type": "page",
+            "view": {
+                "promo": {
+                    "style": {
+                        "backgroundSize": "cover",
+                        "backgroundImage": "url(ugluk.jpg)",
+                        "backgroundRepeat": "no-repeat",
+                        "backgroundPosition": "center"
+                    },
+                    "blocks": []
+                },
+                "title": {
+                    "blocks": [
+                        {
+                            "id": "h4",
+                            "text": [
+                                {
+                                    "href": null,
+                                    "props": {
+                                        "link": null,
+                                        "content": "Upgrade to the Unlimited plan"
+                                    },
+                                    "object": "text",
+                                    "annotations": {
+                                        "bold": true
+                                    }
+                                }
+                            ],
+                            "type": "h1",
+                            "props": [],
+                            "object": "block"
+                        }
+                    ]
+                },
+                "action": {
+                    "style": {
+                        "padding": "1rem",
+                        "textAlign": "center"
+                    },
+                    "blocks": [
+                        {
+                            "id": "action-block",
+                            "text": [
+                                {
+                                    "href": null,
+                                    "props": {
+                                        "link": null,
+                                        "content": "Subscribe Now"
+                                    },
+                                    "object": "text",
+                                    "plain_text": null,
+                                    "annotations": {
+                                        "bold": true
+                                    }
+                                }
+                            ],
+                            "type": "button",
+                            "props": {
+                                "type": "submit"
+                            },
+                            "style": {
+                                "background-color": "#C428D3"
+                            },
+                            "object": "action"
+                        }
+                    ]
+                },
+                "content": {
+                    "blocks": [
+                        {
+                            "id": "ivs",
+                            "type": "IntervalSelector@v1",
+                            "props": [],
+                            "object": "block"
+                        },
+                        {
+                            "id": "pls",
+                            "type": "PlanDescriptor@v1",
+                            "props": {
+                                "plan": "growth-lite"
+                            },
+                            "object": "block"
+                        },
+                        {
+                            "id": "stripe",
+                            "type": "StripeElements@v1",
+                            "props": {
+                                "width": "full"
+                            },
+                            "object": "block"
+                        }
+                    ]
+                }
+            },
+            "layout": {
+                "sm": "split-checkout@v1"
+            },
+            "provides": [
+                "start",
+                "commit",
+                "pm_collection",
+                "li_customization"
+            ],
+            "next_page": {
+                "branches": [],
+                "default_next_page": "page_nw4wu2a"
+            }
+        },
+        "page_ktd4jpu": {
+            "id": "page_ktd4jpu",
+            "name": "Page 1",
+            "type": "entry",
+            "view": {
+                "promo": {
+                    "style": {
+                        "backgroundSize": "cover",
+                        "backgroundImage": "url(saruman.jpg)",
+                        "backgroundRepeat": "no-repeat",
+                        "backgroundPosition": "center"
+                    },
+                    "blocks": []
+                },
+                "action": {
+                    "style": {
+                        "padding": "1rem",
+                        "textAlign": "center"
+                    },
+                    "blocks": [
+                        {
+                            "id": "p",
+                            "text": [
+                                {
+                                    "href": null,
+                                    "props": {
+                                        "link": null,
+                                        "content": "Cancel or downgrade anytime, no questions asked"
+                                    },
+                                    "object": "text",
+                                    "plain_text": "Cancel or downgrade anytime, no questions asked",
+                                    "annotations": {
+                                        "bold": false
+                                    }
+                                }
+                            ],
+                            "type": "p",
+                            "props": [],
+                            "style": {
+                                "color": "#999",
+                                "fontSize": "0.8rem",
+                                "marginBottom": "1rem"
+                            },
+                            "object": "block"
+                        },
+                        {
+                            "id": "action-block",
+                            "text": [
+                                {
+                                    "href": null,
+                                    "props": {
+                                        "link": null,
+                                        "content": "Upgrade Now"
+                                    },
+                                    "object": "text",
+                                    "plain_text": null,
+                                    "annotations": {
+                                        "bold": true
+                                    }
+                                }
+                            ],
+                            "type": "button",
+                            "props": {
+                                "type": "submit"
+                            },
+                            "style": {
+                                "background-color": "#C428D3"
+                            },
+                            "object": "action"
+                        }
+                    ]
+                },
+                "content": {
+                    "style": {
+                        "fontFamily": "Lato, sans-serif"
+                    },
+                    "blocks": [
+                        {
+                            "text": [
+                                {
+                                    "props": {
+                                        "icon": "crown",
+                                        "variant": "solid"
+                                    },
+                                    "style": {
+                                        "color": "#ca8a04"
+                                    },
+                                    "object": "icon"
+                                },
+                                {
+                                    "href": null,
+                                    "props": {
+                                        "link": null,
+                                        "content": "Upgrade to use this feature"
+                                    },
+                                    "object": "text",
+                                    "annotations": {
+                                        "bold": true
+                                    }
+                                }
+                            ],
+                            "type": "h5",
+                            "props": [],
+                            "object": "block"
+                        },
+                        {
+                            "id": "123h",
+                            "text": [
+                                {
+                                    "href": null,
+                                    "props": {
+                                        "link": null,
+                                        "content": "Everything you need to run your orc empire"
+                                    },
+                                    "object": "text",
+                                    "plain_text": null,
+                                    "annotations": {
+                                        "bold": true
+                                    }
+                                }
+                            ],
+                            "type": "h1",
+                            "props": [],
+                            "object": "block"
+                        },
+                        {
+                            "id": "123",
+                            "text": [
+                                {
+                                    "href": null,
+                                    "props": {
+                                        "link": null,
+                                        "content": "For serious magicians looking for unlimited access to other palantir holders, the dark lord and dominion over the free peoples of Middle-earth."
+                                    },
+                                    "object": "text",
+                                    "plain_text": null,
+                                    "annotations": {
+                                        "bold": false
+                                    }
+                                }
+                            ],
+                            "type": "p",
+                            "props": [],
+                            "object": "block"
+                        },
+                        {
+                            "id": null,
+                            "text": [
+                                {
+                                    "href": null,
+                                    "props": {
+                                        "link": null,
+                                        "content": "Here’s what you get with the Unlimited plan"
+                                    },
+                                    "object": "text",
+                                    "plain_text": null,
+                                    "annotations": {
+                                        "bold": true
+                                    }
+                                }
+                            ],
+                            "type": "p",
+                            "props": [],
+                            "object": "block"
+                        },
+                        {
+                            "id": "123dl",
+                            "type": "dl",
+                            "object": "block",
+                            "children": [
+                                {
+                                    "type": "dl-group",
+                                    "children": [
+                                        {
+                                            "type": "dt",
+                                            "props": {
+                                                "icon": "check",
+                                                "width": "6",
+                                                "variant": "solid"
+                                            },
+                                            "object": "block"
+                                        },
+                                        {
+                                            "type": "dd",
+                                            "children": [
+                                                {
+                                                    "text": [
+                                                        {
+                                                            "href": null,
+                                                            "props": {
+                                                                "link": null,
+                                                                "content": "Instant communication to other Palantir holders"
+                                                            },
+                                                            "object": "text",
+                                                            "plain_text": null,
+                                                            "annotations": []
+                                                        }
+                                                    ],
+                                                    "type": "p",
+                                                    "object": "block"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "dl-group",
+                                    "children": [
+                                        {
+                                            "type": "dt",
+                                            "props": {
+                                                "icon": "check",
+                                                "width": "6",
+                                                "variant": "solid"
+                                            },
+                                            "object": "block"
+                                        },
+                                        {
+                                            "type": "dd",
+                                            "children": [
+                                                {
+                                                    "text": [
+                                                        {
+                                                            "href": null,
+                                                            "props": {
+                                                                "link": null,
+                                                                "content": "See into places far off, or events in the past"
+                                                            },
+                                                            "object": "text",
+                                                            "plain_text": null,
+                                                            "annotations": []
+                                                        }
+                                                    ],
+                                                    "type": "p",
+                                                    "object": "block"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "dl-group",
+                                    "children": [
+                                        {
+                                            "type": "dt",
+                                            "props": {
+                                                "icon": "check",
+                                                "width": "6",
+                                                "variant": "solid"
+                                            },
+                                            "object": "block"
+                                        },
+                                        {
+                                            "type": "dd",
+                                            "children": [
+                                                {
+                                                    "text": [
+                                                        {
+                                                            "href": null,
+                                                            "props": {
+                                                                "link": null,
+                                                                "content": "Hotline to the Dark Lord"
+                                                            },
+                                                            "object": "text",
+                                                            "plain_text": null,
+                                                            "annotations": []
+                                                        }
+                                                    ],
+                                                    "type": "p",
+                                                    "object": "block"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "dl-group",
+                                    "children": [
+                                        {
+                                            "type": "dt",
+                                            "props": {
+                                                "icon": "check",
+                                                "width": "6",
+                                                "variant": "solid"
+                                            },
+                                            "object": "block"
+                                        },
+                                        {
+                                            "type": "dd",
+                                            "children": [
+                                                {
+                                                    "text": [
+                                                        {
+                                                            "href": null,
+                                                            "props": {
+                                                                "link": null,
+                                                                "content": "Route to power and dominion over Middle-earth"
+                                                            },
+                                                            "object": "text",
+                                                            "plain_text": null,
+                                                            "annotations": []
+                                                        }
+                                                    ],
+                                                    "type": "p",
+                                                    "object": "block"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            },
+            "layout": {
+                "sm": "split-checkout@v1"
+            },
+            "provides": [
+                "info"
+            ],
+            "next_page": {
+                "branches": [],
+                "default_next_page": "page_ierhele"
+            }
+        },
+        "page_nw4wu2a": {
+            "id": "page_nw4wu2a",
+            "name": "Page 3",
+            "type": "ending",
+            "view": {
+                "promo": {
+                    "style": {
+                        "backgroundSize": "cover",
+                        "backgroundImage": "url(happy-saruman.jpg)",
+                        "backgroundRepeat": "no-repeat",
+                        "backgroundPosition": "center"
+                    },
+                    "blocks": []
+                },
+                "action": {
+                    "style": {
+                        "padding": "1rem"
+                    },
+                    "blocks": [
+                        {
+                            "id": "action-block",
+                            "text": [
+                                {
+                                    "href": null,
+                                    "props": {
+                                        "link": null,
+                                        "content": "Chat with the Orb"
+                                    },
+                                    "object": "text",
+                                    "plain_text": null,
+                                    "annotations": {
+                                        "bold": true
+                                    }
+                                }
+                            ],
+                            "type": "button",
+                            "props": {
+                                "type": "submit"
+                            },
+                            "object": "action"
+                        }
+                    ]
+                },
+                "content": {
+                    "blocks": [
+                        {
+                            "id": "h3",
+                            "text": [
+                                {
+                                    "href": null,
+                                    "props": {
+                                        "link": null,
+                                        "content": "CONGRATULATIONS, UPGRADE SUCCESSFUL"
+                                    },
+                                    "object": "text",
+                                    "plain_text": null,
+                                    "annotations": {
+                                        "bold": true
+                                    }
+                                }
+                            ],
+                            "type": "h3",
+                            "props": [],
+                            "style": {
+                                "color": "#ABAAAA",
+                                "text-transform": "uppercase"
+                            },
+                            "object": "block"
+                        },
+                        {
+                            "id": "h4",
+                            "text": [
+                                {
+                                    "href": null,
+                                    "props": {
+                                        "link": null,
+                                        "content": "Welcome to your new unlimited plan!"
+                                    },
+                                    "object": "text",
+                                    "plain_text": null,
+                                    "annotations": {
+                                        "bold": true
+                                    }
+                                }
+                            ],
+                            "type": "h1",
+                            "props": [],
+                            "object": "block"
+                        },
+                        {
+                            "id": "123p",
+                            "text": [
+                                {
+                                    "href": null,
+                                    "props": {
+                                        "link": null,
+                                        "content": "You’ve just given your empire a massive competitive edge"
+                                    },
+                                    "style": {
+                                        "backgroundColor": "white"
+                                    },
+                                    "object": "text",
+                                    "plain_text": null,
+                                    "annotations": {
+                                        "bold": false
+                                    }
+                                }
+                            ],
+                            "type": "p",
+                            "props": [],
+                            "object": "block"
+                        },
+                        {
+                            "id": "123dl",
+                            "type": "dl",
+                            "props": {
+                                "defaultIcon": null
+                            },
+                            "style": {
+                                "border": "1px solid #ccc"
+                            },
+                            "object": "block",
+                            "children": [
+                                {
+                                    "id": "123dt",
+                                    "text": [
+                                        {
+                                            "href": null,
+                                            "props": {
+                                                "link": null,
+                                                "content": "Instant communication to other Palantir holders"
+                                            },
+                                            "object": "text",
+                                            "plain_text": null,
+                                            "annotations": []
+                                        }
+                                    ],
+                                    "type": "dt",
+                                    "props": {
+                                        "icon": "check",
+                                        "width": "6",
+                                        "variant": "solid"
+                                    },
+                                    "object": "block"
+                                },
+                                {
+                                    "id": "123dd",
+                                    "text": [
+                                        {
+                                            "href": null,
+                                            "props": {
+                                                "link": null,
+                                                "content": "See into places far off, or events in the past"
+                                            },
+                                            "object": "text",
+                                            "plain_text": null,
+                                            "annotations": {
+                                                "bold": false
+                                            }
+                                        }
+                                    ],
+                                    "type": "dd",
+                                    "props": {
+                                        "icon": "check",
+                                        "width": "6",
+                                        "variant": "solid"
+                                    },
+                                    "object": "block"
+                                },
+                                {
+                                    "id": "123dd",
+                                    "text": [
+                                        {
+                                            "href": null,
+                                            "props": {
+                                                "link": null,
+                                                "content": "Hotline to the Dark Lord"
+                                            },
+                                            "object": "text",
+                                            "plain_text": null,
+                                            "annotations": {
+                                                "bold": false
+                                            }
+                                        }
+                                    ],
+                                    "type": "dd",
+                                    "props": {
+                                        "icon": "check",
+                                        "width": "6",
+                                        "variant": "solid"
+                                    },
+                                    "object": "block"
+                                },
+                                {
+                                    "id": "123dd",
+                                    "text": [
+                                        {
+                                            "href": null,
+                                            "props": {
+                                                "link": null,
+                                                "content": "Route to power and dominion over Middle-earth"
+                                            },
+                                            "object": "text",
+                                            "plain_text": null,
+                                            "annotations": {
+                                                "bold": false
+                                            }
+                                        }
+                                    ],
+                                    "type": "dd",
+                                    "props": {
+                                        "icon": "check",
+                                        "width": "6",
+                                        "variant": "solid"
+                                    },
+                                    "object": "block"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            },
+            "layout": {
+                "sm": "split-checkout@v1"
+            },
+            "provides": [
+                "success"
+            ],
+            "next_page": {
+                "branches": [],
+                "default_next_page": null
+            }
+        }
+    },
+    "first_page": "page_ktd4jpu"
+}

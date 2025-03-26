@@ -15,6 +15,7 @@ return new class extends Migration
             $table->id();
             $table->ulid();
             $table->string('name')->nullable();
+            $table->char('default_currency', 3)->default('USD');
             $table->timestamps();
         });
 

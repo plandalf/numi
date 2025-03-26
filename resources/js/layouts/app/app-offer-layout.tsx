@@ -101,7 +101,7 @@ function OfferHeader({ offer, isNameDialogOpen, setIsNameDialogOpen }: AppHeader
 
     return (
         <div className="border-sidebar-border/80 border-b">
-            <div className="mx-auto flex h-16 items-center px-4 md:max-w-7xl">
+            <div className="mx-auto flex h-14 items-center px-4 md:max-w-7xl">
                 {/* Mobile Menu */}
                 <div className="lg:hidden">
                     <Sheet>

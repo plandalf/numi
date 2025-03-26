@@ -15,10 +15,23 @@ class Organization extends Model
     protected $fillable = [
         'name',
         'ulid',
+        'default_currency',
     ];
 
     protected $appends = [
         'invite_link',
+    ];
+
+    protected $attributes = [
+        'default_currency' => 'USD',
+    ];
+
+    public const AVAILABLE_CURRENCIES = [
+        'USD' => 'US Dollar',
+        'EUR' => 'Euro',
+        'GBP' => 'British Pound',
+        'CAD' => 'Canadian Dollar',
+        'AUD' => 'Australian Dollar',
     ];
 
     protected static function boot()
