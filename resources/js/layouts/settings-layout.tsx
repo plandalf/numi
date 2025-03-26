@@ -52,7 +52,7 @@ export default function SettingsLayout({ children }: SettingsLayoutProps) {
                         </SidebarMenu>
                     </SidebarHeader>
                     <SidebarContent>
-                        <SidebarMenu>
+                        <SidebarMenu className="p-2">
                             {settingsNavItems.map((item) => {
                                 const Icon = item.icon;
                                 const isActive = route().current(item.href);

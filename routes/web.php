@@ -22,13 +22,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('join/{ulid}', [OrganizationController::class, 'join'])->name('join');
         Route::post('switch/{organization}', [OrganizationController::class, 'switch'])->name('switch');
         
+        Route::put('/{organization}', [OrganizationController::class, 'update'])->name('update');
+
         // Organization settings routes
         Route::middleware(['organization'])->group(function () {
             Route::prefix('settings')->name('settings.')->group(function () {
                 Route::get('/', [OrganizationController::class, 'settings'])->name('general');
                 Route::get('/team', [OrganizationController::class, 'team'])->name('team');
-                Route::get('/billing', [OrganizationController::class, 'billing'])->name('billing');
-                Route::put('/{organization}', [OrganizationController::class, 'update'])->name('update');
+                Route::get('/billing', [OrganizationController::class, 'billing'])->name('billing');        
             });
         });
     });
