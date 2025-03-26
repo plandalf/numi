@@ -9,6 +9,8 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use Inertia\Inertia;
+use Inertia\Response;
 
 class OrganizationController extends Controller
 {
@@ -37,14 +39,14 @@ class OrganizationController extends Controller
             'name' => ['required', 'string', 'max:255'],
         ]);
 
-        /* @var Organization $organization */
-        $organization = Organization::query()
-            ->create($validated);
+        return DB::transaction(function () use ($validated, $request) {
+            $organization = Organization::create($validated);
+            
+            $organization->users()->attach($request->user());
+            $request->user()->switchOrganization($organization);
 
-        $organization->users()->attach($request->user());
-        $request->user()->switchOrganization($organization);
-
-        return redirect()->route('dashboard');
+            return redirect()->route('dashboard');
+        });
     }
 
     /**
@@ -66,9 +68,15 @@ class OrganizationController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(UpdateOrganizationRequest $request, Organization $organization)
+    public function update(Request $request, Organization $organization): RedirectResponse
     {
-        //
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+        ]);
+
+        $organization->update($validated);
+
+        return redirect()->back()->with('success', 'Organization updated successfully.');
     }
 
     /**
@@ -105,5 +113,33 @@ class OrganizationController extends Controller
         $user->switchOrganization($organization);
 
         return redirect()->back();
+    }
+
+    public function settings(): Response
+    {
+        $organization = request()->user()->currentOrganization;
+        
+        return Inertia::render('organizations/settings/general', [
+            'organization' => $organization,
+        ]);
+    }
+
+    public function team(): Response
+    {
+        $organization = request()->user()->currentOrganization;
+        $organization->load('users');
+        
+        return Inertia::render('organizations/settings/team', [
+            'organization' => $organization,
+        ]);
+    }
+
+    public function billing(): Response
+    {
+        $organization = request()->user()->currentOrganization;
+        
+        return Inertia::render('organizations/settings/billing', [
+            'organization' => $organization,
+        ]);
     }
 }

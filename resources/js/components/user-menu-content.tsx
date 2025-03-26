@@ -27,8 +27,17 @@ export function UserMenuContent({ user }: UserMenuContentProps) {
                         Settings
                     </Link>
                 </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                    <Link className="block w-full" href={route('organizations.settings.general')} as="button" prefetch onClick={cleanup}>
+                    <Settings className="mr-2" />
+                    Organization
+                    </Link>
+                </DropdownMenuItem>
             </DropdownMenuGroup>
+
             <DropdownMenuSeparator />
+            
+            
             <DropdownMenuItem asChild>
                 <Link className="block w-full" method="post" href={route('logout')} as="button" onClick={cleanup}>
                     <LogOut className="mr-2" />

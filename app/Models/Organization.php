@@ -17,6 +17,10 @@ class Organization extends Model
         'ulid',
     ];
 
+    protected $appends = [
+        'invite_link',
+    ];
+
     protected static function boot()
     {
         parent::boot();
@@ -37,7 +41,7 @@ class Organization extends Model
         return $this->hasMany(Offer::class);
     }
 
-    public function getInviteLink(): string
+    public function getInviteLinkAttribute(): string
     {
         return route('organizations.join', $this->ulid);
     }

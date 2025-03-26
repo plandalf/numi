@@ -4,6 +4,7 @@ export interface Organization {
     id: number;
     name: string;
     ulid: string;
+    invite_link: string;
 }
 
 export interface User {
@@ -18,6 +19,11 @@ export interface NavItem {
     title: string;
     href: string;
     icon: LucideIcon;
+}
+
+export interface BreadcrumbItem {
+    title: string;
+    href: string;
 }
 
 export interface SharedData {
