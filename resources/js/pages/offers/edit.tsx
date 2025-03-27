@@ -17,13 +17,13 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback, use } from 'react';
 import { cn } from '@/lib/utils';
-import { MoreVertical, ArrowRightToLine, FileText, CheckSquare, Share2 } from 'lucide-react';
+import { MoreVertical, ArrowRightToLine, FileText, CheckSquare, Share2, Plus } from 'lucide-react';
 import PagePreview from '@/components/offers/page-preview';
 import PageFlowEditor from '@/components/offers/page-flow-editor';
 import { ReactFlowProvider } from '@xyflow/react';
-
+import update from "immutability-helper";
 interface Offer {
     id: number;
     name: string;
@@ -37,16 +37,10 @@ interface Props {
     showNameDialog?: boolean;
 }
 
-const breadcrumbs: BreadcrumbItem[] = [
-    {
-        title: 'Dashboard',
-        href: '/dashboard',
-    },
-    {
-        title: 'Offers',
-        href: '/offers',
-    },
-];
+type FormData = {
+    name: string;
+    view: OfferView;
+}
 
 const PAGE_TYPE_ICONS: Record<PageType, React.ReactNode> = {
     entry: <ArrowRightToLine className="w-4 h-4" />,
@@ -55,6 +49,7 @@ const PAGE_TYPE_ICONS: Record<PageType, React.ReactNode> = {
 };
 
 export default function Edit({ offer, showNameDialog }: Props) {
+    // console.log({ offer });
     const [isNameDialogOpen, setIsNameDialogOpen] = useState(false);
     const [selectedPage, setSelectedPage] = useState<string>(offer.view.first_page);
     const [editingPageName, setEditingPageName] = useState<string | null>(null);
@@ -62,30 +57,42 @@ export default function Edit({ offer, showNameDialog }: Props) {
     const [showPageLogic, setShowPageLogic] = useState(false);
     const inputRef = useRef<HTMLInputElement>(null);
     const [isRenamingFromDropdown, setIsRenamingFromDropdown] = useState(false);
-    
-    // Central state for the view
-    const [view, setView] = useState<OfferView>(offer.view);
-    
-    const { data, setData, put, processing, errors } = useForm({
+    const [showAddPageDialog, setShowAddPageDialog] = useState(false);
+    const [isReady, setIsReady] = useState(false);
+    const { data, setData, put, processing, errors, setDefaults } = useForm({
         name: offer.name,
         view: offer.view
     });
-
-    // Update form data when view changes
-    useEffect(() => {
-        setData('view', view);
-    }, [view, setData]);
-
-    // Update view when offer changes
-    useEffect(() => {
-        setView(offer.view);
-    }, [offer.view]);
 
     useEffect(() => {
         if (showNameDialog) {
             setIsNameDialogOpen(true);
         }
     }, [showNameDialog]);
+
+    useEffect(() => {
+        if (!isReady) {
+            setIsReady(true);
+            return;
+        }
+
+        console.log("Saving!");
+
+        put(route('offers.update', offer.id), {
+            preserveScroll: true,
+            onSuccess: (a) => {
+                // Update view from the response
+                // setData('view', offer.view);
+                console.log("SUCCESS!", a.props.offer); 
+                setDefaults();
+            }
+        });
+    }, [data]);
+
+    // Handle saving changes
+    const handleSave = useCallback(() => {
+        
+    }, [put, offer.id, offer.view, setData]);
 
     const handleNameSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -115,36 +122,29 @@ export default function Edit({ offer, showNameDialog }: Props) {
 
         // Update the page name in the view
         const updatedPages = {
-            ...view.pages,
+            ...data.view.pages,
             [pageId]: {
-                ...view.pages[pageId],
+                ...data.view.pages[pageId],
                 name: pageNameInput
             }
         };
 
-        // Update the central view state
-        setView({
-            ...view,
-            pages: updatedPages
-        });
+        // Update the form data
+        setData(update(data, { view: { pages: { $set: updatedPages } }}));
 
-        // Submit the update
-        put(route('offers.update', offer.id), {
-            onSuccess: () => {
-                setEditingPageName(null);
-            }
-        });
+        // Use setTimeout to ensure state update is completed
+        handleSave();
+        setEditingPageName(null);
     };
 
     const handlePageAction = (pageId: string, action: 'rename' | 'duplicate' | 'delete') => {
         switch (action) {
             case 'rename':
                 setIsRenamingFromDropdown(true);
-                handlePageNameClick(pageId, view.pages[pageId].name);
+                handlePageNameClick(pageId, data.view.pages[pageId].name);
                 break;
             case 'duplicate':
-                // Create a new page with the same content
-                const sourcePage = view.pages[pageId];
+                const sourcePage = data.view.pages[pageId];
                 const newId = `page_${Math.random().toString(36).substr(2, 9)}`;
                 const newPage = {
                     ...sourcePage,
@@ -152,27 +152,21 @@ export default function Edit({ offer, showNameDialog }: Props) {
                     name: `${sourcePage.name} (Copy)`
                 };
 
-                // Update the view with the new page
                 const updatedPages = {
-                    ...view.pages,
+                    ...data.view.pages,
                     [newId]: newPage
                 };
+                setData(update(data, { view: { pages: { $set: updatedPages } }}));
 
-                // Update the central view state
-                setView({
-                    ...view,
-                    pages: updatedPages
-                });
-
-                // Submit the update
-                put(route('offers.update', offer.id));
+                // Use setTimeout to ensure state update is completed
+                setTimeout(() => {
+                    handleSave();
+                }, 0);
                 break;
             case 'delete':
-                // Remove the page and its connections
-                const pagesToUpdate = { ...view.pages };
+                const pagesToUpdate = { ...data.view.pages };
                 delete pagesToUpdate[pageId];
 
-                // Remove any connections to this page
                 Object.keys(pagesToUpdate).forEach(pageKey => {
                     const page = pagesToUpdate[pageKey];
                     if (page.next_page.default_next_page === pageId) {
@@ -189,8 +183,8 @@ export default function Edit({ offer, showNameDialog }: Props) {
                             ...page,
                             next_page: {
                                 ...page.next_page,
-                                branches: page.next_page.branches.map(branch => 
-                                    branch.next_page === pageId 
+                                branches: page.next_page.branches.map((branch: { next_page: string | null }) =>
+                                    branch.next_page === pageId
                                         ? { ...branch, next_page: null }
                                         : branch
                                 )
@@ -199,35 +193,114 @@ export default function Edit({ offer, showNameDialog }: Props) {
                     }
                 });
 
-                // Update the central view state
-                setView({
-                    ...view,
-                    pages: pagesToUpdate
-                });
+                // setData('view', {
+                //     ...data.view,
+                //     pages: pagesToUpdate
+                // });
+                setData(update(data, { view: { pages: { $set: pagesToUpdate } }}));
 
-                // Submit the update
-                put(route('offers.update', offer.id));
+                // If the deleted page was the selected page, select a new page
+                if (selectedPage === pageId) {
+                    // Choose the first page, or any other page if available
+                    const remainingPageIds = Object.keys(pagesToUpdate);
+                    if (remainingPageIds.length > 0) {
+                        // Try to select the first page in the flow if it exists
+                        const firstPageId = data.view.first_page;
+                        const newSelectedPageId = (firstPageId && pagesToUpdate[firstPageId]) 
+                            ? firstPageId 
+                            : remainingPageIds[0];
+                        
+                        setSelectedPage(newSelectedPageId);
+                    }
+                }
+
+                // Use setTimeout to ensure state update is completed
+                setTimeout(() => {
+                    handleSave();
+                }, 0);
                 break;
         }
     };
 
-    const currentPage = view.pages[selectedPage];
-    const nextPageId = currentPage.next_page.default_next_page;
-    const nextPage = nextPageId ? view.pages[nextPageId] : null;
+    const currentPage = data.view?.pages[selectedPage];
+    const nextPageId = currentPage?.next_page?.default_next_page;
+    const nextPage = nextPageId ? data.view?.pages[nextPageId] : null;
 
     // Add this function to get pages in the correct order
     const getOrderedPages = (view: OfferView): [string, Page][] => {
         const orderedPages: [string, Page][] = [];
-        let currentPageId: string | null = view.first_page;
+        const visitedPages = new Set<string>();
         
-        while (currentPageId && view.pages[currentPageId]) {
+        // First, add pages in the main flow starting from first_page
+        let currentPageId: string | null = view.first_page;
+        while (currentPageId && view.pages[currentPageId] && !visitedPages.has(currentPageId)) {
             const currentPage: Page = view.pages[currentPageId];
             orderedPages.push([currentPageId, currentPage]);
+            visitedPages.add(currentPageId);
             currentPageId = currentPage.next_page?.default_next_page ?? null;
         }
-        
+
+        // Then, add any remaining pages that aren't in the main flow
+        Object.entries(view.pages).forEach(([pageId, page]) => {
+            if (!visitedPages.has(pageId)) {
+                orderedPages.push([pageId, page]);
+                visitedPages.add(pageId);
+            }
+        });
+
         return orderedPages;
     };
+
+    // Add this function to handle page creation
+    const handleAddPage = (type: PageType) => {
+        const id = `page_${Math.random().toString(36).substr(2, 9)}`;
+        
+        // Create the new page
+        const newPage: Page = {
+            id,
+            name: type === 'entry' ? 'Entry Page' : type === 'ending' ? 'Ending Page' : 'New Page',
+            type,
+            position: { x: 0, y: 0 },
+            view: {
+                promo: { blocks: [] },
+                title: { blocks: [] },
+                action: { blocks: [] },
+                content: { blocks: [] }
+            },
+            layout: { sm: 'split-checkout@v1' },
+            provides: [],
+            next_page: {
+                branches: [],
+                default_next_page: null
+            }
+        };
+
+        // Create updated pages object
+        const updatedPages = {
+            ...data.view.pages,
+            [id]: newPage
+        };
+
+        // If this is the first page, set it as the first page
+        const updatedView = {
+            ...data.view,
+            pages: updatedPages,
+            first_page: Object.keys(data.view.pages).length === 0 ? id : data.view.first_page
+        };
+
+        // Update the form data
+        // setData('view', updatedView);
+        setData(update(data, { view: { $set: updatedView }}));
+
+        // Submit the update
+        handleSave();
+
+        setShowAddPageDialog(false);
+    };
+
+    if (!data.view) {
+        return <div>Loading...</div>;
+    }
 
     return (
         <AppOfferLayout offer={offer}>
@@ -299,7 +372,7 @@ export default function Edit({ offer, showNameDialog }: Props) {
                         <div className="p-4">
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-2 overflow-x-auto">
-                                    {getOrderedPages(view).map(([pageId, page]) => (
+                                    {getOrderedPages(data.view).map(([pageId, page]) => (
                                         <div
                                             key={pageId}
                                             className={cn(
@@ -314,7 +387,7 @@ export default function Edit({ offer, showNameDialog }: Props) {
                                                     {PAGE_TYPE_ICONS[page.type]}
                                                 </span>
                                             )}
-                                            
+
                                             {editingPageName === pageId ? (
                                                 <Input
                                                     ref={inputRef}
@@ -360,7 +433,7 @@ export default function Edit({ offer, showNameDialog }: Props) {
                                                         <DropdownMenuItem onClick={() => handlePageAction(pageId, 'duplicate')}>
                                                             Duplicate
                                                         </DropdownMenuItem>
-                                                        <DropdownMenuItem 
+                                                        <DropdownMenuItem
                                                             onClick={() => handlePageAction(pageId, 'delete')}
                                                             className="text-destructive"
                                                         >
@@ -371,6 +444,13 @@ export default function Edit({ offer, showNameDialog }: Props) {
                                             )}
                                         </div>
                                     ))}
+                                    <button
+                                        onClick={() => setShowAddPageDialog(true)}
+                                        className="flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium bg-secondary text-secondary-foreground hover:bg-secondary/90"
+                                    >
+                                        <Plus className="w-4 h-4" />
+                                        Add Page
+                                    </button>
                                 </div>
 
                                 <div className="flex items-center gap-4">
@@ -386,11 +466,11 @@ export default function Edit({ offer, showNameDialog }: Props) {
                                         </div>
                                     )}
 
-                                    <div className="flex items-center gap-2">
+                                    <div className="flex items-center gap-2 hidden">
                                         <span className="text-sm text-muted-foreground">Provides:</span>
                                         <div className="flex gap-1">
-                                            {currentPage.provides.map(provide => (
-                                                <span 
+                                            {currentPage.provides.map((provide: string) => (
+                                                <span
                                                     key={provide}
                                                     className="bg-secondary px-2 py-0.5 rounded text-xs"
                                                 >
@@ -427,30 +507,53 @@ export default function Edit({ offer, showNameDialog }: Props) {
                     </div>
                     <div className="flex-1">
                         <ReactFlowProvider>
-                            <PageFlowEditor 
-                                view={view} 
+                            <PageFlowEditor
+                                view={data.view}
                                 onUpdateFlow={(changes) => {
                                     console.log('Flow editor changes:', changes);
-                                    
-                                    // Update the central view state
-                                    setView({
-                                        ...view,
-                                        ...changes
-                                    });
-                                    
+                                    setData(update(data, { view: { $set: changes }}));
+
                                     // Submit the update to backend
                                     console.log('Submitting update to backend...');
-                                    put(route('offers.update', offer.id), {
-                                        onSuccess: () => {
-                                            console.log('Update successful');
-                                        },
-                                        onError: (errors) => {
-                                            console.error('Update failed:', errors);
-                                        }
-                                    });
-                                }} 
+                                    handleSave();
+                                }}
                             />
                         </ReactFlowProvider>
+                    </div>
+                </DialogContent>
+            </Dialog>
+
+            {/* Add Page Dialog */}
+            <Dialog open={showAddPageDialog} onOpenChange={setShowAddPageDialog}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Add New Page</DialogTitle>
+                        <DialogDescription>
+                            Choose the type of page you want to add
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="grid grid-cols-3 gap-4 py-4">
+                        <button
+                            onClick={() => handleAddPage('entry')}
+                            className="flex flex-col items-center gap-2 p-4 rounded-lg border border-border hover:bg-secondary/50"
+                        >
+                            <ArrowRightToLine className="w-6 h-6" />
+                            <span className="text-sm font-medium">Entry Page</span>
+                        </button>
+                        <button
+                            onClick={() => handleAddPage('page')}
+                            className="flex flex-col items-center gap-2 p-4 rounded-lg border border-border hover:bg-secondary/50"
+                        >
+                            <FileText className="w-6 h-6" />
+                            <span className="text-sm font-medium">Content Page</span>
+                        </button>
+                        <button
+                            onClick={() => handleAddPage('ending')}
+                            className="flex flex-col items-center gap-2 p-4 rounded-lg border border-border hover:bg-secondary/50"
+                        >
+                            <CheckSquare className="w-6 h-6" />
+                            <span className="text-sm font-medium">Ending Page</span>
+                        </button>
                     </div>
                 </DialogContent>
             </Dialog>

@@ -139,7 +139,7 @@ export interface Page {
     next_page: {
         branches: {
             next_page: string | null;
-            condition?: BranchCondition;
+            condition: BranchCondition;
         }[];
         default_next_page: string | null;
     };

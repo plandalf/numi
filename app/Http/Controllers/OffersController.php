@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Http\Resources\OfferResource;
 use App\Models\Organization;
 use App\Models\Store\Offer;
 use App\Models\OfferVariant;
@@ -16,7 +17,7 @@ class OffersController extends Controller
     public function index(): Response
     {
         return Inertia::render('offers/index', [
-            'offers' => Offer::with('variants')->paginate(),
+            'offers' => OfferResource::collection(Offer::with('variants')->paginate()),
         ]);
     }
 
@@ -38,11 +39,11 @@ class OffersController extends Controller
 
     public function edit(Offer $offer): Response
     {
-        $json = json_decode(file_get_contents(base_path('resources/view-example.json')), true);
-        $offer->view = $json;
+        // $json = json_decode(file_get_contents(base_path('resources/view-example.json')), true);
+        // $offer->view = $json;
 
         return Inertia::render('offers/edit', [
-            'offer' => $offer->load('variants'),
+            'offer' => new OfferResource($offer->load('variants')),
             'showNameDialog' => session('showNameDialog', false),
         ]);
     }
@@ -57,6 +58,7 @@ class OffersController extends Controller
             'view' => ['nullable', 'array'],
             'product_image_id' => ['nullable'],
         ]);
+        logger()->info('view: ', $validated);
 
         $offer->update($validated);
 
@@ -73,7 +75,7 @@ class OffersController extends Controller
     public function pricing(Offer $offer): Response
     {
         return Inertia::render('offers/pricing', [
-            'offer' => $offer->load('variants'),
+            'offer' => new OfferResource($offer->load('variants')),
         ]);
     }
 
@@ -121,42 +123,42 @@ class OffersController extends Controller
     public function integrate(Offer $offer): Response
     {
         return Inertia::render('offers/integrate', [
-            'offer' => $offer->load('variants'),
+            'offer' => new OfferResource($offer->load('variants')),
         ]);
     }
 
     public function sharing(Offer $offer): Response
     {
         return Inertia::render('offers/sharing', [
-            'offer' => $offer->load('variants'),
+            'offer' => new OfferResource($offer->load('variants')),
         ]);
     }
 
     public function settings(Offer $offer): Response
     {
         return Inertia::render('offers/settings', [
-            'offer' => $offer->load('variants'),
+            'offer' => new OfferResource($offer->load('variants')),
         ]);
     }
 
     public function settingsCustomization(Offer $offer): Response
     {
         return Inertia::render('offers/settings/customization', [
-            'offer' => $offer->load('variants'),
+            'offer' => new OfferResource($offer->load('variants')),
         ]);
     }
 
     public function settingsNotifications(Offer $offer): Response
     {
         return Inertia::render('offers/settings/notifications', [
-            'offer' => $offer->load('variants'),
+            'offer' => new OfferResource($offer->load('variants')),
         ]);
     }
 
     public function settingsAccess(Offer $offer): Response
     {
         return Inertia::render('offers/settings/access', [
-            'offer' => $offer->load('variants'),
+            'offer' => new OfferResource($offer->load('variants')),
         ]);
     }
 

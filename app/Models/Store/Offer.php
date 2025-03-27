@@ -9,9 +9,6 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Support\Str;
-use App\Database\Traits\HasSqids;
 
 class Offer extends Model
 {
@@ -33,12 +30,11 @@ class Offer extends Model
         'product_image_id',
         'properties',
         'transaction_webhook_url',
-
     ];
 
     protected $casts = [
         'status' => 'string',
-        'view' => 'array',
+        'view' => 'json',
         'properties' => 'array',
     ];
 
