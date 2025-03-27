@@ -55,7 +55,7 @@ export default function VariantForm({
         amount: number;
         currency: string;
         media_id: number | null;
-        properties: string; // JSON string
+        properties: object | null; // JSON string
     }>({
         name: initialData?.name || "",
         description: initialData?.description || "",
@@ -64,7 +64,7 @@ export default function VariantForm({
         amount: initialData?.amount || 0,
         currency: initialData?.currency || defaultCurrency,
         media_id: initialData?.media_id || null,
-        properties: initialData?.properties ? JSON.stringify(initialData.properties) : "{}",
+        properties: initialData?.properties,
     });
     console.log(data);
 
@@ -86,7 +86,7 @@ export default function VariantForm({
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        
+
         // Set properties based on pricing model
         let properties = {};
         switch (data.pricing_model) {
@@ -98,8 +98,8 @@ export default function VariantForm({
                 properties = { package: packageConfig };
                 break;
         }
-        
-        setData('properties', JSON.stringify(properties));
+
+        setData('properties', properties);
 
         if (initialData?.id) {
             put(route('offers.variants.update', { offer: offerId, variant: initialData.id }), {
@@ -156,8 +156,8 @@ export default function VariantForm({
                 <DialogHeader>
                     <DialogTitle>{initialData?.id ? 'Edit' : 'Add'} Price Variant</DialogTitle>
                     <DialogDescription>
-                        {initialData?.id 
-                            ? 'Update the pricing details for this variant.' 
+                        {initialData?.id
+                            ? 'Update the pricing details for this variant.'
                             : 'Create a new pricing variant for your product.'}
                     </DialogDescription>
                 </DialogHeader>
@@ -271,8 +271,8 @@ export default function VariantForm({
                             <CardContent className="pt-6">
                                 <div className="space-y-2">
                                     {tiers.map((tier, index) => (
-                                        <div 
-                                            key={index} 
+                                        <div
+                                            key={index}
                                             className="flex space-x-2 items-end rounded-md border bg-muted/40 p-2"
                                         >
                                             <div className="grid gap-2 flex-1">
@@ -405,7 +405,7 @@ export default function VariantForm({
                         >
                             Cancel
                         </Button>
-                        <Button 
+                        <Button
                             type="submit"
                             disabled={processing}
                             className="relative transition-all duration-200 active:scale-95"
@@ -424,4 +424,4 @@ export default function VariantForm({
             </DialogContent>
         </Dialog>
     );
-} 
+}

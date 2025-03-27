@@ -51,7 +51,7 @@ const PAGE_TYPE_ICONS: Record<PageType, React.ReactNode> = {
 export default function Edit({ offer, showNameDialog }: Props) {
     // console.log({ offer });
     const [isNameDialogOpen, setIsNameDialogOpen] = useState(false);
-    const [selectedPage, setSelectedPage] = useState<string>(offer.view.first_page);
+    const [selectedPage, setSelectedPage] = useState<string>(offer.view?.first_page);
     const [editingPageName, setEditingPageName] = useState<string | null>(null);
     const [pageNameInput, setPageNameInput] = useState("");
     const [showPageLogic, setShowPageLogic] = useState(false);

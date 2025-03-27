@@ -108,7 +108,14 @@
                 "li_customization"
             ],
             "next_page": {
-                "branches": [],
+                "branches": [
+                    {
+                        "next_page": "page_nw4wu2a",
+                        "condition": {
+                            
+                        }
+                    }
+                ],
                 "default_next_page": "page_nw4wu2a"
             }
         },

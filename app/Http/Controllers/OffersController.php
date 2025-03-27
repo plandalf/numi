@@ -39,8 +39,10 @@ class OffersController extends Controller
 
     public function edit(Offer $offer): Response
     {
-        // $json = json_decode(file_get_contents(base_path('resources/view-example.json')), true);
-        // $offer->view = $json;
+        if (is_null($offer->view)) {
+            $json = json_decode(file_get_contents(base_path('resources/view-example.json')), true);
+            $offer->view = $json;
+        }
 
         return Inertia::render('offers/edit', [
             'offer' => new OfferResource($offer->load('variants')),

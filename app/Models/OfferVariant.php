@@ -24,7 +24,7 @@ class OfferVariant extends Model
     ];
 
     protected $casts = [
-        'properties' => 'array',
+        'properties' => 'json',
         'amount' => 'integer',
     ];
 
