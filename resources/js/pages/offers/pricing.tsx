@@ -1,7 +1,7 @@
 import AppOfferLayout from '@/layouts/app/app-offer-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, useForm } from '@inertiajs/react';
-import { type Offer, type OfferVariant } from '@/types/offer';
+import { type Offer as OfferType, type OfferVariant } from '@/types/offer';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,9 +12,10 @@ import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { ImageUpload } from '@/components/ui/image-upload';
+import { toast } from 'sonner';
 
 interface Props {
-    offer: Offer;
+    offer: OfferType;
 }
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -56,35 +57,75 @@ export default function Pricing({ offer }: Props) {
 
     const handleVariantSubmit = (variantData: any) => {
         if (editingVariant) {
+            const toastId = toast.loading(`Updating variant ${editingVariant.name}...`);
+            
             put(route('offers.variants.update', { offer: offer.id, variant: editingVariant.id }), {
                 ...variantData,
                 preserveScroll: true,
                 onSuccess: () => {
+                    toast.success(`Variant ${editingVariant.name} updated successfully`, {
+                        id: toastId,
+                    });
                     setIsVariantFormOpen(false);
                     setEditingVariant(null);
                 },
+                onError: (errors) => {
+                    toast.error(`Failed to update variant: ${Object.values(errors).flat().join(', ')}`, {
+                        id: toastId,
+                    });
+                },
             });
         } else {
+            const toastId = toast.loading(`Creating new variant...`);
+            
             post(route('offers.variants.store', { offer: offer.id }), {
                 ...variantData,
                 preserveScroll: true,
                 onSuccess: () => {
+                    toast.success(`Variant created successfully`, {
+                        id: toastId,
+                    });
                     setIsVariantFormOpen(false);
+                },
+                onError: (errors) => {
+                    toast.error(`Failed to create variant: ${Object.values(errors).flat().join(', ')}`, {
+                        id: toastId,
+                    });
                 },
             });
         }
     };
 
-    const handleDeleteVariant = (variantId: number) => {
-        if (confirm('Are you sure you want to delete this variant?')) {
-            destroy(route('offers.variants.destroy', { offer: offer.id, variant: variantId }), {
-                preserveScroll: true
+    const handleDeleteVariant = (variant: OfferVariant) => {
+        if (confirm(`Are you sure you want to delete the variant "${variant.name}"?`)) {
+            const toastId = toast.loading(`Deleting variant ${variant.name}...`);
+            
+            destroy(route('offers.variants.destroy', { offer: offer.id, variant: variant.id }), {
+                preserveScroll: true,
+                onSuccess: () => {
+                    toast.success(`Variant ${variant.name} deleted successfully`, {
+                        id: toastId,
+                    });
+                },
+                onError: (errors) => {
+                    toast.error(`Failed to delete variant: ${errors.message || 'Unknown error'}`, {
+                        id: toastId,
+                    });
+                }
             });
         }
     };
 
+    // Create a compatible offer object for the AppOfferLayout
+    const layoutOffer = {
+        id: offer.id,
+        name: offer.name || '',
+        created_at: offer.created_at,
+        updated_at: offer.updated_at,
+    };
+
     return (
-        <AppOfferLayout offer={offer}>
+        <AppOfferLayout offer={layoutOffer}>
             <Head title={`${offer.name || 'Untitled Offer'} - Pricing`} />
 
             <div className="space-y-6 w-full max-w-7xl mx-auto mt-6">
@@ -209,7 +250,7 @@ export default function Pricing({ offer }: Props) {
                                             <Button
                                                 variant="ghost"
                                                 size="icon"
-                                                onClick={() => handleDeleteVariant(variant.id)}
+                                                onClick={() => handleDeleteVariant(variant)}
                                                 disabled={processing}
                                                 className="relative transition-all duration-200 active:scale-95"
                                             >

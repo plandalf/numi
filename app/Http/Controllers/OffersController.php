@@ -69,9 +69,17 @@ class OffersController extends Controller
 
     public function destroy(Offer $offer): \Illuminate\Http\RedirectResponse
     {
-        $offer->delete();
+        try {
+            // First delete all variants associated with this offer
+            $offer->variants()->delete();
+            
+            // Then delete the offer itself
+            $offer->delete();
 
-        return redirect()->route('dashboard');
+            return redirect()->route('offers.index')->with('success', 'Offer and all associated data deleted successfully');
+        } catch (\Exception $e) {
+            return back()->with('error', 'Failed to delete offer: ' . $e->getMessage());
+        }
     }
 
     public function pricing(Offer $offer): Response
@@ -83,43 +91,58 @@ class OffersController extends Controller
 
     public function storeVariant(Request $request, Offer $offer): \Illuminate\Http\RedirectResponse
     {
-        $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'description' => ['nullable', 'string'],
-            'type' => ['required', 'string', 'in:one_time,subscription'],
-            'pricing_model' => ['required', 'string', 'in:standard,graduated,volume,package'],
-            'amount' => ['nullable', 'integer', 'min:0'],
-            'currency' => ['required', 'string', 'size:3'],
-            'properties' => ['required_if:pricing_model,graduated,volume,package'],
-        ]);
+        try {
+            $validated = $request->validate([
+                'name' => ['required', 'string', 'max:255'],
+                'description' => ['nullable', 'string'],
+                'type' => ['required', 'string', 'in:one_time,subscription'],
+                'pricing_model' => ['required', 'string', 'in:standard,graduated,volume,package'],
+                'amount' => ['nullable', 'integer', 'min:0'],
+                'currency' => ['required', 'string', 'size:3'],
+                'properties' => ['required_if:pricing_model,graduated,volume,package'],
+                'media_id' => ['nullable'],
+            ]);
 
-        $offer->variants()->create($validated);
+            $variant = $offer->variants()->create($validated);
 
-        return back()->with('success', 'Variant created successfully');
+            return back()->with('success', "Variant '{$variant->name}' created successfully");
+        } catch (\Exception $e) {
+            return back()->with('error', 'Failed to create variant: ' . $e->getMessage());
+        }
     }
 
     public function updateVariant(Request $request, Offer $offer, OfferVariant $variant): \Illuminate\Http\RedirectResponse
     {
-        $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'description' => ['nullable', 'string'],
-            'type' => ['required', 'string', 'in:one_time,subscription'],
-            'pricing_model' => ['required', 'string', 'in:standard,graduated,volume,package'],
-            'amount' => ['nullable', 'integer', 'min:0'],
-            'currency' => ['required', 'string', 'size:3'],
-            'properties' => ['nullable', 'array'],
-        ]);
+        try {
+            $validated = $request->validate([
+                'name' => ['required', 'string', 'max:255'],
+                'description' => ['nullable', 'string'],
+                'type' => ['required', 'string', 'in:one_time,subscription'],
+                'pricing_model' => ['required', 'string', 'in:standard,graduated,volume,package'],
+                'amount' => ['nullable', 'integer', 'min:0'],
+                'currency' => ['required', 'string', 'size:3'],
+                'properties' => ['nullable', 'array'],
+                'media_id' => ['nullable'],
+            ]);
 
-        $variant->update($validated);
+            $variant->update($validated);
 
-        return back()->with('success', 'Variant updated successfully');
+            return back()->with('success', "Variant '{$variant->name}' updated successfully");
+        } catch (\Exception $e) {
+            return back()->with('error', 'Failed to update variant: ' . $e->getMessage());
+        }
     }
 
     public function destroyVariant(Offer $offer, OfferVariant $variant): \Illuminate\Http\RedirectResponse
     {
-        $variant->delete();
+        try {
+            $name = $variant->name;
+            $variant->delete();
 
-        return back()->with('success', 'Variant deleted successfully');
+            return back()->with('success', "Variant '{$name}' deleted successfully");
+        } catch (\Exception $e) {
+            return back()->with('error', 'Failed to delete variant: ' . $e->getMessage());
+        }
     }
 
     public function integrate(Offer $offer): Response

@@ -133,7 +133,7 @@ export function ImageUpload({
             />
 
             {previewUrl ? (
-                <div className="relative aspect-square w-full overflow-hidden rounded-lg border">
+                <div className="relative w-full overflow-hidden rounded-lg border">
                     <img
                         src={previewUrl}
                         alt="Preview"

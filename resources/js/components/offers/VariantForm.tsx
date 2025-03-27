@@ -21,6 +21,7 @@ import { Plus, Trash2, Loader2 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { type OfferVariant, type TierConfig, type PackageConfig } from "@/types/offer";
 import { ImageUpload } from "@/components/ui/image-upload";
+import { toast } from "sonner";
 
 type VariantType = "one_time" | "subscription";
 type PricingModel = "standard" | "graduated" | "volume" | "package";
@@ -114,18 +115,38 @@ export default function VariantForm({
             setData('properties', properties);
         }
 
-        if (initialData?.id) {
+        const isEditing = !!initialData?.id;
+        const variantName = data.name || (isEditing ? 'this variant' : 'new variant');
+        const toastId = toast.loading(isEditing ? `Updating ${variantName}...` : `Creating ${variantName}...`);
+        
+        if (isEditing) {
             put(route('offers.variants.update', { offer: offerId, variant: initialData.id }), {
                 preserveScroll: true,
                 onSuccess: () => {
+                    toast.success(`Variant ${variantName} updated successfully`, {
+                        id: toastId,
+                    });
                     onOpenChange(false);
+                },
+                onError: (errors) => {
+                    toast.error(`Failed to update variant: ${Object.values(errors).flat().join(', ')}`, {
+                        id: toastId,
+                    });
                 },
             });
         } else {
             post(route('offers.variants.store', { offer: offerId }), {
                 preserveScroll: true,
                 onSuccess: () => {
+                    toast.success(`Variant ${variantName} created successfully`, {
+                        id: toastId,
+                    });
                     onOpenChange(false);
+                },
+                onError: (errors) => {
+                    toast.error(`Failed to create variant: ${Object.values(errors).flat().join(', ')}`, {
+                        id: toastId,
+                    });
                 },
             });
         }

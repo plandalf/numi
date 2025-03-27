@@ -380,12 +380,6 @@ export default function Edit({ offer, showNameDialog }: Props) {
                                                     : "bg-secondary text-secondary-foreground hover:bg-secondary/90"
                                             )}
                                         >
-                                            {selectedPage !== pageId && (
-                                                <span className="text-muted-foreground">
-                                                    {PAGE_TYPE_ICONS[page.type]}
-                                                </span>
-                                            )}
-
                                             {editingPageName === pageId ? (
                                                 <Input
                                                     ref={inputRef}
@@ -411,8 +405,12 @@ export default function Edit({ offer, showNameDialog }: Props) {
                                             ) : (
                                                 <button
                                                     onClick={() => handlePageNameClick(pageId, page.name)}
-                                                    className="focus:outline-none"
+                                                    className="focus:outline-none flex items-center gap-2"
                                                 >
+                                                    <span className="text-muted-foreground">
+                                                    {PAGE_TYPE_ICONS[page.type]}
+                                                </span>
+
                                                     {page.name}
                                                 </button>
                                             )}
