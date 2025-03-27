@@ -408,6 +408,16 @@ export default function VariantForm({
                         </Card>
                     )}
 
+                    <div className="grid gap-2">
+                        {/* Display errors for hidden/computed fields */}
+                        {errors.properties && (
+                            <p className="text-sm text-red-500">{errors.properties}</p>
+                        )}
+                        {errors.currency && (
+                            <p className="text-sm text-red-500">{errors.currency}</p>
+                        )}
+                    </div>
+
                     <div className="flex justify-end space-x-2">
                         <Button
                             type="button"
