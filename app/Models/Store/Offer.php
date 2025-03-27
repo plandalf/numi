@@ -30,6 +30,7 @@ class Offer extends Model
         'is_one_time_enabled',
         'organization_id',
         'view',
+        'product_image_id',
         'properties',
         'transaction_webhook_url',
 

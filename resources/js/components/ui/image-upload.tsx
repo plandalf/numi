@@ -92,11 +92,12 @@ export function ImageUpload({
                 .then(res => {
                     const data = res.data;
 
-                    console.log('onSuccess');
+                    console.log('onSuccess', data);
                     // 4. Update preview and notify parent
                     const objectUrl = URL.createObjectURL(file);
                     setPreviewUrl(objectUrl);
-                    onChange?.(data!.media_id);
+                    console.log(objectUrl);
+                    onChange?.(data!.media.id);
                 });
 
         } catch (error) {

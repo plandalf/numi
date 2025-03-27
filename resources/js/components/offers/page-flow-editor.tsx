@@ -399,13 +399,13 @@ export default function PageFlowEditor({ view, onUpdateFlow }: PageFlowEditorPro
         if (!pendingPosition) return;
 
         const id = `page_${Math.random().toString(36).substr(2, 9)}`;
-        console.log('Creating new page with ID:', id);
         
+        // Create the new page
         const newPage: Page = {
             id,
             name: 'New Page',
             type,
-            position: pendingPosition, // Add position to the page
+            position: pendingPosition,
             view: {
                 promo: { blocks: [] },
                 title: { blocks: [] },
@@ -419,31 +419,29 @@ export default function PageFlowEditor({ view, onUpdateFlow }: PageFlowEditorPro
                 default_next_page: null
             }
         };
-        console.log('New page object:', newPage);
 
+        // Create updated pages object
         const updatedPages = {
             ...view.pages,
             [id]: newPage
         };
-        console.log('Updated pages object:', updatedPages);
 
-        // If we have a pending connection, update the source page
+        // Handle connections if there's a pending connection
         if (pendingConnection?.source) {
-            console.log('Handling pending connection:', pendingConnection);
             const sourcePage = view.pages[pendingConnection.source];
             if (sourcePage) {
                 if (pendingConnection.sourceHandle?.startsWith('branch-')) {
-                    // Get branch index
+                    // Handle branch connection
                     const branchIndex = parseInt(pendingConnection.sourceHandle.split('-')[1]);
-                    console.log('Updating branch connection:', { branchIndex, sourceId: pendingConnection.source });
+                    const updatedBranches = [...(sourcePage.next_page.branches || [])];
                     
                     // Update the branch with the new target
-                    const updatedBranches = [...(sourcePage.next_page.branches || [])];
                     updatedBranches[branchIndex] = {
                         ...updatedBranches[branchIndex],
                         next_page: id
                     };
 
+                    // Update the source page
                     updatedPages[pendingConnection.source] = {
                         ...sourcePage,
                         next_page: {
@@ -451,9 +449,8 @@ export default function PageFlowEditor({ view, onUpdateFlow }: PageFlowEditorPro
                             branches: updatedBranches
                         }
                     };
-                    console.log('Updated source page with new branch:', updatedPages[pendingConnection.source]);
 
-                    // Show branch condition dialog after updating view
+                    // Show branch condition dialog
                     setPendingConnection({
                         ...pendingConnection,
                         target: id,
@@ -461,7 +458,7 @@ export default function PageFlowEditor({ view, onUpdateFlow }: PageFlowEditorPro
                     });
                     setShowBranchDialog(true);
                 } else {
-                    // Set as default next page
+                    // Handle default connection
                     updatedPages[pendingConnection.source] = {
                         ...sourcePage,
                         next_page: {
@@ -469,36 +466,27 @@ export default function PageFlowEditor({ view, onUpdateFlow }: PageFlowEditorPro
                             default_next_page: id
                         }
                     };
-                    console.log('Updated source page with new default next page:', updatedPages[pendingConnection.source]);
                 }
-            }
-        } else {
-            // If this is the first page, set it as the first page
-            if (Object.keys(view.pages).length === 0) {
-                console.log('Setting as first page since no pages exist');
-                onUpdateFlow({
-                    pages: updatedPages,
-                    first_page: id
-                });
-            } else {
-                console.log('Adding as standalone page');
-                onUpdateFlow({
-                    pages: updatedPages,
-                    first_page: view.first_page
-                });
             }
         }
 
-        // Schedule a fit view after the update
-        setTimeout(() => {
-            fitView({ padding: 0.2, duration: 200 });
-        }, 50);
+        // Update the view configuration
+        onUpdateFlow({
+            pages: updatedPages,
+            first_page: Object.keys(view.pages).length === 0 ? id : view.first_page
+        });
 
+        // Reset state
+        setPendingPosition(null);
+        setShowPageTypeDialog(false);
         if (!pendingConnection?.sourceHandle?.startsWith('branch-')) {
             setPendingConnection(null);
         }
-        setPendingPosition(null);
-        setShowPageTypeDialog(false);
+
+        // Fit view after a short delay to ensure the new node is rendered
+        setTimeout(() => {
+            fitView({ padding: 0.2, duration: 200 });
+        }, 50);
     }, [pendingConnection, pendingPosition, view.pages, view.first_page, onUpdateFlow, fitView]);
 
     const onConnect = useCallback(

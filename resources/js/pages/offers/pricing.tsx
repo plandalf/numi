@@ -86,7 +86,7 @@ export default function Pricing({ offer }: Props) {
     return (
         <AppOfferLayout offer={offer}>
             <Head title={`${offer.name || 'Untitled Offer'} - Pricing`} />
-            
+
             <div className="space-y-6">
                 <Card>
                     <CardHeader>
@@ -128,14 +128,15 @@ export default function Pricing({ offer }: Props) {
                                     preview={offer.product_image?.url}
                                     disabled={processing}
                                 />
+                                {data.product_image_id}
                                 {errors.product_image_id && (
                                     <p className="text-sm text-red-500">{errors.product_image_id}</p>
                                 )}
                             </div>
 
                             <div className="flex justify-end">
-                                <Button 
-                                    type="submit" 
+                                <Button
+                                    type="submit"
                                     disabled={processing}
                                     className="relative transition-all duration-200 active:scale-95"
                                 >
@@ -156,7 +157,7 @@ export default function Pricing({ offer }: Props) {
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between">
                         <CardTitle>Price Variants</CardTitle>
-                        <Button 
+                        <Button
                             onClick={() => {
                                 setEditingVariant(null);
                                 setIsVariantFormOpen(true);
@@ -186,7 +187,7 @@ export default function Pricing({ offer }: Props) {
                                                 {variant.type === 'subscription' ? '🔄 Subscription' : '💰 One-time'} ·{' '}
                                                 {variant.pricing_model === 'standard' && formatMoney(variant.amount || 0, variant.currency)}
                                                 {variant.pricing_model === 'package' && `${formatMoney(variant.properties?.package?.unit_amount || 0, variant.currency)} per ${variant.properties?.package?.size || 1} units`}
-                                                {(variant.pricing_model === 'graduated' || variant.pricing_model === 'volume') && 
+                                                {(variant.pricing_model === 'graduated' || variant.pricing_model === 'volume') &&
                                                     `${variant.pricing_model === 'graduated' ? 'Progressive' : 'Volume-based'} pricing with ${variant.properties?.tiers?.length || 0} tiers`
                                                 }
                                             </p>
@@ -241,4 +242,4 @@ export default function Pricing({ offer }: Props) {
         )}
         </AppOfferLayout>
     );
-} 
+}

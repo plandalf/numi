@@ -55,6 +55,7 @@ class OffersController extends Controller
             'image_url' => ['nullable', 'string', 'url'],
             'properties' => ['nullable', 'array'],
             'view' => ['nullable', 'array'],
+            'product_image_id' => ['nullable'],
         ]);
 
         $offer->update($validated);
