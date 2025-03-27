@@ -52,21 +52,20 @@ export default function VariantForm({
         description: string;
         type: VariantType;
         pricing_model: PricingModel;
-        amount: number;
+        amount: number | null;
         currency: string;
         media_id: number | null;
-        properties: object | null; // JSON string
+        properties: Record<string, any> | null;
     }>({
         name: initialData?.name || "",
         description: initialData?.description || "",
         type: (initialData?.type as VariantType) || "one_time",
         pricing_model: (initialData?.pricing_model as PricingModel) || "standard",
-        amount: initialData?.amount || 0,
+        amount: initialData?.pricing_model === "standard" ? (initialData?.amount || 0) : null,
         currency: initialData?.currency || defaultCurrency,
         media_id: initialData?.media_id || null,
-        properties: initialData?.properties,
+        properties: initialData?.pricing_model === "standard" ? null : initialData?.properties || null,
     });
-    console.log(data);
 
     // Reset form when dialog opens/closes
     useEffect(() => {
@@ -84,22 +83,36 @@ export default function VariantForm({
         }
     }, [data.type]);
 
+    // Update amount and properties when pricing model changes
+    useEffect(() => {
+        if (data.pricing_model === "standard") {
+            setData("properties", null);
+            if (data.amount === null) {
+                setData("amount", 0);
+            }
+        } else {
+            setData("amount", null);
+        }
+    }, [data.pricing_model]);
+
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
 
         // Set properties based on pricing model
-        let properties = {};
-        switch (data.pricing_model) {
-            case "volume":
-            case "graduated":
-                properties = { tiers };
-                break;
-            case "package":
-                properties = { package: packageConfig };
-                break;
+        let properties = null;
+        if (data.pricing_model !== "standard") {
+            switch (data.pricing_model) {
+                case "volume":
+                case "graduated":
+                    properties = { tiers };
+                    break;
+                case "package":
+                    properties = { package: packageConfig };
+                    break;
+            }
+            
+            setData('properties', properties);
         }
-
-        setData('properties', properties);
 
         if (initialData?.id) {
             put(route('offers.variants.update', { offer: offerId, variant: initialData.id }), {
@@ -254,7 +267,7 @@ export default function VariantForm({
                             <Input
                                 id="amount"
                                 type="number"
-                                value={data.amount}
+                                value={data.amount || 0}
                                 onChange={e => setData('amount', Number(e.target.value))}
                             />
                             {errors.amount && (
