@@ -607,6 +607,30 @@ export default function PageFlowEditor({ view, onUpdateFlow }: PageFlowEditorPro
         []
     );
 
+    // Handle node position changes
+    const handleNodesChange = useCallback((changes: any) => {
+        // Apply all changes to React Flow state
+        onNodesChange(changes);
+    }, [onNodesChange]);
+
+    // Handle node drag stop
+    const handleNodeDragStop = useCallback((event: any, node: Node) => {
+        // Update view with new position
+        const updatedPages = { ...view.pages };
+        if (updatedPages[node.id]) {
+            updatedPages[node.id] = {
+                ...updatedPages[node.id],
+                position: node.position
+            };
+        }
+
+        // Update view configuration
+        onUpdateFlow({
+            pages: updatedPages,
+            first_page: view.first_page
+        });
+    }, [view.pages, view.first_page, onUpdateFlow]);
+
     const nodeTypes = useMemo<NodeTypes>(() => ({
         pageNode: PageNode
     }), []);
@@ -616,7 +640,8 @@ export default function PageFlowEditor({ view, onUpdateFlow }: PageFlowEditorPro
             <ReactFlow
                 nodes={nodes}
                 edges={edges}
-                onNodesChange={onNodesChange}
+                onNodesChange={handleNodesChange}
+                onNodeDragStop={handleNodeDragStop}
                 onEdgesChange={onEdgesChange}
                 onConnect={onConnect}
                 onConnectStart={onConnectStart}

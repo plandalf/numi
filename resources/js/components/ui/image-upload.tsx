@@ -98,13 +98,15 @@ export function ImageUpload({
                         Accept: 'application/json',
                     },
                     onSuccess: () => {
+                        console.log('onSuccess');
                         // 4. Update preview and notify parent
                         const objectUrl = URL.createObjectURL(file);
                         setPreviewUrl(objectUrl);
                         onChange?.(data!.media_id);
                     },
-                    onError: () => {
-                        throw new Error('Failed to finalize upload');
+                    onError: (e) => {
+                        console.error(e);
+                        // throw new Error('Failed to finalize upload');
                     },
                 }
             );
