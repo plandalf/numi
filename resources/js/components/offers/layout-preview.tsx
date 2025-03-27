@@ -41,6 +41,11 @@ const BlockRenderer = ({ block, isSelected, onSelect }: BlockRendererProps) => {
         }
     };
 
+    // Add pointer-events-none to child elements to ensure overlay captures clicks
+    const addPointerEventsNone = (className: string | undefined) => {
+        return cn(className || "", "pointer-events-none");
+    };
+
     const renderText = () => {
         if (!block.text) return null;
         return block.text.map((content, i) => {
@@ -85,8 +90,8 @@ const BlockRenderer = ({ block, isSelected, onSelect }: BlockRendererProps) => {
             
             if (block.type === 'p') {
                 return (
-                    <div onClick={handleClick} className="w-full h-full cursor-pointer">
-                        <p className={className}>{renderText()}</p>
+                    <div className="w-full h-full">
+                        <p className={addPointerEventsNone(className)}>{renderText()}</p>
                     </div>
                 );
             }
@@ -94,8 +99,8 @@ const BlockRenderer = ({ block, isSelected, onSelect }: BlockRendererProps) => {
             const Heading = block.type as 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6';
             return React.createElement(
                 'div',
-                { onClick: handleClick, className: "w-full h-full cursor-pointer" },
-                React.createElement(Heading, { className }, renderText())
+                { className: "w-full h-full" },
+                React.createElement(Heading, { className: addPointerEventsNone(className) }, renderText())
             );
         }
         
@@ -104,14 +109,10 @@ const BlockRenderer = ({ block, isSelected, onSelect }: BlockRendererProps) => {
                 return (
                     <button 
                         type="button"
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            handleClick(e);
-                        }}
-                        className={cn(
+                        className={addPointerEventsNone(cn(
                             "px-4 py-2 rounded-md text-sm font-medium",
                             "bg-primary text-primary-foreground hover:bg-primary/90"
-                        )}
+                        ))}
                         style={block.style}
                     >
                         {renderText()}
@@ -119,37 +120,39 @@ const BlockRenderer = ({ block, isSelected, onSelect }: BlockRendererProps) => {
                 );
             case 'dl':
                 return (
-                    <dl className={cn("space-y-4", block.style && styleToClassName(block.style))} onClick={handleClick}>
-                        {block.children?.map((group, groupIdx) => {
-                            if (group.type !== 'dl-group' || !group.children) return null;
-                            
-                            const dtChild = group.children.find(child => child.type === 'dt');
-                            const ddChild = group.children.find(child => child.type === 'dd');
-                            
-                            // Extract content from dt
-                            let dtContent = '';
-                            if (dtChild?.text?.[0]?.props && 'content' in dtChild.text[0].props) {
-                                dtContent = dtChild.text[0].props.content;
-                            }
-                            
-                            return (
-                                <div key={groupIdx} className="border-b border-border pb-3 last:border-0 last:pb-0">
-                                    <dt className="font-semibold mb-1">
-                                        {dtContent}
-                                    </dt>
-                                    {ddChild?.children?.map((paragraph, paraIdx) => (
-                                        <dd key={paraIdx} className="text-muted-foreground">
-                                            {paragraph.text?.map((text, textIdx) => (
-                                                <span key={textIdx}>
-                                                    {text.object === 'text' && text.props.content}
-                                                </span>
-                                            ))}
-                                        </dd>
-                                    ))}
-                                </div>
-                            );
-                        })}
-                    </dl>
+                    <div className="space-y-4">
+                        <dl className={addPointerEventsNone(cn("space-y-4", block.style && styleToClassName(block.style)))}>
+                            {block.children?.map((group, groupIdx) => {
+                                if (group.type !== 'dl-group' || !group.children) return null;
+                                
+                                const dtChild = group.children.find(child => child.type === 'dt');
+                                const ddChild = group.children.find(child => child.type === 'dd');
+                                
+                                // Extract content from dt
+                                let dtContent = '';
+                                if (dtChild?.text?.[0]?.props && 'content' in dtChild.text[0].props) {
+                                    dtContent = dtChild.text[0].props.content;
+                                }
+                                
+                                return (
+                                    <div key={groupIdx} className={addPointerEventsNone("border-b border-border pb-3 last:border-0 last:pb-0")}>
+                                        <dt className={addPointerEventsNone("font-semibold mb-1")}>
+                                            {dtContent}
+                                        </dt>
+                                        {ddChild?.children?.map((paragraph, paraIdx) => (
+                                            <dd key={paraIdx} className={addPointerEventsNone("text-muted-foreground")}>
+                                                {paragraph.text?.map((text, textIdx) => (
+                                                    <span key={textIdx} className="pointer-events-none">
+                                                        {text.object === 'text' && text.props.content}
+                                                    </span>
+                                                ))}
+                                            </dd>
+                                        ))}
+                                    </div>
+                                );
+                            })}
+                        </dl>
+                    </div>
                 );
             case 'image':
                 return (
@@ -157,7 +160,7 @@ const BlockRenderer = ({ block, isSelected, onSelect }: BlockRendererProps) => {
                         <img 
                             src={block.props?.src || ''}
                             alt={block.props?.alt || ''}
-                            className="w-full h-auto object-cover"
+                            className={addPointerEventsNone("w-full h-auto object-cover")}
                         />
                     </div>
                 );
@@ -165,13 +168,17 @@ const BlockRenderer = ({ block, isSelected, onSelect }: BlockRendererProps) => {
             case 'PlanDescriptor@v1':
             case 'StripeElements@v1':
                 return (
-                    <div className="p-4 border border-dashed border-border rounded-lg text-sm text-muted-foreground">
+                    <div 
+                        className={addPointerEventsNone("p-4 border border-dashed border-border rounded-lg text-sm text-muted-foreground")}
+                    >
                         {block.type}
                     </div>
                 );
             default:
                 return (
-                    <div className="p-2 border border-dashed border-border rounded text-xs text-muted-foreground">
+                    <div 
+                        className={addPointerEventsNone("p-2 border border-dashed border-border rounded text-xs text-muted-foreground")}
+                    >
                         Unknown block: {block.type}
                     </div>
                 );
@@ -188,11 +195,17 @@ const BlockRenderer = ({ block, isSelected, onSelect }: BlockRendererProps) => {
                 isSelected && "ring-2 ring-primary"
             )}
         >
+            <div 
+                className="absolute inset-0 z-10" 
+                onClick={handleClick}
+                aria-hidden="true"
+            />
             {blockContent()}
             <div className={cn(
                 "absolute -right-2 -top-2 px-1.5 py-0.5 rounded text-[10px] font-mono opacity-0 bg-primary text-primary-foreground",
                 "group-hover:opacity-100",
-                isSelected && "opacity-100"
+                isSelected && "opacity-100",
+                "z-20"
             )}>
                 {block.type}
             </div>

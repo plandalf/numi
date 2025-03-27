@@ -3,9 +3,10 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
-import { Plus, Trash, MoveUp, MoveDown } from 'lucide-react';
+import { Plus, Trash, MoveUp, MoveDown, Image as ImageIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import React from 'react';
+import React, { useState } from 'react';
+import { ImageUpload } from '@/components/ui/image-upload';
 
 interface BlockEditorProps {
     block: Block;
@@ -39,6 +40,34 @@ export default function BlockEditor({ block, onUpdate }: BlockEditorProps) {
             style: {
                 ...block.style,
                 [property]: value
+            }
+        });
+    };
+
+    // Handle props update for all block types
+    const handlePropsUpdate = (property: string, value: any) => {
+        onUpdate?.({
+            ...block,
+            props: {
+                ...block.props,
+                [property]: value
+            }
+        });
+    };
+
+    // Handle media upload for image blocks
+    const handleMediaUpdate = (mediaId: number | null) => {
+        // If no media ID (image was removed), reset src to a placeholder
+        const src = mediaId 
+            ? `/media/${mediaId}` 
+            : 'https://via.placeholder.com/400x300';
+            
+        onUpdate?.({
+            ...block,
+            props: {
+                ...block.props,
+                src: src,
+                mediaId: mediaId
             }
         });
     };
@@ -202,6 +231,41 @@ export default function BlockEditor({ block, onUpdate }: BlockEditorProps) {
                     </div>
                 </div>
 
+                {/* Image Block Editor */}
+                {block.type === 'image' && (
+                    <div className="space-y-4">
+                        <Label>Image</Label>
+                        <div className="space-y-4">
+                            <ImageUpload
+                                value={block.props?.mediaId || null}
+                                onChange={handleMediaUpdate}
+                                preview={block.props?.src || undefined}
+                                onError={(error) => console.error('Image upload error:', error)}
+                            />
+                            <div className="grid grid-cols-1 gap-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="image-alt">Alt Text</Label>
+                                    <Input
+                                        id="image-alt"
+                                        value={block.props?.alt || ''}
+                                        onChange={(e) => handlePropsUpdate('alt', e.target.value)}
+                                        placeholder="Describe the image for accessibility"
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="image-caption">Caption (optional)</Label>
+                                    <Input
+                                        id="image-caption"
+                                        value={block.props?.caption || ''}
+                                        onChange={(e) => handlePropsUpdate('caption', e.target.value)}
+                                        placeholder="Add a caption to display below the image"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
                 {/* Custom Editor for Detail List (dl) blocks */}
                 {block.type === 'dl' && block.children && (
                     <div className="space-y-4">
@@ -351,7 +415,7 @@ export default function BlockEditor({ block, onUpdate }: BlockEditorProps) {
                     </div>
                 )}
 
-                {block.props && (
+                {block.props && block.type !== 'image' && (
                     <div className="space-y-2">
                         <Label>Properties</Label>
                         <pre className="text-xs font-mono bg-muted p-2 rounded">

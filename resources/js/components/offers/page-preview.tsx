@@ -92,7 +92,9 @@ export const BLOCK_TYPES: Record<string, BlockType> = {
       object: 'image',
       props: {
         src: 'https://via.placeholder.com/400x300',
-        alt: 'Placeholder image'
+        alt: 'Placeholder image',
+        caption: '',
+        mediaId: null
       }
     })
   },
@@ -414,7 +416,7 @@ export default function PagePreview({ page, onUpdatePage }: PreviewProps) {
                                 page={livePreviewPage} 
                                 selectedBlockId={selectedBlockId}
                                 onSelectBlock={handleSelectBlock}
-                                onAddBlock={handleAddBlock}
+                                onAddBlock={handleAddBlock as any}
                             />
                         </div>
                     </div>

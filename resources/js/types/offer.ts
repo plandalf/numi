@@ -103,12 +103,42 @@ export type ViewSection = {
     blocks: Block[];
 };
 
-export type PageView = {
-    promo: ViewSection;
+export interface PageView {
     title?: ViewSection;
-    action: ViewSection;
-    content: ViewSection;
-};
+    content?: ViewSection;
+    action?: ViewSection;
+    promo?: ViewSection;
+    branches?: Branch[];
+    next_page?: string;
+    form?: {
+        fields: FormField[];
+    };
+}
+
+export interface Branch {
+    condition?: string;
+    next_page: string;
+}
+
+export interface FormField {
+    name: string;
+    type: string;
+    label?: string;
+    required?: boolean;
+    options?: { value: string; label: string }[];
+    validation?: string;
+    pattern?: string;
+    patternMessage?: string;
+    minLength?: number;
+    maxLength?: number;
+    matchWith?: string;
+    matchWithLabel?: string;
+    autoComplete?: string;
+    min?: string | number;
+    max?: string | number;
+    rows?: number;
+    helpText?: string;
+}
 
 export type PageNextPage = {
     branches: any[];
