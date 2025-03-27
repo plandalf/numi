@@ -23,8 +23,16 @@ class MediaController extends Controller
 
         // Generate a unique filename
         $extension = pathinfo($request->filename, PATHINFO_EXTENSION);
-        $filename = Str::uuid() . '.' . $extension;
-        $path = 'uploads/' . $filename;
+        $uuid = Str::uuid();
+        $filename = $uuid . '.' . $extension;
+//        $path = 'uploads/' . $filename;
+
+        $key = sprintf(
+            'm/%s/%s.%s',
+            $uuid,
+            Str::slug(pathinfo($filename, PATHINFO_FILENAME)),
+            $extension
+        );
 
         // Create a pending media record
         $media = Media::create([
@@ -33,27 +41,16 @@ class MediaController extends Controller
             'mime_type' => $request->mime_type,
             'size' => $request->size,
             'disk' => 's3',
-            'path' => $path,
+            'path' => $key,
             'status' => Media::STATUS_PENDING,
             'meta' => [
                 'upload_started_at' => now(),
             ],
         ]);
 
-        $uuid = (string) Str::uuid();
-        $extension = pathinfo($media->filename, PATHINFO_EXTENSION);
-        $isVideo = str_starts_with($media->mime_type, 'video/');
-
-        $key = sprintf(
-            'm/%s/%s.%s',
-            $uuid,
-            Str::slug(pathinfo($media->filename, PATHINFO_FILENAME)),
-            $extension
-        );
-
         ['url' => $uploadUrl, 'headers' => $headers] = Storage::disk('private')->temporaryUploadUrl(
             $key,
-            now()->addMinutes($isVideo ? 30 : 5)
+            now()->addMinutes(10)
         );
 
         return response()->json([
@@ -78,7 +75,7 @@ class MediaController extends Controller
         }
 
         // Verify the file exists in S3
-        if (!Storage::disk()->exists($media->path)) {
+        if (!Storage::disk('private')->exists($media->path)) {
             throw ValidationException::withMessages([
                 'media' => ['The file has not been uploaded.'],
             ]);

@@ -310,15 +310,29 @@ export default function PageFlowEditor({ view, onUpdateFlow }: PageFlowEditorPro
     // Derive nodes from ordered pages
     const initialNodes = useMemo(() => {
         const nodes: Node[] = [];
+        const pages = Object.entries(view.pages);
         
-        // Create nodes in the correct order
-        Object.entries(view.pages).forEach(([pageId, page]) => {
+        // Calculate grid dimensions
+        const gridCols = Math.ceil(Math.sqrt(pages.length));
+        const gridRows = Math.ceil(pages.length / gridCols);
+        
+        // Create nodes in the correct order with grid positions
+        pages.forEach(([pageId, page], index) => {
+            // If page has no position, calculate grid position
+            const position = page.position || {
+                x: (index % gridCols) * (NODE_WIDTH + GRID_SPACING) + 50,
+                y: Math.floor(index / gridCols) * (NODE_HEIGHT + GRID_SPACING) + 50
+            };
+
             nodes.push({
                 id: pageId,
                 type: 'pageNode',
-                position: page.position || { x: 0, y: 0 }, // Use saved position or default
+                position,
                 data: { 
-                    page,
+                    page: {
+                        ...page,
+                        position // Ensure position is saved in page data
+                    },
                     isStart: pageId === view.first_page
                 }
             });
@@ -326,6 +340,36 @@ export default function PageFlowEditor({ view, onUpdateFlow }: PageFlowEditorPro
 
         return nodes;
     }, [view.pages, view.first_page]);
+
+    // Update view with initial positions if needed
+    useEffect(() => {
+        const updatedPages = { ...view.pages };
+        let hasUpdates = false;
+
+        // Check each page for missing positions
+        Object.entries(updatedPages).forEach(([pageId, page]) => {
+            if (!page.position) {
+                // Find the node for this page
+                const node = initialNodes.find(n => n.id === pageId);
+                if (node) {
+                    // Update the page with the node's position
+                    updatedPages[pageId] = {
+                        ...page,
+                        position: node.position
+                    };
+                    hasUpdates = true;
+                }
+            }
+        });
+
+        // If we found pages without positions, update the view
+        if (hasUpdates) {
+            onUpdateFlow({
+                pages: updatedPages,
+                first_page: view.first_page
+            });
+        }
+    }, [initialNodes, view.pages, view.first_page, onUpdateFlow]);
 
     // Derive edges from view configuration
     const initialEdges = useMemo(() => {
