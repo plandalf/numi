@@ -87,7 +87,7 @@ export default function Pricing({ offer }: Props) {
         <AppOfferLayout offer={offer}>
             <Head title={`${offer.name || 'Untitled Offer'} - Pricing`} />
 
-            <div className="space-y-6">
+            <div className="space-y-6 w-full max-w-7xl mx-auto mt-6">
                 <Card>
                     <CardHeader>
                         <CardTitle>Product Configuration</CardTitle>

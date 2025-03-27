@@ -137,7 +137,7 @@ export function ImageUpload({
                     <img
                         src={previewUrl}
                         alt="Preview"
-                        className="h-full w-full object-cover"
+                        className="h-full w-full object-cover max-h-[250px]"
                     />
                     <Button
                         type="button"
