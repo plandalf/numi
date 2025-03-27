@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Loader2, Upload, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Page } from '@inertiajs/core';
+import axios from 'axios';
 
 interface UploadUrlResponse {
     media_id: number;
@@ -60,39 +61,26 @@ export function ImageUpload({
             setIsUploading(true);
             setError(null);
 
-            // 1. Get signed upload URL
-            let uploadUrlResponse: UploadUrlResponse | null = null;
+            const { data } = await axios.post(route('medias.upload-url'), {
+                filename: file.name,
+                contentType: file.type,
+                size: file.size,
+                mime_type: file.type,
+            });
+            console.log({ data });
 
-            await router.post<Page<PageProps>>(
-                route('medias.upload-url'),
-                {
-                    filename: file.name,
-                    mime_type: file.type,
-                    size: file.size,
-                },
-                {
-                    preserveScroll: true,
-                    preserveState: true,
-                    headers: {
-                        Accept: 'application/json',
-                    },
-                    onSuccess: (page) => {
-                        uploadUrlResponse = page.props.media;
-                    },
-                }
-            );
-
-            if (!uploadUrlResponse) {
-                throw new Error('Failed to get upload URL');
-            }
-
-            // 2. Upload to S3
-            const uploadResponse = await fetch(uploadUrlResponse.upload_url, {
-                method: 'PUT',
-                body: file,
+            const uploadResponse = await axios.put(data.uploadUrl, file, {
                 headers: {
                     'Content-Type': file.type,
+                    ...data.headers
                 },
+                onUploadProgress: (progressEvent) => {
+                    const progress = Math.round(
+                        (progressEvent.loaded * 100) / (progressEvent.total || file.size)
+                    );
+                    console.log('progress: ', progressEvent);
+                    // updateProgress(item.id, progress, 'uploading');
+                }
             });
 
             if (!uploadResponse.ok) {
@@ -196,4 +184,4 @@ export function ImageUpload({
             )}
         </div>
     );
-} 
+}

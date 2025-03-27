@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState, useEffect } from 'react';
 import {
     ReactFlow,
     Controls,
@@ -91,13 +91,6 @@ function PageNode({ data, id }: { data: { page: Page; isStart?: boolean }; id: s
         setShowAddBranch(false);
     }, [id, page, getNode, setNodes]);
 
-    const getBranchLabel = (condition: BranchCondition) => {
-        if (!condition.field || !condition.operator || !condition.value) {
-            return "Set condition...";
-        }
-        return `${condition.field} ${condition.operator} ${condition.value}`;
-    };
-
     const handleEditBranch = (index: number) => {
         setEditingBranchIndex(index);
         setShowBranchDialog(true);
@@ -187,10 +180,17 @@ function PageNode({ data, id }: { data: { page: Page; isStart?: boolean }; id: s
                                                     type="source"
                                                     position={Position.Right}
                                                     id={`branch-${index}`}
-                                                    className="!w-6 !h-6 !bg-secondary hover:!bg-secondary/80 !border-2 !border-background rounded-full flex items-center justify-center cursor-grab active:cursor-grabbing"
-                                                    isConnectable={!branch.next_page} // Only allow connection if no existing connection
+                                                    className={cn(
+                                                        "!w-6 !h-6 !border-2 !border-background rounded-full flex items-center justify-center",
+                                                        branch.next_page 
+                                                            ? "!bg-muted-foreground/50 cursor-not-allowed" 
+                                                            : "!bg-secondary hover:!bg-secondary/80 cursor-grab active:cursor-grabbing"
+                                                    )}
+                                                    isConnectable={!branch.next_page}
                                                 >
-                                                    <Plus className="w-4 h-4 text-background pointer-events-none" />
+                                                    {!branch.next_page && (
+                                                        <Plus className="w-4 h-4 text-background pointer-events-none" />
+                                                    )}
                                                 </Handle>
                                             </div>
                                         </div>
@@ -232,11 +232,9 @@ function PageNode({ data, id }: { data: { page: Page; isStart?: boolean }; id: s
                     <Handle
                         type="target"
                         position={Position.Left}
-                        className="!w-6 !h-6 !bg-primary hover:!bg-primary/80 !border-2 !border-background rounded-full flex items-center justify-center cursor-grab active:cursor-grabbing"
-                        isConnectable={true}
-                    >
-                        <Plus className="w-4 h-4 text-background pointer-events-none" />
-                    </Handle>
+                        className="!w-3 !h-3 !bg-muted-foreground/50 !border-2 !border-background rounded-full"
+                        isConnectable={false}
+                    />
                 </div>
             </div>
 
@@ -278,6 +276,14 @@ interface BranchCondition {
     value: string;
 }
 
+// Helper function to get branch label
+const getBranchLabel = (condition: BranchCondition) => {
+    if (!condition.field || !condition.operator || !condition.value) {
+        return "Set condition...";
+    }
+    return `${condition.field} ${condition.operator} ${condition.value}`;
+};
+
 export default function PageFlowEditor({ view, onUpdateFlow }: PageFlowEditorProps) {
     const [showPageTypeDialog, setShowPageTypeDialog] = useState(false);
     const [showBranchDialog, setShowBranchDialog] = useState(false);
@@ -287,24 +293,35 @@ export default function PageFlowEditor({ view, onUpdateFlow }: PageFlowEditorPro
     const [dragStartPosition, setDragStartPosition] = useState<XYPosition | null>(null);
     const { fitView } = useReactFlow();
 
+    // Get ordered pages based on the flow
+    const getOrderedPages = useCallback(() => {
+        const orderedPages: [string, Page][] = [];
+        let currentPageId: string | null = view.first_page;
+        
+        while (currentPageId && view.pages[currentPageId]) {
+            const currentPage: Page = view.pages[currentPageId];
+            orderedPages.push([currentPageId, currentPage]);
+            currentPageId = currentPage.next_page?.default_next_page ?? null;
+        }
+        
+        return orderedPages;
+    }, [view.pages, view.first_page]);
+
+    // Derive nodes from ordered pages
     const initialNodes = useMemo(() => {
         const nodes: Node[] = [];
         let x = 0;
         let y = 0;
-        let currentPageId: string | null = view.first_page;
-        const processedPages = new Set<string>();
-
-        while (currentPageId && !processedPages.has(currentPageId)) {
-            const currentPage: Page = view.pages[currentPageId];
-            processedPages.add(currentPageId);
-
+        
+        // Create nodes in the correct order
+        getOrderedPages().forEach(([pageId, page]) => {
             nodes.push({
-                id: currentPageId,
+                id: pageId,
                 type: 'pageNode',
                 position: { x: x * (NODE_WIDTH + GRID_SPACING * 2), y },
                 data: { 
-                    page: currentPage,
-                    isStart: currentPageId === view.first_page
+                    page,
+                    isStart: pageId === view.first_page
                 }
             });
 
@@ -313,62 +330,66 @@ export default function PageFlowEditor({ view, onUpdateFlow }: PageFlowEditorPro
                 x = 0;
                 y += NODE_HEIGHT + GRID_SPACING;
             }
-
-            currentPageId = currentPage.next_page.default_next_page;
-        }
+        });
 
         return nodes;
-    }, [view]);
+    }, [view.pages, view.first_page, getOrderedPages]);
 
+    // Derive edges from view configuration
     const initialEdges = useMemo(() => {
         const edges: Edge[] = [];
-        const processedPages = new Set<string>();
-        let currentPageId: string | null = view.first_page;
 
-        while (currentPageId && !processedPages.has(currentPageId)) {
-            const currentPage: Page = view.pages[currentPageId];
-            const nextPageId = currentPage.next_page.default_next_page;
-            processedPages.add(currentPageId);
-
-            if (nextPageId) {
+        // Create edges for each page's connections
+        Object.entries(view.pages).forEach(([pageId, page]) => {
+            // Add default next page edge
+            if (page.next_page.default_next_page) {
                 edges.push({
-                    id: `${currentPageId}-${nextPageId}`,
-                    source: currentPageId,
-                    target: nextPageId,
+                    id: `${pageId}-${page.next_page.default_next_page}`,
+                    source: pageId,
+                    target: page.next_page.default_next_page,
+                    sourceHandle: 'default',
                     type: 'default',
                     animated: true,
                     data: { type: 'default' }
                 } as Edge);
             }
 
-            currentPage.next_page.branches?.forEach((branch, index) => {
+            // Add branch edges
+            page.next_page.branches?.forEach((branch, index) => {
                 if (branch.next_page) {
                     edges.push({
-                        id: `${currentPageId}-${branch.next_page}-branch-${index}`,
-                        source: currentPageId,
+                        id: `${pageId}-${branch.next_page}-branch-${index}`,
+                        source: pageId,
                         target: branch.next_page,
+                        sourceHandle: `branch-${index}`,
                         type: 'default',
                         animated: true,
-                        label: 'Branch',
+                        label: getBranchLabel(branch.condition),
                         data: { type: 'branch', condition: branch.condition }
                     } as Edge);
                 }
             });
-
-            currentPageId = nextPageId;
-        }
+        });
 
         return edges;
-    }, [view]);
+    }, [view.pages]);
 
+    // Initialize React Flow state
     const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
     const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
-    const { getNode } = useReactFlow();
+
+    // Update React Flow state when view changes
+    useEffect(() => {
+        setNodes(initialNodes);
+        setEdges(initialEdges);
+    }, [initialNodes, initialEdges, setNodes, setEdges]);
 
     const handleCreatePage = useCallback((type: PageType) => {
         if (!pendingPosition) return;
 
         const id = `page_${Math.random().toString(36).substr(2, 9)}`;
+        console.log('Creating new page with ID:', id);
+        
         const newPage: Page = {
             id,
             name: 'New Page',
@@ -386,76 +407,171 @@ export default function PageFlowEditor({ view, onUpdateFlow }: PageFlowEditorPro
                 default_next_page: null
             }
         };
+        console.log('New page object:', newPage);
 
         const updatedPages = {
             ...view.pages,
             [id]: newPage
         };
+        console.log('Updated pages object:', updatedPages);
 
         // If we have a pending connection, update the source page
         if (pendingConnection?.source) {
+            console.log('Handling pending connection:', pendingConnection);
             const sourcePage = view.pages[pendingConnection.source];
             if (sourcePage) {
                 if (pendingConnection.sourceHandle?.startsWith('branch-')) {
-                    // Add as a branch
-                    sourcePage.next_page.branches = [
-                        ...(sourcePage.next_page.branches || []),
-                        { next_page: id, condition: { field: '', operator: '', value: '' } }
-                    ];
+                    // Get branch index
+                    const branchIndex = parseInt(pendingConnection.sourceHandle.split('-')[1]);
+                    console.log('Updating branch connection:', { branchIndex, sourceId: pendingConnection.source });
                     
-                    // Show branch condition dialog
+                    // Update the branch with the new target
+                    const updatedBranches = [...(sourcePage.next_page.branches || [])];
+                    updatedBranches[branchIndex] = {
+                        ...updatedBranches[branchIndex],
+                        next_page: id
+                    };
+
+                    updatedPages[pendingConnection.source] = {
+                        ...sourcePage,
+                        next_page: {
+                            ...sourcePage.next_page,
+                            branches: updatedBranches
+                        }
+                    };
+                    console.log('Updated source page with new branch:', updatedPages[pendingConnection.source]);
+
+                    // Show branch condition dialog after updating view
                     setPendingConnection({
                         ...pendingConnection,
-                        target: id
+                        target: id,
+                        sourceHandle: `branch-${branchIndex}`
                     });
                     setShowBranchDialog(true);
                 } else {
                     // Set as default next page
-                    sourcePage.next_page.default_next_page = id;
-                    
-                    // Add the edge
-                    setEdges(eds => addEdge({
-                        id: `${pendingConnection.source}-${id}`,
-                        source: pendingConnection.source,
-                        target: id,
-                        // type: 'smoothstep',
-                        animated: true,
-                        data: { type: 'default' }
-                    }, eds));
+                    updatedPages[pendingConnection.source] = {
+                        ...sourcePage,
+                        next_page: {
+                            ...sourcePage.next_page,
+                            default_next_page: id
+                        }
+                    };
+                    console.log('Updated source page with new default next page:', updatedPages[pendingConnection.source]);
                 }
-
-                updatedPages[pendingConnection.source] = sourcePage;
+            }
+        } else {
+            // If this is the first page, set it as the first page
+            if (Object.keys(view.pages).length === 0) {
+                console.log('Setting as first page since no pages exist');
+                onUpdateFlow({
+                    pages: updatedPages,
+                    first_page: id
+                });
+            } else {
+                console.log('Adding as standalone page');
+                onUpdateFlow({
+                    pages: updatedPages,
+                    first_page: view.first_page
+                });
             }
         }
 
-        onUpdateFlow({
-            pages: updatedPages,
-            first_page: view.first_page
-        });
+        // Schedule a fit view after the update
+        setTimeout(() => {
+            fitView({ padding: 0.2, duration: 200 });
+        }, 50);
 
-        // Use the exact pending position for the new node
-        setNodes(nodes => {
-            const newNodes = [
-                ...nodes,
-                {
-                    id,
-                    type: 'pageNode',
-                    position: pendingPosition,
-                    data: { page: newPage }
-                }
-            ];
-            
-            // Schedule a fit view after the nodes are updated
-            setTimeout(() => {
-                fitView({ padding: 0.2, duration: 200 });
-            }, 50);
-
-            return newNodes;
-        });
-
-        setPendingConnection(null);
+        if (!pendingConnection?.sourceHandle?.startsWith('branch-')) {
+            setPendingConnection(null);
+        }
         setPendingPosition(null);
-    }, [pendingConnection, pendingPosition, view.pages, onUpdateFlow, setNodes, setEdges, fitView]);
+        setShowPageTypeDialog(false);
+    }, [pendingConnection, pendingPosition, view.pages, view.first_page, onUpdateFlow, fitView]);
+
+    const onConnect = useCallback(
+        (connection: Connection) => {
+            const sourcePage = view.pages[connection.source || ''];
+            const targetId = connection.target;
+            
+            if (!sourcePage || !targetId) return;
+
+            // Check if target is already connected to this source
+            const isAlreadyConnected = Object.values(view.pages).some(page => 
+                page.next_page.default_next_page === targetId ||
+                page.next_page.branches?.some(branch => branch.next_page === targetId)
+            );
+            if (isAlreadyConnected) return;
+
+            const updatedPages = { ...view.pages };
+
+            if (connection.sourceHandle?.startsWith('branch-')) {
+                const branchIndex = parseInt(connection.sourceHandle.split('-')[1]);
+                
+                // Update the branch with the new target
+                const updatedBranches = [...(sourcePage.next_page.branches || [])];
+                updatedBranches[branchIndex] = {
+                    ...updatedBranches[branchIndex],
+                    next_page: targetId
+                };
+
+                updatedPages[connection.source || ''] = {
+                    ...sourcePage,
+                    next_page: {
+                        ...sourcePage.next_page,
+                        branches: updatedBranches
+                    }
+                };
+            } else {
+                // Update default next page
+                updatedPages[connection.source || ''] = {
+                    ...sourcePage,
+                    next_page: {
+                        ...sourcePage.next_page,
+                        default_next_page: targetId
+                    }
+                };
+            }
+
+            // Update view configuration first
+            onUpdateFlow({
+                pages: updatedPages,
+                first_page: view.first_page
+            });
+        },
+        [view.pages, view.first_page, onUpdateFlow]
+    );
+
+    // Function to check if a position is near any existing nodes
+    const isNearNode = useCallback((position: XYPosition) => {
+        const SNAP_DISTANCE = 60; // Snap distance in pixels
+        
+        // Check against all nodes
+        return nodes.some(node => {
+            const nodeRect = {
+                left: node.position.x,
+                right: node.position.x + NODE_WIDTH,
+                top: node.position.y,
+                bottom: node.position.y + NODE_HEIGHT
+            };
+
+            // Check if position is within snap distance of any node
+            return (
+                position.x >= nodeRect.left - SNAP_DISTANCE &&
+                position.x <= nodeRect.right + SNAP_DISTANCE &&
+                position.y >= nodeRect.top - SNAP_DISTANCE &&
+                position.y <= nodeRect.bottom + SNAP_DISTANCE
+            );
+        });
+    }, [nodes]);
+
+    // Function to check if we're far enough from the drag start position
+    const isFarFromStart = useCallback((position: XYPosition) => {
+        if (!dragStartPosition) return false;
+        const dx = Math.abs(position.x - dragStartPosition.x);
+        const dy = Math.abs(position.y - dragStartPosition.y);
+        return Math.sqrt(dx * dx + dy * dy) > 50; // Minimum drag distance of 50px
+    }, [dragStartPosition]);
 
     const onConnectStart: OnConnectStart = useCallback(
         (event, params) => {
@@ -498,168 +614,6 @@ export default function PageFlowEditor({ view, onUpdateFlow }: PageFlowEditorPro
         []
     );
 
-    // Function to check if a position is near any existing nodes
-    const isNearNode = useCallback((position: XYPosition) => {
-        const SNAP_DISTANCE = 60; // Snap distance in pixels
-        
-        // Check against all nodes
-        return nodes.some(node => {
-            const nodeRect = {
-                left: node.position.x,
-                right: node.position.x + NODE_WIDTH,
-                top: node.position.y,
-                bottom: node.position.y + NODE_HEIGHT
-            };
-
-            // Check if position is within snap distance of any node
-            return (
-                position.x >= nodeRect.left - SNAP_DISTANCE &&
-                position.x <= nodeRect.right + SNAP_DISTANCE &&
-                position.y >= nodeRect.top - SNAP_DISTANCE &&
-                position.y <= nodeRect.bottom + SNAP_DISTANCE
-            );
-        });
-    }, [nodes]);
-
-    // Function to get the nearest node to snap to
-    const getNearestNode = useCallback((position: XYPosition) => {
-        let nearestNode = null;
-        let minDistance = Infinity;
-        
-        nodes.forEach(node => {
-            const nodeCenter = {
-                x: node.position.x + NODE_WIDTH / 2,
-                y: node.position.y + NODE_HEIGHT / 2
-            };
-            
-            const dx = position.x - nodeCenter.x;
-            const dy = position.y - nodeCenter.y;
-            const distance = Math.sqrt(dx * dx + dy * dy);
-            
-            if (distance < minDistance) {
-                minDistance = distance;
-                nearestNode = node;
-            }
-        });
-        
-        return nearestNode;
-    }, [nodes]);
-
-    // Function to check if we're far enough from the drag start position
-    const isFarFromStart = useCallback((position: XYPosition) => {
-        if (!dragStartPosition) return false;
-        const dx = Math.abs(position.x - dragStartPosition.x);
-        const dy = Math.abs(position.y - dragStartPosition.y);
-        return Math.sqrt(dx * dx + dy * dy) > 50; // Minimum drag distance of 50px
-    }, [dragStartPosition]);
-
-    const handleSaveBranchCondition = useCallback((condition: BranchCondition) => {
-        if (pendingConnection) {
-            const sourceNode = nodes.find(n => n.id === pendingConnection.source);
-            const targetNode = nodes.find(n => n.id === pendingConnection.target);
-            
-            if (sourceNode && targetNode) {
-                const sourcePage = view.pages[sourceNode.id];
-                const targetId = targetNode.id;
-
-                // Add the branch with condition
-                const updatedPage = {
-                    ...sourcePage,
-                    next_page: {
-                        ...sourcePage.next_page,
-                        branches: [
-                            ...(sourcePage.next_page.branches || []),
-                            { next_page: targetId, condition }
-                        ]
-                    }
-                };
-
-                // Update the view
-                onUpdateFlow({
-                    pages: {
-                        ...view.pages,
-                        [sourceNode.id]: updatedPage
-                    },
-                    first_page: view.first_page
-                });
-
-                // Add the edge
-                const branchIndex = updatedPage.next_page.branches.length - 1;
-                setEdges(eds => addEdge({
-                    ...pendingConnection,
-                    id: `${sourceNode.id}-${targetId}-branch-${branchIndex}`,
-                    // type: 'smoothstep',
-                    animated: true,
-                    label: `${condition.field} ${condition.operator} ${condition.value}`,
-                    data: { type: 'branch', condition }
-                }, eds));
-            }
-        }
-        setPendingConnection(null);
-    }, [nodes, pendingConnection, view.pages, onUpdateFlow, setEdges]);
-
-    const onConnect = useCallback(
-        (connection: Connection) => {
-            const sourceNode = nodes.find(n => n.id === connection.source);
-            const targetNode = nodes.find(n => n.id === connection.target);
-            
-            if (sourceNode && targetNode) {
-                const sourcePage = view.pages[sourceNode.id];
-                const targetId = targetNode.id;
-
-                if (connection.sourceHandle?.startsWith('branch-')) {
-                    // Get branch index from handle ID
-                    const branchIndex = parseInt(connection.sourceHandle.split('-')[1]);
-                    
-                    // Remove any existing connection for this branch
-                    const existingBranch = sourcePage.next_page.branches?.[branchIndex];
-                    if (existingBranch?.next_page) {
-                        setEdges(eds => eds.filter(e => 
-                            e.id !== `${sourceNode.id}-${existingBranch.next_page}-branch-${branchIndex}`
-                        ));
-                    }
-
-                    // Show branch condition dialog
-                    setShowBranchDialog(true);
-                    setPendingConnection(connection);
-                } else {
-                    // Remove any existing default connection
-                    if (sourcePage.next_page.default_next_page) {
-                        setEdges(eds => eds.filter(e => 
-                            e.id !== `${sourceNode.id}-${sourcePage.next_page.default_next_page}`
-                        ));
-                    }
-
-                    // Update default next page
-                    const updatedPage = {
-                        ...sourcePage,
-                        next_page: {
-                            ...sourcePage.next_page,
-                            default_next_page: targetId
-                        }
-                    };
-
-                    onUpdateFlow({
-                        pages: {
-                            ...view.pages,
-                            [sourceNode.id]: updatedPage
-                        },
-                        first_page: view.first_page
-                    });
-
-                    setEdges(eds => addEdge({
-                        ...connection,
-                        id: `${sourceNode.id}-${targetId}`,
-                        type: 'default',
-                        animated: true,
-                        data: { type: 'default' }
-                    }, eds));
-                }
-            }
-        },
-        [nodes, view.pages, onUpdateFlow, setEdges]
-    );
-
     const nodeTypes = useMemo<NodeTypes>(() => ({
         pageNode: PageNode
     }), []);
@@ -675,19 +629,17 @@ export default function PageFlowEditor({ view, onUpdateFlow }: PageFlowEditorPro
                 onConnectStart={onConnectStart}
                 onConnectEnd={onConnectEnd}
                 onMouseMove={(event) => {
-                    if (event.buttons === 1) { // Left mouse button is pressed
+                    if (event.buttons === 1) {
                         const bounds = event.currentTarget.getBoundingClientRect();
                         const position = {
                             x: event.clientX - bounds.left,
                             y: event.clientY - bounds.top
                         };
 
-                        // Only show preview or snap if we're far enough from start
                         if (isFarFromStart({ x: event.clientX, y: event.clientY })) {
                             if (isNearNode(position)) {
                                 setDragPreviewPosition(null);
                             } else {
-                                // Show preview at exact mouse position
                                 setDragPreviewPosition({
                                     x: position.x - NODE_WIDTH / 2,
                                     y: position.y - NODE_HEIGHT / 2
@@ -722,7 +674,10 @@ export default function PageFlowEditor({ view, onUpdateFlow }: PageFlowEditorPro
                             variant="outline" 
                             size="sm" 
                             className="w-full"
-                            onClick={() => setShowPageTypeDialog(true)}
+                            onClick={() => {
+                                setPendingPosition({ x: 100, y: 100 }); // Set a default position
+                                setShowPageTypeDialog(true);
+                            }}
                         >
                             <Plus className="w-3 h-3 mr-1" />
                             Add Page

@@ -63,9 +63,23 @@ export default function Edit({ offer, showNameDialog }: Props) {
     const inputRef = useRef<HTMLInputElement>(null);
     const [isRenamingFromDropdown, setIsRenamingFromDropdown] = useState(false);
     
+    // Central state for the view
+    const [view, setView] = useState<OfferView>(offer.view);
+    
     const { data, setData, put, processing, errors } = useForm({
         name: offer.name,
+        view: offer.view
     });
+
+    // Update form data when view changes
+    useEffect(() => {
+        setData('view', view);
+    }, [view, setData]);
+
+    // Update view when offer changes
+    useEffect(() => {
+        setView(offer.view);
+    }, [offer.view]);
 
     useEffect(() => {
         if (showNameDialog) {
@@ -98,31 +112,108 @@ export default function Edit({ offer, showNameDialog }: Props) {
             setIsRenamingFromDropdown(false);
             return;
         }
-        // TODO: Implement API call to save page name
-        console.log('Saving page name:', pageId, pageNameInput);
-        setEditingPageName(null);
+
+        // Update the page name in the view
+        const updatedPages = {
+            ...view.pages,
+            [pageId]: {
+                ...view.pages[pageId],
+                name: pageNameInput
+            }
+        };
+
+        // Update the central view state
+        setView({
+            ...view,
+            pages: updatedPages
+        });
+
+        // Submit the update
+        put(route('offers.update', offer.id), {
+            onSuccess: () => {
+                setEditingPageName(null);
+            }
+        });
     };
 
     const handlePageAction = (pageId: string, action: 'rename' | 'duplicate' | 'delete') => {
         switch (action) {
             case 'rename':
                 setIsRenamingFromDropdown(true);
-                handlePageNameClick(pageId, offer.view.pages[pageId].name);
+                handlePageNameClick(pageId, view.pages[pageId].name);
                 break;
             case 'duplicate':
-                // TODO: Implement page duplication
-                console.log('Duplicate page:', pageId);
+                // Create a new page with the same content
+                const sourcePage = view.pages[pageId];
+                const newId = `page_${Math.random().toString(36).substr(2, 9)}`;
+                const newPage = {
+                    ...sourcePage,
+                    id: newId,
+                    name: `${sourcePage.name} (Copy)`
+                };
+
+                // Update the view with the new page
+                const updatedPages = {
+                    ...view.pages,
+                    [newId]: newPage
+                };
+
+                // Update the central view state
+                setView({
+                    ...view,
+                    pages: updatedPages
+                });
+
+                // Submit the update
+                put(route('offers.update', offer.id));
                 break;
             case 'delete':
-                // TODO: Implement page deletion
-                console.log('Delete page:', pageId);
+                // Remove the page and its connections
+                const pagesToUpdate = { ...view.pages };
+                delete pagesToUpdate[pageId];
+
+                // Remove any connections to this page
+                Object.keys(pagesToUpdate).forEach(pageKey => {
+                    const page = pagesToUpdate[pageKey];
+                    if (page.next_page.default_next_page === pageId) {
+                        pagesToUpdate[pageKey] = {
+                            ...page,
+                            next_page: {
+                                ...page.next_page,
+                                default_next_page: null
+                            }
+                        };
+                    }
+                    if (page.next_page.branches) {
+                        pagesToUpdate[pageKey] = {
+                            ...page,
+                            next_page: {
+                                ...page.next_page,
+                                branches: page.next_page.branches.map(branch => 
+                                    branch.next_page === pageId 
+                                        ? { ...branch, next_page: null }
+                                        : branch
+                                )
+                            }
+                        };
+                    }
+                });
+
+                // Update the central view state
+                setView({
+                    ...view,
+                    pages: pagesToUpdate
+                });
+
+                // Submit the update
+                put(route('offers.update', offer.id));
                 break;
         }
     };
 
-    const currentPage = offer.view.pages[selectedPage];
+    const currentPage = view.pages[selectedPage];
     const nextPageId = currentPage.next_page.default_next_page;
-    const nextPage = nextPageId ? offer.view.pages[nextPageId] : null;
+    const nextPage = nextPageId ? view.pages[nextPageId] : null;
 
     // Add this function to get pages in the correct order
     const getOrderedPages = (view: OfferView): [string, Page][] => {
@@ -208,7 +299,7 @@ export default function Edit({ offer, showNameDialog }: Props) {
                         <div className="p-4">
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-2 overflow-x-auto">
-                                    {getOrderedPages(offer.view).map(([pageId, page]) => (
+                                    {getOrderedPages(view).map(([pageId, page]) => (
                                         <div
                                             key={pageId}
                                             className={cn(
@@ -337,10 +428,26 @@ export default function Edit({ offer, showNameDialog }: Props) {
                     <div className="flex-1">
                         <ReactFlowProvider>
                             <PageFlowEditor 
-                                view={offer.view} 
+                                view={view} 
                                 onUpdateFlow={(changes) => {
-                                    // TODO: Implement update logic
-                                    console.log('Update flow:', changes);
+                                    console.log('Flow editor changes:', changes);
+                                    
+                                    // Update the central view state
+                                    setView({
+                                        ...view,
+                                        ...changes
+                                    });
+                                    
+                                    // Submit the update to backend
+                                    console.log('Submitting update to backend...');
+                                    put(route('offers.update', offer.id), {
+                                        onSuccess: () => {
+                                            console.log('Update successful');
+                                        },
+                                        onError: (errors) => {
+                                            console.error('Update failed:', errors);
+                                        }
+                                    });
                                 }} 
                             />
                         </ReactFlowProvider>

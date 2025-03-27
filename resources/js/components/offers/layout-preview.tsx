@@ -201,7 +201,7 @@ export default function LayoutPreview({ page, selectedBlockId, onSelectBlock }: 
                 {/* Left Column - Content */}
                 <div className="overflow-hidden">
                     <div className="flex flex-col justify-center h-full">
-                        <div className="flex flex-col space-y-6 overflow-y-auto px-10 py-8 grow">
+                        <div className="flex flex-col space-y-6 overflow-y-auto px-6 py-4 grow">
                             <Section 
                                 section={page.view.title} 
                                 className="min-h-[3rem]"

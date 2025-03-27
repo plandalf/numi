@@ -40,25 +40,29 @@ class MediaController extends Controller
             ],
         ]);
 
-        // Generate a signed S3 upload URL
-        $url = Storage::disk('s3')->temporaryUploadUrl(
-            $path,
-            now()->addMinutes(30),
-            [
-                'Content-Type' => $request->mime_type,
-                'Content-Length' => $request->size,
-            ]
+        $uuid = (string) Str::uuid();
+        $extension = pathinfo($media->filename, PATHINFO_EXTENSION);
+        $isVideo = str_starts_with($media->mime_type, 'video/');
+
+        $key = sprintf(
+            'm/%s/%s.%s',
+            $uuid,
+            Str::slug(pathinfo($media->filename, PATHINFO_FILENAME)),
+            $extension
         );
 
-        //['url' => $uploadUrl, 'headers' => $headers] = Storage::disk('r2')->temporaryUploadUrl(
-        //     $key,
-        //     now()->addMinutes($isVideo ? 30 : 5)
-        // );
+        ['url' => $uploadUrl, 'headers' => $headers] = Storage::disk('private')->temporaryUploadUrl(
+            $key,
+            now()->addMinutes($isVideo ? 30 : 5)
+        );
 
         return response()->json([
-            'media_id' => $media->id,
-            'upload_url' => $url,
-        ]);
+            'uuid' => $uuid,
+            'key' => $key,
+            'uploadUrl' => $uploadUrl,
+            'headers' => $headers,
+            'publicUrl' => $media->getSignedUrl(),
+        ], 201);
     }
 
     /**
@@ -73,7 +77,7 @@ class MediaController extends Controller
         }
 
         // Verify the file exists in S3
-        if (!Storage::disk('s3')->exists($media->path)) {
+        if (!Storage::disk()->exists($media->path)) {
             throw ValidationException::withMessages([
                 'media' => ['The file has not been uploaded.'],
             ]);

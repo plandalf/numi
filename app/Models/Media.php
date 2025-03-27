@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
+use Illuminate\Support\Facades\Storage;
 
 class Media extends Model
 {
@@ -47,10 +48,23 @@ class Media extends Model
      */
     public function getUrlAttribute(): string
     {
-        return $this->disk === 's3' 
+        return $this->disk === 's3'
             ? \Storage::disk('s3')->url($this->path)
             : \Storage::disk('public')->url($this->path);
     }
+
+
+    public function getSignedUrl($expiration = 60)
+    {
+        // Use processed version if available
+        $path = $this->path;
+
+        return Storage::disk('private')->temporaryUrl(
+            $path,
+            now()->addMinutes($expiration)
+        );
+    }
+
 
     /**
      * Scope a query to only include ready media
