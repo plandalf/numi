@@ -117,17 +117,33 @@ export type PageNextPage = {
 
 export type PageType = 'page' | 'entry' | 'ending';
 
-export type Page = {
+export interface BranchCondition {
+    field: string;
+    operator: string;
+    value: string;
+}
+
+export interface Page {
     id: string;
     name: string;
     type: PageType;
-    view: PageView;
-    layout: {
-        sm: string;
+    position: { x: number; y: number };
+    view: {
+        promo: { blocks: Block[] };
+        title: { blocks: Block[] };
+        action: { blocks: Block[] };
+        content: { blocks: Block[] };
     };
+    layout: { sm: string };
     provides: string[];
-    next_page: PageNextPage;
-};
+    next_page: {
+        branches: {
+            next_page: string | null;
+            condition?: BranchCondition;
+        }[];
+        default_next_page: string | null;
+    };
+}
 
 export type OfferView = {
     id: string;

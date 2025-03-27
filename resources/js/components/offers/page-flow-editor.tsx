@@ -310,30 +310,22 @@ export default function PageFlowEditor({ view, onUpdateFlow }: PageFlowEditorPro
     // Derive nodes from ordered pages
     const initialNodes = useMemo(() => {
         const nodes: Node[] = [];
-        let x = 0;
-        let y = 0;
         
         // Create nodes in the correct order
-        getOrderedPages().forEach(([pageId, page]) => {
+        Object.entries(view.pages).forEach(([pageId, page]) => {
             nodes.push({
                 id: pageId,
                 type: 'pageNode',
-                position: { x: x * (NODE_WIDTH + GRID_SPACING * 2), y },
+                position: page.position || { x: 0, y: 0 }, // Use saved position or default
                 data: { 
                     page,
                     isStart: pageId === view.first_page
                 }
             });
-
-            x++;
-            if (x > 3) {
-                x = 0;
-                y += NODE_HEIGHT + GRID_SPACING;
-            }
         });
 
         return nodes;
-    }, [view.pages, view.first_page, getOrderedPages]);
+    }, [view.pages, view.first_page]);
 
     // Derive edges from view configuration
     const initialEdges = useMemo(() => {
@@ -394,6 +386,7 @@ export default function PageFlowEditor({ view, onUpdateFlow }: PageFlowEditorPro
             id,
             name: 'New Page',
             type,
+            position: pendingPosition, // Add position to the page
             view: {
                 promo: { blocks: [] },
                 title: { blocks: [] },

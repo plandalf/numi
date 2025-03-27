@@ -61,6 +61,7 @@ class MediaController extends Controller
             'key' => $key,
             'uploadUrl' => $uploadUrl,
             'headers' => $headers,
+            'media_id' => $media->getRouteKey(),
             'publicUrl' => $media->getSignedUrl(),
         ], 201);
     }

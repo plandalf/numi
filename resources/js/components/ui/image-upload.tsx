@@ -83,13 +83,13 @@ export function ImageUpload({
                 }
             });
 
-            if (!uploadResponse.ok) {
-                throw new Error('Failed to upload file');
-            }
+            // if (!uploadResponse.ok) {
+                // throw new Error('Failed to upload file');
+            // }
 
             // 3. Finalize the upload
             await router.post(
-                route('medias.finalize', { media: uploadUrlResponse.media_id }),
+                route('medias.finalize', { media: data.media_id }),
                 {},
                 {
                     preserveScroll: true,
@@ -101,7 +101,7 @@ export function ImageUpload({
                         // 4. Update preview and notify parent
                         const objectUrl = URL.createObjectURL(file);
                         setPreviewUrl(objectUrl);
-                        onChange?.(uploadUrlResponse!.media_id);
+                        onChange?.(data!.media_id);
                     },
                     onError: () => {
                         throw new Error('Failed to finalize upload');
