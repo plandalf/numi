@@ -103,6 +103,17 @@ function PageNode({ data, id }: { data: { page: Page; isStart?: boolean }; id: s
         setShowBranchDialog(true);
     };
 
+    // Calculate the offset for branch handles based on the content above
+    const getBranchHandleOffset = useCallback((index: number) => {
+        const HEADER_HEIGHT = 40; // Header with name and type
+        const LAYOUT_INFO_HEIGHT = 24; // Layout info row
+        const PROVIDES_HEIGHT = page.provides.length > 0 ? 28 : 0; // Provides section if present
+        const BRANCHES_TITLE_HEIGHT = 32; // "Branches" title
+        const BRANCH_ITEM_HEIGHT = 32; // Height of each branch item
+
+        return HEADER_HEIGHT + LAYOUT_INFO_HEIGHT + PROVIDES_HEIGHT + BRANCHES_TITLE_HEIGHT + (index * BRANCH_ITEM_HEIGHT);
+    }, [page.provides.length]);
+
     return (
         <>
             {/* Default connection handle */}
@@ -120,42 +131,7 @@ function PageNode({ data, id }: { data: { page: Page; isStart?: boolean }; id: s
                 </div>
             )}
 
-            {/* Branch connection handles - align with branch info */}
-            {page.type !== 'ending' && page.next_page.branches?.map((branch, index) => !hasBranchConnection(index) && (
-                <div
-                    key={`branch-${index}`}
-                    className="absolute right-0 translate-x-1/2 z-10"
-                    style={{ 
-                        // Align with branch info: account for header (24px), layout info (24px), provides (if any), 
-                        // branches title (24px), and previous branches (28px each)
-                        top: `${104 + (index * 28)}px`
-                    }}
-                >
-                    <Handle
-                        type="source"
-                        position={Position.Right}
-                        id={`branch-${index}`}
-                        className="!w-6 !h-6 !bg-secondary hover:!bg-secondary/80 !border-2 !border-background rounded-full flex items-center justify-center cursor-grab active:cursor-grabbing"
-                        isConnectable={true}
-                    >
-                        <Plus className="w-4 h-4 text-background pointer-events-none" />
-                    </Handle>
-                </div>
-            ))}
-
-            {/* Target connection handle */}
-            <div className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1/2 z-10">
-                <Handle
-                    type="target"
-                    position={Position.Left}
-                    className="!w-6 !h-6 !bg-primary hover:!bg-primary/80 !border-2 !border-background rounded-full flex items-center justify-center cursor-grab active:cursor-grabbing"
-                    isConnectable={true}
-                >
-                    <Plus className="w-4 h-4 text-background pointer-events-none" />
-                </Handle>
-            </div>
-
-            <div className="bg-card border border-border rounded-lg shadow-sm p-4 w-[250px]">
+            <div className="bg-card border border-border rounded-lg shadow-sm p-4 w-[250px] relative">
                 <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-2">
                         {isStart && <Flag className="w-4 h-4 text-primary" />}
@@ -185,7 +161,7 @@ function PageNode({ data, id }: { data: { page: Page; isStart?: boolean }; id: s
                         </div>
                     )}
 
-                    {/* Branch List */}
+                    {/* Branch List with inline handles */}
                     {page.next_page.branches && page.next_page.branches.length > 0 && (
                         <div className="mt-4 space-y-2">
                             <h4 className="text-sm font-medium">Branches</h4>
@@ -193,17 +169,31 @@ function PageNode({ data, id }: { data: { page: Page; isStart?: boolean }; id: s
                                 {page.next_page.branches.map((branch, index) => (
                                     <div 
                                         key={index}
-                                        className="text-xs p-2 bg-muted rounded-sm flex items-center justify-between"
+                                        className="text-xs p-2 bg-muted rounded-sm flex items-center justify-between h-8 relative group"
                                     >
                                         <span className="text-muted-foreground">
                                             {getBranchLabel(branch.condition)}
                                         </span>
-                                        <button 
-                                            onClick={() => handleEditBranch(index)}
-                                            className="text-primary hover:text-primary/80"
-                                        >
-                                            Edit
-                                        </button>
+                                        <div className="flex items-center gap-2">
+                                            <button 
+                                                onClick={() => handleEditBranch(index)}
+                                                className="text-primary hover:text-primary/80"
+                                            >
+                                                Edit
+                                            </button>
+                                            {/* Inline branch handle */}
+                                            <div className="absolute right-0 translate-x-[150%]">
+                                                <Handle
+                                                    type="source"
+                                                    position={Position.Right}
+                                                    id={`branch-${index}`}
+                                                    className="!w-6 !h-6 !bg-secondary hover:!bg-secondary/80 !border-2 !border-background rounded-full flex items-center justify-center cursor-grab active:cursor-grabbing"
+                                                    isConnectable={!branch.next_page} // Only allow connection if no existing connection
+                                                >
+                                                    <Plus className="w-4 h-4 text-background pointer-events-none" />
+                                                </Handle>
+                                            </div>
+                                        </div>
                                     </div>
                                 ))}
                             </div>
@@ -235,6 +225,18 @@ function PageNode({ data, id }: { data: { page: Page; isStart?: boolean }; id: s
                             Add First Branch
                         </Button>
                     )}
+                </div>
+
+                {/* Target connection handle */}
+                <div className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1/2 z-10">
+                    <Handle
+                        type="target"
+                        position={Position.Left}
+                        className="!w-6 !h-6 !bg-primary hover:!bg-primary/80 !border-2 !border-background rounded-full flex items-center justify-center cursor-grab active:cursor-grabbing"
+                        isConnectable={true}
+                    >
+                        <Plus className="w-4 h-4 text-background pointer-events-none" />
+                    </Handle>
                 </div>
             </div>
 
@@ -606,10 +608,28 @@ export default function PageFlowEditor({ view, onUpdateFlow }: PageFlowEditorPro
                 const targetId = targetNode.id;
 
                 if (connection.sourceHandle?.startsWith('branch-')) {
+                    // Get branch index from handle ID
+                    const branchIndex = parseInt(connection.sourceHandle.split('-')[1]);
+                    
+                    // Remove any existing connection for this branch
+                    const existingBranch = sourcePage.next_page.branches?.[branchIndex];
+                    if (existingBranch?.next_page) {
+                        setEdges(eds => eds.filter(e => 
+                            e.id !== `${sourceNode.id}-${existingBranch.next_page}-branch-${branchIndex}`
+                        ));
+                    }
+
                     // Show branch condition dialog
                     setShowBranchDialog(true);
                     setPendingConnection(connection);
                 } else {
+                    // Remove any existing default connection
+                    if (sourcePage.next_page.default_next_page) {
+                        setEdges(eds => eds.filter(e => 
+                            e.id !== `${sourceNode.id}-${sourcePage.next_page.default_next_page}`
+                        ));
+                    }
+
                     // Update default next page
                     const updatedPage = {
                         ...sourcePage,
