@@ -28,6 +28,10 @@ class OfferVariant extends Model
         'amount' => 'integer',
     ];
 
+    protected $with = [
+        'media',
+    ];
+
     const TYPE_ONE_TIME = 'one_time';
     const TYPE_SUBSCRIPTION = 'subscription';
 

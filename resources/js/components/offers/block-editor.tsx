@@ -1,8 +1,10 @@
-import { type Block, type BlockContent } from '@/types/offer';
+import { type Block, type BlockContent, type TextContent, type IconContent } from '@/types/offer';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
+import { Plus, Trash, MoveUp, MoveDown } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 interface BlockEditorProps {
     block: Block;
@@ -40,8 +42,145 @@ export default function BlockEditor({ block, onUpdate }: BlockEditorProps) {
         });
     };
 
+    // Handle detail list (dl) item updates
+    const handleDlItemUpdate = (groupIndex: number, type: 'dt' | 'dd', content: string) => {
+        if (!block.children) return;
+        
+        const newChildren = [...block.children];
+        const group = { ...newChildren[groupIndex] };
+        
+        if (group.children) {
+            const dtIndex = group.children.findIndex(child => child.type === type);
+            if (dtIndex >= 0) {
+                const updatedChild = { ...group.children[dtIndex] };
+                
+                if (type === 'dt') {
+                    // Update the term directly
+                    if (updatedChild.text && updatedChild.text[0]) {
+                        updatedChild.text = [{
+                            ...updatedChild.text[0],
+                            props: {
+                                ...updatedChild.text[0].props,
+                                content
+                            }
+                        } as BlockContent];
+                    }
+                } else if (type === 'dd') {
+                    // Update the description (assuming it has a paragraph child)
+                    if (updatedChild.children && updatedChild.children[0]) {
+                        const paragraph = { ...updatedChild.children[0] };
+                        if (paragraph.text && paragraph.text[0]) {
+                            paragraph.text = [{
+                                ...paragraph.text[0],
+                                props: {
+                                    ...paragraph.text[0].props,
+                                    content
+                                }
+                            } as BlockContent];
+                            updatedChild.children = [paragraph];
+                        }
+                    }
+                }
+                
+                group.children[dtIndex] = updatedChild;
+            }
+        }
+        
+        newChildren[groupIndex] = group;
+        
+        onUpdate?.({
+            ...block,
+            children: newChildren
+        });
+    };
+
+    // Add a new item to the detail list
+    const handleAddDlItem = () => {
+        if (!block.children) {
+            onUpdate?.({
+                ...block,
+                children: []
+            });
+            return;
+        }
+        
+        const newItem: Block = {
+            type: 'dl-group',
+            object: 'list-group',
+            children: [
+                {
+                    type: 'dt',
+                    object: 'list-term',
+                    text: [{
+                        href: null,
+                        props: {
+                            link: null,
+                            content: 'New Label'
+                        },
+                        object: 'text'
+                    } as BlockContent]
+                } as Block,
+                {
+                    type: 'dd',
+                    object: 'list-description',
+                    children: [{
+                        type: 'p',
+                        object: 'paragraph',
+                        text: [{
+                            href: null,
+                            props: {
+                                link: null,
+                                content: 'New description'
+                            },
+                            object: 'text'
+                        } as BlockContent]
+                    } as Block]
+                } as Block
+            ]
+        };
+        
+        onUpdate?.({
+            ...block,
+            children: [...block.children, newItem]
+        });
+    };
+
+    // Remove an item from the detail list
+    const handleRemoveDlItem = (index: number) => {
+        if (!block.children) return;
+        
+        const newChildren = [...block.children];
+        newChildren.splice(index, 1);
+        
+        onUpdate?.({
+            ...block,
+            children: newChildren
+        });
+    };
+
+    // Move an item up or down in the detail list
+    const handleMoveDlItem = (index: number, direction: 'up' | 'down') => {
+        if (!block.children) return;
+        
+        const newChildren = [...block.children];
+        const item = newChildren[index];
+        
+        if (direction === 'up' && index > 0) {
+            newChildren.splice(index, 1);
+            newChildren.splice(index - 1, 0, item);
+        } else if (direction === 'down' && index < newChildren.length - 1) {
+            newChildren.splice(index, 1);
+            newChildren.splice(index + 1, 0, item);
+        }
+        
+        onUpdate?.({
+            ...block,
+            children: newChildren
+        });
+    };
+
     return (
-        <div className="space-y-6 p-4">
+        <div className="space-y-6">
             <div className="flex items-center justify-between">
                 <div>
                     <h3 className="text-lg font-semibold">Block Editor</h3>
@@ -62,7 +201,101 @@ export default function BlockEditor({ block, onUpdate }: BlockEditorProps) {
                     </div>
                 </div>
 
-                {block.text && (
+                {/* Custom Editor for Detail List (dl) blocks */}
+                {block.type === 'dl' && block.children && (
+                    <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                            <Label className="text-base">Detail List Items</Label>
+                            <Button 
+                                size="sm" 
+                                variant="outline" 
+                                className="flex items-center gap-1"
+                                onClick={handleAddDlItem}
+                            >
+                                <Plus className="w-4 h-4" />
+                                <span>Add Item</span>
+                            </Button>
+                        </div>
+                        
+                        {block.children.map((group, groupIndex) => {
+                            if (group.type !== 'dl-group' || !group.children) return null;
+                            
+                            const dtChild = group.children.find(child => child.type === 'dt');
+                            const ddChild = group.children.find(child => child.type === 'dd');
+                            
+                            let dtContent = '';
+                            let ddContent = '';
+                            
+                            if (dtChild?.text?.[0]?.props && 'content' in dtChild.text[0].props) {
+                                dtContent = dtChild.text[0].props.content;
+                            }
+                            
+                            if (ddChild?.children?.[0]?.text?.[0]?.props && 'content' in ddChild.children[0].text[0].props) {
+                                ddContent = ddChild.children[0].text[0].props.content;
+                            }
+                            
+                            return (
+                                <div key={groupIndex} className="p-4 border border-border rounded-md space-y-2">
+                                    <div className="flex items-center justify-between mb-2">
+                                        <span className="text-sm font-medium">Item {groupIndex + 1}</span>
+                                        <div className="flex items-center gap-1">
+                                            <Button 
+                                                size="icon" 
+                                                variant="ghost" 
+                                                onClick={() => handleMoveDlItem(groupIndex, 'up')}
+                                                disabled={groupIndex === 0}
+                                                className="h-7 w-7"
+                                            >
+                                                <MoveUp className="w-4 h-4" />
+                                            </Button>
+                                            <Button 
+                                                size="icon" 
+                                                variant="ghost" 
+                                                onClick={() => handleMoveDlItem(groupIndex, 'down')}
+                                                disabled={groupIndex === block.children.length - 1}
+                                                className="h-7 w-7"
+                                            >
+                                                <MoveDown className="w-4 h-4" />
+                                            </Button>
+                                            <Button 
+                                                size="icon" 
+                                                variant="ghost" 
+                                                onClick={() => handleRemoveDlItem(groupIndex)}
+                                                className="h-7 w-7 text-destructive hover:text-destructive"
+                                            >
+                                                <Trash className="w-4 h-4" />
+                                            </Button>
+                                        </div>
+                                    </div>
+                                    
+                                    <div className="space-y-4">
+                                        <div>
+                                            <Label>Label</Label>
+                                            <Input
+                                                value={dtContent}
+                                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleDlItemUpdate(groupIndex, 'dt', e.target.value)}
+                                                placeholder="Enter label text"
+                                            />
+                                        </div>
+                                        
+                                        <div>
+                                            <Label>Description</Label>
+                                            <Textarea
+                                                value={ddContent}
+                                                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => handleDlItemUpdate(groupIndex, 'dd', e.target.value)}
+                                                placeholder="Enter description text"
+                                                rows={2}
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                )}
+
+                {/* Regular Text Content Editor */}
+                {block.text && block.type !== 'dl' && (
                     <div className="space-y-4">
                         <Label>Text Content</Label>
                         {block.text.map((content, index) => (
@@ -70,12 +303,12 @@ export default function BlockEditor({ block, onUpdate }: BlockEditorProps) {
                                 {content.object === 'text' && (
                                     <div>
                                         <Input
-                                            value={content.props.content}
-                                            onChange={(e) => handleTextContentUpdate(index, e.target.value)}
+                                            value={(content as TextContent).props.content}
+                                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleTextContentUpdate(index, e.target.value)}
                                             placeholder="Enter text content"
                                         />
                                         <div className="flex gap-2 mt-1">
-                                            {Object.entries(content.annotations || {}).map(([key, value]) => (
+                                            {Object.entries((content as TextContent).annotations || {}).map(([key, value]) => (
                                                 <div 
                                                     key={key}
                                                     className="text-[10px] bg-secondary px-1.5 py-0.5 rounded font-mono"
@@ -92,7 +325,7 @@ export default function BlockEditor({ block, onUpdate }: BlockEditorProps) {
                                             [icon]
                                         </div>
                                         <div className="text-xs font-mono">
-                                            {content.props.icon}@{content.props.variant}
+                                            {(content as IconContent).props.icon}@{(content as IconContent).props.variant}
                                         </div>
                                     </div>
                                 )}
@@ -109,7 +342,7 @@ export default function BlockEditor({ block, onUpdate }: BlockEditorProps) {
                                 <div className="text-sm font-mono">{property}</div>
                                 <Input
                                     value={value}
-                                    onChange={(e) => handleStyleUpdate(property, e.target.value)}
+                                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleStyleUpdate(property, e.target.value)}
                                     placeholder={`Enter ${property}`}
                                 />
                             </div>
