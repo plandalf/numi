@@ -57,17 +57,21 @@ export default function BlockEditor({ block, onUpdate }: BlockEditorProps) {
 
     // Handle media upload for image blocks
     const handleMediaUpdate = (media: { id: number, url: string } | null) => {
+        console.log('Media update received:', media);
+        
         // If no media (image was removed), reset src to a placeholder
         const src = media?.url 
-            ? media.url
-            : 'https://via.placeholder.com/400x300';
+            ? media.url // Use the URL directly from the media object
+            : 'https://place-hold.it/300x500';
             
         onUpdate?.({
             ...block,
             props: {
                 ...block.props,
                 src: src,
-                mediaId: media?.id || null
+                mediaId: media?.id || null,
+                // Store the entire media object reference for later use if needed
+                media: media || undefined
             }
         });
     };

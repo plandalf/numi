@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { router } from '@inertiajs/react';
 import { Button } from '@/components/ui/button';
 import { Loader2, Upload, X } from 'lucide-react';
@@ -47,6 +47,19 @@ export function ImageUpload({
     const [previewUrl, setPreviewUrl] = useState<string | null>(preview || null);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
+    // Log when preview URL changes
+    useEffect(() => {
+        console.log('Preview URL updated:', previewUrl);
+    }, [previewUrl]);
+
+    // Log when the preview prop changes from parent
+    useEffect(() => {
+        console.log('Preview prop changed:', preview);
+        if (preview && preview !== previewUrl) {
+            setPreviewUrl(preview);
+        }
+    }, [preview]);
+
     const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
         if (!file) return;
@@ -87,7 +100,6 @@ export function ImageUpload({
                         (progressEvent.loaded * 100) / (progressEvent.total || file.size)
                     );
                     console.log('progress: ', progressEvent);
-                    // updateProgress(item.id, progress, 'uploading');
                 }
             });
 
@@ -95,15 +107,19 @@ export function ImageUpload({
             await axios.post(route('medias.finalize', { media: data.media_id }))
                 .then(res => {
                     const responseData = res.data;
-
                     console.log('onSuccess', responseData);
-                    // 4. Update preview and notify parent
-                    const objectUrl = URL.createObjectURL(file);
-                    setPreviewUrl(objectUrl);
-                    console.log(objectUrl);
                     
-                    // Pass entire media object instead of just ID
-                    onChange?.(responseData.media);
+                    // Use the actual media URL from the server response instead of creating a temporary object URL
+                    if (responseData.media && responseData.media.url) {
+                        setPreviewUrl(responseData.media.url);
+                        // Pass entire media object to parent
+                        onChange?.(responseData.media);
+                    } else {
+                        // Fallback to object URL if server doesn't return a URL (shouldn't happen)
+                        const objectUrl = URL.createObjectURL(file);
+                        setPreviewUrl(objectUrl);
+                        onChange?.(responseData.media);
+                    }
                 });
 
         } catch (error) {
