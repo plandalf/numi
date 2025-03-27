@@ -329,10 +329,7 @@ export default function PageFlowEditor({ view, onUpdateFlow }: PageFlowEditorPro
                 type: 'pageNode',
                 position,
                 data: { 
-                    page: {
-                        ...page,
-                        position // Ensure position is saved in page data
-                    },
+                    page,
                     isStart: pageId === view.first_page
                 }
             });
@@ -340,36 +337,6 @@ export default function PageFlowEditor({ view, onUpdateFlow }: PageFlowEditorPro
 
         return nodes;
     }, [view.pages, view.first_page]);
-
-    // Update view with initial positions if needed
-    useEffect(() => {
-        const updatedPages = { ...view.pages };
-        let hasUpdates = false;
-
-        // Check each page for missing positions
-        Object.entries(updatedPages).forEach(([pageId, page]) => {
-            if (!page.position) {
-                // Find the node for this page
-                const node = initialNodes.find(n => n.id === pageId);
-                if (node) {
-                    // Update the page with the node's position
-                    updatedPages[pageId] = {
-                        ...page,
-                        position: node.position
-                    };
-                    hasUpdates = true;
-                }
-            }
-        });
-
-        // If we found pages without positions, update the view
-        if (hasUpdates) {
-            onUpdateFlow({
-                pages: updatedPages,
-                first_page: view.first_page
-            });
-        }
-    }, [initialNodes, view.pages, view.first_page, onUpdateFlow]);
 
     // Derive edges from view configuration
     const initialEdges = useMemo(() => {
@@ -414,11 +381,19 @@ export default function PageFlowEditor({ view, onUpdateFlow }: PageFlowEditorPro
     const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
     const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
 
-    // Update React Flow state when view changes
+    // Only update React Flow state when view changes significantly
     useEffect(() => {
-        setNodes(initialNodes);
-        setEdges(initialEdges);
-    }, [initialNodes, initialEdges, setNodes, setEdges]);
+        // Only update if the number of pages or first page changes
+        const currentPageIds = new Set(Object.keys(view.pages));
+        const nodeIds = new Set(nodes.map(n => n.id));
+        
+        if (currentPageIds.size !== nodeIds.size || 
+            !currentPageIds.has(view.first_page) ||
+            nodes.length === 0) {
+            setNodes(initialNodes);
+            setEdges(initialEdges);
+        }
+    }, [initialNodes, initialEdges, setNodes, setEdges, view.pages, view.first_page, nodes]);
 
     const handleCreatePage = useCallback((type: PageType) => {
         if (!pendingPosition) return;
@@ -653,7 +628,7 @@ export default function PageFlowEditor({ view, onUpdateFlow }: PageFlowEditorPro
 
     // Handle node position changes
     const handleNodesChange = useCallback((changes: any) => {
-        // Apply all changes to React Flow state
+        // Only apply changes to React Flow state
         onNodesChange(changes);
     }, [onNodesChange]);
 

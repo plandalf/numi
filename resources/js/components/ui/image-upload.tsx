@@ -88,28 +88,16 @@ export function ImageUpload({
             // }
 
             // 3. Finalize the upload
-            await router.post(
-                route('medias.finalize', { media: data.media_id }),
-                {},
-                {
-                    preserveScroll: true,
-                    preserveState: true,
-                    headers: {
-                        Accept: 'application/json',
-                    },
-                    onSuccess: () => {
-                        console.log('onSuccess');
-                        // 4. Update preview and notify parent
-                        const objectUrl = URL.createObjectURL(file);
-                        setPreviewUrl(objectUrl);
-                        onChange?.(data!.media_id);
-                    },
-                    onError: (e) => {
-                        console.error(e);
-                        // throw new Error('Failed to finalize upload');
-                    },
-                }
-            );
+            await axios.post(route('medias.finalize', { media: data.media_id }))
+                .then(res => {
+                    const data = res.data;
+
+                    console.log('onSuccess');
+                    // 4. Update preview and notify parent
+                    const objectUrl = URL.createObjectURL(file);
+                    setPreviewUrl(objectUrl);
+                    onChange?.(data!.media_id);
+                });
 
         } catch (error) {
             console.error('Upload failed:', error);
