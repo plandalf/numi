@@ -167,7 +167,7 @@ function OfferHeader({ offer, isNameDialogOpen, setIsNameDialogOpen }: AppHeader
                                 <Button 
                                     variant="outline"
                                     onClick={() => setIsNameDialogOpen(true)}
-                                    className="text-sm font-medium cursor-text p-1 h-auto"
+                                    className="text-sm font-medium cursor-text py-1 px-2 h-auto shadow-none border-transparent hover:border-gray-200"
                                 >
                                     {offer.name || 'Untitled Offer'}
                                 </Button>

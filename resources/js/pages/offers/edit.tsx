@@ -76,8 +76,6 @@ export default function Edit({ offer, showNameDialog }: Props) {
             return;
         }
 
-        console.log("Saving!");
-
         put(route('offers.update', offer.id), {
             preserveScroll: true,
             onSuccess: (a) => {
