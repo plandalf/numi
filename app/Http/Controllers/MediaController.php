@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Resources\MediaResource;
 use App\Models\Media;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -90,7 +91,7 @@ class MediaController extends Controller
         ]);
 
         return response()->json([
-            'media' => new MediaResource(),
+            'media' => new MediaResource($media->refresh()),
         ]);
     }
 }
