@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('store_offer_variants', function (Blueprint $table) {
             $table->id();
             $table->foreignId('offer_id')->constrained('store_offers')->cascadeOnDelete();
-            $table->foreignId('media_id')->nullable()->constrained('media')->nullOnDelete();
+            $table->foreignId('media_id')->nullable()->constrained('medias')->nullOnDelete();
             $table->string('name');
             $table->text('description')->nullable();
             $table->enum('type', ['one_time', 'subscription']);
