@@ -227,7 +227,7 @@ export default function VariantForm({
                         <Label>Variant Image</Label>
                         <ImageUpload
                             value={data.media_id}
-                            onChange={(mediaId) => setData('media_id', mediaId)}
+                            onChange={(media) => setData('media_id', media?.id || null)}
                             preview={initialData?.media?.url}
                             disabled={processing}
                         />

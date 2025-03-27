@@ -6,6 +6,14 @@ import { cn } from '@/lib/utils';
 import { Page } from '@inertiajs/core';
 import axios from 'axios';
 
+interface Media {
+    id: number;
+    url: string;
+    filename?: string;
+    mime_type?: string;
+    size?: number;
+}
+
 interface UploadUrlResponse {
     media_id: number;
     upload_url: string;
@@ -18,7 +26,7 @@ interface PageProps {
 interface Props {
     className?: string;
     value?: number | null;
-    onChange?: (mediaId: number | null) => void;
+    onChange?: (media: Media | null) => void;
     onError?: (error: string) => void;
     maxSize?: number; // in bytes
     preview?: string | null;
@@ -83,21 +91,19 @@ export function ImageUpload({
                 }
             });
 
-            // if (!uploadResponse.ok) {
-                // throw new Error('Failed to upload file');
-            // }
-
             // 3. Finalize the upload
             await axios.post(route('medias.finalize', { media: data.media_id }))
                 .then(res => {
-                    const data = res.data;
+                    const responseData = res.data;
 
-                    console.log('onSuccess', data);
+                    console.log('onSuccess', responseData);
                     // 4. Update preview and notify parent
                     const objectUrl = URL.createObjectURL(file);
                     setPreviewUrl(objectUrl);
                     console.log(objectUrl);
-                    onChange?.(data!.media.id);
+                    
+                    // Pass entire media object instead of just ID
+                    onChange?.(responseData.media);
                 });
 
         } catch (error) {

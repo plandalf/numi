@@ -90,7 +90,7 @@ class MediaController extends Controller
         ]);
 
         return response()->json([
-            'media' => $media->fresh(),
+            'media' => new MediaResource(),
         ]);
     }
 }

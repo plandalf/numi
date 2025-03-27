@@ -165,11 +165,10 @@ export default function Pricing({ offer }: Props) {
                                 <Label>Product Image</Label>
                                 <ImageUpload
                                     value={data.product_image_id}
-                                    onChange={(mediaId) => setData('product_image_id', mediaId)}
+                                    onChange={(media) => setData('product_image_id', media?.id || null)}
                                     preview={offer.product_image?.url}
                                     disabled={processing}
                                 />
-                                {data.product_image_id}
                                 {errors.product_image_id && (
                                     <p className="text-sm text-red-500">{errors.product_image_id}</p>
                                 )}

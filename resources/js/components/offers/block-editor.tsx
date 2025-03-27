@@ -56,10 +56,10 @@ export default function BlockEditor({ block, onUpdate }: BlockEditorProps) {
     };
 
     // Handle media upload for image blocks
-    const handleMediaUpdate = (mediaId: number | null) => {
-        // If no media ID (image was removed), reset src to a placeholder
-        const src = mediaId 
-            ? `/media/${mediaId}` 
+    const handleMediaUpdate = (media: { id: number, url: string } | null) => {
+        // If no media (image was removed), reset src to a placeholder
+        const src = media?.url 
+            ? media.url
             : 'https://via.placeholder.com/400x300';
             
         onUpdate?.({
@@ -67,7 +67,7 @@ export default function BlockEditor({ block, onUpdate }: BlockEditorProps) {
             props: {
                 ...block.props,
                 src: src,
-                mediaId: mediaId
+                mediaId: media?.id || null
             }
         });
     };
