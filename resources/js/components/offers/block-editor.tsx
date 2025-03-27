@@ -5,6 +5,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 import { Plus, Trash, MoveUp, MoveDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import React from 'react';
 
 interface BlockEditorProps {
     block: Block;
@@ -252,7 +253,7 @@ export default function BlockEditor({ block, onUpdate }: BlockEditorProps) {
                                                 size="icon" 
                                                 variant="ghost" 
                                                 onClick={() => handleMoveDlItem(groupIndex, 'down')}
-                                                disabled={groupIndex === block.children.length - 1}
+                                                disabled={groupIndex === (block.children?.length || 0) - 1}
                                                 className="h-7 w-7"
                                             >
                                                 <MoveDown className="w-4 h-4" />

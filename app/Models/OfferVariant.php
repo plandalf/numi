@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Store\Offer;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -43,6 +44,11 @@ class OfferVariant extends Model
     public function offer(): BelongsTo
     {
         return $this->belongsTo(Offer::class);
+    }
+
+    public function media()
+    {
+        return $this->belongsTo(Media::class);
     }
 
     public function isOneTime(): bool
