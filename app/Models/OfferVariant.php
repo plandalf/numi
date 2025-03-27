@@ -20,6 +20,7 @@ class OfferVariant extends Model
         'type',
         'pricing_model',
         'amount',
+        'media_id',
         'currency',
         'properties',
     ];
