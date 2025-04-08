@@ -3,10 +3,13 @@
 use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\OffersController;
 use App\Http\Controllers\OrganizationController;
+use App\Http\Controllers\Settings\ProfileController;
 use App\Models\Store\Offer;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use App\Http\Controllers\MediaController;
+use App\Http\Controllers\ProductsController;
+use App\Http\Controllers\PriceController;
 
 Route::get('/', function () {
     return Inertia::render('welcome');
@@ -41,32 +44,28 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // Routes that require an organization
     Route::middleware(['organization'])->group(function () {
+
+        Route::resource('products', ProductsController::class);
+        Route::resource('products.prices', PriceController::class);
+
         // Offers routes
-        Route::prefix('offers')->name('offers.')->group(function () {
-            Route::post('/', [OffersController::class, 'store'])->name('store');
+        Route::resource('offers', OffersController::class)->except(['show', 'create']);
 
-            Route::prefix('{offer}')->group(function () {
-                Route::get('/edit', [OffersController::class, 'edit'])->name('edit');
-                Route::put('/', [OffersController::class, 'update'])->name('update');
-                Route::delete('/', [OffersController::class, 'destroy'])->name('destroy');
+        Route::prefix('offers/{offer}')->name('offers.')->group(function () {
+            Route::get('pricing', [OffersController::class, 'pricing'])->name('pricing');
 
-                // Offer tab routes
-                Route::get('/pricing', [OffersController::class, 'pricing'])->name('pricing');
-                Route::get('/integrate', [OffersController::class, 'integrate'])->name('integrate');
-                Route::get('/sharing', [OffersController::class, 'sharing'])->name('sharing');
-                Route::get('/settings', [OffersController::class, 'settings'])->name('settings');
-                Route::get('/settings/customization', [OffersController::class, 'settingsCustomization'])->name('settings.customization');
-                Route::get('/settings/notifications', [OffersController::class, 'settingsNotifications'])->name('settings.notifications');
-                Route::get('/settings/access', [OffersController::class, 'settingsAccess'])->name('settings.access');
-                Route::post('/publish', [OffersController::class, 'publish'])->name('publish');
+            // Add Slot routes
+            Route::post('/slots', [OffersController::class, 'storeSlot'])->name('slots.store');
+            Route::put('/slots/{slot}', [OffersController::class, 'updateSlot'])->name('slots.update');
+            // Route::delete('/slots/{slot}', [OffersController::class, 'destroySlot'])->name('slots.destroy'); // Add if needed
 
-                // Variant routes
-                Route::prefix('variants')->name('variants.')->group(function () {
-                    Route::post('/', [OffersController::class, 'storeVariant'])->name('store');
-                    Route::put('/{variant}', [OffersController::class, 'updateVariant'])->name('update');
-                    Route::delete('/{variant}', [OffersController::class, 'destroyVariant'])->name('destroy');
-                });
-            });
+            Route::get('integrate', [OffersController::class, 'integrate'])->name('integrate');
+            Route::get('sharing', [OffersController::class, 'sharing'])->name('sharing');
+            Route::get('settings', [OffersController::class, 'settings'])->name('settings');
+            Route::get('settings/customization', [OffersController::class, 'settingsCustomization'])->name('settings.customization');
+            Route::get('settings/notifications', [OffersController::class, 'settingsNotifications'])->name('settings.notifications');
+            Route::get('settings/access', [OffersController::class, 'settingsAccess'])->name('settings.access');
+            Route::post('publish', [OffersController::class, 'publish'])->name('publish');
         });
 
         Route::get('dashboard', function () {
@@ -75,6 +74,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
             ]);
         })->name('dashboard');
     });
+
+    // Media Upload Route
+    Route::post('media', [MediaController::class, 'store'])->name('media.store');
+
+    // Profile Routes
+    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
 // Media routes

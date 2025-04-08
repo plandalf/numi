@@ -5,6 +5,7 @@ namespace App\Providers;
 use App\Models\Organization;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
+use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\ServiceProvider;
 
@@ -25,6 +26,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        JsonResource::$wrap = false;
+
         $this->bootModelRules();
     }
 

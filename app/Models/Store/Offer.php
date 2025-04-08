@@ -3,33 +3,41 @@
 namespace App\Models\Store;
 
 use App\Database\Model;
-use App\Models\OfferVariant;
 use App\Models\Media;
+use App\Models\Store\Slot;
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
+/**
+ * @property int $organization_id
+ * @property string|null $name
+ * @property string|null $description
+ * @property int $product_image_id
+ * @property array $view
+ * @property array|null $properties
+ * @property Carbon $created_at
+ * @property Carbon $updated_at
+ * @property Carbon|null $deleted_at
+ */
 class Offer extends Model
 {
     /** @use HasFactory<\Database\Factories\OfferFactory> */
-    use HasFactory;//, HasSqids;
+    use HasFactory,
+        SoftDeletes;
 
     protected $table = 'store_offers';
 
     protected $fillable = [
+        'organization_id',
         'name',
         'description',
         'product_image_id',
         'status',
-        'default_currency',
-        'is_subscription_enabled',
-        'is_one_time_enabled',
-        'organization_id',
         'view',
-        'product_image_id',
         'properties',
-        'transaction_webhook_url',
     ];
 
     protected $casts = [
@@ -49,9 +57,9 @@ class Offer extends Model
         return $this->belongsTo(Media::class, 'product_image_id');
     }
 
-    public function variants(): HasMany
+    public function slots(): HasMany
     {
-        return $this->hasMany(OfferVariant::class);
+        return $this->hasMany(Slot::class);
     }
 
     public function scopePublished($query)

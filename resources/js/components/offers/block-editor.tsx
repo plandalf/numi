@@ -1,433 +1,465 @@
-import { type Block, type BlockContent, type TextContent, type IconContent } from '@/types/offer';
+import React, { useCallback, useState, useEffect } from 'react';
+import { Block } from '@/types/offer';
+import { getBlockComponent } from '../blocks/block-registry';
+import { NumiProvider, useNumi } from '@/contexts/Numi';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
-import { cn } from '@/lib/utils';
-import { Plus, Trash, MoveUp, MoveDown, Image as ImageIcon } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import React, { useState } from 'react';
-import { ImageUpload } from '@/components/ui/image-upload';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 
-interface BlockEditorProps {
-    block: Block;
-    onUpdate?: (block: Block) => void;
+// Extended Block interface to allow for dynamic properties
+interface ExtendedBlock extends Block {
+  [key: string]: any; // Allow for dynamic properties
+  appearance?: Record<string, any>;
+  content?: { value?: string; [key: string]: any };
+  style?: Record<string, any>;
 }
 
-export default function BlockEditor({ block, onUpdate }: BlockEditorProps) {
-    const handleTextContentUpdate = (index: number, content: string) => {
-        if (!block.text) return;
-        
-        const newText = [...block.text];
-        if (newText[index].object === 'text') {
-            newText[index] = {
-                ...newText[index],
-                props: {
-                    ...newText[index].props,
-                    content
-                }
-            } as BlockContent;
-        }
+// Types for form controls
+interface FormControlProps {
+  label: string;
+  name: string;
+  value: any;
+  onChange: (value: any) => void;
+  placeholder?: string;
+  section?: 'content' | 'appearance' | 'interaction' | 'validation';
+}
 
-        onUpdate?.({
-            ...block,
-            text: newText
-        });
-    };
-
-    const handleStyleUpdate = (property: string, value: string) => {
-        onUpdate?.({
-            ...block,
-            style: {
-                ...block.style,
-                [property]: value
-            }
-        });
-    };
-
-    // Handle props update for all block types
-    const handlePropsUpdate = (property: string, value: any) => {
-        onUpdate?.({
-            ...block,
-            props: {
-                ...block.props,
-                [property]: value
-            }
-        });
-    };
-
-    // Handle media upload for image blocks
-    const handleMediaUpdate = (media: { id: number, url: string } | null) => {
-        console.log('Media update received:', media);
-        
-        // If no media (image was removed), reset src to a placeholder
-        const src = media?.url 
-            ? media.url // Use the URL directly from the media object
-            : 'https://place-hold.it/300x500';
-            
-        onUpdate?.({
-            ...block,
-            props: {
-                ...block.props,
-                src: src,
-                mediaId: media?.id || null,
-                // Store the entire media object reference for later use if needed
-                media: media || undefined
-            }
-        });
-    };
-
-    // Handle detail list (dl) item updates
-    const handleDlItemUpdate = (groupIndex: number, type: 'dt' | 'dd', content: string) => {
-        if (!block.children) return;
-        
-        const newChildren = [...block.children];
-        const group = { ...newChildren[groupIndex] };
-        
-        if (group.children) {
-            const dtIndex = group.children.findIndex(child => child.type === type);
-            if (dtIndex >= 0) {
-                const updatedChild = { ...group.children[dtIndex] };
-                
-                if (type === 'dt') {
-                    // Update the term directly
-                    if (updatedChild.text && updatedChild.text[0]) {
-                        updatedChild.text = [{
-                            ...updatedChild.text[0],
-                            props: {
-                                ...updatedChild.text[0].props,
-                                content
-                            }
-                        } as BlockContent];
-                    }
-                } else if (type === 'dd') {
-                    // Update the description (assuming it has a paragraph child)
-                    if (updatedChild.children && updatedChild.children[0]) {
-                        const paragraph = { ...updatedChild.children[0] };
-                        if (paragraph.text && paragraph.text[0]) {
-                            paragraph.text = [{
-                                ...paragraph.text[0],
-                                props: {
-                                    ...paragraph.text[0].props,
-                                    content
-                                }
-                            } as BlockContent];
-                            updatedChild.children = [paragraph];
-                        }
-                    }
-                }
-                
-                group.children[dtIndex] = updatedChild;
-            }
-        }
-        
-        newChildren[groupIndex] = group;
-        
-        onUpdate?.({
-            ...block,
-            children: newChildren
-        });
-    };
-
-    // Add a new item to the detail list
-    const handleAddDlItem = () => {
-        if (!block.children) {
-            onUpdate?.({
-                ...block,
-                children: []
-            });
-            return;
-        }
-        
-        const newItem: Block = {
-            type: 'dl-group',
-            object: 'list-group',
-            children: [
-                {
-                    type: 'dt',
-                    object: 'list-term',
-                    text: [{
-                        href: null,
-                        props: {
-                            link: null,
-                            content: 'New Label'
-                        },
-                        object: 'text'
-                    } as BlockContent]
-                } as Block,
-                {
-                    type: 'dd',
-                    object: 'list-description',
-                    children: [{
-                        type: 'p',
-                        object: 'paragraph',
-                        text: [{
-                            href: null,
-                            props: {
-                                link: null,
-                                content: 'New description'
-                            },
-                            object: 'text'
-                        } as BlockContent]
-                    } as Block]
-                } as Block
-            ]
-        };
-        
-        onUpdate?.({
-            ...block,
-            children: [...block.children, newItem]
-        });
-    };
-
-    // Remove an item from the detail list
-    const handleRemoveDlItem = (index: number) => {
-        if (!block.children) return;
-        
-        const newChildren = [...block.children];
-        newChildren.splice(index, 1);
-        
-        onUpdate?.({
-            ...block,
-            children: newChildren
-        });
-    };
-
-    // Move an item up or down in the detail list
-    const handleMoveDlItem = (index: number, direction: 'up' | 'down') => {
-        if (!block.children) return;
-        
-        const newChildren = [...block.children];
-        const item = newChildren[index];
-        
-        if (direction === 'up' && index > 0) {
-            newChildren.splice(index, 1);
-            newChildren.splice(index - 1, 0, item);
-        } else if (direction === 'down' && index < newChildren.length - 1) {
-            newChildren.splice(index, 1);
-            newChildren.splice(index + 1, 0, item);
-        }
-        
-        onUpdate?.({
-            ...block,
-            children: newChildren
-        });
-    };
-
+// Text input control
+const TextControl: React.FC<FormControlProps & { rows?: number }> = ({ 
+  label, name, value, onChange, placeholder, rows, section = 'content'
+}) => {
+  if (rows && rows > 1) {
     return (
-        <div className="space-y-6">
-            <div className="flex items-center justify-between">
-                <div>
-                    <h3 className="text-lg font-semibold">Block Editor</h3>
-                    <p className="text-sm text-muted-foreground">
-                        Edit block properties
-                    </p>
-                </div>
-                <div className="text-xs font-mono text-muted-foreground">
-                    {block.id}
-                </div>
-            </div>
-
-            <div className="space-y-4">
-                <div>
-                    <Label>Type</Label>
-                    <div className="text-sm font-mono mt-1.5">
-                        {block.type}
-                    </div>
-                </div>
-
-                {/* Image Block Editor */}
-                {block.type === 'image' && (
-                    <div className="space-y-4">
-                        <Label>Image</Label>
-                        <div className="space-y-4">
-                            <ImageUpload
-                                value={block.props?.mediaId || null}
-                                onChange={handleMediaUpdate}
-                                preview={block.props?.src || undefined}
-                                onError={(error) => console.error('Image upload error:', error)}
-                            />
-                            <div className="grid grid-cols-1 gap-4">
-                                <div className="space-y-2">
-                                    <Label htmlFor="image-alt">Alt Text</Label>
-                                    <Input
-                                        id="image-alt"
-                                        value={block.props?.alt || ''}
-                                        onChange={(e) => handlePropsUpdate('alt', e.target.value)}
-                                        placeholder="Describe the image for accessibility"
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="image-caption">Caption (optional)</Label>
-                                    <Input
-                                        id="image-caption"
-                                        value={block.props?.caption || ''}
-                                        onChange={(e) => handlePropsUpdate('caption', e.target.value)}
-                                        placeholder="Add a caption to display below the image"
-                                    />
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                )}
-
-                {/* Custom Editor for Detail List (dl) blocks */}
-                {block.type === 'dl' && block.children && (
-                    <div className="space-y-4">
-                        <div className="flex items-center justify-between">
-                            <Label className="text-base">Detail List Items</Label>
-                            <Button 
-                                size="sm" 
-                                variant="outline" 
-                                className="flex items-center gap-1"
-                                onClick={handleAddDlItem}
-                            >
-                                <Plus className="w-4 h-4" />
-                                <span>Add Item</span>
-                            </Button>
-                        </div>
-                        
-                        {block.children.map((group, groupIndex) => {
-                            if (group.type !== 'dl-group' || !group.children) return null;
-                            
-                            const dtChild = group.children.find(child => child.type === 'dt');
-                            const ddChild = group.children.find(child => child.type === 'dd');
-                            
-                            let dtContent = '';
-                            let ddContent = '';
-                            
-                            if (dtChild?.text?.[0]?.props && 'content' in dtChild.text[0].props) {
-                                dtContent = dtChild.text[0].props.content;
-                            }
-                            
-                            if (ddChild?.children?.[0]?.text?.[0]?.props && 'content' in ddChild.children[0].text[0].props) {
-                                ddContent = ddChild.children[0].text[0].props.content;
-                            }
-                            
-                            return (
-                                <div key={groupIndex} className="p-4 border border-border rounded-md space-y-2">
-                                    <div className="flex items-center justify-between mb-2">
-                                        <span className="text-sm font-medium">Item {groupIndex + 1}</span>
-                                        <div className="flex items-center gap-1">
-                                            <Button 
-                                                size="icon" 
-                                                variant="ghost" 
-                                                onClick={() => handleMoveDlItem(groupIndex, 'up')}
-                                                disabled={groupIndex === 0}
-                                                className="h-7 w-7"
-                                            >
-                                                <MoveUp className="w-4 h-4" />
-                                            </Button>
-                                            <Button 
-                                                size="icon" 
-                                                variant="ghost" 
-                                                onClick={() => handleMoveDlItem(groupIndex, 'down')}
-                                                disabled={groupIndex === (block.children?.length || 0) - 1}
-                                                className="h-7 w-7"
-                                            >
-                                                <MoveDown className="w-4 h-4" />
-                                            </Button>
-                                            <Button 
-                                                size="icon" 
-                                                variant="ghost" 
-                                                onClick={() => handleRemoveDlItem(groupIndex)}
-                                                className="h-7 w-7 text-destructive hover:text-destructive"
-                                            >
-                                                <Trash className="w-4 h-4" />
-                                            </Button>
-                                        </div>
-                                    </div>
-                                    
-                                    <div className="space-y-4">
-                                        <div>
-                                            <Label>Label</Label>
-                                            <Input
-                                                value={dtContent}
-                                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleDlItemUpdate(groupIndex, 'dt', e.target.value)}
-                                                placeholder="Enter label text"
-                                            />
-                                        </div>
-                                        
-                                        <div>
-                                            <Label>Description</Label>
-                                            <Textarea
-                                                value={ddContent}
-                                                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => handleDlItemUpdate(groupIndex, 'dd', e.target.value)}
-                                                placeholder="Enter description text"
-                                                rows={2}
-                                            />
-                                        </div>
-                                    </div>
-                                </div>
-                            );
-                        })}
-                    </div>
-                )}
-
-                {/* Regular Text Content Editor */}
-                {block.text && block.type !== 'dl' && (
-                    <div className="space-y-4">
-                        <Label>Text Content</Label>
-                        {block.text.map((content, index) => (
-                            <div key={index} className="space-y-2">
-                                {content.object === 'text' && (
-                                    <div>
-                                        <Input
-                                            value={(content as TextContent).props.content}
-                                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleTextContentUpdate(index, e.target.value)}
-                                            placeholder="Enter text content"
-                                        />
-                                        <div className="flex gap-2 mt-1">
-                                            {Object.entries((content as TextContent).annotations || {}).map(([key, value]) => (
-                                                <div 
-                                                    key={key}
-                                                    className="text-[10px] bg-secondary px-1.5 py-0.5 rounded font-mono"
-                                                >
-                                                    {key}: {String(value)}
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
-                                {content.object === 'icon' && (
-                                    <div className="flex items-center gap-2">
-                                        <div className="w-4 h-4 bg-muted flex items-center justify-center rounded">
-                                            [icon]
-                                        </div>
-                                        <div className="text-xs font-mono">
-                                            {(content as IconContent).props.icon}@{(content as IconContent).props.variant}
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                        ))}
-                    </div>
-                )}
-
-                {block.style && (
-                    <div className="space-y-4">
-                        <Label>Styles</Label>
-                        {Object.entries(block.style).map(([property, value]) => (
-                            <div key={property} className="grid grid-cols-2 gap-2">
-                                <div className="text-sm font-mono">{property}</div>
-                                <Input
-                                    value={value}
-                                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleStyleUpdate(property, e.target.value)}
-                                    placeholder={`Enter ${property}`}
-                                />
-                            </div>
-                        ))}
-                    </div>
-                )}
-
-                {block.props && block.type !== 'image' && (
-                    <div className="space-y-2">
-                        <Label>Properties</Label>
-                        <pre className="text-xs font-mono bg-muted p-2 rounded">
-                            {JSON.stringify(block.props, null, 2)}
-                        </pre>
-                    </div>
-                )}
-            </div>
-        </div>
+      <div className="space-y-2">
+        <Label htmlFor={name}>{label}</Label>
+        <Textarea
+          id={name}
+          value={value || ''}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder || ''}
+          rows={rows}
+        />
+      </div>
     );
+  }
+  
+  return (
+    <div className="space-y-2">
+      <Label htmlFor={name}>{label}</Label>
+      <Input
+        id={name}
+        value={value || ''}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder || ''}
+      />
+    </div>
+  );
+};
+
+// Checkbox control
+const CheckboxControl: React.FC<FormControlProps> = ({ 
+  label, name, value, onChange, section = 'content'
+}) => {
+  return (
+    <div className="flex items-center space-x-2 mb-2">
+      <Checkbox
+        id={name}
+        checked={Boolean(value)}
+        onCheckedChange={(checked) => onChange(checked === true)}
+      />
+      <Label htmlFor={name}>{label}</Label>
+    </div>
+  );
+};
+
+// Interface for hook configuration
+interface HookConfig {
+  name: string;
+  label: string;
+  type: string;
+  section?: 'content' | 'appearance' | 'interaction' | 'validation';
+  defaultValue?: any;
+  inspector?: string;
+  [key: string]: any;
+}
+
+interface BlockEditorProps {
+  block: Block;
+  onUpdate: (block: Block) => void;
+  formValues?: Record<string, any>;
+  formErrors?: Record<string, string[]>;
+  setFormValue?: (name: string, value: any) => void;
+}
+
+// Hook Inspector component to analyze block component and extract hooks
+const HookInspector: React.FC<{
+  block: Block;
+  onHooksDetected: (hooks: HookConfig[]) => void;
+}> = ({ block, onHooksDetected }) => {
+  const BlockComponent = getBlockComponent(block.type);
+  
+  // Component to render a block and collect its hooks
+  const HookCollector = () => {
+    const { getRegisteredHooks } = useNumi();
+    
+    // When hooks are registered, pass them to the parent
+    useEffect(() => {
+      const hooks = getRegisteredHooks();
+      if (hooks.length > 0) {
+        console.log(`Block Editor: Found ${hooks.length} hooks in ${block.type}:`, hooks);
+        onHooksDetected(hooks);
+      }
+    }, [getRegisteredHooks]);
+    
+    // We need to actually render the component to trigger its hooks
+    return BlockComponent ? <BlockComponent block={block} isEditing={false} /> : null;
+  };
+  
+  // Render the component in a hidden container
+  return (
+    <div style={{ display: 'none' }}>
+      <NumiProvider block={block}>
+        <HookCollector />
+      </NumiProvider>
+    </div>
+  );
+};
+
+export default function BlockEditor({ 
+  block, 
+  onUpdate, 
+  formValues = {}, 
+  formErrors = {}, 
+  setFormValue
+}: BlockEditorProps) {
+  const [hooks, setHooks] = useState<HookConfig[]>([]);
+  const [expandedSections, setExpandedSections] = useState<string[]>(['content']);
+  
+  const BlockComponent = getBlockComponent(block.type);
+  
+  if (!BlockComponent) {
+    return (
+      <div className="p-4 text-red-500">
+        Unknown block type: {block.type}
+      </div>
+    );
+  }
+  
+  // Update a block property based on section
+  const updateProperty = useCallback((name: string, value: any, section: string = 'content') => {
+    // Cast to extended block type to allow for dynamic properties
+    const newBlock = { ...block } as ExtendedBlock;
+    
+    // Update the property in the appropriate section
+    if (section === 'appearance') {
+      // All appearance properties should go in the style object
+      newBlock.style = {
+        ...(newBlock.style || {}),
+        [name]: value
+      };
+    } else if (section === 'content') {
+      // Special case for text content fields - store in content.value
+      if (name === 'text' || name === 'value') {
+        newBlock.content = {
+          ...(newBlock.content || {}),
+          value: value
+        };
+      } else {
+        // Check if this is another content property that should go in content
+        const content = newBlock.content || {};
+        // Fields named for direct content storage
+        const contentFields = ['title', 'subtitle', 'description', 'html'];
+        
+        if (contentFields.includes(name)) {
+          // Store directly in content object
+          newBlock.content = {
+            ...content,
+            [name]: value
+          };
+        } else {
+          // Store other content props in props for backward compatibility
+          newBlock.props = {
+            ...(newBlock.props || {}),
+            [name]: value
+          };
+        }
+      }
+    } else if (section === 'interaction') {
+      // Store interaction properties in props
+      const validInteractionProps = ['disabled', 'readOnly', 'isLoading'];
+      if (validInteractionProps.includes(name)) {
+        newBlock.props = {
+          ...(newBlock.props || {}),
+          [name]: value
+        };
+      }
+    } else if (section === 'validation') {
+      // Store validation properties in props
+      const validValidationProps = ['required', 'validationRules', 'validationMessage', 'pattern'];
+      if (validValidationProps.includes(name)) {
+        newBlock.props = {
+          ...(newBlock.props || {}),
+          [name]: value
+        };
+      }
+    }
+    
+    onUpdate(newBlock as Block);
+  }, [block, onUpdate]);
+  
+  // Handle when hooks are detected
+  const handleHooksDetected = (detectedHooks: HookConfig[]) => {
+    console.group('Block Editor: Hook Detection');
+    console.log('Block Type:', block.type);
+    
+    // Create a working copy of hooks
+    let hooks = [...detectedHooks];
+    
+    // For field blocks, add fieldId if not present
+    if (block.object === 'field' && !hooks.some(h => h.name === 'fieldId')) {
+      const generateFieldId = () => {
+        const timestamp = Date.now().toString(36);
+        const random = Math.random().toString(36).substring(2, 6);
+        return `${block.type}_${timestamp}${random}`;
+      };
+      
+      hooks.push({
+        name: 'fieldId',
+        label: 'Field ID',
+        type: 'text',
+        section: 'content',
+        defaultValue: (block.props as Record<string, any>)?.fieldId || generateFieldId(),
+      });
+    }
+    
+    // Add fallbacks for text-block if no hooks detected
+    if (hooks.length === 0 && block.type === 'text-block') {
+      // These are fallbacks in case the component doesn't register hooks
+      hooks.push({
+        name: 'value',
+        label: 'Text',
+        type: 'textarea',
+        section: 'content',
+        defaultValue: block.content?.value || 'Hello World',
+        inspector: 'text',
+        rows: 5,
+        placeholder: 'Enter text here',
+        formats: ['markdown', 'plain']
+      });
+      
+      hooks.push({
+        name: 'fontSize',
+        label: 'Font Size',
+        type: 'text',
+        section: 'appearance',
+        defaultValue: block.style?.fontSize || '16px',
+      });
+      
+      hooks.push({
+        name: 'color',
+        label: 'Text Color',
+        type: 'color',
+        section: 'appearance',
+        defaultValue: block.style?.color || 'inherit',
+      });
+      
+      hooks.push({
+        name: 'backgroundColor',
+        label: 'Background Color',
+        type: 'color',
+        section: 'appearance',
+        defaultValue: block.style?.backgroundColor || 'transparent',
+      });
+    }
+    
+    console.log('Processed Hooks:', hooks);
+    
+    // Log hooks by section
+    const hooksBySection = hooks.reduce((acc, hook) => {
+      const section = hook.section || 'content';
+      if (!acc[section]) acc[section] = [];
+      acc[section].push(hook);
+      return acc;
+    }, {} as Record<string, HookConfig[]>);
+    
+    console.log('Hooks by Section:', hooksBySection);
+    console.groupEnd();
+    
+    setHooks(hooks);
+    
+    // Set which accordion sections should be expanded based on detected hooks
+    const sections = new Set<string>();
+    sections.add('content'); // Always show content section
+    
+    hooks.forEach(hook => {
+      if (hook.section) {
+        sections.add(hook.section);
+      }
+    });
+    
+    setExpandedSections(Array.from(sections));
+  };
+  
+  // Render a form control based on hook configuration
+  const renderControl = (hook: HookConfig) => {
+    const { name, label, type, section = 'content', ...rest } = hook;
+    
+    // Get the current value based on the section and name
+    let value;
+    const typedBlock = block as ExtendedBlock;
+    
+    if (section === 'appearance') {
+      // All appearance values come from style object
+      const style = typedBlock.style || {};
+      value = style[name];
+    } else if (section === 'content') {
+      // Check if this is a special text field that uses content.value
+      if (name === 'text' || name === 'value') {
+        // Special case for text - get from content.value
+        const content = typedBlock.content || {};
+        value = content.value;
+      } else {
+        // Check if this is a content field that should be directly in content
+        const content = typedBlock.content || {};
+        // Fields that might be stored directly in content
+        const contentFields = ['title', 'subtitle', 'description', 'html'];
+        
+        if (contentFields.includes(name) && name in content) {
+          // Get directly from content object
+          value = content[name];
+        } else {
+          // Other content fields are in props
+          const props = typedBlock.props as Record<string, any> || {};
+          value = props[name];
+        }
+      }
+    } else if (section === 'interaction') {
+      // Get interaction properties from props
+      const props = typedBlock.props as Record<string, any> || {};
+      value = props[name];
+    } else if (section === 'validation') {
+      // Get validation properties from props
+      const props = typedBlock.props as Record<string, any> || {};
+      value = props[name];
+    }
+    
+    // Apply default value if none is set
+    if (value === undefined && hook.defaultValue !== undefined) {
+      value = hook.defaultValue;
+    }
+    
+    switch (type) {
+      case 'text':
+        return (
+          <TextControl
+            key={name}
+            label={label}
+            name={name}
+            value={value}
+            onChange={(newValue) => updateProperty(name, newValue, section)}
+            placeholder={`Enter ${label.toLowerCase()}`}
+            section={section as any}
+          />
+        );
+        
+      case 'textarea':
+        return (
+          <TextControl
+            key={name}
+            label={label}
+            name={name}
+            value={value}
+            onChange={(newValue) => updateProperty(name, newValue, section)}
+            placeholder={`Enter ${label.toLowerCase()}`}
+            rows={rest.rows || 3}
+            section={section as any}
+          />
+        );
+        
+      case 'checkbox':
+        return (
+          <CheckboxControl
+            key={name}
+            label={label}
+            name={name}
+            value={value}
+            onChange={(newValue) => updateProperty(name, newValue, section)}
+            section={section as any}
+          />
+        );
+        
+      case 'color':
+        return (
+          <div key={name} className="space-y-2">
+            <Label>{label}</Label>
+            <Input
+              type="color"
+              value={value || '#ffffff'}
+              onChange={e => updateProperty(name, e.target.value, section)}
+            />
+          </div>
+        );
+        
+      default:
+        return (
+          <div key={name}>
+            <Label>{label}</Label>
+            <div className="text-sm text-gray-500">Unsupported control type: {type}</div>
+          </div>
+        );
+    }
+  };
+  
+  // Group hooks by section
+  const hooksBySection = hooks.reduce((acc, hook) => {
+    const section = hook.section || 'content';
+    if (!acc[section]) {
+      acc[section] = [];
+    }
+    acc[section].push(hook);
+    return acc;
+  }, {} as Record<string, HookConfig[]>);
+  
+  return (
+    <NumiProvider 
+      block={block} 
+      onUpdateBlock={onUpdate}
+      isEditing={true}
+      formValues={formValues}
+      formErrors={formErrors}
+      setFormValue={setFormValue}
+    >
+      <div className="space-y-4">
+        {/* Invisible component to analyze hooks */}
+        <HookInspector block={block} onHooksDetected={handleHooksDetected} />
+        
+        <Accordion 
+          type="multiple" 
+          defaultValue={expandedSections}
+          className="w-full"
+        >
+
+        {['content', 'appearance', 'interaction', 'validation']
+            .filter(section => hooksBySection[section as keyof typeof hooksBySection]?.length > 0)
+            .map(section => (
+            <AccordionItem value={section}>
+                <AccordionTrigger>{section}</AccordionTrigger>
+                <AccordionContent className="space-y-4">
+                {hooksBySection[section as keyof typeof hooksBySection]?.map(renderControl)}
+                </AccordionContent>
+            </AccordionItem>
+            ))}
+        </Accordion>
+        
+        <pre className='bg-gray-50 text-xs p-2 overflow-auto'>{JSON.stringify(block, null, 2)}</pre>
+      </div>
+    </NumiProvider>
+  );
 } 

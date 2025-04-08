@@ -4,13 +4,21 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StoreOfferVariantRequest;
+use App\Http\Requests\UpdateOfferVariantRequest;
 use App\Http\Resources\OfferResource;
+use App\Http\Resources\ProductResource;
+use App\Models\Catalog\Product;
 use App\Models\Organization;
 use App\Models\Store\Offer;
-use App\Models\OfferVariant;
+use App\Models\Store\Slot;
+use App\Http\Requests\Offer\OfferSlotStoreRequest;
+use App\Http\Requests\Offer\OfferSlotUpdateRequest;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
+use Illuminate\Support\Facades\Auth;
 
 class OffersController extends Controller
 {
@@ -23,13 +31,19 @@ class OffersController extends Controller
 
     public function store(Request $request, Organization $organization)
     {
-        $offer = Offer::create([
+        $offer = Offer::query()->create([
             'name' => null,
             'status' => 'draft',
             'organization_id' => $organization->id,
-            'default_currency' => 'USD',
-            'is_subscription_enabled' => false,
-            'is_one_time_enabled' => true,
+        ]);
+
+
+        $offer->slots()->create([
+            'key' => 'primary',
+            'name' => 'Primary Slot',
+            'is_required' => true,
+            'sort_order' => 0,
+            'default_price_id' => null,
         ]);
 
         return redirect()
@@ -39,13 +53,14 @@ class OffersController extends Controller
 
     public function edit(Offer $offer): Response
     {
-        if (is_null($offer->view)) {
+        // if (is_null($offer->view)) {
             $json = json_decode(file_get_contents(base_path('resources/view-example.json')), true);
             $offer->view = $json;
-        }
+            $offer->save();
+        // }
 
         return Inertia::render('offers/edit', [
-            'offer' => new OfferResource($offer->load('variants')),
+            'offer' => new OfferResource($offer->load('slots')),
             'showNameDialog' => session('showNameDialog', false),
         ]);
     }
@@ -60,7 +75,6 @@ class OffersController extends Controller
             'view' => ['nullable', 'array'],
             'product_image_id' => ['nullable'],
         ]);
-        logger()->info('view: ', $validated);
 
         $offer->update($validated);
 
@@ -69,121 +83,132 @@ class OffersController extends Controller
 
     public function destroy(Offer $offer): \Illuminate\Http\RedirectResponse
     {
-        try {
-            // First delete all variants associated with this offer
-            $offer->variants()->delete();
-            
-            // Then delete the offer itself
-            $offer->delete();
+        $offer->slots()->delete();
+        $offer->delete();
 
-            return redirect()->route('offers.index')->with('success', 'Offer and all associated data deleted successfully');
-        } catch (\Exception $e) {
-            return back()->with('error', 'Failed to delete offer: ' . $e->getMessage());
-        }
+        return redirect()->route('offers.index')->with('success', 'Offer and all associated data deleted successfully');
     }
 
     public function pricing(Offer $offer): Response
     {
+        // $this->authorizeOrganizationAccess($offer);
+
+        $offer->load('slots.defaultPrice');
+
+        $products = Product::query()
+            ->where('organization_id', $offer->organization_id)
+            ->with(['prices' => function ($query) {
+                 $query->active();
+            }])
+            ->get();
+
         return Inertia::render('offers/pricing', [
-            'offer' => new OfferResource($offer->load('variants')),
+            'offer' => new OfferResource($offer->load(['slots.defaultPrice'])),
+            'products' => ProductResource::collection($products),
         ]);
     }
 
-    public function storeVariant(Request $request, Offer $offer): \Illuminate\Http\RedirectResponse
+    public function storeSlot(OfferSlotStoreRequest $request, Offer $offer): \Illuminate\Http\RedirectResponse
     {
-        try {
-            $validated = $request->validate([
-                'name' => ['required', 'string', 'max:255'],
-                'description' => ['nullable', 'string'],
-                'type' => ['required', 'string', 'in:one_time,subscription'],
-                'pricing_model' => ['required', 'string', 'in:standard,graduated,volume,package'],
-                'amount' => ['nullable', 'integer', 'min:0'],
-                'currency' => ['required', 'string', 'size:3'],
-                'properties' => ['required_if:pricing_model,graduated,volume,package'],
-                'media_id' => ['nullable'],
-            ]);
+        $validated = $request->validated();
+        $validated['offer_id'] = $offer->id;
 
-            $variant = $offer->variants()->create($validated);
+        Slot::create($validated);
 
-            return back()->with('success', "Variant '{$variant->name}' created successfully");
-        } catch (\Exception $e) {
-            return back()->with('error', 'Failed to create variant: ' . $e->getMessage());
-        }
+        return redirect()->route('offers.pricing', $offer)->with('success', 'Slot created successfully.');
     }
 
-    public function updateVariant(Request $request, Offer $offer, OfferVariant $variant): \Illuminate\Http\RedirectResponse
+    public function updateSlot(OfferSlotUpdateRequest $request, Offer $offer, Slot $slot): \Illuminate\Http\RedirectResponse
     {
-        try {
-            $validated = $request->validate([
-                'name' => ['required', 'string', 'max:255'],
-                'description' => ['nullable', 'string'],
-                'type' => ['required', 'string', 'in:one_time,subscription'],
-                'pricing_model' => ['required', 'string', 'in:standard,graduated,volume,package'],
-                'amount' => ['nullable', 'integer', 'min:0'],
-                'currency' => ['required', 'string', 'size:3'],
-                'properties' => ['nullable', 'array'],
-                'media_id' => ['nullable'],
-            ]);
+        // Authorization is handled by OfferSlotUpdateRequest
+        $validated = $request->validated();
+        // Update the slot with validated data
+        $slot->update($validated);
 
+        // Redirect back to the pricing page
+        return redirect()->route('offers.pricing', $offer)->with('success', 'Slot updated successfully.');
+    }
+
+    public function storeVariant(StoreOfferVariantRequest $request, Offer $offer): \Illuminate\Http\RedirectResponse
+    {
+        $validated = $request->validated();
+        $priceIds = $validated['price_ids'];
+        unset($validated['price_ids']);
+
+        $validated['offer_id'] = $offer->id;
+
+        $variant = DB::transaction(function () use ($validated, $priceIds) {
+            /* @var OfferVariant $newVariant */
+            $newVariant = OfferVariant::create($validated);
+            $newVariant->prices()->sync($priceIds);
+
+            return $newVariant;
+        });
+
+        return back()->with('success', "Variant '{$variant->name}' created successfully");
+    }
+
+    public function updateVariant(UpdateOfferVariantRequest $request, Offer $offer, OfferVariant $variant): \Illuminate\Http\RedirectResponse
+    {
+        $validated = $request->validated();
+        $priceIds = $validated['price_ids'];
+        unset($validated['price_ids']);
+
+        DB::transaction(function () use ($variant, $validated, $priceIds) {
             $variant->update($validated);
+            $variant->prices()->sync($priceIds);
+        });
 
-            return back()->with('success', "Variant '{$variant->name}' updated successfully");
-        } catch (\Exception $e) {
-            return back()->with('error', 'Failed to update variant: ' . $e->getMessage());
-        }
+        return back()->with('success', "Variant '{$variant->name}' updated successfully");
     }
 
     public function destroyVariant(Offer $offer, OfferVariant $variant): \Illuminate\Http\RedirectResponse
     {
-        try {
-            $name = $variant->name;
-            $variant->delete();
+        $name = $variant->name;
+        $variant->delete();
 
-            return back()->with('success', "Variant '{$name}' deleted successfully");
-        } catch (\Exception $e) {
-            return back()->with('error', 'Failed to delete variant: ' . $e->getMessage());
-        }
+        return back()->with('success', "Variant '{$name}' deleted successfully");
     }
 
     public function integrate(Offer $offer): Response
     {
         return Inertia::render('offers/integrate', [
-            'offer' => new OfferResource($offer->load('variants')),
+            'offer' => new OfferResource($offer->load('slots')),
         ]);
     }
 
     public function sharing(Offer $offer): Response
     {
         return Inertia::render('offers/sharing', [
-            'offer' => new OfferResource($offer->load('variants')),
+            'offer' => new OfferResource($offer->load('slots')),
         ]);
     }
 
     public function settings(Offer $offer): Response
     {
         return Inertia::render('offers/settings', [
-            'offer' => new OfferResource($offer->load('variants')),
+            'offer' => new OfferResource($offer->load('slots')),
         ]);
     }
 
     public function settingsCustomization(Offer $offer): Response
     {
         return Inertia::render('offers/settings/customization', [
-            'offer' => new OfferResource($offer->load('variants')),
+            'offer' => new OfferResource($offer->load('slots')),
         ]);
     }
 
     public function settingsNotifications(Offer $offer): Response
     {
         return Inertia::render('offers/settings/notifications', [
-            'offer' => new OfferResource($offer->load('variants')),
+            'offer' => new OfferResource($offer->load('slots')),
         ]);
     }
 
     public function settingsAccess(Offer $offer): Response
     {
         return Inertia::render('offers/settings/access', [
-            'offer' => new OfferResource($offer->load('variants')),
+            'offer' => new OfferResource($offer->load('slots')),
         ]);
     }
 
@@ -194,5 +219,12 @@ class OffersController extends Controller
         ]);
 
         return back()->with('success', 'Offer has been published successfully.');
+    }
+
+    private function authorizeOrganizationAccess(Offer $offer): void
+    {
+        if ($offer->organization_id !== Auth::user()->currentOrganization->id) {
+            abort(403);
+        }
     }
 }

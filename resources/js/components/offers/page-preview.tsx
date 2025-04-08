@@ -3,157 +3,21 @@ import { cn } from '@/lib/utils';
 import LayoutPreview from './layout-preview';
 import BlockEditor from './block-editor';
 import { useState, useRef, useEffect } from 'react';
-import { X, Save } from 'lucide-react';
+import { X, Save, Type, Calendar, DollarSign, Mail, Lock, Link, ChevronDown, Circle, CheckSquare, ToggleLeft, List, Heading1, Square as ButtonIcon, Image as ImageIcon, AtSign, User, Phone, MapPin, Package, CreditCard } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
-import { DndProvider, useDrop } from 'react-dnd';
+import { DndProvider, useDrop, useDrag } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
+import { getBlockComponent } from '../blocks/block-registry';
 
-// Define block types with proper type definitions
-export interface BlockType {
-  id: string;
-  name: string;
-  icon: React.ReactNode;
-  create: () => Block;
+function createBlock(blockType: BlockType) {
+    console.log('xyz', blockType)
+    return {
+        id: uuidv4(),
+        type: blockType.id,
+        object: blockType.object,
+        // create from all the blocks
+    }
 }
-
-export const BLOCK_TYPES: Record<string, BlockType> = {
-  TEXT: {
-    id: 'text',
-    name: 'Text',
-    icon: null,
-    create: (): Block => ({
-      id: uuidv4(),
-      type: 'p',
-      object: 'paragraph',
-      text: [{
-        href: null,
-        props: {
-          link: null,
-          content: 'New text block'
-        },
-        object: 'text',
-        plain_text: 'New text block',
-        annotations: {}
-      }]
-    })
-  },
-  HEADING: {
-    id: 'heading',
-    name: 'Heading',
-    icon: null,
-    create: (): Block => ({
-      id: uuidv4(),
-      type: 'h3',
-      object: 'heading',
-      text: [{
-        href: null,
-        props: {
-          link: null,
-          content: 'New heading'
-        },
-        object: 'text',
-        plain_text: 'New heading',
-        annotations: { bold: true }
-      }]
-    })
-  },
-  BUTTON: {
-    id: 'button',
-    name: 'Button',
-    icon: null,
-    create: (): Block => ({
-      id: uuidv4(),
-      type: 'button',
-      object: 'button',
-      style: {
-        backgroundColor: '#0C4A6E',
-        color: '#FFFFFF',
-        width: '100%'
-      },
-      text: [{
-        href: null,
-        props: {
-          link: null,
-          content: 'Click me'
-        },
-        object: 'text',
-        plain_text: 'Click me',
-        annotations: {}
-      }]
-    })
-  },
-  IMAGE: {
-    id: 'image',
-    name: 'Image',
-    icon: null,
-    create: (): Block => ({
-      id: uuidv4(),
-      type: 'image',
-      object: 'image',
-      props: {
-        src: 'https://via.placeholder.com/400x300',
-        alt: 'Placeholder image',
-        caption: '',
-        mediaId: null
-      }
-    })
-  },
-  PAYMENT: {
-    id: 'payment',
-    name: 'Payment',
-    icon: null,
-    create: (): Block => ({
-      id: uuidv4(),
-      type: 'StripeElements@v1',
-      object: 'payment',
-      props: {}
-    })
-  },
-  LIST: {
-    id: 'list',
-    name: 'List',
-    icon: null,
-    create: (): Block => ({
-      id: uuidv4(),
-      type: 'dl',
-      object: 'list',
-      children: [{
-        type: 'dl-group',
-        object: 'list-group',
-        children: [
-          {
-            type: 'dt',
-            object: 'list-term',
-            text: [{
-              href: null,
-              props: {
-                link: null,
-                content: 'Icon'
-              },
-              object: 'text'
-            }]
-          },
-          {
-            type: 'dd',
-            object: 'list-description',
-            children: [{
-              type: 'p',
-              object: 'paragraph',
-              text: [{
-                href: null,
-                props: {
-                  link: null,
-                  content: 'List item'
-                },
-                object: 'text'
-              }]
-            }]
-          }
-        ]
-      }]
-    })
-  }
-};
 
 // DND type constants
 export const DRAG_TYPES = {
@@ -172,13 +36,14 @@ export const BlockDropZone = ({ sectionName, index, onDropBlock }: BlockDropZone
   const [{ isOver, canDrop }, drop] = useDrop(() => ({
     accept: DRAG_TYPES.NEW_BLOCK,
     drop: (item: { blockType: BlockType }) => {
+      console.log('Dropping block:', item.blockType);
       onDropBlock(sectionName, item.blockType, index);
     },
     collect: monitor => ({
       isOver: !!monitor.isOver(),
       canDrop: !!monitor.canDrop()
     })
-  }));
+  }), [sectionName, index, onDropBlock]);
 
   const isActive = isOver && canDrop;
 
@@ -296,82 +161,32 @@ export default function PagePreview({ page, onUpdatePage }: PreviewProps) {
         setLivePreviewPage(page);
     }, [page]);
     
-    // Log when blocks are selected to help debug
-    useEffect(() => {
-        if (selectedBlockId) {
-            console.log('Selected block ID:', selectedBlockId);
-        }
-    }, [selectedBlockId]);
-    
     const selectedBlock = selectedBlockId ? findBlockInPage(livePreviewPage, selectedBlockId) : null;
     
     useEffect(() => {
         console.log('Current selected block:', selectedBlock);
     }, [selectedBlock]);
 
-    // Handle block selection
-    const handleSelectBlock = (blockId: string) => {
-        console.log('Block selected with ID:', blockId);
-        
-        // Always force a selection change, even if selecting the same block
-        setSelectedBlockId(null);
-        
-        // Use setTimeout to ensure the state is updated before re-selecting
-        setTimeout(() => {
-            setSelectedBlockId(blockId);
-        }, 10);
-    };
-
     const handleBlockUpdate = (updatedBlock: Block) => {
         if (!updatedBlock.id) return;
         
-        console.log('Updating block:', updatedBlock.id, updatedBlock.type);
-        
         // Apply changes to the live preview immediately
         const updatedPreviewPage = JSON.parse(JSON.stringify(livePreviewPage));
+        updateBlockInPage(updatedPreviewPage, updatedBlock);
         
-        const sections = ['promo', 'title', 'action', 'content'] as const;
-        let updated = false;
-        
-        for (const sectionName of sections) {
-            const section = updatedPreviewPage.view[sectionName];
-            if (!section) continue;
-            
-            const blockIndex = section.blocks.findIndex((b: Block) => b.id === updatedBlock.id);
-            if (blockIndex >= 0) {
-                section.blocks[blockIndex] = updatedBlock;
-                updated = true;
-                console.log(`Updated block in section ${sectionName} at index ${blockIndex}`);
-                break;
-            }
-        }
-        
-        if (updated) {
-            // Update live preview
-            setLivePreviewPage(updatedPreviewPage);
-            
-            // Store the pending changes for later save
-            setPendingChanges(updatedBlock);
-        } else {
-            console.error('Failed to update block in preview');
-        }
+        // Update live preview
+        setLivePreviewPage(updatedPreviewPage);
+        setPendingChanges(updatedBlock);
     };
     
     const handleSaveChanges = () => {
         if (!pendingChanges || !pendingChanges.id || !onUpdatePage) return;
-        
-        console.log('Saving changes for block:', pendingChanges.id);
-        
-        // Apply the pending changes to the actual page data
         onUpdatePage(livePreviewPage);
         setPendingChanges(null);
     };
     
     const handleAddBlock = (section: keyof typeof page.view, blockType: BlockType, index: number = -1) => {
         if (!onUpdatePage) return;
-        
-        // Create the new block
-        const newBlock = blockType.create();
         
         // Create a deep copy of the page
         const updatedPage = JSON.parse(JSON.stringify(livePreviewPage));
@@ -380,16 +195,20 @@ export default function PagePreview({ page, onUpdatePage }: PreviewProps) {
         if (!updatedPage.view[section]) {
             updatedPage.view[section] = { blocks: [] };
         }
+
+        console.log('Adding block:', blockType, 'to section:', section, 'at index:', index);
+        
+        // Create the new block
+        const newBlock = createBlock(blockType);
         
         // Add the new block to the section at the specified index
         if (index >= 0) {
             updatedPage.view[section].blocks.splice(index, 0, newBlock);
         } else {
-            // Add to the end if no index specified
             updatedPage.view[section].blocks.push(newBlock);
         }
         
-        // Update local live preview first
+        // Update live preview first
         setLivePreviewPage(updatedPage);
         
         // Then update the actual page
@@ -399,6 +218,33 @@ export default function PagePreview({ page, onUpdatePage }: PreviewProps) {
         if (newBlock.id) {
             setSelectedBlockId(newBlock.id);
         }
+    };
+
+    const handleMoveBlock = (fromSection: keyof PageView, fromIndex: number, toSection: keyof PageView, toIndex: number) => {
+        if (!onUpdatePage) return;
+
+        // Create a deep copy of the page
+        const updatedPage = JSON.parse(JSON.stringify(livePreviewPage));
+
+        // Get the source section
+        const sourceSection = updatedPage.view[fromSection];
+        if (!sourceSection || !sourceSection.blocks) return;
+
+        // Get the target section
+        const targetSection = updatedPage.view[toSection];
+        if (!targetSection || !targetSection.blocks) return;
+
+        // Remove the block from the source section
+        const [movedBlock] = sourceSection.blocks.splice(fromIndex, 1);
+
+        // Add the block to the target section
+        targetSection.blocks.splice(toIndex, 0, movedBlock);
+
+        // Update live preview first
+        setLivePreviewPage(updatedPage);
+
+        // Then update the actual page
+        onUpdatePage(updatedPage);
     };
 
     return (
@@ -415,8 +261,9 @@ export default function PagePreview({ page, onUpdatePage }: PreviewProps) {
                             <LayoutPreview 
                                 page={livePreviewPage} 
                                 selectedBlockId={selectedBlockId}
-                                onSelectBlock={handleSelectBlock}
-                                onAddBlock={handleAddBlock as any}
+                                onSelectBlock={setSelectedBlockId}
+                                onAddBlock={handleAddBlock}
+                                onMoveBlock={handleMoveBlock}
                             />
                         </div>
                     </div>
@@ -539,4 +386,403 @@ export function styleToClassName(style: Record<string, string>): string {
     }
     
     return classNames.join(' ');
+}
+
+// Add preview renderers for each field type
+const FieldPreview = ({ block }: { block: Block }) => {
+  const { type, props } = block;
+  
+  switch (type) {
+    case 'text_field':
+      return (
+        <div className="space-y-2">
+          <label className="block text-sm font-medium text-gray-700">
+            {props.label}
+            {props.required && <span className="text-red-500 ml-1">*</span>}
+          </label>
+          <input
+            type="text"
+            className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+            placeholder={props.placeholder}
+            disabled
+          />
+          {props.helpText && (
+            <p className="text-sm text-gray-500">{props.helpText}</p>
+          )}
+        </div>
+      );
+      
+    case 'textarea':
+      return (
+        <div className="space-y-2">
+          <label className="block text-sm font-medium text-gray-700">
+            {props.label}
+            {props.required && <span className="text-red-500 ml-1">*</span>}
+          </label>
+          <textarea
+            className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+            rows={props.rows}
+            disabled
+          />
+          {props.helpText && (
+            <p className="text-sm text-gray-500">{props.helpText}</p>
+          )}
+        </div>
+      );
+      
+    case 'date_field':
+      return (
+        <div className="space-y-2">
+          <label className="block text-sm font-medium text-gray-700">
+            {props.label}
+            {props.required && <span className="text-red-500 ml-1">*</span>}
+          </label>
+          <input
+            type="date"
+            className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+            disabled
+          />
+          {props.helpText && (
+            <p className="text-sm text-gray-500">{props.helpText}</p>
+          )}
+        </div>
+      );
+      
+    case 'currency_field':
+      return (
+        <div className="space-y-2">
+          <label className="block text-sm font-medium text-gray-700">
+            {props.label}
+            {props.required && <span className="text-red-500 ml-1">*</span>}
+          </label>
+          <div className="relative">
+            <span className="absolute left-3 top-2 text-gray-500">{props.currency}</span>
+            <input
+              type="number"
+              className="w-full rounded-md border border-gray-300 pl-12 pr-3 py-2 text-sm"
+              disabled
+            />
+          </div>
+          {props.helpText && (
+            <p className="text-sm text-gray-500">{props.helpText}</p>
+          )}
+        </div>
+      );
+      
+    case 'email_field':
+      return (
+        <div className="space-y-2">
+          <label className="block text-sm font-medium text-gray-700">
+            {props.label}
+            {props.required && <span className="text-red-500 ml-1">*</span>}
+          </label>
+          <input
+            type="email"
+            className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+            placeholder={props.placeholder}
+            disabled
+          />
+          {props.helpText && (
+            <p className="text-sm text-gray-500">{props.helpText}</p>
+          )}
+        </div>
+      );
+      
+    case 'password_field':
+      return (
+        <div className="space-y-2">
+          <label className="block text-sm font-medium text-gray-700">
+            {props.label}
+            {props.required && <span className="text-red-500 ml-1">*</span>}
+          </label>
+          <input
+            type="password"
+            className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+            disabled
+          />
+          {props.showStrengthMeter && (
+            <div className="h-1 bg-gray-200 rounded-full">
+              <div className="h-full w-0 bg-gray-400 rounded-full" />
+            </div>
+          )}
+          {props.helpText && (
+            <p className="text-sm text-gray-500">{props.helpText}</p>
+          )}
+        </div>
+      );
+      
+    case 'url_field':
+      return (
+        <div className="space-y-2">
+          <label className="block text-sm font-medium text-gray-700">
+            {props.label}
+            {props.required && <span className="text-red-500 ml-1">*</span>}
+          </label>
+          <input
+            type="url"
+            className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+            placeholder={props.placeholder}
+            disabled
+          />
+          {props.helpText && (
+            <p className="text-sm text-gray-500">{props.helpText}</p>
+          )}
+        </div>
+      );
+      
+    case 'select_field':
+      return (
+        <div className="space-y-2">
+          <label className="block text-sm font-medium text-gray-700">
+            {props.label}
+            {props.required && <span className="text-red-500 ml-1">*</span>}
+          </label>
+          <select className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm" disabled>
+            <option value="">Select an option</option>
+            {props.options.map((option: { value: string; label: string }) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+          {props.helpText && (
+            <p className="text-sm text-gray-500">{props.helpText}</p>
+          )}
+        </div>
+      );
+      
+    case 'multiselect_field':
+      return (
+        <div className="space-y-2">
+          <label className="block text-sm font-medium text-gray-700">
+            {props.label}
+            {props.required && <span className="text-red-500 ml-1">*</span>}
+          </label>
+          <select className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm" multiple disabled>
+            {props.options.map((option: { value: string; label: string }) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+          {props.helpText && (
+            <p className="text-sm text-gray-500">{props.helpText}</p>
+          )}
+        </div>
+      );
+      
+    case 'radio_group':
+      return (
+        <div className="space-y-2">
+          <label className="block text-sm font-medium text-gray-700">
+            {props.label}
+            {props.required && <span className="text-red-500 ml-1">*</span>}
+          </label>
+          <div className={`space-y-2 ${props.layout === 'horizontal' ? 'flex gap-4' : ''}`}>
+            {props.options.map((option: { value: string; label: string }) => (
+              <label key={option.value} className="flex items-center">
+                <input
+                  type="radio"
+                  name={props.name}
+                  value={option.value}
+                  className="mr-2"
+                  disabled
+                />
+                <span className="text-sm">{option.label}</span>
+              </label>
+            ))}
+          </div>
+          {props.helpText && (
+            <p className="text-sm text-gray-500">{props.helpText}</p>
+          )}
+        </div>
+      );
+      
+    case 'checkbox_group':
+      return (
+        <div className="space-y-2">
+          <label className="block text-sm font-medium text-gray-700">
+            {props.label}
+            {props.required && <span className="text-red-500 ml-1">*</span>}
+          </label>
+          <div className={`space-y-2 ${props.layout === 'horizontal' ? 'flex gap-4' : ''}`}>
+            {props.options.map((option: { value: string; label: string }) => (
+              <label key={option.value} className="flex items-center">
+                <input
+                  type="checkbox"
+                  name={props.name}
+                  value={option.value}
+                  className="mr-2"
+                  disabled
+                />
+                <span className="text-sm">{option.label}</span>
+              </label>
+            ))}
+          </div>
+          {props.helpText && (
+            <p className="text-sm text-gray-500">{props.helpText}</p>
+          )}
+        </div>
+      );
+      
+    case 'switch_field':
+      return (
+        <div className="space-y-2">
+          <label className="block text-sm font-medium text-gray-700">
+            {props.label}
+            {props.required && <span className="text-red-500 ml-1">*</span>}
+          </label>
+          <div className="flex items-center">
+            <div className="relative inline-flex h-6 w-11 items-center rounded-full bg-gray-200">
+              <div className="h-4 w-4 transform rounded-full bg-white transition-transform" />
+            </div>
+            <span className="ml-2 text-sm text-gray-500">Toggle {props.defaultChecked ? 'On' : 'Off'}</span>
+          </div>
+          {props.helpText && (
+            <p className="text-sm text-gray-500">{props.helpText}</p>
+          )}
+        </div>
+      );
+      
+    default:
+      return null;
+  }
+};
+
+// Add this function to render legacy blocks
+const renderLegacyBlock = (block: Block) => {
+  switch (block.type) {
+    case 'p':
+    case 'h1':
+    case 'h2':
+    case 'h3':
+    case 'h4':
+    case 'h5':
+    case 'h6':
+      const className = {
+        p: "text-base",
+        h1: "text-3xl font-bold",
+        h2: "text-2xl font-bold",
+        h3: "text-xl font-bold",
+        h4: "text-lg font-bold",
+        h5: "text-base font-bold",
+        h6: "text-sm font-bold"
+      }[block.type];
+      
+      return (
+        <div className={cn(className, block.style && styleToClassName(block.style))}>
+          {block.text?.map((content, i) => (
+            <span key={i}>{content.props.content}</span>
+          ))}
+        </div>
+      );
+    case 'button':
+      return (
+        <button 
+          type="button"
+          className={cn(
+            "w-full px-4 py-3 text-base font-medium rounded-md",
+            "bg-primary text-primary-foreground hover:bg-primary/90 transition-colors",
+            block.style && styleToClassName(block.style)
+          )}
+        >
+          {block.text?.map((content, i) => (
+            <span key={i}>{content.props.content}</span>
+          ))}
+        </button>
+      );
+    case 'dl':
+      return <DetailList block={block} />;
+    case 'image':
+      return <ImageBlock block={block} />;
+    case 'StripeElements@v1':
+      return <PaymentBlock block={block} />;
+    default:
+      if (block.object === 'field') {
+        return <InputBlock block={block} />;
+      }
+      return (
+        <div className="p-4 border border-gray-200 rounded bg-gray-50">
+          <p className="text-sm text-gray-500">Unsupported block type: {block.type}</p>
+        </div>
+      );
+  }
+};
+
+// Update the BlockRenderer component to handle both new and legacy blocks
+const BlockRenderer = ({ block }: { block: Block }) => {
+  // First try to get a registered block component
+  const BlockComponent = getBlockComponent(block.type);
+  if (BlockComponent) {
+    return <BlockComponent.Renderer block={block} isEditing={true} />;
+  }
+
+  // Fall back to legacy rendering if no registered component
+  return renderLegacyBlock(block);
+};
+
+// Add this component to make blocks draggable
+interface DraggableBlockProps {
+    blockType: BlockType;
+    children: React.ReactNode;
+}
+
+const DraggableBlock = ({ blockType, children }: DraggableBlockProps) => {
+    const [{ isDragging }, drag] = useDrag(() => ({
+        type: DRAG_TYPES.NEW_BLOCK,
+        item: { blockType },
+        collect: monitor => ({
+            isDragging: !!monitor.isDragging()
+        })
+    }));
+
+    return (
+        <div
+            ref={drag}
+            className={cn(
+                "cursor-grab active:cursor-grabbing",
+                isDragging && "opacity-50"
+            )}
+        >
+            {children}
+        </div>
+    );
+};
+
+// Update the block type buttons to use DraggableBlock
+const BlockTypeButton = ({ blockType }: { blockType: BlockType }) => {
+    return (
+        <DraggableBlock blockType={blockType}>
+            <button
+                type="button"
+                className={cn(
+                    "flex items-center gap-2 w-full p-2 rounded-md text-sm",
+                    "hover:bg-muted transition-colors"
+                )}
+            >
+                {blockType.icon}
+                <span>{blockType.name}</span>
+            </button>
+        </DraggableBlock>
+    );
+};
+
+// Helper function to update a block in the page
+function updateBlockInPage(page: Page, updatedBlock: Block): boolean {
+    if (!page || !page.view || !updatedBlock.id) return false;
+
+    const sections = ['title', 'content', 'action', 'promo'] as const;
+    
+    for (const sectionName of sections) {
+        const section = page.view[sectionName];
+        if (!section || !section.blocks) continue;
+        
+        const blockIndex = section.blocks.findIndex(b => b.id === updatedBlock.id);
+        if (blockIndex >= 0) {
+            section.blocks[blockIndex] = updatedBlock;
+            return true;
+        }
+    }
+    
+    return false;
 } 

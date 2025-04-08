@@ -25,8 +25,15 @@ const breadcrumbs: BreadcrumbItem[] = [
 ];
 
 export default function Integrate({ offer }: Props) {
+
+    // offer -> flows?
+    // flows->nodes?
+
+    // list all workflows for this particular offer
+    //
+
     return (
-        <AppOfferLayout offer={offer} breadcrumbs={breadcrumbs}>
+        <AppOfferLayout offer={offer} >
             <Head title={`${offer.name || 'Untitled Offer'} - Integration`} />
             <div>
                 <h1 className="text-2xl font-semibold">Integration for {offer.name || 'Untitled Offer'}</h1>

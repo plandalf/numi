@@ -14,23 +14,16 @@ return new class extends Migration
         Schema::create('store_offers', function (Blueprint $table) {
             $table->id();
             $table->bigInteger('organization_id');
+            $table->bigInteger('product_image_id')->nullable();
 
-            
             // Product Information
-            $table->foreignId('product_image_id')->nullable();
             $table->string('name')->nullable();
             $table->text('description')->nullable();
-            $table->string('status', 16)->default('draft'); // draft, published, archived
+            $table->string('status', 16)->default('draft');
 
-            // Product Settings
-            $table->string('default_currency', 3)->default('USD');
-            $table->boolean('is_subscription_enabled')->default(false);
-            $table->boolean('is_one_time_enabled')->default(true);
-            
             // Additional Configuration
-            $table->jsonb('view')->nullable(); // UI/display settings
-            $table->jsonb('properties')->nullable(); // Additional product properties
-            $table->text('transaction_webhook_url')->nullable();
+            $table->jsonb('view')->nullable();
+            $table->jsonb('properties')->nullable();
 
             // Timestamps and Soft Delete
             $table->timestamps();
@@ -39,6 +32,18 @@ return new class extends Migration
             // Indexes
             $table->index(['organization_id', 'status']);
         });
+
+        Schema::create('store_offer_slots', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('offer_id')->constrained('store_offers')->cascadeOnDelete();
+            $table->string('key');
+            $table->string('name');
+            $table->foreignId('default_price_id')->nullable();
+            $table->boolean('is_required')->default(false);
+            $table->integer('sort_order')->default(0);
+            $table->timestamps();
+            $table->softDeletes();
+        });
     }
 
     /**
@@ -46,6 +51,7 @@ return new class extends Migration
      */
     public function down(): void
     {
+        Schema::dropIfExists('store_offer_slots');
         Schema::dropIfExists('store_offers');
     }
 };

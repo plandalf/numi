@@ -1,6 +1,6 @@
 export interface Offer {
     id: number;
-    name: string | null;
+    name: string;
     description: string | null;
     product_image_id: number | null;
     product_image: {
@@ -12,40 +12,82 @@ export interface Offer {
     is_subscription_enabled: boolean;
     is_one_time_enabled: boolean;
     organization_id: number;
-    view: Record<string, any> | null;
+    view: {
+        first_page: string;
+        pages: Record<string, Page>;
+    };
     properties: Record<string, any> | null;
     transaction_webhook_url: string | null;
-    variants: OfferVariant[];
+    slots: OfferSlot[];
     created_at: string;
     updated_at: string;
+    
+}
+
+export interface OfferSlot {
+    id: number;
+    name: string;
+    key: string;
+    default_price_id: number | null;
+    is_required: boolean;
+    sort_order: number;
+    default_price: Price | null;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface Price {
+    id: number;
+    product_id: number; 
+    organization_id: number; 
+    parent_list_price_id?: number | null; 
+    scope: 'list' | 'custom'; 
+    type: 'one_time' | 'recurring' | 'graduated' | 'volume' | 'package';
+    amount: number;
+    currency: string;
+    properties?: Record<string, any> | null; 
+    name?: string | null; 
+    lookup_key?: string | null; 
+    renew_interval?: 'day' | 'week' | 'month' | 'year' | null; 
+    billing_anchor?: string | null; 
+    recurring_interval_count?: number | null; 
+    cancel_after_cycles?: number | null; 
+    gateway_provider?: string | null; 
+    gateway_price_id?: string | null; 
+    is_active: boolean; 
+    archived_at?: string | null; 
+    created_at?: string; 
+    updated_at?: string; 
+}
+
+export interface Product {
+    id: number;
+    name: string;
+    lookup_key: string;
+    description?: string | null;
+    currency?: string;
+    media_id?: number | null;
+    media?: Media | null;
+    is_active?: boolean;
+    prices?: Price[];
+    created_at?: string;
+    updated_at?: string;
+    gateway_provider?: string | null;
+    gateway_product_id?: string | null;
+    organization_id?: number;
 }
 
 export interface OfferVariant {
     id: number;
     offer_id: number;
+    product_id: number | null;
+    product?: Product | null;
     name: string;
     description: string | null;
-    type: 'one_time' | 'subscription';
-    pricing_model: 'standard' | 'graduated' | 'volume' | 'package';
-    amount: number | null;
-    currency: string;
     media_id: number | null;
-    media: {
-        id: number;
-        url: string;
-    } | null;
-    properties: {
-        tiers?: Array<{
-            from: number;
-            to: number | null;
-            unit_amount: number;
-            flat_amount?: number;
-        }>;
-        package?: {
-            size: number;
-            unit_amount: number;
-        };
-    } | null;
+    media: Media | null;
+    prices: Price[];
+    currency?: string;
     created_at: string;
     updated_at: string;
 }
@@ -88,36 +130,98 @@ export type IconContent = {
 
 export type BlockContent = TextContent | IconContent;
 
-export type Block = {
-    id?: string;
-    text?: BlockContent[];
-    type: string;
-    props?: Record<string, any>;
-    style?: Record<string, string>;
-    object: string;
-    children?: Block[];
-};
+export interface Media {
+    id: number;
+    url: string;
+}
 
-export type ViewSection = {
+export interface BlockProps {
+    name?: string;
+    label?: string;
+    placeholder?: string;
+    required?: boolean;
+    helpText?: string;
+    minLength?: number;
+    maxLength?: number;
+    pattern?: string;
+    patternMessage?: string;
+    rows?: number;
+    minDate?: string;
+    maxDate?: string;
+    currency?: string;
+    minAmount?: number;
+    maxAmount?: number;
+    showStrengthMeter?: boolean;
+    defaultChecked?: boolean;
+    layout?: 'horizontal' | 'vertical';
+    options?: Array<{
+        value: string;
+        label: string;
+    }>;
+    mediaId?: number | null;
+    src?: string;
+    alt?: string;
+    caption?: string;
+    content?: string;
+    icon?: string;
+    variant?: string;
+
+    object?: 'field' | 'block';
+}
+
+export interface Block {
+    id: string;
+    type: string;
+    object: 'block' | 'field';
+    content?: {
+        value?: string;
+        is_default_checked?: boolean;
+        [key: string]: any;
+    };
+    interaction?: {
+        isDisabled?: boolean;
+        [key: string]: any;
+    };
+    appearance?: {
+        fontSize?: string;
+        backgroundColor?: string;
+        color?: string;
+        textColor?: string;
+        borderColor?: string;
+        [key: string]: string | undefined;
+    };
+    validation?: {
+        isRequired?: boolean;
+        pattern?: string;
+        patternMessage?: string;
+        minLength?: number;
+        maxLength?: number;
+        [key: string]: any;
+    };
+    props?: BlockProps;
+    text?: Array<{
+        object: 'text' | 'icon';
+        props: BlockProps;
+        annotations?: Record<string, boolean>;
+        style?: Record<string, string>;
+    }>;
+    children?: Block[];
+}
+
+export interface ViewSection {
     style?: Record<string, string>;
     blocks: Block[];
-};
+}
 
-export interface PageView {
-    title?: ViewSection;
-    content?: ViewSection;
-    action?: ViewSection;
-    promo?: ViewSection;
-    branches?: Branch[];
-    next_page?: string;
-    form?: {
-        fields: FormField[];
-    };
+export interface BranchCondition {
+    field: string;
+    operator: 'eq' | 'ne' | 'contains' | 'not_contains' | 'gt' | 'lt' | 'gte' | 'lte';
+    value: string | number | boolean;
 }
 
 export interface Branch {
-    condition?: string;
-    next_page: string;
+    conditions: BranchCondition[];
+    target: string;
 }
 
 export interface FormField {
@@ -145,25 +249,31 @@ export type PageNextPage = {
     default_next_page: string | null;
 };
 
-export type PageType = 'page' | 'entry' | 'ending';
+export type PageType = 'page' | 'entry' | 'payment' | 'ending';
 
-export interface BranchCondition {
-    field: string;
-    operator: string;
-    value: string;
-}
+export type PageSection = {
+    blocks: Block[];
+};
+
+export type FormSection = {
+    fields: FormField[];
+};
+
+export type PageView = {
+    content?: PageSection;
+    promo?: PageSection;
+    title?: PageSection;
+    action?: PageSection;
+    form?: FormSection;
+    [key: string]: PageSection | FormSection | undefined;
+};
 
 export interface Page {
     id: string;
     name: string;
     type: PageType;
     position: { x: number; y: number };
-    view: {
-        promo: { blocks: Block[] };
-        title: { blocks: Block[] };
-        action: { blocks: Block[] };
-        content: { blocks: Block[] };
-    };
+    view: PageView;
     layout: { sm: string };
     provides: string[];
     next_page: {
@@ -175,8 +285,6 @@ export interface Page {
     };
 }
 
-export type OfferView = {
-    id: string;
-    pages: Record<string, Page>;
-    first_page: string;
-}; 
+export interface OfferConfiguration extends Offer {
+    variants?: OfferVariant[];
+} 

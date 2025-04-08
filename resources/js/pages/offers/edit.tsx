@@ -27,8 +27,9 @@ import { ReactFlowProvider } from '@xyflow/react';
 import update from "immutability-helper";
 import { DndProvider, useDrag } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
-import { BLOCK_TYPES, DRAG_TYPES } from '@/components/offers/page-preview';
+import { DRAG_TYPES } from '@/components/offers/page-preview';
 import { GripVertical, Type, SquareStack, Image, CreditCard, List } from 'lucide-react';
+import { BLOCK_TYPES } from '@/components/blocks/block-registry';
 
 interface Offer {
     id: number;
@@ -404,9 +405,9 @@ export default function Edit({ offer, showNameDialog }: Props) {
             </Dialog>
 
             <DndProvider backend={HTML5Backend}>
-                <div className="flex h-full flex-grow">
+                <div className="flex flex-grow border-dashed border-1 border-red-500 h-[calc(100vh-60px)]">
                     {/* Sidebar - Fixed width, no shrink */}
-                    <div className="w-[300px] flex-none border-r border-border bg-card overflow-y-auto">
+                    <div className="w-[300px] flex-none border-r border-border bg-card overflow-y-auto ">
                         <div className="p-4 space-y-4">
                             <h2 className="text-lg font-semibold">Edit Options</h2>
                             <div className="space-y-2">
