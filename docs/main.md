@@ -1,4 +1,48 @@
-# numi 
+# numi
+
+## Billing Without Boundaries
+### Your Checkout, Your Way, Every Time
+
+No store would make a customer wait 40 hours at a register, yet businesses routinely leave online customers hanging after they've shown buying intent. By positioning your product as the solution that eliminates this absurd waiting period through automation and intelligent design, you're addressing a pain point that businesses can instantly recognize but may have accepted as unavoidable.
+
+## Numi Billing Platform
+### Core Vision
+
+We are building the Supabase of billing: an open-source, infinitely customizable billing system that adapts to business logic rather than forcing businesses to adapt to billing limitations.
+
+Our First Step: Checkout Transformation
+Your Customers Want To Buy Now Not Tomorrow
+Starting with checkouts - the critical entry point where purchase intent converts to revenue - we're eliminating the friction that causes businesses to lose sales and customers to abandon carts.
+
+Product Philosophy
+1. Adaptability Over Rigidity: Every business model deserves its perfect billing architecture
+2. Brand Consistency: Customer payment touchpoints should reflect the brand perfectly with no compromises
+3. Time-to-Value: Eliminate waiting periods between customer intent and purchase completion
+4. Automation First: Remove manual intervention and busywork from the entire revenue lifecycle
+
+The Complete Revenue Lifecycle
+While beginning with checkouts, our vision encompasses the entire billing journey:
+
+1. Acquire → Checkouts
+* Customizable purchase flows that match your exact business model
+* Frictionless conversion from customer interest to completed purchase
+* Brand-perfect presentation at the critical moment of decision
+
+2. Monetize → Billing Logic
+* Flexible subscription management for any recurring revenue model
+* Usage-based billing for consumption pricing models
+* Dynamic pricing rules that adapt to customer behavior
+*
+3. Retain → Customer Lifecycle
+* Seamless upgrade/downgrade paths that maximize customer lifetime value
+* Automated dunning and retry logic to prevent involuntary churn
+* Self-service account management to reduce support burden
+
+4. Analyze → Revenue Intelligence
+* Real-time visibility into revenue metrics
+* Customer cohort performance tracking
+* Revenue forecasting and business planning too
+
 
 # Numi - Product Specification
 

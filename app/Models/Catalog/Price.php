@@ -36,8 +36,7 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $deleted_at
  * @property-read Product $product
  * @property-read Price|null $parentListPrice
- * @property-read \Illuminate\Database\Eloquent\Collection|\App\Models\Store\OfferVariant[] $offerVariants
-
+ *
  */
 class Price extends Model
 {
@@ -49,10 +48,10 @@ class Price extends Model
         'product_id',
         'organization_id',
         'parent_list_price_id',
-        
+
         'scope', // list or custom
         'type',  //one_time|graduated|standard|volume|package
-        
+
         'amount',
         'currency',
         'properties',
