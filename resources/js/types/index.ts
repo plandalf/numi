@@ -1,4 +1,5 @@
 import { type LucideIcon } from 'lucide-react';
+import { Theme } from './theme';
 
 export interface Organization {
     id: number;
@@ -30,4 +31,16 @@ export interface SharedData {
     auth: {
         user: User;
     };
+}
+
+export interface Offer {
+    id: number;
+    name: string;
+    description: string | null;
+    status: string;
+    organization_id: number;
+    theme_id: number | null;
+    theme: Theme | null;
+    created_at: string;
+    updated_at: string;
 } 
