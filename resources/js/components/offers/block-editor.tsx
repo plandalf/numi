@@ -1,7 +1,6 @@
 import React, { useCallback, useState, useEffect } from 'react';
 import { Block } from '@/types/offer';
-import { getBlockComponent } from '../blocks/block-registry';
-import { NumiProvider, useNumi } from '@/contexts/Numi';
+// import { NumiProvider, useNumi } from '@/contexts/Numi';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -32,7 +31,7 @@ interface FormControlProps {
 }
 
 // Text input control
-const TextControl: React.FC<FormControlProps & { rows?: number }> = ({ 
+const TextControl: React.FC<FormControlProps & { rows?: number }> = ({
   label, name, value, onChange, placeholder, rows, section = 'content'
 }) => {
   if (rows && rows > 1) {
@@ -49,7 +48,7 @@ const TextControl: React.FC<FormControlProps & { rows?: number }> = ({
       </div>
     );
   }
-  
+
   return (
     <div className="space-y-2">
       <Label htmlFor={name}>{label}</Label>
@@ -64,7 +63,7 @@ const TextControl: React.FC<FormControlProps & { rows?: number }> = ({
 };
 
 // Checkbox control
-const CheckboxControl: React.FC<FormControlProps> = ({ 
+const CheckboxControl: React.FC<FormControlProps> = ({
   label, name, value, onChange, section = 'content'
 }) => {
   return (
@@ -98,17 +97,22 @@ interface BlockEditorProps {
   setFormValue?: (name: string, value: any) => void;
 }
 
+
+function getBlockComponent() {
+  return <div>'getBlockComponent'</div>
+}
+
 // Hook Inspector component to analyze block component and extract hooks
 const HookInspector: React.FC<{
   block: Block;
   onHooksDetected: (hooks: HookConfig[]) => void;
 }> = ({ block, onHooksDetected }) => {
   const BlockComponent = getBlockComponent(block.type);
-  
+
   // Component to render a block and collect its hooks
   const HookCollector = () => {
     const { getRegisteredHooks } = useNumi();
-    
+
     // When hooks are registered, pass them to the parent
     useEffect(() => {
       const hooks = getRegisteredHooks();
@@ -117,11 +121,11 @@ const HookInspector: React.FC<{
         onHooksDetected(hooks);
       }
     }, [getRegisteredHooks]);
-    
+
     // We need to actually render the component to trigger its hooks
     return BlockComponent ? <BlockComponent block={block} isEditing={false} /> : null;
   };
-  
+
   // Render the component in a hidden container
   return (
     <div style={{ display: 'none' }}>
@@ -132,18 +136,18 @@ const HookInspector: React.FC<{
   );
 };
 
-export default function BlockEditor({ 
-  block, 
-  onUpdate, 
-  formValues = {}, 
-  formErrors = {}, 
+export default function BlockEditor({
+  block,
+  onUpdate,
+  formValues = {},
+  formErrors = {},
   setFormValue
 }: BlockEditorProps) {
   const [hooks, setHooks] = useState<HookConfig[]>([]);
   const [expandedSections, setExpandedSections] = useState<string[]>(['content']);
-  
+
   const BlockComponent = getBlockComponent(block.type);
-  
+
   if (!BlockComponent) {
     return (
       <div className="p-4 text-red-500">
@@ -151,12 +155,12 @@ export default function BlockEditor({
       </div>
     );
   }
-  
+
   // Update a block property based on section
   const updateProperty = useCallback((name: string, value: any, section: string = 'content') => {
     // Cast to extended block type to allow for dynamic properties
     const newBlock = { ...block } as ExtendedBlock;
-    
+
     // Update the property in the appropriate section
     if (section === 'appearance') {
       // All appearance properties should go in the style object
@@ -176,7 +180,7 @@ export default function BlockEditor({
         const content = newBlock.content || {};
         // Fields named for direct content storage
         const contentFields = ['title', 'subtitle', 'description', 'html'];
-        
+
         if (contentFields.includes(name)) {
           // Store directly in content object
           newBlock.content = {
@@ -210,18 +214,18 @@ export default function BlockEditor({
         };
       }
     }
-    
+
     onUpdate(newBlock as Block);
   }, [block, onUpdate]);
-  
+
   // Handle when hooks are detected
   const handleHooksDetected = (detectedHooks: HookConfig[]) => {
     console.group('Block Editor: Hook Detection');
     console.log('Block Type:', block.type);
-    
+
     // Create a working copy of hooks
     let hooks = [...detectedHooks];
-    
+
     // For field blocks, add fieldId if not present
     if (block.object === 'field' && !hooks.some(h => h.name === 'fieldId')) {
       const generateFieldId = () => {
@@ -229,7 +233,7 @@ export default function BlockEditor({
         const random = Math.random().toString(36).substring(2, 6);
         return `${block.type}_${timestamp}${random}`;
       };
-      
+
       hooks.push({
         name: 'fieldId',
         label: 'Field ID',
@@ -238,7 +242,7 @@ export default function BlockEditor({
         defaultValue: (block.props as Record<string, any>)?.fieldId || generateFieldId(),
       });
     }
-    
+
     // Add fallbacks for text-block if no hooks detected
     if (hooks.length === 0 && block.type === 'text-block') {
       // These are fallbacks in case the component doesn't register hooks
@@ -253,7 +257,7 @@ export default function BlockEditor({
         placeholder: 'Enter text here',
         formats: ['markdown', 'plain']
       });
-      
+
       hooks.push({
         name: 'fontSize',
         label: 'Font Size',
@@ -261,7 +265,7 @@ export default function BlockEditor({
         section: 'appearance',
         defaultValue: block.style?.fontSize || '16px',
       });
-      
+
       hooks.push({
         name: 'color',
         label: 'Text Color',
@@ -269,7 +273,7 @@ export default function BlockEditor({
         section: 'appearance',
         defaultValue: block.style?.color || 'inherit',
       });
-      
+
       hooks.push({
         name: 'backgroundColor',
         label: 'Background Color',
@@ -278,9 +282,9 @@ export default function BlockEditor({
         defaultValue: block.style?.backgroundColor || 'transparent',
       });
     }
-    
+
     console.log('Processed Hooks:', hooks);
-    
+
     // Log hooks by section
     const hooksBySection = hooks.reduce((acc, hook) => {
       const section = hook.section || 'content';
@@ -288,33 +292,33 @@ export default function BlockEditor({
       acc[section].push(hook);
       return acc;
     }, {} as Record<string, HookConfig[]>);
-    
+
     console.log('Hooks by Section:', hooksBySection);
     console.groupEnd();
-    
+
     setHooks(hooks);
-    
+
     // Set which accordion sections should be expanded based on detected hooks
     const sections = new Set<string>();
     sections.add('content'); // Always show content section
-    
+
     hooks.forEach(hook => {
       if (hook.section) {
         sections.add(hook.section);
       }
     });
-    
+
     setExpandedSections(Array.from(sections));
   };
-  
+
   // Render a form control based on hook configuration
   const renderControl = (hook: HookConfig) => {
     const { name, label, type, section = 'content', ...rest } = hook;
-    
+
     // Get the current value based on the section and name
     let value;
     const typedBlock = block as ExtendedBlock;
-    
+
     if (section === 'appearance') {
       // All appearance values come from style object
       const style = typedBlock.style || {};
@@ -330,7 +334,7 @@ export default function BlockEditor({
         const content = typedBlock.content || {};
         // Fields that might be stored directly in content
         const contentFields = ['title', 'subtitle', 'description', 'html'];
-        
+
         if (contentFields.includes(name) && name in content) {
           // Get directly from content object
           value = content[name];
@@ -349,12 +353,12 @@ export default function BlockEditor({
       const props = typedBlock.props as Record<string, any> || {};
       value = props[name];
     }
-    
+
     // Apply default value if none is set
     if (value === undefined && hook.defaultValue !== undefined) {
       value = hook.defaultValue;
     }
-    
+
     switch (type) {
       case 'text':
         return (
@@ -368,7 +372,7 @@ export default function BlockEditor({
             section={section as any}
           />
         );
-        
+
       case 'textarea':
         return (
           <TextControl
@@ -382,7 +386,7 @@ export default function BlockEditor({
             section={section as any}
           />
         );
-        
+
       case 'checkbox':
         return (
           <CheckboxControl
@@ -394,7 +398,7 @@ export default function BlockEditor({
             section={section as any}
           />
         );
-        
+
       case 'color':
         return (
           <div key={name} className="space-y-2">
@@ -406,7 +410,7 @@ export default function BlockEditor({
             />
           </div>
         );
-        
+
       default:
         return (
           <div key={name}>
@@ -416,7 +420,7 @@ export default function BlockEditor({
         );
     }
   };
-  
+
   // Group hooks by section
   const hooksBySection = hooks.reduce((acc, hook) => {
     const section = hook.section || 'content';
@@ -426,10 +430,10 @@ export default function BlockEditor({
     acc[section].push(hook);
     return acc;
   }, {} as Record<string, HookConfig[]>);
-  
+
   return (
-    <NumiProvider 
-      block={block} 
+    <NumiProvider
+      block={block}
       onUpdateBlock={onUpdate}
       isEditing={true}
       formValues={formValues}
@@ -439,9 +443,9 @@ export default function BlockEditor({
       <div className="space-y-4">
         {/* Invisible component to analyze hooks */}
         <HookInspector block={block} onHooksDetected={handleHooksDetected} />
-        
-        <Accordion 
-          type="multiple" 
+
+        <Accordion
+          type="multiple"
           defaultValue={expandedSections}
           className="w-full"
         >
@@ -457,9 +461,9 @@ export default function BlockEditor({
             </AccordionItem>
             ))}
         </Accordion>
-        
+
         <pre className='bg-gray-50 text-xs p-2 overflow-auto'>{JSON.stringify(block, null, 2)}</pre>
       </div>
     </NumiProvider>
   );
-} 
+}

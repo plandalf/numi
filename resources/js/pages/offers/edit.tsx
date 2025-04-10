@@ -29,7 +29,6 @@ import { DndProvider, useDrag } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 import { DRAG_TYPES } from '@/components/offers/page-preview';
 import { GripVertical, Type, SquareStack, Image, CreditCard, List } from 'lucide-react';
-import { BLOCK_TYPES } from '@/components/blocks/block-registry';
 
 interface Offer {
     id: number;
@@ -67,7 +66,7 @@ const BLOCK_ICONS = {
 
 // Block item component for the Editor sidebar
 interface BlockItemProps {
-  blockType: typeof BLOCK_TYPES[keyof typeof BLOCK_TYPES];
+  // blockType: typeof BLOCK_TYPES[keyof typeof BLOCK_TYPES];
 }
 
 const BlockItem = ({ blockType }: BlockItemProps) => {
@@ -128,7 +127,7 @@ export default function Edit({ offer, showNameDialog }: Props) {
             onSuccess: (a) => {
                 // Update view from the response
                 // setData('view', offer.view);
-                console.log("SUCCESS!", a.props.offer); 
+                console.log("SUCCESS!", a.props.offer);
                 setDefaults();
             }
         });
@@ -136,7 +135,7 @@ export default function Edit({ offer, showNameDialog }: Props) {
 
     // Handle saving changes
     const handleSave = useCallback(() => {
-        
+
     }, [put, offer.id, offer.view, setData]);
 
     const handleNameSubmit = (e: React.FormEvent) => {
@@ -251,10 +250,10 @@ export default function Edit({ offer, showNameDialog }: Props) {
                     if (remainingPageIds.length > 0) {
                         // Try to select the first page in the flow if it exists
                         const firstPageId = data.view.first_page;
-                        const newSelectedPageId = (firstPageId && pagesToUpdate[firstPageId]) 
-                            ? firstPageId 
+                        const newSelectedPageId = (firstPageId && pagesToUpdate[firstPageId])
+                            ? firstPageId
                             : remainingPageIds[0];
-                        
+
                         setSelectedPage(newSelectedPageId);
                     }
                 }
@@ -270,7 +269,7 @@ export default function Edit({ offer, showNameDialog }: Props) {
     // Handle block updates
     const handlePageUpdate = (updatedPage: Page) => {
         if (!isReady) return;
-        
+
         // @ts-ignore - Ignore TypeScript errors for now to focus on functionality
         const updatedView = {
             ...data.view,
@@ -293,7 +292,7 @@ export default function Edit({ offer, showNameDialog }: Props) {
     const getOrderedPages = (view: OfferView): [string, Page][] => {
         const orderedPages: [string, Page][] = [];
         const visitedPages = new Set<string>();
-        
+
         // First, add pages in the main flow starting from first_page
         let currentPageId: string | null = view.first_page;
         while (currentPageId && view.pages[currentPageId] && !visitedPages.has(currentPageId)) {
@@ -317,7 +316,7 @@ export default function Edit({ offer, showNameDialog }: Props) {
     // Add this function to handle page creation
     const handleAddPage = (type: PageType) => {
         const id = `page_${Math.random().toString(36).substr(2, 9)}`;
-        
+
         // Create the new page
         const newPage: Page = {
             id,
@@ -417,7 +416,7 @@ export default function Edit({ offer, showNameDialog }: Props) {
                                 >
                                     Edit Name
                                 </button>
-                            
+
                             </div>
                         </div>
 
@@ -425,11 +424,11 @@ export default function Edit({ offer, showNameDialog }: Props) {
                         <div className="p-4 border-t border-border">
                             <h3 className="text-md font-medium mb-3">Available Blocks</h3>
                             <p className="text-xs text-muted-foreground mb-4">Drag blocks to add them to your page</p>
-                            
+
                             <div className="space-y-2">
-                                {Object.values(BLOCK_TYPES).map((blockType) => (
-                                    <BlockItem 
-                                        key={blockType.id} 
+                                {Object.values({}).map((blockType) => (
+                                    <BlockItem
+                                        key={blockType.id}
                                         blockType={blockType}
                                     />
                                 ))}
@@ -442,8 +441,8 @@ export default function Edit({ offer, showNameDialog }: Props) {
                         {/* Preview Area - Make it fill the available space */}
                         <div className="absolute inset-0 bottom-[68px] overflow-hidden">
                             <div className="h-full">
-                                <PagePreview 
-                                    page={currentPage} 
+                                <PagePreview
+                                    page={currentPage}
                                     onUpdatePage={handlePageUpdate}
                                 />
                             </div>
