@@ -249,6 +249,7 @@ export default function PagePreview({ page, onUpdatePage }: PreviewProps) {
 
     return (
         <DndProvider backend={HTML5Backend}>
+          {/* <pre className="text-xs">{JSON.stringify(livePreviewPage, null, 2)}</pre> */}
             <div className="h-full flex bg-zinc-100">
                 {/* Canvas - Now using the full space */}
                 <div className={cn(

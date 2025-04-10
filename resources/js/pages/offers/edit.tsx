@@ -29,6 +29,7 @@ import { DndProvider, useDrag } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 import { DRAG_TYPES } from '@/components/offers/page-preview';
 import { GripVertical, Type, SquareStack, Image, CreditCard, List } from 'lucide-react';
+import { blockTypes } from '@/components/blocks';
 
 interface Offer {
     id: number;
@@ -426,7 +427,7 @@ export default function Edit({ offer, showNameDialog }: Props) {
                             <p className="text-xs text-muted-foreground mb-4">Drag blocks to add them to your page</p>
 
                             <div className="space-y-2">
-                                {Object.values({}).map((blockType) => (
+                                {Object.values(blockTypes).map((blockType) => (
                                     <BlockItem
                                         key={blockType.id}
                                         blockType={blockType}
