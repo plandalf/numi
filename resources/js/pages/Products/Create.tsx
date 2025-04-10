@@ -1,6 +1,6 @@
 import { Head } from '@inertiajs/react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import ProductForm from '@/Components/Products/ProductForm';
+import ProductForm from '@/components/Products/ProductForm';
 
 export default function Create() {
     return (
@@ -21,4 +21,4 @@ export default function Create() {
             </div>
         </>
     );
-} 
+}
