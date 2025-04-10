@@ -19,7 +19,7 @@ return new class extends Migration
         Schema::create('store_checkout_items', function (Blueprint $table) {
             $table->id();
             $table->foreignId('checkout_id')->constrained('store_checkouts');
-            $table->foreignId('price_id')->constrained('store_prices');
+            $table->foreignId('price_id')->constrained('catalog_prices');
             $table->integer('quantity');
 
             // checkout -> converts to an "order" or multiple?
@@ -34,6 +34,7 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('checkouts');
+        Schema::dropIfExists('store_checkout_items');
+        Schema::dropIfExists('store_checkouts');
     }
 };
