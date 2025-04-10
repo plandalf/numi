@@ -7,7 +7,7 @@ import { X, Save, Type, Calendar, DollarSign, Mail, Lock, Link, ChevronDown, Cir
 import { v4 as uuidv4 } from 'uuid';
 import { DndProvider, useDrop, useDrag } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
-import { getBlockComponent } from '../blocks/block-registry';
+
 
 function createBlock(blockType: BlockType) {
     console.log('xyz', blockType)
@@ -52,13 +52,13 @@ export const BlockDropZone = ({ sectionName, index, onDropBlock }: BlockDropZone
   }
 
   return (
-    <div 
+    <div
       // @ts-ignore - React DnD type mismatch with refs
       ref={(node) => drop(node)}
       className={cn(
         "h-2 -mx-2 my-1 rounded transition-all",
-        isActive 
-          ? "bg-primary scale-y-150" 
+        isActive
+          ? "bg-primary scale-y-150"
           : "bg-primary/30"
       )}
     />
@@ -78,30 +78,30 @@ const Inspector = ({
 }) => {
     const [editedBlock, setEditedBlock] = useState<Block>(block);
     const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-    
+
     // Update local state when incoming block changes
     useEffect(() => {
         console.log('Inspector received block:', block.id, block.type);
         setEditedBlock(block);
     }, [block]);
-    
+
     const handleUpdate = (updatedBlock: Block) => {
         console.log('Inspector updating block:', updatedBlock.id, updatedBlock.type);
         setEditedBlock(updatedBlock);
-        
+
         // Update preview immediately
         onUpdate(updatedBlock);
-        
+
         // Debounce save operation
         if (saveTimeoutRef.current) {
             clearTimeout(saveTimeoutRef.current);
         }
-        
+
         saveTimeoutRef.current = setTimeout(() => {
             onSave();
         }, 1000); // 1 second debounce
     };
-    
+
     // Clean up timeout on unmount
     useEffect(() => {
         return () => {
@@ -110,7 +110,7 @@ const Inspector = ({
             }
         };
     }, []);
-    
+
     return (
         <div className="w-[400px] border-l border-border bg-background h-full overflow-y-auto flex flex-col">
             <div className="flex items-center justify-between p-4 border-b border-border">
@@ -128,7 +128,7 @@ const Inspector = ({
                 </div>
             </div>
             <div className="p-4 flex-grow overflow-y-auto">
-                <BlockEditor 
+                <BlockEditor
                     block={editedBlock}
                     onUpdate={handleUpdate}
                 />
@@ -155,65 +155,65 @@ export default function PagePreview({ page, onUpdatePage }: PreviewProps) {
     const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null);
     const [pendingChanges, setPendingChanges] = useState<Block | null>(null);
     const [livePreviewPage, setLivePreviewPage] = useState<Page>(page);
-    
+
     // Update live preview when page changes from outside
     useEffect(() => {
         setLivePreviewPage(page);
     }, [page]);
-    
+
     const selectedBlock = selectedBlockId ? findBlockInPage(livePreviewPage, selectedBlockId) : null;
-    
+
     useEffect(() => {
         console.log('Current selected block:', selectedBlock);
     }, [selectedBlock]);
 
     const handleBlockUpdate = (updatedBlock: Block) => {
         if (!updatedBlock.id) return;
-        
+
         // Apply changes to the live preview immediately
         const updatedPreviewPage = JSON.parse(JSON.stringify(livePreviewPage));
         updateBlockInPage(updatedPreviewPage, updatedBlock);
-        
+
         // Update live preview
         setLivePreviewPage(updatedPreviewPage);
         setPendingChanges(updatedBlock);
     };
-    
+
     const handleSaveChanges = () => {
         if (!pendingChanges || !pendingChanges.id || !onUpdatePage) return;
         onUpdatePage(livePreviewPage);
         setPendingChanges(null);
     };
-    
+
     const handleAddBlock = (section: keyof typeof page.view, blockType: BlockType, index: number = -1) => {
         if (!onUpdatePage) return;
-        
+
         // Create a deep copy of the page
         const updatedPage = JSON.parse(JSON.stringify(livePreviewPage));
-        
+
         // Ensure the section exists
         if (!updatedPage.view[section]) {
             updatedPage.view[section] = { blocks: [] };
         }
 
         console.log('Adding block:', blockType, 'to section:', section, 'at index:', index);
-        
+
         // Create the new block
         const newBlock = createBlock(blockType);
-        
+
         // Add the new block to the section at the specified index
         if (index >= 0) {
             updatedPage.view[section].blocks.splice(index, 0, newBlock);
         } else {
             updatedPage.view[section].blocks.push(newBlock);
         }
-        
+
         // Update live preview first
         setLivePreviewPage(updatedPage);
-        
+
         // Then update the actual page
         onUpdatePage(updatedPage);
-        
+
         // Select the new block
         if (newBlock.id) {
             setSelectedBlockId(newBlock.id);
@@ -258,8 +258,8 @@ export default function PagePreview({ page, onUpdatePage }: PreviewProps) {
                     <div className="flex-1 flex items-center justify-center p-8 h-full overflow-auto">
                         <div className="bg-background rounded-lg shadow-lg w-full max-w-5xl">
                             {/* The layout preview - using live preview page */}
-                            <LayoutPreview 
-                                page={livePreviewPage} 
+                            <LayoutPreview
+                                page={livePreviewPage}
                                 selectedBlockId={selectedBlockId}
                                 onSelectBlock={setSelectedBlockId}
                                 onAddBlock={handleAddBlock}
@@ -295,9 +295,9 @@ export function findBlockInPage(page: Page, blockId: string): Block | null {
         console.error('Invalid page or view in findBlockInPage');
         return null;
     }
-    
+
     console.log('Finding block:', blockId, 'in page:', page.id);
-    
+
     const sections: Array<[keyof PageView, ViewSection]> = [
         ['title', page.view.title],
         ['content', page.view.content],
@@ -309,7 +309,7 @@ export function findBlockInPage(page: Page, blockId: string): Block | null {
     console.log('Available blocks:');
     sections.forEach(([sectionName, section]) => {
         if (!section || !section.blocks) return;
-        
+
         console.log(`Section ${sectionName}:`);
         section.blocks.forEach((block, blockIndex) => {
             console.log(`  - Block ${blockIndex}:`, block.id, block.type);
@@ -319,18 +319,18 @@ export function findBlockInPage(page: Page, blockId: string): Block | null {
     // First try direct lookup for performance
     for (const [sectionName, section] of sections) {
         if (!section || !section.blocks) continue;
-        
+
         const block = section.blocks.find(block => block.id === blockId);
         if (block) {
             console.log(`Found block in section ${sectionName}:`, block.id, block.type);
             return block;
         }
     }
-    
+
     // Then try nested blocks
     for (const [sectionName, section] of sections) {
         if (!section || !section.blocks) continue;
-        
+
         for (const parentBlock of section.blocks) {
             if (parentBlock.children) {
                 const nestedBlock = findNestedBlock(parentBlock.children, blockId);
@@ -350,13 +350,13 @@ export function findBlockInPage(page: Page, blockId: string): Block | null {
 function findNestedBlock(blocks: Block[], blockId: string): Block | null {
     for (const block of blocks) {
         if (block.id === blockId) return block;
-        
+
         if (block.children) {
             const nestedBlock = findNestedBlock(block.children, blockId);
             if (nestedBlock) return nestedBlock;
         }
     }
-    
+
     return null;
 }
 
@@ -365,7 +365,7 @@ export function styleToClassName(style: Record<string, string>): string {
     // This is a simple implementation - you might want to expand this
     // to handle more complex style conversions
     const classNames: string[] = [];
-    
+
     if (style.textAlign) {
         const alignmentMap: Record<string, string> = {
             'left': 'text-left',
@@ -375,23 +375,23 @@ export function styleToClassName(style: Record<string, string>): string {
         };
         classNames.push(alignmentMap[style.textAlign] || '');
     }
-    
+
     if (style.color) {
         // This is simplified - in a real app you'd map colors to Tailwind classes
         classNames.push(`text-[${style.color}]`);
     }
-    
+
     if (style.backgroundColor) {
         classNames.push(`bg-[${style.backgroundColor}]`);
     }
-    
+
     return classNames.join(' ');
 }
 
 // Add preview renderers for each field type
 const FieldPreview = ({ block }: { block: Block }) => {
   const { type, props } = block;
-  
+
   switch (type) {
     case 'text_field':
       return (
@@ -411,7 +411,7 @@ const FieldPreview = ({ block }: { block: Block }) => {
           )}
         </div>
       );
-      
+
     case 'textarea':
       return (
         <div className="space-y-2">
@@ -429,7 +429,7 @@ const FieldPreview = ({ block }: { block: Block }) => {
           )}
         </div>
       );
-      
+
     case 'date_field':
       return (
         <div className="space-y-2">
@@ -447,7 +447,7 @@ const FieldPreview = ({ block }: { block: Block }) => {
           )}
         </div>
       );
-      
+
     case 'currency_field':
       return (
         <div className="space-y-2">
@@ -468,7 +468,7 @@ const FieldPreview = ({ block }: { block: Block }) => {
           )}
         </div>
       );
-      
+
     case 'email_field':
       return (
         <div className="space-y-2">
@@ -487,7 +487,7 @@ const FieldPreview = ({ block }: { block: Block }) => {
           )}
         </div>
       );
-      
+
     case 'password_field':
       return (
         <div className="space-y-2">
@@ -510,7 +510,7 @@ const FieldPreview = ({ block }: { block: Block }) => {
           )}
         </div>
       );
-      
+
     case 'url_field':
       return (
         <div className="space-y-2">
@@ -529,7 +529,7 @@ const FieldPreview = ({ block }: { block: Block }) => {
           )}
         </div>
       );
-      
+
     case 'select_field':
       return (
         <div className="space-y-2">
@@ -550,7 +550,7 @@ const FieldPreview = ({ block }: { block: Block }) => {
           )}
         </div>
       );
-      
+
     case 'multiselect_field':
       return (
         <div className="space-y-2">
@@ -570,7 +570,7 @@ const FieldPreview = ({ block }: { block: Block }) => {
           )}
         </div>
       );
-      
+
     case 'radio_group':
       return (
         <div className="space-y-2">
@@ -597,7 +597,7 @@ const FieldPreview = ({ block }: { block: Block }) => {
           )}
         </div>
       );
-      
+
     case 'checkbox_group':
       return (
         <div className="space-y-2">
@@ -624,7 +624,7 @@ const FieldPreview = ({ block }: { block: Block }) => {
           )}
         </div>
       );
-      
+
     case 'switch_field':
       return (
         <div className="space-y-2">
@@ -643,7 +643,7 @@ const FieldPreview = ({ block }: { block: Block }) => {
           )}
         </div>
       );
-      
+
     default:
       return null;
   }
@@ -668,7 +668,7 @@ const renderLegacyBlock = (block: Block) => {
         h5: "text-base font-bold",
         h6: "text-sm font-bold"
       }[block.type];
-      
+
       return (
         <div className={cn(className, block.style && styleToClassName(block.style))}>
           {block.text?.map((content, i) => (
@@ -678,7 +678,7 @@ const renderLegacyBlock = (block: Block) => {
       );
     case 'button':
       return (
-        <button 
+        <button
           type="button"
           className={cn(
             "w-full px-4 py-3 text-base font-medium rounded-md",
@@ -772,17 +772,17 @@ function updateBlockInPage(page: Page, updatedBlock: Block): boolean {
     if (!page || !page.view || !updatedBlock.id) return false;
 
     const sections = ['title', 'content', 'action', 'promo'] as const;
-    
+
     for (const sectionName of sections) {
         const section = page.view[sectionName];
         if (!section || !section.blocks) continue;
-        
+
         const blockIndex = section.blocks.findIndex(b => b.id === updatedBlock.id);
         if (blockIndex >= 0) {
             section.blocks[blockIndex] = updatedBlock;
             return true;
         }
     }
-    
+
     return false;
-} 
+}

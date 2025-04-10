@@ -1,10 +1,8 @@
 import { type Page, type ViewSection, type Block } from '@/types/offer';
 import { cn } from '@/lib/utils';
 import React, { useRef } from 'react';
-import { getBlockComponent } from '../blocks/block-registry';
 import { DndProvider, useDrag, useDrop } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
-import { NumiProvider } from '@/contexts/Numi';
 
 // Local interfaces that match the actual structure
 interface PageView {
@@ -12,6 +10,10 @@ interface PageView {
     title: { blocks: Block[]; style?: Record<string, string> };
     action: { blocks: Block[]; style?: Record<string, string> };
     content: { blocks: Block[]; style?: Record<string, string> };
+}
+
+function getBlockComponent() {
+  return <div>'getBlockComponent'</div>
 }
 
 interface LocalPage extends Omit<Page, 'view'> {
@@ -72,10 +74,10 @@ const BlockRenderer = ({ block, isSelected, onSelect, sectionName, index, onMove
 
     const [{ isDragging }, drag] = useDrag(() => ({
         type: DRAG_TYPES.EXISTING_BLOCK,
-        item: { 
+        item: {
             id: blockId,
             fromSection: sectionName,
-            fromIndex: index 
+            fromIndex: index
         },
         collect: monitor => ({
             isDragging: !!monitor.isDragging()
@@ -87,40 +89,40 @@ const BlockRenderer = ({ block, isSelected, onSelect, sectionName, index, onMove
         hover: (item: { id: string, fromSection: keyof PageView, fromIndex: number }, monitor) => {
             if (!blockRef.current) return;
             if (item.id === blockId) return;
-            
+
             // Get the middle Y of the current item
             const hoverBoundingRect = blockRef.current.getBoundingClientRect();
             const hoverMiddleY = (hoverBoundingRect.bottom - hoverBoundingRect.top) / 2;
-            
+
             // Get the mouse position
             const clientOffset = monitor.getClientOffset();
             if (!clientOffset) return;
-            
+
             // Get the pixels to the top
             const hoverClientY = clientOffset.y - hoverBoundingRect.top;
-            
+
             // Only perform the move when the mouse has crossed half of the items height
             // When dragging downwards, only move when the cursor is below 50%
             // When dragging upwards, only move when the cursor is above 50%
-            
+
             // Dragging downwards
             if (item.fromSection === sectionName && item.fromIndex < index && hoverClientY < hoverMiddleY) {
                 return;
             }
-            
+
             // Dragging upwards
             if (item.fromSection === sectionName && item.fromIndex > index && hoverClientY > hoverMiddleY) {
                 return;
             }
-            
+
             // Don't update if we're hovering the same position
             if (item.fromSection === sectionName && item.fromIndex === index) {
                 return;
             }
-            
+
             // Time to actually perform the action
             onMoveBlock?.(item.fromSection, item.fromIndex, sectionName, index);
-            
+
             // Update the source index only after we're sure we want to make the move
             item.fromSection = sectionName;
             item.fromIndex = index;
@@ -140,7 +142,7 @@ const BlockRenderer = ({ block, isSelected, onSelect, sectionName, index, onMove
         e.preventDefault();
         e.stopPropagation();
         console.log('Block clicked, ID:', blockId, 'Type:', block.type);
-        
+
         if (block.id) {
             onSelect?.();
         } else {
@@ -158,7 +160,7 @@ const BlockRenderer = ({ block, isSelected, onSelect, sectionName, index, onMove
 
     if (BlockComponent) {
         return (
-            <div 
+            <div
                 ref={ref}
                 onClick={handleClick}
                 className={cn(
@@ -170,14 +172,14 @@ const BlockRenderer = ({ block, isSelected, onSelect, sectionName, index, onMove
                 )}
             >
                 <div className={addPointerEventsNone("w-full")}>
-                    <NumiProvider 
-                        block={block} 
-                        isEditing={true} 
-                        formValues={{}}
-                        formErrors={{}}
-                    >
-                        <BlockComponent block={block} isEditing={true} />
-                    </NumiProvider>
+                    {/*<NumiProvider*/}
+                    {/*    block={block}*/}
+                    {/*    isEditing={true}*/}
+                    {/*    formValues={{}}*/}
+                    {/*    formErrors={{}}*/}
+                    {/*>*/}
+                    {/*    <BlockComponent block={block} isEditing={true} />*/}
+                    {/*</NumiProvider>*/}
                 </div>
                 {isSelected && (
                     <div className="absolute inset-0 bg-primary/10 pointer-events-none" />
@@ -196,7 +198,7 @@ const BlockRenderer = ({ block, isSelected, onSelect, sectionName, index, onMove
 
     // Fall back to legacy rendering
     return (
-        <div 
+        <div
             ref={ref}
             onClick={handleClick}
             className={cn(
@@ -236,7 +238,7 @@ const BlockRenderer = ({ block, isSelected, onSelect, sectionName, index, onMove
                         case 'button':
                             return (
                                 <div className="p-2">
-                                    <button 
+                                    <button
                                         type="button"
                                         className={cn(
                                             "w-full px-4 py-2 text-base font-medium rounded-md",
@@ -254,7 +256,7 @@ const BlockRenderer = ({ block, isSelected, onSelect, sectionName, index, onMove
                             return (
                                 <div className="p-2">
                                     <div className="rounded-md overflow-hidden border border-border">
-                                        <img 
+                                        <img
                                             src={block.props?.src || ''}
                                             alt={block.props?.alt || ''}
                                             className={addPointerEventsNone("w-full h-auto object-cover")}
@@ -345,7 +347,7 @@ const Section = ({ section, sectionName, className, selectedBlockId, onSelectBlo
     if (!section) return null;
 
     return (
-        <div 
+        <div
             className={cn(
                 "relative",
                 className
@@ -365,7 +367,7 @@ const Section = ({ section, sectionName, className, selectedBlockId, onSelectBlo
 
                     {section.blocks?.map((block, index) => (
                         <div key={block.id || index} className="relative" data-section={sectionName} data-index={index}>
-                            <BlockRenderer 
+                            <BlockRenderer
                                 block={block}
                                 isSelected={block.id === selectedBlockId}
                                 onSelect={() => {
@@ -378,7 +380,7 @@ const Section = ({ section, sectionName, className, selectedBlockId, onSelectBlo
                                 index={index}
                                 onMoveBlock={onMoveBlock}
                             />
-                            
+
                             {onAddBlock && (
                                 <BlockDropZone
                                     sectionName={sectionName}
@@ -421,13 +423,13 @@ export const BlockDropZone = ({ sectionName, index, onDropBlock, onMoveBlock }: 
     const isActive = isOver && canDrop;
 
     return (
-        <div 
+        <div
             ref={dropRef}
             className={cn(
                 "h-1 transition-all duration-200",
                 isDragging && (
-                    isOver 
-                        ? "h-6 -mx-2 my-2 border-2 border-dashed border-primary bg-primary/10 scale-y-125" 
+                    isOver
+                        ? "h-6 -mx-2 my-2 border-2 border-dashed border-primary bg-primary/10 scale-y-125"
                         : "hover:h-6 hover:-mx-2 hover:my-2 hover:border-2 hover:border-dashed hover:border-primary/20"
                 ),
                 "group cursor-copy"
@@ -458,7 +460,7 @@ export default function LayoutPreview({ page, selectedBlockId, onSelectBlock, on
                     <div className="overflow-hidden">
                         <div className="flex flex-col justify-center h-full">
                             <div className="flex flex-col space-y-6 overflow-y-auto px-6 py-4 grow">
-                                <Section 
+                                <Section
                                     section={page.view.title}
                                     sectionName="title"
                                     className="min-h-[3rem]"
@@ -467,7 +469,7 @@ export default function LayoutPreview({ page, selectedBlockId, onSelectBlock, on
                                     onAddBlock={onAddBlock}
                                     onMoveBlock={onMoveBlock}
                                 />
-                                <Section 
+                                <Section
                                     section={page.view.content}
                                     sectionName="content"
                                     className="grow"
@@ -477,7 +479,7 @@ export default function LayoutPreview({ page, selectedBlockId, onSelectBlock, on
                                     onMoveBlock={onMoveBlock}
                                 />
                             </div>
-                            <Section 
+                            <Section
                                 section={page.view.action}
                                 sectionName="action"
                                 className="p-6 min-h-[6rem]"
@@ -489,7 +491,7 @@ export default function LayoutPreview({ page, selectedBlockId, onSelectBlock, on
                         </div>
                     </div>
 
-                    <Section 
+                    <Section
                         section={page.view.promo}
                         sectionName="promo"
                         className="h-full"
@@ -502,4 +504,4 @@ export default function LayoutPreview({ page, selectedBlockId, onSelectBlock, on
             </div>
         </DndProvider>
     );
-} 
+}
