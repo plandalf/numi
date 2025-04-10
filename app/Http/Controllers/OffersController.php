@@ -12,13 +12,14 @@ use App\Models\Catalog\Product;
 use App\Models\Organization;
 use App\Models\Store\Offer;
 use App\Models\Store\Slot;
-use App\Http\Requests\Offer\OfferSlotStoreRequest;
 use App\Http\Requests\Offer\OfferSlotUpdateRequest;
+use App\Http\Requests\Offer\OfferThemeUpdateRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 use Illuminate\Support\Facades\Auth;
+use App\Models\Store\Theme;
 
 class OffersController extends Controller
 {
@@ -36,7 +37,6 @@ class OffersController extends Controller
             'status' => 'draft',
             'organization_id' => $organization->id,
         ]);
-
 
         $offer->slots()->create([
             'key' => 'primary',
@@ -210,6 +210,28 @@ class OffersController extends Controller
         return Inertia::render('offers/settings/access', [
             'offer' => new OfferResource($offer->load('slots')),
         ]);
+    }
+
+    public function settingsTheme(Offer $offer): Response
+    {
+        $themes = Theme::query()
+            ->where('organization_id', $offer->organization_id)
+            ->get();
+
+        return Inertia::render('offers/settings/theme', [
+            'offer' => $offer,
+            'themes' => $themes,
+            'currentTheme' => $offer->theme,
+        ]);
+    }
+
+    public function updateTheme(OfferThemeUpdateRequest $request, Offer $offer): \Illuminate\Http\RedirectResponse
+    {
+        $offer->update([
+            'theme_id' => $request->validated('theme_id'),
+        ]);
+
+        return back()->with('success', 'Theme updated successfully.');
     }
 
     public function publish(Offer $offer): \Illuminate\Http\RedirectResponse
