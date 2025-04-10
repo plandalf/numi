@@ -3,16 +3,11 @@ import { useEffect, useState, createContext, useContext, useCallback, useReducer
 import { type Block, type Page, type PageType, type OfferConfiguration, type OfferVariant, Branch, PageView } from '@/types/offer';
 import { cn, formatMoney } from '@/lib/utils';
 import update from 'immutability-helper';
-import { BlockConfig, FieldState } from '@/types/blocks';
+import { BlockConfig, FieldState, HookUsage } from '@/types/blocks';
 import TextBlockComponent from '@/components/blocks/TextBlock';
 import { BlockContext } from '@/contexts/Numi';
-import CheckboxBlockComponent from '@/components/blocks/CheckboxBlock';
-import TextInputBlockComponent from '@/components/blocks/TextInputBlock';
-import DetailListBlockComponent from '@/components/blocks/DetailListComponent';
-import ButtonBlockComponent from '@/components/blocks/ButtonBlock';
-import QuoteBlockComponent from '@/components/blocks/QuoteBlock';
-import OptionSelectorComponent from '@/components/blocks/OptionSelectorBlock';
-import CheckoutSummaryComponent from '@/components/blocks/CheckoutSummaryBlock';
+
+import { blockTypes } from '@/components/blocks';
 // Form and validation context
 type FormData = Record<string, any>;
 type ValidationErrors = Record<string, string[]>;
@@ -31,49 +26,6 @@ interface BlockContextType {
   blockId: string;
   // Add other properties as needed
 }
-
-// Example block with the new structure
-const exampleBlocks: Block[] = [
-  {
-    id: 'text-block-1',
-    type: 'text',
-    object: 'block',
-    content: {
-      value: 'This is a sample text block',
-      label: 'Text Block'
-    },
-    interaction: {
-      isDisabled: false,
-    },
-    appearance: {
-      fontSize: '16px',
-      fontWeight: 'bold',
-      textColor: '#333333',
-    },
-    validation: {
-      isRequired: true,
-    }
-  },
-  {
-    id: 'checkbox-block-1',
-    type: 'checkbox',
-    object: 'field',
-    content: {
-      label: 'Checkbox Block',
-      is_default_checked: false,
-    }
-  },
-  {
-    id: '789',
-    type: 'text_input',
-    object: 'block',
-    content: {  
-      default_value: 'Block Text',
-      label: 'First Name',
-    }
-  },
-];
-
 
 
 // Contexts
@@ -174,10 +126,6 @@ function GlobalStateProvider({ offer, children }: { offer: OfferConfiguration, c
     
     // Collect blocks from all sections
     const pageView = page.view;
-    // collectBlocks(pageView?.content?.blocks || []);
-    // collectBlocks(pageView?.promo?.blocks || []);
-    // collectBlocks(pageView?.title?.blocks || []);
-    // collectBlocks(pageView?.action?.blocks || []);
     
     // Find the block for this field
     const block = allBlocks.find(b => b.id === fieldId);
@@ -315,17 +263,6 @@ function BlockRenderer({ block, children }: {
       {children(blockContext)}
     </BlockContext.Provider>
   );
-}
-
-const blockTypes = {
-  text: TextBlockComponent,
-  checkbox: CheckboxBlockComponent,
-  text_input: TextInputBlockComponent,
-  detail_list: DetailListBlockComponent,
-  button: ButtonBlockComponent,
-  quote: QuoteBlockComponent,
-  option_selector: OptionSelectorComponent, 
-  checkout_summary: CheckoutSummaryComponent,
 }
 
 // Render a section of blocks - shows the block structure without actual rendering
