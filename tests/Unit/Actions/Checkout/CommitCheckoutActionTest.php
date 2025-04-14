@@ -64,7 +64,7 @@ class CommitCheckoutActionTest extends TestCase
 
         // Mock CreateOrderAction
         $this->createOrderAction
-            ->expects('execute')
+            ->expects('__invoke')
             ->once()
             ->with(Mockery::type(CheckoutSession::class))
             ->andReturn($order);
@@ -72,7 +72,7 @@ class CommitCheckoutActionTest extends TestCase
         // Mock CreateOrderItemAction for each line item
         foreach ($lineItems as $lineItem) {
             $this->createOrderItemAction
-                ->expects('execute')
+                ->expects('__invoke')
                 ->once()
                 ->with(
                     Mockery::type(Order::class),
@@ -108,7 +108,7 @@ class CommitCheckoutActionTest extends TestCase
 
         // Mock CreateOrderAction - it should not be called
         $this->createOrderAction
-            ->expects('execute')
+            ->expects('__invoke')
             ->never();
 
         // Act
