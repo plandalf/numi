@@ -22,11 +22,11 @@ class CommitCheckoutAction
             return $checkoutSession;
         }
 
-        $order = $this->createOrderAction->execute($checkoutSession);
+        $order = ($this->createOrderAction)($checkoutSession);
 
         // Create order items from checkout line items
         foreach ($checkoutSession->lineItems as $lineItem) {
-            $this->createOrderItemAction->execute($order, $lineItem);
+            ($this->createOrderItemAction)($order, $lineItem);
         }
 
         $order->updateTotalAmount();

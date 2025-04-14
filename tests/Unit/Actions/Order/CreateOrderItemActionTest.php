@@ -50,7 +50,7 @@ class CreateOrderItemActionTest extends TestCase
         $action = new CreateOrderItemAction();
 
         // Act
-        $orderItem = $action->execute($order, $checkoutLineItem);
+        $orderItem = $action($order, $checkoutLineItem);
 
         // Assert
         $this->assertInstanceOf(OrderItem::class, $orderItem);

@@ -15,7 +15,7 @@ class CreateOrderAction
      * @param CheckoutSession $checkoutSession
      * @return Order
      */
-    public function execute(CheckoutSession $checkoutSession): Order
+    public function __invoke(CheckoutSession $checkoutSession): Order
     {
         // Use updateOrCreate to handle the unique constraint
         $order = Order::updateOrCreate(

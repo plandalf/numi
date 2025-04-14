@@ -29,7 +29,7 @@ class CreateOrderActionTest extends TestCase
         $action = new CreateOrderAction();
 
         // Act
-        $order = $action->execute($checkoutSession);
+        $order = $action($checkoutSession);
 
         // Assert
         $this->assertEquals($existingOrder->id, $order->id);
@@ -47,10 +47,10 @@ class CreateOrderActionTest extends TestCase
         $action = new CreateOrderAction();
 
         // Act - First call creates a new order
-        $order1 = $action->execute($checkoutSession);
+        $order1 = $action($checkoutSession);
 
         // Act - Second call should return the same order
-        $order2 = $action->execute($checkoutSession);
+        $order2 = $action($checkoutSession);
 
         // Assert
         $this->assertEquals($order1->id, $order2->id);

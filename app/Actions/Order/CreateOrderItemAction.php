@@ -15,7 +15,7 @@ class CreateOrderItemAction
      * @param CheckoutLineItem $checkoutLineItem
      * @return OrderItem
      */
-    public function execute(Order $order, CheckoutLineItem $checkoutLineItem): OrderItem
+    public function __invoke(Order $order, CheckoutLineItem $checkoutLineItem): OrderItem
     {
         // Create the order item
         $orderItem = OrderItem::create([
