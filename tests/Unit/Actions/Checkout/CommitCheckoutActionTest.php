@@ -98,4 +98,24 @@ class CommitCheckoutActionTest extends TestCase
         $this->assertEquals(CheckoutSessionStatus::CLOSED, $result->status);
         $this->assertNotNull($result->finalized_at);
     }
+
+    public function test_it_returns_checkout_session_without_creating_order_if_already_closed(): void
+    {
+        // Arrange
+        $checkoutSession = CheckoutSession::factory()->create([
+            'status' => CheckoutSessionStatus::CLOSED,
+        ]);
+
+        // Mock CreateOrderAction - it should not be called
+        $this->createOrderAction
+            ->expects('execute')
+            ->never();
+
+        // Act
+        $result = $this->action->execute($checkoutSession);
+
+        // Assert
+        $this->assertInstanceOf(CheckoutSession::class, $result);
+        $this->assertEquals(CheckoutSessionStatus::CLOSED, $result->status);
+    }
 }

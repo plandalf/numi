@@ -17,15 +17,18 @@ class CreateOrderAction
      */
     public function execute(CheckoutSession $checkoutSession): Order
     {
-        // Create the order
-        $order = Order::create([
-            'organization_id' => $checkoutSession->organization_id,
-            'checkout_session_id' => $checkoutSession->id,
-            'status' => OrderStatus::PENDING,
-            'total_amount' => 0, // Will be updated after items are created
-            'currency' => 'USD', // Default currency, can be made dynamic if needed
-            'uuid' => Str::uuid(),
-        ]);
+        // Use updateOrCreate to handle the unique constraint
+        $order = Order::updateOrCreate(
+            [
+                'organization_id' => $checkoutSession->organization_id,
+                'checkout_session_id' => $checkoutSession->id,
+            ],
+            [
+                'status' => OrderStatus::PENDING,
+                'total_amount' => 0,
+                'currency' => 'USD',
+            ]
+        );
 
         return $order;
     }
