@@ -2,6 +2,7 @@
 
 namespace App\Models\Order;
 
+use App\Enums\OrderStatus;
 use App\Models\Catalog\Price;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -32,6 +33,10 @@ class OrderItem extends Model
         'total_amount',
         'metadata',
         'organization_id',
+    ];
+
+    protected $attributes = [
+        'status' => OrderStatus::PENDING,
     ];
 
     /**

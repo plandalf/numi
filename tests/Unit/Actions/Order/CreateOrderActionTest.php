@@ -12,12 +12,18 @@ use Tests\TestCase;
 
 class CreateOrderActionTest extends TestCase
 {
-    public function test_it_creates_an_order_from_a_checkout_session(): void
+    public function test_it_returns_existing_order_if_one_exists_for_checkout_session(): void
     {
         // Arrange
         $organization = Organization::factory()->create();
         $checkoutSession = CheckoutSession::factory()->create([
             'organization_id' => $organization->id,
+        ]);
+
+        // Create an existing order for this checkout session
+        $existingOrder = Order::factory()->create([
+            'organization_id' => $organization->id,
+            'checkout_session_id' => $checkoutSession->id,
         ]);
 
         $action = new CreateOrderAction();
@@ -26,16 +32,11 @@ class CreateOrderActionTest extends TestCase
         $order = $action->execute($checkoutSession);
 
         // Assert
-        $this->assertInstanceOf(Order::class, $order);
-        $this->assertEquals($organization->id, $order->organization_id);
-        $this->assertEquals($checkoutSession->id, $order->checkout_session_id);
-        $this->assertEquals(OrderStatus::PENDING, $order->status);
-        $this->assertEquals(0, $order->total_amount);
-        $this->assertEquals('USD', $order->currency);
-        $this->assertInstanceOf(LazyUuidFromString::class, $order->uuid);
+        $this->assertEquals($existingOrder->id, $order->id);
+        $this->assertEquals($existingOrder->uuid, $order->uuid);
     }
 
-    public function test_it_generates_a_unique_uuid_for_each_order(): void
+    public function test_it_uses_update_or_create_to_handle_unique_constraint(): void
     {
         // Arrange
         $organization = Organization::factory()->create();
@@ -45,13 +46,19 @@ class CreateOrderActionTest extends TestCase
 
         $action = new CreateOrderAction();
 
-        // Act
+        // Act - First call creates a new order
         $order1 = $action->execute($checkoutSession);
+
+        // Act - Second call should return the same order
         $order2 = $action->execute($checkoutSession);
 
         // Assert
-        $this->assertInstanceOf(LazyUuidFromString::class, $order1->uuid);
-        $this->assertInstanceOf(LazyUuidFromString::class, $order2->uuid);
-        $this->assertNotEquals($order1->uuid->toString(), $order2->uuid->toString());
+        $this->assertEquals($order1->id, $order2->id);
+        $this->assertEquals($order1->uuid, $order2->uuid);
+
+        // Verify only one order exists in the database
+        $this->assertEquals(1, Order::where('organization_id', $organization->id)
+            ->where('checkout_session_id', $checkoutSession->id)
+            ->count());
     }
 }

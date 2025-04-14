@@ -19,6 +19,8 @@ class CreateOrdersTable extends Migration
             $table->text('redirect_url')->nullable(); // Optional custom redirect
             $table->timestamp('completed_at')->nullable();
             $table->timestamps();
+
+            $table->unique(['organization_id', 'checkout_session_id']);
         });
 
         Schema::create('order_items', function (Blueprint $table) {
@@ -26,6 +28,7 @@ class CreateOrdersTable extends Migration
             $table->foreignId('organization_id')->constrained()->cascadeOnDelete();
             $table->foreignId('order_id')->constrained('orders')->onDelete('cascade');
             $table->foreignId('price_id')->constrained('catalog_prices');
+            $table->string('status');
             $table->unsignedBigInteger('slot_id');
             $table->integer('quantity')->default(1);
             $table->integer('total_amount')->nullable();
