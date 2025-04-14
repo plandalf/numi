@@ -10,6 +10,7 @@ use Inertia\Inertia;
 use App\Http\Controllers\MediaController;
 use App\Http\Controllers\ProductsController;
 use App\Http\Controllers\PriceController;
+use App\Http\Controllers\ThemeController;
 
 Route::get('/', function () {
     return Inertia::render('welcome');
@@ -53,6 +54,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         Route::prefix('offers/{offer}')->name('offers.')->group(function () {
             Route::get('pricing', [OffersController::class, 'pricing'])->name('pricing');
+
+            Route::get('settings/theme', [OffersController::class, 'settingsTheme'])->name('settings.theme');
+            Route::put('theme', [OffersController::class, 'updateTheme'])->name('update.theme');
 
             // Add Slot routes
             Route::post('/slots', [OffersController::class, 'storeSlot'])->name('slots.store');
