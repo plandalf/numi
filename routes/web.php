@@ -10,6 +10,8 @@ use Inertia\Inertia;
 use App\Http\Controllers\MediaController;
 use App\Http\Controllers\ProductsController;
 use App\Http\Controllers\PriceController;
+use App\Http\Controllers\ThemeController;
+use App\Http\Controllers\TemplateController;
 
 Route::get('/', function () {
     return Inertia::render('welcome');
@@ -54,6 +56,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::prefix('offers/{offer}')->name('offers.')->group(function () {
             Route::get('pricing', [OffersController::class, 'pricing'])->name('pricing');
 
+            Route::get('settings/theme', [OffersController::class, 'settingsTheme'])->name('settings.theme');
+            Route::put('theme', [OffersController::class, 'updateTheme'])->name('update.theme');
+
             // Add Slot routes
             Route::post('/slots', [OffersController::class, 'storeSlot'])->name('slots.store');
             Route::put('/slots/{slot}', [OffersController::class, 'updateSlot'])->name('slots.update');
@@ -82,6 +87,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+
+    Route::get('/templates', [TemplateController::class, 'index'])->name('templates.index');
+    Route::post('/templates/{template}/use', [TemplateController::class, 'useTemplate'])->name('templates.use');
 });
 
 // Media routes
