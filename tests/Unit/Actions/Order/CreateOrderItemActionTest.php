@@ -44,7 +44,6 @@ class CreateOrderItemActionTest extends TestCase
             'price_id' => $price->id,
             'slot_id' => $slot->id,
             'quantity' => 2,
-            'total_amount' => 19998, // $199.98
         ]);
 
         $action = new CreateOrderItemAction();
@@ -59,7 +58,6 @@ class CreateOrderItemActionTest extends TestCase
         $this->assertEquals($checkoutLineItem->price_id, $orderItem->price_id);
         $this->assertEquals($checkoutLineItem->slot_id, $orderItem->slot_id);
         $this->assertEquals($checkoutLineItem->quantity, $orderItem->quantity);
-        $this->assertEquals($checkoutLineItem->total_amount, $orderItem->total_amount);
         $this->assertEquals([], $orderItem->metadata);
     }
 }

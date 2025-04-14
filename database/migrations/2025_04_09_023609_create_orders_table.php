@@ -14,7 +14,6 @@ class CreateOrdersTable extends Migration
             $table->foreignId('organization_id')->constrained()->cascadeOnDelete();
             $table->foreignId('checkout_session_id')->constrained('checkout_sessions')->onDelete('cascade');
             $table->string('status');
-            $table->integer('total_amount')->nullable();
             $table->string('currency', 3)->default('USD');
             $table->text('redirect_url')->nullable(); // Optional custom redirect
             $table->timestamp('completed_at')->nullable();
@@ -31,7 +30,6 @@ class CreateOrdersTable extends Migration
             $table->string('status');
             $table->unsignedBigInteger('slot_id');
             $table->integer('quantity')->default(1);
-            $table->integer('total_amount')->nullable();
             $table->jsonb('metadata')->nullable();
             $table->timestamps();
         });

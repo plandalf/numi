@@ -18,12 +18,10 @@ class CheckoutLineItem extends Model
         'price_id',
         'slot_id',
         'quantity',
-        'total_amount',
         'organization_id',
     ];
 
     protected $casts = [
-        'total_amount' => 'integer',
         'quantity' => 'integer',
     ];
 

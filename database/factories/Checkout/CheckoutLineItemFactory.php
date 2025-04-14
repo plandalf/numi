@@ -30,7 +30,6 @@ class CheckoutLineItemFactory extends Factory
     public function definition(): array
     {
         $quantity = fake()->numberBetween(1, 5);
-        $unitAmount = fake()->numberBetween(100, 1000);
 
         return [
             'organization_id' => Organization::factory(),
@@ -38,7 +37,6 @@ class CheckoutLineItemFactory extends Factory
             'price_id' => Price::factory(),
             'slot_id' => Slot::factory(),
             'quantity' => $quantity,
-            'total_amount' => $quantity * $unitAmount,
         ];
     }
 }

@@ -9,7 +9,11 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Collection as DBCollection;
 
+/**
+ * @property DBCollection<OrderItem> $items
+ */
 class Order extends Model
 {
     use UuidRouteKey, HasFactory;
@@ -25,7 +29,6 @@ class Order extends Model
         'uuid',
         'checkout_session_id',
         'status',
-        'total_amount',
         'currency',
         'redirect_url',
         'completed_at',
@@ -38,7 +41,6 @@ class Order extends Model
      * @var array<string, string>
      */
     protected $casts = [
-        'total_amount' => 'integer',
         'completed_at' => 'datetime',
         'status' => OrderStatus::class,
     ];
@@ -96,23 +98,11 @@ class Order extends Model
 
     /**
      * Calculate the total amount for the order based on its items.
-     *
+     *check
      * @return float
      */
-    public function calculateTotalAmount(): float
+    public function getTotalAmountAttribute(): float
     {
         return $this->items->sum('total_amount');
-    }
-
-    /**
-     * Update the total amount for the order based on its items.
-     *
-     * @return bool
-     */
-    public function updateTotalAmount(): bool
-    {
-        return $this->update([
-            'total_amount' => $this->calculateTotalAmount(),
-        ]);
     }
 }

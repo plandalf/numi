@@ -31,7 +31,6 @@ return new class extends Migration
             $table->foreign('price_id')->references('id')->on('catalog_prices');
             $table->unsignedBigInteger('slot_id');
             $table->integer('quantity')->default(1);
-            $table->integer('total_amount')->nullable();
             $table->timestamps();
         });
     }
