@@ -5,14 +5,17 @@ namespace App\Models\Store;
 use App\Database\Model;
 use App\Models\Media;
 use App\Models\Store\Slot;
+use App\Models\Theme;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
  * @property int $organization_id
+ * @property int|null $theme_id
  * @property string|null $name
  * @property string|null $description
  * @property int $product_image_id
@@ -32,6 +35,7 @@ class Offer extends Model
 
     protected $fillable = [
         'organization_id',
+        'theme_id',
         'name',
         'description',
         'product_image_id',
@@ -60,6 +64,11 @@ class Offer extends Model
     public function slots(): HasMany
     {
         return $this->hasMany(Slot::class);
+    }
+
+    public function theme(): BelongsTo
+    {
+        return $this->belongsTo(Theme::class);
     }
 
     public function scopePublished($query)
