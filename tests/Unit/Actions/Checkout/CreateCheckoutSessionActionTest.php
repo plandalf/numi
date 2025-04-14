@@ -86,7 +86,6 @@ class CreateCheckoutSessionActionTest extends TestCase
                     'price_id' => $slot->default_price_id,
                     'slot_id' => $slot->id,
                     'quantity' => 1,
-                    'total_amount' => $priceAmount,
                 ]);
             });
 

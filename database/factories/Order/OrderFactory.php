@@ -36,7 +36,6 @@ class OrderFactory extends Factory
                 OrderStatus::CANCELLED->value,
             ]),
             'checkout_session_id' => CheckoutSession::factory(),
-            'total_amount' => fake()->numberBetween(1000, 10000),
             'currency' => fake()->currencyCode(),
             'redirect_url' => fake()->url(),
             'completed_at' => fake()->dateTimeBetween('-1 month', 'now'),

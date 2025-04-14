@@ -29,8 +29,6 @@ class CommitCheckoutAction
             ($this->createOrderItemAction)($order, $lineItem);
         }
 
-        $order->updateTotalAmount();
-
         $checkoutSession->markAsClosed();
 
         return $checkoutSession;

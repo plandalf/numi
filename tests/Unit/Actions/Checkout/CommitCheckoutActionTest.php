@@ -59,7 +59,6 @@ class CommitCheckoutActionTest extends TestCase
             'organization_id' => $checkoutSession->organization_id,
             'checkout_session_id' => $checkoutSession->id,
             'status' => OrderStatus::PENDING,
-            'total_amount' => 0,
         ]);
 
         // Mock CreateOrderAction
@@ -85,7 +84,6 @@ class CommitCheckoutActionTest extends TestCase
                         'price_id' => $lineItem->price_id,
                         'slot_id' => $lineItem->slot_id,
                         'quantity' => $lineItem->quantity,
-                        'total_amount' => $lineItem->total_amount,
                     ]);
                 });
         }

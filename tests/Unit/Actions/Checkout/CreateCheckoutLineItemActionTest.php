@@ -50,6 +50,5 @@ class CreateCheckoutLineItemActionTest extends TestCase
         $this->assertEquals($slot->default_price_id, $lineItem->price_id);
         $this->assertEquals($slot->id, $lineItem->slot_id);
         $this->assertEquals(1, $lineItem->quantity);
-        $this->assertEquals($price->amount, $lineItem->total_amount);
     }
 }

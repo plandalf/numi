@@ -25,7 +25,6 @@ class CreateOrderAction
             ],
             [
                 'status' => OrderStatus::PENDING,
-                'total_amount' => 0,
                 'currency' => 'USD',
             ]
         );

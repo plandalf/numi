@@ -30,9 +30,6 @@ class OrderItemFactory extends Factory
     public function definition(): array
     {
         $quantity = fake()->numberBetween(1, 5);
-        $unitAmount = fake()->numberBetween(100, 1000);
-        $subtotal = $quantity * $unitAmount;
-        $tax = (int)($subtotal * 0.1); // 10% tax
 
         return [
             'organization_id' => Organization::factory(),
@@ -40,7 +37,6 @@ class OrderItemFactory extends Factory
             'price_id' => Price::factory(),
             'slot_id' => Slot::factory(),
             'quantity' => $quantity,
-            'total_amount' => $subtotal + $tax,
         ];
     }
 }

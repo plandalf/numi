@@ -2,6 +2,7 @@
 
 namespace Database\Factories\Catalog;
 
+use App\Enums\ChargeType;
 use App\Models\Catalog\Price;
 use App\Models\Catalog\Product;
 use App\Models\Organization;
@@ -28,7 +29,7 @@ class PriceFactory extends Factory
     {
         return [
             'name' => fake()->words(3, true),
-            'type' => fake()->randomElement(['fixed', 'recurring']),
+            'type' => fake()->randomElement(ChargeType::values()),
             'product_id' => Product::factory(),
             'lookup_key' => fake()->unique()->bothify('PRICE-####-???'),
             'organization_id' => Organization::factory(),
