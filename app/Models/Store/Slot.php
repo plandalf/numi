@@ -4,15 +4,17 @@ namespace App\Models\Store;
 
 use App\Database\Model;
 use App\Models\Catalog\Price;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Slot extends Model
 {
+    use HasFactory;
+
     protected $table = 'store_offer_slots';
 
     protected $fillable = [
         'offer_id',
-        'organization_id',
         'key',
         'name',
         'default_price_id',

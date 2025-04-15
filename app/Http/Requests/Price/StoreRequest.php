@@ -8,6 +8,7 @@ use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\RequiredIf;
+use App\Enums\ChargeType;
 
 class StoreRequest extends FormRequest
 {
@@ -43,7 +44,7 @@ class StoreRequest extends FormRequest
             'scope' => ['required', Rule::in(['list', 'custom'])],
             'type' => [
                 'required',
-                Rule::in(['one_time', 'recurring', 'tiered', 'volume', 'graduated', 'package']) // Added package
+                Rule::in(ChargeType::values())
             ],
             'amount' => ['required', 'integer', 'min:0'],
             'currency' => ['required', 'string', 'size:3'],
@@ -60,7 +61,7 @@ class StoreRequest extends FormRequest
             // Recurring fields validation
             'renew_interval' => [
                 new RequiredIf($this->input('type') === 'recurring'),
-                'nullable', 
+                'nullable',
                 Rule::in(['day', 'week', 'month', 'year'])
             ],
             'billing_anchor' => [
@@ -88,7 +89,7 @@ class StoreRequest extends FormRequest
     protected function prepareForValidation()
     {
         $this->mergeIfMissing(['is_active' => true]);
-        
+
         if ($this->input('scope') === 'list') {
             $this->merge(['parent_list_price_id' => null]);
         }
@@ -101,7 +102,7 @@ class StoreRequest extends FormRequest
                  // cancel_after_cycles might apply to non-recurring, keep as is
              ]);
         }
-        
+
         // TODO: Add preparation logic for properties based on type
     }
 }

@@ -2,12 +2,22 @@
 
 namespace App\Models\Catalog;
 
+use App\Enums\ChargeType;
+use App\Modules\Billing\Charges\GraduatedCharge;
+use App\Modules\Billing\Charges\OneTimeCharge;
+use App\Modules\Billing\Charges\PackageCharge;
+use App\Modules\Billing\Charges\VolumeCharge;
+use App\Modules\Billing\CurrencyCast;
+use App\Modules\Billing\MoneyCast;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
+use Money\Currency;
+use Money\Money;
+use Parental\HasChildren;
 
 /**
  * App\Models\Catalog\Price
@@ -17,9 +27,9 @@ use Illuminate\Support\Carbon;
  * @property int $organization_id
  * @property int|null $parent_list_price_id If scope=custom, points to list price base
  * @property string $scope list or custom
- * @property string $type one_time|graduated|standard|volume|package
- * @property int $amount Base price/amount in cents
- * @property string $currency 3-letter ISO currency code
+ * @property ChargeType $type one_time|graduated|standard|volume|package
+ * @property Money $amount Base price/amount in cents
+ * @property Currency $currency 3-letter ISO currency code
  * @property array|null $properties
  * @property string|null $name Optional name for the price
  * @property string|null $lookup_key Optional unique lookup key
@@ -41,8 +51,11 @@ use Illuminate\Support\Carbon;
 class Price extends Model
 {
     use HasFactory, SoftDeletes;
+    use HasChildren;
 
     protected $table = 'catalog_prices';
+
+    const MAX_QUANTITY = 1_000_000_000_000; // 1 trillion
 
     protected $fillable = [
         'product_id',
@@ -76,11 +89,19 @@ class Price extends Model
         'properties' => 'json',
         'is_active' => 'boolean',
         'archived_at' => 'datetime',
-
-        'amount' => 'integer', // Ensure amount is treated as integer (cents)
+        'type' => ChargeType::class,
+        'currency' => CurrencyCast::class,
+        'amount' => MoneyCast::class, // Ensure amount is treated as integer (cents)
 
         'recurring_interval_count' => 'integer',
         'cancel_after_cycles' => 'integer',
+    ];
+
+    protected $childTypes = [
+        'graduated' => GraduatedCharge::class,
+        'one_time' => OneTimeCharge::class,
+        'volume' => VolumeCharge::class,
+        'package' => PackageCharge::class,
     ];
 
     public function product(): BelongsTo
