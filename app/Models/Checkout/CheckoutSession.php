@@ -46,10 +46,25 @@ class CheckoutSession extends Model
         return $this->hasMany(CheckoutLineItem::class);
     }
 
-    public function markAsClosed(): self
+    public function markAsClosed(bool $save = false): self
     {
         $this->status = CheckoutSessionStatus::CLOSED;
         $this->finalized_at = now();
+
+        if ($save) {
+            $this->save();
+        }
+
+        return $this;
+    }
+
+    public function markAsFailed(bool $save = false): self
+    {
+        $this->status = CheckoutSessionStatus::FAILED;
+
+        if ($save) {
+            $this->save();
+        }
 
         return $this;
     }
