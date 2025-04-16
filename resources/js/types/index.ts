@@ -5,6 +5,12 @@ export interface Organization {
     name: string;
     ulid: string;
     invite_link: string;
+    join_token: string;
+    users?: (User & {
+        pivot: {
+            role: string;
+        };
+    })[];
 }
 
 export interface User {
