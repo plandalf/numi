@@ -31,3 +31,9 @@ export interface SharedData {
         user: User;
     };
 }
+
+export interface PageProps {
+    auth: {
+        user: User;
+    };
+}

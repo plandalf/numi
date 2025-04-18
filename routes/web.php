@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\CheckoutController;
+use App\Http\Controllers\IntegrationsController;
 use App\Http\Controllers\OffersController;
 use App\Http\Controllers\OrganizationController;
 use App\Http\Controllers\Settings\ProfileController;
@@ -62,6 +63,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         Route::resource('products', ProductsController::class);
         Route::resource('products.prices', PriceController::class);
+
+        Route::get('/integrations/{integrationType}/callback', [IntegrationsController::class, 'callback']);
+        Route::post('/integrations/{integrationType}/authorizations', [IntegrationsController::class, 'authorize']);
+        Route::resource('integrations', IntegrationsController::class);
 
         // Offers routes
         Route::resource('offers', OffersController::class)->except(['show', 'create']);
