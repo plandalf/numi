@@ -59,7 +59,7 @@ class OffersController extends Controller
             $offer->save();
         // }
 
-        return Inertia::render('offers/edit', [
+        return Inertia::render('offers/Edit', [
             'offer' => new OfferResource($offer->load('slots')),
             'showNameDialog' => session('showNameDialog', false),
         ]);

@@ -1,4 +1,4 @@
-function JSONSchemaEditor({
+export function JSONSchemaEditor({
   schema,
   path = '',
   value,

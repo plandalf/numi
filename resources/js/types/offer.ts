@@ -260,12 +260,7 @@ export type FormSection = {
 };
 
 export type PageView = {
-    content?: PageSection;
-    promo?: PageSection;
-    title?: PageSection;
-    action?: PageSection;
-    form?: FormSection;
-    [key: string]: PageSection | FormSection | undefined;
+    [key: string]: PageSection;
 };
 
 export interface Page {

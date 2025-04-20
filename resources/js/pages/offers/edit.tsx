@@ -1,7 +1,6 @@
-// @ts-nocheck
 import AppOfferLayout from '@/layouts/app/app-offer-layout';
 import { type BreadcrumbItem } from '@/types';
-import { type OfferView, type Page, type PageType } from '@/types/offer';
+import { Block, Offer, ViewSection, type OfferView, type Page, type PageType } from '@/types/offer';
 import { Head, useForm } from '@inertiajs/react';
 import {
     Dialog,
@@ -18,36 +17,29 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useEffect, useState, useRef, useCallback, use } from 'react';
+import { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import { cn } from '@/lib/utils';
 import { MoreVertical, ArrowRightToLine, FileText, CheckSquare, Share2, Plus } from 'lucide-react';
-import PagePreview from '@/components/offers/page-preview';
+import PagePreview, { findBlockInPage, Inspector } from '@/components/offers/page-preview';
 import PageFlowEditor from '@/components/offers/page-flow-editor';
 import { ReactFlowProvider } from '@xyflow/react';
 import update from "immutability-helper";
-import { DndProvider, useDrag } from 'react-dnd';
-import { HTML5Backend } from 'react-dnd-html5-backend';
-import { DRAG_TYPES } from '@/components/offers/page-preview';
 import { GripVertical, Type, SquareStack, Image, CreditCard, List } from 'lucide-react';
-import { blockTypes } from '@/components/blocks';
+import { GlobalStateProvider } from '@/pages/Checkout';
+import { CheckoutSession } from '@/pages/Checkout';
+import { DRAG_TYPES } from '@/components/offers/layout-preview';
+import { DndContext, DragOverlay, useDraggable, closestCenter, DragStartEvent, useDroppable, useDndMonitor, DragPendingEvent, useSensor, PointerSensor, useSensors, rectIntersection, DragOverEvent, DragEndEvent } from "@dnd-kit/core";
 
-interface Offer {
-    id: number;
-    name: string;
-    view: OfferView;
-    created_at: string;
-    updated_at: string;
-}
+import { blockTypes, getBlockMeta } from '@/components/blocks';
+import { v4 as uuidv4 } from 'uuid';
+import React, { createContext, useContext } from 'react';
+
 
 interface Props {
     offer: Offer;
     showNameDialog?: boolean;
 }
 
-type FormData = {
-    name: string;
-    view: OfferView;
-}
 
 const PAGE_TYPE_ICONS: Record<PageType, React.ReactNode> = {
     entry: <ArrowRightToLine className="w-4 h-4" />,
@@ -67,577 +59,1062 @@ const BLOCK_ICONS = {
 
 // Block item component for the Editor sidebar
 interface BlockItemProps {
-  // blockType: typeof BLOCK_TYPES[keyof typeof BLOCK_TYPES];
+  blockType: typeof blockTypes[keyof typeof blockTypes];
 }
 
-const BlockItem = ({ blockType }: BlockItemProps) => {
-  const [{ isDragging }, drag] = useDrag(() => ({
-    type: DRAG_TYPES.NEW_BLOCK,
-    item: { blockType },
-    collect: monitor => ({
-      isDragging: !!monitor.isDragging()
-    })
-  }));
+// note: tempaltes?
+
+const BlockTemplateItem = ({ id, blockType }: BlockItemProps) => {
+
+  const meta = getBlockMeta(id);
+
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+  } = useDraggable({
+    id: `template:${id}`,
+  });
+
+  const style = {
+    border: '1px dashed black',
+  };
 
   return (
     <div
-      // @ts-ignore - React DnD type mismatch with refs
-      ref={(node) => drag(node)}
+      ref={setNodeRef}
+      {...attributes}
+      {...listeners}
+      style={style}
       className={cn(
         "flex items-center gap-2 p-2 rounded cursor-move border border-border hover:bg-muted transition-all",
-        isDragging && "opacity-50"
       )}
     >
-      <GripVertical className="w-4 h-4 text-muted-foreground" />
       <span className="text-muted-foreground">{BLOCK_ICONS[blockType.id as keyof typeof BLOCK_ICONS]}</span>
-      <span className="text-sm">{blockType.name}</span>
+      <span className="text-sm">{meta.icon} {meta.title}</span>
     </div>
   );
 };
 
-export default function Edit({ offer, showNameDialog }: Props) {
-    // console.log({ offer });
-    const [isNameDialogOpen, setIsNameDialogOpen] = useState(false);
-    const [selectedPage, setSelectedPage] = useState<string>(offer.view?.first_page);
-    const [editingPageName, setEditingPageName] = useState<string | null>(null);
-    const [pageNameInput, setPageNameInput] = useState("");
-    const [showPageLogic, setShowPageLogic] = useState(false);
-    const inputRef = useRef<HTMLInputElement>(null);
-    const [isRenamingFromDropdown, setIsRenamingFromDropdown] = useState(false);
-    const [showAddPageDialog, setShowAddPageDialog] = useState(false);
-    const [isReady, setIsReady] = useState(false);
-    const { data, setData, put, processing, errors, setDefaults } = useForm({
-        name: offer.name,
-        view: offer.view
+// --- Editor Context ---
+interface EditorContextType {
+  data: any;
+  setData: typeof setData;
+  put: typeof put;
+  processing: boolean;
+  errors: any;
+  setDefaults: typeof setDefaults;
+
+  isNameDialogOpen: boolean;
+  setIsNameDialogOpen: React.Dispatch<React.SetStateAction<boolean>>;
+
+  selectedPage: string;
+  setSelectedPage: React.Dispatch<React.SetStateAction<string>>;
+
+  editingPageName: string | null;
+  setEditingPageName: React.Dispatch<React.SetStateAction<string | null>>;
+
+  pageNameInput: string;
+  setPageNameInput: React.Dispatch<React.SetStateAction<string>>;
+
+  showPageLogic: boolean;
+  setShowPageLogic: React.Dispatch<React.SetStateAction<boolean>>;
+
+  inputRef: React.RefObject<HTMLInputElement>;
+
+  isRenamingFromDropdown: boolean;
+  setIsRenamingFromDropdown: React.Dispatch<React.SetStateAction<boolean>>;
+
+  showAddPageDialog: boolean;
+  setShowAddPageDialog: React.Dispatch<React.SetStateAction<boolean>>;
+
+  isReady: boolean;
+  setIsReady: React.Dispatch<React.SetStateAction<boolean>>;
+
+  selectedBlockId: string | null;
+  setSelectedBlockId: React.Dispatch<React.SetStateAction<string | null>>;
+
+  handleSave: () => void;
+  handleNameSubmit: (e: React.FormEvent) => void;
+  handlePageNameClick: (pageId: string, currentName: string) => void;
+  handlePageNameSave: (pageId: string) => void;
+  handlePageAction: (pageId: string, action: 'rename' | 'duplicate' | 'delete') => void;
+  handlePageUpdate: (updatedPage: Page) => void;
+  getOrderedPages: (view: OfferView) => [string, Page][];
+  handleAddPage: (type: PageType) => void;
+  offer: Offer;
+}
+
+const EditorContext = createContext<EditorContextType | undefined>(undefined);
+
+export function useEditor() {
+  const ctx = useContext(EditorContext);
+  if (!ctx) throw new Error('useEditor must be used within an EditorProvider');
+  return ctx;
+}
+
+function EditorProvider({ offer, showNameDialog, children }: React.PropsWithChildren<Props>) {
+  // --- move all state/logic from Edit here ---
+  const [isNameDialogOpen, setIsNameDialogOpen] = useState(false);
+  const [selectedPage, setSelectedPage] = useState<string>(offer.view?.first_page);
+  const [editingPageName, setEditingPageName] = useState<string | null>(null);
+  const [pageNameInput, setPageNameInput] = useState("");
+  const [showPageLogic, setShowPageLogic] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [isRenamingFromDropdown, setIsRenamingFromDropdown] = useState(false);
+  const [showAddPageDialog, setShowAddPageDialog] = useState(false);
+  const [isReady, setIsReady] = useState(false);
+  
+  // const { data, setData, put, processing, errors, setDefaults } = useForm({
+  //   name: offer.name,
+  //   view: offer.view
+  // });
+
+  const [data, setData] = useState({
+    name: offer.name,
+    view: offer.view
+  });
+
+  const [errors, setErrors] = useState({});
+
+  useEffect(() => {
+    if (showNameDialog) {
+      setIsNameDialogOpen(true);
+    }
+  }, [showNameDialog]);
+
+  useEffect(() => {
+    if (!isReady) {
+      setIsReady(true);
+      return;
+    }
+    // put(route('offers.update', offer.id), {
+    //   preserveScroll: true,
+    //   onSuccess: (a) => {
+    //     setDefaults();
+    //   }
+    // });
+  }, [data]);
+
+  const handleSave = useCallback(() => {}, [
+    setData
+  ]);
+
+  const handleNameSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    put(route('offers.update', offer.id), {
+      onSuccess: () => setIsNameDialogOpen(false),
+    });
+  };
+
+  const handlePageNameClick = (pageId: string, currentName: string) => {
+    if (pageId === selectedPage) {
+      setEditingPageName(pageId);
+      setPageNameInput(currentName);
+      setTimeout(() => {
+        inputRef.current?.focus();
+        inputRef.current?.select();
+      }, 0);
+    } else {
+      setSelectedPage(pageId);
+    }
+  };
+
+  const handlePageNameSave = (pageId: string) => {
+    if (isRenamingFromDropdown) {
+      setIsRenamingFromDropdown(false);
+      return;
+    }
+    const updatedPages = {
+      ...data.view.pages,
+      [pageId]: {
+        ...data.view.pages[pageId],
+        name: pageNameInput
+      }
+    };
+    setData(update(data, { view: { pages: { $set: updatedPages } }}));
+    handleSave();
+    setEditingPageName(null);
+  };
+
+  const handlePageAction = (pageId: string, action: 'rename' | 'duplicate' | 'delete') => {
+    switch (action) {
+      case 'rename':
+        setIsRenamingFromDropdown(true);
+        handlePageNameClick(pageId, data.view.pages[pageId].name);
+        break;
+      case 'duplicate':
+        const sourcePage = data.view.pages[pageId];
+        const newId = `page_${Math.random().toString(36).substr(2, 9)}`;
+        const newPage = {
+          ...sourcePage,
+          id: newId,
+          name: `${sourcePage.name} (Copy)`
+        };
+        const updatedPages = {
+          ...data.view.pages,
+          [newId]: newPage
+        };
+        setData(update(data, { view: { pages: { $set: updatedPages } }}));
+        setTimeout(() => { handleSave(); }, 0);
+        break;
+      case 'delete':
+        const pagesToUpdate = { ...data.view.pages };
+        delete pagesToUpdate[pageId];
+        Object.keys(pagesToUpdate).forEach(pageKey => {
+          const page = pagesToUpdate[pageKey];
+          if (page.next_page.default_next_page === pageId) {
+            pagesToUpdate[pageKey] = {
+              ...page,
+              next_page: {
+                ...page.next_page,
+                default_next_page: null
+              }
+            };
+          }
+          if (page.next_page.branches) {
+            pagesToUpdate[pageKey] = {
+              ...page,
+              next_page: {
+                ...page.next_page,
+                branches: page.next_page.branches.map((branch: { next_page: string | null }) =>
+                  branch.next_page === pageId
+                    ? { ...branch, next_page: null }
+                    : branch
+                )
+              }
+            };
+          }
+        });
+        setData(update(data, { view: { pages: { $set: pagesToUpdate } }}));
+        if (selectedPage === pageId) {
+          const remainingPageIds = Object.keys(pagesToUpdate);
+          if (remainingPageIds.length > 0) {
+            const firstPageId = data.view.first_page;
+            const newSelectedPageId = (firstPageId && pagesToUpdate[firstPageId])
+              ? firstPageId
+              : remainingPageIds[0];
+            setSelectedPage(newSelectedPageId);
+          }
+        }
+        setTimeout(() => { handleSave(); }, 0);
+        break;
+    }
+  };
+
+  const handlePageUpdate = (updatedPage: Page) => {
+    if (!isReady) return;
+    const updatedView = {
+      ...data.view,
+      pages: {
+        ...data.view.pages,
+        [selectedPage]: updatedPage
+      }
+    };
+    setData(update(data, { view: { $set: updatedView }}));
+  };
+
+  const getOrderedPages = (view: OfferView): [string, Page][] => {
+    const orderedPages: [string, Page][] = [];
+    const visitedPages = new Set<string>();
+    let currentPageId: string | null = view.first_page;
+    while (currentPageId && view.pages[currentPageId] && !visitedPages.has(currentPageId)) {
+      const currentPage: Page = view.pages[currentPageId];
+      orderedPages.push([currentPageId, currentPage]);
+      visitedPages.add(currentPageId);
+      currentPageId = currentPage.next_page?.default_next_page ?? null;
+    }
+    Object.entries(view.pages).forEach(([pageId, page]) => {
+      if (!visitedPages.has(pageId)) {
+        orderedPages.push([pageId, page]);
+        visitedPages.add(pageId);
+      }
+    });
+    return orderedPages;
+  };
+
+  const handleAddPage = (type: PageType) => {
+    const id = `page_${Math.random().toString(36).substr(2, 9)}`;
+    const newPage: Page = {
+      id,
+      name: type === 'entry' ? 'Entry Page' : type === 'ending' ? 'Ending Page' : 'New Page',
+      type,
+      position: { x: 0, y: 0 },
+      view: {
+        promo: { blocks: [] },
+        title: { blocks: [] },
+        action: { blocks: [] },
+        content: { blocks: [] }
+      },
+      layout: { sm: 'split-checkout@v1' },
+      provides: [],
+      next_page: {
+        branches: [],
+        default_next_page: null
+      }
+    };
+    const updatedPages = {
+      ...data.view.pages,
+      [id]: newPage
+    };
+    const updatedView = {
+      ...data.view,
+      pages: updatedPages,
+      first_page: Object.keys(data.view.pages).length === 0 ? id : data.view.first_page
+    };
+    setData(update(data, { view: { $set: updatedView }}));
+    handleSave();
+    setShowAddPageDialog(false);
+  };
+
+  const updateBlock = (block: Block) => {
+    console.log('updateBlock', block)
+    // set the entire page all at once
+    // blocks is an array on the section
+
+    // find block in all sections
+    const page = {...data.view.pages[selectedPage]};
+
+    const sectionId = Object.keys(page.view).find((section) => {
+      const x = page.view[section].blocks.findIndex((b) => b.id === block.id)
+      
+      // console.log("🚵‍♀️", { section, x })
+      if (x === -1) return false;
+
+      return section;
     });
 
-    useEffect(() => {
-        if (showNameDialog) {
-            setIsNameDialogOpen(true);
-        }
-    }, [showNameDialog]);
+    if (!sectionId) return;
 
-    useEffect(() => {
-        if (!isReady) {
-            setIsReady(true);
-            return;
-        }
+    const blockIndex = page.view[sectionId].blocks.findIndex((b) => b.id === block.id);
 
-        put(route('offers.update', offer.id), {
-            preserveScroll: true,
-            onSuccess: (a) => {
-                // Update view from the response
-                // setData('view', offer.view);
-                console.log("SUCCESS!", a.props.offer);
-                setDefaults();
-            }
-        });
-    }, [data]);
+    console.log("🚵‍♀️", { sectionId, blockIndex })
 
-    // Handle saving changes
-    const handleSave = useCallback(() => {
+    // page.view[section].blocks[blockIndex] = block;
 
-    }, [put, offer.id, offer.view, setData]);
+    const thePage = update(page, { view: { [sectionId]: { blocks: { $set: page.view[sectionId].blocks.map((b, i) => i === blockIndex ? block : b) } } } });
+    console.log("PAGE!", { page })
+    // const thePage = update(page, { view: { [blockIndex]: { blocks: { $set: block } } } });
+    // gotta find the section first 
 
-    const handleNameSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        put(route('offers.update', offer.id), {
-            onSuccess: () => setIsNameDialogOpen(false),
-        });
-    };
+    if (blockIndex === -1) return;
 
-    const handlePageNameClick = (pageId: string, currentName: string) => {
-        if (pageId === selectedPage) {
-            setEditingPageName(pageId);
-            setPageNameInput(currentName);
-            setTimeout(() => {
-                inputRef.current?.focus();
-                inputRef.current?.select();
-            }, 0);
-        } else {
-            setSelectedPage(pageId);
-        }
-    };
+    setData(update(data, { view: { pages: { [selectedPage]: { view: { $set: thePage.view } } } } }));
+    
+  }
 
-    const handlePageNameSave = (pageId: string) => {
-        if (isRenamingFromDropdown) {
-            setIsRenamingFromDropdown(false);
-            return;
-        }
+  const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null);
 
-        // Update the page name in the view
-        const updatedPages = {
-            ...data.view.pages,
-            [pageId]: {
-                ...data.view.pages[pageId],
-                name: pageNameInput
-            }
-        };
+  const value: EditorContextType = {
+    data, 
+    setData,
+    // put,
+    // processing,
+    errors,
+    // setDefaults,
+    isNameDialogOpen, setIsNameDialogOpen,
+    selectedPage, setSelectedPage,
+    editingPageName, setEditingPageName,
+    pageNameInput, setPageNameInput,
+    showPageLogic, setShowPageLogic,
+    inputRef,
+    isRenamingFromDropdown, setIsRenamingFromDropdown,
+    showAddPageDialog, setShowAddPageDialog,
+    isReady, setIsReady,
+    handleSave,
+    handleNameSubmit,
+    handlePageNameClick,
+    handlePageNameSave,
+    handlePageAction,
+    handlePageUpdate,
+    getOrderedPages,
+    handleAddPage,
 
-        // Update the form data
-        setData(update(data, { view: { pages: { $set: updatedPages } }}));
+    offer,
+    updateBlock,
 
-        // Use setTimeout to ensure state update is completed
-        handleSave();
-        setEditingPageName(null);
-    };
+    selectedBlockId, setSelectedBlockId,
 
-    const handlePageAction = (pageId: string, action: 'rename' | 'duplicate' | 'delete') => {
-        switch (action) {
-            case 'rename':
-                setIsRenamingFromDropdown(true);
-                handlePageNameClick(pageId, data.view.pages[pageId].name);
-                break;
-            case 'duplicate':
-                const sourcePage = data.view.pages[pageId];
-                const newId = `page_${Math.random().toString(36).substr(2, 9)}`;
-                const newPage = {
-                    ...sourcePage,
-                    id: newId,
-                    name: `${sourcePage.name} (Copy)`
-                };
+  };
+  return <EditorContext.Provider value={value}>{children}</EditorContext.Provider>;
+}
 
-                const updatedPages = {
-                    ...data.view.pages,
-                    [newId]: newPage
-                };
-                setData(update(data, { view: { pages: { $set: updatedPages } }}));
+// --- Refactored Edit component ---
+function Edit({ offer, showNameDialog }: Props) {
+  return (
+    <EditorProvider offer={offer} showNameDialog={showNameDialog}>
+      <EditApp />
+    </EditorProvider>
+  );
+}
 
-                // Use setTimeout to ensure state update is completed
-                setTimeout(() => {
-                    handleSave();
-                }, 0);
-                break;
-            case 'delete':
-                const pagesToUpdate = { ...data.view.pages };
-                delete pagesToUpdate[pageId];
+function parseDndId(id: string): { type: string; id: string } {
+  const [type, ...rest] = id.split(":");
+  return { type, id: rest.join(":") };
+}
 
-                Object.keys(pagesToUpdate).forEach(pageKey => {
-                    const page = pagesToUpdate[pageKey];
-                    if (page.next_page.default_next_page === pageId) {
-                        pagesToUpdate[pageKey] = {
-                            ...page,
-                            next_page: {
-                                ...page.next_page,
-                                default_next_page: null
-                            }
-                        };
-                    }
-                    if (page.next_page.branches) {
-                        pagesToUpdate[pageKey] = {
-                            ...page,
-                            next_page: {
-                                ...page.next_page,
-                                branches: page.next_page.branches.map((branch: { next_page: string | null }) =>
-                                    branch.next_page === pageId
-                                        ? { ...branch, next_page: null }
-                                        : branch
-                                )
-                            }
-                        };
-                    }
-                });
 
-                // setData('view', {
-                //     ...data.view,
-                //     pages: pagesToUpdate
-                // });
-                setData(update(data, { view: { pages: { $set: pagesToUpdate } }}));
+function findSectionIndexById(sections, sectionId: string) {
+  return sections[sectionId]
+}
 
-                // If the deleted page was the selected page, select a new page
-                if (selectedPage === pageId) {
-                    // Choose the first page, or any other page if available
-                    const remainingPageIds = Object.keys(pagesToUpdate);
-                    if (remainingPageIds.length > 0) {
-                        // Try to select the first page in the flow if it exists
-                        const firstPageId = data.view.first_page;
-                        const newSelectedPageId = (firstPageId && pagesToUpdate[firstPageId])
-                            ? firstPageId
-                            : remainingPageIds[0];
+function findBlockIndexById(blocks: Block[], blockId: string) {
+  return blocks.findIndex((block: Block) => block.id === blockId);
+}
 
-                        setSelectedPage(newSelectedPageId);
-                    }
+function getOverBlockIndex(section: ViewSection, overBlockId: string) {
+  return section.blocks.findIndex((block: Block) => block.id === overBlockId);
+}
+
+// --- Main App UI, now using useEditor() ---
+function EditApp() {
+  const {
+    data,
+    setData,
+    processing,
+    errors,
+    setDefaults,
+    isNameDialogOpen, setIsNameDialogOpen,
+    selectedPage, setSelectedPage,
+    editingPageName, setEditingPageName,
+    pageNameInput, setPageNameInput,
+    showPageLogic, setShowPageLogic,
+    inputRef,
+    isRenamingFromDropdown, setIsRenamingFromDropdown,
+    showAddPageDialog, setShowAddPageDialog,
+    isReady, setIsReady,
+    handleSave,
+    handleNameSubmit,
+    handlePageNameClick,
+    handlePageNameSave,
+    handlePageAction,
+    handlePageUpdate,
+    getOrderedPages,
+    handleAddPage,
+    offer,
+
+    selectedBlockId,
+    setSelectedBlockId
+  } = useEditor();
+
+
+
+  const session: CheckoutSession = {
+    id: '123',
+    line_items: [
+      {
+        id: '123',
+      }
+    ],
+    currency: 'USD',
+    subtotal: 100,
+    taxes: 10,
+    shipping: 5,
+    discount: 10,
+    total: 105,
+    metadata: {}
+  }
+
+
+  const [prototype, setPrototype] = useState<null | { sectionId: string; index: number }>();
+  const [activeItem, setActiveItem] = useState<any>(null);
+
+  const [activeBlock, setActiveBlock] = useState<any>(null);
+
+  function handleDragStart(event: DragStartEvent) {
+    console.log('drag start', event);
+
+    const [type, id] = event.active.id.split(':');
+
+    setActiveItem({ type, id });
+
+    if (type === 'template') {
+      setPrototype(null);
+    }
+  }
+
+  function setSections(newSections: ViewSection[]) {
+    setData(update(data, { view: { pages: { [selectedPage]: { view: { $set: newSections } } } } }));
+  }
+
+
+
+  function handleDragOver(event: DragOverEvent) {
+    console.log('drag over', event);
+    if (!event.active || !event.over) return;
+
+    const activeId = event.active.id;
+    const overId = event.over.id;
+
+    const { type: activeType, id: activeRawId } = parseDndId(activeId);
+    const { type: overType, id: overRawId } = parseDndId(overId);
+
+    // active = the currently dragging item
+    // over   = the item that the currently dragging item is over
+
+    const sections = data.view.pages[selectedPage].view;
+
+    // --- TEMPLATE DRAG LOGIC ---
+    if (activeType === 'template') {
+      // Only add prototype if over a block or section
+      if (overType === 'block' || overType === 'section') {
+        let sectionId = overType === 'block'
+          ? String(event.over.data.current?.sortable.containerId.split(':')[1])
+          : String(overRawId);
+
+        console.log('sectionIdx', sectionId);
+
+        if (!sectionId) {
+          // if the section is not found, remove the prototype if it exists
+          if (prototype) {
+            // Remove previous prototype if any
+            let newSections = sections;
+            const oldSectionIdx = findSectionIndexById(newSections, prototype.sectionId);
+            if (oldSectionIdx !== -1) {
+              newSections = update(newSections, {
+                [oldSectionIdx]: {
+                  blocks: { $splice: [[prototype.index, 1]] }
                 }
-
-                // Use setTimeout to ensure state update is completed
-                setTimeout(() => {
-                    handleSave();
-                }, 0);
-                break;
-        }
-    };
-
-    // Handle block updates
-    const handlePageUpdate = (updatedPage: Page) => {
-        if (!isReady) return;
-
-        // @ts-ignore - Ignore TypeScript errors for now to focus on functionality
-        const updatedView = {
-            ...data.view,
-            pages: {
-                // @ts-ignore
-                ...data.view.pages,
-                [selectedPage]: updatedPage
+              });
+              setSections(newSections);
             }
+            setPrototype(null);
+          }
+          return;
+        }
+
+        let insertIdx = null;
+        if (overType === 'block') {
+          insertIdx = getOverBlockIndex(sections[sectionId], overRawId);
+          console.log('insertIdx', insertIdx);
+          if (insertIdx === -1) insertIdx = sections[sectionId].blocks?.length;
+        } else {
+          insertIdx = sections[sectionId].blocks.length;
+        }
+        console.log('insertIdx', insertIdx);
+
+        // If prototype is already at the correct position, do nothing
+        if (prototype && prototype.sectionId === sectionId
+          && prototype.index === insertIdx
+        ) {
+          return;
+        }
+
+        // Remove previous prototype if any
+        let newSections = sections;
+        if (prototype) {
+          const oldSectionIdx = prototype.sectionId;
+          console.log('oldSectionIdx', oldSectionIdx);
+          if (oldSectionIdx) {
+            newSections = update(newSections, {
+              [oldSectionIdx]: {
+                blocks: { $splice: [[prototype.index, 1]] }
+              }
+            });
+          }
+        }
+        // Insert prototype
+        const protoBlock: BlockData = {
+          id: '__proto__',
+          object: 'block',
+          type: activeRawId,
+          content: {
+            value: '*new block*',
+            format: 'markdown',
+          }
         };
 
-        // @ts-ignore
-        setData(update(data, { view: { $set: updatedView }}));
-    };
 
-    const currentPage = data.view?.pages[selectedPage];
-    const nextPageId = currentPage?.next_page?.default_next_page;
-    const nextPage = nextPageId ? data.view?.pages[nextPageId] : null;
-
-    // Add this function to get pages in the correct order
-    const getOrderedPages = (view: OfferView): [string, Page][] => {
-        const orderedPages: [string, Page][] = [];
-        const visitedPages = new Set<string>();
-
-        // First, add pages in the main flow starting from first_page
-        let currentPageId: string | null = view.first_page;
-        while (currentPageId && view.pages[currentPageId] && !visitedPages.has(currentPageId)) {
-            const currentPage: Page = view.pages[currentPageId];
-            orderedPages.push([currentPageId, currentPage]);
-            visitedPages.add(currentPageId);
-            currentPageId = currentPage.next_page?.default_next_page ?? null;
-        }
-
-        // Then, add any remaining pages that aren't in the main flow
-        Object.entries(view.pages).forEach(([pageId, page]) => {
-            if (!visitedPages.has(pageId)) {
-                orderedPages.push([pageId, page]);
-                visitedPages.add(pageId);
-            }
+        newSections = update(newSections, {
+          [sectionId]: {
+            blocks: { $splice: [[insertIdx, 0, protoBlock]] }
+          }
         });
-
-        return orderedPages;
-    };
-
-    // Add this function to handle page creation
-    const handleAddPage = (type: PageType) => {
-        const id = `page_${Math.random().toString(36).substr(2, 9)}`;
-
-        // Create the new page
-        const newPage: Page = {
-            id,
-            name: type === 'entry' ? 'Entry Page' : type === 'ending' ? 'Ending Page' : 'New Page',
-            type,
-            position: { x: 0, y: 0 },
-            view: {
-                promo: { blocks: [] },
-                title: { blocks: [] },
-                action: { blocks: [] },
-                content: { blocks: [] }
-            },
-            layout: { sm: 'split-checkout@v1' },
-            provides: [],
-            next_page: {
-                branches: [],
-                default_next_page: null
-            }
-        };
-
-        // Create updated pages object
-        const updatedPages = {
-            ...data.view.pages,
-            [id]: newPage
-        };
-
-        // If this is the first page, set it as the first page
-        const updatedView = {
-            ...data.view,
-            pages: updatedPages,
-            first_page: Object.keys(data.view.pages).length === 0 ? id : data.view.first_page
-        };
-
-        // Update the form data
-        // setData('view', updatedView);
-        setData(update(data, { view: { $set: updatedView }}));
-
-        // Submit the update
-        handleSave();
-
-        setShowAddPageDialog(false);
-    };
-
-    if (!data.view) {
-        return <div>Loading...</div>;
+        setPrototype({ sectionId, index: insertIdx });
+        setSections(newSections);
+      } else {
+        // Not over a valid drop target, remove prototype if it exists
+        if (prototype) {
+          let newSections = sections;
+          const oldSectionIdx = findSectionIndexById(newSections, prototype.sectionId);
+          if (oldSectionIdx !== -1) {
+            newSections = update(newSections, {
+              [oldSectionIdx]: {
+                blocks: { $splice: [[prototype.index, 1]] }
+              }
+            });
+            setSections(newSections);
+          }
+          setPrototype(null);
+        }
+      }
+      return;
     }
 
-    return (
-        <AppOfferLayout offer={offer}>
-            <Head title={`Edit ${offer.name || 'Untitled Offer'}`} />
+    // --- BLOCK DRAG LOGIC ---
+    if (activeType === 'block') {
+      const sections = data.view.pages[selectedPage].view;
 
-            <Dialog open={isNameDialogOpen} onOpenChange={setIsNameDialogOpen}>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>Name your offer</DialogTitle>
-                        <DialogDescription>
-                            Give your offer a name that describes what you're selling.
-                        </DialogDescription>
-                    </DialogHeader>
-                    <form onSubmit={handleNameSubmit} className="space-y-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="name">Name</Label>
-                            <Input
-                                id="name"
-                                value={data.name}
-                                onChange={e => setData('name', e.target.value)}
-                                placeholder="Enter offer name"
-                                autoFocus
-                            />
-                            {errors.name && (
-                                <p className="text-sm text-red-500">{errors.name}</p>
-                            )}
-                        </div>
-                        <div className="flex justify-end">
-                            <button
-                                type="submit"
-                                className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-                                disabled={processing}
-                            >
-                                Save
-                            </button>
-                        </div>
-                    </form>
-                </DialogContent>
-            </Dialog>
+      // Find current section/block
+      let fromSectionId = String(event.active.data.current?.sortable.containerId?.split(':')[1]);
 
-            <DndProvider backend={HTML5Backend}>
-                <div className="flex flex-grow border-dashed border-1 border-red-500 h-[calc(100vh-60px)]">
-                    {/* Sidebar - Fixed width, no shrink */}
-                    <div className="w-[300px] flex-none border-r border-border bg-card overflow-y-auto ">
-                        <div className="p-4 space-y-4">
-                            <h2 className="text-lg font-semibold">Edit Options</h2>
-                            <div className="space-y-2">
-                                <button
-                                    onClick={() => setIsNameDialogOpen(true)}
-                                    className="w-full rounded-md bg-secondary px-4 py-2 text-sm font-medium text-secondary-foreground hover:bg-secondary/90"
-                                >
-                                    Edit Name
-                                </button>
+      let blockIdx = findBlockIndexById(sections[fromSectionId]?.blocks || [], String(activeRawId));
+      console.log('blockIdx', blockIdx);
 
-                            </div>
-                        </div>
+      if (!fromSectionId || blockIdx === -1) return;
+      let newSections = sections;
 
-                        {/* Available Block Types */}
-                        <div className="p-4 border-t border-border">
-                            <h3 className="text-md font-medium mb-3">Available Blocks</h3>
-                            <p className="text-xs text-muted-foreground mb-4">Drag blocks to add them to your page</p>
+      // Remove block from old location
+      newSections = update(newSections, {
+        [fromSectionId]: {
+          blocks: { $splice: [[blockIdx, 1]] }
+        }
+      });
 
-                            <div className="space-y-2">
-                                {Object.values(blockTypes).map((blockType) => (
-                                    <BlockItem
-                                        key={blockType.id}
-                                        blockType={blockType}
-                                    />
-                                ))}
-                            </div>
-                        </div>
-                    </div>
 
-                    {/* Main Content Area */}
-                    <div className="flex-1 flex flex-col min-w-0 relative">
-                        {/* Preview Area - Make it fill the available space */}
-                        <div className="absolute inset-0 bottom-[68px] overflow-hidden">
-                            <div className="h-full">
-                                <PagePreview
-                                    page={currentPage}
-                                    onUpdatePage={handlePageUpdate}
-                                />
-                            </div>
-                        </div>
+      console.log('newSections', { fromSectionId, blockIdx, newSections });
 
-                        {/* Toolbar */}
-                        <div className="absolute bottom-0 left-0 right-0 border-t border-border bg-muted">
-                            <div className="p-4">
-                                <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-2 overflow-x-auto">
-                                        {getOrderedPages(data.view).map(([pageId, page]) => (
-                                            <div
-                                                key={pageId}
-                                                className={cn(
-                                                    "flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium whitespace-nowrap",
-                                                    selectedPage === pageId
-                                                        ? "bg-primary text-primary-foreground"
-                                                        : "bg-secondary text-secondary-foreground hover:bg-secondary/90"
-                                                )}
-                                            >
-                                                {editingPageName === pageId ? (
-                                                    <Input
-                                                        ref={inputRef}
-                                                        value={pageNameInput}
-                                                        onChange={(e) => setPageNameInput(e.target.value)}
-                                                        onBlur={() => handlePageNameSave(pageId)}
-                                                        onKeyDown={(e) => {
-                                                            if (e.key === 'Enter') {
-                                                                setIsRenamingFromDropdown(false);
-                                                                handlePageNameSave(pageId);
-                                                            } else if (e.key === 'Escape') {
-                                                                setIsRenamingFromDropdown(false);
-                                                                setEditingPageName(null);
-                                                            }
-                                                        }}
-                                                        className={cn(
-                                                            "h-6 px-1 py-0 w-[120px]",
-                                                            selectedPage === pageId
-                                                                ? "bg-primary text-primary-foreground"
-                                                                : "bg-secondary text-secondary-foreground"
-                                                        )}
-                                                    />
-                                                ) : (
-                                                    <button
-                                                        onClick={() => handlePageNameClick(pageId, page.name)}
-                                                        className="focus:outline-none flex items-center gap-2"
-                                                    >
-                                                        <span className="text-muted-foreground">
-                                                        {PAGE_TYPE_ICONS[page.type]}
-                                                    </span>
+      // Insert into new location
+      if (overType === 'block') {
+        let toSectionId = event.over.data.current?.sortable.containerId?.split(':')[1];
 
-                                                        {page.name}
-                                                    </button>
-                                                )}
+        const o =  event.over.data ;
+        console.log("🧑‍🎤 ", { toSectionId, newSections,o, overRawId })
 
-                                                {selectedPage === pageId && (
-                                                    <DropdownMenu>
-                                                        <DropdownMenuTrigger asChild>
-                                                            <button className="focus:outline-none">
-                                                                <MoreVertical className="w-4 h-4" />
-                                                            </button>
-                                                        </DropdownMenuTrigger>
-                                                        <DropdownMenuContent align="end">
-                                                            <DropdownMenuItem onClick={() => handlePageAction(pageId, 'rename')}>
-                                                                Rename
-                                                            </DropdownMenuItem>
-                                                            <DropdownMenuItem onClick={() => handlePageAction(pageId, 'duplicate')}>
-                                                                Duplicate
-                                                            </DropdownMenuItem>
-                                                            <DropdownMenuItem
-                                                                onClick={() => handlePageAction(pageId, 'delete')}
-                                                                className="text-destructive"
-                                                            >
-                                                                Delete
-                                                            </DropdownMenuItem>
-                                                        </DropdownMenuContent>
-                                                    </DropdownMenu>
-                                                )}
-                                            </div>
-                                        ))}
-                                        <button
-                                            onClick={() => setShowAddPageDialog(true)}
-                                            className="flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium bg-secondary text-secondary-foreground hover:bg-secondary/90"
-                                        >
-                                            <Plus className="w-4 h-4" />
-                                            Add Page
-                                        </button>
-                                    </div>
+        let overBlockIdx = getOverBlockIndex(newSections[toSectionId], overRawId);
+        if (toSectionId === -1 || overBlockIdx === -1) return;
+        // Insert before or after depending on pointer position (y axis)
+        // For simplicity, always insert before for now (can enhance with pointer position)
+        const block = sections[fromSectionId]?.blocks?.[blockIdx];
+        if (!block) return;
+        newSections = update(newSections, {
+          [toSectionId]: {
+            blocks: { $splice: [[overBlockIdx, 0, block]] }
+          }
+        });
+      } else if (overType === 'section') {
+        let toSectionId = overRawId;
 
-                                    <div className="flex items-center gap-4">
-                                        <div className="flex items-center gap-2">
-                                            <span className="text-sm text-muted-foreground">Layout:</span>
-                                            <span className="text-sm font-medium">{currentPage.layout.sm}</span>
-                                        </div>
+        if (!toSectionId) return;
 
-                                        {nextPage && (
-                                            <div className="flex items-center gap-2">
-                                                <span className="text-sm text-muted-foreground">Next:</span>
-                                                <span className="text-sm font-medium">{nextPage.name}</span>
-                                            </div>
-                                        )}
+        const block = sections[fromSectionId]?.blocks?.[blockIdx];
+        if (!block) return;
 
-                                        <div className="flex items-center gap-2 hidden">
-                                            <span className="text-sm text-muted-foreground">Provides:</span>
-                                            <div className="flex gap-1">
-                                                {currentPage.provides.map((provide: string) => (
-                                                    <span
-                                                        key={provide}
-                                                        className="bg-secondary px-2 py-0.5 rounded text-xs"
-                                                    >
-                                                        {provide}
-                                                    </span>
-                                                ))}
-                                            </div>
-                                        </div>
+        console.log('abc', newSections, toSectionId, newSections[toSectionId])
 
-                                        <button
-                                            onClick={() => setShowPageLogic(true)}
-                                            className="flex items-center gap-2 px-3 py-1.5 text-sm hover:bg-secondary/90 bg-secondary rounded-md"
-                                        >
-                                            <Share2 className="w-4 h-4" />
-                                            Page Logic
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+        newSections = update(newSections, {
+          [toSectionId]: {
+            blocks: { $push: [block] }
+          }
+        });
+      }
+      setSections(newSections);
+      return;
+    }
+  }
+
+  function handleDragEnd(event: DragEndEvent) {
+
+    if (!event.active) return;
+    console.log('drag end', event);
+
+
+    const activeId = String(event.active.id);
+    const { type: activeType, id: activeRawId } = parseDndId(activeId);
+
+    const sections = data.view.pages[selectedPage].view;
+    const sectionId = event.over?.data.current?.sortable.containerId.split(':')[1];
+    const section = sections[sectionId];
+    let newSections = sections;
+
+    // --- TEMPLATE DROP ---
+    if (activeType === 'template') {
+      if (prototype) {
+        // Replace prototype with real block
+        if (sectionId) {
+          const newBlock: BlockData = {
+            id: uuidv4(),
+            type: 'text',
+            object: 'block',
+            content: {
+              value: '*new block*',
+              format: 'markdown',
+            }
+          };
+          console.log('----ADDING-BLOCK----', newBlock)
+
+          newSections = update(newSections, {
+            [sectionId]: {
+              blocks: { $splice: [[prototype.index, 1, newBlock]] }
+            }
+          });
+        }
+      }
+      setPrototype(null);
+      setSections(newSections);
+      setActiveItem(null);
+      return;
+    }
+
+    // --- BLOCK DROP ---
+    if (activeType === 'block') {
+      // No-op: all logic handled in dragOver for live reordering
+      setActiveItem(null);
+      return;
+    }
+
+    setActiveItem(null);
+  }
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: { distance: 10 }
+    })
+  )
+
+  if (!data.view) {
+    return <div>Loading...</div>;
+  }
+
+  return (
+    <AppOfferLayout offer={offer}>
+      <Head title={`Edit ${offer.name || 'Untitled Offer'}`} />
+
+      <GlobalStateProvider offer={data} session={session}>
+
+        <DndContext
+          sensors={sensors}
+          onDragStart={handleDragStart}
+          onDragEnd={handleDragEnd}
+          onDragOver={handleDragOver}
+          collisionDetection={rectIntersection}
+        >
+          <DragOverlay dropAnimation={null}>
+            {activeItem && (
+              <div>
+                <h3>{activeItem?.type} : {activeItem?.id} </h3>
+                {/* <pre>{JSON.stringify(activeItemData, null, 2)}</pre> */}
+              </div>
+            )}
+          </DragOverlay>
+
+          <div className="flex flex-grow border-dashed border-1 border-red-500 h-[calc(100vh-60px)]">
+            {/* Sidebar - Fixed width, no shrink */}
+            <div className="w-[300px] flex-none border-r border-border bg-card overflow-y-auto ">
+              <div className="p-4 space-y-4">
+                <h2 className="text-lg font-semibold">Edit Options</h2>
+                <div className="space-y-2">
+                  <button
+                    onClick={() => setIsNameDialogOpen(true)}
+                    className="w-full rounded-md bg-secondary px-4 py-2 text-sm font-medium text-secondary-foreground hover:bg-secondary/90"
+                  >
+                    Edit Name
+                  </button>
                 </div>
-            </DndProvider>
+              </div>
 
-            {/* Page Logic Dialog */}
-            <Dialog open={showPageLogic} onOpenChange={setShowPageLogic}>
-                <DialogContent className="w-screen h-screen flex flex-col p-0 m-0 rounded-none sm:max-w-none">
-                    <div className="border-b border-border p-6">
-                        <DialogHeader>
-                            <DialogTitle>Page Logic</DialogTitle>
-                            <DialogDescription>
-                                Configure the flow between pages and define branch conditions
-                            </DialogDescription>
-                        </DialogHeader>
-                    </div>
-                    <div className="flex-1">
-                        <ReactFlowProvider>
-                            <PageFlowEditor
-                                view={data.view}
-                                onUpdateFlow={(changes) => {
-                                    console.log('Flow editor changes:', changes);
-                                    setData(update(data, { view: { $set: changes }}));
+              {selectedBlockId && (
+                <Inspector
+                  key={selectedBlockId}
+                  block={findBlockInPage(data.view.pages[selectedPage], selectedBlockId)}
+                  onClose={() => setSelectedBlockId(null)}
+                />
+              )}
 
-                                    // Submit the update to backend
-                                    console.log('Submitting update to backend...');
-                                    handleSave();
-                                }}
-                            />
-                        </ReactFlowProvider>
-                    </div>
-                </DialogContent>
-            </Dialog>
+              {!selectedBlockId && (
+                <div>
+                  {/* Available Block Types */}
+                  <div className="p-4 border-t border-border" id="templates-list">
+                    <h3 className="text-md font-medium mb-3">Available Blocks</h3>
+                    <p className="text-xs text-muted-foreground mb-4">Drag blocks to add them to your page</p>
 
-            {/* Add Page Dialog */}
-            <Dialog open={showAddPageDialog} onOpenChange={setShowAddPageDialog}>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>Add New Page</DialogTitle>
-                        <DialogDescription>
-                            Choose the type of page you want to add
-                        </DialogDescription>
-                    </DialogHeader>
-                    <div className="grid grid-cols-3 gap-4 py-4">
-                        <button
-                            onClick={() => handleAddPage('entry')}
-                            className="flex flex-col items-center gap-2 p-4 rounded-lg border border-border hover:bg-secondary/50"
-                        >
-                            <ArrowRightToLine className="w-6 h-6" />
-                            <span className="text-sm font-medium">Entry Page</span>
-                        </button>
-                        <button
-                            onClick={() => handleAddPage('page')}
-                            className="flex flex-col items-center gap-2 p-4 rounded-lg border border-border hover:bg-secondary/50"
-                        >
-                            <FileText className="w-6 h-6" />
-                            <span className="text-sm font-medium">Content Page</span>
-                        </button>
-                        <button
-                            onClick={() => handleAddPage('ending')}
-                            className="flex flex-col items-center gap-2 p-4 rounded-lg border border-border hover:bg-secondary/50"
-                        >
-                            <CheckSquare className="w-6 h-6" />
-                            <span className="text-sm font-medium">Ending Page</span>
-                        </button>
+                    <div className="space-y-2">
+                      {Object.keys(blockTypes).map((blockType) => (
+                        <BlockTemplateItem
+                          key={blockType}
+                          id={blockType}
+                          blockType={blockTypes[blockType]}
+                        />
+                      ))}
                     </div>
-                </DialogContent>
-            </Dialog>
-        </AppOfferLayout>
-    );
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Main Content Area */}
+            <div className="flex-1 flex flex-col min-w-0 relative">
+              {/* Preview Area - Make it fill the available space */}
+              <div className="absolute inset-0 bottom-[68px] overflow-hidden">
+                <div className="h-full">
+                  <PagePreview
+                    page={data.view.pages[selectedPage]}
+                    onUpdatePage={handlePageUpdate}
+                  />
+                </div>
+              </div>
+
+              {/* Toolbar */}
+              <Toolbar />
+            </div>
+          </div>
+        </DndContext>
+
+      </GlobalStateProvider>
+
+      {/* Page Logic Dialog */}
+      <PageLogicDialog />
+
+      <AddPageDialog />
+
+      <EditNameDialog />
+
+      {/* <div className="text-xs absolute bottom-0 w-[500px] right-0 border-t border-border bg-white h-full overflow-scroll">
+        <pre>{JSON.stringify(data.view.pages[selectedPage], null, 2)}</pre>
+      </div> */}
+    </AppOfferLayout>
+  );
 }
+
+function Toolbar() {
+  const {
+    data, setData, processing, errors, setDefaults,
+    isNameDialogOpen, setIsNameDialogOpen,
+    selectedPage, setSelectedPage,
+    editingPageName, setEditingPageName,
+    pageNameInput, setPageNameInput,
+    handlePageNameSave,
+    handlePageNameClick,
+    handlePageAction,
+    getOrderedPages,
+  } = useEditor();
+
+  return (
+    <div className="absolute bottom-0 left-0 right-0 border-t border-border bg-muted">
+      <div className="p-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2 overflow-x-auto">
+            {getOrderedPages(data.view).map(([pageId, page]) => (
+              <div
+                key={pageId}
+                className={cn(
+                  "flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium whitespace-nowrap",
+                  selectedPage === pageId
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-secondary text-secondary-foreground hover:bg-secondary/90"
+                )}
+              >
+                {editingPageName === pageId ? (
+                  <Input
+                    ref={inputRef}
+                    value={pageNameInput}
+                    onChange={(e) => setPageNameInput(e.target.value)}
+                    onBlur={() => handlePageNameSave(pageId)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        setIsRenamingFromDropdown(false);
+                        handlePageNameSave(pageId);
+                      } else if (e.key === 'Escape') {
+                        setIsRenamingFromDropdown(false);
+                        setEditingPageName(null);
+                      }
+                    }}
+                    className={cn(
+                      "h-6 px-1 py-0 w-[120px]",
+                      selectedPage === pageId
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-secondary text-secondary-foreground"
+                    )}
+                  />
+                ) : (
+                  <button
+                    onClick={() => handlePageNameClick(pageId, page.name)}
+                    className="focus:outline-none flex items-center gap-2"
+                  >
+                    <span className="text-muted-foreground">
+                      {PAGE_TYPE_ICONS[page.type]}
+                    </span>
+                    {page.name}
+                  </button>
+                )}
+
+                {selectedPage === pageId && (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button className="focus:outline-none">
+                        <MoreVertical className="w-4 h-4" />
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => handlePageAction(pageId, 'rename')}>
+                        Rename
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handlePageAction(pageId, 'duplicate')}>
+                        Duplicate
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => handlePageAction(pageId, 'delete')}
+                        className="text-destructive"
+                      >
+                        Delete
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                )}
+              </div>
+            ))}
+            <button
+              onClick={() => setShowAddPageDialog(true)}
+              className="flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium bg-secondary text-secondary-foreground hover:bg-secondary/90"
+            >
+              <Plus className="w-4 h-4" />
+              Add Page
+            </button>
+          </div>
+
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">Layout:</span>
+              <span className="text-sm font-medium">{data.view.pages[selectedPage].layout.sm}</span>
+            </div>
+
+            {data.view.pages[selectedPage].next_page?.default_next_page && (
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">Next:</span>
+                <span className="text-sm font-medium">{data.view.pages[data.view.pages[selectedPage].next_page.default_next_page].name}</span>
+              </div>
+            )}
+
+            <button
+              onClick={() => setShowPageLogic(true)}
+              className="flex items-center gap-2 px-3 py-1.5 text-sm hover:bg-secondary/90 bg-secondary rounded-md"
+            >
+              <Share2 className="w-4 h-4" />
+              Page Logic
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function PageLogicDialog() {
+
+    const { showPageLogic, setShowPageLogic, data } = useEditor();
+
+  return (
+    <Dialog open={showPageLogic} onOpenChange={setShowPageLogic}>
+      <DialogContent className="w-screen h-screen flex flex-col p-0 m-0 rounded-none sm:max-w-none">
+        <div className="border-b border-border p-6">
+          <DialogHeader>
+            <DialogTitle>Page Logic</DialogTitle>
+            <DialogDescription>
+              Configure the flow between pages and define branch conditions
+            </DialogDescription>
+          </DialogHeader>
+        </div>
+        <div className="flex-1">
+          <ReactFlowProvider>
+            <PageFlowEditor
+              view={data.view}
+              onUpdateFlow={(changes) => {
+                console.log('Flow editor changes:', changes);
+                setData(update(data, { view: { $set: changes }}));
+
+                // Submit the update to backend
+                console.log('Submitting update to backend...');
+                handleSave();
+              }}
+            />
+          </ReactFlowProvider>
+        </div>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+function EditNameDialog() {
+
+    const { isNameDialogOpen, setIsNameDialogOpen, data, setData, handleNameSubmit, errors, processing } = useEditor();
+
+  return (
+    <Dialog open={isNameDialogOpen} onOpenChange={setIsNameDialogOpen}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Name your offer</DialogTitle>
+          <DialogDescription>
+            Give your offer a name that describes what you're selling.
+          </DialogDescription>
+        </DialogHeader>
+        <form onSubmit={handleNameSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="name">Name</Label>
+            <Input
+              id="name"
+              value={data.name}
+              onChange={e => setData('name', e.target.value)}
+              placeholder="Enter offer name"
+              autoFocus
+            />
+            {errors.name && (
+              <p className="text-sm text-red-500">{errors.name}</p>
+            )}
+          </div>
+          <div className="flex justify-end">
+            <button
+              type="submit"
+              className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+              disabled={processing}
+            >
+              Save
+            </button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+function AddPageDialog() {
+
+    const { showAddPageDialog, setShowAddPageDialog, handleAddPage } = useEditor();
+
+  return (
+    <Dialog open={showAddPageDialog} onOpenChange={setShowAddPageDialog}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Add New Page</DialogTitle>
+          <DialogDescription>
+            Choose the type of page you want to add
+          </DialogDescription>
+        </DialogHeader>
+        <div className="grid grid-cols-3 gap-4 py-4">
+          <button
+            onClick={() => handleAddPage('entry')}
+            className="flex flex-col items-center gap-2 p-4 rounded-lg border border-border hover:bg-secondary/50"
+          >
+            <ArrowRightToLine className="w-6 h-6" />
+            <span className="text-sm font-medium">Entry Page</span>
+          </button>
+          <button
+            onClick={() => handleAddPage('page')}
+            className="flex flex-col items-center gap-2 p-4 rounded-lg border border-border hover:bg-secondary/50"
+          >
+            <FileText className="w-6 h-6" />
+            <span className="text-sm font-medium">Content Page</span>
+          </button>
+          <button
+            onClick={() => handleAddPage('ending')}
+            className="flex flex-col items-center gap-2 p-4 rounded-lg border border-border hover:bg-secondary/50"
+          >
+            <CheckSquare className="w-6 h-6" />
+            <span className="text-sm font-medium">Ending Page</span>
+          </button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+export default Edit;
