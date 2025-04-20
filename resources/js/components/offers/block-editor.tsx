@@ -1,6 +1,5 @@
 import React, { useCallback, useState, useEffect } from 'react';
 import { Block } from '@/types/offer';
-// import { NumiProvider, useNumi } from '@/contexts/Numi';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -126,12 +125,13 @@ const HookInspector: React.FC<{
     return BlockComponent ? <BlockComponent block={block} isEditing={false} /> : null;
   };
 
+  return 'hook inspector'
+
   // Render the component in a hidden container
   return (
     <div style={{ display: 'none' }}>
-      <NumiProvider block={block}>
         <HookCollector />
-      </NumiProvider>
+
     </div>
   );
 };
@@ -432,14 +432,7 @@ export default function BlockEditor({
   }, {} as Record<string, HookConfig[]>);
 
   return (
-    <NumiProvider
-      block={block}
-      onUpdateBlock={onUpdate}
-      isEditing={true}
-      formValues={formValues}
-      formErrors={formErrors}
-      setFormValue={setFormValue}
-    >
+  
       <div className="space-y-4">
         {/* Invisible component to analyze hooks */}
         <HookInspector block={block} onHooksDetected={handleHooksDetected} />
@@ -464,6 +457,5 @@ export default function BlockEditor({
 
         <pre className='bg-gray-50 text-xs p-2 overflow-auto'>{JSON.stringify(block, null, 2)}</pre>
       </div>
-    </NumiProvider>
   );
 }

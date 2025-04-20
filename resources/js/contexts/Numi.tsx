@@ -3,7 +3,7 @@
 import { BlockConfig, BlockContextType } from "@/types/blocks";
 import { createContext, useContext, useEffect, useState } from "react";
 import get from "lodash/get";
-import { CheckoutState } from "@/pages/Checkout";
+import { CheckoutState, GlobalStateContext } from "@/pages/Checkout";
 
 export const BlockContext = createContext<BlockContextType>({
   blockId: '',
@@ -188,22 +188,9 @@ class Numi {
   }
 
   static useCheckout(options: CheckoutOptions = {}): CheckoutState {
-    const [checkout] = useState(() => {
-      // Create a checkout instance with provided options
-      const instance = new CheckoutSDK(options);
-      
-      // Initialize with default values for demo purposes
-      if (!options.initialState?.items?.length) {
-        instance.addItem({
-          name: 'Demo Product',
-          price: 29.99,
-          quantity: 1,
-          image: 'https://placehold.co/60x60.png',
-        });
-      }
-      
-      return instance;
-    });
+    const {
+      session
+    } = useContext(GlobalStateContext);
 
     useEffect(() => {
       // Cleanup function
@@ -213,17 +200,7 @@ class Numi {
     }, []);
 
     return {
-      session: {
-        items: [],
-        total: 0,
-        subtotal: 0,
-        taxes: 0,
-        shipping: 0,
-        discount: 0,
-        currency: 'USD',
-        status: 'pending',
-        id: 'checkout-123',
-      }
+      session,
     };
   }
 

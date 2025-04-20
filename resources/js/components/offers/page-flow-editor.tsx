@@ -93,16 +93,6 @@ function PageNode({ data, id }: { data: { page: Page; isStart?: boolean }; id: s
         });
     };
 
-    // Calculate the offset for branch handles based on the content above
-    const getBranchHandleOffset = useCallback((index: number) => {
-        const HEADER_HEIGHT = 40; // Header with name and type
-        const LAYOUT_INFO_HEIGHT = 24; // Layout info row
-        const PROVIDES_HEIGHT = page.provides.length > 0 ? 28 : 0; // Provides section if present
-        const BRANCHES_TITLE_HEIGHT = 32; // "Branches" title
-        const BRANCH_ITEM_HEIGHT = 32; // Height of each branch item
-
-        return HEADER_HEIGHT + LAYOUT_INFO_HEIGHT + PROVIDES_HEIGHT + BRANCHES_TITLE_HEIGHT + (index * BRANCH_ITEM_HEIGHT);
-    }, [page.provides.length]);
 
     return (
         <>
@@ -139,19 +129,7 @@ function PageNode({ data, id }: { data: { page: Page; isStart?: boolean }; id: s
                         <span>{page.layout.sm}</span>
                     </div>
                     
-                    {page.provides.length > 0 && (
-                        <div className="flex flex-wrap gap-1">
-                            {page.provides.map(provide => (
-                                <span 
-                                    key={provide}
-                                    className="bg-secondary px-2 py-0.5 rounded text-xs"
-                                >
-                                    {provide}
-                                </span>
-                            ))}
-                        </div>
-                    )}
-
+                
                     {/* Branch List with inline handles */}
                     {page.next_page.branches && page.next_page.branches.length > 0 && (
                         <div className="mt-4 space-y-2">

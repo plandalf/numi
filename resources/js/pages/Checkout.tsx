@@ -1,25 +1,17 @@
 import { Head } from '@inertiajs/react';
-import { useEffect, useState, createContext, useContext, useCallback, useReducer, useMemo } from 'react';
-import { type Block, type Page, type PageType, type OfferConfiguration, type OfferVariant, Branch, PageView } from '@/types/offer';
+import { useEffect, useState, createContext, useContext, useMemo } from 'react';
+import { type Block, type Page as OfferPage, type OfferConfiguration, } from '@/types/offer';
 import { cn, formatMoney } from '@/lib/utils';
-import update from 'immutability-helper';
+
 import { BlockConfig, FieldState, HookUsage } from '@/types/blocks';
 import TextBlockComponent from '@/components/blocks/TextBlock';
 import { BlockContext } from '@/contexts/Numi';
 
 import { blockTypes } from '@/components/blocks';
+import axios from '@/lib/axios';
 // Form and validation context
 type FormData = Record<string, any>;
 type ValidationErrors = Record<string, string[]>;
-
-interface FormState {
-  data: FormData;
-  errors: ValidationErrors;
-  isDirty: boolean;
-  submitting: boolean;
-  // currentPageId: string;
-  pageHistory: string[];
-}
 
 // Add placeholder type definition for BlockContextType
 interface BlockContextType {
@@ -28,8 +20,54 @@ interface BlockContextType {
 }
 
 
+// Checkout SDK
+export type CheckoutItem = {
+  id: string;
+
+  slot: string;
+
+  name: string;
+  // price: number;
+  quantity: number;
+  image?: string;
+  metadata?: Record<string, any>;
+
+  subtotal: number;
+  taxes: number;
+  shipping: number;
+  discount: number;
+  total: number;
+};
+
+export interface CheckoutSession {
+
+  id: string;
+
+  status: 'open' | 'processing' | 'completed' | 'abandoned';
+
+  line_items: CheckoutItem[];
+
+  currency: string;
+  subtotal: number;
+  taxes: number;
+  shipping: number;
+  discount: number;
+  total: number;
+
+  customer?: Customer;
+  shipping_address?: CheckoutAddress;
+  billing_address?: CheckoutAddress;
+
+  metadata: Record<string, any>;
+  discount_code?: string;
+
+}
+
+
+
+
 // Contexts
-const GlobalStateContext = createContext<GlobalState | null>(null);
+export const GlobalStateContext = createContext<GlobalState | null>(null);
 
 // Enhanced GlobalState interface to include checkout functionality
 export interface GlobalState {
@@ -39,31 +77,35 @@ export interface GlobalState {
   registerHook: (block: BlockConfig, hook: HookUsage) => void;
   hookUsage: Record<string, HookUsage[]>;
 
-  
+
   // Form functionality
   errors: ValidationErrors;
   setErrors: (errors: ValidationErrors) => void;
   clearErrors: () => void;
-  
+  submitError: string | null;
+  setSubmitError: (error: string | null) => void;
+  isSubmitting: boolean;
+  setSubmitting: (submitting: boolean) => void;
+
   // Validation
   // validatePage: (pageId: string) => boolean;
   validateField: (fieldId: string) => boolean;
-  
+
   // Submission
-  isSubmitting: boolean;
-  setSubmitting: (submitting: boolean) => void;
   submitPage: (pageId: string) => Promise<boolean>;
 }
 
-function GlobalStateProvider({ offer, children }: { offer: OfferConfiguration, children: React.ReactNode }) {
+export function GlobalStateProvider({ offer, session: defaultSession, children }: { offer: OfferConfiguration, session: CheckoutSession, children: React.ReactNode }) {
   // Field states for all blocks
   const [fieldStates, setFieldStates] = useState<Record<string, FieldState>>({});
   const [hookUsage, setHookUsage] = useState<Record<string, HookUsage[]>>({});
   const [registeredHooks, setRegisteredHooks] = useState<Set<string>>(new Set());
-  
+
+  const [session, setSession] = useState<CheckoutSession>(defaultSession);
 
   // Form state
   const [errors, setErrors] = useState<ValidationErrors>({});
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const [isSubmitting, setSubmitting] = useState<boolean>(false);
 
 
@@ -71,11 +113,11 @@ function GlobalStateProvider({ offer, children }: { offer: OfferConfiguration, c
   const updateFieldState = (blockId: string, fieldName: string, value: any) => {
     setFieldStates(prev => ({
       ...prev,
-      [`${blockId}:${fieldName}`]: { 
-        blockId, 
-        fieldName, 
-        value, 
-        type: typeof value === 'boolean' ? 'boolean' : typeof value === 'number' ? 'number' : 'string' 
+      [`${blockId}:${fieldName}`]: {
+        blockId,
+        fieldName,
+        value,
+        type: typeof value === 'boolean' ? 'boolean' : typeof value === 'number' ? 'number' : 'string'
       }
     }));
   };
@@ -88,32 +130,44 @@ function GlobalStateProvider({ offer, children }: { offer: OfferConfiguration, c
   // Register hook function
   const registerHook = (block: BlockConfig, hook: HookUsage) => {
     const hookKey = `${block.id}:${hook.name}`;
+    // console.log('registerHook', hookKey, block, hook);
     if (!registeredHooks.has(hookKey)) {
       setRegisteredHooks(prev => new Set([...prev, hookKey]));
-      setHookUsage(prev => ({
-        ...prev,
-        [block.id]: [...(prev[block.id] || []), hook]
-      }));
+      setHookUsage(prev => {
+        let newPrev = {...prev};
+        
+        if (prev[block.id] && !(prev[block.id] instanceof Array)) {
+          newPrev[block.id] = []
+        }
+      window.newPrev = newPrev[block.id];
+
+        console.log('🥕', block, prev, hook, newPrev[block.id])
+
+        return {
+          ...prev,
+          [block.id]: [...(newPrev[block.id] || []), hook]
+        }
+      });
     }
   };
-  
+
   // Clear errors function
   const clearErrors = () => {
     setErrors({});
   };
-  
- 
-  
+
+
+
   // Validation functions
   const validateField = (fieldId: string): boolean => {
     const field = Object.values(fieldStates).find(state => state.blockId === fieldId);
-    
+
     if (!field) return true; // If field doesn't exist, consider it valid
-    
+
     // Get the block configuration for validation rules
     const page = offer.view.pages[currentPageId];
     const allBlocks: Block[] = [];
-    
+
     // Helper to collect all blocks from a page
     const collectBlocks = (blocks: Block[] = []) => {
       blocks.forEach(block => {
@@ -123,25 +177,25 @@ function GlobalStateProvider({ offer, children }: { offer: OfferConfiguration, c
         }
       });
     };
-    
+
     // Collect blocks from all sections
     const pageView = page.view;
-    
+
     // Find the block for this field
     const block = allBlocks.find(b => b.id === fieldId);
-    
+
     if (!block) return true; // Block not found, consider valid
-    
+
     // Check validation rules
     const value = field.value;
     const newErrors: ValidationErrors = {};
-    
+
     // Required validation
     if (block.validation?.isRequired && (value === undefined || value === null || value === '')) {
       const label = block.content?.label || field.fieldName;
       newErrors[fieldId] = [`${label} is required`];
     }
-    
+
     // Pattern validation
     if (block.validation?.pattern && value) {
       const regex = new RegExp(block.validation.pattern);
@@ -149,22 +203,22 @@ function GlobalStateProvider({ offer, children }: { offer: OfferConfiguration, c
         newErrors[fieldId] = [block.validation.patternMessage || 'Invalid format'];
       }
     }
-    
+
     // Min/Max length validation
     if (block.validation?.minLength && typeof value === 'string' && value.length < block.validation.minLength) {
       newErrors[fieldId] = [`Must be at least ${block.validation.minLength} characters`];
     }
-    
+
     if (block.validation?.maxLength && typeof value === 'string' && value.length > block.validation.maxLength) {
       newErrors[fieldId] = [`Must be no more than ${block.validation.maxLength} characters`];
     }
-    
+
     // Update errors for this field
     if (Object.keys(newErrors).length > 0) {
       setErrors(prev => ({ ...prev, ...newErrors }));
       return false;
     }
-    
+
     // Clear errors for this field if it was previously invalid
     if (errors[fieldId]) {
       setErrors(prev => {
@@ -173,42 +227,88 @@ function GlobalStateProvider({ offer, children }: { offer: OfferConfiguration, c
         return newErrors;
       });
     }
-    
+
     return true;
   };
-  
- 
-  
+
+
+
   // Helper to get field value by ID
   const getFieldValue = (fieldId: string): any => {
     const state = Object.values(fieldStates).find(state => state.blockId === fieldId);
     return state?.value;
   };
-  
+
+  const submitPage = async (pageId: string): Promise<boolean> => {
+    try {
+      setSubmitting(true);
+      setSubmitError(null);
+
+      // Determine the action based on the page type
+      const currentPage = offer.view.pages[pageId];
+      const action = currentPage.type === 'payment' ? 'commit' : 'setFields';
+      console.log({ action, currentPage });
+      // Use Axios instead of fetch
+      const response = await axios.post(`/checkouts/${pageId}/mutations`, {
+        action,
+        fields: fieldStates
+      });
+
+      return true;
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        setSubmitError(error.response?.data?.message || 'Failed to submit page');
+      } else {
+        setSubmitError('An unexpected error occurred');
+      }
+      return false;
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const backendValidateFields = async (fields: Record<string, any>) => {
+    // Call API to validate fields
+    try {
+      const response = await axios.post('/api/validate', fields);
+      return response.data.errors || {};
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        return error.response?.data?.errors || {};
+      }
+      return {};
+    }
+  };
+
   // Create context value
-  const value: EnhancedGlobalState = {
+  const value: GlobalState = {
     // Original GlobalState properties
     fieldStates,
     updateFieldState,
     getFieldState,
     registerHook,
     hookUsage,
-    
+
     // Form
     errors,
     setErrors,
     clearErrors,
-    
+    submitError,
+    setSubmitError,
+    isSubmitting,
+    setSubmitting,
+    submitPage,
+
     // Validation
     // validatePage,
     validateField,
-    
+
     // Submission
-    isSubmitting,
-    setSubmitting,
     // submitPage,
-    // submit 
+    // submit
     offer,
+    session,
+    setSession
   };
 
   return (
@@ -219,25 +319,25 @@ function GlobalStateProvider({ offer, children }: { offer: OfferConfiguration, c
 }
 
 // Hook to use the enhanced global state
-const useCheckoutState = () => {
+export const useCheckoutState = () => {
   const context = useContext(GlobalStateContext);
   if (!context) {
-    throw new Error('useCheckoutState must be used within a GlobalStateProvider');
+    // throw new Error('useCheckoutState must be used within a GlobalStateProvider');
   }
-  return context as EnhancedGlobalState;
+  return context ?? {};
 };
 
 // Stubbed out BlockRenderer component that doesn't render anything
 // Block Renderer
-function BlockRenderer({ block, children }: { 
-  block: BlockConfig, 
-  children: (props: BlockContextType) => React.ReactNode 
+function BlockRenderer({ block, children }: {
+  block: BlockConfig,
+  children: (props: BlockContextType) => React.ReactNode
 }) {
   const globalStateContext = useContext(GlobalStateContext);
   if (!globalStateContext) {
     throw new Error('BlockRenderer must be used within a GlobalStateProvider');
   }
-  
+
   const blockContext: BlockContextType = {
     blockId: block.id,
     blockConfig: block,
@@ -293,12 +393,29 @@ interface NavigationBarProps extends React.HTMLAttributes<HTMLDivElement> {
   className?: string;
 }
 
-const NavigationBar = ({ barStyle, children, className, ...props }: NavigationBarProps) => (
-  <div className={`${className} flex items-center justify-between`} {...props}>
-    <h1 className="text-xl font-bold">Checkout</h1>
-    {children}
-  </div>
-);
+const NavigationBar = ({ barStyle, children, className, ...props }: NavigationBarProps) => {
+  const { goToPrevPage, canGoBack, canGoForward } = useNavigation();
+
+  function onBack() {
+    goToPrevPage();
+  }
+
+  return (
+    <div className={`${className} border-2 border-orange-500 flex items-center justify-between`} {...props}>
+      {canGoBack() && (
+        <button
+          onClick={onBack}
+          type="button"
+          className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900"
+        >
+          Back
+        </button>
+      )}
+      <h1 className="text-xl font-bold">Checkout</h1>
+      {children}
+    </div>
+  );
+};
 
 
 interface TailwindLayoutConfig {
@@ -318,16 +435,16 @@ interface TailwindLayoutRendererProps {
   components?: Record<string, React.ComponentType<any>>;
 }
 
-const TailwindLayoutRenderer = ({ 
-  layoutConfig, 
-  page, 
-  components = {} 
+const TailwindLayoutRenderer = ({
+  layoutConfig,
+  page,
+  components = {}
 }: TailwindLayoutRendererProps) => {
   // Use the config directly if it's an object, otherwise parse it
-  const config = typeof layoutConfig === 'string' 
-    ? JSON.parse(layoutConfig) 
+  const config = typeof layoutConfig === 'string'
+    ? JSON.parse(layoutConfig)
     : layoutConfig;
-  
+
   // Set up component registry
   const componentRegistry = {
     // Default components
@@ -360,10 +477,10 @@ const renderElement = (
 ): React.ReactNode => {
   // Return null for undefined or null elements
   if (!element) return null;
-  
+
   const { type, props = {}, children = [], id } = element;
   const { componentRegistry, contentMap } = context;
-  
+
   // If this element has an ID, check if it matches a section in the page view
   if (id && page.view[id]) {
     const section = page.view[id];
@@ -377,16 +494,16 @@ const renderElement = (
       );
     }
   }
-  
+
   // Render child elements recursively
-  const childElements = Array.isArray(children) 
+  const childElements = Array.isArray(children)
     ? children.map((child, index) => renderElement(
         child,
         page,
         context
       ))
     : null;
-  
+
   // Return the appropriate React element based on type
   return createElement(type, { ...props, key: id || `${type}` }, childElements, componentRegistry);
 };
@@ -489,65 +606,12 @@ const layoutConfig = {
   }
 }
 
-
-type Item = {
-  id: string;
-  name: string;
-  
-  
-  price: number;
-  quantity: number;
-  image?: string;
-};
-
-// Checkout SDK
-type CheckoutItem = {
-  id: string;
-
-  slot: string;
-
-  name: string;
-  // price: number;
-  quantity: number;
-  image?: string;
-  metadata?: Record<string, any>;
-
-  subtotal: number;
-  taxes: number;
-  shipping: number;
-  discount: number;
-  total: number;
-};
-
-interface CheckoutSession {
-
-  id: string;
-  // closed?
-  status: 'open' | 'processing' | 'completed' | 'abandoned';
-  items: CheckoutItem[];
-
-  currency: string;
-  subtotal: number;
-  taxes: number;
-  shipping: number;
-  discount: number;
-  total: number;
-
-  customer?: Customer;
-  shipping_address?: CheckoutAddress;
-  billing_address?: CheckoutAddress;
-  currency: string;
-  metadata: Record<string, any>;
-  discount_code?: string;
-}
-
-
 // diff between a checkout "state" ?Submission
-  // state of progress through the checkout 
- 
-// and the checkout model 
+  // state of progress through the checkout
 
-// and the fields 
+// and the checkout model
+
+// and the fields
 
 export type CheckoutState = {
 
@@ -569,27 +633,60 @@ export type CheckoutState = {
   total: () => number;
 };
 
-type NavigationContextType = {
-  currentPage: number;
-  goToNextPage: (fieldErrors: Record<string, string[]>) => void;
-}
-const NavigationContext = createContext<NavigationContextType | null>(null)
+// Page Types
+type PageType = 'page' | 'entry' | 'payment' | 'ending';
 
-  // Navigation logic
+interface Page extends OfferPage {
+  type: PageType;
+}
+
+// Navigation Types
+interface NavigationHistoryEntry {
+  pageId: string;
+  timestamp: number;
+  direction: 'forward' | 'backward';
+  pageType: PageType;
+}
+
+interface NavigationState {
+  currentPageId: string;
+  pageHistory: string[];
+  completedPages: string[];
+  navigationHistory: NavigationHistoryEntry[];
+}
+
+interface NavigationContextType {
+  // State
+  currentPage: Page;
+  currentPageId: string;
+  pageHistory: string[];
+  completedPages: string[];
+  navigationHistory: NavigationHistoryEntry[];
+
+  // Navigation Methods
+  goToNextPage: (fieldErrors: Record<string, string[]>) => Promise<void>;
+  goToPrevPage: () => void;
+  canGoBack: () => boolean;
+  canGoForward: () => boolean;
+}
+
+const NavigationContext = createContext<NavigationContextType | null>(null);
+
+// Navigation logic
 const handleNavigationLogic = (page: Page, getFieldValue: (field: string) => any): string | null => {
   // Get branches
   const branches = page.next_page.branches || [];
-  
+
   if (branches.length > 0) {
     // Find first matching branch
     const matchingBranch = branches.find(branch => {
       if (!branch.condition) {
         return true; // Default branch
       }
-      
+
       const { field, operator, value } = branch.condition;
       const fieldValue = getFieldValue(field);
-      
+
       // Compare based on operator
       switch (operator) {
         case 'eq':
@@ -612,91 +709,166 @@ const handleNavigationLogic = (page: Page, getFieldValue: (field: string) => any
           return false;
       }
     });
-    
+
     if (matchingBranch && matchingBranch.next_page) {
       return matchingBranch.next_page;
     }
   }
-  
+
   // Default next page
   return page.next_page.default_next_page || null;
 };
 
-export const NavigationProvider = ({ children,  }: { children: React.ReactNode }) => {
-
+export const NavigationProvider = ({ children }: { children: React.ReactNode }) => {
   const { offer } = useCheckoutState();
-  const { fieldStates } = useCheckoutState()
-  // remember current page from state 
-  
+  const { fieldStates } = useCheckoutState();
+
   const pages = useMemo(() => {
     return offer.view.pages;
-  }, [offer])
+  }, [offer]);
 
   const [currentPageId, setCurrentPageId] = useState(offer.view.first_page);
+  const [pageHistory, setPageHistory] = useState<string[]>([]);
+  const [completedPages, setCompletedPages] = useState<string[]>([]);
+  const [navigationHistory, setNavigationHistory] = useState<NavigationHistoryEntry[]>([]);
 
   const currentPage = useMemo(() => {
     return pages[currentPageId];
-  }, [currentPageId, pages])
+  }, [currentPageId, pages]);
 
   const canNavigateToNextPage = (fieldErrors: Record<string, string[]>) => {
-    // Check if any fields have errors. If yes, don't navigate.
-    return Object.values(fieldErrors).every((error) => !error)
-  }
+    return Object.values(fieldErrors).every((error) => !error);
+  };
 
-  const goToNextPage = (fieldErrors: Record<string, string[]>) => {
-    if (canNavigateToNextPage(fieldErrors)) {
-      console.info('Can navigate to next page!')
-      // todo: figure this out
-      // determine the next page
-      const nextPage = handleNavigationLogic(currentPage, (field) => {
-        return fieldStates[field].value
-      })
-      console.log({ nextPage })
-      setCurrentPageId(nextPage);
-    } else {
-      console.log('Validation failed, cannot navigate.')
+  const canGoBack = () => {
+    // Can't go back from entry pages
+    if (currentPage.type === 'entry') return false;
+    // Can go back if we have history
+    return pageHistory.length > 0;
+  };
+
+  const canGoForward = () => {
+    // Can't go forward from ending pages
+    if (currentPage.type === 'ending') return false;
+
+    const nextPage = handleNavigationLogic(currentPage, (field) => {
+      return fieldStates[field]?.value;
+    });
+    return !!nextPage;
+  };
+
+  const addToNavigationHistory = (pageId: string, direction: 'forward' | 'backward', pageType: PageType) => {
+    setNavigationHistory(prev => [...prev, {
+      pageId,
+      timestamp: Date.now(),
+      direction,
+      pageType
+    }]);
+  };
+
+  const submitPageFields = async (pageId: string, fields: Record<string, any>) => {
+    try {
+      const response = await fetch(`/api/checkout/pages/${pageId}/submit`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ fields }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to submit page fields');
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error submitting page fields:', error);
+      throw error;
     }
-  }
-  const [pageHistory, setPageHistory] = useState<string[]>([]);
-    
-  const [completedPages, setCompletedPages] = useState<string[]>([]);
+  };
 
+  const commitCheckout = async () => {
+    try {
+      const response = await fetch('/api/checkout/commit', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
 
-   // Navigation functions
-  //  const navigateTo = (pageId: string, addToHistory = true) => {
-  //   if (addToHistory && currentPageId !== pageId) {
-  //     // Add current page to history
-  //     setPageHistory(prev => [...prev, currentPageId]);
-      
-  //     // Add to completed pages if not already there
-  //     if (!completedPages.includes(currentPageId)) {
-  //       setCompletedPages(prev => [...prev, currentPageId]);
-  //     }
-  //   }
-    
-  //   // Navigate to new page
-  //   setCurrentPageId(pageId);
-  // };
-  
-  // const goBack = () => {
-  //   if (pageHistory.length > 0) {
-  //     // Get last page from history
-  //     const previousPage = pageHistory[pageHistory.length - 1];
-      
-  //     // Update current page
-  //     setCurrentPageId(previousPage);
-      
-  //     // Remove from history
-  //     setPageHistory(prev => prev.slice(0, prev.length - 1));
-  //   }
-  // };
+      if (!response.ok) {
+        throw new Error('Failed to commit checkout');
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error committing checkout:', error);
+      throw error;
+    }
+  };
+
+  const goToPrevPage = () => {
+    if (canGoBack()) {
+      const previousPage = pageHistory[pageHistory.length - 1];
+      setCurrentPageId(previousPage);
+      setPageHistory(prev => prev.slice(0, -1));
+      addToNavigationHistory(previousPage, 'backward', pages[previousPage].type);
+    }
+  };
+
+  const goToNextPage = async (fieldErrors: Record<string, string[]>) => {
+    if (!canNavigateToNextPage(fieldErrors)) {
+      return;
+    }
+
+    const nextPageId = handleNavigationLogic(currentPage, (field) => {
+      return fieldStates[field]?.value;
+    });
+
+    if (!nextPageId) {
+      return;
+    }
+
+    const nextPage = pages[nextPageId];
+
+    // Update navigation state
+    setPageHistory(prev => [...prev, currentPageId]);
+
+    if (!completedPages.includes(currentPageId)) {
+      setCompletedPages(prev => [...prev, currentPageId]);
+    }
+
+    addToNavigationHistory(nextPageId, 'forward', nextPage.type);
+    setCurrentPageId(nextPageId);
+  };
+
+  const value: NavigationContextType = {
+    currentPage,
+    goToNextPage,
+    goToPrevPage,
+    currentPageId,
+    pageHistory,
+    completedPages,
+    canGoBack,
+    canGoForward,
+    navigationHistory
+  };
 
   return (
-    <NavigationContext.Provider value={{ currentPage, currentPageId, pageHistory, completedPages, goToNextPage }}>
+    <NavigationContext.Provider value={value}>
       {children}
     </NavigationContext.Provider>
-  )
-}
+  );
+};
+
+// Update the useNavigation hook to handle null context
+export const useNavigation = (): NavigationContextType => {
+  const context = useContext(NavigationContext);
+  if (!context) {
+    throw new Error('useNavigation must be used within a NavigationProvider');
+  }
+  return context;
+};
 
 export const useValidateFields = () => {
   const { fieldStates, setFieldError } = useCheckoutState()
@@ -709,7 +881,7 @@ export const useValidateFields = () => {
     }
   }
 
-  
+
 
   function validateAllFields () {
     const fields = Object.entries(fieldStates).reduce((acc, [key, state]) => {
@@ -730,75 +902,116 @@ export const useValidateFields = () => {
       // Object.keys(errors).forEach((field) => {
         // setFieldError(field, errors[field])
       // })
-      
+
       resolve({})
     })
   }
 
-  const backendValidateFields = async (fields) => {
+  const backendValidateFields = async (fields: Record<string, any>) => {
     // Call API to validate fields
-    const res = await fetch('/api/validate', {
-      method: 'POST',
-      body: JSON.stringify(fields),
-    })
-    const data = await res.json()
-    return data.errors || {}
-  }
+    try {
+      const response = await axios.post('/api/validate', fields);
+      return response.data.errors || {};
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        return error.response?.data?.errors || {};
+      }
+      return {};
+    }
+  };
 
   return { validateAllFields }
-}
-
-function useNavigation() {
-  const { currentPage, goToNextPage } = useContext(NavigationContext)
-  return { currentPage, goToNextPage }
 }
 
 // checkout context?
 // Replace CheckoutLayout with CheckoutPage component
 const CheckoutController = ({ offer }: { offer: OfferConfiguration }) => {
-  const { 
-    // currentPageId,
-    // submitPage,
-    // errors
-    session,
-    fields,
-
+  const {
+    isSubmitting,
+    submitError,
+    clearErrors,
+    setSubmitting,
+    setSubmitError,
+    submitPage,
   } = useCheckoutState();
 
-  const { validateAllFields } = useValidateFields()
+  const { validateAllFields } = useValidateFields();
   const { currentPage, goToNextPage } = useNavigation();
-  
+
   const handleSubmit = async (evt: React.FormEvent) => {
     evt.preventDefault();
-    
-    const errors = await validateAllFields();
-    console.log({ errors })
+    clearErrors();
+    setSubmitError(null);
 
-    goToNextPage(errors);
+    try {
+      setSubmitting(true);
+      const errors = await validateAllFields();
+
+      if (Object.keys(errors).length > 0) {
+        setSubmitError('Please fix the errors before continuing');
+        return;
+      }
+
+      // Submit the current page
+      const success = await submitPage(currentPage.id);
+      if (!success) {
+        return; // Stop if submission failed
+      }
+
+      // If all successful, proceed to next page
+      await goToNextPage(errors);
+    } catch (error) {
+      setSubmitError(error instanceof Error ? error.message : 'An unexpected error occurred');
+    } finally {
+      setSubmitting(false);
+    }
   };
-  
+
   if (!currentPage) {
     console.error('No page found');
     return null;
   }
-  
+
   return (
-    <form onSubmit={handleSubmit} noValidate>
-      {/* Display form-level errors if any */}
-      {/* {errors.form && (
-        <div className="bg-red-50 text-red-700 p-4 mb-4 rounded-md">
-          {errors.form.map((error, index) => (
-            <p key={index}>{error}</p>
-          ))}
+    <>
+      {/* Fixed error toast */}
+      {submitError && (
+        <div className="fixed top-4 right-4 z-50 max-w-md">
+          <div className="bg-red-50 border border-red-200 rounded-md shadow-lg p-4">
+            <div className="flex items-start">
+              <div className="flex-shrink-0">
+                <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div className="ml-3">
+                <p className="text-sm text-red-700">{submitError}</p>
+              </div>
+              <div className="ml-4 flex-shrink-0">
+                <button
+                  type="button"
+                  className="inline-flex text-red-400 hover:text-red-500"
+                  onClick={() => setSubmitError(null)}
+                >
+                  <span className="sr-only">Dismiss</span>
+                  <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
-      )} */}
-      
-      <TailwindLayoutRenderer
-        layoutConfig={layoutConfig}
-        page={currentPage}
-        components={{ NavigationBar }}
-      />
-    </form>
+      )}
+
+      <form onSubmit={handleSubmit} noValidate className="relative">
+        <TailwindLayoutRenderer
+          layoutConfig={layoutConfig}
+          page={currentPage}
+          components={{ NavigationBar }}
+        />
+      </form>
+    </>
   );
 };
 
@@ -825,16 +1038,40 @@ export default function Checkout({ offer, error, environment = 'live' }: Props) 
     return <PageNotFound/>;
   }
 
-  // checkout controller controls the entire process 
-  
+  // checkout controller controls the entire process
+
   // use a theme one too?
+  const session: CheckoutSession = {
+    id: '123',
+    status: 'open',
+    line_items: [
+      {
+        id: '123',
+        slot: 'slot-1',
+        name: 'Sample Product',
+        quantity: 1,
+        subtotal: 1000,
+        taxes: 100,
+        shipping: 100,
+        discount: 100,
+        total: 1100,
+      },
+    ],
+    currency: 'USD',
+    subtotal: 1000,
+    taxes: 100,
+    shipping: 100,
+    discount: 100,
+    total: 1100,
+    metadata: {},
+  }
 
   return (
     <>
       <Head title={`Checkout: ${offer.name}`} />
 
       {/* global state, checkout */}
-      <GlobalStateProvider offer={offer}>
+      <GlobalStateProvider offer={offer} session={session}>
         <NavigationProvider>
           <div className="min-h-screen bg-gray-50">
             {error ? (
@@ -849,7 +1086,7 @@ export default function Checkout({ offer, error, environment = 'live' }: Props) 
                 <DebugPanel />
               </>
             )}
-            
+
           </div>
         </NavigationProvider>
       </GlobalStateProvider>
@@ -870,7 +1107,7 @@ const DebugPanel = () => {
         >
           {isOpen ? 'Hide Debug' : 'Show Debug'}
         </button>
-        
+
         {isOpen && (
           <div className="w-96 max-h-[50vh] overflow-y-auto bg-white rounded-lg shadow-lg border border-gray-200 text-xs">
             <StateDisplay />
@@ -883,36 +1120,49 @@ const DebugPanel = () => {
 
 function StateDisplay() {
   const globalState = useContext(GlobalStateContext);
-  if (!globalState) {
-    throw new Error('StateDisplay must be used within a GlobalStateProvider');
-  }
-  
-  const stateDisplay = Object.entries(globalState.fieldStates).reduce((acc, [key, state]) => {
-    acc[key] = state.value;
-    return acc;
-  }, {} as Record<string, any>);
-
-  console.log({ globalState, stateDisplay });
+  const { pageHistory, completedPages, canGoBack, canGoForward, navigationHistory } = useNavigation();
+  if (!globalState) return null;
 
   return (
     <div className="p-1 bg-gray-100 rounded">
       <table className="whitespace-pre-wrap">
-        <thead> 
+        <thead>
           <tr className="text-xs text-left">
             <th className="px-1 overflow-hidden">Field</th>
             <th className="px-1">Value</th>
           </tr>
         </thead>
         <tbody>
-          {Object.entries(stateDisplay).map(([key, value]) => (
+          {Object.entries(globalState.fieldStates).map(([key, field]) => (
             <tr key={key}>
               <td className="px-1">{key}</td>
-              <td className="px-1">{JSON.stringify(value, null, 2)}</td>
+              <td className="px-1">{JSON.stringify(field.value, null, 2)}</td>
             </tr>
           ))}
         </tbody>
+        <tfoot>
+          <tr>
+            <td className="px-1">Page History</td>
+            <td className="px-1">{pageHistory.join(', ')}</td>
+          </tr>
+          <tr>
+            <td className="px-1">Completed Pages</td>
+            <td className="px-1">{completedPages.join(', ')}</td>
+          </tr>
+          <tr>
+            <td className="px-1">Navigation History</td>
+            <td className="px-1">
+              <div className="space-y-1">
+                {navigationHistory.map((entry: NavigationHistoryEntry, index: number) => (
+                  <div key={index} className="text-xs">
+                    {new Date(entry.timestamp).toLocaleTimeString()} - {entry.direction}: {entry.pageId}
+                  </div>
+                ))}
+              </div>
+            </td>
+          </tr>
+        </tfoot>
       </table>
-    
     </div>
   );
 }
@@ -928,28 +1178,20 @@ function PageNotFound() {
       </div>
   )
 }
-      
+
 function LoadingError({ error }: { error: string }) {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <div className="bg-white p-8 rounded-lg shadow-md max-w-md">
         <h1 className="text-xl font-bold text-red-600 mb-4">Error Loading Checkout</h1>
         <p className="text-gray-700">{error}</p>
-        <button 
+        <button
           onClick={() => window.location.reload()}
           className="mt-6 w-full bg-primary text-white py-2 px-4 rounded hover:bg-primary/90"
         >
           Try Again
         </button>
       </div>
-    </div>
-  )
-}
-
-function Loading() {
-  return (
-    <div className="flex items-center justify-center min-h-screen">
-      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
     </div>
   )
 }
