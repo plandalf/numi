@@ -11,6 +11,7 @@ use App\Http\Controllers\MediaController;
 use App\Http\Controllers\ProductsController;
 use App\Http\Controllers\PriceController;
 use App\Http\Controllers\ThemeController;
+use App\Http\Controllers\TemplateController;
 
 Route::get('/', function () {
     return Inertia::render('welcome');
@@ -99,6 +100,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+
+    Route::get('/templates', [TemplateController::class, 'index'])->name('templates.index');
+    Route::post('/templates/{template}/use', [TemplateController::class, 'useTemplate'])->name('templates.use');
 });
 
 // Media routes

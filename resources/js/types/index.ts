@@ -30,4 +30,4 @@ export interface SharedData {
     auth: {
         user: User;
     };
-} 
+}
