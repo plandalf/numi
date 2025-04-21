@@ -134,7 +134,7 @@ export function GlobalStateProvider({ offer, session: defaultSession, children }
     if (!registeredHooks.has(hookKey)) {
       setRegisteredHooks(prev => new Set([...prev, hookKey]));
       setHookUsage(prev => {
-        let newPrev = {...prev};
+        const newPrev = {...prev};
         
         if (prev[block.id] && !(prev[block.id] instanceof Array)) {
           newPrev[block.id] = []

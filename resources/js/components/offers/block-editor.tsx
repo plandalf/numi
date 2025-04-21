@@ -224,7 +224,7 @@ export default function BlockEditor({
     console.log('Block Type:', block.type);
 
     // Create a working copy of hooks
-    let hooks = [...detectedHooks];
+    const hooks = [...detectedHooks];
 
     // For field blocks, add fieldId if not present
     if (block.object === 'field' && !hooks.some(h => h.name === 'fieldId')) {

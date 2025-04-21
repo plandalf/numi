@@ -558,7 +558,7 @@ function EditApp() {
     if (activeType === 'template') {
       // Only add prototype if over a block or section
       if (overType === 'block' || overType === 'section') {
-        let sectionId = overType === 'block'
+        const sectionId = overType === 'block'
           ? String(event.over.data.current?.sortable.containerId.split(':')[1])
           : String(overRawId);
 
@@ -656,9 +656,9 @@ function EditApp() {
       const sections = data.view.pages[selectedPage].view;
 
       // Find current section/block
-      let fromSectionId = String(event.active.data.current?.sortable.containerId?.split(':')[1]);
+      const fromSectionId = String(event.active.data.current?.sortable.containerId?.split(':')[1]);
 
-      let blockIdx = findBlockIndexById(sections[fromSectionId]?.blocks || [], String(activeRawId));
+      const blockIdx = findBlockIndexById(sections[fromSectionId]?.blocks || [], String(activeRawId));
       console.log('blockIdx', blockIdx);
 
       if (!fromSectionId || blockIdx === -1) return;
@@ -676,12 +676,12 @@ function EditApp() {
 
       // Insert into new location
       if (overType === 'block') {
-        let toSectionId = event.over.data.current?.sortable.containerId?.split(':')[1];
+        const toSectionId = event.over.data.current?.sortable.containerId?.split(':')[1];
 
         const o =  event.over.data ;
         console.log("🧑‍🎤 ", { toSectionId, newSections,o, overRawId })
 
-        let overBlockIdx = getOverBlockIndex(newSections[toSectionId], overRawId);
+        const overBlockIdx = getOverBlockIndex(newSections[toSectionId], overRawId);
         if (toSectionId === -1 || overBlockIdx === -1) return;
         // Insert before or after depending on pointer position (y axis)
         // For simplicity, always insert before for now (can enhance with pointer position)
@@ -693,7 +693,7 @@ function EditApp() {
           }
         });
       } else if (overType === 'section') {
-        let toSectionId = overRawId;
+        const toSectionId = overRawId;
 
         if (!toSectionId) return;
 

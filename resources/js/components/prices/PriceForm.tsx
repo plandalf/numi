@@ -178,7 +178,7 @@ export default function PriceForm({
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
 
-        let preparedData: PriceFormData = { ...data }; 
+        const preparedData: PriceFormData = { ...data }; 
 
         if (['tiered', 'volume', 'graduated'].includes(data.type)) {
             preparedData.properties = { tiers };
