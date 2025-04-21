@@ -1,5 +1,5 @@
 import { Head, useForm, usePage } from '@inertiajs/react';
-import { LoaderCircle, AlertCircle, Building2 } from 'lucide-react';
+import { LoaderCircle, AlertCircle, Building2, CheckCircle2 } from 'lucide-react';
 import { FormEventHandler } from 'react';
 
 import { Button } from '@/components/ui/button';
@@ -16,8 +16,14 @@ export default function Join({ organization }: JoinPageProps) {
     const { auth } = page.props;
     const { post, processing } = useForm();
 
+    const isAlreadyMember = auth.user && organization && auth.user.organizations?.some(org => org.id === organization.id);
+
     const submit: FormEventHandler = (e) => {
         e.preventDefault();
+        if (isAlreadyMember) {
+            window.location.href = route('dashboard');
+            return;
+        }
         post(route('organizations.join'));
     };
 
@@ -53,19 +59,27 @@ export default function Join({ organization }: JoinPageProps) {
         <AuthLayout 
             title={
                 <div className="flex flex-row justify-center items-center gap-4">
-                    <Building2 className="h-6 w-6 text-primary" />
-                    Join {organization.name}
+                    {isAlreadyMember ? (
+                        <CheckCircle2 className="h-6 w-6 text-green-500" />
+                    ) : (
+                        <Building2 className="h-6 w-6 text-primary" />
+                    )}
+                    {isAlreadyMember ? 'Already a Member' : `Join ${organization.name}`}
                 </div>
             }
-            description="You've been invited to join this organization. Click the button below to join."
+            description={
+                isAlreadyMember 
+                    ? "You're already a member of this organization. Click the button below to go to your dashboard."
+                    : "You've been invited to join this organization. Click the button below to join."
+            }
         >
             <Head title={`Join ${organization.name}`} />
             
             <div className="flex flex-col items-center gap-6">
                 <form className="w-full" onSubmit={submit}>
-                    <Button type="submit" className="w-full" disabled={processing}>
+                    <Button type="submit" className="w-full cursor-pointer" disabled={processing}>
                         {processing && <LoaderCircle className="h-4 w-4 animate-spin mr-2" />}
-                        Join Team
+                        {isAlreadyMember ? 'Go to Dashboard' : 'Join Team'}
                     </Button>
                 </form>
                 
