@@ -35,4 +35,16 @@ return [
         ],
     ],
 
+    'stripe' => [
+        'client_id' => env('STRIPE_CLIENT_ID'),
+        'client_secret' => env('STRIPE_CLIENT_SECRET'),
+        'redirect' => env('STRIPE_REDIRECT_URI'),
+    ],
+
+    'stripe_test' => [
+        'client_id' => env('STRIPE_TEST_CLIENT_ID'),
+        'client_secret' => env('STRIPE_TEST_CLIENT_SECRET'),
+        'redirect' => env('STRIPE_TEST_REDIRECT_URI'),
+    ],
+
 ];

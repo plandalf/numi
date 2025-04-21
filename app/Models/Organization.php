@@ -40,7 +40,7 @@ class Organization extends Model
     protected static function boot()
     {
         parent::boot();
-        
+
         static::creating(function ($organization) {
             $organization->ulid = Str::ulid();
         });
@@ -65,5 +65,10 @@ class Organization extends Model
     public function getInviteLinkAttribute(): string
     {
         return route('organizations.join', $this->ulid);
+    }
+
+    public function integrations(): HasMany
+    {
+        return $this->hasMany(Integration::class);
     }
 }
