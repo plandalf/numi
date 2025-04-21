@@ -27,6 +27,8 @@ export interface SharedData {
     quote: { message: string; author: string };
     auth: Auth;
     ziggy: Config & { location: string };
+    errors?: Record<string, string>;
+    flash?: { success?: string; error?: string };
     [key: string]: unknown;
 }
 

@@ -57,7 +57,7 @@ Route::middleware('auth')->group(function () {
 });
 
 // Made the join route public
-Route::get('join/{join_token}', [OrganizationController::class, 'joinPage'])
+Route::get('auth/join/{join_token}', [OrganizationController::class, 'joinPage'])
     ->name('auth.join');
 
 Route::post('organizations/join', [OrganizationController::class, 'join'])->name('organizations.join');
