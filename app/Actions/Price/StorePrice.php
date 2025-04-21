@@ -8,7 +8,7 @@ use App\Http\Requests\Price\StoreRequest;
 use App\Models\Catalog\Price;
 use App\Models\Catalog\Product;
 use App\Models\Organization;
-use App\Modules\Integrations\Contracts\CanCreatePrice;
+use App\Modules\Integrations\Contracts\HasPrices;
 
 class StorePrice
 {
@@ -25,7 +25,7 @@ class StorePrice
 
         $integrationClient = $product->integrationClient();
 
-        if($integrationClient instanceof CanCreatePrice) {
+        if($integrationClient instanceof HasPrices) {
             /**
              * @todo implement DTO (data transfer object) or other design patterns
              * to avoid exposing integration specific model to our domain

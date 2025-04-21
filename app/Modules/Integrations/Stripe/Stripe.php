@@ -7,8 +7,8 @@ use App\Models\Catalog\Price;
 use App\Models\Catalog\Product;
 use App\Models\Integration;
 use App\Modules\Integrations\AbstractIntegration;
-use App\Modules\Integrations\Contracts\CanCreatePrice;
-use App\Modules\Integrations\Contracts\CanCreateProducts;
+use App\Modules\Integrations\Contracts\HasPrices;
+use App\Modules\Integrations\Contracts\HasProducts;
 use App\Modules\Integrations\Contracts\CanCreateSubscription;
 use App\Modules\Integrations\Contracts\CanSetupIntent;
 
@@ -17,8 +17,8 @@ use Stripe\StripeClient;
 class Stripe extends AbstractIntegration implements
     CanCreateSubscription,
     CanSetupIntent,
-    CanCreateProducts,
-    CanCreatePrice
+    HasProducts,
+    HasPrices
 {
     protected StripeClient $stripe;
 
@@ -51,6 +51,35 @@ class Stripe extends AbstractIntegration implements
         ]);
     }
 
+    public function getAllProducts(array $params = [])
+    {
+        return $this->stripe->products->all($params);
+    }
+
+    public function searchProducts(array $params = [])
+    {
+        $searchParams = [
+            'query' => isset($params['search']) ? "name~\"{$params['search']}\"" : '',
+            'limit' => $params['limit'] ?? 100,
+        ];
+
+        return $this->stripe->products->search($searchParams);
+    }
+
+    // public function searchProducst(string $query = '', int $limit = 50, string $nextPageToken = '')
+    // {
+    //     $searchParams = [
+    //         'query' => "name~\"{$query}\"",
+    //         'limit' => $limit,
+    //     ];
+
+    //     if($nextPageToken) {
+    //         $searchParams['page'] = $nextPageToken;
+    //     }
+
+    //     return $this->stripe->products->search($searchParams);
+    // }
+
     public function createPrice(Price $price, Product $product)
     {
         $attrs = [
@@ -78,5 +107,20 @@ class Stripe extends AbstractIntegration implements
         }
 
         return $this->stripe->prices->create($attrs);
+    }
+
+    public function getAllPrices(array $params = [])
+    {
+        return $this->stripe->prices->all($params);
+    }
+
+    public function searchPrices(array $params = [])
+    {
+        $searchParams = [
+            'query' => isset($params['search']) ? "active:\"true\" AND lookup_key:\"{$params['search']}\"" : 'active:\"true\"',
+            'limit' => $params['limit'] ?? 100,
+        ];
+
+        return $this->stripe->prices->search($searchParams);
     }
 }

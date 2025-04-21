@@ -60,9 +60,11 @@ export default function Integrate({ integrations }: IntegrationsPageProps) {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center">
                       <div className="ml-4">
-                        <h3 className="text-lg font-medium text-gray-900 dark:text-white">
-                          {integration.name || integration.type}
-                        </h3>
+                        <Link href={`/integrations/${integration.id}`} className="hover:underline">
+                          <h3 className="text-lg font-medium text-gray-900 dark:text-white">
+                            {integration.name || integration.type}
+                          </h3>
+                        </Link>
                         <p className="text-sm text-gray-500 dark:text-gray-400">
                           Type: {integration.type} | Environment: {integration.environment}
                         </p>

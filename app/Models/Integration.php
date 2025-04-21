@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\IntegrationType;
+use App\Modules\Integrations\AbstractIntegration;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -65,5 +66,10 @@ class Integration extends Model
     public function organization(): BelongsTo
     {
         return $this->belongsTo(Organization::class);
+    }
+
+    public function integrationClient(): AbstractIntegration
+    {
+        return get_integration_client_class($this);
     }
 }
