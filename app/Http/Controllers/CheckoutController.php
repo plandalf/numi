@@ -9,7 +9,7 @@ use Inertia\Inertia;
 
 class CheckoutController extends Controller
 {
-    public function show(Request $request, string $offerId, string $environment = 'live')
+    public function initialize(Request $request, string $offerId, string $environment = 'live')
     {
         // $variant = $request->query('variant');
         $offer = Offer::retrieve($offerId);
@@ -29,5 +29,26 @@ class CheckoutController extends Controller
             'embedDomain' => config('services.plandalf.embed_domain'),
             'environment' => $environment,
         ]);
+    }
+
+    public function storeMutation(Request $request,  $checkoutId)
+    {
+        // get checkout
+        $action = $request->input('action');
+        // $submit = new SubmitPageService() -> $submit($checkoutId, $action);
+        // props 
+        // 
+        switch ($action) {
+            case 'setFields':
+                // $checkout = Checkout::find($checkoutId);
+                // $checkout->update($request->input('fields'));
+                break;
+                default:
+            abort(400);
+        }
+
+        return [
+            'id' => $checkoutId,
+        ];
     }
 }

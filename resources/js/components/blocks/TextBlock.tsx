@@ -1,6 +1,6 @@
 import { BlockContextType } from "@/types/blocks";
-import Numi from "@/contexts/Numi";
 import ReactMarkdown from 'react-markdown';
+import Numi from "@/contexts/Numi";
 import { cn } from "@/lib/utils";
 
 
@@ -13,11 +13,6 @@ function TextBlockComponent({ context }: { context: BlockContextType }) {
 
   const { fontWeight, fontSize } = context.blockConfig.appearance ?? {};
   const isMarkdown = format === 'markdown';
-
-  console.info('🫏 CONTEXT', {
-    id: context.blockId,
-    isHidden: context.blockConfig.appearance?.isHidden,
-  });
 
   if (context.blockConfig.appearance?.isHidden) {
     return <div>{context.blockConfig.id} is hidden!</div>

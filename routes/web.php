@@ -16,9 +16,22 @@ Route::get('/', function () {
     return Inertia::render('welcome');
 })->name('home');
 
-Route::get('/o/{offer}/{environment?}', [CheckoutController::class, 'show'])
+// get offer controller 
+// redirect to 
+Route::get('/o/{offer}/{environment?}', [CheckoutController::class, 'initialize'])
     ->name('offers.show')
     ->where('environment', 'live|test');
+
+Route::get('/checkout/checkout}', [CheckoutController::class, 'show'])
+    ->name('checkouts.show');
+
+// Route::get('/checkout/{checkout}', [CheckoutController::class, 'show'])
+// ->name('offers.show')
+// ->where('environment', 'live|test');
+
+Route::post('/checkouts/{checkout}/mutations', [CheckoutController::class, 'storeMutation'])
+    ->name('checkouts.mutations.store')
+    ->middleware(['web']);
 
 Route::middleware(['auth', 'verified'])->group(function () {
     // Organization setup route - no organization middleware
