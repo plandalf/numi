@@ -13,11 +13,19 @@ import { Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { type Product } from "@/types/product"; // Assuming you have a Product type
 import { toast } from "sonner";
-
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue
+} from "@/components/ui/select";
+import { Integration } from "@/types/integration";
 interface Props {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     initialData?: Product;
+    integrations: Integration[];
 }
 
 const slugify = (text: string): string => {
@@ -32,18 +40,20 @@ const slugify = (text: string): string => {
         .replace(/-+$/, '');         // Trim - from end of text
 };
 
-export default function ProductForm({ open, onOpenChange, initialData }: Props) {
+export default function ProductForm({ open, onOpenChange, initialData, integrations }: Props) {
     const isEditing = !!initialData;
     const [isLookupKeyManuallyEdited, setIsLookupKeyManuallyEdited] = useState(false);
 
     const { data, setData, post, put, processing, errors, reset } = useForm<{
         name: string;
         lookup_key: string;
+        integration_id: number | null;
         gateway_provider: string | null;
         gateway_product_id: string | null;
     }>({
         name: initialData?.name || "",
         lookup_key: initialData?.lookup_key || "",
+        integration_id: initialData?.integration_id || null,
         gateway_provider: initialData?.gateway_provider || null,
         gateway_product_id: initialData?.gateway_product_id || null,
     });
@@ -53,6 +63,7 @@ export default function ProductForm({ open, onOpenChange, initialData }: Props) 
             setData({
                 name: initialData.name || "",
                 lookup_key: initialData.lookup_key || "",
+                integration_id: initialData.integration_id || null,
                 gateway_provider: initialData.gateway_provider || null,
                 gateway_product_id: initialData.gateway_product_id || null,
             });
@@ -112,6 +123,7 @@ export default function ProductForm({ open, onOpenChange, initialData }: Props) 
         }
     };
 
+    console.log(initialData);
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent>
@@ -156,7 +168,29 @@ export default function ProductForm({ open, onOpenChange, initialData }: Props) 
                             A unique identifier for this product within your organization. {!isLookupKeyManuallyEdited && "Will update automatically based on name."}
                         </p>
                     </div>
-                    
+
+                    <div className="grid gap-2">
+                        <Label htmlFor="integration_id">Integration</Label>
+                        <Select
+                            value={data.integration_id?.toString() || ""}
+                            onValueChange={(value) => setData("integration_id", value ? parseInt(value) : null)}
+                            disabled={processing || (initialData && initialData.integration_id !== null)}
+                        >
+                            <SelectTrigger id="integration_id" className="w-full">
+                                <SelectValue placeholder="Select an integration" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {integrations.map((integration) => (
+                                    <SelectItem key={integration.id} value={integration.id.toString()}>
+                                        {integration.name}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                        {errors.integration_id && (
+                            <p className="text-sm text-red-500">{errors.integration_id}</p>
+                        )}
+                    </div>
                     {/* Optional Gateway Fields */}
                     {/* Consider adding these if needed */}
                     {/* <div className="grid gap-2">
@@ -213,4 +247,4 @@ export default function ProductForm({ open, onOpenChange, initialData }: Props) 
             </DialogContent>
         </Dialog>
     );
-} 
+}

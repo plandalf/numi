@@ -8,6 +8,7 @@ use App\Http\Requests\Price\StoreRequest;
 use App\Models\Catalog\Price;
 use App\Models\Catalog\Product;
 use App\Models\Organization;
+use App\Modules\Integrations\Contracts\CanCreatePrice;
 
 class StorePrice
 {
@@ -18,7 +19,25 @@ class StorePrice
         $organization = app(Organization::class);
 
         $validated['organization_id'] = $organization->id;
+        $validated['integration_id'] = $product->integration_id;
 
-        return $product->prices()->create($validated);
+        $price = $product->prices()->create($validated);
+
+        $integrationClient = $product->integrationClient();
+
+        if($integrationClient instanceof CanCreatePrice) {
+            /**
+             * @todo implement DTO (data transfer object) or other design patterns
+             * to avoid exposing integration specific model to our domain
+             * */
+            $integrationPrice = $integrationClient->createPrice($price, $product);
+
+            $price->gateway_price_id = $integrationPrice->id;
+            $price->gateway_provider = $product->integration->type;
+
+            $price->save();
+        }
+
+        return $price;
     }
 }

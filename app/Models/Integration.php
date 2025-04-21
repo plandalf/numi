@@ -2,11 +2,21 @@
 
 namespace App\Models;
 
+use App\Enums\IntegrationType;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
+/**
+ * @property string $lookup_key
+ * @property string $type
+ * @property string $organization_id
+ * @property string $name
+ * @property string $secret
+ * @property array $config
+ * @property string $current_state
+ */
 class Integration extends Model
 {
     use HasFactory, SoftDeletes;
@@ -37,6 +47,7 @@ class Integration extends Model
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
         'deleted_at' => 'datetime',
+        'type' => IntegrationType::class,
     ];
 
     /**

@@ -37,6 +37,7 @@ class ProductStoreRequest extends FormRequest
                     return $query->where('organization_id', $organizationId);
                 })
             ],
+            'integration_id' => ['required', 'exists:integrations,id'],
             // Add validation for other fields from migration if needed (e.g., gateway)
             'gateway_provider' => ['nullable', 'string', 'max:255'],
             'gateway_product_id' => ['nullable', 'string', 'max:255'],

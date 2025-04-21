@@ -13,15 +13,17 @@ import { formatMoney } from "@/lib/utils";
 import PriceForm from "@/components/prices/PriceForm";
 import ProductForm from "@/components/Products/ProductForm";
 import { toast } from "sonner";
+import { Integration } from "@/types/integration";
 
 interface ProductShowPageProps extends InertiaPageProps {
     product: Product;
     prices: Price[];
     listPrices: Price[];
+    integrations: Integration[];
 }
 
 export default function Show() {
-    const { product, prices, listPrices, errors } = usePage<ProductShowPageProps>().props;
+    const { product, prices, listPrices, integrations, errors } = usePage<ProductShowPageProps>().props;
 
     const [isPriceFormOpen, setIsPriceFormOpen] = useState(false);
     const [editingPrice, setEditingPrice] = useState<Price | undefined>(undefined);
@@ -34,7 +36,7 @@ export default function Show() {
 
     const handleDeletePrice = (priceId: number) => {
         if (!confirm('Are you sure you want to delete this price?')) return;
-        
+
         router.delete(route('products.prices.destroy', { product: product.id, price: priceId }), {
             preserveScroll: true,
             onSuccess: () => toast.success('Price deleted successfully.'),
@@ -66,7 +68,7 @@ export default function Show() {
                         </p>
                     </div>
                     <div className="flex space-x-2">
-                        <Button variant="outline" onClick={() => setIsProductFormOpen(true)}> 
+                        <Button variant="outline" onClick={() => setIsProductFormOpen(true)}>
                             <Edit className="w-4 h-4 mr-2" /> Edit Product
                         </Button>
                         {/* Add other actions */}
@@ -80,7 +82,7 @@ export default function Show() {
                             <CardTitle>Pricing</CardTitle>
                             <CardDescription>Manage prices for this product.</CardDescription>
                         </div>
-                        <Button onClick={() => openPriceForm()}> 
+                        <Button onClick={() => openPriceForm()}>
                             <Plus className="w-4 h-4 mr-2" /> Add Price
                         </Button>
                     </CardHeader>
@@ -104,16 +106,16 @@ export default function Show() {
                                         <TableRow key={price.id}>
                                             <TableCell>{price.name || '-'}</TableCell>
                                             <TableCell>{price.lookup_key || '-'}</TableCell>
-                                            <TableCell>{price.type}</TableCell> 
+                                            <TableCell>{price.type}</TableCell>
                                             <TableCell>{price.scope}</TableCell>
                                             <TableCell className="text-right">
-                                                {['one_time', 'recurring'].includes(price.type) 
+                                                {['one_time', 'recurring'].includes(price.type)
                                                     ? formatMoney(price.amount, price.currency)
                                                     : <span className="text-muted-foreground text-xs italic">Complex</span>
                                                 }
                                             </TableCell>
                                             <TableCell>
-                                                {price.type === 'recurring' 
+                                                {price.type === 'recurring'
                                                     ? `${price.recurring_interval_count || ''} ${price.renew_interval}(s)`
                                                     : '-'
                                                 }
@@ -142,21 +144,22 @@ export default function Show() {
                 </Card>
 
                 {/* Price Form Dialog */}
-                <PriceForm 
+                <PriceForm
                     open={isPriceFormOpen}
                     onOpenChange={setIsPriceFormOpen}
-                    product={product} 
-                    initialData={editingPrice} 
+                    product={product}
+                    initialData={editingPrice}
                     listPrices={listPrices || []}
                 />
-                
+
                 {/* Product Form Dialog */}
                 <ProductForm
                     open={isProductFormOpen}
                     onOpenChange={setIsProductFormOpen}
                     initialData={product}
+                    integrations={integrations}
                 />
             </div>
         </AppLayout>
     );
-} 
+}

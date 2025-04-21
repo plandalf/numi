@@ -1,6 +1,6 @@
 import { Link, Head } from '@inertiajs/react';
 // Correct layout import
-import AppLayout from "@/layouts/app-layout"; 
+import AppLayout from "@/layouts/app-layout";
 // import { PageProps, PaginatedResponse, Product } from "@/types"; // Commented out potentially wrong path
 
 // --- Placeholder Types (Replace with actual imports if available) ---
@@ -21,14 +21,6 @@ interface Price { // Basic Price type
     // Add other price fields
 }
 
-interface Product { // Basic Product type
-    id: number;
-    name: string;
-    lookup_key: string;
-    prices?: Price[];
-    // Add other product fields
-}
-
 interface PaginatedResponse<T> {
     data: T[];
     links: { url: string | null; label: string; active: boolean }[];
@@ -37,24 +29,28 @@ interface PaginatedResponse<T> {
 // --- End Placeholder Types ---
 
 import { Button } from '@/components/ui/button';
-import { 
-    Card, 
-    CardHeader, 
-    CardTitle, 
-    CardDescription, 
-    CardContent, 
-    CardFooter 
+import {
+    Card,
+    CardHeader,
+    CardTitle,
+    CardDescription,
+    CardContent,
+    CardFooter
 } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { Plus } from 'lucide-react';
 import { useState } from 'react';
 // Trying capitalized path based on linter error context
-import ProductForm from '@/components/Products/ProductForm'; 
+import ProductForm from '@/components/Products/ProductForm';
+import { Integration } from '@/types/integration';
+import { Product } from '@/types/product';
 
 interface ProductsIndexProps extends PageProps {
     products: PaginatedResponse<Product>;
+    integrations: Integration[];
 }
 
-export default function Index({ auth, products }: ProductsIndexProps) {
+export default function Index({ auth, products, integrations }: ProductsIndexProps) {
     const [isProductFormOpen, setIsProductFormOpen] = useState(false);
 
     return (
@@ -95,9 +91,21 @@ export default function Index({ auth, products }: ProductsIndexProps) {
                                     <CardDescription>{product.lookup_key}</CardDescription>
                                 </CardHeader>
                                 <CardContent className="flex-grow">
-                                    <p className="text-sm text-muted-foreground">
-                                        {product.prices?.length || 0} active price(s)
-                                    </p>
+                                    <div className="space-y-2">
+                                        <p className="text-sm text-muted-foreground">
+                                            {product.prices?.length || 0} active price(s)
+                                        </p>
+                                        {product.integration && (
+                                            <div className="flex gap-2">
+                                                <Badge variant="secondary">
+                                                    {product.integration.name}
+                                                </Badge>
+                                                <Badge variant="outline">
+                                                    {product.integration.type}
+                                                </Badge>
+                                            </div>
+                                        )}
+                                    </div>
                                 </CardContent>
                                 <CardFooter>
                                     <Link
@@ -116,12 +124,13 @@ export default function Index({ auth, products }: ProductsIndexProps) {
                 {/* ... */}
 
                 {/* Product Create/Edit Dialog */}
-                <ProductForm 
+                <ProductForm
                     open={isProductFormOpen}
                     onOpenChange={setIsProductFormOpen}
+                    integrations={integrations}
                 />
 
             </div>
         </AppLayout>
     );
-} 
+}

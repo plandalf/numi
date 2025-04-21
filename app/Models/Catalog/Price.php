@@ -3,12 +3,14 @@
 namespace App\Models\Catalog;
 
 use App\Enums\ChargeType;
+use App\Models\Integration;
 use App\Modules\Billing\Charges\GraduatedCharge;
 use App\Modules\Billing\Charges\OneTimeCharge;
 use App\Modules\Billing\Charges\PackageCharge;
 use App\Modules\Billing\Charges\VolumeCharge;
 use App\Modules\Billing\CurrencyCast;
 use App\Modules\Billing\MoneyCast;
+use App\Modules\Integrations\AbstractIntegration;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -83,6 +85,8 @@ class Price extends Model
 
         'is_active',
         'archived_at',
+
+        'integration_id',
     ];
 
     protected $casts = [
@@ -138,5 +142,15 @@ class Price extends Model
     public function offerVariants(): BelongsToMany
     {
         return $this->belongsToMany(OfferVariant::class, 'offer_variant_price');
+    }
+
+    public function integration(): BelongsTo
+    {
+        return $this->belongsTo(Integration::class);
+    }
+
+    public function integrationClient(): AbstractIntegration
+    {
+        return get_integration_client_class($this->integration);
     }
 }

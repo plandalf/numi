@@ -31,6 +31,8 @@ class ProductResource extends JsonResource
             // Conditionally load prices if the relationship is loaded
             'prices' => PriceResource::collection($this->whenLoaded('prices')),
 
+            'integration_id' => $this->integration_id,
+
             // Optionally load media if needed (assuming MediaResource exists or is simple)
             // 'media' => new MediaResource($this->whenLoaded('media')),
         ];

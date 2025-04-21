@@ -26,4 +26,4 @@ export default function Edit({ product }: Props) {
             </div>
         </>
     );
-} 
+}

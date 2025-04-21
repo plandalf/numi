@@ -1,13 +1,17 @@
+import { Integration } from "./integration";
+
 export interface Product {
     id: number;
     name: string;
     lookup_key: string;
+    integration_id: number | null;
     gateway_provider: string | null;
     gateway_product_id: string | null;
     created_at: string;
     updated_at: string;
     deleted_at: string | null;
     prices?: Price[];
+    integration?: Integration;
 }
 
 export interface Price {
@@ -35,4 +39,4 @@ export interface Price {
     created_at: string;
     updated_at: string;
     deleted_at: string | null;
-} 
+}
