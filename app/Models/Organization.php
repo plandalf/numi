@@ -19,6 +19,7 @@ class Organization extends Model
         'name',
         'ulid',
         'default_currency',
+        'join_token',
     ];
 
     protected $appends = [
@@ -43,12 +44,15 @@ class Organization extends Model
 
         static::creating(function ($organization) {
             $organization->ulid = Str::ulid();
+            $organization->join_token = hash('sha256', $organization->ulid);
         });
     }
 
     public function users(): BelongsToMany
     {
         return $this->belongsToMany(User::class, 'organization_users')
+            ->using(OrganizationUser::class)
+            ->withPivot('role')
             ->withTimestamps();
     }
 
@@ -64,7 +68,7 @@ class Organization extends Model
 
     public function getInviteLinkAttribute(): string
     {
-        return route('organizations.join', $this->ulid);
+        return route('auth.join', $this->join_token);
     }
 
     public function integrations(): HasMany

@@ -70,4 +70,12 @@ class User extends Authenticatable
         $this->current_organization_id = $organization->id;
         $this->save();
     }
+
+    // Switch to the first available organization
+    public function switchToAvailableOrganization(): void
+    {
+        $availableOrganization = $this->organizations()->first();
+        $this->current_organization_id = $availableOrganization?->id ?? null;
+        $this->save();
+    }
 }

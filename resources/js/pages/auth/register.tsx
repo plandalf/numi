@@ -1,5 +1,5 @@
 import { Head, useForm } from '@inertiajs/react';
-import { LoaderCircle } from 'lucide-react';
+import { Building2, LoaderCircle } from 'lucide-react';
 import { FormEventHandler } from 'react';
 
 import InputError from '@/components/input-error';
@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import AuthLayout from '@/layouts/auth-layout';
+import { Organization } from '@/types';
 
 type RegisterForm = {
     name: string;
@@ -16,7 +17,11 @@ type RegisterForm = {
     password_confirmation: string;
 };
 
-export default function Register() {
+interface RegisterProps {
+    organization?: Organization;
+}
+
+export default function Register({ organization }: RegisterProps) {
     const { data, setData, post, processing, errors, reset } = useForm<Required<RegisterForm>>({
         name: '',
         email: '',
@@ -32,7 +37,16 @@ export default function Register() {
     };
 
     return (
-        <AuthLayout title="Create an account" description="Enter your details below to create your account">
+        <AuthLayout 
+            title={organization
+                ? <div className="flex flex-row justify-center items-center gap-4">
+                    <Building2 className="h-6 w-6 text-primary" />
+                    Join {organization.name}
+                </div>
+                : "Create an account"
+            } 
+            description="Enter your details below to create your account"
+        >
             <Head title="Register" />
             <form className="flex flex-col gap-6" onSubmit={submit}>
                 <div className="grid gap-6">
@@ -103,7 +117,7 @@ export default function Register() {
 
                     <Button type="submit" className="mt-2 w-full" tabIndex={5} disabled={processing}>
                         {processing && <LoaderCircle className="h-4 w-4 animate-spin" />}
-                        Create account
+                        {organization ? 'Create account and join team' : 'Create account'}
                     </Button>
                 </div>
 
