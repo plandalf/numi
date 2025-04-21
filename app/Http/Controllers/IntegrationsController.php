@@ -7,7 +7,7 @@ use Inertia\Response;
 use App\Enums\IntegrationType;
 use App\Modules\Integrations\Contracts\SupportsAuthorization;
 use App\Modules\Integrations\Services\IntegrationUpsertService;
-use App\Modules\Integrations\Stripe\Stripe;
+use App\Modules\Integrations\Stripe\StripeAuth;
 use Illuminate\Http\Request;
 
 class IntegrationsController extends Controller
@@ -26,7 +26,7 @@ class IntegrationsController extends Controller
 
     public function authorize(string $integrationType, Request $request)
     {
-        $integrationClass = $this->getIntegrationClass(IntegrationType::from($integrationType));
+        $integrationClass = $this->getIntegrationAuthClass(IntegrationType::from($integrationType));
 
         if(!$integrationClass instanceof SupportsAuthorization) {
             throw new \Exception('Integration does not support authorization');
@@ -39,7 +39,7 @@ class IntegrationsController extends Controller
 
     public function callback(string $integrationType, Request $request)
     {
-        $integrationClass = $this->getIntegrationClass(IntegrationType::from($integrationType));
+        $integrationClass = $this->getIntegrationAuthClass(IntegrationType::from($integrationType));
 
         if(!$integrationClass instanceof SupportsAuthorization) {
             throw new \Exception('Integration does not support authorization');
@@ -49,11 +49,11 @@ class IntegrationsController extends Controller
     }
 
 
-    public function getIntegrationClass(IntegrationType $integration)
+    public function getIntegrationAuthClass(IntegrationType $integration)
     {
         return match($integration) {
-            IntegrationType::STRIPE => app(Stripe::class),
-            IntegrationType::STRIPE_TEST => app(Stripe::class),
+            IntegrationType::STRIPE => app(StripeAuth::class),
+            IntegrationType::STRIPE_TEST => app(StripeAuth::class),
         };
     }
 
