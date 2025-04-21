@@ -6,7 +6,7 @@ import { useState, useRef, useEffect, useContext } from 'react';
 import { X, Save, Type, Calendar, DollarSign, Mail, Lock, Link, ChevronDown, Circle, CheckSquare, ToggleLeft, List, Heading1, Square as ButtonIcon, Image as ImageIcon, AtSign, User, Phone, MapPin, Package, CreditCard } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import { BlockType, DRAG_TYPES } from './layout-preview';
-import edit, { useEditor } from '@/pages/offers/edit';
+import edit, { useEditor } from '@/pages/offers/Edit';
 import { GlobalStateContext } from '@/pages/Checkout';
 import { JSONSchemaEditor } from '@/components/editor/JSONSchemaEditor';
 import { Button } from '../ui/button';
