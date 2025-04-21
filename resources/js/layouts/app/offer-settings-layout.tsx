@@ -26,6 +26,11 @@ const sidebarNavItems: OfferNavItem[] = [
         icon: null,
     },
     {
+        title: 'Theme',
+        href: (offerId) => `/offers/${offerId}/settings/theme`,
+        icon: null,
+    },
+    {
         title: 'Notifications',
         href: (offerId) => `/offers/${offerId}/settings/notifications`,
         icon: null,

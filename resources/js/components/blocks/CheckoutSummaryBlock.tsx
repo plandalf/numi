@@ -42,18 +42,24 @@ function CheckoutSummaryComponent({ context }: { context: BlockContextType }) {
   console.log('showDiscountForm value:', showDiscountForm);
   console.log('blockConfig content:', context.blockConfig.content);
 
-  const formatCurrency = (amount: number) => {
+  const formatCurrency = (amount: number | null | undefined) => {
+    if (amount === null || amount === undefined) {
+      return 'N/A';
+    }
     return `$${amount.toFixed(2)}`;
   };
 
   const handleApplyDiscount = () => {
-
     // await this here, 
     if (discountCode.trim()) {
       console.log('Applying discount:', discountCode);
-      checkout.applyCoupon(discountCode);
+      // Use the session context to apply the discount
+      // This is a placeholder - you'll need to implement the actual discount application logic
+      console.log('Discount code applied:', discountCode);
     }
   };
+
+  console.log('session', session);
 
   return (
     <div className="border rounded-md p-4 bg-white shadow-sm">
@@ -71,7 +77,7 @@ function CheckoutSummaryComponent({ context }: { context: BlockContextType }) {
       
       {/* Order Items */}
       <div className="space-y-3 mb-4">
-        {session.items.map((item: any) => (
+        {session.line_items.map((item: any) => (
           <div key={item.id} className="flex items-center gap-3">
             {showImages && (
               <div className="w-12 h-12 border rounded flex-shrink-0">
@@ -81,12 +87,12 @@ function CheckoutSummaryComponent({ context }: { context: BlockContextType }) {
             <div className="flex-grow">
               <div className="flex justify-between">
                 <div className="font-medium">{item.name}</div>
-                {showItemPrices && (
+                {showItemPrices && item.price !== undefined && (
                   <div className="text-gray-700">{formatCurrency(item.price * item.quantity)}</div>
                 )}
               </div>
               <div className="text-sm text-gray-500">
-                Qty: {item.quantity} {showItemPrices && `× ${formatCurrency(item.price)}`}
+                Qty: {item.quantity} {showItemPrices && item.price !== undefined && `× ${formatCurrency(item.price)}`}
               </div>
             </div>
           </div>

@@ -19,8 +19,6 @@ Order will immediately process all checkout items into order items and set Check
 
 Orders will have their own (basic) public order status page with information about purchase status
 
-Status page URL /order-status/{public-id}?signature={url-signature}
-
 Orders are listed in dashboard
 
 Orders have a default redirect behaviour if none is used to the order status page
@@ -28,4 +26,6 @@ Orders have a default redirect behaviour if none is used to the order status pag
 TODO: 
 - [ ] Order Processing 
 - [ ] Hosted order details page like shopify
-- 
+- [ ] Status page URL /order-status/{public-id}?signature={url-signature}
+- [ ] Dashboard orders list /orders 
+- [ ] Dashboard order detail /orders/{id}
