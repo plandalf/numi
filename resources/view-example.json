@@ -4,7 +4,7 @@
         "page_ierhele": {
             "id": "page_ierhele",
             "name": "Page 2",
-            "type": "page",
+            "type": "payment",
             "view": {
                 "promo": {
                     "style": {
@@ -134,18 +134,12 @@
             "layout": {
                 "sm": "split-checkout@v1"
             },
-            "provides": [
-                "start",
-                "commit",
-                "pm_collection",
-                "li_customization"
-            ],
             "next_page": {
                 "branches": [
                     {
                         "next_page": "page_nw4wu2a",
                         "condition": {
-                            
+
                         }
                     }
                 ],
@@ -157,6 +151,10 @@
             "name": "Page 1",
             "type": "entry",
             "view": {
+                "title": {
+                    "style": {},
+                    "blocks": []
+                },
                 "promo": {
                     "style": {
                         "backgroundSize": "cover",
@@ -180,7 +178,7 @@
                                 "quote": "These bros are mad talented, totes bussin no cap",
                                 "author": "Gandalf the Grey",
                                 "affiliation": "Wizard of Middle-earth"
-                                
+
                             },
                             "object": "block"
                         }
@@ -230,6 +228,7 @@
                     "blocks": [
                         {
                             "type": "text",
+                            "id": "orc-text-1",
                             "props": [],
                             "object": "block",
                             "content": {
@@ -277,17 +276,11 @@
                             }
                         }
                     ]
-                },
-                "title": {
-
                 }
             },
             "layout": {
                 "sm": "split-checkout@v1"
             },
-            "provides": [
-                "info"
-            ],
             "next_page": {
                 "branches": [],
                 "default_next_page": "page_ierhele"
@@ -518,9 +511,7 @@
             "layout": {
                 "sm": "split-checkout@v1"
             },
-            "provides": [
-                "success"
-            ],
+
             "next_page": {
                 "branches": [],
                 "default_next_page": null
