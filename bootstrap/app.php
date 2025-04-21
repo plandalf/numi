@@ -24,6 +24,10 @@ return Application::configure(basePath: dirname(__DIR__))
             AddLinkHeadersForPreloadedAssets::class,
         ]);
 
+        $middleware->validateCsrfTokens(except: [
+            'client/*',
+        ]);
+
         $middleware->alias([
             'organization' => RequireOrganization::class,
         ]);
