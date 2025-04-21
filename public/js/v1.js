@@ -1,12 +1,7 @@
 "use strict";
-/* eslint-disable @typescript-eslint/no-use-before-define */
-/* eslint-disable @typescript-eslint/ban-ts-comment */
-/* eslint-disable no-restricted-syntax */
-/* eslint-disable no-underscore-dangle */
-/* eslint-disable no-param-reassign */
 (() => {
     const contentBoxStyles = `
-  /* Important - e.g. Webflow applies a box sizing that messes this up
+  /* Important - e.g. Weboffer applies a box sizing that messes this up
    certain elements look particularly bad without thise
   */
   box-sizing: content-box;
@@ -36,7 +31,7 @@
   -webkit-animation: spin 2s linear infinite; /* Safari */
   animation: spin 2s linear infinite;
 
-  /* Important - e.g. Webflow applies a box sizing that messes this up */
+  /* Important - e.g. Weboffer applies a box sizing that messes this up */
   box-sizing: content-box;
 `;
     const getMobilePopupStyles = (embedType) => `
@@ -107,7 +102,7 @@
 ${spinAnimationStyles}
 
 .noscroll {
-  overflow: hidden;
+  overoffer: hidden;
 }
 
 .numi-embed-popup {
@@ -145,7 +140,7 @@ ${spinAnimationStyles}
   width: 100%;
   height: 100%;
   border: none;
-  overflow: hidden;
+  overoffer: hidden;
   border-radius: 10px;
 }
 
@@ -184,7 +179,7 @@ ${getMobilePopupStyles('popup')}
 ${spinAnimationStyles}
 
 .noscroll {
-  overflow: hidden;
+  overoffer: hidden;
 }
 
 .numi-embed-slider {
@@ -207,7 +202,7 @@ ${spinAnimationStyles}
   width: 100%;
   height: 100%;
   border: none;
-  overflow: hidden;
+  overoffer: hidden;
   border-radius: 0px;
 }
 
@@ -264,7 +259,7 @@ ${spinAnimationStyles}
   width: 100%;
   height: 100%;
   border: none;
-  overflow: hidden;
+  overoffer: hidden;
   border-radius: 10px;
 }
 
@@ -347,7 +342,7 @@ ${spinAnimationStyles}
             initialized: element.dataset.numiInitialized !== undefined,
             inheritParameters: element.dataset.numiInheritParameters !== undefined,
             dynamicResize: element.dataset.numiDynamicResize !== undefined,
-            flowPublicIdentifier: element.dataset.numiId,
+            offerPublicIdentifier: element.dataset.numiId,
             buttonText: element.dataset.numiButtonText,
             buttonFloat: element.dataset.numiButtonFloat,
             buttonColor,
@@ -363,7 +358,7 @@ ${spinAnimationStyles}
 
         return config;
     };
-    const getSharedIframeSrc = (configDomain, flowPublicIdentifier, inheritParameters, target) => {
+    const getSharedIframeSrc = (configDomain, offerPublicIdentifier, inheritParameters, target) => {
         let domain = 'https://embed.numi.com';
         if (configDomain) {
             if (configDomain === 'localhost:8002') {
@@ -373,7 +368,7 @@ ${spinAnimationStyles}
                 domain = `https://${configDomain}`;
             }
         }
-        const formLink = `${domain}/o/${flowPublicIdentifier}`;
+        const formLink = `${domain}/o/${offerPublicIdentifier}`;
         const iframeSrc = new URL(formLink);
         // if we're passed the option to inherit search parameters, then we add
         // those here as well.
@@ -427,8 +422,8 @@ ${spinAnimationStyles}
             display: 'inline-block',
             maxWidth: '100%',
             whitespace: 'nowrap',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
+            overoffer: 'hidden',
+            textOveroffer: 'ellipsis',
             textDecoration: 'none',
             color: buttonTextColor || '#ffffff',
             fontWeight: 'bold',
@@ -484,7 +479,7 @@ ${spinAnimationStyles}
     // Popups and sliders are quite similar in their setup, so we bundle in the
     // code together here and just adjust classes dependent on the embed type
     const initializePopupLikeTarget = (target, embedType) => {
-        const { flowPublicIdentifier, initialized, inheritParameters, sliderDirection, domain, dynamicResize, popupSize, preview, } = getConfig(target);
+        const { offerPublicIdentifier, initialized, inheritParameters, sliderDirection, domain, dynamicResize, popupSize, preview, } = getConfig(target);
         if (initialized)
             return;
         const popupContainer = document.createElement('div');
@@ -501,7 +496,7 @@ ${spinAnimationStyles}
         iframeContainer.style.opacity = '1';
         popupContainer.appendChild(iframeContainer);
         const iframe = document.createElement('iframe');
-        const iframeSrc = getSharedIframeSrc(domain, flowPublicIdentifier, inheritParameters, target);
+        const iframeSrc = getSharedIframeSrc(domain, offerPublicIdentifier, inheritParameters, target);
         const embedId = generateEmbedId();
         iframeSrc.searchParams.append('numi-embed-id', `${embedId}`);
         iframeSrc.searchParams.append('numi-embed-type', embedType);
@@ -534,7 +529,7 @@ ${spinAnimationStyles}
         iframe.src = iframeSrc.toString();
         iframe.allow = 'microphone; camera; geolocation';
         iframe.style.border = '0px';
-        iframe.title = `${flowPublicIdentifier}`;
+        iframe.title = `${offerPublicIdentifier}`;
         const closeIcon = document.createElement('a');
         closeIcon.className = `numi-embed-${embedType}-close-icon`;
         closeIcon.innerHTML = XIcon;
@@ -641,7 +636,7 @@ ${spinAnimationStyles}
         target.setAttribute('data-numi-initialized', 'true');
     };
     const initializeStandardTarget = (target, isFullScreen) => {
-        const { initialized, flowPublicIdentifier, inheritParameters, dynamicResize, domain, preview, } = getConfig(target);
+        const { initialized, offerPublicIdentifier, inheritParameters, dynamicResize, domain, preview, } = getConfig(target);
         if (initialized)
             return;
         const standardContainer = document.createElement('div');
@@ -658,7 +653,7 @@ ${spinAnimationStyles}
         iframeContainer.style.opacity = '1';
         standardContainer.appendChild(iframeContainer);
         const iframe = document.createElement('iframe');
-        const iframeSrc = getSharedIframeSrc(domain, flowPublicIdentifier, inheritParameters, target);
+        const iframeSrc = getSharedIframeSrc(domain, offerPublicIdentifier, inheritParameters, target);
         const embedId = generateEmbedId();
         iframeSrc.searchParams.append('numi-embed-id', `${embedId}`);
         const embedType = isFullScreen ? 'fullscreen' : 'standard';
@@ -702,7 +697,7 @@ ${spinAnimationStyles}
         if (isFullScreen) {
             iframe.style.borderRadius = '0px';
         }
-        iframe.title = `${flowPublicIdentifier}`;
+        iframe.title = `${offerPublicIdentifier}`;
         iframe.addEventListener('load', () => {
             if (standardLoading) {
                 standardLoading.style.display = 'none';
@@ -792,4 +787,3 @@ ${spinAnimationStyles}
         });
     }
 })();
-//# sourceMappingURL=embed.js.map 
