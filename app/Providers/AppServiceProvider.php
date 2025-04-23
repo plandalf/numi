@@ -3,11 +3,13 @@
 namespace App\Providers;
 
 use App\Models\Organization;
+use App\Models\Subscription;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\ServiceProvider;
+use Laravel\Cashier\Cashier;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -27,6 +29,9 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         JsonResource::$wrap = false;
+
+        Cashier::useCustomerModel(Organization::class);
+        Cashier::useSubscriptionModel(Subscription::class);
 
         $this->bootModelRules();
     }

@@ -9,17 +9,23 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
+use Laravel\Cashier\Billable;
+use function Illuminate\Events\queueable;
 
 class Organization extends Model
 {
     /** @use HasFactory<\Database\Factories\OrganizationFactory> */
-    use HasFactory;
+    use HasFactory, Billable;
 
     protected $fillable = [
         'name',
         'ulid',
         'default_currency',
         'join_token',
+        'stripe_id',
+        'pm_type',
+        'pm_last_four',
+        'trial_ends_at',
     ];
 
     protected $appends = [
@@ -28,6 +34,10 @@ class Organization extends Model
 
     protected $attributes = [
         'default_currency' => 'USD',
+    ];
+
+    protected $casts = [
+        'trial_ends_at' => 'datetime',
     ];
 
     public const AVAILABLE_CURRENCIES = [
@@ -42,10 +52,34 @@ class Organization extends Model
     {
         parent::boot();
 
+        // If the organization has no active subscription, create a new subscription in trial
+        static::retrieved(function ($organization) {
+            $trialDays = (int) config('cashier.trial_days');
+
+            // Check if the organization has no active subscription
+            if (!$organization->subscribed('default')) {
+                $organization->update([
+                    'trial_ends_at' => now()->addDays($trialDays),
+                ]);
+            
+                // Create a new subscription in trial
+                $organization
+                    ->newSubscription('default', config('cashier.paid_price_id'))
+                    ->trialDays($trialDays)
+                    ->create();
+            }
+        });
+
         static::creating(function ($organization) {
             $organization->ulid = Str::ulid();
             $organization->join_token = hash('sha256', $organization->ulid);
         });
+
+        static::updated(queueable(function (Organization $organization) {
+            if ($organization->hasStripeId()) {
+                $organization->syncStripeCustomerDetails();
+            }
+        }));
     }
 
     public function users(): BelongsToMany

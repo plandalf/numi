@@ -11,8 +11,8 @@ use Inertia\Inertia;
 use App\Http\Controllers\MediaController;
 use App\Http\Controllers\ProductsController;
 use App\Http\Controllers\PriceController;
-use App\Http\Controllers\ThemeController;
 use App\Http\Controllers\TemplateController;
+use App\Http\Controllers\Billing\CheckoutController as BillingCheckoutController;
 
 Route::get('/', function () {
     return Inertia::render('welcome');
@@ -24,7 +24,7 @@ Route::get('/o/{offer}/{environment?}', [CheckoutController::class, 'initialize'
     ->name('offers.show')
     ->where('environment', 'live|test');
 
-Route::get('/checkout/checkout}', [CheckoutController::class, 'show'])
+Route::get('/checkout/{checkout}', [CheckoutController::class, 'show'])
     ->name('checkouts.show');
 
 // Route::get('/checkout/{checkout}', [CheckoutController::class, 'show'])
@@ -52,8 +52,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::prefix('settings')->name('settings.')->group(function () {
                 Route::get('/', [OrganizationController::class, 'settings'])->name('general');
                 Route::get('/team', [OrganizationController::class, 'team'])->name('team');
-                Route::get('/billing', [OrganizationController::class, 'billing'])->name('billing');
                 Route::delete('/team/{user}', [OrganizationController::class, 'removeTeamMember'])->name('team.remove');
+            
+                Route::prefix('billing')->name('billing.')->group(function () {
+                    Route::get('/', [BillingCheckoutController::class, 'billing'])->name('index');
+                    Route::get('/portal', [BillingCheckoutController::class, 'portal'])->name('portal');
+                });
             });
         });
     });

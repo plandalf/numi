@@ -2,8 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\StoreOrganizationRequest;
-use App\Http\Requests\UpdateOrganizationRequest;
+use App\Http\Resources\OrganizationResource;
 use App\Models\Organization;
 use App\Models\User;
 use App\Services\OrganizationService;
@@ -50,10 +49,21 @@ class OrganizationController extends Controller
         ]);
 
         return DB::transaction(function () use ($validated, $request) {
-            $organization = Organization::create($validated);
+            $trialDays = (int) config('cashier.trial_days');
+
+            $organization = Organization::create([
+                ...$validated,
+                'trial_ends_at' => now()->addMinutes(1),
+            ]);
             
             $organization->users()->attach($request->user());
             $request->user()->switchOrganization($organization);
+            
+            // Create a new subscription in trial
+            $organization
+                ->newSubscription('default', config('cashier.paid_price_id'))
+                ->trialDays($trialDays)
+                ->create();
 
             return redirect()->route('dashboard');
         });
@@ -170,7 +180,7 @@ class OrganizationController extends Controller
         $organization = request()->user()->currentOrganization;
         
         return Inertia::render('organizations/settings/general', [
-            'organization' => $organization,
+            'organization' => new OrganizationResource($organization),
         ]);
     }
 
@@ -180,16 +190,7 @@ class OrganizationController extends Controller
         $organization->load('users');
         
         return Inertia::render('organizations/settings/team', [
-            'organization' => $organization,
-        ]);
-    }
-
-    public function billing(): Response
-    {
-        $organization = request()->user()->currentOrganization;
-        
-        return Inertia::render('organizations/settings/billing', [
-            'organization' => $organization,
+            'organization' => new OrganizationResource($organization),
         ]);
     }
 

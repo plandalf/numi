@@ -30,7 +30,7 @@ const settingsNavItems = [
     },
     {
         title: 'Billing',
-        href: route('organizations.settings.billing'),
+        href: route('organizations.settings.billing.index'),
         icon: CreditCard,
     },
 ];

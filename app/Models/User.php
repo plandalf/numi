@@ -58,7 +58,7 @@ class User extends Authenticatable
 
     public function currentOrganization()
     {
-        return $this->belongsTo(Organization::class, 'current_organization_id');
+        return $this->belongsTo(Organization::class, 'current_organization_id')->with('subscriptions');
     }
 
     public function switchOrganization(Organization $organization): void

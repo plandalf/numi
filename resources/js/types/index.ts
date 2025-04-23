@@ -11,6 +11,20 @@ export interface Organization {
             role: string;
         };
     })[];
+    subscriptions?: Subscription[];
+}
+
+export interface Subscription {
+    id: string;
+    product_name: string;
+    stripe_status: string;
+    type: string;
+    quantity: number;
+    created_at: string;
+    updated_at: string;
+    on_trial: boolean;
+    trial_days_left: number;
+    is_free_plan: boolean;
 }
 
 export interface User {

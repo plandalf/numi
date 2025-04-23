@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Http\Resources\OrganizationResource;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
@@ -48,8 +49,8 @@ class HandleInertiaRequests extends Middleware
                     'id' => $user->id,
                     'name' => $user->name,
                     'email' => $user->email,
-                    'current_organization' => $user->currentOrganization,
-                    'organizations' => $user->organizations,
+                    'current_organization' => new OrganizationResource($user->currentOrganization),
+                    'organizations' => OrganizationResource::collection($user->organizations),
                 ] : null,
             ],
             'ziggy' => fn (): array => [
