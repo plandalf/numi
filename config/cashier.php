@@ -160,4 +160,14 @@ return [
     */
     'trial_days' => env('STRIPE_TRIAL_DAYS', 14),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Enable Billing
+    |--------------------------------------------------------------------------
+    |
+    | This is a flag to enable or disable billing.
+    |
+    */
+    'enable_billing' => env('ENABLE_BILLING', true),
+
 ];

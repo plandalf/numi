@@ -28,8 +28,11 @@ export function useOrganizationSwitcher({
   };
 
   const handleSwitch = (id: number) => {
-    router.post(route('organizations.switch', { organization: id }));
-    onSwitch?.(id);
+    router.post(route('organizations.switch', { organization: id }), {},{
+      onSuccess: () => {
+        onSwitch?.(id);
+      },
+    });
   };
    
   return {

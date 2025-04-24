@@ -19,10 +19,9 @@ import { Label } from '@/components/ui/label';
 import { SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
 import { useOrganizationSwitcher } from '@/hooks/use-organization-switcher';
 import { type SharedData } from '@/types';
-import { router, usePage } from '@inertiajs/react';
+import { usePage } from '@inertiajs/react';
 import { Building2, ChevronDown, Plus } from 'lucide-react';
 import { useState } from 'react';
-
 
 export function OrganizationSwitcher() {
     const { auth } = usePage<SharedData>().props;

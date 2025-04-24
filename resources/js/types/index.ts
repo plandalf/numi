@@ -51,6 +51,7 @@ export interface SharedData {
     auth: {
         user: User;
     };
+    modules: Record<Modules, boolean>;
 }
 
 export interface PageProps {
@@ -58,3 +59,8 @@ export interface PageProps {
         user: User;
     };
 }
+
+export enum Modules {
+    BILLING = 'billing',
+}
+

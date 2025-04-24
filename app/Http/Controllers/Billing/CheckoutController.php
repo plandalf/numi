@@ -10,6 +10,11 @@ class CheckoutController extends Controller
 {
     public function billing(Request $request)
     {
+
+        if (!config('cashier.enable_billing')) {
+            return redirect()->route('dashboard');
+        }
+
         $intent = $request->has('intent') ? $request->input('intent') : null;
 
         $response = Inertia::render('organizations/settings/billing');

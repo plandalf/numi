@@ -94,21 +94,36 @@ class Organization extends Model
 
     public function getTrialDaysLeftAttribute()
     {
+        if (!config('cashier.enable_billing')) {
+            return 0;
+        }
+
         return $this->trial_ends_at ? ceil(now()->diffInDays($this->trial_ends_at)) : 0;
     }
 
     public function getSubscribedAttribute()
     {
+        if (!config('cashier.enable_billing')) {
+            return true;
+        }
+
         return $this->subscribed();
     }
 
     public function getTrialPeriodExpiredAttribute()
     {
+        if (!config('cashier.enable_billing')) {
+            return false;
+        }
         return $this->trial_ends_at && $this->trial_ends_at->isPast();
     }
 
     public function getOnTrialAttribute()
     {
+        if (!config('cashier.enable_billing')) {
+            return false;
+        }
+
         return $this->onGenericTrial();
     }
 }

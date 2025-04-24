@@ -46,13 +46,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
     })->name('organizations.setup');
 
     // Organization routes
-    Route::prefix('organizations')->middleware(['subscription'])->name('organizations.')->group(function () {
+    Route::prefix('organizations')->name('organizations.')->group(function () {
         Route::post('/', [OrganizationController::class, 'store'])->name('store');
         Route::post('switch/{organization}', [OrganizationController::class, 'switch'])->name('switch');
         Route::put('/{organization}', [OrganizationController::class, 'update'])->name('update');
 
         // Organization settings routes
-        Route::middleware(['organization'])->group(function () {
+        Route::middleware(['organization','subscription'])->group(function () {
             Route::prefix('settings')->name('settings.')->group(function () {
                 Route::get('/', [OrganizationController::class, 'settings'])->name('general');
                 Route::get('/team', [OrganizationController::class, 'team'])->name('team');
