@@ -21,14 +21,4 @@ class Subscription extends CashierSubscription
             return $product->name;
         });
     }
-
-    public function getTrialDaysLeftAttribute()
-    {
-        return $this->trial_ends_at ? ceil(now()->diffInDays($this->trial_ends_at)) : 0;
-    }
-
-    public function getIsFreePlanAttribute()
-    {
-        return $this->stripe_price === config('cashier.free_price_id');
-    }
 }

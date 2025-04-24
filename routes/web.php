@@ -13,6 +13,7 @@ use App\Http\Controllers\ProductsController;
 use App\Http\Controllers\PriceController;
 use App\Http\Controllers\TemplateController;
 use App\Http\Controllers\Billing\CheckoutController as BillingCheckoutController;
+use App\Http\Controllers\NoAccessController;
 
 Route::get('/', function () {
     return Inertia::render('welcome');
@@ -36,13 +37,16 @@ Route::post('/checkouts/{checkout}/mutations', [CheckoutController::class, 'stor
     ->middleware(['web']);
 
 Route::middleware(['auth', 'verified'])->group(function () {
+    // No access route
+    Route::get('/no-access', [NoAccessController::class, '__invoke'])->name('no-access');
+
     // Organization setup route - no organization middleware
     Route::get('/organizations/setup', function () {
         return Inertia::render('organizations/setup');
     })->name('organizations.setup');
 
     // Organization routes
-    Route::prefix('organizations')->name('organizations.')->group(function () {
+    Route::prefix('organizations')->middleware(['subscription'])->name('organizations.')->group(function () {
         Route::post('/', [OrganizationController::class, 'store'])->name('store');
         Route::post('switch/{organization}', [OrganizationController::class, 'switch'])->name('switch');
         Route::put('/{organization}', [OrganizationController::class, 'update'])->name('update');
@@ -63,7 +67,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     });
 
     // Routes that require an organization
-    Route::middleware(['organization'])->group(function () {
+    Route::middleware(['organization', 'subscription'])->group(function () {
 
         Route::resource('products', ProductsController::class);
         Route::resource('products.prices', PriceController::class);
@@ -100,19 +104,26 @@ Route::middleware(['auth', 'verified'])->group(function () {
                 'offers' => Offer::latest()->get(),
             ]);
         })->name('dashboard');
+
+        Route::get('/templates', [TemplateController::class, 'index'])->name('templates.index');
+        Route::post('/templates/{template}/use', [TemplateController::class, 'useTemplate'])->name('templates.use');
+
+        // Media Upload Route
+        Route::post('media', [MediaController::class, 'store'])->name('media.store');
+    
+        // Profile Routes
+        Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+        Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+        Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
     });
-
-    // Media Upload Route
-    Route::post('media', [MediaController::class, 'store'])->name('media.store');
-
-    // Profile Routes
-    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
-    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
-    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
-
-    Route::get('/templates', [TemplateController::class, 'index'])->name('templates.index');
-    Route::post('/templates/{template}/use', [TemplateController::class, 'useTemplate'])->name('templates.use');
 });
+
+
+Route::middleware(['auth', 'organization'])->group(function () {
+    Route::get('organizations/settings/billing/checkout', [BillingCheckoutController::class, 'checkout'])
+        ->name('organizations.settings.billing.checkout');
+});
+
 
 // Media routes
 Route::middleware(['auth'])->group(function () {

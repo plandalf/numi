@@ -49,21 +49,15 @@ class OrganizationController extends Controller
         ]);
 
         return DB::transaction(function () use ($validated, $request) {
-            $trialDays = (int) config('cashier.trial_days');
-
             $organization = Organization::create([
                 ...$validated,
-                'trial_ends_at' => now()->addMinutes(1),
+                'trial_ends_at' => now()->addDays(
+                    (int) config('cashier.trial_days')
+                ),
             ]);
             
             $organization->users()->attach($request->user());
             $request->user()->switchOrganization($organization);
-            
-            // Create a new subscription in trial
-            $organization
-                ->newSubscription('default', config('cashier.paid_price_id'))
-                ->trialDays($trialDays)
-                ->create();
 
             return redirect()->route('dashboard');
         });

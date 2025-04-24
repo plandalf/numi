@@ -22,9 +22,6 @@ class SubscriptionResource extends JsonResource
             'quantity' => $this->quantity,
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
-            'on_trial' => $this->onTrial(),
-            'trial_days_left' => $this->trial_days_left,
-            'is_free_plan' => $this->is_free_plan,
         ];
     }
 }

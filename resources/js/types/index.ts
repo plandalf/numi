@@ -11,6 +11,8 @@ export interface Organization {
             role: string;
         };
     })[];
+    on_trial: boolean;
+    trial_days_left: string;
     subscriptions?: Subscription[];
 }
 
@@ -24,7 +26,6 @@ export interface Subscription {
     updated_at: string;
     on_trial: boolean;
     trial_days_left: number;
-    is_free_plan: boolean;
 }
 
 export interface User {

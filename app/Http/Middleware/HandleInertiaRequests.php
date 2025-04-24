@@ -49,14 +49,18 @@ class HandleInertiaRequests extends Middleware
                     'id' => $user->id,
                     'name' => $user->name,
                     'email' => $user->email,
-                    'current_organization' => new OrganizationResource($user->currentOrganization),
+                    'current_organization' => $user->currentOrganization ? new OrganizationResource($user->currentOrganization) : null,
                     'organizations' => OrganizationResource::collection($user->organizations),
                 ] : null,
             ],
             'ziggy' => fn (): array => [
 //                ...(new Ziggy)->toArray(),
                 'location' => $request->url(),
-            ]
+            ],
+            'flash' => [
+                'success' => fn () => $request->session()->get('success'),
+                'error' => fn () => $request->session()->get('error'),
+            ],
         ];
     }
 }

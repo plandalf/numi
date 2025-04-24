@@ -17,28 +17,24 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
+import { useOrganizationSwitcher } from '@/hooks/use-organization-switcher';
 import { type SharedData } from '@/types';
 import { router, usePage } from '@inertiajs/react';
 import { Building2, ChevronDown, Plus } from 'lucide-react';
 import { useState } from 'react';
+
 
 export function OrganizationSwitcher() {
     const { auth } = usePage<SharedData>().props;
     const [isOpen, setIsOpen] = useState(false);
     const [name, setName] = useState('');
 
-    const handleCreate = () => {
-        router.post(route('organizations.store'), { name }, {
-            onSuccess: () => {
-                setIsOpen(false);
-                setName('');
-            },
-        });
-    };
-
-    const handleSwitch = (id: number) => {
-        router.post(route('organizations.switch', { organization: id }));
-    };
+    const { onSwitch, onCreate } = useOrganizationSwitcher({
+        onCreate: () => {
+            setIsOpen(false);
+            setName('');
+        },
+    });
 
     return (
         <SidebarMenu>
@@ -49,13 +45,13 @@ export function OrganizationSwitcher() {
                             <Building2 className="mr-2 size-4" />
                             <span className="flex-1 text-left">
                                 {auth.user.current_organization?.name ?? 'Select Organization'}
-                            </span>
+                                </span>
                             <ChevronDown className="ml-auto size-4" />
                         </SidebarMenuButton>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent className="w-56">
                         {auth.user.organizations.map((org) => (
-                            <DropdownMenuItem key={org.id} onClick={() => handleSwitch(org.id)}>
+                            <DropdownMenuItem key={org.id} onClick={() => onSwitch?.(org.id)}>
                                 {org.name}
                             </DropdownMenuItem>
                         ))}
@@ -87,7 +83,7 @@ export function OrganizationSwitcher() {
                                     </div>
                                 </div>
                                 <div className="flex justify-end">
-                                    <Button onClick={handleCreate}>Create Organization</Button>
+                                    <Button onClick={() => onCreate?.(name)}>Create Organization</Button>
                                 </div>
                             </DialogContent>
                         </Dialog>

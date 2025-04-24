@@ -52,24 +52,6 @@ class Organization extends Model
     {
         parent::boot();
 
-        // If the organization has no active subscription, create a new subscription in trial
-        static::retrieved(function ($organization) {
-            $trialDays = (int) config('cashier.trial_days');
-
-            // Check if the organization has no active subscription
-            if (!$organization->subscribed('default')) {
-                $organization->update([
-                    'trial_ends_at' => now()->addDays($trialDays),
-                ]);
-            
-                // Create a new subscription in trial
-                $organization
-                    ->newSubscription('default', config('cashier.paid_price_id'))
-                    ->trialDays($trialDays)
-                    ->create();
-            }
-        });
-
         static::creating(function ($organization) {
             $organization->ulid = Str::ulid();
             $organization->join_token = hash('sha256', $organization->ulid);
@@ -108,5 +90,25 @@ class Organization extends Model
     public function integrations(): HasMany
     {
         return $this->hasMany(Integration::class);
+    }
+
+    public function getTrialDaysLeftAttribute()
+    {
+        return $this->trial_ends_at ? ceil(now()->diffInDays($this->trial_ends_at)) : 0;
+    }
+
+    public function getSubscribedAttribute()
+    {
+        return $this->subscribed();
+    }
+
+    public function getTrialPeriodExpiredAttribute()
+    {
+        return $this->trial_ends_at && $this->trial_ends_at->isPast();
+    }
+
+    public function getOnTrialAttribute()
+    {
+        return $this->onGenericTrial();
     }
 }

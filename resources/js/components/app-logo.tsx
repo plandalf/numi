@@ -1,9 +1,9 @@
+import { useCurrentOrganization } from '@/hooks/use-current-organization';
 import AppLogoIcon from './app-logo-icon';
 import { useSubscriptions } from '@/hooks/use-subscriptions';
 
 export default function AppLogo() {
-    const subscriptions = useSubscriptions();
-    const subscription = subscriptions?.[0];
+    const organization = useCurrentOrganization();
 
     return (
         <div className="flex items-center gap-2">
@@ -16,16 +16,9 @@ export default function AppLogo() {
                 </div>
             </div>
             {
-                subscription?.on_trial && (
+                organization?.on_trial && (
                     <div className="bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded-full text-xs font-medium">
-                        {subscription?.trial_days_left} days trial left
-                    </div>
-                )
-            }
-            {
-                subscription?.is_free_plan && (
-                    <div className="bg-green-100 text-green-800 px-2 py-0.5 rounded-full text-xs font-medium">
-                        Free plan
+                        {organization?.trial_days_left} days trial left
                     </div>
                 )
             }

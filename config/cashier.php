@@ -137,12 +137,27 @@ return [
 
     'model' => App\Models\Organization::class,
 
-    'free_product_id' => env('STRIPE_FREE_PRODUCT_ID'),
-    'free_price_id' => env('STRIPE_FREE_PRICE_ID'),
 
-    'paid_product_id' => env('STRIPE_PAID_PRODUCT_ID'),
-    'paid_price_id' => env('STRIPE_PAID_PRICE_ID'),
+    /*
+    |--------------------------------------------------------------------------
+    | Plandalf Plan
+    |--------------------------------------------------------------------------
+    |
+    | This is the product and price id for the Plandalf plan.
+    |
+    */
+    'stripe_plandalf_product_id' => env('STRIPE_PLANDALF_PRODUCT_ID'),
+    'stripe_plandalf_price_id' => env('STRIPE_PLANDALF_PRICE_ID'),
 
+
+    /*
+    |--------------------------------------------------------------------------
+    | Plandalf Plan Trial Days
+    |--------------------------------------------------------------------------
+    |
+    | This is the number of trial days before we require them to avail the Plandalf plan.
+    |
+    */
     'trial_days' => env('STRIPE_TRIAL_DAYS', 14),
 
 ];
