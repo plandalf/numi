@@ -11,6 +11,21 @@ export interface Organization {
             role: string;
         };
     })[];
+    on_trial: boolean;
+    trial_days_left: string;
+    subscriptions?: Subscription[];
+}
+
+export interface Subscription {
+    id: string;
+    product_name: string;
+    stripe_status: string;
+    type: string;
+    quantity: number;
+    created_at: string;
+    updated_at: string;
+    on_trial: boolean;
+    trial_days_left: number;
 }
 
 export interface User {
@@ -36,6 +51,7 @@ export interface SharedData {
     auth: {
         user: User;
     };
+    modules: Record<Modules, boolean>;
 }
 
 export interface PageProps {
@@ -43,3 +59,8 @@ export interface PageProps {
         user: User;
     };
 }
+
+export enum Modules {
+    BILLING = 'billing',
+}
+

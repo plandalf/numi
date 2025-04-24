@@ -11,8 +11,9 @@ use Inertia\Inertia;
 use App\Http\Controllers\MediaController;
 use App\Http\Controllers\ProductsController;
 use App\Http\Controllers\PriceController;
-use App\Http\Controllers\ThemeController;
 use App\Http\Controllers\TemplateController;
+use App\Http\Controllers\Billing\CheckoutController as BillingCheckoutController;
+use App\Http\Controllers\NoAccessController;
 
 Route::get('/', function () {
     return Inertia::render('welcome');
@@ -24,7 +25,7 @@ Route::get('/o/{offer}/{environment?}', [CheckoutController::class, 'initialize'
     ->name('offers.show')
     ->where('environment', 'live|test');
 
-Route::get('/checkout/checkout}', [CheckoutController::class, 'show'])
+Route::get('/checkout/{checkout}', [CheckoutController::class, 'show'])
     ->name('checkouts.show');
 
 // Route::get('/checkout/{checkout}', [CheckoutController::class, 'show'])
@@ -36,6 +37,9 @@ Route::post('/checkouts/{checkout}/mutations', [CheckoutController::class, 'stor
     ->middleware(['web']);
 
 Route::middleware(['auth', 'verified'])->group(function () {
+    // No access route
+    Route::get('/no-access', [NoAccessController::class, '__invoke'])->name('no-access');
+
     // Organization setup route - no organization middleware
     Route::get('/organizations/setup', function () {
         return Inertia::render('organizations/setup');
@@ -48,18 +52,22 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::put('/{organization}', [OrganizationController::class, 'update'])->name('update');
 
         // Organization settings routes
-        Route::middleware(['organization'])->group(function () {
+        Route::middleware(['organization','subscription'])->group(function () {
             Route::prefix('settings')->name('settings.')->group(function () {
                 Route::get('/', [OrganizationController::class, 'settings'])->name('general');
                 Route::get('/team', [OrganizationController::class, 'team'])->name('team');
-                Route::get('/billing', [OrganizationController::class, 'billing'])->name('billing');
                 Route::delete('/team/{user}', [OrganizationController::class, 'removeTeamMember'])->name('team.remove');
+            
+                Route::prefix('billing')->name('billing.')->group(function () {
+                    Route::get('/', [BillingCheckoutController::class, 'billing'])->name('index');
+                    Route::get('/portal', [BillingCheckoutController::class, 'portal'])->name('portal');
+                });
             });
         });
     });
 
     // Routes that require an organization
-    Route::middleware(['organization'])->group(function () {
+    Route::middleware(['organization', 'subscription'])->group(function () {
 
         Route::resource('products', ProductsController::class);
         Route::resource('products.prices', PriceController::class);
@@ -99,19 +107,26 @@ Route::middleware(['auth', 'verified'])->group(function () {
                 'offers' => Offer::latest()->get(),
             ]);
         })->name('dashboard');
+
+        Route::get('/templates', [TemplateController::class, 'index'])->name('templates.index');
+        Route::post('/templates/{template}/use', [TemplateController::class, 'useTemplate'])->name('templates.use');
+
+        // Media Upload Route
+        Route::post('media', [MediaController::class, 'store'])->name('media.store');
+    
+        // Profile Routes
+        Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+        Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+        Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
     });
-
-    // Media Upload Route
-    Route::post('media', [MediaController::class, 'store'])->name('media.store');
-
-    // Profile Routes
-    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
-    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
-    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
-
-    Route::get('/templates', [TemplateController::class, 'index'])->name('templates.index');
-    Route::post('/templates/{template}/use', [TemplateController::class, 'useTemplate'])->name('templates.use');
 });
+
+
+Route::middleware(['auth', 'organization'])->group(function () {
+    Route::get('organizations/settings/billing/checkout', [BillingCheckoutController::class, 'checkout'])
+        ->name('organizations.settings.billing.checkout');
+});
+
 
 // Media routes
 Route::middleware(['auth'])->group(function () {

@@ -12,30 +12,34 @@ import {
     SidebarProvider,
 } from '@/components/ui/sidebar';
 import AppLogo from '@/components/app-logo';
-
+import { useModules } from '@/hooks/use-modules';
 interface SettingsLayoutProps {
     children: React.ReactNode;
 }
-
-const settingsNavItems = [
-    {
-        title: 'General',
-        href: route('organizations.settings.general'),
-        icon: Building2,
-    },
-    {
-        title: 'Team',
-        href: route('organizations.settings.team'),
-        icon: Users,
-    },
-    {
-        title: 'Billing',
-        href: route('organizations.settings.billing'),
-        icon: CreditCard,
-    },
-];
-
 export default function SettingsLayout({ children }: SettingsLayoutProps) {
+
+    const modules = useModules();
+
+    const settingsNavItems = [
+        {
+            title: 'General',
+            href: route('organizations.settings.general'),
+            icon: Building2,
+        },
+        {
+            title: 'Team',
+            href: route('organizations.settings.team'),
+            icon: Users,
+        },
+        ...(modules.billing ? [
+            {
+                title: 'Billing',
+                href: route('organizations.settings.billing.index'),
+                icon: CreditCard,
+            },
+        ] : []),
+    ];
+
     return (
         <SidebarProvider defaultOpen>
             <div className="flex min-h-screen">

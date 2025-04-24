@@ -60,4 +60,11 @@ export const initFlashMessages = () => {
             handleFlashMessages(event.detail.page.props.flash);
         }
     });
+
+    // Listen for navigation responses
+    router.on('navigate', (event) => {
+        if (event.detail.page.props.flash) {
+            handleFlashMessages(event.detail.page.props.flash);
+        }
+    });
 }; 

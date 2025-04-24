@@ -9,17 +9,23 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
+use Laravel\Cashier\Billable;
+use function Illuminate\Events\queueable;
 
 class Organization extends Model
 {
     /** @use HasFactory<\Database\Factories\OrganizationFactory> */
-    use HasFactory;
+    use HasFactory, Billable;
 
     protected $fillable = [
         'name',
         'ulid',
         'default_currency',
         'join_token',
+        'stripe_id',
+        'pm_type',
+        'pm_last_four',
+        'trial_ends_at',
     ];
 
     protected $appends = [
@@ -28,6 +34,10 @@ class Organization extends Model
 
     protected $attributes = [
         'default_currency' => 'USD',
+    ];
+
+    protected $casts = [
+        'trial_ends_at' => 'datetime',
     ];
 
     public const AVAILABLE_CURRENCIES = [
@@ -46,6 +56,12 @@ class Organization extends Model
             $organization->ulid = Str::ulid();
             $organization->join_token = hash('sha256', $organization->ulid);
         });
+
+        static::updated(queueable(function (Organization $organization) {
+            if ($organization->hasStripeId()) {
+                $organization->syncStripeCustomerDetails();
+            }
+        }));
     }
 
     public function users(): BelongsToMany
@@ -74,5 +90,40 @@ class Organization extends Model
     public function integrations(): HasMany
     {
         return $this->hasMany(Integration::class);
+    }
+
+    public function getTrialDaysLeftAttribute()
+    {
+        if (!config('cashier.enable_billing')) {
+            return 0;
+        }
+
+        return $this->trial_ends_at ? ceil(now()->diffInDays($this->trial_ends_at)) : 0;
+    }
+
+    public function getSubscribedAttribute()
+    {
+        if (!config('cashier.enable_billing')) {
+            return true;
+        }
+
+        return $this->subscribed();
+    }
+
+    public function getTrialPeriodExpiredAttribute()
+    {
+        if (!config('cashier.enable_billing')) {
+            return false;
+        }
+        return $this->trial_ends_at && $this->trial_ends_at->isPast();
+    }
+
+    public function getOnTrialAttribute()
+    {
+        if (!config('cashier.enable_billing')) {
+            return false;
+        }
+
+        return $this->onGenericTrial();
     }
 }

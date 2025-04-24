@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Http\Resources\OrganizationResource;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
@@ -48,14 +49,21 @@ class HandleInertiaRequests extends Middleware
                     'id' => $user->id,
                     'name' => $user->name,
                     'email' => $user->email,
-                    'current_organization' => $user->currentOrganization,
-                    'organizations' => $user->organizations,
+                    'current_organization' => $user->currentOrganization ? new OrganizationResource($user->currentOrganization) : null,
+                    'organizations' => OrganizationResource::collection($user->organizations),
                 ] : null,
             ],
             'ziggy' => fn (): array => [
 //                ...(new Ziggy)->toArray(),
                 'location' => $request->url(),
-            ]
+            ],
+            'flash' => [
+                'success' => fn () => $request->session()->get('success'),
+                'error' => fn () => $request->session()->get('error'),
+            ],
+            'modules' => [
+                'billing' => config('cashier.enable_billing'),
+            ],
         ];
     }
 }
