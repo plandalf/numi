@@ -164,7 +164,7 @@ function EditorProvider({ offer, showNameDialog, children }: React.PropsWithChil
   const [isRenamingFromDropdown, setIsRenamingFromDropdown] = useState(false);
   const [showAddPageDialog, setShowAddPageDialog] = useState(false);
   const [isReady, setIsReady] = useState(false);
-  
+
   // const { data, setData, put, processing, errors, setDefaults } = useForm({
   //   name: offer.name,
   //   view: offer.view
@@ -377,7 +377,7 @@ function EditorProvider({ offer, showNameDialog, children }: React.PropsWithChil
 
     const sectionId = Object.keys(page.view).find((section) => {
       const x = page.view[section].blocks.findIndex((b) => b.id === block.id)
-      
+
       // console.log("🚵‍♀️", { section, x })
       if (x === -1) return false;
 
@@ -395,18 +395,18 @@ function EditorProvider({ offer, showNameDialog, children }: React.PropsWithChil
     const thePage = update(page, { view: { [sectionId]: { blocks: { $set: page.view[sectionId].blocks.map((b, i) => i === blockIndex ? block : b) } } } });
     console.log("PAGE!", { page })
     // const thePage = update(page, { view: { [blockIndex]: { blocks: { $set: block } } } });
-    // gotta find the section first 
+    // gotta find the section first
 
     if (blockIndex === -1) return;
 
     setData(update(data, { view: { pages: { [selectedPage]: { view: { $set: thePage.view } } } } }));
-    
+
   }
 
   const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null);
 
   const value: EditorContextType = {
-    data, 
+    data,
     setData,
     // put,
     // processing,
@@ -716,7 +716,6 @@ function EditApp() {
   function handleDragEnd(event: DragEndEvent) {
 
     if (!event.active) return;
-    console.log('drag end', event);
 
 
     const activeId = String(event.active.id);
@@ -734,14 +733,11 @@ function EditApp() {
         if (sectionId) {
           const newBlock: BlockData = {
             id: uuidv4(),
-            type: 'text',
+            type: activeRawId,
             object: 'block',
             content: {
-              value: '*new block*',
-              format: 'markdown',
             }
           };
-          console.log('----ADDING-BLOCK----', newBlock)
 
           newSections = update(newSections, {
             [sectionId]: {

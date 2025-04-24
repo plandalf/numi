@@ -13,7 +13,13 @@ import { Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { type Product } from "@/types/product"; // Assuming you have a Product type
 import { toast } from "sonner";
-
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue
+} from "@/components/ui/select";
 interface Props {
     open: boolean;
     onOpenChange: (open: boolean) => void;
@@ -39,11 +45,13 @@ export default function ProductForm({ open, onOpenChange, initialData }: Props) 
     const { data, setData, post, put, processing, errors, reset } = useForm<{
         name: string;
         lookup_key: string;
+        integration_id: number | null;
         gateway_provider: string | null;
         gateway_product_id: string | null;
     }>({
         name: initialData?.name || "",
         lookup_key: initialData?.lookup_key || "",
+        integration_id: initialData?.integration_id || null,
         gateway_provider: initialData?.gateway_provider || null,
         gateway_product_id: initialData?.gateway_product_id || null,
     });
@@ -53,6 +61,7 @@ export default function ProductForm({ open, onOpenChange, initialData }: Props) 
             setData({
                 name: initialData.name || "",
                 lookup_key: initialData.lookup_key || "",
+                integration_id: initialData.integration_id || null,
                 gateway_provider: initialData.gateway_provider || null,
                 gateway_product_id: initialData.gateway_product_id || null,
             });
@@ -112,6 +121,7 @@ export default function ProductForm({ open, onOpenChange, initialData }: Props) 
         }
     };
 
+    console.log(initialData);
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent>
@@ -156,7 +166,6 @@ export default function ProductForm({ open, onOpenChange, initialData }: Props) 
                             A unique identifier for this product within your organization. {!isLookupKeyManuallyEdited && "Will update automatically based on name."}
                         </p>
                     </div>
-                    
                     {/* Optional Gateway Fields */}
                     {/* Consider adding these if needed */}
                     {/* <div className="grid gap-2">
@@ -213,4 +222,4 @@ export default function ProductForm({ open, onOpenChange, initialData }: Props) 
             </DialogContent>
         </Dialog>
     );
-} 
+}

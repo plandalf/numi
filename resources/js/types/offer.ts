@@ -21,7 +21,7 @@ export interface Offer {
     slots: OfferSlot[];
     created_at: string;
     updated_at: string;
-    
+
 }
 
 export interface OfferSlot {
@@ -38,32 +38,33 @@ export interface OfferSlot {
 
 export interface Price {
     id: number;
-    product_id: number; 
-    organization_id: number; 
-    parent_list_price_id?: number | null; 
-    scope: 'list' | 'custom'; 
+    product_id: number;
+    organization_id: number;
+    parent_list_price_id?: number | null;
+    scope: 'list' | 'custom';
     type: 'one_time' | 'recurring' | 'graduated' | 'volume' | 'package';
     amount: number;
     currency: string;
-    properties?: Record<string, any> | null; 
-    name?: string | null; 
-    lookup_key?: string | null; 
-    renew_interval?: 'day' | 'week' | 'month' | 'year' | null; 
-    billing_anchor?: string | null; 
-    recurring_interval_count?: number | null; 
-    cancel_after_cycles?: number | null; 
-    gateway_provider?: string | null; 
-    gateway_price_id?: string | null; 
-    is_active: boolean; 
-    archived_at?: string | null; 
-    created_at?: string; 
-    updated_at?: string; 
+    properties?: Record<string, any> | null;
+    name?: string | null;
+    lookup_key?: string | null;
+    renew_interval?: 'day' | 'week' | 'month' | 'year' | null;
+    billing_anchor?: string | null;
+    recurring_interval_count?: number | null;
+    cancel_after_cycles?: number | null;
+    gateway_provider?: string | null;
+    gateway_price_id?: string | null;
+    is_active: boolean;
+    archived_at?: string | null;
+    created_at?: string;
+    updated_at?: string;
 }
 
 export interface Product {
     id: number;
     name: string;
     lookup_key: string;
+    integration_id: number;
     description?: string | null;
     currency?: string;
     media_id?: number | null;
@@ -282,4 +283,4 @@ export interface Page {
 
 export interface OfferConfiguration extends Offer {
     variants?: OfferVariant[];
-} 
+}

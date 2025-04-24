@@ -38,7 +38,7 @@ class PriceFactory extends Factory
             'recurring_interval_count' => fake()->numberBetween(1, 12),
             'cancel_after_cycles' => fake()->numberBetween(0, 12),
             'properties' => fake()->randomElement([null, fake()->word()]),
-            'gateway_provider' => fake()->randomElement(['stripe', 'paypal']),
+            'gateway_provider' => fake()->randomElement(['stripe', 'stripe_test']),
             'gateway_price_id' => fake()->uuid(),
             'is_active' => fake()->boolean(),
         ];

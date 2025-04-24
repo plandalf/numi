@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\Product\CreateProductAction;
 use App\Actions\Product\DestroyProduct;
 use App\Actions\Product\UpdateProduct;
 use App\Http\Requests\Product\ProductStoreRequest;
@@ -10,6 +11,7 @@ use App\Http\Resources\ProductResource;
 use App\Http\Resources\PriceResource;
 use App\Models\Catalog\Price;
 use App\Models\Catalog\Product;
+use App\Models\Integration;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
@@ -18,20 +20,41 @@ use Inertia\Response;
 
 class ProductsController extends Controller
 {
+    public function __construct(
+        private readonly CreateProductAction $createProductAction,
+    ) {}
+
     /**
      * Display a listing of the resource.
      */
     public function index(): Response
     {
         $organizationId = Auth::user()->currentOrganization->id;
+        $search = request('search', '');
+
         $products = Product::query()
             ->where('organization_id', $organizationId)
-            ->with('prices')
+            ->when($search, function ($query) use ($search) {
+                $query->where(function ($q) use ($search) {
+                    $q->where('name', 'like', "%{$search}%")
+                      ->orWhere('description', 'like', "%{$search}%");
+                });
+            })
+            ->with(['prices', 'integration'])
             ->latest()
-            ->paginate(10);
+            ->paginate(10)
+            ->withQueryString();
+
+        $integrations = Integration::query()
+            ->where('organization_id', $organizationId)
+            ->get();
 
         return Inertia::render('Products/Index', [
             'products' => $products,
+            'filters' => [
+                'search' => $search,
+            ],
+            'integrations' => $integrations,
         ]);
     }
 
@@ -44,11 +67,20 @@ class ProductsController extends Controller
         $organizationId = Auth::user()->currentOrganization->id;
         $validated['organization_id'] = $organizationId;
 
-        $product = Product::create($validated);
+        $product = null;
+        if($request->has('integration_id') && $request->input('integration_id') !== null) {
+            /** @var Integration $integration */
+            $integration = Integration::find($request->input('integration_id'));
+            $integrationClient = $integration->integrationClient();
 
-        return Inertia::render('Products/Show', [
-            'product' => $product,
-        ]);
+            $product = $integrationClient->importProduct($validated);
+        }
+
+        if(!$product) {
+            $product = $this->createProductAction->execute($validated);
+        }
+
+        return redirect()->route('products.show', $product);
     }
 
     /**
@@ -65,14 +97,21 @@ class ProductsController extends Controller
         ]);
 
         $listPrices = $product->prices()
-                              ->list()
-                              ->active()
-                              ->get();
+            ->list()
+            ->active()
+            ->get();
+
+
+        $organizationId = Auth::user()->currentOrganization->id;
+        $integrations = Integration::query()
+            ->where('organization_id', $organizationId)
+            ->get();
 
         return Inertia::render('Products/Show', [
             'product' => new ProductResource($product),
             'prices' => PriceResource::collection($product->prices),
             'listPrices' => PriceResource::collection($listPrices),
+            'integrations' => $integrations,
         ]);
     }
 
