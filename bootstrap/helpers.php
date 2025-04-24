@@ -10,6 +10,7 @@ if (! function_exists('get_integration_client_class')) {
         return match($integration->type) {
             IntegrationType::STRIPE => new Stripe($integration),
             IntegrationType::STRIPE_TEST => new Stripe($integration),
+            default => null, // TODO: create Plandalf integration client
         };
     }
 }

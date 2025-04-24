@@ -1,5 +1,12 @@
 import { Integration } from "./integration";
 
+export enum ProductStatus {
+    ACTIVE = 'active',
+    DRAFT = 'draft',
+    ARCHIVED = 'archived',
+    DELETED = 'deleted',
+}
+
 export interface Product {
     id: number;
     name: string;
@@ -7,6 +14,8 @@ export interface Product {
     integration_id: number | null;
     gateway_provider: string | null;
     gateway_product_id: string | null;
+    status: ProductStatus;
+    description?: string | null;
     created_at: string;
     updated_at: string;
     deleted_at: string | null;

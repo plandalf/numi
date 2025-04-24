@@ -157,7 +157,6 @@ export default function Show() {
                     open={isProductFormOpen}
                     onOpenChange={setIsProductFormOpen}
                     initialData={product}
-                    integrations={integrations}
                 />
             </div>
         </AppLayout>

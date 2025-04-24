@@ -20,12 +20,10 @@ import {
     SelectTrigger,
     SelectValue
 } from "@/components/ui/select";
-import { Integration } from "@/types/integration";
 interface Props {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     initialData?: Product;
-    integrations: Integration[];
 }
 
 const slugify = (text: string): string => {
@@ -40,7 +38,7 @@ const slugify = (text: string): string => {
         .replace(/-+$/, '');         // Trim - from end of text
 };
 
-export default function ProductForm({ open, onOpenChange, initialData, integrations }: Props) {
+export default function ProductForm({ open, onOpenChange, initialData }: Props) {
     const isEditing = !!initialData;
     const [isLookupKeyManuallyEdited, setIsLookupKeyManuallyEdited] = useState(false);
 
@@ -167,29 +165,6 @@ export default function ProductForm({ open, onOpenChange, initialData, integrati
                         <p className="text-xs text-muted-foreground">
                             A unique identifier for this product within your organization. {!isLookupKeyManuallyEdited && "Will update automatically based on name."}
                         </p>
-                    </div>
-
-                    <div className="grid gap-2">
-                        <Label htmlFor="integration_id">Integration</Label>
-                        <Select
-                            value={data.integration_id?.toString() || ""}
-                            onValueChange={(value) => setData("integration_id", value ? parseInt(value) : null)}
-                            disabled={processing || (initialData && initialData.integration_id !== null)}
-                        >
-                            <SelectTrigger id="integration_id" className="w-full">
-                                <SelectValue placeholder="Select an integration" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {integrations.map((integration) => (
-                                    <SelectItem key={integration.id} value={integration.id.toString()}>
-                                        {integration.name}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                        {errors.integration_id && (
-                            <p className="text-sm text-red-500">{errors.integration_id}</p>
-                        )}
                     </div>
                     {/* Optional Gateway Fields */}
                     {/* Consider adding these if needed */}

@@ -11,4 +11,6 @@ interface HasProducts
     public function getAllProducts(array $params = []);
 
     public function searchProducts(array $params = []);
+
+    public function getProduct(string $gatewayProductId);
 }

@@ -30,11 +30,20 @@ class ProductsController extends Controller
     public function index(): Response
     {
         $organizationId = Auth::user()->currentOrganization->id;
+        $search = request('search', '');
+
         $products = Product::query()
             ->where('organization_id', $organizationId)
+            ->when($search, function ($query) use ($search) {
+                $query->where(function ($q) use ($search) {
+                    $q->where('name', 'like', "%{$search}%")
+                      ->orWhere('description', 'like', "%{$search}%");
+                });
+            })
             ->with(['prices', 'integration'])
             ->latest()
-            ->paginate(10);
+            ->paginate(10)
+            ->withQueryString();
 
         $integrations = Integration::query()
             ->where('organization_id', $organizationId)
@@ -42,6 +51,9 @@ class ProductsController extends Controller
 
         return Inertia::render('Products/Index', [
             'products' => $products,
+            'filters' => [
+                'search' => $search,
+            ],
             'integrations' => $integrations,
         ]);
     }
@@ -55,15 +67,20 @@ class ProductsController extends Controller
         $organizationId = Auth::user()->currentOrganization->id;
         $validated['organization_id'] = $organizationId;
 
-        $product = $this->createProductAction->execute($validated);
-        $integrations = Integration::query()
-            ->where('organization_id', $organizationId)
-            ->get();
+        $product = null;
+        if($request->has('integration_id') && $request->input('integration_id') !== null) {
+            /** @var Integration $integration */
+            $integration = Integration::find($request->input('integration_id'));
+            $integrationClient = $integration->integrationClient();
 
-        return Inertia::render('Products/Show', [
-            'product' => $product,
-            'integrations' => $integrations,
-        ]);
+            $product = $integrationClient->importProduct($validated);
+        }
+
+        if(!$product) {
+            $product = $this->createProductAction->execute($validated);
+        }
+
+        return redirect()->route('products.show', $product);
     }
 
     /**
@@ -83,6 +100,7 @@ class ProductsController extends Controller
             ->list()
             ->active()
             ->get();
+
 
         $organizationId = Auth::user()->currentOrganization->id;
         $integrations = Integration::query()

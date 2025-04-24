@@ -2,6 +2,7 @@
 
 namespace App\Actions\Product;
 
+use App\Enums\ProductStatus;
 use App\Models\Catalog\Product;
 use App\Modules\Integrations\Contracts\HasProducts;
 use Illuminate\Support\Str;
@@ -24,6 +25,8 @@ class CreateProductAction
 
             $product->gateway_product_id = $integrationProduct->id;
             $product->gateway_provider = $product->integration->type;
+            $product->status = ProductStatus::active;
+
             $product->save();
         }
 

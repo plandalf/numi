@@ -50,7 +50,7 @@ class StripeAuth implements SupportsAuthorization
 
         abort_if(! $state, 404, 'Invalid state');
 
-        $uri = new Uri("/integrations");
+        $uri = new Uri("/products");
         $query = Query::parse($uri->getQuery());
 
         try {

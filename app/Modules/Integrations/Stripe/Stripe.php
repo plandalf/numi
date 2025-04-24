@@ -11,7 +11,7 @@ use App\Modules\Integrations\Contracts\HasPrices;
 use App\Modules\Integrations\Contracts\HasProducts;
 use App\Modules\Integrations\Contracts\CanCreateSubscription;
 use App\Modules\Integrations\Contracts\CanSetupIntent;
-
+use App\Modules\Integrations\Stripe\Actions\ImportStripeProductAction;
 use Stripe\StripeClient;
 
 class Stripe extends AbstractIntegration implements
@@ -20,10 +20,10 @@ class Stripe extends AbstractIntegration implements
     HasProducts,
     HasPrices
 {
-    protected StripeClient $stripe;
+    protected StripeClient $stripeClient;
 
-    public function __construct(private readonly Integration $integration) {
-        $this->stripe = new StripeClient([
+    public function __construct(public Integration $integration) {
+        $this->stripeClient = new StripeClient([
             'api_key' => $this->integration->secret,
             'stripe_account' => $this->integration->lookup_key,
         ]);
@@ -46,14 +46,19 @@ class Stripe extends AbstractIntegration implements
 
     public function createProduct(Product $product)
     {
-        return $this->stripe->products->create([
+        return $this->stripeClient->products->create([
             'name' => $product->name,
         ]);
     }
 
     public function getAllProducts(array $params = [])
     {
-        return $this->stripe->products->all($params);
+        return $this->stripeClient->products->all($params);
+    }
+
+    public function getProduct(string $gatewayProductId)
+    {
+        return $this->stripeClient->products->retrieve($gatewayProductId);
     }
 
     public function searchProducts(array $params = [])
@@ -63,22 +68,8 @@ class Stripe extends AbstractIntegration implements
             'limit' => $params['limit'] ?? 100,
         ];
 
-        return $this->stripe->products->search($searchParams);
+        return $this->stripeClient->products->search($searchParams);
     }
-
-    // public function searchProducst(string $query = '', int $limit = 50, string $nextPageToken = '')
-    // {
-    //     $searchParams = [
-    //         'query' => "name~\"{$query}\"",
-    //         'limit' => $limit,
-    //     ];
-
-    //     if($nextPageToken) {
-    //         $searchParams['page'] = $nextPageToken;
-    //     }
-
-    //     return $this->stripe->products->search($searchParams);
-    // }
 
     public function createPrice(Price $price, Product $product)
     {
@@ -106,12 +97,12 @@ class Stripe extends AbstractIntegration implements
             $attrs['tiers'] = $price->properties ?? [];
         }
 
-        return $this->stripe->prices->create($attrs);
+        return $this->stripeClient->prices->create($attrs);
     }
 
     public function getAllPrices(array $params = [])
     {
-        return $this->stripe->prices->all($params);
+        return $this->stripeClient->prices->all($params);
     }
 
     public function searchPrices(array $params = [])
@@ -121,6 +112,29 @@ class Stripe extends AbstractIntegration implements
             'limit' => $params['limit'] ?? 100,
         ];
 
-        return $this->stripe->prices->search($searchParams);
+        return $this->stripeClient->prices->search($searchParams);
     }
+
+    public function importProduct(array $attrs = []): ?Product
+    {
+        $gatewayProductId = data_get($attrs, 'gateway_product_id');
+        $gatewayPrices = data_get($attrs, 'gateway_prices');
+        $productAttrs = [
+            data_get($attrs, 'lookup_key', $gatewayProductId),
+            data_get($attrs, 'name', $gatewayProductId),
+            data_get($attrs, 'description', $gatewayProductId),
+        ];
+
+        if(!$gatewayProductId || !$gatewayPrices) return null;
+
+
+        return (new ImportStripeProductAction)(
+            $this->integration,
+            $gatewayProductId,
+            $gatewayPrices,
+            $productAttrs
+        );
+    }
+
+
 }

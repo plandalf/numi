@@ -149,8 +149,12 @@ class Price extends Model
         return $this->belongsTo(Integration::class);
     }
 
-    public function integrationClient(): AbstractIntegration
+    public function integrationClient(): ?AbstractIntegration
     {
+        if(!$this->integration) {
+            return null;
+        }
+
         return get_integration_client_class($this->integration);
     }
 }

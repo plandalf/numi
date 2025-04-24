@@ -6,12 +6,12 @@ use Inertia\Inertia;
 use Inertia\Response;
 use App\Enums\IntegrationType;
 use App\Models\Integration;
+use App\Modules\Integrations\Contracts\HasPrices;
 use App\Modules\Integrations\Contracts\HasProducts;
 use App\Modules\Integrations\Contracts\SupportsAuthorization;
 use App\Modules\Integrations\Services\IntegrationUpsertService;
 use App\Modules\Integrations\Stripe\StripeAuth;
 use Illuminate\Http\Request;
-use App\Modules\Integrations\Contracts\HasPrices;
 
 class IntegrationsController extends Controller
 {
@@ -29,55 +29,74 @@ class IntegrationsController extends Controller
 
     public function show(Integration $integration)
     {
-        $integrationClient = $integration->integrationClient();
-
-        $products = collect([]);
-        if($integrationClient instanceof HasProducts) {
-            $params = ['limit' => request('per_page', 10)];
-
-            if (request('starting_after')) {
-                $params['starting_after'] = request('starting_after');
-            }
-
-            if (request('ending_before')) {
-                $params['ending_before'] = request('ending_before');
-            }
-
-            if (request('search')) {
-                $params['search'] = request('search');
-                $products = $integrationClient->searchProducts($params);
-            } else {
-                $products = $integrationClient->getAllProducts($params);
-            }
-        }
-
-        $prices = collect([]);
-        if($integrationClient instanceof HasPrices) {
-            $params = ['limit' => request('per_page', 10)];
-            $prices = $integrationClient->getAllPrices($params);
-        }
-
-        $filters = ['per_page' => request('per_page', 10)];
-
-        if (request('starting_after')) {
-            $filters['starting_after'] = request('starting_after');
-        }
-
-        if (request('ending_before')) {
-            $filters['ending_before'] = request('ending_before');
-        }
-
-        if (request('search')) {
-            $filters['search'] = request('search');
-        }
-
         return Inertia::render('integrations/show', [
             'integration' => $integration,
-            'products' => $products,
-            'prices' => $prices,
-            'filters' => $filters
         ]);
     }
+
+    public function products(Integration $integration)
+    {
+        $integrationClient = $integration->integrationClient();
+
+        if($integrationClient instanceof HasProducts) {
+            $allProducts = collect();
+            $startingAfter = null;
+
+            do {
+                $params = [
+                    'limit' => 100,
+                ];
+
+                if ($startingAfter) {
+                    $params['starting_after'] = $startingAfter;
+                }
+
+                $products = $integrationClient->getAllProducts($params);
+                $allProducts = $allProducts->concat($products->data);
+
+                $startingAfter = $products->has_more ? end($products->data)->id : null;
+            } while ($startingAfter);
+
+            return response()->json($allProducts->toArray());
+        }
+
+        return response()->json([]);
+    }
+
+    public function prices(Integration $integration, string $gatewayProductId)
+    {
+        $integrationClient = $integration->integrationClient();
+
+        if($integrationClient instanceof HasPrices) {
+            $allPrices = collect();
+            $startingAfter = null;
+
+            do {
+                $params = [
+                    'product' => $gatewayProductId,
+                    'expand' => [
+                        'data.tiers',
+                    ],
+                    'limit' => 100,
+                ];
+
+                if ($startingAfter) {
+                    $params['starting_after'] = $startingAfter;
+                }
+
+                $prices = $integrationClient->getAllPrices($params);
+                $allPrices = $allPrices->concat($prices->data);
+
+                $startingAfter = $prices->has_more ? end($prices->data)->id : null;
+            } while ($startingAfter);
+
+            return response()->json($allPrices->toArray());
+        }
+
+        return response()->json([]);
+    }
+
+
 
     public function authorize(string $integrationType, Request $request)
     {
