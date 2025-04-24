@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Models\Organization;
 use App\Models\Subscription;
+use App\Models\SubscriptionItem;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -32,6 +33,7 @@ class AppServiceProvider extends ServiceProvider
 
         Cashier::useCustomerModel(Organization::class);
         Cashier::useSubscriptionModel(Subscription::class);
+        Cashier::useSubscriptionItemModel(SubscriptionItem::class);
 
         $this->bootModelRules();
     }
