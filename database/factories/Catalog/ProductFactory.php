@@ -29,7 +29,7 @@ class ProductFactory extends Factory
             'organization_id' => Organization::factory(),
             'name' => fake()->words(3, true),
             'lookup_key' => fake()->unique()->bothify('PROD-####-???'),
-            'gateway_provider' => fake()->randomElement(['stripe', 'paypal']),
+            'gateway_provider' => fake()->randomElement(['stripe', 'stripe_test']),
             'gateway_product_id' => fake()->uuid(),
         ];
     }

@@ -1,127 +1,262 @@
-import { Link, Head } from '@inertiajs/react';
-// Correct layout import
-import AppLayout from "@/layouts/app-layout"; 
-// import { PageProps, PaginatedResponse, Product } from "@/types"; // Commented out potentially wrong path
+import { Link, Head, router } from '@inertiajs/react';
+import AppLayout from "@/layouts/app-layout";
+import cx from "classnames";
+import { pluralize, formatDate } from '@/lib/utils';
+import { Search } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { useDebounce } from '@/hooks/use-debounce';
+import { useEffect, useState } from 'react';
 
-// --- Placeholder Types (Replace with actual imports if available) ---
 type User = { id: number; name: string; email: string; /* ... other user fields */ };
+
 interface PageProps {
-    auth: {
-        user: User;
-    };
-    // Add other common page props like errors, flash messages, etc.
-    errors?: Record<string, string>;
-    flash?: { success?: string; error?: string };
-}
-
-interface Price { // Basic Price type
-    id: number;
-    amount: number;
-    currency: string;
-    // Add other price fields
-}
-
-interface Product { // Basic Product type
-    id: number;
-    name: string;
-    lookup_key: string;
-    prices?: Price[];
-    // Add other product fields
+  auth: {
+    user: User;
+  };
+  // Add other common page props like errors, flash messages, etc.
+  errors?: Record<string, string>;
+  flash?: { success?: string; error?: string };
 }
 
 interface PaginatedResponse<T> {
-    data: T[];
-    links: { url: string | null; label: string; active: boolean }[];
-    // Add other pagination meta if needed (current_page, total, etc.)
+  data: T[];
+  links: { url: string | null; label: string; active: boolean }[];
+  current_page: number;
+  last_page: number;
+  per_page: number;
+  total: number;
+  // Add other pagination meta if needed
 }
 // --- End Placeholder Types ---
 
 import { Button } from '@/components/ui/button';
-import { 
-    Card, 
-    CardHeader, 
-    CardTitle, 
-    CardDescription, 
-    CardContent, 
-    CardFooter 
-} from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { Plus } from 'lucide-react';
-import { useState } from 'react';
 // Trying capitalized path based on linter error context
-import ProductForm from '@/components/Products/ProductForm'; 
+import ProductForm from '@/components/Products/ProductForm';
+import { Integration } from '@/types/integration';
+import { Product, ProductStatus } from '@/types/product';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Pagination } from "@/components/pagination/Pagination";
+import { Card } from '@/components/ui/card';
+import AddNewProductDialog from '@/components/Products/AddNewProductDialog';
+import AddExistingStripeProductDialog from '@/components/Products/AddExistingStripeProductDialog';
 
 interface ProductsIndexProps extends PageProps {
-    products: PaginatedResponse<Product>;
+  products: PaginatedResponse<Product>;
+  filters: {
+    search: string;
+  };
+  integrations: Integration[];
 }
 
-export default function Index({ auth, products }: ProductsIndexProps) {
-    const [isProductFormOpen, setIsProductFormOpen] = useState(false);
+export default function Index({ auth, products, filters, integrations }: ProductsIndexProps) {
+  const [isProductFormOpen, setIsProductFormOpen] = useState(false);
+  const [isAddNewProductDialogOpen, setIsAddNewProductDialogOpen] = useState(false);
+  const [isAddExistingStripeProductDialogOpen, setIsAddExistingStripeProductDialogOpen] = useState(false);
+  const [integrationId, setIntegrationId] = useState<string>('');
+  const [search, setSearch] = useState(filters.search || '');
+  const debouncedSearch = useDebounce(search, 300);
 
-    return (
-        // Remove user prop - likely handled by shared props
-        <AppLayout>
-            <Head title="Products" />
+  const hasIntegrations = integrations.length > 0;
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const integrationIdParam = urlParams.get('integration_id');
+    if (integrationIdParam) {
+      setIntegrationId(integrationIdParam);
+      setIsAddExistingStripeProductDialogOpen(true);
+    }
+  }, []);
 
-            <div className="container mx-auto py-10 px-4 sm:px-6 lg:px-8">
-                <header className="mb-8 flex justify-between items-center">
-                    <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">
-                        Products
-                    </h1>
-                    <Button onClick={() => setIsProductFormOpen(true)}>
-                        <Plus className="w-4 h-4 mr-2" />
-                        Create Product
-                    </Button>
-                </header>
-
-                {products.data.length === 0 ? (
-                    <div className="text-center py-12">
-                        <h3 className="text-lg font-medium text-gray-900 dark:text-white">No products found</h3>
-                        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                            Get started by creating your first product.
-                        </p>
-                        <div className="mt-6">
-                            <Button onClick={() => setIsProductFormOpen(true)}>
-                                <Plus className="w-4 h-4 mr-2" />
-                                Create Product
-                            </Button>
-                        </div>
-                    </div>
-                ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {products.data.map((product: Product) => (
-                            <Card key={product.id} className="flex flex-col">
-                                <CardHeader>
-                                    <CardTitle>{product.name}</CardTitle>
-                                    <CardDescription>{product.lookup_key}</CardDescription>
-                                </CardHeader>
-                                <CardContent className="flex-grow">
-                                    <p className="text-sm text-muted-foreground">
-                                        {product.prices?.length || 0} active price(s)
-                                    </p>
-                                </CardContent>
-                                <CardFooter>
-                                    <Link
-                                        href={route('products.show', product.id)}
-                                        className="text-sm font-medium text-primary hover:underline"
-                                    >
-                                        View Details
-                                    </Link>
-                                </CardFooter>
-                            </Card>
-                        ))}
-                    </div>
-                )}
-
-                {/* Pagination Links */}
-                {/* ... */}
-
-                {/* Product Create/Edit Dialog */}
-                <ProductForm 
-                    open={isProductFormOpen}
-                    onOpenChange={setIsProductFormOpen}
-                />
-
-            </div>
-        </AppLayout>
+  useEffect(() => {
+    router.get(
+      route('products.index'),
+      { search: debouncedSearch },
+      { preserveState: true, preserveScroll: true }
     );
-} 
+  }, [debouncedSearch]);
+
+  const ConnectToStripeButton = () => {
+    const handleClick = () => {
+      if (hasIntegrations) {
+        setIntegrationId('');
+        setIsAddExistingStripeProductDialogOpen(true);
+      }
+    }
+    return (
+      <Button className="w-full bg-[#6772E5] hover:bg-[#6772E5]/80" onClick={handleClick}>
+        <img src="/assets/icons/stripe.svg" alt="Stripe" className="w-4 h-4 mr-2" />
+        {hasIntegrations ? 'Import an existing product' : 'Connect to Stripe'}
+      </Button>
+    )
+  }
+
+  return (
+    <AppLayout>
+      <Head title="Products" />
+
+      <div className="container max-w-[100vw] mx-auto py-6 sm:py-10 px-4 sm:px-6 lg:px-8">
+        <header className="mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div>
+            <h1 className="text-xl sm:text-2xl font-semibold text-gray-900 dark:text-white">
+              Your products
+            </h1>
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              All your live and draft products
+            </p>
+          </div>
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
+            <div className="relative flex-1 sm:flex-initial">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
+              <Input
+                type="search"
+                placeholder="Search products..."
+                className="pl-9 w-full sm:w-[250px]"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+            </div>
+            <Button onClick={() => setIsAddNewProductDialogOpen(true)} className="flex-none">
+              <Plus className="w-4 h-4 mr-2" />
+              <span className="hidden sm:inline">Add a Product</span>
+              <span className="sm:hidden">Add</span>
+            </Button>
+          </div>
+        </header>
+
+        {products.data.length === 0 ? (
+          <div className="flex flex-col items-center gap-8 sm:gap-12 py-6 sm:py-8 justify-center bg-[#F7F9FF] rounded-md p-4">
+            <div className="text-center">
+              <h3 className="text-xl sm:text-2xl font-semibold text-gray-900 dark:text-white">You don't have any products yet</h3>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Create or import a product to get started
+              </p>
+            </div>
+            <div className="grid grid-cols-1 gap-8 w-full max-w-[1200px] px-4">
+              <div className="grid grid-cols-1 lg:grid-cols-[1fr_auto_1fr] items-center gap-6">
+                <Card className="flex flex-col p-4 w-full">
+                  <div className="mb-4">
+                    <p className="text-xl sm:text-2xl font-semibold">Create a new product</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                      Make a new product in Plandalf
+                    </p>
+                  </div>
+                  <Button onClick={() => setIsProductFormOpen(true)} className="w-full sm:w-auto">
+                    <Plus className="w-4 h-4 mr-2" />
+                    Create a new Product
+                  </Button>
+                </Card>
+                <div className="text-xl sm:text-2xl font-semibold text-center py-4">or</div>
+                <Card className="flex flex-col p-4 w-full">
+                  <div className="mb-4">
+                    <p className="text-xl sm:text-2xl font-semibold">Import an existing product</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                      Use products from your Stripe account
+                    </p>
+                  </div>
+                  {integrations.length ? (
+                    <ConnectToStripeButton />
+                  ) : (
+                    <Link href="/integrations/stripe/authorizations" method="post" as="button" className="w-full">
+                      <ConnectToStripeButton />
+                    </Link>
+                  )}
+                </Card>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <>
+            <div className="rounded-md border overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="min-w-[150px]">Product name</TableHead>
+                    <TableHead className="min-w-[100px]">Status</TableHead>
+                    <TableHead className="min-w-[120px]">Created</TableHead>
+                    <TableHead className="min-w-[100px]">Source</TableHead>
+                    <TableHead className="min-w-[100px]">Prices</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {products.data.map((product: Product) => (
+                    <TableRow key={product.id}>
+                      <TableCell className="font-medium">
+                        <Link
+                          href={route('products.show', product.id)}
+                          className="hover:underline line-clamp-1"
+                        >
+                          {product.name}
+                        </Link>
+                      </TableCell>
+                      <TableCell>
+                        <Badge className={cx('text-white whitespace-nowrap', {
+                          'bg-[#7EB500]': product.status === ProductStatus.ACTIVE,
+                          'bg-[#808ABF]': product.status === ProductStatus.DRAFT,
+                          'bg-red-400': product.status === ProductStatus.ARCHIVED,
+                          'bg-red-600': product.status === ProductStatus.DELETED,
+                        })}>
+                          {product.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="whitespace-nowrap">
+                        {formatDate(product.created_at)}
+                      </TableCell>
+                      <TableCell className="whitespace-nowrap">
+                        {product.integration?.name || 'Plandalf'}
+                      </TableCell>
+                      <TableCell className="whitespace-nowrap">
+                        {product.prices?.length || 0} {pluralize('price', product.prices?.length || 0)}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+
+            <div className="mt-4 flex items-center justify-center sm:justify-start">
+              <Pagination
+                page={products.current_page}
+                pageSize={products.per_page}
+                totalCount={products.total}
+                onPageChange={(page) => {
+                  window.location.href = route('products.index', { page });
+                }}
+              />
+            </div>
+          </>
+        )}
+
+        {/* Product Create/Edit Dialog */}
+        <ProductForm
+          open={isProductFormOpen}
+          onOpenChange={setIsProductFormOpen}
+        />
+
+        <AddNewProductDialog
+          open={isAddNewProductDialogOpen}
+          onOpenChange={setIsAddNewProductDialogOpen}
+          onCreateProductPlandalfClick={() => setIsProductFormOpen(true)}
+          integrations={integrations}
+          onCreateExistingProductClick={() => setIsAddExistingStripeProductDialogOpen(true)}
+        />
+
+        {isAddExistingStripeProductDialogOpen && (
+          <AddExistingStripeProductDialog
+            open={isAddExistingStripeProductDialogOpen}
+            onOpenChange={setIsAddExistingStripeProductDialogOpen}
+            integrationId={integrationId ? Number(integrationId) : undefined}
+            integrations={integrations}
+          />
+        )}
+      </div>
+    </AppLayout>
+  );
+}

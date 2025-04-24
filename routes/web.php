@@ -18,8 +18,8 @@ Route::get('/', function () {
     return Inertia::render('welcome');
 })->name('home');
 
-// get offer controller 
-// redirect to 
+// get offer controller
+// redirect to
 Route::get('/o/{offer}/{environment?}', [CheckoutController::class, 'initialize'])
     ->name('offers.show')
     ->where('environment', 'live|test');
@@ -66,7 +66,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         Route::get('/integrations/{integrationType}/callback', [IntegrationsController::class, 'callback']);
         Route::post('/integrations/{integrationType}/authorizations', [IntegrationsController::class, 'authorize']);
+        Route::get('/integrations/{integration}/products', [IntegrationsController::class, 'products'])->name('integrations.products');
+        Route::get('/integrations/{integration}/products/{gatewayProductId}/prices', [IntegrationsController::class, 'prices'])->name('integrations.prices');
         Route::resource('integrations', IntegrationsController::class);
+
 
         // Offers routes
         Route::resource('offers', OffersController::class)->except(['show', 'create']);

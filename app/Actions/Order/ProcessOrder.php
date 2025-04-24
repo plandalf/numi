@@ -24,16 +24,16 @@ class ProcessOrder
                 return $item->price->type->value;
             });
 
-            $integrationClass = get_integration_class(IntegrationType::from($orderItems->first()->price->gateway_provider));
-            $groupedItems->each(function (Collection $items, $type) use ($integrationClass) {
+            $integrationClient = $orderItems->first()->price->integrationClient();
+            $groupedItems->each(function (Collection $items, $type) use ($integrationClient) {
                 /**
                  * @todo
                  * - Order should have a payment provider
                  * - Can a customer choose a payment provider? ex. card (stripe) or paypal
                  * - Payment provider should be initialized with the order (maybe using the Parental lib)
                  */
-                if($integrationClass instanceof CanCreateSubscription) {
-                    $integrationClass->createSubscription($items->toArray());
+                if($integrationClient instanceof CanCreateSubscription) {
+                    $integrationClient->createSubscription($items->toArray());
                 }
             });
 
