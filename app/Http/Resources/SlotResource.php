@@ -14,6 +14,8 @@ class SlotResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
-        return parent::toArray($request);
+        return array_merge(parent::toArray($request), [
+            'default_price' => new PriceResource($this->whenLoaded('defaultPrice')),
+        ]);
     }
 }

@@ -9,20 +9,20 @@ use App\Enums\CheckoutSessionStatus;
 use App\Models\Checkout\CheckoutSession;
 use App\Models\Order\Order;
 
+
 class CommitCheckoutAction
 {
     public function __construct(
         private readonly CreateOrderAction $createOrderAction,
         private readonly CreateOrderItemAction $createOrderItemAction,
-        private readonly ProcessOrder $processOrder
+        private readonly ProcessOrder $processOrder,
     ) {}
 
-
-    public function execute(CheckoutSession $checkoutSession): Order
+    public function execute(CheckoutSession $checkoutSession, ?string $confirmationToken = null): Order
     {
         // If the checkout session is already closed, return it
-        if ($checkoutSession->status === CheckoutSessionStatus::CLOSED) {
-            return $checkoutSession->order;
+        if ($checkoutSession->status === CheckoutSessionStatus::CLOSED || $checkoutSession->status === CheckoutSessionStatus::FAILED) {
+            return ($this->processOrder)($checkoutSession->order, $checkoutSession, $confirmationToken);
         }
 
         $order = ($this->createOrderAction)($checkoutSession);
@@ -32,6 +32,7 @@ class CommitCheckoutAction
             ($this->createOrderItemAction)($order, $lineItem);
         }
 
-        return ($this->processOrder)($order, $checkoutSession);
+        $checkoutSession->markAsClosed(true);
+        return ($this->processOrder)($order, $checkoutSession, $confirmationToken);
     }
 }

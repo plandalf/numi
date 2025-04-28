@@ -35,26 +35,17 @@
                     "blocks": [
                         {
                             "id": "action-block",
-                            "text": [
-                                {
-                                    "href": null,
-                                    "props": {
-                                        "link": null,
-                                        "content": "Subscribe Now"
-                                    },
-                                    "object": "text",
-                                    "plain_text": null,
-                                    "annotations": {
-                                        "bold": true
-                                    }
-                                }
-                            ],
                             "type": "button",
-                            "props": {
-                                "type": "submit"
+                            "content": {
+                                "type": "submit",
+                                "value": "Proceed"
                             },
-                            "style": {
-                                "background-color": "#C428D3"
+                            "appearance": {
+                                "backgroundColor": "#C428D3",
+                                "textColor": "white",
+                                "alignment": "expand",
+                                "fontWeight": "semibold",
+                                "border": "none"
                             },
                             "object": "action"
                         }
@@ -112,19 +103,15 @@
                                 "title": "Order Summary 🐕 "
                             }
                         },
-                        {
-                            "id": "pls",
-                            "type": "PlanDescriptor@v1",
-                            "props": {
-                                "plan": "growth-lite"
-                            },
-                            "object": "block"
-                        },
+
                         {
                             "id": "stripe",
-                            "type": "StripeElements@v1",
+                            "type": "payment_method",
                             "props": {
                                 "width": "full"
+                            },
+                            "content": {
+                                "title": "Payment Details"
                             },
                             "object": "block"
                         }

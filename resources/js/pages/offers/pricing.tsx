@@ -100,8 +100,8 @@ export default function Pricing() {
                                         )}
                                     </div>
                                     <div className="flex gap-2">
-                                        <Button 
-                                            variant="outline" 
+                                        <Button
+                                            variant="outline"
                                             size="sm"
                                             onClick={() => {
                                                 setEditingSlot(slot);

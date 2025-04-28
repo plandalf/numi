@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\CheckoutSessionController;
 use App\Http\Controllers\OfferSlotsController;
 use Illuminate\Support\Facades\Route;
 

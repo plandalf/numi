@@ -2,21 +2,61 @@
 
 namespace App\Actions\Order;
 
-use App\Enums\IntegrationType;
-use App\Enums\OrderStatus;
+use App\Enums\ChargeType;
+use App\Exceptions\Payment\PaymentException;
 use App\Models\Checkout\CheckoutSession;
 use App\Models\Order\Order;
 use App\Models\Order\OrderItem;
 use App\Modules\Integrations\Contracts\CanCreateSubscription;
+use App\Modules\Integrations\Contracts\CanSetupIntent;
 use App\Modules\Integrations\Stripe\Stripe;
+use App\Services\PaymentValidationService;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Log;
 
 class ProcessOrder
 {
-    public function __invoke(Order $order, CheckoutSession $checkoutSession): Order
+    protected PaymentValidationService $paymentValidationService;
+
+    public function __construct(PaymentValidationService $paymentValidationService)
+    {
+        $this->paymentValidationService = $paymentValidationService;
+    }
+
+    public function __invoke(Order $order, CheckoutSession $checkoutSession, ?string $confirmationToken = null): Order
     {
         try {
-            $order->loadMissing('items.price');
+            $integrationClient = $checkoutSession->integrationClient();
+
+            if($integrationClient instanceof CanSetupIntent && $confirmationToken) {
+                $setupIntent = $integrationClient->createSetupIntent($order, $confirmationToken);
+
+                // Check if the setup intent was successful
+                if ($setupIntent->status !== 'succeeded') {
+                    $errorMessage = $setupIntent->last_setup_error?->message ?? $setupIntent->status;
+                    $errorType = $this->paymentValidationService->determinePaymentErrorType(
+                        $errorMessage,
+                        $setupIntent->last_setup_error?->code
+                    );
+
+                    $errorDetails = [
+                        'setup_intent_id' => $setupIntent->id,
+                        'status' => $setupIntent->status,
+                        'error' => $setupIntent->last_setup_error ?? null,
+                    ];
+
+                    Log::error('Setup intent failed', $errorDetails);
+
+                    $checkoutSession->markAsFailed(true);
+                    throw new PaymentException(
+                        $this->paymentValidationService->getUserFriendlyErrorMessage($errorType),
+                        $errorType,
+                        $errorDetails
+                    );
+                }
+            }
+
+            $order->loadMissing('items.price.integration');
             $orderItems = $order->items;
 
             /** Group by price type. ex. subscription, one-time, etc. */
@@ -24,26 +64,100 @@ class ProcessOrder
                 return $item->price->type->value;
             });
 
+            Log::info('ProcessOrder', ['orderItems' => $orderItems]);
+
+            if ($orderItems->isEmpty()) {
+                throw new \Exception('No items found in the order');
+            }
+
             $integrationClient = $orderItems->first()->price->integrationClient();
-            $groupedItems->each(function (Collection $items, $type) use ($integrationClient) {
-                /**
-                 * @todo
-                 * - Order should have a payment provider
-                 * - Can a customer choose a payment provider? ex. card (stripe) or paypal
-                 * - Payment provider should be initialized with the order (maybe using the Parental lib)
-                 */
-                if($integrationClient instanceof CanCreateSubscription) {
-                    $integrationClient->createSubscription($items->toArray());
+
+            // Process each group of items based on their type
+            $groupedItems->each(function (Collection $items, $type) use ($integrationClient, $order, $checkoutSession) {
+                // Handle subscription items (graduated, volume, package)
+                if (in_array($type, [ChargeType::GRADUATED->value, ChargeType::VOLUME->value, ChargeType::PACKAGE->value])
+                    && $integrationClient instanceof CanCreateSubscription) {
+                    $subscription = $integrationClient->createSubscription([
+                        'order' => $order,
+                        'items' => $items->toArray(),
+                    ]);
+
+                    // Validate the subscription payment
+                    $validationResult = $this->paymentValidationService->validateSubscriptionPayment($subscription);
+
+                    if (!$validationResult['is_valid']) {
+                        $errorDetails = array_merge(
+                            ['subscription_id' => $subscription->id],
+                            $validationResult['error_details'] ?? []
+                        );
+
+                        Log::error('Subscription creation failed', $errorDetails);
+
+                        $checkoutSession->markAsFailed(true);
+                        throw new PaymentException(
+                            $this->paymentValidationService->getUserFriendlyErrorMessage($validationResult['error_type']),
+                            $validationResult['error_type'],
+                            $errorDetails
+                        );
+                    }
+                }
+                // Handle one-time payment items
+                elseif ($type === ChargeType::ONE_TIME->value && $integrationClient instanceof Stripe) {
+                    $paymentIntent = $integrationClient->createPaymentIntent([
+                        'order' => $order,
+                        'items' => $items->toArray(),
+                    ]);
+
+                    // Validate the one-time payment
+                    $validationResult = $this->paymentValidationService->validateOneTimePayment($paymentIntent);
+
+                    if (!$validationResult['is_valid']) {
+                        $errorDetails = array_merge(
+                            ['payment_intent_id' => $paymentIntent->id],
+                            $validationResult['error_details'] ?? []
+                        );
+
+                        Log::error('Payment intent creation failed', $errorDetails);
+
+                        $checkoutSession->markAsFailed(true);
+                        throw new PaymentException(
+                            $this->paymentValidationService->getUserFriendlyErrorMessage($validationResult['error_type']),
+                            $validationResult['error_type'],
+                            $errorDetails
+                        );
+                    }
+                }
+                // Handle other types of charges if needed
+                else {
+                    Log::warning('Unhandled charge type', [
+                        'order_id' => $order->id,
+                        'type' => $type,
+                    ]);
                 }
             });
 
-            $checkoutSession->markAsClosed(true);
+            $order->markAsCompleted();
 
             return $order;
-        } catch (\Exception $e) {
-            $checkoutSession->markAsFailed(true);
+        } catch (PaymentException $e) {
+            Log::error('Payment processing failed', [
+                'order_id' => $order->id,
+                'error_type' => $e->getErrorType(),
+                'error_message' => $e->getMessage(),
+                'error_details' => $e->getErrorDetails(),
+            ]);
 
-            throw new \Exception('Error processing order: ' . $e->getMessage());
+            $checkoutSession->markAsFailed(true);
+            throw $e;
+        } catch (\Exception $e) {
+            Log::error('Order processing failed', [
+                'order_id' => $order->id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            $checkoutSession->markAsFailed(true);
+            throw $e;
         }
     }
 }

@@ -27,22 +27,22 @@ export const BlockContext = createContext<BlockContextType>({
 
 
 
-// adding an item 
+// adding an item
 function TestComponent() {
 
-  // modifying: 
+  // modifying:
 
   const {
-    addItem// checkout.items.add -> 
+    addItem// checkout.items.add ->
   } = Numi.useCheckout();
-  // returns some kind of modification promise? 
+  // returns some kind of modification promise?
   // setModifying(addItem().then(() => {
   // setModifying(null)
-  // })) 
+  // }))
 
-  // need "loading" state for adding an item 
-  // need validation 
-  // need errors 
+  // need "loading" state for adding an item
+  // need validation
+  // need errors
 
   return (
     <div>
@@ -62,7 +62,7 @@ export const Appearance = {
     options,
     defaultValue: 'left'
   }),
-  
+
   backgroundColor: (options: string[] = ['primary', 'secondary', 'success', 'danger', 'warning', 'info', 'light', 'dark']) => ({
     type: 'backgroundColor',
     options,
@@ -122,13 +122,13 @@ class CheckoutSDK {
 
 class Numi {
 
-  // get static checkout ? 
+  // get static checkout ?
   // static useCheckout(options: CheckoutOptions = {}): CheckoutSDK {
   //   const [checkout] = useState(() => {
   //     // Create a checkout instance with provided options
   //     const instance = new CheckoutSDK(options);
 
-  //     return instance;  
+  //     return instance;
   //   });
 
   //   return checkout;
@@ -145,15 +145,15 @@ class Numi {
       });
     }, []);
 
-    // allow calling something event is called 
+    // allow calling something event is called
     // const checkout = Numi.useCheckout();
 
     return () => {
       // "on click happened, basically"
-      // run the actions set up for this block 
+      // run the actions set up for this block
       if (blockContext.blockConfig.interaction?.onClick) {
         for (const callback of blockContext.blockConfig.interaction.onClick) {
-          // this will only be a "named" action 
+          // this will only be a "named" action
           switch (callback.action) {
             case 'setSlot':
               // checkout.setSlot(callback.slot, callback.price); // todo: other options too?!
@@ -182,7 +182,7 @@ class Numi {
       });
     }, []);
 
-    // options list data must match 
+    // options list data must match
     const data = get(blockContext.blockConfig, `content.${props.name}`, {});
 
     // return options
@@ -216,13 +216,13 @@ class Numi {
         if (prop.type) {
           // Get the value from block config or use default
           const value = blockContext.blockConfig.appearance?.[prop.type] || prop.defaultValue;
-          
+
           // Update the appearance state
           setAppearance(prev => ({
             ...prev,
             [prop.type]: value
           }));
-          
+
           // Register the hook
           blockContext.registerHook({
             name: prop.type,
@@ -257,13 +257,13 @@ class Numi {
     }
   }
 
-  static useStateEnumeration(props: { 
-    name: string; 
-    initialValue: string; 
-    options: string[]; 
+  static useStateEnumeration(props: {
+    name: string;
+    initialValue: string;
+    options: string[];
     labels: Record<string, string>;
-    inspector: string; 
-    label: string; 
+    inspector: string;
+    label: string;
     icons?: Record<string, React.ReactNode>;
   }): [any] {
     const blockContext = useContext(BlockContext);
@@ -288,7 +288,7 @@ class Numi {
 
   static useStateBoolean(props: { name: string; defaultValue: boolean; label?: string; inspector?: string }): [boolean, (value: boolean) => void] {
     const blockContext = useContext(BlockContext);
-    
+
     useEffect(() => {
       blockContext.registerHook({
         name: props.name,
@@ -302,7 +302,7 @@ class Numi {
         blockContext.blockId,
         props.name
       );
-      
+
       if (!existingState) {
         // Use block config value as initial value if it exists
         const initialValue = blockContext.blockConfig.content[props.name] ?? props.defaultValue;
@@ -319,7 +319,7 @@ class Numi {
     const value = props.inspector === 'checkbox'
       ? blockContext.blockConfig.content[props.name] ?? blockContext.getFieldValue(props.name) ?? props.defaultValue
       : blockContext.getFieldValue(props.name) ?? blockContext.blockConfig.content[props.name] ?? props.defaultValue;
-    
+
     const setValue = (newValue: boolean) => {
       blockContext.setFieldValue(props.name, newValue);
     };
@@ -340,10 +340,10 @@ class Numi {
       });
 
       const existingState = blockContext.globalState.getFieldState(
-        blockContext.blockId, 
+        blockContext.blockId,
         props.name
       );
-      
+
       if (!existingState) {
         // Use block config value as initial value if it exists
         const initialValue = blockContext.blockConfig.content[props.name] ?? props.defaultValue;
@@ -383,8 +383,8 @@ class Numi {
     return [value, setValue];
   }
 
-  static useValidation(props: { rules: Record<string, any> }): { 
-    isValid: boolean; 
+  static useValidation(props: { rules: Record<string, any> }): {
+    isValid: boolean;
     errors: string[];
     validate: (value: any) => boolean;
   } {
@@ -401,12 +401,12 @@ class Numi {
 
     const validate = (value: any) => {
       const newErrors: string[] = [];
-      
+
       // Check required validation
       if (props.rules.isRequired && (!value || value === '')) {
         newErrors.push('This field is required');
       }
-      
+
       setErrors(newErrors);
       setIsValid(newErrors.length === 0);
       return newErrors.length === 0;
@@ -416,10 +416,10 @@ class Numi {
       isValid,
       errors,
       validate,
-      isRequired: blockContext.blockConfig.validation?.isRequired ?? false 
+      isRequired: blockContext.blockConfig.validation?.isRequired ?? false
     };
   }
-  
+
   static useTheme(): Theme | undefined {
     const blockContext = useContext(BlockContext);
     return blockContext.theme;

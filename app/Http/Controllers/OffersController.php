@@ -14,6 +14,7 @@ use App\Models\Catalog\Product;
 use App\Models\Organization;
 use App\Models\Store\Offer;
 use App\Models\Store\Slot;
+use App\Http\Requests\Offer\OfferSlotStoreRequest;
 use App\Http\Requests\Offer\OfferSlotUpdateRequest;
 use App\Http\Requests\Offer\OfferThemeUpdateRequest;
 use App\Http\Requests\UpdateThemeRequest;

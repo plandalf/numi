@@ -3,6 +3,8 @@ import CheckboxBlockComponent from "./CheckboxBlock";
 import CheckoutSummaryComponent from "./CheckoutSummaryBlock";
 import DetailListBlockComponent from "./DetailListComponent";
 import OptionSelectorComponent from "./OptionSelectorBlock";
+import PaymentMethodBlock from "./PaymentMethodBlock";
+import PlanDescriptorComponent from "./PlanDescriptorBlock";
 import QuoteBlockComponent from "./QuoteBlock";
 import TextBlockComponent from "./TextBlock";
 import TextInputBlockComponent from "./TextInputBlock";
@@ -14,8 +16,10 @@ export const blockTypes = {
   detail_list: DetailListBlockComponent,
   button: ButtonBlockComponent,
   quote: QuoteBlockComponent,
-  option_selector: OptionSelectorComponent, 
+  option_selector: OptionSelectorComponent,
   checkout_summary: CheckoutSummaryComponent,
+  payment_method: PaymentMethodBlock,
+  plan_descriptor: PlanDescriptorComponent,
 }
 
 type BlockMeta = {
@@ -73,6 +77,18 @@ export const blockMetas: Record<keyof typeof blockTypes, BlockMeta> = {
     title: 'Checkout Summary Block',
     icon: '🧾',
     description: 'A block for displaying checkout/order summary.',
+  },
+  payment_method: {
+    id: 'payment_method',
+    title: 'Payment Method Block',
+    icon: '💳',
+    description: 'A block for displaying Stripe payment elements.',
+  },
+  plan_descriptor: {
+    id: 'plan_descriptor',
+    title: 'Plan Descriptor Block',
+    icon: '📋',
+    description: 'A block for displaying plan descriptions and details.',
   },
 };
 

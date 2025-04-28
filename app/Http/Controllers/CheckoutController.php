@@ -2,53 +2,56 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\Checkout\CreateCheckoutSessionAction;
+use App\Http\Resources\Checkout\CheckoutSessionResource;
 use App\Models\Store\Offer;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
+use App\Models\Checkout\CheckoutSession;
 
 class CheckoutController extends Controller
 {
-    public function initialize(Request $request, string $offerId, string $environment = 'live')
+    public function __construct(
+        private readonly CreateCheckoutSessionAction $createCheckoutSessionAction
+    ) {}
+
+    public function initialize(string $offerId)
     {
-        // $variant = $request->query('variant');
         $offer = Offer::retrieve($offerId);
+        $checkoutSession = $this->createCheckoutSessionAction->execute($offer);
 
-        // $variant = $offer->variants->first();
-        $json = json_decode(file_get_contents(base_path('resources/view-example.json')), true);
-        $offer->view = $json;
-
-        // checkout, if passed via a cart_token
-
-        return Inertia::render('Checkout', [
-            'offer' => $offer,
-            'checkout' => '',
-            'error' => null,
-//                'agentToken' => $this->agentTokenService->generateToken('user_' . auth()->id() ?? 'guest'),
-            'collectorId' => Str::uuid(),
-            'embedDomain' => config('services.plandalf.embed_domain'),
-            'environment' => $environment,
-        ]);
+        return redirect()->to(URL::signedRoute('checkouts.show', [
+            'checkout' => $checkoutSession->id
+        ], now()->addDays(5)));
     }
 
-    public function storeMutation(Request $request,  $checkoutId)
+    public function show(CheckoutSession $checkout, Request $request)
     {
-        // get checkout
-        $action = $request->input('action');
-        // $submit = new SubmitPageService() -> $submit($checkoutId, $action);
-        // props 
-        // 
-        switch ($action) {
-            case 'setFields':
-                // $checkout = Checkout::find($checkoutId);
-                // $checkout->update($request->input('fields'));
-                break;
-                default:
-            abort(400);
+        // Validate the signed URL
+        if (!$request->hasValidSignature()) {
+            abort(403, 'Invalid or expired checkout link.');
         }
 
-        return [
-            'id' => $checkoutId,
-        ];
+        $offer = $checkout->offer;
+
+        $json = json_decode(file_get_contents(base_path('resources/view-example.json')), true);
+
+        /**
+         * @todo Replace with the actual view json
+         */
+        $json['first_page'] = $checkout->metadata['current_page_id'] ?? $json['first_page'];
+        $offer->view = $json;
+
+        $checkout->load(['lineItems.slot', 'lineItems.price.integration']);
+        return Inertia::render('Checkout', [
+            'offer' => $offer,
+            'checkoutSession' => new CheckoutSessionResource($checkout),
+            'error' => null,
+            'collectorId' => Str::uuid(),
+            'embedDomain' => config('services.plandalf.embed_domain'),
+            'environment' => 'live',
+        ]);
     }
 }

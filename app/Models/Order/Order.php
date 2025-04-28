@@ -5,6 +5,7 @@ namespace App\Models\Order;
 use App\Database\Traits\UuidRouteKey;
 use App\Enums\OrderStatus;
 use App\Models\Checkout\CheckoutSession;
+use App\Models\Customer;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -104,5 +105,10 @@ class Order extends Model
     public function getTotalAmountAttribute(): float
     {
         return $this->items->sum('total_amount');
+    }
+
+    public function customer(): BelongsTo
+    {
+        return $this->belongsTo(Customer::class);
     }
 }

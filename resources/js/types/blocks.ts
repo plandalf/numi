@@ -18,7 +18,7 @@ export interface FieldState {
     value: any;
     type: 'string' | 'boolean' | 'number';
   }
-  
+
 
 export interface HookUsage {
     name: string;
@@ -29,9 +29,7 @@ export interface HookUsage {
     options?: string[]; // For enumeration type
     labels?: Record<string, string>; // For enumeration type labels
     label?: string; // For display label
-    icons?: Record<string, string | React.ReactNode>; // For enumeration type icons
-}
-  
+  }
 
 export interface GlobalState {
   fieldStates: Record<string, FieldState>;
@@ -55,7 +53,7 @@ export interface BlockContextType {
 
 
 
-// Add after the Editor component but before the Welcome component 
+// Add after the Editor component but before the Welcome component
 // JSONSchema Editor Components
 export type JsonSchemaType = 'string' | 'number' | 'boolean' | 'object' | 'array' | 'null' | 'color';
 

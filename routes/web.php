@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\CheckoutSessionController;
 use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\IntegrationsController;
 use App\Http\Controllers\OffersController;
@@ -127,7 +128,7 @@ Route::get('/checkout/{checkout}', [CheckoutController::class, 'show'])
 // ->name('offers.show')
 // ->where('environment', 'live|test');
 
-Route::post('/checkouts/{checkout}/mutations', [CheckoutController::class, 'storeMutation'])
+Route::post('/checkouts/{checkoutSession}/mutations', [CheckoutSessionController::class, 'storeMutation'])
     ->name('checkouts.mutations.store')
     ->middleware(['web']);
 
@@ -147,7 +148,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::put('/{organization}', [OrganizationController::class, 'update'])->name('update');
 
         // Organization settings routes
-        Route::middleware(['organization','subscription'])->group(function () {
+        Route::middleware(['organization', 'subscription'])->group(function () {
             Route::prefix('settings')->name('settings.')->group(function () {
                 Route::get('/', [OrganizationController::class, 'settings'])->name('general');
                 Route::get('/team', [OrganizationController::class, 'team'])->name('team');
@@ -231,8 +232,7 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/medias/{media}/finalize', [MediaController::class, 'finalizeUpload'])->name('medias.finalize');
 });
 
-require __DIR__.'/settings.php';
-require __DIR__.'/auth.php';
-require __DIR__.'/client.php';
+require __DIR__ . '/settings.php';
+require __DIR__ . '/auth.php';
 
 //
