@@ -9,6 +9,7 @@ function TextBlockComponent({ context }: { context: BlockContextType }) {
   const [text, setText, format] = Numi.useStateString({
     name: 'value',
     defaultValue: 'Default Text!',
+    inspector: 'multiline',
   });
 
   const { fontWeight, fontSize } = context.blockConfig.appearance ?? {};

@@ -3,7 +3,7 @@ import { cn } from '@/lib/utils';
 import { blockTypes, getBlockMeta, blockMetas } from '@/components/blocks';
 import { findBlockInPage } from '@/components/offers/page-preview';
 import { Inspector } from '@/components/offers/page-inspector';
-import { useEditor } from '@/pages/offers/edit';
+import { useEditor } from '@/pages/offers/Edit';
 import { Block } from '@/types/offer';
 import { 
   Type, 

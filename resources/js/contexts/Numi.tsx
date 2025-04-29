@@ -284,7 +284,7 @@ class Numi {
     return [value];
   }
 
-  static useStateBoolean(props: { name: string; defaultValue: boolean; inspector?: string }): [boolean, (value: boolean) => void] {
+  static useStateBoolean(props: { name: string; defaultValue: boolean; label?: string; inspector?: string }): [boolean, (value: boolean) => void] {
     const blockContext = useContext(BlockContext);
     
     useEffect(() => {
@@ -292,7 +292,8 @@ class Numi {
         name: props.name,
         type: 'boolean',
         defaultValue: props.defaultValue,
-        inspector: props.inspector ?? 'checkbox'
+        inspector: props.inspector ?? 'checkbox',
+        label: props.label,
       });
 
       const existingState = blockContext.globalState.getFieldState(
@@ -326,6 +327,7 @@ class Numi {
 
   static useStateString(props: { name: string; defaultValue: string; inspector?: string }): [string, (value: string) => void, string] {
     const blockContext = useContext(BlockContext);
+
 
     useEffect(() => {
       blockContext.registerHook({

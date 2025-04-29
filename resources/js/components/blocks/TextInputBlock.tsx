@@ -11,10 +11,15 @@ function TextInputBlockComponent({ context }: { context: BlockContextType }) {
   const [label] = Numi.useStateString({
     name: 'label',
     defaultValue: 'No Label',
-    inspector: 'text',
   });
 
-  // const { { isRequired }: rules , errors } = Numi.useValidation();
+  const { isValid, errors, validate } = Numi.useValidation({
+    rules: {
+      isRequired: true,
+    },
+  });
+
+  const { isDisabled } = Numi.useInteraction();
   // or, we wrap this manually?
 
   // const { fields, session } = Numi.useCheckout();

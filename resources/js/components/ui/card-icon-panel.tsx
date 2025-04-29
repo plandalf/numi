@@ -1,7 +1,7 @@
 import React from 'react';
 import { cn } from '@/lib/utils';
 
-interface IconPanelProps {
+interface CardIconPanelProps {
   options: string[];
   value: string;
   onChange: (value: string) => void;
@@ -9,7 +9,7 @@ interface IconPanelProps {
   labels?: Record<string, string>;
 }
 
-export const IconPanel: React.FC<IconPanelProps> = ({ options, value, onChange, icons, labels }) => {
+export const CardIconPanel: React.FC<CardIconPanelProps> = ({ options, value, onChange, icons, labels }) => {
   return (
     <div className="flex gap-3">
       {options.map((option) => {

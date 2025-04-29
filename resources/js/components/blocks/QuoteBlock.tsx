@@ -42,26 +42,24 @@ function QuoteBlockComponent({ context }: { context: BlockContextType }) {
         <circle cx="10.2414" cy="10.2414" r="10.2414" fill="#189AB4"/>
       </svg>),
     },
-    inspector: 'select',
+    inspector: 'card',
     label: 'Quote Style',
   });
 
   const [quote] = Numi.useStateString({
     name: 'quote',
     defaultValue: '',
-    inspector: 'text',
+    inspector: 'multiline',
   });
 
   const [author] = Numi.useStateString({
     name: 'author',
     defaultValue: '',
-    inspector: 'text',
   });
 
   const [affiliation] = Numi.useStateString({
     name: 'affiliation',
     defaultValue: '',
-    inspector: 'text',
   });
 
   const [image] = Numi.useStateString({

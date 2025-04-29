@@ -22,7 +22,7 @@ export const ShadowPickerEditor: React.FC<ShadowPickerEditorProps> = ({ label, v
   };
   return (
     <div className="flex flex-col gap-1.5 mb-3">
-      <Label className="mb-1 block">{label}</Label>
+      <Label className="mb-1 block text-sm capitalize">{label}</Label>
       <ShadowPicker value={safeValue} onChange={onChange} />
     </div>
   );

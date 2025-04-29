@@ -9,8 +9,8 @@ interface BooleanEditorProps {
 }
 
 export const BooleanEditor: React.FC<BooleanEditorProps> = ({ label, value, onChange }) => (
-  <div className="flex items-center gap-2 mb-3">
+  <div className="flex items-center gap-3 mb-3">
     <Checkbox checked={value} onCheckedChange={onChange} />
-    <Label className="mb-0">{label}</Label>
+    <Label className="mb-0 text-sm capitalize">{label}</Label>
   </div>
 ); 

@@ -1,7 +1,7 @@
 import React from 'react';
 import { Label } from '../ui/label';
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from '../ui/select';
-import { IconPanel } from '../ui/icon-panel';
+import { CardIconPanel } from '../ui/card-icon-panel';
 
 interface EnumerationEditorProps {
   label: string;
@@ -10,13 +10,14 @@ interface EnumerationEditorProps {
   options: string[];
   icons?: Record<string, string | React.ReactNode>;
   labels?: Record<string, string>;
+  inspector?: string;
 }
 
-export const EnumerationEditor: React.FC<EnumerationEditorProps> = ({ label, value, onChange, options, icons, labels }) => (
+export const EnumerationEditor: React.FC<EnumerationEditorProps> = ({ label, value, onChange, options, icons, labels, inspector }) => (
   <div className="flex flex-col gap-3 mb-3">
-    <Label>{label}</Label>
-    {icons && typeof icons === 'object' ? (
-      <IconPanel
+    <Label className="text-sm capitalize">{label}</Label>
+    {inspector && inspector === 'card' ? (
+      <CardIconPanel
         options={options}
         value={value}
         onChange={onChange}

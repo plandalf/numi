@@ -11,7 +11,6 @@ function CheckoutSummaryComponent({ context }: { context: BlockContextType }) {
   const [title] = Numi.useStateString({
     name: 'title',
     defaultValue: 'Order Summary',
-    inspector: 'text',
   });
   
   const [showImages] = Numi.useStateBoolean({

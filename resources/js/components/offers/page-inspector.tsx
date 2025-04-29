@@ -65,6 +65,8 @@ export const Inspector = ({
       could not find block
     </div>;
   }
+  console.log('block', block);
+
 
     return (
       <div className="p-4">
@@ -88,7 +90,7 @@ export const Inspector = ({
                           label={hook.label || hook.name}
                           value={block.content?.[hook.name] ?? hook.defaultValue}
                           onChange={value => handleContentChange(hook.name, value)}
-                          multiline={hook.inspector === 'text'}
+                          multiline={hook.inspector === 'multiline'}
                         />
                       ) : hook.type === 'boolean' ? (
                         <BooleanEditor
@@ -103,6 +105,7 @@ export const Inspector = ({
                           onChange={value => handleContentChange(hook.name, value)}
                           options={hook.options || []}
                           icons={hook.icons}
+                          inspector={hook.inspector}
                           labels={hook.labels}
                         />
                       ) : hook.type === 'jsonSchema' && hook.schema ? (
@@ -175,31 +178,41 @@ export const Inspector = ({
                 </div>
               )}
 
-              <h3 className="mt-6 mb-2 font-semibold">Validation</h3>
-              <div className="flex items-center gap-2 mb-4">
-                <Checkbox
-                  checked={block.validation?.isRequired ?? false}
-                  onCheckedChange={(checked) => handleValidationChange('isRequired', !!checked)}
-                />
-                <Label className="mb-0">Is required?</Label>
-              </div>
+              {/* Validation Section - Only show if block implements useValidation */}
+              {globalState.hookUsage[block.id]?.some((hook) => hook.type === 'validation') && (
+                <>
+                  <h3 className="mt-6 mb-2 font-semibold">Validation</h3>
+                  <div className="flex items-center gap-2 mb-4">
+                    <Checkbox
+                      checked={block.validation?.isRequired ?? false}
+                      onCheckedChange={(checked) => handleValidationChange('isRequired', !!checked)}
+                    />
+                    <Label className="mb-0">Is required?</Label>
+                  </div>
+                </>
+              )}
 
-              <h3 className="mb-2 font-semibold">Interaction</h3>
-              <div className="flex items-center gap-2">
-                <Checkbox
-                  checked={block.interaction?.isDisabled ?? false}
-                  onCheckedChange={(checked) => {
-                    onUpdate({
-                      ...block,
-                      interaction: {
-                        ...block.interaction,
-                        isDisabled: !!checked,
-                      },
-                    });
-                  }}
-                />
-                <Label className="mb-0">Is disabled?</Label>
-              </div>
+              {/* Interaction Section - Only show if block implements useInteraction */}
+              {globalState.hookUsage[block.id]?.some((hook) => hook.type === 'interaction') && (
+                <>
+                  <h3 className="mb-2 font-semibold">Interaction</h3>
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      checked={block.interaction?.isDisabled ?? false}
+                      onCheckedChange={(checked) => {
+                        onUpdate({
+                          ...block,
+                          interaction: {
+                            ...block.interaction,
+                            isDisabled: !!checked,
+                          },
+                        });
+                      }}
+                    />
+                    <Label className="mb-0">Is disabled?</Label>
+                  </div>
+                </>
+              )}
             </div>
           )}
         </div>
