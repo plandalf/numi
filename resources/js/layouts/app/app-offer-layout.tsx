@@ -15,6 +15,7 @@ import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { useEditor } from '@/pages/offers/Edit';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { PublishStatusCard } from '@/components/offers/publish-status-card';
 
 interface Offer {
     id: number;
@@ -37,8 +38,11 @@ interface AppHeaderProps {
 
 function OfferHeader({ offer, isNameDialogOpen, setIsNameDialogOpen }: AppHeaderProps) {
     const [name, setName] = useState(offer.name);
+    const [status, setStatus] = useState(offer.status);
     const isMobile = useIsMobile();
     const { viewMode, setViewMode } = useEditor();
+    
+    const [showPublishDialog, setShowPublishDialog] = useState(false);
 
     // Preview mode state
     const [previewType, setPreviewType] = useState<'desktop' | 'mobile'>('desktop');
@@ -88,6 +92,13 @@ function OfferHeader({ offer, isNameDialogOpen, setIsNameDialogOpen }: AppHeader
     const isPreviewMode = viewMode === 'preview';
     const isShareMode = viewMode === 'share';
     const isEditorMode = viewMode === 'editor';
+
+    const offerUrl = `${window.location.origin}/o/${offer.id}`;
+
+    const handlePublish = () => {
+        setStatus('live');
+        setShowPublishDialog(true);
+    };
 
     return (
         <div className="border-sidebar-border/80 border-b bg-blue-950 flex justify-between h-14 items-center p-3 gap-x-4">
@@ -212,10 +223,45 @@ function OfferHeader({ offer, isNameDialogOpen, setIsNameDialogOpen }: AppHeader
                     {isMobile && <Eye className="size-4" />}
                     {!isMobile && 'Preview'}
                 </Button>
-                <Button className="flex flex-row gap-x-2" variant="outline-transparent" tooltip="Publish the Offer">
-                    <Flame className="size-4" />
-                    {!isMobile && 'Publish'}
-                </Button>
+                <DropdownMenu open={showPublishDialog} onOpenChange={setShowPublishDialog}>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      className="flex flex-row gap-x-2"
+                      variant="outline-transparent"
+                      tooltip="Publish the Offer"
+                      onClick={handlePublish}
+                    >
+                      <Flame className="size-4" />
+                      {!isMobile && 'Publish'}
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="center" className="w-[400px] mb-10 p-0 rounded-xl shadow-lg border">
+                    <div className="p-4 flex flex-col items-center">
+                      <PublishStatusCard isPublished={true} />
+                      <div className="w-full mt-2 mb-4">
+                        <Label className="text-xs mb-1">Experience link</Label>
+                        <div className="flex items-center gap-2">
+                          <Input
+                            className="flex-1 text-xs"
+                            value={offerUrl}
+                            readOnly
+                          />
+                          <Button
+                            type="button"
+                            size="sm"
+                            className="px-3"
+                            onClick={() => navigator.clipboard.writeText(`htthttps://numi-main-tf0jzg.laravel.com/offer/${offer.id}`)}
+                          >
+                            Copy
+                          </Button>
+                        </div>
+                      </div>
+                      <Button className="w-full mt-2" variant="outline">
+                        More sharing options
+                      </Button>
+                    </div>
+                  </DropdownMenuContent>
+                </DropdownMenu>
                 <Button
                     variant="outline-transparent"
                     tooltip="Share to other platforms"
