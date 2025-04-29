@@ -262,6 +262,7 @@ class Numi {
     labels: Record<string, string>;
     inspector: string; 
     label: string; 
+    icons?: Record<string, React.ReactNode>;
   }): [any] {
     const blockContext = useContext(BlockContext);
 
@@ -272,6 +273,7 @@ class Numi {
         defaultValue: props.initialValue,
         options: props.options,
         labels: props.labels,
+        icons: props.icons,
         inspector: props.inspector,
         label: props.label,
       });

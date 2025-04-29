@@ -12,31 +12,59 @@ function DetailListBlockComponent({ context }: { context: BlockContextType }) {
       items: {
         type: "object",
         properties: {
-          key: { type: "string" },
+          key: { 
+            type: "string",
+            meta: { editor: "hidden" }
+          },
           children: {
             type: "array",
             items: {
               $ref: "#"  
             }
           },
-          label: { type: "string" },
-          caption: { type: "string" },
-          color: { type: "string" },
+          label: {
+            title: "Label",
+            type: "string" 
+          },
+          caption: { 
+            title: "Caption",
+            type: "string" 
+          },
+          color: { 
+            title: "Color",
+            type: "string",
+            description: "A file upload input for selecting an image.",
+            meta: { editor: "colorSelector" }
+          },
           prefixImage: {
+            title: "Image",
             type: "string",
             format: "uri",
             description: "A file upload input for selecting an image.",
             meta: { editor: "fileUpload" }
           },
           prefixIcon: {
+            title: "Icon",
             type: "string",
             description: "Select an icon from a predefined list.",
             meta: { editor: "iconSelector" }
           },
-          prefixText: { type: "string" },
-          tooltip: { type: "string" },
-          disabled: { type: "boolean" },
-          hidden: { type: "boolean" }
+          prefixText: { 
+            title: "Text",
+            type: "string"
+          },
+          tooltip: { 
+            title: "Tooltip",
+            type: "string" 
+          },
+          disabled: { 
+            title: "Disabled",
+            type: "boolean" 
+          },
+          hidden: { 
+            title: "Hidden",
+            type: "boolean" 
+          }
         },
         required: ["key"]
       }

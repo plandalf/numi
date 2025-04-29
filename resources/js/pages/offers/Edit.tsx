@@ -1,7 +1,7 @@
 import AppOfferLayout from '@/layouts/app/app-offer-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Block, Offer, ViewSection, type OfferView, type Page, type PageType } from '@/types/offer';
-import { Head, useForm } from '@inertiajs/react';
+import { Head, router, useForm } from '@inertiajs/react';
 import {
     Dialog,
     DialogContent,
@@ -19,7 +19,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import { cn } from '@/lib/utils';
-import { MoreVertical, ArrowRightToLine, FileText, CheckSquare, Share2, Plus } from 'lucide-react';
+import { MoreVertical, ArrowRightToLine, FileText, CheckSquare, Share2, Plus, Copy, ExternalLink, QrCode, CheckCircle, Fullscreen, MessageSquare, Maximize, PanelLeftClose, AlertCircle } from 'lucide-react';
 import PagePreview, { findBlockInPage, Inspector } from '@/components/offers/page-preview';
 import PageFlowEditor from '@/components/offers/page-flow-editor';
 import { ReactFlowProvider } from '@xyflow/react';
@@ -33,6 +33,13 @@ import { DndContext, DragOverlay, useDraggable, closestCenter, DragStartEvent, u
 import { blockTypes, getBlockMeta } from '@/components/blocks';
 import { v4 as uuidv4 } from 'uuid';
 import React, { createContext, useContext } from 'react';
+import { Sidebar } from '@/components/offers/sidebar';
+import { CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { ToggleGroupItem } from '@/components/ui/toggle-group';
+import { ToggleGroup } from '@/components/ui/toggle-group';
+import { QRCodeSVG } from 'qrcode.react';
 
 
 interface Props {
@@ -134,6 +141,9 @@ interface EditorContextType {
   selectedBlockId: string | null;
   setSelectedBlockId: React.Dispatch<React.SetStateAction<string | null>>;
 
+  viewMode: 'editor' | 'preview' | 'share';
+  setViewMode: React.Dispatch<React.SetStateAction<'editor' | 'preview' | 'share'>>;
+
   handleSave: () => void;
   handleNameSubmit: (e: React.FormEvent) => void;
   handlePageNameClick: (pageId: string, currentName: string) => void;
@@ -143,6 +153,7 @@ interface EditorContextType {
   getOrderedPages: (view: OfferView) => [string, Page][];
   handleAddPage: (type: PageType) => void;
   offer: Offer;
+  updateBlock: (block: Block) => void;
 }
 
 const EditorContext = createContext<EditorContextType | undefined>(undefined);
@@ -164,7 +175,8 @@ function EditorProvider({ offer, showNameDialog, children }: React.PropsWithChil
   const [isRenamingFromDropdown, setIsRenamingFromDropdown] = useState(false);
   const [showAddPageDialog, setShowAddPageDialog] = useState(false);
   const [isReady, setIsReady] = useState(false);
-
+  const [viewMode, setViewMode] = useState<'editor' | 'preview' | 'share'>('editor');
+  
   // const { data, setData, put, processing, errors, setDefaults } = useForm({
   //   name: offer.name,
   //   view: offer.view
@@ -434,6 +446,8 @@ function EditorProvider({ offer, showNameDialog, children }: React.PropsWithChil
     updateBlock,
 
     selectedBlockId, setSelectedBlockId,
+
+    viewMode, setViewMode,
 
   };
   return <EditorContext.Provider value={value}>{children}</EditorContext.Provider>;
@@ -793,66 +807,9 @@ function EditApp() {
               </div>
             )}
           </DragOverlay>
-
           <div className="flex flex-grow border-dashed border-1 border-red-500 h-[calc(100vh-60px)]">
-            {/* Sidebar - Fixed width, no shrink */}
-            <div className="w-[300px] flex-none border-r border-border bg-card overflow-y-auto ">
-              <div className="p-4 space-y-4">
-                <h2 className="text-lg font-semibold">Edit Options</h2>
-                <div className="space-y-2">
-                  <button
-                    onClick={() => setIsNameDialogOpen(true)}
-                    className="w-full rounded-md bg-secondary px-4 py-2 text-sm font-medium text-secondary-foreground hover:bg-secondary/90"
-                  >
-                    Edit Name
-                  </button>
-                </div>
-              </div>
-
-              {selectedBlockId && (
-                <Inspector
-                  key={selectedBlockId}
-                  block={findBlockInPage(data.view.pages[selectedPage], selectedBlockId)}
-                  onClose={() => setSelectedBlockId(null)}
-                />
-              )}
-
-              {!selectedBlockId && (
-                <div>
-                  {/* Available Block Types */}
-                  <div className="p-4 border-t border-border" id="templates-list">
-                    <h3 className="text-md font-medium mb-3">Available Blocks</h3>
-                    <p className="text-xs text-muted-foreground mb-4">Drag blocks to add them to your page</p>
-
-                    <div className="space-y-2">
-                      {Object.keys(blockTypes).map((blockType) => (
-                        <BlockTemplateItem
-                          key={blockType}
-                          id={blockType}
-                          blockType={blockTypes[blockType]}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Main Content Area */}
-            <div className="flex-1 flex flex-col min-w-0 relative">
-              {/* Preview Area - Make it fill the available space */}
-              <div className="absolute inset-0 bottom-[68px] overflow-hidden">
-                <div className="h-full">
-                  <PagePreview
-                    page={data.view.pages[selectedPage]}
-                    onUpdatePage={handlePageUpdate}
-                  />
-                </div>
-              </div>
-
-              {/* Toolbar */}
-              <Toolbar />
-            </div>
+            <Sidebar />
+            <MainContent />
           </div>
         </DndContext>
 
@@ -872,6 +829,230 @@ function EditApp() {
   );
 }
 
+function MainContent() {
+  const {
+    data,
+    selectedPage,
+    handlePageUpdate,
+    viewMode,
+  } = useEditor();
+
+  const isShareMode = viewMode === 'share';
+
+  return (
+    <div className="flex-1 flex flex-col min-w-0 relative">
+      {/* Preview Area - Make it fill the available space */}
+      <div className="absolute inset-0 bottom-[68px] overflow-hidden">
+        <div className="h-full">
+          {isShareMode ? (
+            <Share />
+          ) : (
+            <PagePreview
+              page={data.view.pages[selectedPage]}
+              onUpdatePage={handlePageUpdate}
+            />
+          )}
+        </div>
+      </div>
+
+      {/* Toolbar */}
+      <Toolbar />
+    </div>
+  )
+}
+
+const embedTypes = [
+  { id: 'standard', icon: <Maximize className="size-6 text-white" />, name: 'Standard', description: 'Hosted link that opens in a new tab' },
+  { id: 'popup', icon: <MessageSquare className="size-6 text-white" />, name: 'Popup', description: 'Opens in a popup window' },
+  { id: 'fullscreen', icon: <Fullscreen className="size-6 text-white" />, name: 'Full Screen', description: 'Takes over the entire screen' },
+  { id: 'slider', icon: <PanelLeftClose className="size-6 text-white" />, name: 'Slider', description: 'Slides in from the side' },
+];
+
+function Share() {
+  const { offer, setViewMode } = useEditor();
+  const [showQrCode, setShowQrCode] = useState(false);
+  const [showEmbedInfo, setShowEmbedInfo] = useState(false);
+  const [selectedEmbedType, setSelectedEmbedType] = useState('standard');
+
+  const offerUrl = `${window.location.origin}/o/${offer.id}`;
+
+  const handlePublish = () => {
+      router.post(`/offers/${offer.id}/publish`);
+  };
+
+  const copyToClipboard = (text: string) => {
+      navigator.clipboard.writeText(text);
+      // You might want to add a toast notification here
+  };
+
+  const getEmbedCode = (type: string) => {
+      switch (type) {
+          case 'standard':
+              return `<a href="${offerUrl}" target="_blank">Open Offer</a>`;
+          case 'popup':
+              return `<script>
+function openOfferPopup() {
+  window.open('${offerUrl}', 'offer', 'width=800,height=600');
+}
+</script>
+<button onclick="openOfferPopup()">Open Offer</button>`;
+          case 'fullscreen':
+              return `<script src="${window.location.origin}/embed.js"></script>
+<button data-numi-offer="${offer.id}" data-type="fullscreen">Open Offer</button>`;
+          case 'slider':
+              return `<script src="${window.location.origin}/embed.js"></script>
+<button data-numi-offer="${offer.id}" data-type="slider">Open Offer</button>`;
+          default:
+              return '';
+      }
+  };
+
+  const isPublished = offer.status === 'published';
+
+  return (
+    <div className="max-w-2xl mx-auto space-y-8 py-12">
+      <Card>
+          <CardHeader>
+            <div className={cn(
+              "p-6 flex flex-row gap-2 items-center rounded-md shadow-sm",
+              isPublished ? 'bg-lime-100 border border-lime-500 text-green-900' : 'bg-red-100 border border-red-500 text-red-900'
+            )}>
+              {isPublished ? (
+                <CheckCircle className="size-6" />
+              ) : (
+                <AlertCircle className="size-6" />
+              )}
+              {isPublished ? 'Your experience is ready to share' : 'You have unsaved changes'}
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-2">
+              <CardTitle>Experience link</CardTitle>
+              <CardDescription>
+                <div className="flex flex-row gap-2">
+                    <Input
+                        readOnly
+                        value={offerUrl}
+                        className="text-muted-foreground"
+                    />
+                    <div className="flex gap-2">
+                      {isPublished && (
+                        <>
+                          <Button
+                              variant="ghost"
+                              size="sm"
+                              className='border-input border-1 h-full'
+                              onClick={() => window.open(offerUrl, '_blank')}
+                          >
+                              <ExternalLink className="size-4" />
+                          </Button>
+                          <Button
+                              variant="ghost"
+                              size="sm"
+                              className='border-input border-1 h-full'
+                              onClick={() => setShowQrCode(true)}
+                          >
+                              <QrCode className="h-4 w-4" />
+                          </Button>
+                        </>
+                      )}
+                        <Button
+                            variant="default"
+                            size="sm"
+                            className='border-input border-1 h-full text-sm'
+                            onClick={() => copyToClipboard(offerUrl)}
+                        >
+                            <Copy className="h-4 w-4" />
+                            Copy
+                        </Button>
+                    </div>
+                </div>
+              </CardDescription>
+          </CardContent>
+          <CardContent className="space-y-2">
+              <CardTitle>Embed your experience</CardTitle>
+              <CardDescription>
+                Choose how to embed this offer on your website.<br/>
+                You can preview different sharing methods in <span className="text-teal-700 cursor-pointer" onClick={() => setViewMode('preview')}>preview</span>
+                </CardDescription>
+          </CardContent>
+          <CardContent className="space-y-2">
+              <ToggleGroup
+                  type="single"
+                  value={selectedEmbedType}
+                  onValueChange={(value) => {
+                      if (value) {
+                          setSelectedEmbedType(value);
+                          setShowEmbedInfo(true);
+                      }
+                  }}
+                  className="grid grid-cols-4 gap-2"
+              >
+                  {embedTypes.map((type) => (
+                      <ToggleGroupItem
+                          key={type.id}
+                          value={type.id}
+                          className="flex flex-col justify-center items-center p-4 data-[state=on]:bg-primary/5 gap-2 border-input border-1 h-full rounded-md cursor-pointer"
+                      >
+                        <div className="p-1 bg-primary rounded-md">
+                        {type.icon}
+                        </div>
+                        <div className="flex flex-col gap-0.5 items-center">
+                          <div className="font-semibold">{type.name}</div>
+                          <div className="text-xs text-muted-foreground">{type.description}</div>
+                        </div>
+                      </ToggleGroupItem>
+                  ))}
+              </ToggleGroup>
+          </CardContent>
+      </Card>
+      <Dialog open={showQrCode} onOpenChange={setShowQrCode}>
+          <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                  <DialogTitle>QR Code</DialogTitle>
+              </DialogHeader>
+              <div className="flex justify-center p-6">
+                  <QRCodeSVG value={offerUrl} size={256} />
+              </div>
+          </DialogContent>
+      </Dialog>
+
+      <Dialog open={showEmbedInfo} onOpenChange={setShowEmbedInfo}>
+          <DialogContent className="sm:max-w-2xl">
+              <DialogHeader>
+                  <DialogTitle>
+                      {embedTypes.find(t => t.id === selectedEmbedType)?.name} Integration
+                  </DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                  <div className="p-4 bg-muted rounded-lg">
+                      <pre className="whitespace-pre-wrap text-sm">
+                          {getEmbedCode(selectedEmbedType)}
+                      </pre>
+                  </div>
+                  <div className="flex flex-row gap-2 justify-between">
+                    <Button
+                      variant="outline"
+                      onClick={() => setViewMode('preview')}
+                      className="w-fit"
+                    >
+                      Preview
+                    </Button>
+                    <Button
+                      variant="default"
+                        onClick={() => copyToClipboard(getEmbedCode(selectedEmbedType))}
+                        className="w-fit"
+                    >
+                      Copy Code
+                    </Button>
+                  </div>
+              </div>
+          </DialogContent>
+      </Dialog>
+    </div>
+  )
+}
+
+
 function Toolbar() {
   const {
     data, setData, processing, errors, setDefaults,
@@ -883,12 +1064,16 @@ function Toolbar() {
     handlePageNameClick,
     handlePageAction,
     getOrderedPages,
+    viewMode,
   } = useEditor();
 
   return (
-    <div className="absolute bottom-0 left-0 right-0 border-t border-border bg-muted">
+    <div className="absolute bottom-0 left-0 right-0 bg-[#F7F9FF]">
       <div className="p-4">
-        <div className="flex items-center justify-between">
+        <div className={cn(
+          "flex items-center transition-all duration-300",
+          viewMode === 'preview' ? "justify-center" : "justify-between"
+        )}>
           <div className="flex items-center gap-2 overflow-x-auto">
             {getOrderedPages(data.view).map(([pageId, page]) => (
               <div
@@ -896,8 +1081,8 @@ function Toolbar() {
                 className={cn(
                   "flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium whitespace-nowrap",
                   selectedPage === pageId
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-secondary text-secondary-foreground hover:bg-secondary/90"
+                    ? "bg-white border-1 border-teal-600"
+                    : "bg-transparent border-none"
                 )}
               >
                 {editingPageName === pageId ? (
@@ -959,16 +1144,16 @@ function Toolbar() {
                 )}
               </div>
             ))}
-            <button
+            {/* <button
               onClick={() => setShowAddPageDialog(true)}
               className="flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium bg-secondary text-secondary-foreground hover:bg-secondary/90"
             >
               <Plus className="w-4 h-4" />
               Add Page
-            </button>
+            </button> */}
           </div>
 
-          <div className="flex items-center gap-4">
+          {/* <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
               <span className="text-sm text-muted-foreground">Layout:</span>
               <span className="text-sm font-medium">{data.view.pages[selectedPage].layout.sm}</span>
@@ -988,7 +1173,7 @@ function Toolbar() {
               <Share2 className="w-4 h-4" />
               Page Logic
             </button>
-          </div>
+          </div> */}
         </div>
       </div>
     </div>

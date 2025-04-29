@@ -27,7 +27,8 @@ export interface HookUsage {
     options?: string[]; // For enumeration type
     labels?: Record<string, string>; // For enumeration type labels
     label?: string; // For display label
-  }
+    icons?: Record<string, string | React.ReactNode>; // For enumeration type icons
+}
   
 
 export interface GlobalState {
@@ -53,12 +54,13 @@ export interface BlockContextType {
 
 // Add after the Editor component but before the Welcome component 
 // JSONSchema Editor Components
-type JsonSchemaType = 'string' | 'number' | 'boolean' | 'object' | 'array' | 'null';
+export type JsonSchemaType = 'string' | 'number' | 'boolean' | 'object' | 'array' | 'null' | 'color';
 
-interface JsonSchemaProperty {
+export interface JsonSchemaProperty {
   type: JsonSchemaType | JsonSchemaType[];
   properties?: Record<string, JsonSchemaProperty>;
   items?: JsonSchemaProperty | JsonSchemaProperty[];
+  title?: string;
   format?: string;
   description?: string;
   meta?: {
@@ -68,8 +70,9 @@ interface JsonSchemaProperty {
   required?: string[];
 }
 
-interface JsonSchema {
+export interface JsonSchema {
   $schema?: string;
+  title?: string;
   type: JsonSchemaType | JsonSchemaType[];
   properties?: Record<string, JsonSchemaProperty>;
   items?: JsonSchemaProperty;
