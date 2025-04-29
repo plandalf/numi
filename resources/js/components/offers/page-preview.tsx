@@ -135,7 +135,7 @@ export default function PagePreview({ page, onUpdatePage }: PreviewProps) {
 
 return (
 
-  <div className="h-full flex bg-[#F7F9FF]">
+  <div className="h-full flex">
     <div className="flex-1 flex items-center justify-center p-8 h-full overflow-auto">
       <div className="bg-background rounded-lg shadow-lg w-full max-w-5xl">
         {/* The layout preview - using live preview page */}

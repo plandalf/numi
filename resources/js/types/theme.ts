@@ -35,7 +35,9 @@ export interface ThemeComponentStyling {
   shadow_lg: string;
 }
 
-export interface Theme extends ThemeColor, ThemeTypography, ThemeComponentStyling {
+export interface ThemeProperties extends ThemeColor, ThemeTypography, ThemeComponentStyling {};
+
+export interface Theme extends ThemeProperties {
   id: number;
   name: string;
   created_at: string;

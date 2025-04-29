@@ -23,6 +23,7 @@ class TemplateService
             $theme = null;
             if ($template->theme) {
                 $theme = $template->theme->replicate();
+                $theme->name = 'From Template: ' . $template->name;
                 $theme->organization_id = $organizationId;
                 $theme->save();
             }

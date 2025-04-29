@@ -86,6 +86,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::get('pricing', [OffersController::class, 'pricing'])->name('pricing');
 
             Route::get('settings/theme', [OffersController::class, 'settingsTheme'])->name('settings.theme');
+            Route::post('theme', [OffersController::class, 'storeAsSavedTheme'])->name('store.saved-theme');
             Route::put('theme', [OffersController::class, 'updateTheme'])->name('update.theme');
 
             // Add Slot routes

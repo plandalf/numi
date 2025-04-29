@@ -11,7 +11,7 @@ import { Button } from "./button";
 
 interface AccordionSectionProps {
   items: any[];
-  onAdd: () => void;
+  onAdd?: () => void;
   renderSection: (item: any, index: number) => React.ReactNode;
   getSectionTitle?: (item: any, index: number) => string;
   addLabel?: string;

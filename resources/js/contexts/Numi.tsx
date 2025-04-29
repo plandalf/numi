@@ -4,6 +4,7 @@ import { BlockConfig, BlockContextType } from "@/types/blocks";
 import { createContext, useContext, useEffect, useState } from "react";
 import get from "lodash/get";
 import { CheckoutState, GlobalStateContext } from "@/pages/Checkout";
+import { Theme } from "@/types/theme";
 
 export const BlockContext = createContext<BlockContextType>({
   blockId: '',
@@ -20,7 +21,8 @@ export const BlockContext = createContext<BlockContextType>({
   registerField: () => {},
   getFieldValue: () => undefined,
   setFieldValue: () => {},
-  registerHook: () => {}
+  registerHook: () => {},
+  theme: undefined
 });
 
 
@@ -416,6 +418,11 @@ class Numi {
       validate,
       isRequired: blockContext.blockConfig.validation?.isRequired ?? false 
     };
+  }
+  
+  static useTheme(): Theme | undefined {
+    const blockContext = useContext(BlockContext);
+    return blockContext.theme;
   }
 }
 

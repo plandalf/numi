@@ -1,3 +1,5 @@
+import type { Theme } from "@/types/theme";
+
 // Types
 export interface BlockConfig {
     id: string;
@@ -47,6 +49,7 @@ export interface BlockContextType {
     getFieldValue: (fieldName: string) => any;
     setFieldValue: (fieldName: string, value: any) => void;
     registerHook: (hook: HookUsage) => void;
+    theme?: Theme;
 }
 
 

@@ -12,6 +12,7 @@ import { FileEditor } from '@/components/editor/file-editor';
 import { ColorPickerEditor } from '@/components/editor/color-picker-editor';
 import { ShadowPickerEditor } from '@/components/editor/shadow-picker-editor';
 import { AlignmentPickerEditor } from '@/components/editor/alignment-picker-editor';
+import { Theme } from '@/types/theme';
 
 export const Inspector = ({
     block,
@@ -65,8 +66,6 @@ export const Inspector = ({
       could not find block
     </div>;
   }
-  console.log('block', block);
-
 
     return (
       <div className="p-4">
@@ -156,23 +155,13 @@ export const Inspector = ({
                       labels={{ normal: 'Normal', semibold: 'Semibold', bold: 'Bold' }}
                     />
                   )}
-                  {/* Shadow Picker */}
+                  {/* Border */}
                   {globalState.hookUsage[block.id].some(h => h.name === 'border') && (
-                    <ShadowPickerEditor
-                      label="Border shadow"
-                      value={{
-                        borderX: block.appearance?.borderX,
-                        borderY: block.appearance?.borderY,
-                        borderBlur: block.appearance?.borderBlur,
-                        borderSpread: block.appearance?.borderSpread,
-                      }}
-                      onChange={val => onUpdate({
-                        ...block,
-                        appearance: {
-                          ...block.appearance,
-                          ...val,
-                        },
-                      })}
+                    <EnumerationEditor
+                      label='Border'
+                      value={block.appearance?.border || '0px'}
+                      onChange={value => onUpdate({ ...block, appearance: { ...block.appearance, border: value } })}
+                      options={[ '0px', '4px', '8px', '12px', '16px', '24px', '32px' ]}
                     />
                   )}
                 </div>

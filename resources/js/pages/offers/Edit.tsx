@@ -40,10 +40,14 @@ import { Card } from '@/components/ui/card';
 import { ToggleGroupItem } from '@/components/ui/toggle-group';
 import { ToggleGroup } from '@/components/ui/toggle-group';
 import { QRCodeSVG } from 'qrcode.react';
+import { Theme } from '@/types/theme';
 
 
-interface Props {
+export interface EditProps {
     offer: Offer;
+    fonts: string[];
+    weights: string[];
+    themes: Theme[];
     showNameDialog?: boolean;
 }
 
@@ -112,6 +116,8 @@ interface EditorContextType {
   errors: any;
   setDefaults: typeof setDefaults;
 
+  themes: Theme[];
+
   isNameDialogOpen: boolean;
   setIsNameDialogOpen: React.Dispatch<React.SetStateAction<boolean>>;
 
@@ -164,7 +170,7 @@ export function useEditor() {
   return ctx;
 }
 
-function EditorProvider({ offer, showNameDialog, children }: React.PropsWithChildren<Props>) {
+function EditorProvider({ offer, themes, showNameDialog, children }: React.PropsWithChildren<EditProps>) {
   // --- move all state/logic from Edit here ---
   const [isNameDialogOpen, setIsNameDialogOpen] = useState(false);
   const [selectedPage, setSelectedPage] = useState<string>(offer.view?.first_page);
@@ -184,7 +190,8 @@ function EditorProvider({ offer, showNameDialog, children }: React.PropsWithChil
 
   const [data, setData] = useState({
     name: offer.name,
-    view: offer.view
+    view: offer.view,
+    theme: offer.theme,
   });
 
   const [errors, setErrors] = useState({});
@@ -443,6 +450,7 @@ function EditorProvider({ offer, showNameDialog, children }: React.PropsWithChil
     handleAddPage,
 
     offer,
+    themes,
     updateBlock,
 
     selectedBlockId, setSelectedBlockId,
@@ -454,9 +462,9 @@ function EditorProvider({ offer, showNameDialog, children }: React.PropsWithChil
 }
 
 // --- Refactored Edit component ---
-function Edit({ offer, showNameDialog }: Props) {
+function Edit({ offer, themes, showNameDialog }: EditProps) {
   return (
-    <EditorProvider offer={offer} showNameDialog={showNameDialog}>
+    <EditorProvider offer={offer} themes={themes} showNameDialog={showNameDialog}>
       <EditApp />
     </EditorProvider>
   );
@@ -843,7 +851,7 @@ function MainContent() {
     <div className="flex-1 flex flex-col min-w-0 relative">
       {/* Preview Area - Make it fill the available space */}
       <div className="absolute inset-0 bottom-[68px] overflow-hidden">
-        <div className="h-full">
+        <div className="h-full bg-[#F7F9FF]">
           {isShareMode ? (
             <Share />
           ) : (

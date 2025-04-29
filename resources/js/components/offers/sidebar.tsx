@@ -3,7 +3,7 @@ import { cn } from '@/lib/utils';
 import { blockTypes, getBlockMeta, blockMetas } from '@/components/blocks';
 import { findBlockInPage } from '@/components/offers/page-preview';
 import { Inspector } from '@/components/offers/page-inspector';
-import { useEditor } from '@/pages/offers/Edit';
+import { EditProps, useEditor } from '@/pages/offers/Edit';
 import { Block } from '@/types/offer';
 import { 
   Type, 
@@ -35,8 +35,12 @@ import {
 import { useDraggable } from '@dnd-kit/core';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import PageTheme from './page-theme';
+import { ScrollArea } from '../ui/scroll-area';
+import SearchBar from './search-bar';
+import { usePage } from '@inertiajs/react';
 
-type SidebarTab = 'elements' | 'inspector' | 'templates' | 'settings' | 'layers';
+type SidebarTab = 'elements' | 'products' | 'themes' | 'settings' | 'layers';
 
 interface CustomElementIconProps {
   type: keyof typeof blockTypes;
@@ -125,19 +129,24 @@ type IconButton = {
 };
 
 export function Sidebar() {
+  const { fonts, weights } = usePage<EditProps>().props;
   const [activeTab, setActiveTab] = useState<SidebarTab>('elements');
   const [searchQuery, setSearchQuery] = useState('');
   const {
+    themes,
     data,
+    setData,
     selectedPage,
     selectedBlockId,
     setSelectedBlockId,
     updateBlock,
     viewMode,
-    setViewMode
   } = useEditor();
 
+  console.log(data);
+
   const isEditorMode = viewMode === 'editor';
+
 
   const iconButtons: IconButton[] = [
     { icon: <DiamondPlus className="size-5" />, tab: 'elements', label: 'Elements' },
@@ -209,15 +218,11 @@ export function Sidebar() {
         
         return (
           <div className="p-4 space-y-6 overflow-y-auto">
-            <div className="relative mb-8">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-              <Input 
-                className="pl-10 h-12 rounded-lg"
-                placeholder="Search for elements" 
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-            </div>
+            <SearchBar 
+              placeholder="Search for elements" 
+              value={searchQuery}
+              onChange={setSearchQuery}
+            />
 
             {searchQuery && !hasBaseElements && !hasInteractiveElements && !hasPaymentElements ? (
               <div className="text-center py-8 text-muted-foreground">
@@ -327,12 +332,12 @@ export function Sidebar() {
           </div>
         );
       }
-      case 'templates':
+      case 'products':
         return (
           <div className="p-4">
-            <h3 className="text-md font-medium">Templates</h3>
+            <h3 className="text-md font-medium">Products</h3>
             <p className="text-xs text-muted-foreground mt-2">
-              Coming soon - Save and reuse sections of your pages.
+              Coming soon - Add products to your offer.
             </p>
           </div>
         );
@@ -341,23 +346,29 @@ export function Sidebar() {
           <div className="p-4">
             <h3 className="text-md font-medium">Page Settings</h3>
             <p className="text-xs text-muted-foreground mt-2">
-              Configure the settings for the current page.
+              Coming soon - Configure the settings for the current page.
             </p>
           </div>
         );
-      case 'inspector':
+      case 'themes':
         return (
-          <div className="p-4">
-            <h3 className="text-md font-medium">Notifications</h3>
-            <p className="text-xs text-muted-foreground mt-2">
-              You have no new notifications.
-            </p>
-          </div>
+          <PageTheme
+            themes={themes}
+            currentTheme={data.theme}
+            onThemeChange={theme => setData({ ...data, theme })}
+            fonts={fonts}
+            weights={weights}
+          />
         );
       default:
         return null;
     }
   };
+
+  const onTabClick = (tab: SidebarTab) => {
+    setActiveTab(tab);
+    setSelectedBlockId(null);
+  }
 
   return (
     <div className={cn(
@@ -374,7 +385,7 @@ export function Sidebar() {
             className={cn("h-10 w-10",  
               activeTab === 'elements' ? "bg-gray-900 text-white hover:bg-gray-900 hover:text-white" : "hover:bg-gray-500 hover:text-white"
             )}
-            onClick={() => setActiveTab('elements' as SidebarTab)}
+            onClick={() => onTabClick('elements')}
             tooltip="Elements"
             tooltipSide='right'
           >
@@ -390,10 +401,7 @@ export function Sidebar() {
             <Button
                 variant="outline-transparent"
                 key={button.tab}
-                onClick={() => {
-                  setActiveTab(button.tab as SidebarTab);
-                  setSelectedBlockId(null);
-                }}
+                onClick={() => onTabClick(button.tab as SidebarTab)}
                 tooltip={button.label}
                 tooltipSide='right'
                 className={cn(
@@ -437,9 +445,9 @@ export function Sidebar() {
         </div>
         
         {/* Lower right: Content */}
-        <div className="flex-grow overflow-y-auto">
+        <ScrollArea className="flex-grow overflow-y-auto">
           {renderTabContent()}
-        </div>
+        </ScrollArea>
       </div>
     </div>
   );
