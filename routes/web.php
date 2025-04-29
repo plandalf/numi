@@ -4,8 +4,13 @@ use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\IntegrationsController;
 use App\Http\Controllers\OffersController;
 use App\Http\Controllers\OrganizationController;
+use App\Http\Controllers\SequencesController;
 use App\Http\Controllers\Settings\ProfileController;
+use App\Mail\ActivityEmail;
+use App\Models\ResourceEvent;
 use App\Models\Store\Offer;
+use App\Workflows\RunSequenceWorkflow;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use App\Http\Controllers\MediaController;
@@ -14,10 +19,100 @@ use App\Http\Controllers\PriceController;
 use App\Http\Controllers\TemplateController;
 use App\Http\Controllers\Billing\CheckoutController as BillingCheckoutController;
 use App\Http\Controllers\NoAccessController;
+use Workflow\Serializers\Serializer;
+use Workflow\WorkflowStub;
 
 Route::get('/', function () {
     return Inertia::render('welcome');
 })->name('home');
+
+Route::get('/workflow-test', function () {
+
+    $order = new \App\Models\Order\Order();
+    $order->organization_id = 1;
+    $order->checkout_session_id = 1;
+    $order->status = \App\Enums\OrderStatus::COMPLETED;
+    $order->save();
+    $event = new ResourceEvent();
+    $event->action = 'c';
+    $event->organization_id = 1;
+    $event->subject()->associate($order);
+    $event->snapshot = [
+        'customer' => [
+            'email' => 'mitch@flindev.com',
+        ]
+    ];
+    $event->save();
+
+    // triggers = event + model ?
+    $sequence = \App\Models\Automation\Sequence::query()
+        ->firstOrCreate([
+            'name' => '',
+            'organization_id' => 1,
+        ]);
+
+    $email = \App\Models\Automation\Node::query()
+        ->create([
+            'sequence_id' => $sequence->id,
+            'type' => 'email',
+            'arguments' => [
+                'subject' => 'what is going on?',
+                'recipients' => [
+                    ['email' => '{{trigger.customer.email}}'],
+                ],
+                'body' => 'Hi {{trigger.customer.name}}\nThanks for buying',
+            ]
+        ]);
+
+    $trigger = \App\Models\Automation\Trigger::query()
+        ->create([
+            'sequence_id' => $sequence->id,
+            'event_name' => 'order.created',
+            'target_type' => 'offer',
+            'target_id' => 3,
+            'next_node_id' => $email->id,
+        ]);
+
+    $webhookAction = \App\Models\Automation\Node::query()
+        ->create([
+            'sequence_id' => $sequence->id,
+            'type' => 'webhook',
+            'arguments' => [
+                'url' => 'https://webhook.site/545ae49e-d183-4ea1-8855-ddf9b227e55e',
+                'type' => 'advanced',
+                'method' => 'POST',
+                'query' => [
+                    'key' => 'value',
+                ],
+                'headers' => [
+                    'accept' => 'application/json',
+                ],
+                'body' => [
+                    'hello' => 'there 👋'
+                ],
+            ]
+        ]);
+
+    $node = \App\Models\Automation\Edge::query()
+        ->firstOrCreate([
+            'from_node_id' => $email->id,
+            'to_node_id' => $webhookAction->id,
+            'sequence_id' => $sequence->id,
+        ]);
+    $stored = \App\Models\Automation\StoredWorkflow::query()
+        ->create([
+            'class' => RunSequenceWorkflow::class,
+            'organization_id' => 1,
+        ]);
+
+    $wf = WorkflowStub::fromStoredWorkflow($stored);
+
+    dd(
+        $wf->start($trigger, $event),
+        $wf->id(),
+    );
+
+})->name('test');
 
 // get offer controller
 // redirect to
@@ -57,7 +152,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
                 Route::get('/', [OrganizationController::class, 'settings'])->name('general');
                 Route::get('/team', [OrganizationController::class, 'team'])->name('team');
                 Route::delete('/team/{user}', [OrganizationController::class, 'removeTeamMember'])->name('team.remove');
-            
+
                 Route::prefix('billing')->name('billing.')->group(function () {
                     Route::get('/', [BillingCheckoutController::class, 'billing'])->name('index');
                     Route::get('/portal', [BillingCheckoutController::class, 'portal'])->name('portal');
@@ -70,6 +165,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::middleware(['organization', 'subscription'])->group(function () {
 
         Route::resource('products', ProductsController::class);
+        Route::resource('sequences', SequencesController::class);
         Route::resource('products.prices', PriceController::class);
 
         Route::get('/integrations/{integrationType}/callback', [IntegrationsController::class, 'callback']);
@@ -113,7 +209,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         // Media Upload Route
         Route::post('media', [MediaController::class, 'store'])->name('media.store');
-    
+
         // Profile Routes
         Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
         Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');

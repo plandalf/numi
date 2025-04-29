@@ -5,7 +5,7 @@ import { OrganizationSwitcher } from '@/components/organization-switcher';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
 import { type NavItem } from '@/types';
 import { Link } from '@inertiajs/react';
-import { HomeIcon, PackageSearchIcon, OrigamiIcon, BlocksIcon } from 'lucide-react';
+import { HomeIcon, PackageSearchIcon, OrigamiIcon, BlocksIcon, ToyBrickIcon } from 'lucide-react';
 import AppLogo from './app-logo';
 
 const mainNavItems: NavItem[] = [
@@ -28,6 +28,11 @@ const mainNavItems: NavItem[] = [
         title: 'Integrations',
         href: '/integrations',
         icon: BlocksIcon,
+    },
+  {
+        title: 'Sequences',
+        href: '/sequences',
+        icon: ToyBrickIcon,
     },
 ];
 
