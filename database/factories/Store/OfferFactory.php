@@ -5,6 +5,7 @@ namespace Database\Factories\Store;
 use App\Models\Organization;
 use App\Models\Store\Offer;
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Support\Str;
 
 /**
  * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Store\Offer>
@@ -32,6 +33,7 @@ class OfferFactory extends Factory
             'status' => fake()->randomElement(['draft', 'published', 'archived']),
             'view' => fake()->randomElement(['grid', 'list']),
             'properties' => fake()->randomElement([null, fake()->word()]),
+            'uuid' => Str::uuid(),
         ];
     }
 }

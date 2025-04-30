@@ -13,6 +13,7 @@ use App\Http\Controllers\ProductsController;
 use App\Http\Controllers\SequencesController;
 use App\Http\Controllers\Settings\ProfileController;
 use App\Http\Controllers\TemplateController;
+use App\Http\Resources\OfferResource;
 use App\Models\ResourceEvent;
 use App\Models\Store\Offer;
 use App\Workflows\RunSequenceWorkflow;
@@ -198,7 +199,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         Route::get('dashboard', function () {
             return Inertia::render('dashboard', [
-                'offers' => Offer::latest()->get(),
+                'offers' => OfferResource::collection(Offer::latest()->get()),
             ]);
         })->name('dashboard');
 

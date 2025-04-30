@@ -20,7 +20,7 @@ class OfferResource extends JsonResource
         $theme = $this->theme ? $this->theme : new Theme;
 
         return [
-            'id' => $this->id,
+            'id' => $this->getRouteKey(),
             'name' => $this->name,
             'description' => $this->description,
             'product_image_id' => $this->product_image_id,

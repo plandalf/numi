@@ -2,6 +2,7 @@
 
 namespace App\Models\Checkout;
 
+use App\Database\Traits\UuidRouteKey;
 use App\Enums\CheckoutSessionStatus;
 use App\Models\Customer;
 use App\Models\Order\Order;
@@ -16,7 +17,7 @@ use Illuminate\Support\Arr;
 
 class CheckoutSession extends Model
 {
-    use HasFactory;
+    use HasFactory, UuidRouteKey;
 
     protected $table = 'checkout_sessions';
 
@@ -27,6 +28,7 @@ class CheckoutSession extends Model
         'finalized_at',
         'metadata',
         'organization_id',
+        'uuid',
         // 'customer_id',
     ];
 
@@ -91,7 +93,7 @@ class CheckoutSession extends Model
 
     public function getCurrencyAttribute()
     {
-        return $this->lineItems->first()->currency;
+        return $this->lineItems->first()?->currency ?? 'usd';
     }
 
     public function getPublishableKeyAttribute()

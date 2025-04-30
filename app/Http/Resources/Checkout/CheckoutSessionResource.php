@@ -10,7 +10,7 @@ class CheckoutSessionResource extends JsonResource
     public function toArray(Request $request)
     {
         return [
-            'id' => $this->id,
+            'id' => $this->getRouteKey(),
             'status' => $this->status,
             'line_items' => $this->line_items_breakdown,
             'currency' => $this->currency,
