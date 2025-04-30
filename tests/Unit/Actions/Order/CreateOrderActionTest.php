@@ -3,11 +3,9 @@
 namespace Tests\Unit\Actions\Order;
 
 use App\Actions\Order\CreateOrderAction;
-use App\Enums\OrderStatus;
 use App\Models\Checkout\CheckoutSession;
 use App\Models\Order\Order;
 use App\Models\Organization;
-use Ramsey\Uuid\Lazy\LazyUuidFromString;
 use Tests\TestCase;
 
 class CreateOrderActionTest extends TestCase
@@ -26,7 +24,7 @@ class CreateOrderActionTest extends TestCase
             'checkout_session_id' => $checkoutSession->id,
         ]);
 
-        $action = new CreateOrderAction();
+        $action = new CreateOrderAction;
 
         // Act
         $order = $action($checkoutSession);
@@ -44,7 +42,7 @@ class CreateOrderActionTest extends TestCase
             'organization_id' => $organization->id,
         ]);
 
-        $action = new CreateOrderAction();
+        $action = new CreateOrderAction;
 
         // Act - First call creates a new order
         $order1 = $action($checkoutSession);

@@ -10,7 +10,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
 class PriceResource extends JsonResource
 {
     public static $wrap = false;
-    
+
     /**
      * Transform the resource into an array.
      *
@@ -24,13 +24,13 @@ class PriceResource extends JsonResource
             'organization_id' => $this->organization_id,
             'parent_list_price_id' => $this->parent_list_price_id,
             'scope' => $this->scope,
-            'type' => $this->type, 
-            'amount' => $this->amount,
+            'type' => $this->type,
+            'amount' => $this->calculateAmount()->getAmount(),
             'currency' => $this->currency,
             'properties' => $this->properties,
             'name' => $this->name,
             'lookup_key' => $this->lookup_key,
-            'renew_interval' => $this->renew_interval, 
+            'renew_interval' => $this->renew_interval,
             'billing_anchor' => $this->billing_anchor,
             'recurring_interval_count' => $this->recurring_interval_count,
             'cancel_after_cycles' => $this->cancel_after_cycles,

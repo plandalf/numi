@@ -1,25 +1,23 @@
 <?php
 
+use App\Http\Controllers\Api\CheckoutSessionController;
+use App\Http\Controllers\Billing\CheckoutController as BillingCheckoutController;
 use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\IntegrationsController;
+use App\Http\Controllers\MediaController;
+use App\Http\Controllers\NoAccessController;
 use App\Http\Controllers\OffersController;
 use App\Http\Controllers\OrganizationController;
+use App\Http\Controllers\PriceController;
+use App\Http\Controllers\ProductsController;
 use App\Http\Controllers\SequencesController;
 use App\Http\Controllers\Settings\ProfileController;
-use App\Mail\ActivityEmail;
+use App\Http\Controllers\TemplateController;
 use App\Models\ResourceEvent;
 use App\Models\Store\Offer;
 use App\Workflows\RunSequenceWorkflow;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
-use App\Http\Controllers\MediaController;
-use App\Http\Controllers\ProductsController;
-use App\Http\Controllers\PriceController;
-use App\Http\Controllers\TemplateController;
-use App\Http\Controllers\Billing\CheckoutController as BillingCheckoutController;
-use App\Http\Controllers\NoAccessController;
-use Workflow\Serializers\Serializer;
 use Workflow\WorkflowStub;
 
 Route::get('/', function () {
@@ -28,19 +26,19 @@ Route::get('/', function () {
 
 Route::get('/workflow-test', function () {
 
-    $order = new \App\Models\Order\Order();
+    $order = new \App\Models\Order\Order;
     $order->organization_id = 1;
     $order->checkout_session_id = 1;
     $order->status = \App\Enums\OrderStatus::COMPLETED;
     $order->save();
-    $event = new ResourceEvent();
+    $event = new ResourceEvent;
     $event->action = 'c';
     $event->organization_id = 1;
     $event->subject()->associate($order);
     $event->snapshot = [
         'customer' => [
             'email' => 'mitch@flindev.com',
-        ]
+        ],
     ];
     $event->save();
 
@@ -61,7 +59,7 @@ Route::get('/workflow-test', function () {
                     ['email' => '{{trigger.customer.email}}'],
                 ],
                 'body' => 'Hi {{trigger.customer.name}}\nThanks for buying',
-            ]
+            ],
         ]);
 
     $trigger = \App\Models\Automation\Trigger::query()
@@ -88,9 +86,9 @@ Route::get('/workflow-test', function () {
                     'accept' => 'application/json',
                 ],
                 'body' => [
-                    'hello' => 'there 👋'
+                    'hello' => 'there 👋',
                 ],
-            ]
+            ],
         ]);
 
     $node = \App\Models\Automation\Edge::query()
@@ -127,7 +125,7 @@ Route::get('/checkout/{checkout}', [CheckoutController::class, 'show'])
 // ->name('offers.show')
 // ->where('environment', 'live|test');
 
-Route::post('/checkouts/{checkout}/mutations', [CheckoutController::class, 'storeMutation'])
+Route::post('/checkouts/{checkoutSession}/mutations', [CheckoutSessionController::class, 'storeMutation'])
     ->name('checkouts.mutations.store')
     ->middleware(['web']);
 
@@ -147,7 +145,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::put('/{organization}', [OrganizationController::class, 'update'])->name('update');
 
         // Organization settings routes
-        Route::middleware(['organization','subscription'])->group(function () {
+        Route::middleware(['organization', 'subscription'])->group(function () {
             Route::prefix('settings')->name('settings.')->group(function () {
                 Route::get('/', [OrganizationController::class, 'settings'])->name('general');
                 Route::get('/team', [OrganizationController::class, 'team'])->name('team');
@@ -173,7 +171,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/integrations/{integration}/products', [IntegrationsController::class, 'products'])->name('integrations.products');
         Route::get('/integrations/{integration}/products/{gatewayProductId}/prices', [IntegrationsController::class, 'prices'])->name('integrations.prices');
         Route::resource('integrations', IntegrationsController::class);
-
 
         // Offers routes
         Route::resource('offers', OffersController::class)->except(['show', 'create']);
@@ -218,12 +215,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     });
 });
 
-
 Route::middleware(['auth', 'organization'])->group(function () {
     Route::get('organizations/settings/billing/checkout', [BillingCheckoutController::class, 'checkout'])
         ->name('organizations.settings.billing.checkout');
 });
-
 
 // Media routes
 Route::middleware(['auth'])->group(function () {
@@ -233,6 +228,5 @@ Route::middleware(['auth'])->group(function () {
 
 require __DIR__.'/settings.php';
 require __DIR__.'/auth.php';
-require __DIR__.'/client.php';
 
 //

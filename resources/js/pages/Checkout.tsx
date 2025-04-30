@@ -1,75 +1,23 @@
 import { Head } from '@inertiajs/react';
-import { useEffect, useState, createContext, useContext, useMemo } from 'react';
+import { useState, createContext, useContext, useMemo } from 'react';
 import { type Block, type Page as OfferPage, type OfferConfiguration, } from '@/types/offer';
-import { cn, formatMoney } from '@/lib/utils';
+import { cn } from '@/lib/utils';
 
 import { BlockConfig, FieldState, HookUsage } from '@/types/blocks';
-import TextBlockComponent from '@/components/blocks/TextBlock';
 import { BlockContext } from '@/contexts/Numi';
 
 import { blockTypes } from '@/components/blocks';
 import axios from '@/lib/axios';
+import { CheckoutSession } from '@/types/checkout';
 // Form and validation context
 type FormData = Record<string, any>;
 type ValidationErrors = Record<string, string[]>;
-
-// Add placeholder type definition for BlockContextType
 interface BlockContextType {
   blockId: string;
-  // Add other properties as needed
 }
-
-
-// Checkout SDK
-export type CheckoutItem = {
-  id: string;
-
-  slot: string;
-
-  name: string;
-  // price: number;
-  quantity: number;
-  image?: string;
-  metadata?: Record<string, any>;
-
-  subtotal: number;
-  taxes: number;
-  shipping: number;
-  discount: number;
-  total: number;
-};
-
-export interface CheckoutSession {
-
-  id: string;
-
-  status: 'open' | 'processing' | 'completed' | 'abandoned';
-
-  line_items: CheckoutItem[];
-
-  currency: string;
-  subtotal: number;
-  taxes: number;
-  shipping: number;
-  discount: number;
-  total: number;
-
-  customer?: Customer;
-  shipping_address?: CheckoutAddress;
-  billing_address?: CheckoutAddress;
-
-  metadata: Record<string, any>;
-  discount_code?: string;
-
-}
-
-
-
 
 // Contexts
 export const GlobalStateContext = createContext<GlobalState | null>(null);
-
-// Enhanced GlobalState interface to include checkout functionality
 export interface GlobalState {
   fieldStates: Record<string, FieldState>; // key is `${blockId}:${fieldName}`
   updateFieldState: (blockId: string, fieldName: string, value: any) => void;
@@ -93,6 +41,7 @@ export interface GlobalState {
 
   // Submission
   submitPage: (pageId: string) => Promise<boolean>;
+  setPageSubmissionProps: (callback: () => Promise<unknown>) => void;
 }
 
 export function GlobalStateProvider({ offer, session: defaultSession, children }: { offer: OfferConfiguration, session: CheckoutSession, children: React.ReactNode }) {
@@ -100,9 +49,8 @@ export function GlobalStateProvider({ offer, session: defaultSession, children }
   const [fieldStates, setFieldStates] = useState<Record<string, FieldState>>({});
   const [hookUsage, setHookUsage] = useState<Record<string, HookUsage[]>>({});
   const [registeredHooks, setRegisteredHooks] = useState<Set<string>>(new Set());
-
   const [session, setSession] = useState<CheckoutSession>(defaultSession);
-
+  const [submissionProps, setSubmissionProps] = useState<() => Promise<unknown>>();
   // Form state
   const [errors, setErrors] = useState<ValidationErrors>({});
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -135,7 +83,7 @@ export function GlobalStateProvider({ offer, session: defaultSession, children }
       setRegisteredHooks(prev => new Set([...prev, hookKey]));
       setHookUsage(prev => {
         const newPrev = {...prev};
-        
+
         if (prev[block.id] && !(prev[block.id] instanceof Array)) {
           newPrev[block.id] = []
         }
@@ -239,21 +187,48 @@ export function GlobalStateProvider({ offer, session: defaultSession, children }
     return state?.value;
   };
 
+  const setPageSubmissionProps = (callback: () => Promise<unknown>) => {
+    setSubmissionProps(() => callback);
+  };
+
   const submitPage = async (pageId: string): Promise<boolean> => {
     try {
+      console.log('submitPage', pageId)
       setSubmitting(true);
       setSubmitError(null);
 
       // Determine the action based on the page type
       const currentPage = offer.view.pages[pageId];
       const action = currentPage.type === 'payment' ? 'commit' : 'setFields';
-      console.log({ action, currentPage });
-      // Use Axios instead of fetch
-      const response = await axios.post(`/checkouts/${pageId}/mutations`, {
-        action,
-        fields: fieldStates
+      const nextPageId = handleNavigationLogic(currentPage, (field) => {
+        return fieldStates[field]?.value;
       });
 
+      let params: Record<string, any> = {
+        action,
+        metadata: {
+          fields: fieldStates,
+          current_page_id: nextPageId,
+        }
+      }
+
+      if(action === 'commit') {
+        const body = (await submissionProps?.() ?? {}) as { error?: string, confirmation_token?: string };
+        if(body.error) {
+          setSubmitError(body.error);
+          return false;
+        }
+
+        params.confirmation_token = body.confirmation_token;
+      }
+
+      // Use Axios instead of fetch
+      const response = await axios.post(`/checkouts/${session.id}/mutations`, params);
+
+      if (response.status !== 200) {
+        setSubmitError(response.data?.message || 'Failed to commit checkout');
+        return false;
+      }
       return true;
     } catch (error) {
       if (axios.isAxiosError(error)) {
@@ -298,7 +273,7 @@ export function GlobalStateProvider({ offer, session: defaultSession, children }
     isSubmitting,
     setSubmitting,
     submitPage,
-
+    setPageSubmissionProps,
     // Validation
     // validatePage,
     validateField,
@@ -353,7 +328,7 @@ function BlockRenderer({ block, children }: {
     setFieldValue: (fieldName, value) => {
       globalStateContext.updateFieldState(block.id, fieldName, value);
     },
-    registerHook: (hook) => {
+    registerHook: (hook: HookUsage) => {
       globalStateContext.registerHook(block, hook);
     }
   };
@@ -787,26 +762,6 @@ export const NavigationProvider = ({ children }: { children: React.ReactNode }) 
     }
   };
 
-  const commitCheckout = async () => {
-    try {
-      const response = await fetch('/api/checkout/commit', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to commit checkout');
-      }
-
-      return await response.json();
-    } catch (error) {
-      console.error('Error committing checkout:', error);
-      throw error;
-    }
-  };
-
   const goToPrevPage = () => {
     if (canGoBack()) {
       const previousPage = pageHistory[pageHistory.length - 1];
@@ -1024,9 +979,10 @@ interface Props {
   error?: string | null;
   embedDomain?: string;
   environment?: string;
+  checkoutSession: CheckoutSession;
 }
 
-export default function Checkout({ offer, error, environment = 'live' }: Props) {
+export default function Checkout({ offer, error, environment = 'live', checkoutSession }: Props) {
 
   if (error) {
     return <LoadingError error={error}/>;
@@ -1038,40 +994,13 @@ export default function Checkout({ offer, error, environment = 'live' }: Props) 
     return <PageNotFound/>;
   }
 
-  // checkout controller controls the entire process
-
-  // use a theme one too?
-  const session: CheckoutSession = {
-    id: '123',
-    status: 'open',
-    line_items: [
-      {
-        id: '123',
-        slot: 'slot-1',
-        name: 'Sample Product',
-        quantity: 1,
-        subtotal: 1000,
-        taxes: 100,
-        shipping: 100,
-        discount: 100,
-        total: 1100,
-      },
-    ],
-    currency: 'USD',
-    subtotal: 1000,
-    taxes: 100,
-    shipping: 100,
-    discount: 100,
-    total: 1100,
-    metadata: {},
-  }
-
+  console.log('checkoutSession', checkoutSession)
   return (
     <>
       <Head title={`Checkout: ${offer.name}`} />
 
       {/* global state, checkout */}
-      <GlobalStateProvider offer={offer} session={session}>
+      <GlobalStateProvider offer={offer} session={checkoutSession}>
         <NavigationProvider>
           <div className="min-h-screen bg-gray-50">
             {error ? (

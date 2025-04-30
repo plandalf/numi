@@ -2,8 +2,8 @@
 
 namespace App\Services;
 
+use App\Models\Store\Offer;
 use App\Models\Template;
-use App\Models\Store\Offer as Offer;
 use App\Models\Theme;
 use Illuminate\Support\Facades\DB;
 
@@ -11,10 +11,6 @@ class TemplateService
 {
     /**
      * Create a new offer from a template.
-     *
-     * @param Template $template
-     * @param int $organizationId
-     * @return Offer
      */
     public function createOfferFromTemplate(Template $template, int $organizationId): Offer
     {
@@ -23,13 +19,13 @@ class TemplateService
             $theme = null;
             if ($template->theme) {
                 $theme = $template->theme->replicate();
-                $theme->name = 'From Template: ' . $template->name;
+                $theme->name = 'From Template: '.$template->name;
                 $theme->organization_id = $organizationId;
                 $theme->save();
             }
 
             // Create new offer
-            $offer = new Offer();
+            $offer = new Offer;
             $offer->organization_id = $organizationId;
             $offer->name = $template->name;
             $offer->view = $template->view;
@@ -39,4 +35,4 @@ class TemplateService
             return $offer;
         });
     }
-} 
+}

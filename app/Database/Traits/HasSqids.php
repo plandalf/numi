@@ -21,7 +21,7 @@ trait HasSqids
 
         return implode('-', array_filter([
             $name ? Str::slug($name) : null,
-            $this->getSqids()->encode([$this->id, (crc32(static::class) % 256)])
+            $this->getSqids()->encode([$this->id, (crc32(static::class) % 256)]),
         ]));
     }
 

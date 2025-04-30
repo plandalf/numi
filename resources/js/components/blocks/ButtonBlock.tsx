@@ -3,7 +3,7 @@ import Numi, { Appearance } from "@/contexts/Numi";
 import cx from "classnames";
 import { useCheckoutState } from "@/pages/Checkout";
 
-// Does Submitting of field forms. 
+// Does Submitting of field forms.
 function ButtonBlockComponent({ context }: { context: BlockContextType }) {
   const { isSubmitting, submitError } = useCheckoutState();
 
@@ -13,7 +13,7 @@ function ButtonBlockComponent({ context }: { context: BlockContextType }) {
     name: 'value',
     defaultValue: 'Submit',
   });
-  
+
   const [type] = Numi.useStateEnumeration({
     name: 'type',
     initialValue: 'submit',
@@ -41,8 +41,8 @@ function ButtonBlockComponent({ context }: { context: BlockContextType }) {
 
   return (
     <div className="space-y-2">
-      <button 
-        type={type} 
+      <button
+        type={type}
         disabled={type === 'submit' && isSubmitting}
         className={cx({
           "border border-gray-300 rounded-md p-2": true,
@@ -57,7 +57,7 @@ function ButtonBlockComponent({ context }: { context: BlockContextType }) {
           border: appearance.border || '1px solid #ccc',
         }}
         onClick={onClick}
-      >  
+      >
         {type === 'submit' && isSubmitting ? (
           <div className="flex items-center justify-center space-x-2">
             <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">

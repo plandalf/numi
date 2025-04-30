@@ -20,4 +20,4 @@ class OrganizationUser extends Pivot
     protected $attributes = [
         'role' => Role::MEMBER,
     ];
-} 
+}

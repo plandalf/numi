@@ -10,7 +10,7 @@ class NoAccessController extends Controller
     public function __invoke(Request $request)
     {
         $organization = $request->user()->currentOrganization;
-        if($organization->subscribed) {
+        if ($organization->subscribed) {
             return redirect()->route('dashboard');
         }
 

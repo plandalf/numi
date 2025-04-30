@@ -28,7 +28,7 @@ class TemplateSeeder extends Seeder
     private function createBasicCheckoutTemplate(): void
     {
         $theme = Theme::factory()->create();
-        
+
         Template::create([
             'name' => 'Basic Checkout Flow',
             'description' => 'A simple, streamlined checkout process perfect for small to medium businesses. Features a clean, single-page design that guides customers through payment with minimal friction.',
@@ -51,43 +51,43 @@ class TemplateSeeder extends Seeder
                                     'backgroundSize' => 'cover',
                                     'backgroundImage' => 'url(saruman.jpg)',
                                     'backgroundRepeat' => 'no-repeat',
-                                    'backgroundPosition' => 'center'
+                                    'backgroundPosition' => 'center',
                                 ],
                                 'blocks' => [
                                     [
                                         'id' => 'text-block-1',
                                         'type' => 'text',
                                         'content' => [
-                                            'value' => 'Start Your Journey'
+                                            'value' => 'Start Your Journey',
                                         ],
-                                        'object' => 'block'
-                                    ]
-                                ]
+                                        'object' => 'block',
+                                    ],
+                                ],
                             ],
                             'content' => [
                                 'blocks' => [
                                     [
                                         'id' => 'checkout-form',
                                         'type' => 'checkout_form',
-                                        'object' => 'block'
-                                    ]
-                                ]
-                            ]
+                                        'object' => 'block',
+                                    ],
+                                ],
+                            ],
                         ],
                         'layout' => [
-                            'sm' => 'split-checkout@v1'
-                        ]
-                    ]
+                            'sm' => 'split-checkout@v1',
+                        ],
+                    ],
                 ],
-                'first_page' => 'page_entry'
-            ]
+                'first_page' => 'page_entry',
+            ],
         ]);
     }
 
     private function createPremiumCheckoutTemplate(): void
     {
         $theme = Theme::factory()->create();
-        
+
         Template::create([
             'name' => 'Premium Multi-step Checkout',
             'description' => 'An enhanced checkout experience with multiple steps and progress tracking. Includes upsell opportunities, saved payment methods, and a seamless mobile experience.',
@@ -96,7 +96,7 @@ class TemplateSeeder extends Seeder
             'preview_images' => [
                 self::PREVIEW_IMAGES['preview-1'],
                 self::PREVIEW_IMAGES['preview-2'],
-                self::PREVIEW_IMAGES['preview-3']
+                self::PREVIEW_IMAGES['preview-3'],
             ],
             'view' => [
                 'id' => 'view_premium_checkout',
@@ -111,8 +111,8 @@ class TemplateSeeder extends Seeder
                                     'backgroundSize' => 'cover',
                                     'backgroundImage' => 'url(ugluk.jpg)',
                                     'backgroundRepeat' => 'no-repeat',
-                                    'backgroundPosition' => 'center'
-                                ]
+                                    'backgroundPosition' => 'center',
+                                ],
                             ],
                             'content' => [
                                 'blocks' => [
@@ -120,37 +120,37 @@ class TemplateSeeder extends Seeder
                                         'id' => 'welcome-message',
                                         'type' => 'text',
                                         'content' => [
-                                            'value' => 'Welcome to Premium Checkout'
+                                            'value' => 'Welcome to Premium Checkout',
                                         ],
-                                        'object' => 'block'
-                                    ]
-                                ]
-                            ]
+                                        'object' => 'block',
+                                    ],
+                                ],
+                            ],
                         ],
                         'layout' => [
-                            'sm' => 'split-checkout@v1'
+                            'sm' => 'split-checkout@v1',
                         ],
                         'next_page' => [
-                            'default_next_page' => 'page_payment'
-                        ]
-                    ]
+                            'default_next_page' => 'page_payment',
+                        ],
+                    ],
                 ],
-                'first_page' => 'page_welcome'
-            ]
+                'first_page' => 'page_welcome',
+            ],
         ]);
     }
 
     private function createEnterpriseCheckoutTemplate(): void
     {
         $theme = Theme::factory()->create();
-        
+
         Template::create([
             'name' => 'Enterprise Checkout Solution',
             'description' => 'A comprehensive checkout solution for large businesses. Features advanced security, analytics integration, customizable workflows, and support for multiple payment providers.',
             'category' => 'Enterprise',
             'theme_id' => $theme->id,
             'preview_images' => [
-                self::PREVIEW_IMAGES['preview-1']
+                self::PREVIEW_IMAGES['preview-1'],
             ],
             'view' => [
                 'id' => 'view_enterprise_checkout',
@@ -165,15 +165,15 @@ class TemplateSeeder extends Seeder
                                     'backgroundSize' => 'cover',
                                     'backgroundImage' => 'url(happy-saruman.jpg)',
                                     'backgroundRepeat' => 'no-repeat',
-                                    'backgroundPosition' => 'center'
-                                ]
+                                    'backgroundPosition' => 'center',
+                                ],
                             ],
                             'content' => [
                                 'blocks' => [
                                     [
                                         'id' => 'enterprise-form',
                                         'type' => 'enterprise_checkout_form',
-                                        'object' => 'block'
+                                        'object' => 'block',
                                     ],
                                     [
                                         'id' => 'features-list',
@@ -185,27 +185,27 @@ class TemplateSeeder extends Seeder
                                                     'key' => 'feature-1',
                                                     'label' => 'Enterprise Grade Security',
                                                     'prefixIcon' => 'shield',
-                                                    'caption' => 'Bank-level security for your transactions'
+                                                    'caption' => 'Bank-level security for your transactions',
                                                 ],
                                                 [
                                                     'key' => 'feature-2',
                                                     'label' => 'Advanced Analytics',
                                                     'prefixIcon' => 'chart',
-                                                    'caption' => 'Detailed insights into your business'
-                                                ]
-                                            ]
-                                        ]
-                                    ]
-                                ]
-                            ]
+                                                    'caption' => 'Detailed insights into your business',
+                                                ],
+                                            ],
+                                        ],
+                                    ],
+                                ],
+                            ],
                         ],
                         'layout' => [
-                            'sm' => 'split-checkout@v1'
-                        ]
-                    ]
+                            'sm' => 'split-checkout@v1',
+                        ],
+                    ],
                 ],
-                'first_page' => 'page_main'
-            ]
+                'first_page' => 'page_main',
+            ],
         ]);
     }
 }

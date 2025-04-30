@@ -4,7 +4,6 @@ namespace App\Models\Order;
 
 use App\Enums\OrderStatus;
 use App\Models\Catalog\Price;
-use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -69,8 +68,6 @@ class OrderItem extends Model
 
     /**
      * Calculate the total amount for this item.
-     *
-     * @return float
      */
     public function getTotalAmountAttribute(): float
     {

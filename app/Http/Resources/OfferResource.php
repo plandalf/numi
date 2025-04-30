@@ -2,10 +2,9 @@
 
 namespace App\Http\Resources;
 
+use App\Models\Theme;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
-use App\Http\Resources\SlotResource;
-use App\Models\Theme;
 
 class OfferResource extends JsonResource
 {
@@ -18,7 +17,7 @@ class OfferResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
-        $theme = $this->theme ? $this->theme : new Theme();
+        $theme = $this->theme ? $this->theme : new Theme;
 
         return [
             'id' => $this->id,

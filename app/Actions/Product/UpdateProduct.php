@@ -12,6 +12,7 @@ class UpdateProduct
     public function __invoke(Product $product, ProductUpdateRequest $request): Product
     {
         $product->update($request->validated());
+
         return $product->fresh();
     }
 }

@@ -1,7 +1,6 @@
 import AppOfferLayout from '@/layouts/app/app-offer-layout';
-import { type BreadcrumbItem } from '@/types';
 import { Block, Offer, ViewSection, type OfferView, type Page, type PageType } from '@/types/offer';
-import { Head, router, useForm } from '@inertiajs/react';
+import { Head } from '@inertiajs/react';
 import {
     Dialog,
     DialogContent,
@@ -17,32 +16,24 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useEffect, useState, useRef, useCallback, useMemo } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { cn } from '@/lib/utils';
-import { MoreVertical, ArrowRightToLine, FileText, CheckSquare, Share2, Plus, Copy, ExternalLink, QrCode, CheckCircle, Fullscreen, MessageSquare, Maximize, PanelLeftClose, AlertCircle } from 'lucide-react';
-import PagePreview, { findBlockInPage, Inspector } from '@/components/offers/page-preview';
+import { MoreVertical, ArrowRightToLine, FileText, CheckSquare } from 'lucide-react';
+import PagePreview from '@/components/offers/page-preview';
 import PageFlowEditor from '@/components/offers/page-flow-editor';
 import { ReactFlowProvider } from '@xyflow/react';
 import update from "immutability-helper";
-import { GripVertical, Type, SquareStack, Image, CreditCard, List } from 'lucide-react';
+import { Type, SquareStack, Image, CreditCard, List } from 'lucide-react';
 import { GlobalStateProvider } from '@/pages/Checkout';
-import { CheckoutSession } from '@/pages/Checkout';
-import { DRAG_TYPES } from '@/components/offers/layout-preview';
 import { DndContext, DragOverlay, useDraggable, closestCenter, DragStartEvent, useDroppable, useDndMonitor, DragPendingEvent, useSensor, PointerSensor, useSensors, rectIntersection, DragOverEvent, DragEndEvent } from "@dnd-kit/core";
 
 import { blockTypes, getBlockMeta } from '@/components/blocks';
 import { v4 as uuidv4 } from 'uuid';
 import React, { createContext, useContext } from 'react';
 import { Sidebar } from '@/components/offers/sidebar';
-import { CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { ToggleGroupItem } from '@/components/ui/toggle-group';
-import { ToggleGroup } from '@/components/ui/toggle-group';
-import { QRCodeSVG } from 'qrcode.react';
 import { Theme } from '@/types/theme';
-import { PublishStatusCard } from '@/components/offers/publish-status-card';
 import { PageShare } from '@/components/offers/page-share';
+import { CheckoutSession, IntegrationClient } from '@/types/checkout';
 
 
 export interface EditProps {
@@ -172,7 +163,7 @@ export function useEditor() {
   return ctx;
 }
 
-function EditorProvider({ offer, themes, showNameDialog, children }: React.PropsWithChildren<EditProps>) {
+export function EditorProvider({ offer, themes, showNameDialog, children }: React.PropsWithChildren<EditProps>) {
   // --- move all state/logic from Edit here ---
   const [isNameDialogOpen, setIsNameDialogOpen] = useState(false);
   const [selectedPage, setSelectedPage] = useState<string>(offer.view?.first_page);
@@ -184,7 +175,7 @@ function EditorProvider({ offer, themes, showNameDialog, children }: React.Props
   const [showAddPageDialog, setShowAddPageDialog] = useState(false);
   const [isReady, setIsReady] = useState(false);
   const [viewMode, setViewMode] = useState<'editor' | 'preview' | 'share'>('editor');
-  
+
   // const { data, setData, put, processing, errors, setDefaults } = useForm({
   //   name: offer.name,
   //   view: offer.view
@@ -528,15 +519,25 @@ function EditApp() {
     line_items: [
       {
         id: '123',
+        slot: '123',
+        name: '123',
+        quantity: 1,
+        subtotal: 100,
+        taxes: 10,
+        shipping: 5,
+        discount: 10,
+        total: 105,
       }
     ],
     currency: 'USD',
     subtotal: 100,
-    taxes: 10,
-    shipping: 5,
     discount: 10,
     total: 105,
-    metadata: {}
+    metadata: {},
+    integration_client: IntegrationClient.STRIPE,
+    status: 'open',
+    taxes: 10,
+    shipping: 5
   }
 
 

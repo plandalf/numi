@@ -9,7 +9,7 @@ use Illuminate\Support\Str;
 if (! function_exists('get_integration_client_class')) {
     function get_integration_client_class(Integration $integration)
     {
-        return match($integration->type) {
+        return match ($integration->type) {
             IntegrationType::STRIPE => new Stripe($integration),
             IntegrationType::STRIPE_TEST => new Stripe($integration),
             default => null, // TODO: create Plandalf integration client

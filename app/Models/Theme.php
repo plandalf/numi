@@ -3,7 +3,6 @@
 namespace App\Models;
 
 use App\Database\Model;
-use App\Models\Organization;
 use App\Models\Store\Offer;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;

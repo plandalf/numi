@@ -19,7 +19,7 @@ class CreateCheckoutSessionAction
         ]);
 
         foreach ($offer->slots as $slot) {
-            if (!$slot->default_price_id) {
+            if (! $slot->default_price_id) {
                 continue;
             }
 

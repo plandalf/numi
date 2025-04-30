@@ -25,7 +25,7 @@ class EmailActivity extends WorkflowActivity
         $body = TemplateResolver::get($event, Arr::get($node->arguments, 'body')) ?? '';
 
         // Format recipients for Mail::to()
-        $formattedRecipients = collect($recipients)->map(function($recipient) {
+        $formattedRecipients = collect($recipients)->map(function ($recipient) {
             if (isset($recipient['name'])) {
                 return [$recipient['email'] => $recipient['name']];
             }
@@ -34,7 +34,7 @@ class EmailActivity extends WorkflowActivity
         })->toArray();
 
         // note: new mailable
-        $mailable = new ActivityEmail();
+        $mailable = new ActivityEmail;
         $mailable->subject($subject);
         $mailable->html($body);
 

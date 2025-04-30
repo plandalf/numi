@@ -46,7 +46,7 @@ class CreateOrderItemActionTest extends TestCase
             'quantity' => 2,
         ]);
 
-        $action = new CreateOrderItemAction();
+        $action = new CreateOrderItemAction;
 
         // Act
         $orderItem = $action($order, $checkoutLineItem);

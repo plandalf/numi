@@ -2,12 +2,11 @@
 
 namespace Database\Factories\Order;
 
-use App\Models\Order\Order;
-use App\Models\Organization;
-use App\Models\User;
-use Illuminate\Database\Eloquent\Factories\Factory;
 use App\Enums\OrderStatus;
 use App\Models\Checkout\CheckoutSession;
+use App\Models\Order\Order;
+use App\Models\Organization;
+use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
  * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Order\Order>

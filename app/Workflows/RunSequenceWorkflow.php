@@ -2,9 +2,9 @@
 
 namespace App\Workflows;
 
+use App\Models\Automation\Node;
 use App\Models\Automation\StoredWorkflow;
 use App\Models\Automation\Trigger;
-use App\Models\Automation\Node;
 use App\Models\ResourceEvent;
 use App\Workflows\Automation\ActivitySchemaRegistry;
 use Workflow\ActivityStub;

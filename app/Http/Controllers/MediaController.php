@@ -5,8 +5,8 @@ namespace App\Http\Controllers;
 use App\Http\Resources\MediaResource;
 use App\Models\Media;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 class MediaController extends Controller
@@ -25,8 +25,8 @@ class MediaController extends Controller
         // Generate a unique filename
         $extension = pathinfo($request->filename, PATHINFO_EXTENSION);
         $uuid = Str::uuid();
-        $filename = $uuid . '.' . $extension;
-//        $path = 'uploads/' . $filename;
+        $filename = $uuid.'.'.$extension;
+        //        $path = 'uploads/' . $filename;
 
         $key = sprintf(
             'm/%s/%s.%s',
@@ -76,7 +76,7 @@ class MediaController extends Controller
         }
 
         // Verify the file exists in S3
-        if (!Storage::disk('private')->exists($media->path)) {
+        if (! Storage::disk('private')->exists($media->path)) {
             throw ValidationException::withMessages([
                 'media' => ['The file has not been uploaded.'],
             ]);

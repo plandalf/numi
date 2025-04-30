@@ -3,7 +3,7 @@ import { AppShell } from '@/components/app-shell';
 
 import { Button } from '@/components/ui/button';
 import { Link, router } from '@inertiajs/react';
-import { ArrowLeft, CircleCheck, Eye, Flame, Folder, HomeIcon, LayoutGrid, Menu, Pencil, Redo, Search, Share, Undo, ChevronDown, X } from 'lucide-react';
+import { ArrowLeft, CircleCheck, Eye, Flame, Folder, HomeIcon, LayoutGrid, Menu, Pencil, Redo, Search, Share, Undo, ChevronDown, X, DollarSign } from 'lucide-react';
 
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
@@ -41,7 +41,7 @@ function OfferHeader({ offer, isNameDialogOpen, setIsNameDialogOpen }: AppHeader
     const [status, setStatus] = useState(offer.status);
     const isMobile = useIsMobile();
     const { viewMode, setViewMode } = useEditor();
-    
+
     const [showPublishDialog, setShowPublishDialog] = useState(false);
 
     // Preview mode state
@@ -113,7 +113,7 @@ function OfferHeader({ offer, isNameDialogOpen, setIsNameDialogOpen }: AppHeader
                     <span className="text-lg font-bold text-white truncate">
                         {offer.name || 'Untitled Offer'}
                     </span>
-                    <Button 
+                    <Button
                         variant="link"
                         size="icon"
                         onClick={() => setIsNameDialogOpen(true)}
@@ -178,8 +178,8 @@ function OfferHeader({ offer, isNameDialogOpen, setIsNameDialogOpen }: AppHeader
                         </DropdownMenu>
                     </div>
                     <div className="flex items-center space-x-3 h-full flex-shrink-0">
-                        <Button 
-                            variant="outline" 
+                        <Button
+                            variant="outline"
                             tooltip="Exit the current preview mode"
                             onClick={() => setViewMode('editor')}
                             className={cn(
@@ -195,8 +195,8 @@ function OfferHeader({ offer, isNameDialogOpen, setIsNameDialogOpen }: AppHeader
 
             {isShareMode && (
                 <div className="flex items-center space-x-3 h-full flex-shrink-0">
-                    <Button 
-                        variant="outline" 
+                    <Button
+                        variant="outline"
                         tooltip="Exit the current preview mode"
                         onClick={() => setViewMode('editor')}
                         className={cn(
@@ -211,8 +211,8 @@ function OfferHeader({ offer, isNameDialogOpen, setIsNameDialogOpen }: AppHeader
 
             {isEditorMode && (
               <div className="flex items-center space-x-3 h-full flex-shrink-0">
-                <Button 
-                    variant="outline" 
+                <Button
+                    variant="outline"
                     tooltip="Preview the design of the Offer."
                     onClick={() => setViewMode('preview')}
                     className={cn(
@@ -270,6 +270,18 @@ function OfferHeader({ offer, isNameDialogOpen, setIsNameDialogOpen }: AppHeader
                     {isMobile && <Share className="size-4" />}
                     {!isMobile && 'Share'}
                 </Button>
+                <Button
+                    variant="outline"
+                    tooltip="Preview the design of the Offer."
+                    onClick={() =>  window.location.href = `${window.location.origin}/offers/${offer.id}/pricing`}
+                    className={cn(
+                        "transition-colors",
+                        isPreviewMode ? "bg-primary text-primary-foreground" : ""
+                    )}
+                >
+                    {isMobile && <DollarSign className="size-4" />}
+                    {!isMobile && 'Pricing'}
+                </Button>
                 <Button className="flex flex-row gap-x-2" variant="outline-transparent" tooltip="Save the current changes">
                     <CircleCheck className="size-4" />
                     {!isMobile && 'Save'}
@@ -314,8 +326,8 @@ export default function AppOfferLayout({ children, offer }: Props) {
 
     return (
         <AppShell>
-            <OfferHeader 
-                offer={offer} 
+            <OfferHeader
+                offer={offer}
                 isNameDialogOpen={isNameDialogOpen}
                 setIsNameDialogOpen={setIsNameDialogOpen}
             />

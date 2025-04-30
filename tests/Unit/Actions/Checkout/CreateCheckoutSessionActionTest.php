@@ -19,6 +19,7 @@ class CreateCheckoutSessionActionTest extends TestCase
     use RefreshDatabase;
 
     private CreateCheckoutSessionAction $action;
+
     private $createCheckoutLineItemAction;
 
     protected function setUp(): void

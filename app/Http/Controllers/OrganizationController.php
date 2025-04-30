@@ -10,7 +10,6 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Session;
-use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -55,7 +54,7 @@ class OrganizationController extends Controller
                     (int) config('cashier.trial_days')
                 ),
             ]);
-            
+
             $organization->users()->attach($request->user());
             $request->user()->switchOrganization($organization);
 
@@ -107,7 +106,7 @@ class OrganizationController extends Controller
     public function joinPage(Request $request, string $joinToken): Response
     {
         $organization = $this->organizationService->getOrganizationByJoinToken($joinToken);
-        
+
         // Store the join token in the session for later use
         Session::put('join_token', $joinToken);
 
@@ -123,18 +122,18 @@ class OrganizationController extends Controller
     public function join(Request $request): RedirectResponse
     {
         $joinToken = $request->input('join_token') ?? Session::get('join_token');
-        
-        if (!$joinToken) {
+
+        if (! $joinToken) {
             return redirect()->route('home')->with('error', 'Invalid join link.');
         }
 
         $user = $request->user();
 
         // If the user is not logged in, redirect to the register page
-        if(!$user) {
+        if (! $user) {
             return redirect()->route('register');
         }
-        
+
         $organization = $this->organizationService->getOrganizationByJoinToken($joinToken);
 
         if ($organization) {
@@ -146,10 +145,10 @@ class OrganizationController extends Controller
 
             // Join the organization
             $this->organizationService->attachUserToOrganization($user, $organization);
-            
+
             // Clear the join token from the session
             Session::forget('join_token');
-            
+
             return redirect()->route('dashboard')->with('success', 'Successfully joined organization.');
         }
 
@@ -160,7 +159,7 @@ class OrganizationController extends Controller
     {
         $user = request()->user();
 
-        if (!$user->organizations->contains($organization->id)) {
+        if (! $user->organizations->contains($organization->id)) {
             return redirect()->back()->with('error', 'You do not have access to this organization.');
         }
 
@@ -172,7 +171,7 @@ class OrganizationController extends Controller
     public function settings(): Response
     {
         $organization = request()->user()->currentOrganization;
-        
+
         return Inertia::render('organizations/settings/general', [
             'organization' => new OrganizationResource($organization),
         ]);
@@ -182,7 +181,7 @@ class OrganizationController extends Controller
     {
         $organization = request()->user()->currentOrganization;
         $organization->load('users');
-        
+
         return Inertia::render('organizations/settings/team', [
             'organization' => new OrganizationResource($organization),
         ]);
@@ -199,7 +198,7 @@ class OrganizationController extends Controller
         }
 
         // Check if the user is a member of the organization
-        if (!$organization->users()->where('user_id', $user->id)->exists()) {
+        if (! $organization->users()->where('user_id', $user->id)->exists()) {
             return redirect()->back()->with('error', 'User is not a member of this organization.');
         }
 
@@ -207,7 +206,7 @@ class OrganizationController extends Controller
         $organization->users()->detach($user->id);
 
         // Switch the main org of the user to the first available organization if it is the current user's main organization
-        if($organization->id === $user->current_organization_id) { 
+        if ($organization->id === $user->current_organization_id) {
 
             $user->switchToAvailableOrganization();
         }

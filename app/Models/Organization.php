@@ -3,19 +3,19 @@
 namespace App\Models;
 
 use App\Models\Store\Offer;
-use App\Models\Theme;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
 use Laravel\Cashier\Billable;
+
 use function Illuminate\Events\queueable;
 
 class Organization extends Model
 {
     /** @use HasFactory<\Database\Factories\OrganizationFactory> */
-    use HasFactory, Billable;
+    use Billable, HasFactory;
 
     protected $fillable = [
         'name',
@@ -94,7 +94,7 @@ class Organization extends Model
 
     public function getTrialDaysLeftAttribute()
     {
-        if (!config('cashier.enable_billing')) {
+        if (! config('cashier.enable_billing')) {
             return 0;
         }
 
@@ -103,7 +103,7 @@ class Organization extends Model
 
     public function getSubscribedAttribute()
     {
-        if (!config('cashier.enable_billing')) {
+        if (! config('cashier.enable_billing')) {
             return true;
         }
 
@@ -112,15 +112,16 @@ class Organization extends Model
 
     public function getTrialPeriodExpiredAttribute()
     {
-        if (!config('cashier.enable_billing')) {
+        if (! config('cashier.enable_billing')) {
             return false;
         }
+
         return $this->trial_ends_at && $this->trial_ends_at->isPast();
     }
 
     public function getOnTrialAttribute()
     {
-        if (!config('cashier.enable_billing')) {
+        if (! config('cashier.enable_billing')) {
             return false;
         }
 

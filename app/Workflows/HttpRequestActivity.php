@@ -18,7 +18,6 @@ class HttpRequestActivity extends Activity
         // For example:
         // $response = Http::withHeaders(['Authorization' => 'Bearer token'])->$method($url, $data);
 
-
-        return 'Response from ' . $url;
+        return 'Response from '.$url;
     }
 }

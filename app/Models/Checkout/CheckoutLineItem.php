@@ -30,6 +30,11 @@ class CheckoutLineItem extends Model
         return $this->belongsTo(Price::class);
     }
 
+    public function getCurrencyAttribute()
+    {
+        return $this->price->currency;
+    }
+
     public function session()
     {
         return $this->belongsTo(CheckoutSession::class);
@@ -38,5 +43,19 @@ class CheckoutLineItem extends Model
     public function slot()
     {
         return $this->belongsTo(Slot::class, 'slot_id');
+    }
+
+    public function getLineItemAttribute()
+    {
+        return [
+            'id' => $this->id,
+            'slot' => $this->slot->name,
+            'name' => $this->slot->name,
+            'quantity' => $this->quantity,
+            'subtotal' => $this->price->calculateAmount()->getAmount(),
+            // 'taxes' => $this->price->calculateTaxes()->getAmount(),
+            'total' => $this->price->calculateAmount()->getAmount(),
+            // 'discount' => $this->price->calculateDiscount()->getAmount(),
+        ];
     }
 }

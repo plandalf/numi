@@ -9,12 +9,12 @@ class CurrencyCast implements CastsAttributes
 {
     public function get(Model $model, string $key, mixed $value, array $attributes)
     {
-        return !empty($value) ? new \Money\Currency($value) : null;
+        return ! empty($value) ? new \Money\Currency($value) : null;
     }
 
     public function set(Model $model, string $key, mixed $value, array $attributes)
     {
-        return match(true) {
+        return match (true) {
             is_null($value) => null,
             is_string($value) => $value,
             $value instanceof \Money\Currency => $value->getCode(),

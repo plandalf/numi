@@ -2,7 +2,6 @@
 
 namespace Database\Seeders\Store;
 
-use App\Models\Organization;
 use App\Models\Store\Offer;
 use App\Models\User;
 use Database\Seeders\UserSeeder;

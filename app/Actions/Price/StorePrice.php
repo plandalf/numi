@@ -25,7 +25,7 @@ class StorePrice
 
         $integrationClient = $product->integrationClient();
 
-        if($integrationClient instanceof HasPrices) {
+        if ($integrationClient instanceof HasPrices) {
             /**
              * @todo implement DTO (data transfer object) or other design patterns
              * to avoid exposing integration specific model to our domain

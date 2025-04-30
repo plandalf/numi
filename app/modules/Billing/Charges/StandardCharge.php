@@ -6,7 +6,7 @@ use App\Models\Catalog\Price;
 use Money\Money;
 use Parental\HasParent;
 
-class OneTimeCharge extends Price
+class StandardCharge extends Price
 {
     use HasParent;
 
