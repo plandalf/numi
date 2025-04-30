@@ -281,7 +281,7 @@ function BlockRenderer({ block, children }: {
 }) {
   const globalStateContext = useContext(GlobalStateContext);
 
-  const { selectedBlockId, setSelectedBlockId } = useEditor();  
+  const { selectedBlockId, setSelectedBlockId, data } = useEditor();  
   const {
     attributes,
     listeners,
@@ -306,6 +306,7 @@ function BlockRenderer({ block, children }: {
   }
   
   const blockContext: BlockContextType = {
+    theme: data?.theme,
     blockId: block.id,
     blockConfig: block,
     globalState: globalStateContext as unknown as GlobalState,

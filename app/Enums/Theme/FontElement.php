@@ -18,6 +18,7 @@ enum FontElement: string
     case BOOKMAN = 'Bookman';
     case COMIC_SANS_MS = 'Comic Sans MS';
     case IMPACT = 'Impact';
+    case INSTRUMENT_SANS = 'Instrument Sans';
 
     public static function values(): array
     {

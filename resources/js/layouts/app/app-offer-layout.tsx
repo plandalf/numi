@@ -1,79 +1,34 @@
 import { AppContent } from '@/components/app-content';
 import { AppShell } from '@/components/app-shell';
-import type { PropsWithChildren } from 'react';
 
-import { Breadcrumbs } from '@/components/breadcrumbs';
-import { Icon } from '@/components/icon';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { NavigationMenu, NavigationMenuItem, NavigationMenuList, navigationMenuTriggerStyle } from '@/components/ui/navigation-menu';
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { UserMenuContent } from '@/components/user-menu-content';
-import { useInitials } from '@/hooks/use-initials';
-import { cn } from '@/lib/utils';
-import { type BreadcrumbItem, type NavItem, type SharedData } from '@/types';
-import { Link, router, usePage } from '@inertiajs/react';
-import { BookOpen, Folder, HomeIcon, LayoutGrid, Menu, Search } from 'lucide-react';
-import AppLogoIcon from '@/components/app-logo-icon';
-import AppLogo from '@/components/app-logo';
+import { Link, router } from '@inertiajs/react';
+import { ArrowLeft, CircleCheck, Eye, Flame, Folder, HomeIcon, LayoutGrid, Menu, Pencil, Redo, Search, Share, Undo, ChevronDown, X } from 'lucide-react';
+
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { useState } from 'react';
+import { Separator } from '@/components/ui/separator';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
+import { useEditor } from '@/pages/offers/Edit';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { PublishStatusCard } from '@/components/offers/publish-status-card';
 
 interface Offer {
     id: number;
     name: string;
     created_at: string;
     updated_at: string;
+    status: string;
 }
 
 interface Props {
     children: React.ReactNode;
     offer: Offer;
 }
-
-function getMainNavItems(): NavItem[] {
-    return [
-        {
-            title: 'Edit',
-            href: 'offers.edit',
-        },
-        {
-            title: 'Pricing',
-            href: 'offers.pricing',
-        },
-        {
-            title: 'Integrate',
-            href: 'offers.integrate',
-        },
-        {
-            title: 'Sharing',
-            href: 'offers.sharing',
-        },
-        {
-            title: 'Settings',
-            href: 'offers.settings',
-        },
-    ];
-}
-
-const rightNavItems: NavItem[] = [
-    {
-        title: 'Repository',
-        href: 'https://github.com/laravel/react-starter-kit',
-        icon: Folder,
-    },
-    {
-        title: 'Documentation',
-        href: 'https://laravel.com/docs/starter-kits',
-        icon: BookOpen,
-    },
-];
-
-const activeItemStyles = '!text-teal-900 !dark:bg-teal-800 !dark:text-teal-100 !bg-teal-50';
 
 interface AppHeaderProps {
     offer: Offer;
@@ -82,11 +37,46 @@ interface AppHeaderProps {
 }
 
 function OfferHeader({ offer, isNameDialogOpen, setIsNameDialogOpen }: AppHeaderProps) {
-    const page = usePage<SharedData>();
-    const { auth } = page.props;
-    const getInitials = useInitials();
-    const mainNavItems = getMainNavItems();
     const [name, setName] = useState(offer.name);
+    const [status, setStatus] = useState(offer.status);
+    const isMobile = useIsMobile();
+    const { viewMode, setViewMode } = useEditor();
+    
+    const [showPublishDialog, setShowPublishDialog] = useState(false);
+
+    // Preview mode state
+    const [previewType, setPreviewType] = useState<'desktop' | 'mobile'>('desktop');
+    const [previewDevice, setPreviewDevice] = useState<string>('iphone_14');
+
+    // Device lists
+    const mobileDevices = [
+      { label: 'iPhone 14', value: 'iphone_14', width: 390, height: 844 },
+      { label: 'iPhone SE', value: 'iphone_se', width: 375, height: 667 },
+      { label: 'iPhone 13 Pro Max', value: 'iphone_13_pro_max', width: 428, height: 926 },
+      { label: 'Samsung S23', value: 'samsung_s23', width: 412, height: 915 },
+      { label: 'Google Pixel 7', value: 'pixel_7', width: 412, height: 915 },
+      { label: 'OnePlus 11', value: 'oneplus_11', width: 412, height: 919 },
+      { label: 'iPhone XR', value: 'iphone_xr', width: 414, height: 896 },
+      { label: 'iPhone 12 Mini', value: 'iphone_12_mini', width: 360, height: 780 },
+      { label: 'Samsung Note 20', value: 'note_20', width: 412, height: 915 },
+      { label: 'iPhone 8 Plus', value: 'iphone_8_plus', width: 414, height: 736 },
+    ];
+    const desktopDevices = [
+      { label: '1024 x 768', value: '1024x768', width: 1024, height: 768 },
+      { label: '1280 x 800', value: '1280x800', width: 1280, height: 800 },
+      { label: '1366 x 768', value: '1366x768', width: 1366, height: 768 },
+      { label: '1440 x 900', value: '1440x900', width: 1440, height: 900 },
+      { label: '1536 x 864', value: '1536x864', width: 1536, height: 864 },
+      { label: '1600 x 900', value: '1600x900', width: 1600, height: 900 },
+      { label: '1680 x 1050', value: '1680x1050', width: 1680, height: 1050 },
+      { label: '1920 x 1080', value: '1920x1080', width: 1920, height: 1080 },
+      { label: '2048 x 1152', value: '2048x1152', width: 2048, height: 1152 },
+      { label: '2560 x 1440', value: '2560x1440', width: 2560, height: 1440 },
+    ];
+    const currentDevice = previewType === 'mobile'
+      ? mobileDevices.find(d => d.value === previewDevice)
+      : desktopDevices.find(d => d.value === previewDevice);
+    const deviceOptions = previewType === 'mobile' ? mobileDevices : desktopDevices;
 
     const handleNameSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -99,184 +89,222 @@ function OfferHeader({ offer, isNameDialogOpen, setIsNameDialogOpen }: AppHeader
         });
     };
 
+    const isPreviewMode = viewMode === 'preview';
+    const isShareMode = viewMode === 'share';
+    const isEditorMode = viewMode === 'editor';
+
+    const offerUrl = `${window.location.origin}/o/${offer.id}`;
+
+    const handlePublish = () => {
+        setStatus('live');
+        setShowPublishDialog(true);
+    };
+
     return (
-        <div className="border-sidebar-border/80 border-b">
-            <div className="mx-auto flex h-14 items-center px-4 md:max-w-7xl">
-                {/* Mobile Menu */}
-                <div className="lg:hidden">
-                    <Sheet>
-                        <SheetTrigger asChild>
-                            <Button variant="ghost" size="icon" className="mr-2 h-[34px] w-[34px]">
-                                <Menu className="h-5 w-5" />
-                            </Button>
-                        </SheetTrigger>
-                        <SheetContent side="left" className="bg-sidebar flex h-full w-64 flex-col items-stretch justify-between">
-                            <SheetTitle className="sr-only">Navigation Menu</SheetTitle>
-                            <SheetHeader className="flex justify-start text-left">
-                                <AppLogoIcon className="h-6 w-6 fill-current text-black dark:text-white" />
-                            </SheetHeader>
-                            <div className="flex h-full flex-1 flex-col space-y-4 p-4">
-                                <div className="flex h-full flex-col justify-between text-sm">
-                                    <div className="flex flex-col space-y-4">
-                                        {mainNavItems.map((item) => {
-                                            const isActive = route().current(item.href);
-                                            return (
-                                                <Link 
-                                                    key={item.title} 
-                                                    href={item.href} 
-                                                    className={cn(
-                                                        "flex items-center space-x-2 font-medium p-2 rounded-md",
-                                                        { "bg-gray-200": isActive }
-                                                    )}
-                                                >
-                                                    {item.icon && <Icon iconNode={item.icon} className="h-5 w-5" />}
-                                                    <span>{item.title}</span>
-                                                </Link>
-                                            );
-                                        })}
-                                    </div>
-
-                                    <div className=" flex flex-col space-y-4 hidden">
-                                        {rightNavItems.map((item) => (
-                                            <a
-                                                key={item.title}
-                                                href={item.href}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="flex items-center space-x-2 font-medium"
-                                            >
-                                                {item.icon && <Icon iconNode={item.icon} className="h-5 w-5" />}
-                                                <span>{item.title}</span>
-                                            </a>
-                                        ))}
-                                    </div>
-                                </div>
-                            </div>
-                        </SheetContent>
-                    </Sheet>
+        <div className="border-sidebar-border/80 border-b bg-blue-950 flex justify-between h-14 items-center p-3 gap-x-4">
+            {/* Left side */}
+            <div className="flex gap-x-4 items-center min-w-0">
+                <Link href="/dashboard" prefetch>
+                    <Button variant="outline" size="icon" className="flex-shrink-0 group">
+                        <ArrowLeft className="size-4 text-black group-hover:mr-1 transition-all" />
+                    </Button>
+                </Link>
+                <div className="flex items-center space-x-2 min-w-0">
+                    <span className="text-lg font-bold text-white truncate">
+                        {offer.name || 'Untitled Offer'}
+                    </span>
+                    <Button 
+                        variant="link"
+                        size="icon"
+                        onClick={() => setIsNameDialogOpen(true)}
+                        className="text-sm font-medium text-white flex-shrink-0"
+                        tooltip="Edit Name"
+                    >
+                        <Pencil className="size-4" />
+                    </Button>
                 </div>
-
-                <div className="flex items-center space-x-2 flex-shrink-0">
-                    <Link href="/dashboard" prefetch className="mr-5">
-                        <HomeIcon className="size-5" />
-                    </Link>
-            
-                    <TooltipProvider delayDuration={0}>
-                        <Tooltip>
-                            <TooltipTrigger asChild>
-                                <Button 
-                                    variant="outline"
-                                    onClick={() => setIsNameDialogOpen(true)}
-                                    className="text-sm font-medium cursor-text py-1 px-2 h-auto shadow-none border-transparent hover:border-gray-200"
-                                >
-                                    {offer.name || 'Untitled Offer'}
-                                </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                                <p>Edit Name</p>
-                            </TooltipContent>
-                        </Tooltip>
-                    </TooltipProvider>
-
-                    <Dialog open={isNameDialogOpen} onOpenChange={setIsNameDialogOpen}>
-                        <DialogContent>
-                            <DialogHeader>
-                                <DialogTitle>Name your offer</DialogTitle>
-                                <DialogDescription>
-                                    Give your offer a name that describes what you're selling.
-                                </DialogDescription>
-                            </DialogHeader>
-                            <form onSubmit={handleNameSubmit} className="space-y-4">
-                                <div className="space-y-2">
-                                    <Label htmlFor="name">Name</Label>
-                                    <Input
-                                        id="name"
-                                        value={name}
-                                        onChange={e => setName(e.target.value)}
-                                        placeholder="Enter offer name"
-                                        autoFocus
-                                    />
-                                </div>
-                                <div className="flex justify-end">
-                                    <Button type="submit">
-                                        Save
-                                    </Button>
-                                </div>
-                            </form>
-                        </DialogContent>
-                    </Dialog>
-                </div>
-
-                {/* Desktop Navigation */}
-                <div className="ml-6 hidden h-full items-center space-x-6 lg:flex justify-center w-full">
-                    <NavigationMenu className="flex h-full items-stretch">
-                        <NavigationMenuList className="flex h-full items-stretch space-x-2">
-                            {mainNavItems.map((item, index) => {
-                                const isActive = route().current(item.href);
-                                return (
-                                    <NavigationMenuItem key={index} className="relative flex h-full items-center">
-                                        <Link
-                                            href={route(item.href, { offer: offer.id })}
-                                            className={cn(
-                                                navigationMenuTriggerStyle(),
-                                                { [activeItemStyles]: isActive },
-                                                'h-9 cursor-pointer px-3'
-                                            )}
-                                        >
-                                            {item.title}
-                                        </Link>
-                                    </NavigationMenuItem>
-                                );
-                            })}
-                        </NavigationMenuList>
-                    </NavigationMenu>
-                </div>
-
-                <div className="ml-auto flex items-center space-x-2">
-                    <div className="relative flex items-center space-x-1">
-                        {/* <Button variant="ghost" size="icon" className="group h-9 w-9 cursor-pointer">
-                            <Search className="!size-5 opacity-80 group-hover:opacity-100" />
-                        </Button> */}
-                        <div className="hidden">
-                            {rightNavItems.map((item) => (
-                                <TooltipProvider key={item.title} delayDuration={0}>
-                                    <Tooltip>
-                                        <TooltipTrigger>
-                                            <a
-                                                href={item.href}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="group text-accent-foreground ring-offset-background hover:bg-accent hover:text-accent-foreground focus-visible:ring-ring ml-1 inline-flex h-9 w-9 items-center justify-center rounded-md bg-transparent p-0 text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50"
-                                            >
-                                                <span className="sr-only">{item.title}</span>
-                                                {item.icon && <Icon iconNode={item.icon} className="size-5 opacity-80 group-hover:opacity-100" />}
-                                            </a>
-                                        </TooltipTrigger>
-                                        <TooltipContent>
-                                            <p>{item.title}</p>
-                                        </TooltipContent>
-                                    </Tooltip>
-                                </TooltipProvider>
-                            ))}
-                        </div>
-                    </div>
-                    <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" className="size-10 rounded-full p-1">
-                                <Avatar className="size-8 overflow-hidden rounded-full">
-                                    <AvatarImage src={auth.user.avatar} alt={auth.user.name} />
-                                    <AvatarFallback className="rounded-lg bg-neutral-200 text-black dark:bg-neutral-700 dark:text-white">
-                                        {getInitials(auth.user.name)}
-                                    </AvatarFallback>
-                                </Avatar>
-                            </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent className="w-56" align="end">
-                            <UserMenuContent user={auth.user} />
-                        </DropdownMenuContent>
-                    </DropdownMenu>
-                </div>
+                {!isMobile && (
+                    <Badge variant="secondary" className={cn("capitalize flex-shrink-0", {
+                        "bg-green-500": offer.status === 'live',
+                        "bg-white": offer.status === 'draft',
+                    })}>{offer.status}</Badge>
+                )}
             </div>
+
+            {/* Right side */}
+            {isPreviewMode && (
+                <>
+                    <div className="flex items-center gap-4 px-2 py-1 rounded-lg">
+                        <div className="flex bg-[#E9EBFB] rounded p-1">
+                            <Button
+                                variant='ghost'
+                                size="sm"
+                                className={cn('rounded px-4 py-2 text-sm font-medium w-24', previewType === 'desktop' && 'bg-white text-black shadow')}
+                                onClick={() => setPreviewType('desktop')}
+                            >
+                                Desktop
+                            </Button>
+                            <Button
+                                variant='ghost'
+                                size="sm"
+                                className={cn('rounded px-4 py-2 text-sm font-medium w-24', previewType === 'mobile' ? 'bg-white text-black shadow' : 'text-gray-900')}
+                                onClick={() => setPreviewType('mobile')}
+                            >
+                                Mobile
+                            </Button>
+                        </div>
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" className="text-[#A3B6D6] px-2 py-1 flex items-center justify-between gap-1 text-sm font-medium w-40">
+                                    {currentDevice ? (
+                                        <span>{currentDevice.label}</span>
+                                    ) : (
+                                        <span>Select device</span>
+                                    )}
+                                    <ChevronDown className="w-4 h-4 ml-1" />
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                                {deviceOptions.map(device => (
+                                    <DropdownMenuItem
+                                        key={device.value}
+                                        onClick={() => setPreviewDevice(device.value)}
+                                        className={cn(previewDevice === device.value && 'font-bold text-sm')}
+                                    >
+                                        <span>{device.label}</span>
+                                    </DropdownMenuItem>
+                                ))}
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                    </div>
+                    <div className="flex items-center space-x-3 h-full flex-shrink-0">
+                        <Button 
+                            variant="outline" 
+                            tooltip="Exit the current preview mode"
+                            onClick={() => setViewMode('editor')}
+                            className={cn(
+                                "transition-colors"
+                            )}
+                        >
+                            <X className="size-4" />
+                            Exit Preview
+                        </Button>
+                    </div>
+                </>
+            )}
+
+            {isShareMode && (
+                <div className="flex items-center space-x-3 h-full flex-shrink-0">
+                    <Button 
+                        variant="outline" 
+                        tooltip="Exit the current preview mode"
+                        onClick={() => setViewMode('editor')}
+                        className={cn(
+                            "transition-colors"
+                        )}
+                    >
+                        <X className="size-4" />
+                        Exit Sharing
+                    </Button>
+                </div>
+            )}
+
+            {isEditorMode && (
+              <div className="flex items-center space-x-3 h-full flex-shrink-0">
+                <Button 
+                    variant="outline" 
+                    tooltip="Preview the design of the Offer."
+                    onClick={() => setViewMode('preview')}
+                    className={cn(
+                        "transition-colors",
+                        isPreviewMode ? "bg-primary text-primary-foreground" : ""
+                    )}
+                >
+                    {isMobile && <Eye className="size-4" />}
+                    {!isMobile && 'Preview'}
+                </Button>
+                <DropdownMenu open={showPublishDialog} onOpenChange={setShowPublishDialog}>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      className="flex flex-row gap-x-2"
+                      variant="outline-transparent"
+                      tooltip="Publish the Offer"
+                      onClick={handlePublish}
+                    >
+                      <Flame className="size-4" />
+                      {!isMobile && 'Publish'}
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="center" className="w-[400px] mb-10 p-0 rounded-xl shadow-lg border">
+                    <div className="p-4 flex flex-col items-center">
+                      <PublishStatusCard isPublished={true} />
+                      <div className="w-full mt-2 mb-4">
+                        <Label className="text-xs mb-1">Experience link</Label>
+                        <div className="flex items-center gap-2">
+                          <Input
+                            className="flex-1 text-xs"
+                            value={offerUrl}
+                            readOnly
+                          />
+                          <Button
+                            type="button"
+                            size="sm"
+                            className="px-3"
+                            onClick={() => navigator.clipboard.writeText(`htthttps://numi-main-tf0jzg.laravel.com/offer/${offer.id}`)}
+                          >
+                            Copy
+                          </Button>
+                        </div>
+                      </div>
+                      <Button className="w-full mt-2" variant="outline">
+                        More sharing options
+                      </Button>
+                    </div>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+                <Button
+                    variant="outline-transparent"
+                    tooltip="Share to other platforms"
+                    onClick={() => setViewMode('share')}
+                >
+                    {isMobile && <Share className="size-4" />}
+                    {!isMobile && 'Share'}
+                </Button>
+                <Button className="flex flex-row gap-x-2" variant="outline-transparent" tooltip="Save the current changes">
+                    <CircleCheck className="size-4" />
+                    {!isMobile && 'Save'}
+                </Button>
+            </div>
+            )}
+
+            {/* Dialogs */}
+            <Dialog open={isNameDialogOpen} onOpenChange={setIsNameDialogOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Name your offer</DialogTitle>
+                        <DialogDescription>
+                            Give your offer a name that describes what you're selling.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <form onSubmit={handleNameSubmit} className="space-y-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="name">Name</Label>
+                            <Input
+                                id="name"
+                                value={name}
+                                onChange={e => setName(e.target.value)}
+                                placeholder="Enter offer name"
+                                autoFocus
+                            />
+                        </div>
+                        <div className="flex justify-end">
+                            <Button type="submit">
+                                Save
+                            </Button>
+                        </div>
+                    </form>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }

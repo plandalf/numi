@@ -1,7 +1,7 @@
 import AppOfferLayout from '@/layouts/app/app-offer-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Block, Offer, ViewSection, type OfferView, type Page, type PageType } from '@/types/offer';
-import { Head, useForm } from '@inertiajs/react';
+import { Head, router, useForm } from '@inertiajs/react';
 import {
     Dialog,
     DialogContent,
@@ -19,7 +19,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import { cn } from '@/lib/utils';
-import { MoreVertical, ArrowRightToLine, FileText, CheckSquare, Share2, Plus } from 'lucide-react';
+import { MoreVertical, ArrowRightToLine, FileText, CheckSquare, Share2, Plus, Copy, ExternalLink, QrCode, CheckCircle, Fullscreen, MessageSquare, Maximize, PanelLeftClose, AlertCircle } from 'lucide-react';
 import PagePreview, { findBlockInPage, Inspector } from '@/components/offers/page-preview';
 import PageFlowEditor from '@/components/offers/page-flow-editor';
 import { ReactFlowProvider } from '@xyflow/react';
@@ -33,10 +33,23 @@ import { DndContext, DragOverlay, useDraggable, closestCenter, DragStartEvent, u
 import { blockTypes, getBlockMeta } from '@/components/blocks';
 import { v4 as uuidv4 } from 'uuid';
 import React, { createContext, useContext } from 'react';
+import { Sidebar } from '@/components/offers/sidebar';
+import { CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { ToggleGroupItem } from '@/components/ui/toggle-group';
+import { ToggleGroup } from '@/components/ui/toggle-group';
+import { QRCodeSVG } from 'qrcode.react';
+import { Theme } from '@/types/theme';
+import { PublishStatusCard } from '@/components/offers/publish-status-card';
+import { PageShare } from '@/components/offers/page-share';
 
 
-interface Props {
+export interface EditProps {
     offer: Offer;
+    fonts: string[];
+    weights: string[];
+    themes: Theme[];
     showNameDialog?: boolean;
 }
 
@@ -105,6 +118,8 @@ interface EditorContextType {
   errors: any;
   setDefaults: typeof setDefaults;
 
+  themes: Theme[];
+
   isNameDialogOpen: boolean;
   setIsNameDialogOpen: React.Dispatch<React.SetStateAction<boolean>>;
 
@@ -134,6 +149,9 @@ interface EditorContextType {
   selectedBlockId: string | null;
   setSelectedBlockId: React.Dispatch<React.SetStateAction<string | null>>;
 
+  viewMode: 'editor' | 'preview' | 'share';
+  setViewMode: React.Dispatch<React.SetStateAction<'editor' | 'preview' | 'share'>>;
+
   handleSave: () => void;
   handleNameSubmit: (e: React.FormEvent) => void;
   handlePageNameClick: (pageId: string, currentName: string) => void;
@@ -143,6 +161,7 @@ interface EditorContextType {
   getOrderedPages: (view: OfferView) => [string, Page][];
   handleAddPage: (type: PageType) => void;
   offer: Offer;
+  updateBlock: (block: Block) => void;
 }
 
 const EditorContext = createContext<EditorContextType | undefined>(undefined);
@@ -153,7 +172,7 @@ export function useEditor() {
   return ctx;
 }
 
-function EditorProvider({ offer, showNameDialog, children }: React.PropsWithChildren<Props>) {
+function EditorProvider({ offer, themes, showNameDialog, children }: React.PropsWithChildren<EditProps>) {
   // --- move all state/logic from Edit here ---
   const [isNameDialogOpen, setIsNameDialogOpen] = useState(false);
   const [selectedPage, setSelectedPage] = useState<string>(offer.view?.first_page);
@@ -164,7 +183,8 @@ function EditorProvider({ offer, showNameDialog, children }: React.PropsWithChil
   const [isRenamingFromDropdown, setIsRenamingFromDropdown] = useState(false);
   const [showAddPageDialog, setShowAddPageDialog] = useState(false);
   const [isReady, setIsReady] = useState(false);
-
+  const [viewMode, setViewMode] = useState<'editor' | 'preview' | 'share'>('editor');
+  
   // const { data, setData, put, processing, errors, setDefaults } = useForm({
   //   name: offer.name,
   //   view: offer.view
@@ -172,7 +192,8 @@ function EditorProvider({ offer, showNameDialog, children }: React.PropsWithChil
 
   const [data, setData] = useState({
     name: offer.name,
-    view: offer.view
+    view: offer.view,
+    theme: offer.theme,
   });
 
   const [errors, setErrors] = useState({});
@@ -431,18 +452,21 @@ function EditorProvider({ offer, showNameDialog, children }: React.PropsWithChil
     handleAddPage,
 
     offer,
+    themes,
     updateBlock,
 
     selectedBlockId, setSelectedBlockId,
+
+    viewMode, setViewMode,
 
   };
   return <EditorContext.Provider value={value}>{children}</EditorContext.Provider>;
 }
 
 // --- Refactored Edit component ---
-function Edit({ offer, showNameDialog }: Props) {
+function Edit({ offer, themes, showNameDialog }: EditProps) {
   return (
-    <EditorProvider offer={offer} showNameDialog={showNameDialog}>
+    <EditorProvider offer={offer} themes={themes} showNameDialog={showNameDialog}>
       <EditApp />
     </EditorProvider>
   );
@@ -793,66 +817,9 @@ function EditApp() {
               </div>
             )}
           </DragOverlay>
-
           <div className="flex flex-grow border-dashed border-1 border-red-500 h-[calc(100vh-60px)]">
-            {/* Sidebar - Fixed width, no shrink */}
-            <div className="w-[300px] flex-none border-r border-border bg-card overflow-y-auto ">
-              <div className="p-4 space-y-4">
-                <h2 className="text-lg font-semibold">Edit Options</h2>
-                <div className="space-y-2">
-                  <button
-                    onClick={() => setIsNameDialogOpen(true)}
-                    className="w-full rounded-md bg-secondary px-4 py-2 text-sm font-medium text-secondary-foreground hover:bg-secondary/90"
-                  >
-                    Edit Name
-                  </button>
-                </div>
-              </div>
-
-              {selectedBlockId && (
-                <Inspector
-                  key={selectedBlockId}
-                  block={findBlockInPage(data.view.pages[selectedPage], selectedBlockId)}
-                  onClose={() => setSelectedBlockId(null)}
-                />
-              )}
-
-              {!selectedBlockId && (
-                <div>
-                  {/* Available Block Types */}
-                  <div className="p-4 border-t border-border" id="templates-list">
-                    <h3 className="text-md font-medium mb-3">Available Blocks</h3>
-                    <p className="text-xs text-muted-foreground mb-4">Drag blocks to add them to your page</p>
-
-                    <div className="space-y-2">
-                      {Object.keys(blockTypes).map((blockType) => (
-                        <BlockTemplateItem
-                          key={blockType}
-                          id={blockType}
-                          blockType={blockTypes[blockType]}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Main Content Area */}
-            <div className="flex-1 flex flex-col min-w-0 relative">
-              {/* Preview Area - Make it fill the available space */}
-              <div className="absolute inset-0 bottom-[68px] overflow-hidden">
-                <div className="h-full">
-                  <PagePreview
-                    page={data.view.pages[selectedPage]}
-                    onUpdatePage={handlePageUpdate}
-                  />
-                </div>
-              </div>
-
-              {/* Toolbar */}
-              <Toolbar />
-            </div>
+            <Sidebar />
+            <MainContent />
           </div>
         </DndContext>
 
@@ -872,6 +839,38 @@ function EditApp() {
   );
 }
 
+function MainContent() {
+  const {
+    data,
+    selectedPage,
+    handlePageUpdate,
+    viewMode,
+  } = useEditor();
+
+  const isShareMode = viewMode === 'share';
+
+  return (
+    <div className="flex-1 flex flex-col min-w-0 relative">
+      {/* Preview Area - Make it fill the available space */}
+      <div className="absolute inset-0 bottom-[68px] overflow-hidden">
+        <div className="h-full bg-[#F7F9FF]">
+          {isShareMode ? (
+            <PageShare />
+          ) : (
+            <PagePreview
+              page={data.view.pages[selectedPage]}
+              onUpdatePage={handlePageUpdate}
+            />
+          )}
+        </div>
+      </div>
+
+      {/* Toolbar */}
+      <Toolbar />
+    </div>
+  )
+}
+
 function Toolbar() {
   const {
     data, setData, processing, errors, setDefaults,
@@ -883,12 +882,16 @@ function Toolbar() {
     handlePageNameClick,
     handlePageAction,
     getOrderedPages,
+    viewMode,
   } = useEditor();
 
   return (
-    <div className="absolute bottom-0 left-0 right-0 border-t border-border bg-muted">
+    <div className="absolute bottom-0 left-0 right-0 bg-[#F7F9FF]">
       <div className="p-4">
-        <div className="flex items-center justify-between">
+        <div className={cn(
+          "flex items-center transition-all duration-300",
+          viewMode === 'preview' ? "justify-center" : "justify-between"
+        )}>
           <div className="flex items-center gap-2 overflow-x-auto">
             {getOrderedPages(data.view).map(([pageId, page]) => (
               <div
@@ -896,8 +899,8 @@ function Toolbar() {
                 className={cn(
                   "flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium whitespace-nowrap",
                   selectedPage === pageId
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-secondary text-secondary-foreground hover:bg-secondary/90"
+                    ? "bg-white border-1 border-teal-600"
+                    : "bg-transparent border-none"
                 )}
               >
                 {editingPageName === pageId ? (
@@ -959,16 +962,16 @@ function Toolbar() {
                 )}
               </div>
             ))}
-            <button
+            {/* <button
               onClick={() => setShowAddPageDialog(true)}
               className="flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium bg-secondary text-secondary-foreground hover:bg-secondary/90"
             >
               <Plus className="w-4 h-4" />
               Add Page
-            </button>
+            </button> */}
           </div>
 
-          <div className="flex items-center gap-4">
+          {/* <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
               <span className="text-sm text-muted-foreground">Layout:</span>
               <span className="text-sm font-medium">{data.view.pages[selectedPage].layout.sm}</span>
@@ -988,7 +991,7 @@ function Toolbar() {
               <Share2 className="w-4 h-4" />
               Page Logic
             </button>
-          </div>
+          </div> */}
         </div>
       </div>
     </div>

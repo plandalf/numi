@@ -10,11 +10,6 @@ function CheckboxBlockComponent({ context }: { context: BlockContextType }) {
     inspector: 'hidden',
   });
 
-  const [isDefaultChecked, setIsDefaultChecked] = Numi.useStateBoolean({
-    name: 'is_default_checked',
-    defaultValue: false,
-  });
-
   const [appearance] = Numi.useStateEnumeration({
     name: 'appearance',
     initialValue: 'checkbox',
@@ -32,14 +27,24 @@ function CheckboxBlockComponent({ context }: { context: BlockContextType }) {
     defaultValue: 'Checked?',
   });
 
+  const [isDefaultChecked, setIsDefaultChecked] = Numi.useStateBoolean({
+    name: 'is_default_checked',
+    label: 'Default Checked',
+    defaultValue: false,
+  });
+
   function handleChange() {
     setChecked(!checked);
   }
 
   // validation rules~
-  // const { isValid, errors, validate } = Numi.useValidation({
-  //   isRequired: false,
-  // }); 
+  const { isValid, errors, validate } = Numi.useValidation({
+    rules: {
+      isRequired: false,
+    },
+  });
+
+  const { isDisabled } = Numi.useInteraction();
 
   return (
     <div>

@@ -1,3 +1,5 @@
+import { Theme } from "./theme";
+
 export interface Offer {
     id: number;
     name: string;
@@ -19,6 +21,7 @@ export interface Offer {
     properties: Record<string, any> | null;
     transaction_webhook_url: string | null;
     slots: OfferSlot[];
+    theme: Theme | null;
     created_at: string;
     updated_at: string;
 

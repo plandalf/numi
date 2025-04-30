@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Enums\Theme\FontElement;
+use App\Enums\Theme\WeightElement;
 use App\Http\Requests\StoreOfferVariantRequest;
 use App\Http\Requests\UpdateOfferVariantRequest;
 use App\Http\Resources\OfferResource;
@@ -14,6 +16,7 @@ use App\Models\Store\Offer;
 use App\Models\Store\Slot;
 use App\Http\Requests\Offer\OfferSlotUpdateRequest;
 use App\Http\Requests\Offer\OfferThemeUpdateRequest;
+use App\Http\Requests\UpdateThemeRequest;
 use App\Http\Resources\ThemeResource;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -52,7 +55,7 @@ class OffersController extends Controller
             ->with('showNameDialog', true);
     }
 
-    public function edit(Offer $offer): Response
+    public function edit(Offer $offer, Request $request): Response
     {
         // if (is_null($offer->view)) {
             $json = json_decode(file_get_contents(base_path('resources/view-example.json')), true);
@@ -60,9 +63,22 @@ class OffersController extends Controller
             $offer->save();
         // }
 
+        $organizationThemes = Theme::where('organization_id', $request->user()->current_organization_id)
+            ->whereDoesntHave('offer')
+            ->get();
+
+        $globalThemes = Theme::whereNull('organization_id')->get();
+        $themes = $organizationThemes->merge($globalThemes);
+
+        // Load the offer with its theme and slots
+        $offer->load(['slots', 'theme']);
+    
         return Inertia::render('offers/Edit', [
-            'offer' => new OfferResource($offer->load('slots')),
+            'offer' => new OfferResource($offer),
             'showNameDialog' => session('showNameDialog', false),
+            'themes' => ThemeResource::collection($themes),
+            'fonts' => FontElement::values(),
+            'weights' => WeightElement::values(),
         ]);
     }
 
@@ -235,6 +251,16 @@ class OffersController extends Controller
         ]);
 
         return back()->with('success', 'Theme updated successfully.');
+    }
+
+    public function storeAsSavedTheme(UpdateThemeRequest $request): \Illuminate\Http\RedirectResponse
+    {
+        Theme::create([
+            'organization_id' => $request->user()->current_organization_id,
+            ...$request->validated(),
+        ]);
+        
+        return back()->with('success', 'Theme saved successfully.');
     }
 
     public function publish(Offer $offer): \Illuminate\Http\RedirectResponse

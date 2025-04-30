@@ -4,6 +4,7 @@ import { BlockConfig, BlockContextType } from "@/types/blocks";
 import { createContext, useContext, useEffect, useState } from "react";
 import get from "lodash/get";
 import { CheckoutState, GlobalStateContext } from "@/pages/Checkout";
+import { Theme } from "@/types/theme";
 
 export const BlockContext = createContext<BlockContextType>({
   blockId: '',
@@ -20,7 +21,8 @@ export const BlockContext = createContext<BlockContextType>({
   registerField: () => {},
   getFieldValue: () => undefined,
   setFieldValue: () => {},
-  registerHook: () => {}
+  registerHook: () => {},
+  theme: undefined
 });
 
 
@@ -262,6 +264,7 @@ class Numi {
     labels: Record<string, string>;
     inspector: string; 
     label: string; 
+    icons?: Record<string, React.ReactNode>;
   }): [any] {
     const blockContext = useContext(BlockContext);
 
@@ -272,6 +275,7 @@ class Numi {
         defaultValue: props.initialValue,
         options: props.options,
         labels: props.labels,
+        icons: props.icons,
         inspector: props.inspector,
         label: props.label,
       });
@@ -282,7 +286,7 @@ class Numi {
     return [value];
   }
 
-  static useStateBoolean(props: { name: string; defaultValue: boolean; inspector?: string }): [boolean, (value: boolean) => void] {
+  static useStateBoolean(props: { name: string; defaultValue: boolean; label?: string; inspector?: string }): [boolean, (value: boolean) => void] {
     const blockContext = useContext(BlockContext);
     
     useEffect(() => {
@@ -290,7 +294,8 @@ class Numi {
         name: props.name,
         type: 'boolean',
         defaultValue: props.defaultValue,
-        inspector: props.inspector ?? 'checkbox'
+        inspector: props.inspector ?? 'checkbox',
+        label: props.label,
       });
 
       const existingState = blockContext.globalState.getFieldState(
@@ -324,6 +329,7 @@ class Numi {
 
   static useStateString(props: { name: string; defaultValue: string; inspector?: string }): [string, (value: string) => void, string] {
     const blockContext = useContext(BlockContext);
+
 
     useEffect(() => {
       blockContext.registerHook({
@@ -412,6 +418,11 @@ class Numi {
       validate,
       isRequired: blockContext.blockConfig.validation?.isRequired ?? false 
     };
+  }
+  
+  static useTheme(): Theme | undefined {
+    const blockContext = useContext(BlockContext);
+    return blockContext.theme;
   }
 }
 

@@ -3,6 +3,8 @@ import { Slot } from "@radix-ui/react-slot"
 import { cva, type VariantProps } from "class-variance-authority"
 
 import { cn } from "@/lib/utils"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Redo } from "lucide-react"
 
 const buttonVariants = cva(
   "cursor-pointer inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-[color,box-shadow] disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive",
@@ -15,6 +17,7 @@ const buttonVariants = cva(
           "bg-destructive text-white shadow-xs hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40",
         outline:
           "border border-input bg-background shadow-xs hover:bg-accent hover:text-accent-foreground",
+        "outline-transparent": "border text-white transform transition-all hover:bg-accent hover:text-accent-foreground shadow-xs ",
         secondary:
           "bg-secondary text-secondary-foreground shadow-xs hover:bg-secondary/80",
         ghost: "hover:bg-accent hover:text-accent-foreground",
@@ -34,24 +37,50 @@ const buttonVariants = cva(
   }
 )
 
+interface ButtonProps 
+  extends React.ComponentProps<"button">,
+  VariantProps<typeof buttonVariants> {
+    tooltip?: React.ReactNode;
+    tooltipSide?: "top" | "right" | "bottom" | "left";
+    tooltipAlign?: "start" | "center" | "end";
+    asChild?: boolean
+  }
+
 function Button({
   className,
   variant,
   size,
   asChild = false,
-  ...props
-}: React.ComponentProps<"button"> &
-  VariantProps<typeof buttonVariants> & {
-    asChild?: boolean
-  }) {
+  tooltip,
+  tooltipSide = "top",
+  tooltipAlign = "center",
+  ...otherProps
+}: ButtonProps) {
   const Comp = asChild ? Slot : "button"
 
+  const props = {
+    ...otherProps,
+    "data-slot": "button",
+    className: cn(buttonVariants({ variant, size, className })),
+  }
+
+  if(tooltip) {
+    return ( 
+      <TooltipProvider delayDuration={100000}>
+        <Tooltip>
+            <TooltipTrigger asChild>
+                <Comp {...props} />
+            </TooltipTrigger>
+            <TooltipContent side={tooltipSide} align={tooltipAlign}>
+                {tooltip}
+            </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    )
+  }
+
   return (
-    <Comp
-      data-slot="button"
-      className={cn(buttonVariants({ variant, size, className }))}
-      {...props}
-    />
+    <Comp {...props} />
   )
 }
 

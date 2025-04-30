@@ -5,6 +5,7 @@ namespace App\Http\Resources;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use App\Http\Resources\SlotResource;
+use App\Models\Theme;
 
 class OfferResource extends JsonResource
 {
@@ -17,6 +18,8 @@ class OfferResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
+        $theme = $this->theme ? $this->theme : new Theme();
+
         return [
             'id' => $this->id,
             'name' => $this->name,
@@ -32,8 +35,8 @@ class OfferResource extends JsonResource
             'organization_id' => $this->organization_id,
             'view' => $this->view,
             'properties' => $this->properties,
-            
             'slots' => SlotResource::collection($this->whenLoaded('slots')),
+            'theme' => new ThemeResource($theme),
             'created_at' => $this->created_at?->toISOString(),
             'updated_at' => $this->updated_at?->toISOString(),
         ];
