@@ -1,7 +1,9 @@
-import { GlobalStateContext } from '@/contexts/GlobalStateProvider';
+import { GlobalStateContext, useCheckoutState } from '@/contexts/GlobalStateProvider';
 import { BlockContext } from '@/contexts/Numi';
 import { BlockConfig, HookUsage } from '@/types/blocks';
-import { useContext } from 'react';
+import { useContext, useMemo } from 'react';
+import Mustache from 'mustache';
+import { isBlockVisible } from '@/lib/utils';
 
 export interface BlockContextType {
   blockId: string;
@@ -11,12 +13,20 @@ export interface BlockContextType {
 // Block Renderer
 export function BlockRenderer({ block, children }: {
   block: BlockConfig,
-  children: (props: BlockContextType) => React.ReactNode
+  children: (props: BlockContextType) => React.ReactNode,
 }) {
   const globalStateContext = useContext(GlobalStateContext);
   if (!globalStateContext) {
     throw new Error('BlockRenderer must be used within a GlobalStateProvider');
   }
+
+  const { fields } = useCheckoutState();
+
+  const isVisible = useMemo(() => {
+    const visibility = block.appearance?.visibility;
+
+   return isBlockVisible({ fields }, visibility?.fn);
+  }, [block, fields]);
 
   const blockContext: BlockContextType = {
     blockId: block.id,
@@ -38,9 +48,15 @@ export function BlockRenderer({ block, children }: {
     }
   };
 
+  if (!isVisible) {
+    return null;
+  }
+
   return (
     <BlockContext.Provider value={blockContext}>
       {children(blockContext)}
     </BlockContext.Provider>
   );
 }
+
+

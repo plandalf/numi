@@ -54,7 +54,7 @@
                 "content": {
                     "blocks": [
                         {
-                            "id": "ivs",
+                            "id": "option_selector",
                             "type": "option_selector",
                             "content": {
                                 "options": [
@@ -64,7 +64,8 @@
                                 "labels": {
                                     "monthly": "Monthly",
                                     "yearly": "Yearly"
-                                }
+                                },
+                                "value": "yearly"
                             },
                             "object": "field"
                         },
@@ -76,8 +77,8 @@
                                 "appearance": "switch"
                             },
                             "appearance": {
-                                "isHidden": {
-                                    "fn": "{{fields.option_selector.value}} === 'yearly'"
+                                "visibility": {
+                                    "fn": "{{fields.option_selector.value === 'yearly'}}"
                                 }
                             },
                             "object": "field"
@@ -89,8 +90,8 @@
                                 "value": "You'll be charged $100 for the first month and then $100 per month thereafter"
                             },
                             "appearance": {
-                                "isHidden": {
-                                    "fn": "{{fields['checkbox-recurring'].value}} == true}}"
+                                "visibility": {
+                                    "fn": "{{fields['checkbox-recurring'].value == true}}"
                                 }
                             },
                             "object": "block"

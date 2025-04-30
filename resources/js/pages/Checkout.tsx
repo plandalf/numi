@@ -17,7 +17,6 @@ type ValidationErrors = Record<string, string[]>;
 const Section = ({ blocks, className }: { blocks: Block[], className?: string }) => {
     if (!blocks || blocks.length === 0) return null;
 
-    console.log('blocks', blocks)
     return (
         <div className={cn("space-y-2 ", className)}>
             <div className="text-sm font-medium bg-gray-100">Section with {blocks.length} block(s)</div>

@@ -1,6 +1,6 @@
 import { type Page, type ViewSection, type Block } from '@/types/offer';
-import { cn } from '@/lib/utils';
-import React, { useRef } from 'react';
+import { cn, isBlockVisible } from '@/lib/utils';
+import React, { useMemo, useRef } from 'react';
 import { Head } from '@inertiajs/react';
 import { CSS } from '@dnd-kit/utilities';
 import { useEffect, useState, createContext, useContext } from 'react';
@@ -8,7 +8,7 @@ import { type PageType, type OfferConfiguration, type OfferVariant, Branch, type
 import { BlockConfig, FieldState, HookUsage, GlobalState, BlockContextType } from '@/types/blocks';
 import { BlockContext } from '@/contexts/Numi';
 import { blockTypes } from '@/components/blocks';
-import { GlobalStateContext } from '@/contexts/GlobalStateProvider';
+import { GlobalStateContext, useCheckoutState } from '@/contexts/GlobalStateProvider';
 import { useDroppable } from '@dnd-kit/core';
 import cx from 'classnames';
 import { rectSortingStrategy, SortableContext, useSortable } from '@dnd-kit/sortable';
@@ -331,6 +331,16 @@ function BlockRenderer({ block, children }: {
     if (block) {
       setSelectedBlockId(block.id)
     }
+  }
+
+  const isVisible = useMemo(() => {
+    const visibility = block.appearance?.visibility;
+
+   return isBlockVisible({ fields: globalStateContext.fields }, visibility?.fn);
+  }, [block, globalStateContext]);
+
+  if(!isVisible) {
+    return null;
   }
 
   return (
