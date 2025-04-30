@@ -26,7 +26,7 @@ class CheckoutSession extends Model
         'expires_at',
         'finalized_at',
         'metadata',
-        'organization_id'
+        'organization_id',
         // 'customer_id',
     ];
 
@@ -74,7 +74,6 @@ class CheckoutSession extends Model
         return $this;
     }
 
-
     public function getLineItemsBreakdownAttribute()
     {
         return $this->lineItems->pluck('line_item')->toArray();
@@ -97,7 +96,7 @@ class CheckoutSession extends Model
 
     public function getPublishableKeyAttribute()
     {
-        if (!$this->lineItems->first()) {
+        if (! $this->lineItems->first()) {
             return null;
         }
 
@@ -106,7 +105,7 @@ class CheckoutSession extends Model
 
     public function integrationClient(): ?AbstractIntegration
     {
-        if (!$this->lineItems->first()) {
+        if (! $this->lineItems->first()) {
             return null;
         }
 

@@ -16,6 +16,7 @@ class ProductUpdateRequest extends FormRequest
     {
         // Authorization: Check if user can update this specific product
         $product = $this->route('product');
+
         // Ensure product belongs to the current user's organization
         return Auth::user()->currentOrganization->id === $product->organization_id;
         // Optional: Add policy check: return $this->user()->can('update', $product);
@@ -41,7 +42,7 @@ class ProductUpdateRequest extends FormRequest
                     ->where(function ($query) use ($organizationId) {
                         return $query->where('organization_id', $organizationId);
                     })
-                    ->ignore($productId)
+                    ->ignore($productId),
             ],
             'gateway_provider' => ['nullable', 'string', 'max:255'],
             'gateway_product_id' => ['nullable', 'string', 'max:255'],

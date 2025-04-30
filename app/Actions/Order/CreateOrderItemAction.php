@@ -10,10 +10,6 @@ class CreateOrderItemAction
 {
     /**
      * Create an order item from a checkout line item.
-     *
-     * @param Order $order
-     * @param CheckoutLineItem $checkoutLineItem
-     * @return OrderItem
      */
     public function __invoke(Order $order, CheckoutLineItem $checkoutLineItem): OrderItem
     {

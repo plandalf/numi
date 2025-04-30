@@ -7,16 +7,11 @@ use Exception;
 class PaymentException extends Exception
 {
     protected string $errorType;
+
     protected ?array $errorDetails;
 
     /**
      * Create a new payment exception instance.
-     *
-     * @param string $message
-     * @param string $errorType
-     * @param array|null $errorDetails
-     * @param int $code
-     * @param \Throwable|null $previous
      */
     public function __construct(
         string $message,
@@ -32,8 +27,6 @@ class PaymentException extends Exception
 
     /**
      * Get the error type.
-     *
-     * @return string
      */
     public function getErrorType(): string
     {
@@ -42,8 +35,6 @@ class PaymentException extends Exception
 
     /**
      * Get the error details.
-     *
-     * @return array|null
      */
     public function getErrorDetails(): ?array
     {

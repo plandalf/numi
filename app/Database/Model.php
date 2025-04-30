@@ -39,7 +39,7 @@ class Model extends EloquentModel
             return parent::resolveRouteBindingQuery($query, $value, $field);
         }
 
-        if (!method_exists($this, 'organization')) {
+        if (! method_exists($this, 'organization')) {
             return $query->where($field ?? $this->getRouteKeyName(), $value);
         }
 

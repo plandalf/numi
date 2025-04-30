@@ -48,12 +48,11 @@ use Parental\HasChildren;
  * @property Carbon|null $deleted_at
  * @property-read Product $product
  * @property-read Price|null $parentListPrice
- *
  */
 class Price extends Model
 {
-    use HasFactory, SoftDeletes;
     use HasChildren;
+    use HasFactory, SoftDeletes;
 
     protected $table = 'catalog_prices';
 
@@ -65,7 +64,7 @@ class Price extends Model
         'parent_list_price_id',
 
         'scope', // list or custom
-        'type',  //one_time|graduated|standard|volume|package
+        'type',  // one_time|graduated|standard|volume|package
 
         'amount',
         'currency',
@@ -151,7 +150,7 @@ class Price extends Model
 
     public function integrationClient(): ?AbstractIntegration
     {
-        if(!$this->integration) {
+        if (! $this->integration) {
             return null;
         }
 

@@ -137,7 +137,6 @@ return [
 
     'model' => App\Models\Organization::class,
 
-
     /*
     |--------------------------------------------------------------------------
     | Plandalf Plan
@@ -148,7 +147,6 @@ return [
     */
     'stripe_plandalf_product_id' => env('STRIPE_PLANDALF_PRODUCT_ID'),
     'stripe_plandalf_price_id' => env('STRIPE_PLANDALF_PRICE_ID'),
-
 
     /*
     |--------------------------------------------------------------------------

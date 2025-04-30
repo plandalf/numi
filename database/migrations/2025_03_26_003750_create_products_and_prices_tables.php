@@ -46,7 +46,6 @@ return new class extends Migration
             $table->unsignedSmallInteger('recurring_interval_count')->nullable();
             $table->unsignedSmallInteger('cancel_after_cycles')->nullable();
 
-
             // Gateway link, how to actually link these?
             $table->string('gateway_provider')->nullable()->index();
             $table->string('gateway_price_id')->nullable()->index();

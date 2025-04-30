@@ -31,7 +31,7 @@ class AuthenticatedSessionController extends Controller
         $organization = $this->organizationService->getOrganizationByJoinToken(
             Session::get('join_token')
         );
-        
+
         return Inertia::render('auth/login', [
             'canResetPassword' => Route::has('password.request'),
             'status' => $request->session()->get('status'),
@@ -63,10 +63,10 @@ class AuthenticatedSessionController extends Controller
 
             // Join the organization
             $this->organizationService->attachUserToOrganization($user, $organization);
-            
+
             // Clear the join token from the session
             Session::forget('join_token');
-            
+
             return redirect()
                 ->route('dashboard')
                 ->with('success', 'Successfully joined organization.');

@@ -24,18 +24,18 @@ class ActivityArgument
         if ($this->section === null && str_contains($name, '.')) {
             $this->section = explode('.', $name)[0];
         }
-        
+
         // Default to general section if not specified or derived
         if ($this->section === null) {
             $this->section = 'general';
         }
-        
+
         // Generate label from name if not provided
         if ($this->label === null) {
-            $fieldName = str_contains($name, '.') 
-                ? last(explode('.', $name)) 
+            $fieldName = str_contains($name, '.')
+                ? last(explode('.', $name))
                 : $name;
             $this->label = ucfirst(str_replace('_', ' ', $fieldName));
         }
     }
-} 
+}

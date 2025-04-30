@@ -22,7 +22,7 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
-        'current_organization_id'
+        'current_organization_id',
     ];
 
     /**
@@ -63,7 +63,7 @@ class User extends Authenticatable
 
     public function switchOrganization(Organization $organization): void
     {
-        if (!$organization->users()->where('organization_users.user_id', $this->id)->exists()) {
+        if (! $organization->users()->where('organization_users.user_id', $this->id)->exists()) {
             throw new \Exception('User does not belong to this organization');
         }
 

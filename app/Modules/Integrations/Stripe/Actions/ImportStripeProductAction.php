@@ -16,6 +16,7 @@ use Stripe\Product as StripeProduct;
 class ImportStripeProductAction
 {
     public Stripe $stripeClientWrapper;
+
     public function __invoke(
         Integration $integration,
         string $gatewayProductId,
@@ -54,7 +55,6 @@ class ImportStripeProductAction
             $startingAfter = $prices->has_more ? end($prices->data)->id : null;
         } while ($startingAfter);
 
-
         $pricesToImport = $allPrices->filter(fn (StripePrice $price) => in_array($price->id, $gatewayPrices));
 
         // Import prices for this product
@@ -77,7 +77,7 @@ class ImportStripeProductAction
             ],
             [
                 'lookup_key' => data_get($productAttrs, 'lookup_key', $stripeProduct->id),
-                'name' =>  data_get($productAttrs, 'name', $stripeProduct->name),
+                'name' => data_get($productAttrs, 'name', $stripeProduct->name),
                 'description' => data_get($productAttrs, 'description', $stripeProduct->description),
                 'status' => $stripeProduct->active ? ProductStatus::active : ProductStatus::archived,
                 'integration_id' => $this->stripeClientWrapper->integration->id,

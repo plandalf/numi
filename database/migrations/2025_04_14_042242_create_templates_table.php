@@ -22,7 +22,7 @@ return new class extends Migration
             $table->jsonb('preview_images')->nullable();
             $table->timestamps();
             $table->softDeletes();
-            
+
             // Indexes
             $table->index(['organization_id', 'category']);
         });

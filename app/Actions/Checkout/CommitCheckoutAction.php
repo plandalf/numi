@@ -9,7 +9,6 @@ use App\Enums\CheckoutSessionStatus;
 use App\Models\Checkout\CheckoutSession;
 use App\Models\Order\Order;
 
-
 class CommitCheckoutAction
 {
     public function __construct(
@@ -33,6 +32,7 @@ class CommitCheckoutAction
         }
 
         $checkoutSession->markAsClosed(true);
+
         return ($this->processOrder)($order, $checkoutSession, $confirmationToken);
     }
 }

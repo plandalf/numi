@@ -19,12 +19,10 @@ enum IntegrationType: string
 
     /**
      * Get a human-readable label for the charge type.
-     *
-     * @return string
      */
     public function label(): string
     {
-        return match($this) {
+        return match ($this) {
             self::STRIPE => 'Stripe'
         };
     }

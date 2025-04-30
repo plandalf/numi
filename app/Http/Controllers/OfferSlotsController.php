@@ -2,7 +2,4 @@
 
 namespace App\Http\Controllers;
 
-class OfferSlotsController extends Controller
-{
-  
-}
+class OfferSlotsController extends Controller {}

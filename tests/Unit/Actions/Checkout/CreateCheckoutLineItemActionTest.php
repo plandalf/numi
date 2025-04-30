@@ -20,7 +20,7 @@ class CreateCheckoutLineItemActionTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->action = new CreateCheckoutLineItemAction();
+        $this->action = new CreateCheckoutLineItemAction;
     }
 
     public function test_it_creates_checkout_line_item(): void

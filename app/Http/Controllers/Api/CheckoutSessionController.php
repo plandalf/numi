@@ -6,15 +6,10 @@ use App\Actions\Checkout\CommitCheckoutAction;
 use App\Actions\Checkout\CreateCheckoutSessionAction;
 use App\Http\Controllers\Controller;
 use App\Models\Checkout\CheckoutSession;
-use App\Models\Store\Offer;
-use Illuminate\Http\Request;
-use Illuminate\Http\JsonResponse;
-use Illuminate\Validation\ValidationException;
 use Exception;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
-use Illuminate\Auth\AuthenticationException;
-use Illuminate\Auth\Access\AuthorizationException;
-use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 
 class CheckoutSessionController extends Controller
 {

@@ -20,7 +20,9 @@ class CommitCheckoutActionTest extends TestCase
     use RefreshDatabase;
 
     private CommitCheckoutAction $action;
+
     private $createOrderAction;
+
     private $createOrderItemAction;
 
     protected function setUp(): void

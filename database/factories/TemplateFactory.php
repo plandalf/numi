@@ -42,13 +42,11 @@ class TemplateFactory extends Factory
 
     /**
      * Get sample view data based on the view-example.json
-     *
-     * @return array
      */
     private function getSampleViewData(): array
     {
         return [
-            'id' => 'view_' . $this->faker->uuid,
+            'id' => 'view_'.$this->faker->uuid,
             'pages' => [
                 'page_1' => [
                     'id' => 'page_1',
@@ -60,9 +58,9 @@ class TemplateFactory extends Factory
                                 'backgroundSize' => 'cover',
                                 'backgroundImage' => 'url(sample.jpg)',
                                 'backgroundRepeat' => 'no-repeat',
-                                'backgroundPosition' => 'center'
+                                'backgroundPosition' => 'center',
                             ],
-                            'blocks' => []
+                            'blocks' => [],
                         ],
                         'title' => [
                             'blocks' => [
@@ -70,30 +68,30 @@ class TemplateFactory extends Factory
                                     'id' => 'text-block-1',
                                     'type' => 'text',
                                     'content' => [
-                                        'value' => 'Sample Template'
+                                        'value' => 'Sample Template',
                                     ],
-                                    'object' => 'block'
-                                ]
-                            ]
+                                    'object' => 'block',
+                                ],
+                            ],
                         ],
                         'content' => [
-                            'blocks' => []
-                        ]
+                            'blocks' => [],
+                        ],
                     ],
                     'layout' => [
-                        'sm' => 'split-checkout@v1'
+                        'sm' => 'split-checkout@v1',
                     ],
                     'provides' => [
                         'start',
-                        'commit'
+                        'commit',
                     ],
                     'next_page' => [
                         'branches' => [],
-                        'default_next_page' => null
-                    ]
-                ]
+                        'default_next_page' => null,
+                    ],
+                ],
             ],
-            'first_page' => 'page_1'
+            'first_page' => 'page_1',
         ];
     }
-} 
+}

@@ -69,4 +69,4 @@ class Kernel extends HttpKernel
         'organization' => \App\Http\Middleware\RequireOrganization::class,
         'subscription' => \App\Http\Middleware\RequiresSubscription::class,
     ];
-} 
+}

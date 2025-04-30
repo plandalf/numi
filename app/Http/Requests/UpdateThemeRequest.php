@@ -6,7 +6,6 @@ use Illuminate\Foundation\Http\FormRequest;
 
 class UpdateThemeRequest extends FormRequest
 {
-
     protected $colorFields = [
         'primary_color',
         'secondary_color',
@@ -21,7 +20,7 @@ class UpdateThemeRequest extends FormRequest
         'info_color',
         'warning_color',
         'success_color',
-        'highlight_color'
+        'highlight_color',
     ];
 
     protected $fontFields = ['main_font', 'mono_font'];
@@ -34,7 +33,7 @@ class UpdateThemeRequest extends FormRequest
         'h5_typography',
         'h6_typography',
         'label_typography',
-        'body_typography'
+        'body_typography',
     ];
 
     protected $sizeFields = ['border_radius'];
@@ -119,19 +118,19 @@ class UpdateThemeRequest extends FormRequest
         // Add typography array messages
         foreach ($this->typographyArrays as $field) {
             $fieldName = $this->getReadableFieldName($field);
-            
+
             $messages["{$field}.array"] = "The {$fieldName} must be an array.";
             $messages["{$field}.size"] = "The {$fieldName} must contain exactly 3 elements: [size, font, weight].";
-            
+
             // Key-specific messages
             $messages["{$field}.0.required"] = "The size is required in {$fieldName}.";
             $messages["{$field}.0.string"] = "The size in {$fieldName} must be a string.";
             $messages["{$field}.0.regex"] = "The size in {$fieldName} must be a valid CSS size (e.g., 16px, 1.5rem, 1.2em).";
-            
+
             $messages["{$field}.1.required"] = "The font is required in {$fieldName}.";
             $messages["{$field}.1.string"] = "The font in {$fieldName} must be a string.";
             $messages["{$field}.1.max"] = "The font in {$fieldName} cannot be longer than 64 characters.";
-            
+
             $messages["{$field}.2.required"] = "The weight is required in {$fieldName}.";
             $messages["{$field}.2.string"] = "The weight in {$fieldName} must be a string.";
             $messages["{$field}.2.max"] = "The weight in {$fieldName} cannot be longer than 3 characters.";
@@ -156,4 +155,4 @@ class UpdateThemeRequest extends FormRequest
     {
         return ucwords(str_replace('_', ' ', $field));
     }
-} 
+}

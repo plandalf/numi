@@ -15,7 +15,7 @@ return new class extends Migration
         Schema::table('catalog_products', function (Blueprint $table) {
             $table->foreignId('integration_id')->after('id')->nullable()->index();
             $table->text('description')->nullable()->after('name');
-            $table->enum('status', array_map(fn(ProductStatus $case) => $case->value, ProductStatus::cases()))->default(ProductStatus::draft->value)
+            $table->enum('status', array_map(fn (ProductStatus $case) => $case->value, ProductStatus::cases()))->default(ProductStatus::draft->value)
                 ->after('gateway_product_id');
         });
 

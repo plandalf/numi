@@ -2,50 +2,51 @@
 
 namespace App\Providers;
 
-use Illuminate\Support\ServiceProvider;
-use Symfony\Component\Finder\Finder;
-use ReflectionClass;
-use App\Workflows\Automation\Attributes\Activity;
 use App\Workflows\Automation\ActivitySchemaRegistry;
+use App\Workflows\Automation\Attributes\Activity;
+use Illuminate\Support\ServiceProvider;
+use ReflectionClass;
+use Symfony\Component\Finder\Finder;
 
 class ActivityServiceProvider extends ServiceProvider
 {
     public function register()
     {
         $this->app->singleton(ActivitySchemaRegistry::class, function ($app) {
-            $registry = new ActivitySchemaRegistry();
+            $registry = new ActivitySchemaRegistry;
             $this->registerActivities($registry);
+
             return $registry;
         });
     }
 
-    public function boot()
-    {
-    }
-    
+    public function boot() {}
+
     private function registerActivities(ActivitySchemaRegistry $registry): void
     {
         $namespace = 'App\\Workflows\\Automation\\';
         $directory = app_path('Workflows/Automation');
-        
+
         $finder = Finder::create()
             ->files()
             ->name('*Activity.php')
             ->in($directory);
-            
+
         foreach ($finder as $file) {
-            $className = $namespace . str_replace(
+            $className = $namespace.str_replace(
                 ['/', '.php'],
                 ['\\', ''],
                 $file->getRelativePathname()
             );
-  
-            if (!class_exists($className)) continue;
-            
+
+            if (! class_exists($className)) {
+                continue;
+            }
+
             $reflection = new ReflectionClass($className);
-            
+
             // Check if this is an activity class
-            if (!$reflection->isAbstract()) {
+            if (! $reflection->isAbstract()) {
                 $activityAttr = $reflection->getAttributes(Activity::class)[0] ?? null;
 
                 if ($activityAttr) {
@@ -59,4 +60,4 @@ class ActivityServiceProvider extends ServiceProvider
             }
         }
     }
-} 
+}

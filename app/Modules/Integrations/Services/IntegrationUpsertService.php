@@ -3,9 +3,9 @@
 namespace App\Modules\Integrations\Services;
 
 use App\Enums\IntegrationType;
-use Illuminate\Database\Eloquent\Model;
 use App\Models\Integration;
 use App\Services\BaseService;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Arr;
 use Laravel\Socialite\AbstractUser;
 use SocialiteProviders\Manager\OAuth2\User;
@@ -34,7 +34,7 @@ class IntegrationUpsertService extends BaseService
                 'type' => $integrationType->value,
             ], [
                 'environment' => $environment,
-                'name' => $user->nickname. '('.$environment.')',
+                'name' => $user->nickname.'('.$environment.')',
                 'secret' => $user->token,
                 'config' => array_merge(
                     ['access_token' => $user->accessTokenResponseBody],

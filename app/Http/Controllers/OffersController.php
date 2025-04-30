@@ -6,25 +6,25 @@ namespace App\Http\Controllers;
 
 use App\Enums\Theme\FontElement;
 use App\Enums\Theme\WeightElement;
+use App\Http\Requests\Offer\OfferSlotStoreRequest;
+use App\Http\Requests\Offer\OfferSlotUpdateRequest;
+use App\Http\Requests\Offer\OfferThemeUpdateRequest;
 use App\Http\Requests\StoreOfferVariantRequest;
 use App\Http\Requests\UpdateOfferVariantRequest;
+use App\Http\Requests\UpdateThemeRequest;
 use App\Http\Resources\OfferResource;
 use App\Http\Resources\ProductResource;
+use App\Http\Resources\ThemeResource;
 use App\Models\Catalog\Product;
 use App\Models\Organization;
 use App\Models\Store\Offer;
 use App\Models\Store\Slot;
-use App\Http\Requests\Offer\OfferSlotStoreRequest;
-use App\Http\Requests\Offer\OfferSlotUpdateRequest;
-use App\Http\Requests\Offer\OfferThemeUpdateRequest;
-use App\Http\Requests\UpdateThemeRequest;
-use App\Http\Resources\ThemeResource;
+use App\Models\Theme;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
-use Illuminate\Support\Facades\Auth;
-use App\Models\Theme;
 
 class OffersController extends Controller
 {
@@ -59,9 +59,9 @@ class OffersController extends Controller
     public function edit(Offer $offer, Request $request): Response
     {
         // if (is_null($offer->view)) {
-            $json = json_decode(file_get_contents(base_path('resources/view-example.json')), true);
-            $offer->view = $json;
-            $offer->save();
+        $json = json_decode(file_get_contents(base_path('resources/view-example.json')), true);
+        $offer->view = $json;
+        $offer->save();
         // }
 
         $organizationThemes = Theme::where('organization_id', $request->user()->current_organization_id)
@@ -73,7 +73,7 @@ class OffersController extends Controller
 
         // Load the offer with its theme and slots
         $offer->load(['slots', 'theme']);
-    
+
         return Inertia::render('offers/Edit', [
             'offer' => new OfferResource($offer),
             'showNameDialog' => session('showNameDialog', false),
@@ -116,7 +116,7 @@ class OffersController extends Controller
         $products = Product::query()
             ->where('organization_id', $offer->organization_id)
             ->with(['prices' => function ($query) {
-                 $query->active();
+                $query->active();
             }])
             ->get();
 
@@ -260,7 +260,7 @@ class OffersController extends Controller
             'organization_id' => $request->user()->current_organization_id,
             ...$request->validated(),
         ]);
-        
+
         return back()->with('success', 'Theme saved successfully.');
     }
 

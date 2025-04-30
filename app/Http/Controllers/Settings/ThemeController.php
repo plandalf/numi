@@ -19,6 +19,7 @@ class ThemeController extends Controller
     public function index(Request $request)
     {
         $themes = Theme::where('organization_id', $request->user()->current_organization_id)->get();
+
         return Inertia::render('settings/themes', [
             'themes' => ThemeResource::collection($themes),
         ]);
@@ -58,7 +59,7 @@ class ThemeController extends Controller
         // Update the theme with the validated data
         $theme->fill($request->validated());
         $theme->save();
-        
+
         return redirect()->back()->with('success', 'Theme updated successfully');
     }
 
@@ -68,6 +69,7 @@ class ThemeController extends Controller
     public function destroy(Theme $theme)
     {
         $theme->delete();
+
         return redirect()->back()->with('success', 'Theme successfully deleted');
     }
 }

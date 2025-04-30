@@ -55,7 +55,7 @@ class Product extends Model
 
     public function integrationClient(): ?AbstractIntegration
     {
-        if(!$this->integration) {
+        if (! $this->integration) {
             return null;
         }
 

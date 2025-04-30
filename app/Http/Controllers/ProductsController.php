@@ -7,12 +7,10 @@ use App\Actions\Product\DestroyProduct;
 use App\Actions\Product\UpdateProduct;
 use App\Http\Requests\Product\ProductStoreRequest;
 use App\Http\Requests\Product\ProductUpdateRequest;
-use App\Http\Resources\ProductResource;
 use App\Http\Resources\PriceResource;
-use App\Models\Catalog\Price;
+use App\Http\Resources\ProductResource;
 use App\Models\Catalog\Product;
 use App\Models\Integration;
-use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
@@ -37,7 +35,7 @@ class ProductsController extends Controller
             ->when($search, function ($query) use ($search) {
                 $query->where(function ($q) use ($search) {
                     $q->where('name', 'like', "%{$search}%")
-                      ->orWhere('description', 'like', "%{$search}%");
+                        ->orWhere('description', 'like', "%{$search}%");
                 });
             })
             ->with(['prices', 'integration'])
@@ -68,7 +66,7 @@ class ProductsController extends Controller
         $validated['organization_id'] = $organizationId;
 
         $product = null;
-        if($request->has('integration_id') && $request->input('integration_id') !== null) {
+        if ($request->has('integration_id') && $request->input('integration_id') !== null) {
             /** @var Integration $integration */
             $integration = Integration::find($request->input('integration_id'));
             $integrationClient = $integration->integrationClient();
@@ -76,7 +74,7 @@ class ProductsController extends Controller
             $product = $integrationClient->importProduct($validated);
         }
 
-        if(!$product) {
+        if (! $product) {
             $product = $this->createProductAction->execute($validated);
         }
 
@@ -100,7 +98,6 @@ class ProductsController extends Controller
             ->list()
             ->active()
             ->get();
-
 
         $organizationId = Auth::user()->currentOrganization->id;
         $integrations = Integration::query()

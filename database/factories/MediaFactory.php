@@ -28,7 +28,7 @@ class MediaFactory extends Factory
             'model_id' => fake()->numberBetween(1, 100),
             'collection_name' => fake()->randomElement(['avatar', 'logo', 'product_image']),
             'name' => fake()->uuid(),
-            'file_name' => fake()->uuid() . '.jpg',
+            'file_name' => fake()->uuid().'.jpg',
             'mime_type' => 'image/jpeg',
             'disk' => 'public',
             'conversions_disk' => 'public',

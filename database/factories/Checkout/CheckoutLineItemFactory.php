@@ -3,7 +3,6 @@
 namespace Database\Factories\Checkout;
 
 use App\Models\Catalog\Price;
-use App\Models\Catalog\Product;
 use App\Models\Checkout\CheckoutLineItem;
 use App\Models\Checkout\CheckoutSession;
 use App\Models\Organization;

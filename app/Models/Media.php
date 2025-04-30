@@ -31,8 +31,11 @@ class Media extends Model
 
     // Status constants
     const STATUS_PENDING = 'pending';    // Upload URL generated but upload not completed
+
     const STATUS_UPLOADED = 'uploaded';   // File uploaded but not finalized
+
     const STATUS_READY = 'ready';        // File processed and ready for use
+
     const STATUS_FAILED = 'failed';      // Upload or processing failed
 
     /**
@@ -53,7 +56,6 @@ class Media extends Model
             : \Storage::disk('public')->url($this->path);
     }
 
-
     public function getSignedUrl($expiration = 60)
     {
         // Use processed version if available
@@ -64,7 +66,6 @@ class Media extends Model
             now()->addMinutes($expiration)
         );
     }
-
 
     /**
      * Scope a query to only include ready media
