@@ -22,6 +22,8 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(Organization::class, function ($app) {
             return $app->make(Request::class)->user()?->currentOrganization;
         });
+
+        $this->app->register(ActivityServiceProvider::class);
     }
 
     /**
@@ -45,7 +47,7 @@ class AppServiceProvider extends ServiceProvider
         Model::preventAccessingMissingAttributes();
         Model::preventSilentlyDiscardingAttributes();
 
-        // Since this is a performance concern only, don’t halt
+        // Since this is a performance concern only, don't halt
         // production for violations.
         Model::preventLazyLoading();
 
