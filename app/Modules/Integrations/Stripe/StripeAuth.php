@@ -5,14 +5,14 @@ namespace App\Modules\Integrations\Stripe;
 use App\Enums\IntegrationType;
 use App\Modules\Integrations\Contracts\SupportsAuthorization;
 use App\Modules\Integrations\Services\IntegrationUpsertService;
-use Laravel\Socialite\Facades\Socialite;
+use GuzzleHttp\Exception\ClientException;
 use GuzzleHttp\Psr7\Query;
+use GuzzleHttp\Psr7\Uri;
+use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
-use GuzzleHttp\Psr7\Uri;
-use Illuminate\Http\Request;
-use GuzzleHttp\Exception\ClientException;
+use Laravel\Socialite\Facades\Socialite;
 use Laravel\Socialite\Two\InvalidStateException;
 
 /** @todo implement actual stripe client */
@@ -22,7 +22,7 @@ class StripeAuth implements SupportsAuthorization
     {
         $integrationType = $integrationType->value;
 
-         /** @var AbstractProvider $socialite */
+        /** @var AbstractProvider $socialite */
         $socialite = Socialite::driver($integrationType)->stateless();
 
         $user = $request->user();
@@ -50,7 +50,7 @@ class StripeAuth implements SupportsAuthorization
 
         abort_if(! $state, 404, 'Invalid state');
 
-        $uri = new Uri("/products");
+        $uri = new Uri('/products');
         $query = Query::parse($uri->getQuery());
 
         try {

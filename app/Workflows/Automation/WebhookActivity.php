@@ -28,9 +28,10 @@ class WebhookActivity extends WorkflowActivity
 
         if (empty($url)) {
             logger()->error('Webhook activity missing URL');
+
             return [
                 'error' => 'Missing URL',
-                'status' => 400
+                'status' => 400,
             ];
         }
 
@@ -38,7 +39,7 @@ class WebhookActivity extends WorkflowActivity
             $request = Http::withHeaders($headers)
                 ->timeout($timeout);
 
-            if (!$verifySsl) {
+            if (! $verifySsl) {
                 $request->withoutVerifying();
             }
 
@@ -48,18 +49,18 @@ class WebhookActivity extends WorkflowActivity
                 'status' => $response->status(),
                 'body' => $response->json() ?? $response->body(),
                 'headers' => $response->headers(),
-                'success' => $response->successful()
+                'success' => $response->successful(),
             ];
         } catch (\Exception $e) {
             logger()->error('Webhook request failed', [
                 'error' => $e->getMessage(),
-                'url' => $url
+                'url' => $url,
             ]);
 
             return [
                 'error' => $e->getMessage(),
                 'status' => 0,
-                'success' => false
+                'success' => false,
             ];
         }
     }

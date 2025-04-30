@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('organization_id')->nullable()->constrained('organizations')->nullOnDelete();
             $table->string('name')->nullable();
-            
+
             // Color fields with alpha channel
             $table->string('primary_color', 9)->nullable();
             $table->string('secondary_color', 9)->nullable();
@@ -31,11 +31,11 @@ return new class extends Migration
             $table->string('warning_color', 9)->nullable();
             $table->string('success_color', 9)->nullable();
             $table->string('highlight_color', 9)->nullable();
-            
+
             // Typography fields
             $table->string('main_font', 64)->nullable();
             $table->string('mono_font', 64)->nullable();
-            
+
             // Typography arrays
             $table->json('h1_typography')->nullable();
             $table->json('h2_typography')->nullable();
@@ -45,19 +45,19 @@ return new class extends Migration
             $table->json('h6_typography')->nullable();
             $table->json('label_typography')->nullable();
             $table->json('body_typography')->nullable();
-            
+
             // Component fields
             $table->string('border_radius', 4)->nullable();
             $table->string('shadow_sm', 64)->nullable();
             $table->string('shadow_md', 64)->nullable();
             $table->string('shadow_lg', 64)->nullable();
-            
+
             $table->timestamps();
             $table->softDeletes();
 
             // Add indexes for foreign keys
             $table->index('organization_id');
-            
+
             // Add index for soft deletes
             $table->index('deleted_at');
         });

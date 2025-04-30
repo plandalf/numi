@@ -5,27 +5,23 @@ namespace App\Modules\Integrations\Stripe;
 use App\Enums\ChargeType;
 use App\Models\Catalog\Price;
 use App\Models\Catalog\Product;
-use App\Models\Checkout\CheckoutSession;
 use App\Models\Customer;
 use App\Models\Integration;
 use App\Models\Order\Order;
 use App\Modules\Integrations\AbstractIntegration;
-use App\Modules\Integrations\Contracts\HasPrices;
-use App\Modules\Integrations\Contracts\HasProducts;
 use App\Modules\Integrations\Contracts\CanCreateSubscription;
 use App\Modules\Integrations\Contracts\CanSetupIntent;
+use App\Modules\Integrations\Contracts\HasPrices;
+use App\Modules\Integrations\Contracts\HasProducts;
 use App\Modules\Integrations\Stripe\Actions\ImportStripeProductAction;
 use Stripe\StripeClient;
 
-class Stripe extends AbstractIntegration implements
-    CanCreateSubscription,
-    CanSetupIntent,
-    HasProducts,
-    HasPrices
+class Stripe extends AbstractIntegration implements CanCreateSubscription, CanSetupIntent, HasPrices, HasProducts
 {
     protected StripeClient $stripeClient;
 
-    public function __construct(public Integration $integration) {
+    public function __construct(public Integration $integration)
+    {
         $this->stripeClient = new StripeClient([
             'api_key' => $this->integration->secret,
             'stripe_account' => $this->integration->lookup_key,
@@ -85,6 +81,7 @@ class Stripe extends AbstractIntegration implements
     public function createCustomer(array $attrs = [])
     {
         logger()->info('createCustomer', ['attrs' => $attrs]);
+
         return $this->stripeClient->customers->create($attrs);
     }
 
@@ -98,14 +95,14 @@ class Stripe extends AbstractIntegration implements
         $order = $data['order'] ?? null;
         $items = $data['items'] ?? [];
 
-        if (!$order || empty($items)) {
+        if (! $order || empty($items)) {
             throw new \InvalidArgumentException('Order and items are required to create a subscription');
         }
 
         // Get the customer from the order
         $customer = $order->customer;
 
-        if (!$customer) {
+        if (! $customer) {
             throw new \InvalidArgumentException('Customer is required to create a subscription');
         }
 
@@ -176,7 +173,7 @@ class Stripe extends AbstractIntegration implements
             'lookup_key' => $price->lookup_key,
         ];
 
-        if($price->renew_interval || $price->recurring_interval_count) {
+        if ($price->renew_interval || $price->recurring_interval_count) {
             $attrs['recurring'] = [
                 'interval' => $price->renew_interval,
                 'interval_count' => $price->recurring_interval_count,
@@ -184,7 +181,7 @@ class Stripe extends AbstractIntegration implements
         }
 
         /** @todo set tiers properly */
-        if($price->type === ChargeType::ONE_TIME) {
+        if ($price->type === ChargeType::ONE_TIME) {
             $attrs['billing_scheme'] = 'per_unit';
             $attrs['unit_amount'] = $price->amount->getAmount();
         } else {
@@ -221,8 +218,9 @@ class Stripe extends AbstractIntegration implements
             data_get($attrs, 'description', $gatewayProductId),
         ];
 
-        if(!$gatewayProductId || !$gatewayPrices) return null;
-
+        if (! $gatewayProductId || ! $gatewayPrices) {
+            return null;
+        }
 
         return (new ImportStripeProductAction)(
             $this->integration,
@@ -237,14 +235,14 @@ class Stripe extends AbstractIntegration implements
         $order = $data['order'] ?? null;
         $items = $data['items'] ?? [];
 
-        if (!$order || empty($items)) {
+        if (! $order || empty($items)) {
             throw new \InvalidArgumentException('Order and items are required to create a payment intent');
         }
 
         // Get the customer from the order
         $customer = $order->customer;
 
-        if (!$customer) {
+        if (! $customer) {
             throw new \InvalidArgumentException('Customer is required to create a payment intent');
         }
 
@@ -256,7 +254,7 @@ class Stripe extends AbstractIntegration implements
             $price = $item['price'];
             $quantity = $item['quantity'] ?? 1;
 
-            if (!$currency) {
+            if (! $currency) {
                 $currency = $price['currency'];
             } elseif ($currency !== $price['currency']) {
                 throw new \InvalidArgumentException('All items must have the same currency');

@@ -18,6 +18,7 @@ class UpdatePrice
         // TODO: Add logic for gateway provider price update if needed
 
         $price->update($validated);
+
         return $price->fresh();
     }
 }

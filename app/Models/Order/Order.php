@@ -6,18 +6,18 @@ use App\Database\Traits\UuidRouteKey;
 use App\Enums\OrderStatus;
 use App\Models\Checkout\CheckoutSession;
 use App\Models\Customer;
+use Illuminate\Database\Eloquent\Collection as DBCollection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Collection as DBCollection;
 
 /**
  * @property DBCollection<OrderItem> $items
  */
 class Order extends Model
 {
-    use UuidRouteKey, HasFactory;
+    use HasFactory, UuidRouteKey;
 
     protected $table = 'orders';
 
@@ -100,7 +100,6 @@ class Order extends Model
     /**
      * Calculate the total amount for the order based on its items.
      *check
-     * @return float
      */
     public function getTotalAmountAttribute(): float
     {

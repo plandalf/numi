@@ -24,6 +24,7 @@ class RegisteredUserController extends Controller
     {
         $this->organizationService = $organizationService;
     }
+
     /**
      * Show the registration page.
      */
@@ -60,7 +61,7 @@ class RegisteredUserController extends Controller
         event(new Registered($user));
 
         Auth::login($user);
-        
+
         $organization = $this->organizationService->getOrganizationByJoinToken(
             Session::get('join_token')
         );
@@ -74,10 +75,10 @@ class RegisteredUserController extends Controller
 
             // Join the organization
             $this->organizationService->attachUserToOrganization($user, $organization);
-            
+
             // Clear the join token from the session
             Session::forget('join_token');
-            
+
             return redirect()
                 ->route('dashboard')
                 ->with('success', 'Account created and joined organization successfully.');

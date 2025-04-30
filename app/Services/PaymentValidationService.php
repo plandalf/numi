@@ -2,17 +2,13 @@
 
 namespace App\Services;
 
-use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 class PaymentValidationService
 {
     /**
      * Determine the type of payment error based on the error message or code
-     *
-     * @param string|null $errorMessage
-     * @param string|null $errorCode
-     * @return string
      */
     public function determinePaymentErrorType(?string $errorMessage = null, ?string $errorCode = null): string
     {
@@ -51,9 +47,6 @@ class PaymentValidationService
 
     /**
      * Get a user-friendly error message based on the error type
-     *
-     * @param string $errorType
-     * @return string
      */
     public function getUserFriendlyErrorMessage(string $errorType): string
     {
@@ -70,8 +63,7 @@ class PaymentValidationService
     /**
      * Validate a subscription payment
      *
-     * @param mixed $subscription
-     * @return array
+     * @param  mixed  $subscription
      */
     public function validateSubscriptionPayment($subscription): array
     {
@@ -81,7 +73,7 @@ class PaymentValidationService
         $errorDetails = null;
 
         // Check if subscription exists
-        if (!$subscription) {
+        if (! $subscription) {
             return [
                 'is_valid' => false,
                 'error_type' => 'subscription_not_found',
@@ -134,8 +126,7 @@ class PaymentValidationService
     /**
      * Validate a one-time payment
      *
-     * @param mixed $paymentIntent
-     * @return array
+     * @param  mixed  $paymentIntent
      */
     public function validateOneTimePayment($paymentIntent): array
     {
@@ -145,7 +136,7 @@ class PaymentValidationService
         $errorDetails = null;
 
         // Check if payment intent exists
-        if (!$paymentIntent) {
+        if (! $paymentIntent) {
             return [
                 'is_valid' => false,
                 'error_type' => 'payment_intent_not_found',

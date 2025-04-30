@@ -2,9 +2,9 @@
 
 namespace App\Modules\Integrations\Contracts;
 
-use Illuminate\Http\Request;
 use App\Enums\IntegrationType;
 use App\Modules\Integrations\Services\IntegrationUpsertService;
+use Illuminate\Http\Request;
 
 interface SupportsAuthorization
 {

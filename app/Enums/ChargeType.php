@@ -21,12 +21,10 @@ enum ChargeType: string
 
     /**
      * Get a human-readable label for the charge type.
-     *
-     * @return string
      */
     public function label(): string
     {
-        return match($this) {
+        return match ($this) {
             self::ONE_TIME => 'One Time',
             self::GRADUATED => 'Graduated',
             self::VOLUME => 'Volume',

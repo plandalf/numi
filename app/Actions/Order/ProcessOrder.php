@@ -28,7 +28,7 @@ class ProcessOrder
         try {
             $integrationClient = $checkoutSession->integrationClient();
 
-            if($integrationClient instanceof CanSetupIntent && $confirmationToken) {
+            if ($integrationClient instanceof CanSetupIntent && $confirmationToken) {
                 $setupIntent = $integrationClient->createSetupIntent($order, $confirmationToken);
 
                 // Check if the setup intent was successful
@@ -85,7 +85,7 @@ class ProcessOrder
                     // Validate the subscription payment
                     $validationResult = $this->paymentValidationService->validateSubscriptionPayment($subscription);
 
-                    if (!$validationResult['is_valid']) {
+                    if (! $validationResult['is_valid']) {
                         $errorDetails = array_merge(
                             ['subscription_id' => $subscription->id],
                             $validationResult['error_details'] ?? []
@@ -111,7 +111,7 @@ class ProcessOrder
                     // Validate the one-time payment
                     $validationResult = $this->paymentValidationService->validateOneTimePayment($paymentIntent);
 
-                    if (!$validationResult['is_valid']) {
+                    if (! $validationResult['is_valid']) {
                         $errorDetails = array_merge(
                             ['payment_intent_id' => $paymentIntent->id],
                             $validationResult['error_details'] ?? []

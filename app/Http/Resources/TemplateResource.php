@@ -25,17 +25,17 @@ class TemplateResource extends JsonResource
             'preview_images' => $this->preview_images,
             'created_at' => $this->created_at?->toISOString(),
             'updated_at' => $this->updated_at?->toISOString(),
-            
+
             // Load theme using ThemeResource when relationship is loaded
             'theme' => $this->when(
-                $this->relationLoaded('theme'), 
-                fn() => $this->theme ? new ThemeResource($this->theme) : null
+                $this->relationLoaded('theme'),
+                fn () => $this->theme ? new ThemeResource($this->theme) : null
             ),
-            
+
             // Load organization when relationship is loaded
             'organization' => $this->when(
-                $this->relationLoaded('organization'), 
-                fn() => $this->organization ? [
+                $this->relationLoaded('organization'),
+                fn () => $this->organization ? [
                     'id' => $this->organization->id,
                     'name' => $this->organization->name,
                     'ulid' => $this->organization->ulid,

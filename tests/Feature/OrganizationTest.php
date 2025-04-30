@@ -2,9 +2,9 @@
 
 namespace Tests\Feature;
 
+use App\Enums\Role;
 use App\Models\Organization;
 use App\Models\User;
-use App\Enums\Role;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
@@ -14,7 +14,9 @@ class OrganizationTest extends TestCase
     use RefreshDatabase;
 
     private Organization $organization;
+
     private User $owner;
+
     private User $member;
 
     protected function setUp(): void
@@ -153,7 +155,7 @@ class OrganizationTest extends TestCase
         $response = $this->post(route('register'), $userData);
 
         $newUser = User::where('email', 'test@example.com')->first();
-        
+
         $this->assertDatabaseHas('organization_users', [
             'organization_id' => $this->organization->id,
             'user_id' => $newUser->id,
@@ -229,7 +231,7 @@ class OrganizationTest extends TestCase
         // Create another organization for the member to be part of
         $otherOrganization = Organization::factory()->create();
         $this->member->organizations()->attach($otherOrganization, ['role' => Role::MEMBER->value]);
-        
+
         // Verify member's current organization is the one we're about to remove them from
         $this->assertEquals($this->organization->id, $this->member->current_organization_id);
 
@@ -246,11 +248,11 @@ class OrganizationTest extends TestCase
 
         // Assert that the member's current organization has been switched to the other organization
         $this->assertEquals($otherOrganization->id, $this->member->current_organization_id);
-        
+
         // Verify they were removed from the original organization
         $this->assertDatabaseMissing('organization_users', [
             'organization_id' => $this->organization->id,
             'user_id' => $this->member->id,
         ]);
     }
-} 
+}

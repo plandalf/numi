@@ -48,23 +48,23 @@ class OfferSlotUpdateRequest extends FormRequest
                 'required',
                 'string',
                 'max:255',
-                 // Key must be unique within the *offer*
-                 // Use the actual table name from Slot model if different
-                 // $slot->getTable()
-                // Rule::unique('store_offer_slots')->where(function ($query) use ($offer) { 
+                // Key must be unique within the *offer*
+                // Use the actual table name from Slot model if different
+                // $slot->getTable()
+                // Rule::unique('store_offer_slots')->where(function ($query) use ($offer) {
                 //     return $query->where('offer_id', $offer->id);
                 // })->ignore($slot->id), // Ignore the current slot being updated
-                'regex:/^[a-z0-9_]+$/' // Ensure key is snake_case and alphanumeric
+                'regex:/^[a-z0-9_]+$/', // Ensure key is snake_case and alphanumeric
             ],
             'sort_order' => ['sometimes', 'required', 'integer', 'min:0'],
             'is_required' => ['sometimes', 'required', 'boolean'],
-            'default_price_id' => [ 
-                'nullable', 
+            'default_price_id' => [
+                'nullable',
                 'integer',
                 Rule::exists('catalog_prices', 'id')->where(function ($query) use ($organizationId) {
                     return $query->where('organization_id', $organizationId)
-                                ->where('is_active', true); 
-                })
+                        ->where('is_active', true);
+                }),
             ],
         ];
     }
@@ -77,18 +77,18 @@ class OfferSlotUpdateRequest extends FormRequest
         // Ensure boolean value for is_required
         if ($this->has('is_required')) {
             $this->merge([
-                'is_required' => filter_var($this->input('is_required'), FILTER_VALIDATE_BOOLEAN)
+                'is_required' => filter_var($this->input('is_required'), FILTER_VALIDATE_BOOLEAN),
             ]);
         }
         // Ensure sort_order is integer
         if ($this->has('sort_order')) {
             $this->merge([
-                 'sort_order' => (int) $this->input('sort_order', 0)
+                'sort_order' => (int) $this->input('sort_order', 0),
             ]);
         }
         // Ensure default_price_id is null if empty string or not present
-         if (!$this->input('default_price_id')) { 
-             $this->merge(['default_price_id' => null]); 
-         }
+        if (! $this->input('default_price_id')) {
+            $this->merge(['default_price_id' => null]);
+        }
     }
 }

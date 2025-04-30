@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-use App\Models\Checkout\CheckoutSession;
 use App\Models\Order\Order;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;

@@ -21,7 +21,7 @@ class ThemeTest extends TestCase
 
         $this->assertNotNull($theme->id);
         $this->assertEquals($organization->id, $theme->organization_id);
-        
+
         // Verify default properties are set
         $this->assertNotNull($theme->primary_color);
         $this->assertNotNull($theme->main_font);
@@ -43,10 +43,10 @@ class ThemeTest extends TestCase
     {
         // Create mix of global and organization themes
         $organization = Organization::factory()->create();
-        
+
         // Create 2 global themes
         Theme::factory()->count(2)->create();
-        
+
         // Create 3 organization themes
         Theme::factory()
             ->count(3)
@@ -55,7 +55,7 @@ class ThemeTest extends TestCase
 
         // Test global scope
         $globalThemes = Theme::global()->get();
-        
+
         $this->assertCount(2, $globalThemes);
         $globalThemes->each(function ($theme) {
             $this->assertNull($theme->organization_id);
@@ -66,7 +66,7 @@ class ThemeTest extends TestCase
     public function it_can_update_theme_properties()
     {
         $theme = Theme::factory()->create();
-        
+
         $theme->fill([
             'primary_color' => '#FF0000',
             'secondary_color' => '#00FF00',
@@ -80,7 +80,7 @@ class ThemeTest extends TestCase
             'h2_typography' => ['14px', 'Arial', '600'],
             'body_typography' => ['14px', 'Arial', '400'],
         ]);
-        
+
         $theme->save();
 
         $this->assertEquals('#FF0000', $theme->primary_color);
@@ -100,7 +100,7 @@ class ThemeTest extends TestCase
     public function it_validates_color_property_values_types()
     {
         $theme = Theme::factory()->create();
-        
+
         // Colors should be 6 characters (hex without alpha)
         $this->assertMatchesRegularExpression('/^#[0-9A-Fa-f]{6}$/', $theme->primary_color);
         $this->assertMatchesRegularExpression('/^#[0-9A-Fa-f]{6}$/', $theme->secondary_color);
@@ -112,18 +112,18 @@ class ThemeTest extends TestCase
     public function it_validates_typography_property_value_types()
     {
         $theme = Theme::factory()->create();
-        
+
         // Fonts should be strings
         $this->assertIsString($theme->main_font);
         $this->assertIsString($theme->mono_font);
-        
+
         // Typography arrays should have 3 elements
         $this->assertIsArray($theme->h1_typography);
         $this->assertCount(3, $theme->h1_typography);
         $this->assertIsString($theme->h1_typography[0]); // size
         $this->assertIsString($theme->h1_typography[1]); // font
         $this->assertIsString($theme->h1_typography[2]); // weight
-        
+
         $this->assertIsArray($theme->body_typography);
         $this->assertCount(3, $theme->body_typography);
         $this->assertIsString($theme->body_typography[0]); // size
@@ -135,18 +135,18 @@ class ThemeTest extends TestCase
     public function it_validates_components_property_value_types()
     {
         $theme = Theme::factory()->create();
-        
+
         // Border radius should be a string with max 4 chars
         $this->assertIsString($theme->border_radius);
         $this->assertLessThanOrEqual(4, strlen($theme->border_radius));
-        
+
         // Shadows should be strings with max 64 chars
         $this->assertIsString($theme->shadow_sm);
         $this->assertLessThanOrEqual(64, strlen($theme->shadow_sm));
 
         $this->assertIsString($theme->shadow_md);
         $this->assertLessThanOrEqual(64, strlen($theme->shadow_md));
-        
+
         $this->assertIsString($theme->shadow_lg);
         $this->assertLessThanOrEqual(64, strlen($theme->shadow_lg));
     }

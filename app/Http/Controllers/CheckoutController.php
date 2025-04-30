@@ -4,12 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Actions\Checkout\CreateCheckoutSessionAction;
 use App\Http\Resources\Checkout\CheckoutSessionResource;
+use App\Models\Checkout\CheckoutSession;
 use App\Models\Store\Offer;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
-use App\Models\Checkout\CheckoutSession;
 
 class CheckoutController extends Controller
 {
@@ -23,14 +23,14 @@ class CheckoutController extends Controller
         $checkoutSession = $this->createCheckoutSessionAction->execute($offer);
 
         return redirect()->to(URL::signedRoute('checkouts.show', [
-            'checkout' => $checkoutSession->id
+            'checkout' => $checkoutSession->id,
         ], now()->addDays(5)));
     }
 
     public function show(CheckoutSession $checkout, Request $request)
     {
         // Validate the signed URL
-        if (!$request->hasValidSignature()) {
+        if (! $request->hasValidSignature()) {
             abort(403, 'Invalid or expired checkout link.');
         }
 
@@ -45,6 +45,7 @@ class CheckoutController extends Controller
         $offer->view = $json;
 
         $checkout->load(['lineItems.slot', 'lineItems.price.integration']);
+
         return Inertia::render('Checkout', [
             'offer' => $offer,
             'checkoutSession' => new CheckoutSessionResource($checkout),

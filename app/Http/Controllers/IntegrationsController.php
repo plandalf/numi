@@ -2,8 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use Inertia\Inertia;
-use Inertia\Response;
 use App\Enums\IntegrationType;
 use App\Models\Integration;
 use App\Modules\Integrations\Contracts\HasPrices;
@@ -12,10 +10,11 @@ use App\Modules\Integrations\Contracts\SupportsAuthorization;
 use App\Modules\Integrations\Services\IntegrationUpsertService;
 use App\Modules\Integrations\Stripe\StripeAuth;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
+use Inertia\Response;
 
 class IntegrationsController extends Controller
 {
-
     public function index(Request $request): Response
     {
         $user = $request->user();
@@ -23,7 +22,7 @@ class IntegrationsController extends Controller
         $integrations = $organization->integrations;
 
         return Inertia::render('integrations/index', [
-            'integrations' => $integrations
+            'integrations' => $integrations,
         ]);
     }
 
@@ -38,7 +37,7 @@ class IntegrationsController extends Controller
     {
         $integrationClient = $integration->integrationClient();
 
-        if($integrationClient instanceof HasProducts) {
+        if ($integrationClient instanceof HasProducts) {
             $allProducts = collect();
             $startingAfter = null;
 
@@ -67,7 +66,7 @@ class IntegrationsController extends Controller
     {
         $integrationClient = $integration->integrationClient();
 
-        if($integrationClient instanceof HasPrices) {
+        if ($integrationClient instanceof HasPrices) {
             $allPrices = collect();
             $startingAfter = null;
 
@@ -96,13 +95,11 @@ class IntegrationsController extends Controller
         return response()->json([]);
     }
 
-
-
     public function authorize(string $integrationType, Request $request)
     {
         $integrationClass = $this->getIntegrationAuthClass(IntegrationType::from($integrationType));
 
-        if(!$integrationClass instanceof SupportsAuthorization) {
+        if (! $integrationClass instanceof SupportsAuthorization) {
             throw new \Exception('Integration does not support authorization');
         }
 
@@ -115,20 +112,18 @@ class IntegrationsController extends Controller
     {
         $integrationClass = $this->getIntegrationAuthClass(IntegrationType::from($integrationType));
 
-        if(!$integrationClass instanceof SupportsAuthorization) {
+        if (! $integrationClass instanceof SupportsAuthorization) {
             throw new \Exception('Integration does not support authorization');
         }
 
         return $integrationClass->handleCallback(IntegrationType::from($integrationType), $request, app(IntegrationUpsertService::class));
     }
 
-
     public function getIntegrationAuthClass(IntegrationType $integration)
     {
-        return match($integration) {
+        return match ($integration) {
             IntegrationType::STRIPE => app(StripeAuth::class),
             IntegrationType::STRIPE_TEST => app(StripeAuth::class),
         };
     }
-
 }

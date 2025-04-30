@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Template;
 use App\Http\Resources\TemplateResource;
+use App\Models\Template;
 use App\Services\TemplateService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -54,4 +54,4 @@ class TemplateController extends Controller
 
         return redirect()->route('offers.edit', $offer);
     }
-} 
+}

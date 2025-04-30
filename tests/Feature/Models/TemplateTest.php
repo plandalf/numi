@@ -43,7 +43,7 @@ class TemplateTest extends TestCase
     public function it_casts_view_as_json()
     {
         $template = Template::factory()->create();
-        
+
         $this->assertIsArray($template->view);
         $this->assertArrayHasKey('id', $template->view);
         $this->assertArrayHasKey('pages', $template->view);
@@ -53,7 +53,7 @@ class TemplateTest extends TestCase
     public function it_casts_preview_images_as_array()
     {
         $template = Template::factory()->create();
-        
+
         $this->assertIsArray($template->preview_images);
         $this->assertCount(2, $template->preview_images);
     }
@@ -82,9 +82,9 @@ class TemplateTest extends TestCase
     public function it_can_be_soft_deleted()
     {
         $template = Template::factory()->create();
-        
+
         $template->delete();
-        
+
         $this->assertSoftDeleted('templates', [
             'id' => $template->id,
         ]);
@@ -95,16 +95,16 @@ class TemplateTest extends TestCase
     {
         // Create a global template (no organization)
         $globalTemplate = Template::factory()->create(['organization_id' => null]);
-        
+
         // Create an organization-specific template
         $organization = Organization::factory()->create();
         Template::factory()->create(['organization_id' => $organization->id]);
-        
+
         // Get global templates
         $globalTemplates = Template::global()->get();
-        
+
         // Assert only the global template is returned
         $this->assertCount(1, $globalTemplates);
         $this->assertEquals($globalTemplate->id, $globalTemplates->first()->id);
     }
-} 
+}

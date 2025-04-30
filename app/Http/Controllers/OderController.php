@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-
 use App\Models\Order\Order;
 use Inertia\Inertia;
 

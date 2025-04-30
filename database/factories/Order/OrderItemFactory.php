@@ -3,7 +3,6 @@
 namespace Database\Factories\Order;
 
 use App\Models\Catalog\Price;
-use App\Models\Catalog\Product;
 use App\Models\Order\Order;
 use App\Models\Order\OrderItem;
 use App\Models\Organization;

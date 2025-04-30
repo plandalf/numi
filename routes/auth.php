@@ -61,4 +61,3 @@ Route::get('auth/join/{join_token}', [OrganizationController::class, 'joinPage']
     ->name('auth.join');
 
 Route::post('organizations/join', [OrganizationController::class, 'join'])->name('organizations.join');
-

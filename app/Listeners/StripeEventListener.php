@@ -8,7 +8,6 @@ use Laravel\Cashier\Events\WebhookReceived;
 
 class StripeEventListener
 {
-
     /**
      * Create the event listener.
      */
@@ -26,11 +25,11 @@ class StripeEventListener
             $this->invoicePaymentFailed($event->payload);
         }
     }
-    
+
     public function invoicePaymentFailed(array $payload): void
     {
         $organization = $this->getBillableModel($payload);
-    
+
         if ($organization && $organization->subscribed('default')) {
             $organization->subscription('default')->cancel(); // Cancel current paid sub
             $organization->newSubscription('default', config('cashier.free_price_id'))->create(); // Downgrade to free

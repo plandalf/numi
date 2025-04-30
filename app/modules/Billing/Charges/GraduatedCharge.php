@@ -24,7 +24,7 @@ class GraduatedCharge extends Price
         $properties = $this->properties;
 
         // ensure properties are always sorted from smallest to largest
-        usort($properties, fn($a, $b) => ($a['up_to'] ?? PHP_FLOAT_MAX) - ($b['up_to'] ?? PHP_FLOAT_MAX));
+        usort($properties, fn ($a, $b) => ($a['up_to'] ?? PHP_FLOAT_MAX) - ($b['up_to'] ?? PHP_FLOAT_MAX));
 
         foreach ($properties as $tier) {
             $tierQuantity = $this->calculateTierQuantity($remainingQuantity, $tier, $lastTierEndQuantity);
@@ -37,7 +37,9 @@ class GraduatedCharge extends Price
             $remainingQuantity -= $tierQuantity;
             $lastTierEndQuantity = $tier['up_to'] ?? $lastTierEndQuantity + $tierQuantity;
 
-            if ($remainingQuantity <= 0) break;
+            if ($remainingQuantity <= 0) {
+                break;
+            }
         }
 
         return $total;

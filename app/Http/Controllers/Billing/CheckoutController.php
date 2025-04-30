@@ -4,14 +4,14 @@ namespace App\Http\Controllers\Billing;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use Inertia\Inertia;;
+use Inertia\Inertia;
 
 class CheckoutController extends Controller
 {
     public function billing(Request $request)
     {
 
-        if (!config('cashier.enable_billing')) {
+        if (! config('cashier.enable_billing')) {
             return redirect()->route('dashboard');
         }
 
@@ -19,12 +19,12 @@ class CheckoutController extends Controller
 
         $response = Inertia::render('organizations/settings/billing');
 
-        if($intent && $intent === 'checkout_success') {
+        if ($intent && $intent === 'checkout_success') {
             return $response->with('flash', [
-                    'success' => 'Congratulations! Your subscription has been successfully updated.',
-                ]);
+                'success' => 'Congratulations! Your subscription has been successfully updated.',
+            ]);
         }
-        
+
         return $response;
     }
 
@@ -32,7 +32,7 @@ class CheckoutController extends Controller
     {
         $organization = request()->user()->currentOrganization;
 
-        if (!$organization->hasStripeId()) {
+        if (! $organization->hasStripeId()) {
             $organization->createAsStripeCustomer();
         }
 
@@ -45,7 +45,6 @@ class CheckoutController extends Controller
                 'cancel_url' => route('organizations.settings.billing.index'),
             ]);
     }
-    
 
     public function portal(Request $request)
     {

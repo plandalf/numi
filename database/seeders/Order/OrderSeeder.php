@@ -4,7 +4,6 @@ namespace Database\Seeders\Order;
 
 use App\Models\Order\Order;
 use App\Models\Order\OrderItem;
-use App\Models\Organization;
 use App\Models\User;
 use Database\Seeders\UserSeeder;
 use Illuminate\Database\Seeder;

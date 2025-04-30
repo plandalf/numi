@@ -5,15 +5,11 @@ namespace App\Actions\Order;
 use App\Enums\OrderStatus;
 use App\Models\Checkout\CheckoutSession;
 use App\Models\Order\Order;
-use Illuminate\Support\Str;
 
 class CreateOrderAction
 {
     /**
      * Create a new order from a checkout session.
-     *
-     * @param CheckoutSession $checkoutSession
-     * @return Order
      */
     public function __invoke(CheckoutSession $checkoutSession): Order
     {

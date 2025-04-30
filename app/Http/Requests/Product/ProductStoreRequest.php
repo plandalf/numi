@@ -35,7 +35,7 @@ class ProductStoreRequest extends FormRequest
                 'max:255',
                 Rule::unique(Product::class)->where(function ($query) use ($organizationId) {
                     return $query->where('organization_id', $organizationId);
-                })
+                }),
             ],
             'integration_id' => ['nullable', 'exists:integrations,id'],
             'gateway_prices' => ['required_with:integration_id', 'array'],

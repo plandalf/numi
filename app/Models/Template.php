@@ -3,12 +3,10 @@
 namespace App\Models;
 
 use App\Database\Model;
-use App\Models\Organization;
-use App\Models\Theme;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Database\Eloquent\Builder;
 
 /**
  * @property int $id
@@ -69,12 +67,9 @@ class Template extends Model
 
     /**
      * Scope a query to only include global templates (not associated with any organization).
-     *
-     * @param  \Illuminate\Database\Eloquent\Builder  $query
-     * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeGlobal(Builder $query): Builder
     {
         return $query->whereNull('organization_id');
     }
-} 
+}

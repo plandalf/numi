@@ -7,7 +7,8 @@ use Illuminate\Database\Seeder;
 
 class UserSeeder extends Seeder
 {
-    static $adminEmail = 'dev@plandalf.com';
+    public static $adminEmail = 'dev@plandalf.com';
+
     /**
      * Run the database seeds.
      */

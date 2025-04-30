@@ -6,7 +6,7 @@ use App\Models\ResourceEvent;
 
 class TemplateResolver
 {
-    public static function get(ResourceEvent $event, string|array $key = null, mixed $default = null): mixed
+    public static function get(ResourceEvent $event, string|array|null $key = null, mixed $default = null): mixed
     {
         $context = ['trigger' => $event->snapshot];
 
@@ -15,7 +15,7 @@ class TemplateResolver
                 return array_map($resolve, $value);
             }
 
-            if (!is_string($value) || !str_contains($value, '{{')) {
+            if (! is_string($value) || ! str_contains($value, '{{')) {
                 return $value;
             }
 

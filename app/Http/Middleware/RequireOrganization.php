@@ -13,10 +13,10 @@ class RequireOrganization
      */
     public function handle(Request $request, Closure $next): Response
     {
-        if (!$request->user() || $request->user()->organizations()->exists()) {
+        if (! $request->user() || $request->user()->organizations()->exists()) {
             return $next($request);
         }
 
         return redirect()->route('organizations.setup');
     }
-} 
+}

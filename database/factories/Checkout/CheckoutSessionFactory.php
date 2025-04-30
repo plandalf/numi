@@ -6,7 +6,6 @@ use App\Enums\CheckoutSessionStatus;
 use App\Models\Checkout\CheckoutSession;
 use App\Models\Organization;
 use App\Models\Store\Offer;
-use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
