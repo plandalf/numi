@@ -3,7 +3,7 @@
 import { BlockConfig, BlockContextType } from "@/types/blocks";
 import { createContext, useContext, useEffect, useState } from "react";
 import get from "lodash/get";
-import { CheckoutState, GlobalStateContext } from "@/pages/Checkout";
+import { CheckoutState, GlobalStateContext } from "@/contexts/GlobalStateProvider";
 import { Theme } from "@/types/theme";
 
 export const BlockContext = createContext<BlockContextType>({

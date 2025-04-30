@@ -1,5 +1,5 @@
 import { useEffect, useContext } from 'react';
-import { GlobalStateContext } from '@/pages/Checkout';
+import { GlobalStateContext } from '@/contexts/GlobalStateProvider';
 import { JSONSchemaEditor } from '@/components/editor/json-schema-editor';
 import { Block } from '@/types/offer';
 import { Label } from '../ui/label';
@@ -124,7 +124,7 @@ export const Inspector = ({
                   <h3 className="mb-2 font-semibold">Appearance</h3>
                   {/* Alignment Selector */}
                   {globalState.hookUsage[block.id].some(h => h.name === 'alignment') && (
-                    <AlignmentPickerEditor 
+                    <AlignmentPickerEditor
                       label="Alignment"
                       value={block.appearance?.alignment || 'left'}
                       onChange={align => onUpdate({ ...block, appearance: { ...block.appearance, alignment: align } })}

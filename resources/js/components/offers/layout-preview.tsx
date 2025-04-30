@@ -8,7 +8,7 @@ import { type PageType, type OfferConfiguration, type OfferVariant, Branch, type
 import { BlockConfig, FieldState, HookUsage, GlobalState, BlockContextType } from '@/types/blocks';
 import { BlockContext } from '@/contexts/Numi';
 import { blockTypes } from '@/components/blocks';
-import { GlobalStateContext } from '@/pages/Checkout';
+import { GlobalStateContext } from '@/contexts/GlobalStateProvider';
 import { useDroppable } from '@dnd-kit/core';
 import cx from 'classnames';
 import { rectSortingStrategy, SortableContext, useSortable } from '@dnd-kit/sortable';
@@ -54,7 +54,7 @@ interface LayoutPreviewProps {
     selectedBlockId?: string | null;
     onSelectBlock?: (blockId: string) => void;
     onAddBlock?: (section: keyof LocalPageView, blockType: BlockType, index?: number) => void;
-    
+
 }
 
 interface SectionProps {
@@ -64,7 +64,7 @@ interface SectionProps {
     selectedBlockId?: string | null;
     onSelectBlock?: (blockId: string) => void;
     onAddBlock?: (section: keyof LocalPageView, blockType: BlockType, index?: number) => void;
-    
+
 }
 
 interface BlockRendererProps {
@@ -187,19 +187,19 @@ const createElement = (
   return <div {...props} style={{ outline: '1px dashed red' }}>{children}</div>;
 };
 
-const TailwindLayoutRenderer = ({ 
-  layoutConfig, 
-  page, 
-  components = {} 
+const TailwindLayoutRenderer = ({
+  layoutConfig,
+  page,
+  components = {}
 }: TailwindLayoutRendererProps) => {
   // console.log('TailwindLayoutRenderer page:', page);
   // console.log('TailwindLayoutRenderer page.view:', page.view);
-  
+
   // Use the config directly if it's an object, otherwise parse it
-  const config = typeof layoutConfig === 'string' 
-    ? JSON.parse(layoutConfig) 
+  const config = typeof layoutConfig === 'string'
+    ? JSON.parse(layoutConfig)
     : layoutConfig;
-  
+
   // Set up component registry
   const componentRegistry = {
     // Default components
@@ -243,45 +243,45 @@ const renderElement = (
   }
 ): React.ReactNode => {
   if (!element) return null;
-  
+
   const { type, props = {}, children = [], id } = element;
   const { componentRegistry, contentMap } = context;
-  
-  
+
+
   if (id && id in page.view) {
     // console.log('Found section for id:', id, page.view[id]);
     const section = page.view[id];
     return createElement(
       type,
       { ...props, id },
-      <Section 
-        section={section} 
-        sectionName={id as keyof LocalPageView} 
-        className={props.className} 
+      <Section
+        section={section}
+        sectionName={id as keyof LocalPageView}
+        className={props.className}
       />,
       componentRegistry
     );
   }
-  
-  const childElements = Array.isArray(children) 
+
+  const childElements = Array.isArray(children)
     ? children.map((child, index) => renderElement(
         child,
         page,
         context
       ))
     : null;
-  
+
   return createElement(type, { ...props, key: id || `${type}` }, childElements, componentRegistry);
 };
 
 // Update BlockRenderer to use our extended type
-function BlockRenderer({ block, children }: { 
-  block: BlockConfig, 
-  children: (props: BlockContextType) => React.ReactNode 
+function BlockRenderer({ block, children }: {
+  block: BlockConfig,
+  children: (props: BlockContextType) => React.ReactNode
 }) {
   const globalStateContext = useContext(GlobalStateContext);
 
-  const { selectedBlockId, setSelectedBlockId, data } = useEditor();  
+  const { selectedBlockId, setSelectedBlockId, data } = useEditor();
   const {
     attributes,
     listeners,
@@ -289,7 +289,7 @@ function BlockRenderer({ block, children }: {
     transform,
     transition,
     isDragging
-  } = useSortable({ 
+  } = useSortable({
     id: `block:${block.id}`,
   });
 
@@ -304,7 +304,7 @@ function BlockRenderer({ block, children }: {
   if (!globalStateContext) {
     throw new Error('BlockRenderer must be used within a GlobalStateProvider');
   }
-  
+
   const blockContext: BlockContextType = {
     theme: data?.theme,
     blockId: block.id,
@@ -334,11 +334,11 @@ function BlockRenderer({ block, children }: {
   }
 
   return (
-    <div 
+    <div
       ref={setNodeRef}
       style={style}
-      {...attributes} 
-      {...listeners} 
+      {...attributes}
+      {...listeners}
       className={cx({
         "relative cursor-pointer": true,
         "hover:outline hover:outline-2 hover:outline-blue-300": true,
@@ -356,20 +356,20 @@ function BlockRenderer({ block, children }: {
 // Section Component
 const Section = ({ section, sectionName: id, className, selectedBlockId, onSelectBlock }: SectionProps) => {
 
-  const { setNodeRef, isOver, active } = useDroppable({ 
+  const { setNodeRef, isOver, active } = useDroppable({
     id: `section:${id}`,
   })
 
   return (
     <div
       className={cn(
-        "relative",   
+        "relative",
         className
       )}
     >
       <div className="">
-        
-      <SortableContext 
+
+      <SortableContext
         id={`section:${id}`}
         items={(section?.blocks || [])?.map(block => `block:${block.id}`)}
         strategy={rectSortingStrategy}
@@ -379,10 +379,10 @@ const Section = ({ section, sectionName: id, className, selectedBlockId, onSelec
           "border border-gray-200 min-h-20" : true,
           'border-red-500': active,
           'border-blue-500': isOver,
-        })} 
+        })}
         ref={setNodeRef}
         >
-          
+
           {section.blocks?.map((block: Block, index: number) => {
             return (
               <BlockRenderer block={block as BlockConfig}>
@@ -427,7 +427,7 @@ export default function LayoutPreview({ page, selectedBlockId, onSelectBlock, on
               className={className}
               selectedBlockId={selectedBlockId}
               onSelectBlock={handleBlockSelect}
-            
+
             />
           )
         }}

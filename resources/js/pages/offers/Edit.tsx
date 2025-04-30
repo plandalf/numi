@@ -24,7 +24,7 @@ import PageFlowEditor from '@/components/offers/page-flow-editor';
 import { ReactFlowProvider } from '@xyflow/react';
 import update from "immutability-helper";
 import { Type, SquareStack, Image, CreditCard, List } from 'lucide-react';
-import { GlobalStateProvider } from '@/pages/Checkout';
+import { GlobalStateProvider } from '@/contexts/GlobalStateProvider';
 import { DndContext, DragOverlay, useDraggable, closestCenter, DragStartEvent, useDroppable, useDndMonitor, DragPendingEvent, useSensor, PointerSensor, useSensors, rectIntersection, DragOverEvent, DragEndEvent } from "@dnd-kit/core";
 
 import { blockTypes, getBlockMeta } from '@/components/blocks';

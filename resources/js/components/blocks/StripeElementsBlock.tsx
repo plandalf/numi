@@ -3,7 +3,7 @@ import { BlockContextType } from "@/types/blocks";
 import { useState, useEffect, useRef } from "react";
 import { Elements, PaymentElement, useStripe, useElements, AddressElement } from '@stripe/react-stripe-js';
 import { loadStripe, Stripe } from '@stripe/stripe-js';
-import { useCheckoutState } from "@/pages/Checkout";
+import { useCheckoutState } from "@/contexts/GlobalStateProvider";
 
 // Define the type for the checkout state
 interface CheckoutState {
