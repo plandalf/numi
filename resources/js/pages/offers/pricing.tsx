@@ -10,6 +10,7 @@ import { Plus, Pencil, Trash2, Loader2 } from 'lucide-react';
 import SlotForm from '@/components/offers/SlotForm';
 import { toast } from 'sonner';
 import { formatMoney } from "@/lib/utils";
+import { EditorProvider } from './Edit';
 
 interface PricingPageProps extends PageProps {
     offer: OfferType;
@@ -64,6 +65,8 @@ export default function Pricing() {
     console.log(offer.slots[0])
 
     return (
+      <EditorProvider offer={offer}>
+
         <AppOfferLayout offer={layoutOffer}>
             <Head title={`${offer.name || 'Untitled Offer'} - Pricing`} />
 
@@ -131,5 +134,6 @@ export default function Pricing() {
                 />
             )}
         </AppOfferLayout>
+        </EditorProvider>
     );
 }

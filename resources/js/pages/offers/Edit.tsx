@@ -163,7 +163,7 @@ export function useEditor() {
   return ctx;
 }
 
-function EditorProvider({ offer, themes, showNameDialog, children }: React.PropsWithChildren<EditProps>) {
+export function EditorProvider({ offer, themes, showNameDialog, children }: React.PropsWithChildren<EditProps>) {
   // --- move all state/logic from Edit here ---
   const [isNameDialogOpen, setIsNameDialogOpen] = useState(false);
   const [selectedPage, setSelectedPage] = useState<string>(offer.view?.first_page);
