@@ -347,7 +347,7 @@ const Section = ({ blocks, className }: { blocks: Block[], className?: string })
     console.log('blocks', blocks)
     return (
         <div className={cn("space-y-2 ", className)}>
-            <div className="text-sm font-medium bg-gray-100">Section with {blocks.length} block(s)</div>
+            {/*<div className="text-sm font-medium bg-gray-100">Section with {blocks.length} block(s)</div>*/}
             {blocks.map(block => (
               <BlockRenderer key={block.id} block={block}>
                   {(blockContext) => {
@@ -376,7 +376,7 @@ const NavigationBar = ({ barStyle, children, className, ...props }: NavigationBa
   }
 
   return (
-    <div className={`${className} border-2 border-orange-500 flex items-center justify-between`} {...props}>
+    <div className={`${className} flex items-center justify-between`} {...props}>
       {canGoBack() && (
         <button
           onClick={onBack}
@@ -505,7 +505,7 @@ const createElement = (
   }
 
   // Use a div
-  return <div {...props} style={{ outline: '1px dashed red' }}>{children}</div>;
+  return <div {...props}>{children}</div>;
 };
 
 const layoutConfig = {

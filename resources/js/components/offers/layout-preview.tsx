@@ -184,7 +184,7 @@ const createElement = (
   }
 
   // Use a div
-  return <div {...props} style={{ outline: '1px dashed red' }}>{children}</div>;
+  return <div {...props}>{children}</div>;
 };
 
 const TailwindLayoutRenderer = ({

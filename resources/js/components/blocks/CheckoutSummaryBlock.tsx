@@ -56,7 +56,7 @@ function CheckoutSummaryComponent({ context }: { context: BlockContextType }) {
 
   return (
     <div className="border rounded-md p-4 bg-white shadow-sm">
-      <div className="text-xs bg-gray-100 p-1 mb-4 rounded">OrderSummaryComponent: {context.blockId}</div>
+      {/*<div className="text-xs bg-gray-100 p-1 mb-4 rounded">OrderSummaryComponent: {context.blockId}</div>*/}
 
       {/* Debug controls */}
       <div className="flex items-center space-x-2 mb-4 bg-gray-50 p-2 rounded text-sm">
