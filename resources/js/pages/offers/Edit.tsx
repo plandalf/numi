@@ -546,6 +546,10 @@ function EditApp() {
 
   const [activeBlock, setActiveBlock] = useState<any>(null);
 
+  function setSections(newSections: ViewSection[]) {
+    setData(update(data, { view: { pages: { [selectedPage]: { view: { $set: newSections } } } } }));
+  }
+
   function handleDragStart(event: DragStartEvent) {
     console.log('drag start', event);
 
@@ -558,14 +562,15 @@ function EditApp() {
     }
   }
 
-  function setSections(newSections: ViewSection[]) {
-    setData(update(data, { view: { pages: { [selectedPage]: { view: { $set: newSections } } } } }));
-  }
-
-
-
   function handleDragOver(event: DragOverEvent) {
     console.log('drag over', event);
+
+    if (prototype && !event.over) {
+      console.log('🐴 REMOVE PROROTPEP', { prototype, event });
+      return;
+    }
+
+    // if over = null
     if (!event.active || !event.over) return;
 
     const activeId = event.active.id;
@@ -818,7 +823,7 @@ function EditApp() {
               </div>
             )}
           </DragOverlay>
-          <div className="flex flex-grow border-dashed border-1 border-red-500 h-[calc(100vh-60px)]">
+          <div className="flex flex-grow h-[calc(100vh-60px)]">
             <Sidebar />
             <MainContent />
           </div>
