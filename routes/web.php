@@ -198,8 +198,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
         });
 
         Route::get('dashboard', function () {
+            $offers = auth()->user()
+                ->currentOrganization
+                ->offers()
+                ->with(['theme'])
+                ->get();
+
             return Inertia::render('dashboard', [
-                'offers' => OfferResource::collection(Offer::latest()->get()),
+                'offers' => OfferResource::collection($offers),
             ]);
         })->name('dashboard');
 
