@@ -23,7 +23,7 @@ class CheckoutController extends Controller
         $checkoutSession = $this->createCheckoutSessionAction->execute($offer);
 
         return redirect()->to(URL::signedRoute('checkouts.show', [
-            'checkout' => $checkoutSession->id,
+            'checkout' => $checkoutSession->getRouteKey(),
         ], now()->addDays(5)));
     }
 

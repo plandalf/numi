@@ -7,6 +7,7 @@ use App\Models\Checkout\CheckoutSession;
 use App\Models\Organization;
 use App\Models\Store\Offer;
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Support\Str;
 
 /**
  * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Checkout\CheckoutSession>
@@ -32,6 +33,7 @@ class CheckoutSessionFactory extends Factory
             'offer_id' => Offer::factory(),
             'status' => fake()->randomElement([CheckoutSessionStatus::STARTED, CheckoutSessionStatus::CLOSED]),
             'expires_at' => fake()->dateTimeBetween('now', '+1 hour'),
+            'uuid' => Str::uuid(),
         ];
     }
 }

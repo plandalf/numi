@@ -3,6 +3,7 @@
 namespace App\Models\Store;
 
 use App\Database\Model;
+use App\Database\Traits\UuidRouteKey;
 use App\Models\Media;
 use App\Models\Theme;
 use Carbon\Carbon;
@@ -22,12 +23,14 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property Carbon $created_at
  * @property Carbon $updated_at
  * @property Carbon|null $deleted_at
+ * @property string $uuid
  */
 class Offer extends Model
 {
     /** @use HasFactory<\Database\Factories\OfferFactory> */
     use HasFactory,
-        SoftDeletes;
+        SoftDeletes,
+        UuidRouteKey;
 
     protected $table = 'store_offers';
 
@@ -40,6 +43,7 @@ class Offer extends Model
         'status',
         'view',
         'properties',
+        'uuid',
     ];
 
     protected $casts = [
