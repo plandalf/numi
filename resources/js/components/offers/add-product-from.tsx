@@ -48,7 +48,7 @@ interface ExtendedPrice extends Price {
     pricing_model?: string;
 }
 
-export default function SlotForm({
+export default function AddProductForm({
     open,
     onOpenChange,
     initialData,

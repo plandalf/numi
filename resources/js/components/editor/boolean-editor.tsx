@@ -13,4 +13,4 @@ export const BooleanEditor: React.FC<BooleanEditorProps> = ({ label, value, onCh
     <Checkbox checked={value} onCheckedChange={onChange} />
     <Label className="mb-0 text-sm capitalize">{label}</Label>
   </div>
-); 
+);

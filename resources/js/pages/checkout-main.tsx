@@ -78,22 +78,33 @@ export function GlobalStateProvider({ offer, session: defaultSession, children }
   // Register hook function
   const registerHook = (block: BlockConfig, hook: HookUsage) => {
     const hookKey = `${block.id}:${hook.name}`;
-    // console.log('registerHook', hookKey, block, hook);
-    if (!registeredHooks.has(hookKey)) {
-      setRegisteredHooks(prev => new Set([...prev, hookKey]));
-      setHookUsage(prev => {
-        const newPrev = { ...prev };
 
-        if (prev[block.id] && !(prev[block.id] instanceof Array)) {
-          newPrev[block.id] = []
-        }
+    setHookUsage(prev => {
+      const newPrev = { ...prev };
 
-        return {
-          ...prev,
-          [block.id]: [...(newPrev[block.id] || []), hook]
+      // Initialize as array if not already an array
+      if (!newPrev[block.id] || !(newPrev[block.id] instanceof Array)) {
+        newPrev[block.id] = [];
+      }
+
+      // Check if this specific hook already exists
+      const existingHookIndex = newPrev[block.id].findIndex(
+        (existingHook: HookUsage) => existingHook.name === hook.name
+      );
+
+      if (existingHookIndex >= 0) {
+        // Update existing hook
+        newPrev[block.id][existingHookIndex] = hook;
+      } else {
+        // Add new hook and register it
+        if (!registeredHooks.has(hookKey)) {
+          setRegisteredHooks(prev => new Set([...prev, hookKey]));
+          newPrev[block.id].push(hook);
         }
-      });
-    }
+      }
+
+      return newPrev;
+    });
   };
 
   // Clear errors function

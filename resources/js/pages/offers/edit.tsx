@@ -1,5 +1,5 @@
 import AppOfferLayout from '@/layouts/app/app-offer-layout';
-import { Block, Offer, ViewSection, type PageType } from '@/types/offer';
+import { Block, Offer, Price, Product, ViewSection, type OfferView, type Page, type PageType } from '@/types/offer';
 import { Head } from '@inertiajs/react';
 import {
     Dialog,
@@ -33,13 +33,15 @@ import { Theme } from '@/types/theme';
 import { PageShare } from '@/components/offers/page-share';
 import { CheckoutSession, IntegrationClient } from '@/types/checkout';
 import { EditorProvider, useEditor } from '@/contexts/offer/editor-context';
+import { PageProps } from '@inertiajs/core';
 
-export interface EditProps {
+export interface EditProps extends PageProps {
     offer: Offer;
     fonts: string[];
     weights: string[];
     themes: Theme[];
     showNameDialog?: boolean;
+    products: Product[];
 }
 
 const PAGE_TYPE_ICONS: Record<PageType, React.ReactNode> = {
@@ -457,7 +459,7 @@ function MainContent() {
 
 function Toolbar() {
   const {
-    data, 
+    data,
     selectedPage,
     editingPageName, setEditingPageName,
     pageNameInput, setPageNameInput,

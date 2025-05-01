@@ -13,7 +13,7 @@ import { AccordionItem } from '../ui/accordion';
 import ThemePreviewCard from './theme-preview-card';
 import SearchBar from './search-bar';
 import { router, usePage } from '@inertiajs/react';
-import { EditProps } from '@/pages/offers/edit';
+import type { EditProps } from '@/pages/offers/Edit';
 
 interface ThemeSidebarPanelProps {
   themes: Theme[];
@@ -59,7 +59,7 @@ const componentFields = [
 ];
 
 export const PageTheme: React.FC<ThemeSidebarPanelProps> = ({ themes = [], currentTheme, onThemeChange }) => {
-  
+
   const { offer, fonts, weights } = usePage<EditProps>().props;
   const [tab, setTab] = useState<'all' | 'custom'>('all');
   const [theme, setTheme] = useState<Theme>(currentTheme);
@@ -131,8 +131,8 @@ export const PageTheme: React.FC<ThemeSidebarPanelProps> = ({ themes = [], curre
           <TabsTrigger value="custom">Custom Theme</TabsTrigger>
         </TabsList>
         <TabsContent value="all">
-          <SearchBar 
-            placeholder="Search themes" 
+          <SearchBar
+            placeholder="Search themes"
             value={search}
             onChange={setSearch}
           />
@@ -158,7 +158,7 @@ export const PageTheme: React.FC<ThemeSidebarPanelProps> = ({ themes = [], curre
                 value="colors"
                 className="rounded-lg border-none shadow-none"
               >
-                <AccordionTrigger 
+                <AccordionTrigger
                   className={cn(
                     'flex items-center justify-between w-full p-4 py-3',
                     'rounded-lg transition-colors group cursor-pointer',
@@ -186,7 +186,7 @@ export const PageTheme: React.FC<ThemeSidebarPanelProps> = ({ themes = [], curre
                 value="typography"
                 className="rounded-lg border-none shadow-none"
               >
-                <AccordionTrigger 
+                <AccordionTrigger
                   className={cn(
                     'flex items-center justify-between w-full px-4 py-3 mb-2',
                     'rounded-lg transition-colors group cursor-pointer',
@@ -233,7 +233,7 @@ export const PageTheme: React.FC<ThemeSidebarPanelProps> = ({ themes = [], curre
                 value="components"
                 className="rounded-lg border-none shadow-none"
               >
-                <AccordionTrigger 
+                <AccordionTrigger
                   className={cn(
                     'flex items-center justify-between w-full px-4 py-3 mb-2',
                     'rounded-lg transition-colors group cursor-pointer',
@@ -279,7 +279,7 @@ export const PageTheme: React.FC<ThemeSidebarPanelProps> = ({ themes = [], curre
                 value="theme-settings"
                 className="rounded-lg border-none shadow-none"
               >
-                <AccordionTrigger 
+                <AccordionTrigger
                   className={cn(
                     'flex items-center justify-between w-full px-4 py-3 mb-2',
                     'rounded-lg transition-colors group cursor-pointer',
@@ -317,4 +317,4 @@ export const PageTheme: React.FC<ThemeSidebarPanelProps> = ({ themes = [], curre
   );
 };
 
-export default PageTheme; 
+export default PageTheme;

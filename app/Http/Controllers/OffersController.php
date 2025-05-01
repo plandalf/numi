@@ -15,6 +15,7 @@ use App\Http\Requests\UpdateThemeRequest;
 use App\Http\Requests\Offer\OfferUpdateRequest;
 use App\Http\Resources\OfferResource;
 use App\Http\Resources\ProductResource;
+use App\Http\Resources\SlotResource;
 use App\Http\Resources\ThemeResource;
 use App\Models\Catalog\Product;
 use App\Models\Organization;
@@ -66,8 +67,15 @@ class OffersController extends Controller
         $globalThemes = Theme::whereNull('organization_id')->get();
         $themes = $organizationThemes->merge($globalThemes);
 
+        $products = Product::query()
+            ->where('organization_id', $offer->organization_id)
+            ->with(['prices' => function ($query) {
+                $query->active();
+            }])
+            ->get();
+
         // Load the offer with its theme and slots
-        $offer->load(['slots', 'theme']);
+        $offer->load(['slots.defaultPrice.product', 'theme']);
 
         return Inertia::render('offers/edit', [
             'offer' => new OfferResource($offer),
@@ -75,6 +83,7 @@ class OffersController extends Controller
             'themes' => ThemeResource::collection($themes),
             'fonts' => FontElement::values(),
             'weights' => WeightElement::values(),
+            'products' => ProductResource::collection($products),
         ]);
     }
 

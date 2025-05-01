@@ -26,13 +26,7 @@ export const AccordionSection: React.FC<AccordionSectionProps> = ({
   addLabel = "Add another section",
   className,
 }) => {
-  const [open, setOpen] = React.useState<string>(items.length ? `section-0` : "");
-
-  React.useEffect(() => {
-    if (items.length && !open) {
-      setOpen(`section-0`);
-    }
-  }, [items.length]);
+  const [open, setOpen] = React.useState<string>("");
 
   return (
     <div className={cn("w-full flex flex-col gap-2", className)}>
@@ -48,7 +42,7 @@ export const AccordionSection: React.FC<AccordionSectionProps> = ({
             value={`section-${i}`}
             className="rounded-lg border-none shadow-none space-y-4"
           >
-            <AccordionTrigger 
+            <AccordionTrigger
               className={cn(
                 'flex items-center justify-between w-full px-4 py-3',
                 'rounded-lg transition-colors group cursor-pointer',
@@ -76,4 +70,4 @@ export const AccordionSection: React.FC<AccordionSectionProps> = ({
       )}
     </div>
   );
-}; 
+};

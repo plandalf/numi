@@ -12,19 +12,25 @@ function DetailListBlockComponent({ context }: { context: BlockContextType }) {
       items: {
         type: "object",
         properties: {
-          key: { 
+          key: {
             type: "string",
             meta: { editor: "hidden" }
           },
+          children: {
+            type: "array",
+            items: {
+              $ref: "#"
+            }
+          },
           label: {
             title: "Label",
-            type: "string" 
+            type: "string"
           },
-          caption: { 
+          caption: {
             title: "Caption",
-            type: "string" 
+            type: "string"
           },
-          color: { 
+          color: {
             title: "Color",
             type: "string",
             description: "A file upload input for selecting an image.",
@@ -43,21 +49,21 @@ function DetailListBlockComponent({ context }: { context: BlockContextType }) {
             description: "Select an icon from a predefined list.",
             meta: { editor: "iconSelector" }
           },
-          prefixText: { 
+          prefixText: {
             title: "Text",
             type: "string"
           },
-          tooltip: { 
+          tooltip: {
             title: "Tooltip",
-            type: "string" 
+            type: "string"
           },
-          disabled: { 
+          disabled: {
             title: "Disabled",
-            type: "boolean" 
+            type: "boolean"
           },
-          hidden: { 
+          hidden: {
             title: "Hidden",
-            type: "boolean" 
+            type: "boolean"
           }
         },
         required: ["key"]
@@ -68,13 +74,13 @@ function DetailListBlockComponent({ context }: { context: BlockContextType }) {
   // Recursively render a detail list item and its children
   const renderDetailItem = (item: any, depth = 0) => {
     if (!item || item.hidden) return null;
-    
+
     // Don't render if item is disabled and we're showing only enabled items
     // This could be a filter toggle in the future
-    
+
     return (
-      <div 
-        key={item.key} 
+      <div
+        key={item.key}
         className={cx(
           // "border-l-2 pl-3 py-2 my-1",
           {
@@ -91,13 +97,13 @@ function DetailListBlockComponent({ context }: { context: BlockContextType }) {
         <div className="flex items-center space-x-2">
           {/* Prefix elements */}
           {item.prefixImage && (
-            <img 
-              src={item.prefixImage} 
-              alt="" 
+            <img
+              src={item.prefixImage}
+              alt=""
               className="h-6 w-6 object-cover rounded"
             />
           )}
-          
+
           {item.prefixIcon && (
             <span className="text-gray-500">
               {/* This would be a real icon component in production */}
@@ -108,31 +114,31 @@ function DetailListBlockComponent({ context }: { context: BlockContextType }) {
               {item.prefixIcon === 'triangle' && '▲'}
             </span>
           )}
-          
+
           {item.prefixText && (
             <span className="text-gray-500 text-sm">{item.prefixText}</span>
           )}
-          
+
           {/* Main content */}
           <div className="flex-1">
             <div className="flex items-center">
               <span className="font-medium">
                 {item.label || `Item ${item.key}`}
               </span>
-              
+
               {item.tooltip && (
                 <div className="ml-1 text-gray-500 cursor-help" title={item.tooltip}>
                   ⓘ
                 </div>
               )}
             </div>
-            
+
             {item.caption && (
               <div className="text-sm text-gray-500">{item.caption}</div>
             )}
           </div>
         </div>
-        
+
         {/* Recursively render children */}
         {item.children && item.children.length > 0 && (
           <div className="ml-4 mt-2 space-y-1">
@@ -150,7 +156,7 @@ function DetailListBlockComponent({ context }: { context: BlockContextType }) {
       <div className="space-y-1">
         {dataToRender.map((item: any) => renderDetailItem(item))}
       </div>
-      
+
       {(!items || items.length === 0) && (
         <div className="text-xs text-gray-500 mt-2 p-1 bg-gray-50 rounded">
           Note: Showing sample data. Edit in the JSONSchema editor to customize.
