@@ -42,6 +42,7 @@ import SearchBar from './search-bar';
 import { usePage } from '@inertiajs/react';
 import cx from 'classnames';
 import { PageLayers } from './page-layers';
+import PageProducts from './page-products';
 
 type SidebarTab = 'elements' | 'products' | 'themes' | 'settings' | 'layers';
 
@@ -61,12 +62,12 @@ export const CustomElementIcon = ({ type }: CustomElementIconProps) => {
             return <SquareStack className="w-6 h-6" />;
         case 'checkbox':
             return <SquareCheck className="w-6 h-6" />;
-        case 'option_selector':
-            return <ArrowLeft className="w-6 h-6 inline-block" />;
         case 'text_input':
             return <FormInput className="w-6 h-6" />;
         case 'checkout_summary':
             return <CreditCard className="w-6 h-6" />;
+        case 'option_selector':
+            return <ToggleLeft className="w-6 h-6" />;
         default:
             return null;
     }
@@ -149,12 +150,12 @@ const baseElements = [
   { type: 'text', title: 'Text Block' },
   { type: 'quote', title: 'Quote' },
   { type: 'detail_list', title: 'Detail List' },
+  { type: 'option_selector', title: 'Plan Selector' },
 ];
 
 const interactiveElements = [
   { type: 'button', title: 'Button' },
   { type: 'checkbox', title: 'Checkbox' },
-  { type: 'option_selector', title: 'Option Slide' },
   { type: 'text_input', title: 'Entry Field' },
 ];
 
@@ -286,12 +287,7 @@ export function Sidebar() {
         );
       case 'products':
         return (
-          <div className="p-4">
-            <h3 className="text-md font-medium">Products</h3>
-            <p className="text-xs text-muted-foreground mt-2">
-              Coming soon - Add products to your offer.
-            </p>
-          </div>
+          <PageProducts />
         );
       case 'settings':
         return (

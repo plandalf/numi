@@ -1,4 +1,4 @@
-import Numi from "@/contexts/Numi";
+import Numi, { Appearance, Conditions } from "@/contexts/Numi";
 import { BlockContextType } from "@/types/blocks";
 import { Switch } from "@/components/ui/switch";
 
@@ -15,8 +15,8 @@ function CheckboxBlockComponent({ context }: { context: BlockContextType }) {
     inspector: 'hidden',
   });
 
-  const [appearance] = Numi.useStateEnumeration({
-    name: 'appearance',
+  const [style] = Numi.useStateEnumeration({
+    name: 'style',
     initialValue: 'checkbox',
     options: ['checkbox', 'switch'],
     labels: {
@@ -24,7 +24,7 @@ function CheckboxBlockComponent({ context }: { context: BlockContextType }) {
       switch: 'Switch',
     } as Record<string, string>,
     inspector: 'select',
-    label: 'Appearance',
+    label: 'Style',
   });
 
   const [label] = Numi.useStateString({
@@ -51,14 +51,19 @@ function CheckboxBlockComponent({ context }: { context: BlockContextType }) {
 
   const { isDisabled } = Numi.useInteraction();
 
+  const appearance = Numi.useAppearance([
+    Appearance.backgroundColor(),
+    Appearance.visibility(),
+  ]);
+
   return (
     <div>
-      {appearance === 'checkbox' && (
+      {style === 'checkbox' && (
         <div>
           <input id={id} type="checkbox" name={context.blockId} checked={checked} onChange={handleChange} /> {label}
         </div>
       )}
-      {appearance === 'switch' && (
+      {style === 'switch' && (
         <div className="flex items-center gap-2">
           <Switch
             checked={checked}

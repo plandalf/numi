@@ -1,3 +1,4 @@
+import { RuleGroup } from "@/components/editor/condition-visibility-editor";
 import { Theme } from "./theme";
 
 export interface Offer {
@@ -21,6 +22,7 @@ export interface Offer {
     properties: Record<string, any> | null;
     transaction_webhook_url: string | null;
     slots: OfferSlot[];
+    prices: Price[];
     theme: Theme | null;
     screenshot: {
         id: number;
@@ -41,6 +43,8 @@ export interface OfferSlot {
     default_price: Price | null;
     created_at: string;
     updated_at: string;
+    product: Product | null;
+    price: Price[];
 }
 
 export interface Price {
@@ -65,6 +69,7 @@ export interface Price {
     archived_at?: string | null;
     created_at?: string;
     updated_at?: string;
+    product?: Product | null;
 }
 
 export interface Product {
@@ -198,7 +203,10 @@ export interface Block {
         borderColor?: string;
         border?: string;
         hidden?: boolean;
-        [key: string]: string | boolean | undefined;
+        visibility?: {
+          conditional: RuleGroup;
+        }
+        [key: string]: string | boolean | { conditional: RuleGroup } | undefined;
     };
     validation?: {
         isRequired?: boolean;

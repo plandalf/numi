@@ -1,5 +1,6 @@
 import { type Page, type ViewSection, type Block } from '@/types/offer';
-import { cn, isBlockVisible } from '@/lib/utils';
+import { isBlockVisible } from '@/lib/blocks';
+import { cn } from '@/lib/utils';
 import React, { useMemo, useRef } from 'react';
 import { CSS } from '@dnd-kit/utilities';
 import { useContext } from 'react';
@@ -344,15 +345,16 @@ function BlockRenderer({ block, children }: {
     }
   }
 
-  const isVisible = useMemo(() => {
-    const visibility = block.appearance?.visibility;
+  // TODO
+  // const isVisible = useMemo(() => {
+  //   const visibility = block.appearance?.visibility;
 
-   return isBlockVisible({ fields: globalStateContext.fields }, visibility?.fn);
-  }, [block, globalStateContext]);
+  //  return isBlockVisible({ fields: globalStateContext.fields }, visibility);
+  // }, [block, globalStateContext]);
 
-  if(!isVisible) {
-    return null;
-  }
+  // if(!isVisible) {
+  //   return null;
+  // }
 
   return (
     <div

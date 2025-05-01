@@ -68,9 +68,9 @@ export default function Show() {
                         </p>
                     </div>
                     <div className="flex space-x-2">
-                        <Button variant="outline" onClick={() => setIsProductFormOpen(true)}>
+                        <ProductForm trigger={<Button variant="outline" onClick={() => setIsProductFormOpen(true)}>
                             <Edit className="w-4 h-4 mr-2" /> Edit Product
-                        </Button>
+                        </Button>} initialData={product} />
                         {/* Add other actions */}
                     </div>
                 </div>
@@ -150,13 +150,6 @@ export default function Show() {
                     product={product}
                     initialData={editingPrice}
                     listPrices={listPrices || []}
-                />
-
-                {/* Product Form Dialog */}
-                <ProductForm
-                    open={isProductFormOpen}
-                    onOpenChange={setIsProductFormOpen}
-                    initialData={product}
                 />
             </div>
         </AppLayout>

@@ -1,3 +1,4 @@
+import { cn } from '@/lib/utils';
 import { Label } from '../ui/label';
 import { Textarea } from '../ui/textarea';
 import React from 'react';
@@ -8,15 +9,16 @@ interface StringEditorProps {
   onChange: (value: string) => void;
   placeholder?: string;
   multiline?: boolean;
+  hidden?: boolean;
 }
 
 export const StringEditor: React.FC<StringEditorProps> = ({ label, placeholder, value, onChange, multiline }) => (
   <div className="flex flex-col gap-2">
     {label && <Label className="text-sm capitalize">{label}</Label>}
     {multiline ? (
-      <Textarea 
-        value={value} 
-        onChange={e => onChange(e.target.value)} 
+      <Textarea
+        value={value}
+        onChange={e => onChange(e.target.value)}
         rows={5}
         placeholder={placeholder}
       />
@@ -30,4 +32,4 @@ export const StringEditor: React.FC<StringEditorProps> = ({ label, placeholder, 
       />
     )}
   </div>
-); 
+);
