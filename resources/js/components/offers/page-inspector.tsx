@@ -28,17 +28,15 @@ export const Inspector = ({
   const globalState = useContext(GlobalStateContext);
 
     // Update local state when incoming block changes
-    useEffect(() => {
-      if (!block) return;
-      console.log('Inspector received block:', block.id, block.type);
-      // setSelectedBlock(block);
-    }, [block]);
+    // useEffect(() => {
+    //   if (!block) return;
+    //   console.log('Inspector received block:', block.id, block.type);
+    //   // setSelectedBlock(block);
+    // }, [block]);
 
   const handleContentChange = (fieldName: string, value: any) => {
     if (!block) return;
-
-    console.log('handleContentChange', fieldName, value, block);
-
+    // console.log('handleContentChange', fieldName, value, block);
     onUpdate({
       ...block,
       content: {
@@ -124,7 +122,7 @@ export const Inspector = ({
                   <h3 className="mb-2 font-semibold">Appearance</h3>
                   {/* Alignment Selector */}
                   {globalState.hookUsage[block.id].some(h => h.name === 'alignment') && (
-                    <AlignmentPickerEditor 
+                    <AlignmentPickerEditor
                       label="Alignment"
                       value={block.appearance?.alignment || 'left'}
                       onChange={align => onUpdate({ ...block, appearance: { ...block.appearance, alignment: align } })}

@@ -5,11 +5,11 @@ import { findBlockInPage } from '@/components/offers/page-preview';
 import { Inspector } from '@/components/offers/page-inspector';
 import { EditProps, useEditor } from '@/pages/offers/Edit';
 import { Block } from '@/types/offer';
-import { 
-  Type, 
-  SquareStack, 
-  Image as ImageIcon, 
-  CreditCard, 
+import {
+  Type,
+  SquareStack,
+  Image as ImageIcon,
+  CreditCard,
   List,
   Bell,
   X,
@@ -39,6 +39,7 @@ import PageTheme from './page-theme';
 import { ScrollArea } from '../ui/scroll-area';
 import SearchBar from './search-bar';
 import { usePage } from '@inertiajs/react';
+import cx from 'classnames';
 
 type SidebarTab = 'elements' | 'products' | 'themes' | 'settings' | 'layers';
 
@@ -46,7 +47,7 @@ interface CustomElementIconProps {
   type: keyof typeof blockTypes;
 }
 
-const CustomElementIcon = ({ type }: CustomElementIconProps) => {
+export const CustomElementIcon = ({ type }: CustomElementIconProps) => {
     switch(type) {
         case 'text':
             return <AlignLeft className="w-6 h-6" />;
@@ -81,6 +82,7 @@ const BlockTemplateItem = ({ blockType, title }: BlockItemProps) => {
     attributes,
     listeners,
     setNodeRef,
+    isDragging,
   } = useDraggable({
     id: `template:${blockType}`,
   });
@@ -90,9 +92,10 @@ const BlockTemplateItem = ({ blockType, title }: BlockItemProps) => {
       ref={setNodeRef}
       {...attributes}
       {...listeners}
-      className={cn(
-        "flex flex-col items-center justify-center rounded-md cursor-move transition-all min-h-20 w-full",
-      )}
+      className={cx({
+        "flex flex-col items-center justify-center rounded-md cursor-move transition-all min-h-20 w-full": true,
+        "opacity-60": isDragging,
+      })}
     >
       <div className="flex items-center justify-center bg-slate-800 rounded-md w-full h-14 mb-2">
         <span className="text-white">
@@ -128,6 +131,42 @@ type IconButton = {
   label: string;
 };
 
+
+const iconButtons: IconButton[] = [
+  { icon: <DiamondPlus className="size-5" />, tab: 'elements', label: 'Elements' },
+  { icon: <LayoutPanelLeft className="size-5" />, tab: 'layers', label: 'Layers' },
+  { icon: <Package className="size-5" />, tab: 'products', label: 'Products' },
+  { icon: <Paintbrush className="size-5" />, tab: 'themes', label: 'Themes' },
+  { icon: <Settings2 className="size-5" />, tab: 'settings', label: 'Settings' },
+  // { icon: <Unplug className="size-5" />, tab: 'integration', label: 'Integrations' },
+  // { icon: <Bell className="size-5" />, tab: 'inspector', label: 'Notifications' },
+];
+
+// Mapping for block elements
+const baseElements = [
+  { type: 'text', title: 'Text Block' },
+  { type: 'quote', title: 'Quote' },
+  { type: 'detail_list', title: 'Detail List' },
+];
+
+const interactiveElements = [
+  { type: 'button', title: 'Button' },
+  { type: 'checkbox', title: 'Checkbox' },
+  { type: 'option_selector', title: 'Option Slide' },
+  { type: 'text_input', title: 'Entry Field' },
+];
+
+const paymentElements = [
+  { type: 'checkout_summary', title: 'Payment' },
+];
+
+export const allElementTypes = [
+  ...baseElements,
+  ...interactiveElements,
+  ...paymentElements,
+];
+
+
 export function Sidebar() {
   const { fonts, weights } = usePage<EditProps>().props;
   const [activeTab, setActiveTab] = useState<SidebarTab>('elements');
@@ -143,47 +182,19 @@ export function Sidebar() {
     viewMode,
   } = useEditor();
 
-  console.log(data);
+  // console.log(data);
 
   const isEditorMode = viewMode === 'editor';
 
-
-  const iconButtons: IconButton[] = [
-    { icon: <DiamondPlus className="size-5" />, tab: 'elements', label: 'Elements' },
-    { icon: <LayoutPanelLeft className="size-5" />, tab: 'layers', label: 'Layers' },
-    { icon: <Package className="size-5" />, tab: 'products', label: 'Products' },
-    { icon: <Paintbrush className="size-5" />, tab: 'themes', label: 'Themes' },
-    { icon: <Settings2 className="size-5" />, tab: 'settings', label: 'Settings' },
-    // { icon: <Unplug className="size-5" />, tab: 'integration', label: 'Integrations' },
-    // { icon: <Bell className="size-5" />, tab: 'inspector', label: 'Notifications' },
-  ];
-
-  // Mapping for block elements
-  const baseElements = [
-    { type: 'text', title: 'Text Block' },
-    { type: 'quote', title: 'Quote' },
-    { type: 'detail_list', title: 'Detail List' },
-  ];
-
-  const interactiveElements = [
-    { type: 'button', title: 'Button' },
-    { type: 'checkbox', title: 'Checkbox' },
-    { type: 'option_selector', title: 'Option Slide' },
-    { type: 'text_input', title: 'Entry Field' },
-  ];
-
-  const paymentElements = [
-    { type: 'checkout_summary', title: 'Payment' },
-  ];
 
   // Content for each tab
   const renderTabContent = () => {
     if (selectedBlockId) {
       const block = findBlockInPage(data.view.pages[selectedPage], selectedBlockId);
       if (!block) return null;
-      
+
       return (
-        <Inspector 
+        <Inspector
           key={selectedBlockId}
           block={block}
           onClose={() => setSelectedBlockId(null)}
@@ -196,30 +207,30 @@ export function Sidebar() {
     switch (activeTab) {
       case 'elements':
         // Filter elements based on search query
-        const filteredBaseElements = baseElements.filter(element => 
+        const filteredBaseElements = baseElements.filter(element =>
           element.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
           element.type.toLowerCase().includes(searchQuery.toLowerCase())
         );
-        
-        const filteredInteractiveElements = interactiveElements.filter(element => 
+
+        const filteredInteractiveElements = interactiveElements.filter(element =>
           element.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
           element.type.toLowerCase().includes(searchQuery.toLowerCase())
         );
-        
-        const filteredPaymentElements = paymentElements.filter(element => 
+
+        const filteredPaymentElements = paymentElements.filter(element =>
           element.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
           element.type.toLowerCase().includes(searchQuery.toLowerCase())
         );
-        
+
         // Check if any category has elements after filtering
         const hasBaseElements = filteredBaseElements.length > 0;
         const hasInteractiveElements = filteredInteractiveElements.length > 0;
         const hasPaymentElements = filteredPaymentElements.length > 0;
-        
+
         return (
           <div className="p-4 space-y-6 overflow-y-auto">
-            <SearchBar 
-              placeholder="Search for elements" 
+            <SearchBar
+              placeholder="Search for elements"
               value={searchQuery}
               onChange={setSearchQuery}
             />
@@ -382,7 +393,7 @@ export function Sidebar() {
           <Button
             variant="outline"
             size="icon"
-            className={cn("h-10 w-10",  
+            className={cn("h-10 w-10",
               activeTab === 'elements' ? "bg-gray-900 text-white hover:bg-gray-900 hover:text-white" : "hover:bg-gray-500 hover:text-white"
             )}
             onClick={() => onTabClick('elements')}
@@ -392,7 +403,7 @@ export function Sidebar() {
             <DiamondPlus className="size-5" />
           </Button>
         </div>
-        
+
         {/* Lower left: Navigation Icons */}
         <div className="flex flex-col flex-grow w-[56px] p-2 gap-2">
           {iconButtons
@@ -406,8 +417,8 @@ export function Sidebar() {
                 tooltipSide='right'
                 className={cn(
                     "h-10 border-none shadow-none flex items-center justify-center transition-colors text-primary",
-                    activeTab === button.tab 
-                    ? "bg-gray-900 text-white hover:bg-gray-900 hover:text-white" 
+                    activeTab === button.tab
+                    ? "bg-gray-900 text-white hover:bg-gray-900 hover:text-white"
                     : "hover:bg-gray-500 hover:text-white"
                 )}
                 title={button.label}
@@ -443,7 +454,7 @@ export function Sidebar() {
             <h2 className="text-lg font-bold truncate">{iconButtons.find(b => b.tab === activeTab)?.label}</h2>
           )}
         </div>
-        
+
         {/* Lower right: Content */}
         <ScrollArea className="flex-grow overflow-y-auto">
           {renderTabContent()}
@@ -451,4 +462,4 @@ export function Sidebar() {
       </div>
     </div>
   );
-} 
+}

@@ -30,7 +30,7 @@ import { DndContext, DragOverlay, useDraggable, closestCenter, DragStartEvent, u
 import { blockTypes, getBlockMeta } from '@/components/blocks';
 import { v4 as uuidv4 } from 'uuid';
 import React, { createContext, useContext } from 'react';
-import { Sidebar } from '@/components/offers/sidebar';
+import { allElementTypes, CustomElementIcon, Sidebar } from '@/components/offers/sidebar';
 import { Theme } from '@/types/theme';
 import { PageShare } from '@/components/offers/page-share';
 import { CheckoutSession, IntegrationClient } from '@/types/checkout';
@@ -380,7 +380,7 @@ export function EditorProvider({ offer, themes, showNameDialog, children }: Reac
   };
 
   const updateBlock = (block: Block) => {
-    console.log('updateBlock', block)
+    // console.log('updateBlock', block)
     // set the entire page all at once
     // blocks is an array on the section
 
@@ -400,12 +400,10 @@ export function EditorProvider({ offer, themes, showNameDialog, children }: Reac
 
     const blockIndex = page.view[sectionId].blocks.findIndex((b) => b.id === block.id);
 
-    console.log("🚵‍♀️", { sectionId, blockIndex })
-
     // page.view[section].blocks[blockIndex] = block;
 
     const thePage = update(page, { view: { [sectionId]: { blocks: { $set: page.view[sectionId].blocks.map((b, i) => i === blockIndex ? block : b) } } } });
-    console.log("PAGE!", { page })
+
     // const thePage = update(page, { view: { [blockIndex]: { blocks: { $set: block } } } });
     // gotta find the section first
 
@@ -551,7 +549,7 @@ function EditApp() {
   }
 
   function handleDragStart(event: DragStartEvent) {
-    console.log('drag start', event);
+    // console.log('drag start', event);
 
     const [type, id] = event.active.id.split(':');
 
@@ -563,7 +561,6 @@ function EditApp() {
   }
 
   function handleDragOver(event: DragOverEvent) {
-    console.log('drag over', event);
 
     if (prototype && !event.over) {
       console.log('🐴 REMOVE PROROTPEP', { prototype, event });
@@ -592,7 +589,7 @@ function EditApp() {
           ? String(event.over.data.current?.sortable.containerId.split(':')[1])
           : String(overRawId);
 
-        console.log('sectionIdx', sectionId);
+        // console.log('sectionIdx', sectionId);
 
         if (!sectionId) {
           // if the section is not found, remove the prototype if it exists
@@ -616,12 +613,12 @@ function EditApp() {
         let insertIdx = null;
         if (overType === 'block') {
           insertIdx = getOverBlockIndex(sections[sectionId], overRawId);
-          console.log('insertIdx', insertIdx);
+          // console.log('insertIdx', insertIdx);
           if (insertIdx === -1) insertIdx = sections[sectionId].blocks?.length;
         } else {
           insertIdx = sections[sectionId].blocks.length;
         }
-        console.log('insertIdx', insertIdx);
+        // console.log('insertIdx', insertIdx);
 
         // If prototype is already at the correct position, do nothing
         if (prototype && prototype.sectionId === sectionId
@@ -634,7 +631,7 @@ function EditApp() {
         let newSections = sections;
         if (prototype) {
           const oldSectionIdx = prototype.sectionId;
-          console.log('oldSectionIdx', oldSectionIdx);
+          // console.log('oldSectionIdx', oldSectionIdx);
           if (oldSectionIdx) {
             newSections = update(newSections, {
               [oldSectionIdx]: {
@@ -689,7 +686,7 @@ function EditApp() {
       const fromSectionId = String(event.active.data.current?.sortable.containerId?.split(':')[1]);
 
       const blockIdx = findBlockIndexById(sections[fromSectionId]?.blocks || [], String(activeRawId));
-      console.log('blockIdx', blockIdx);
+      // console.log('blockIdx', blockIdx);
 
       if (!fromSectionId || blockIdx === -1) return;
       let newSections = sections;
@@ -701,15 +698,14 @@ function EditApp() {
         }
       });
 
-
-      console.log('newSections', { fromSectionId, blockIdx, newSections });
+      // console.log('newSections', { fromSectionId, blockIdx, newSections });
 
       // Insert into new location
       if (overType === 'block') {
         const toSectionId = event.over.data.current?.sortable.containerId?.split(':')[1];
 
         const o =  event.over.data ;
-        console.log("🧑‍🎤 ", { toSectionId, newSections,o, overRawId })
+        // console.log("🧑‍🎤 ", { toSectionId, newSections,o, overRawId })
 
         const overBlockIdx = getOverBlockIndex(newSections[toSectionId], overRawId);
         if (toSectionId === -1 || overBlockIdx === -1) return;
@@ -730,7 +726,7 @@ function EditApp() {
         const block = sections[fromSectionId]?.blocks?.[blockIdx];
         if (!block) return;
 
-        console.log('abc', newSections, toSectionId, newSections[toSectionId])
+        // console.log('abc', newSections, toSectionId, newSections[toSectionId])
 
         newSections = update(newSections, {
           [toSectionId]: {
@@ -817,10 +813,7 @@ function EditApp() {
         >
           <DragOverlay dropAnimation={null}>
             {activeItem && (
-              <div>
-                <h3>{activeItem?.type} : {activeItem?.id} </h3>
-                {/* <pre>{JSON.stringify(activeItemData, null, 2)}</pre> */}
-              </div>
+              <DragOverlayPreview item={activeItem}/>
             )}
           </DragOverlay>
           <div className="flex flex-grow h-[calc(100vh-60px)]">
@@ -845,12 +838,41 @@ function EditApp() {
   );
 }
 
+function DragOverlayPreview({ item }: { item: any }) {
+
+  if (item.type === 'template') {
+    const type = allElementTypes.find(t => t.type === item.id);
+    return (
+      <div
+
+        className={cn(
+          'flex flex-col items-center justify-center rounded-md cursor-move transition-all min-h-20 w-full'
+        )}
+      >
+        <div className="flex items-center justify-center bg-slate-800 rounded-md w-full h-14 mb-2">
+        <span className="text-white">
+          <CustomElementIcon type={item.id} />
+        </span>
+        </div>
+        <span className="text-sm text-black">{type?.title || item.id}</span>
+      </div>
+    )
+  }
+
+  return (
+    <div>
+      <h3>{item?.type} : {item?.id} </h3>
+      {/* <pre>{JSON.stringify(activeItemData, null, 2)}</pre> */}
+    </div>
+  );
+}
+
 function MainContent() {
   const {
     data,
     selectedPage,
     handlePageUpdate,
-    viewMode,
+    viewMode
   } = useEditor();
 
   const isShareMode = viewMode === 'share';
@@ -859,7 +881,7 @@ function MainContent() {
     <div className="flex-1 flex flex-col min-w-0 relative">
       {/* Preview Area - Make it fill the available space */}
       <div className="absolute inset-0 bottom-[68px] overflow-hidden">
-        <div className="h-full bg-[#F7F9FF]">
+      <div className="h-full bg-[#F7F9FF]">
           {isShareMode ? (
             <PageShare />
           ) : (
@@ -1024,7 +1046,7 @@ function PageLogicDialog() {
             <PageFlowEditor
               view={data.view}
               onUpdateFlow={(changes) => {
-                console.log('Flow editor changes:', changes);
+                // console.log('Flow editor changes:', changes);
                 setData(update(data, { view: { $set: changes }}));
 
                 // Submit the update to backend

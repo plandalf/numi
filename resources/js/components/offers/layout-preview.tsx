@@ -1,10 +1,9 @@
 import { type Page, type ViewSection, type Block } from '@/types/offer';
 import { cn } from '@/lib/utils';
 import React, { useRef } from 'react';
-import { Head } from '@inertiajs/react';
 import { CSS } from '@dnd-kit/utilities';
-import { useEffect, useState, createContext, useContext } from 'react';
-import { type PageType, type OfferConfiguration, type OfferVariant, Branch, type PageView as OfferPageView, type PageSection, type FormSection } from '@/types/offer';
+import { useContext } from 'react';
+import { type PageView as OfferPageView, type PageSection, type FormSection } from '@/types/offer';
 import { BlockConfig, FieldState, HookUsage, GlobalState, BlockContextType } from '@/types/blocks';
 import { BlockContext } from '@/contexts/Numi';
 import { blockTypes } from '@/components/blocks';
@@ -101,24 +100,28 @@ const layoutConfig = {
   "name": "SplitCheckout@v1.1",
   "template": {
     "type": "grid",
+    "id": "1x2-grid",
     "props": {
       "className": "grid grid-cols-1 md:grid-cols-2 h-full w-full"
     },
     "children": [
       {
         "type": "box",
+        "id": "core-box",
         "props": {
           "className": "h-full overflow-hidden"
         },
         "children": [
           {
             "type": "flex",
+            "id": "core-flex",
             "props": {
               "className": "flex flex-col h-full"
             },
             "children": [
               {
                 "type": "flex",
+                "id": "header",
                 "props": {
                   "className": "flex flex-col flex-grow space-y-6 p-6 overflow-y-auto"
                 },
@@ -163,6 +166,7 @@ const layoutConfig = {
 
 type ComponentProps = React.HTMLAttributes<HTMLElement> & {
   className?: string;
+  id: string;
   [key: string]: any;
 };
 
@@ -180,7 +184,8 @@ const createElement = (
   // If we have a custom component registered for this type, use it
   if (componentRegistry[type]) {
     const Component = componentRegistry[type];
-    return <Component {...props}>{children}</Component>;
+
+    return <Component key={props.id} {...props}>{children}</Component>;
   }
 
   // Use a div
@@ -192,8 +197,6 @@ const TailwindLayoutRenderer = ({
   page,
   components = {}
 }: TailwindLayoutRendererProps) => {
-  // console.log('TailwindLayoutRenderer page:', page);
-  // console.log('TailwindLayoutRenderer page.view:', page.view);
 
   // Use the config directly if it's an object, otherwise parse it
   const config = typeof layoutConfig === 'string'
@@ -205,21 +208,25 @@ const TailwindLayoutRenderer = ({
     // Default components
     box: (props: ComponentProps) => {
       return (
-        <div {...props} className={cn("relative", props.className)}>
+        <div key={props.id} className={cn("relative", props.className)}>
           {props.children}
         </div>
       );
     },
-    flex: (props: ComponentProps) => (
-      <div {...props} className={cn("flex", props.className)}>
-        {props.children}
-      </div>
-    ),
-    grid: (props: ComponentProps) => (
-      <div {...props} className={cn("grid", props.className)}>
-        {props.children}
-      </div>
-    ),
+    flex: (props: ComponentProps) => {
+      return (
+        <div key={props.id} className={cn('flex', props.className)}>
+          {props.children}
+        </div>
+      )
+    },
+    grid: (props: ComponentProps) => {
+      return (
+        <div key={props.id} className={cn('grid', props.className)}>
+          {props.children}
+        </div>
+      )
+    },
     // Custom components from props
     ...components
   };
@@ -244,9 +251,13 @@ const renderElement = (
 ): React.ReactNode => {
   if (!element) return null;
 
-  const { type, props = {}, children = [], id } = element;
+  const {
+    type,
+    props = {},
+    children = [],
+    id
+  } = element;
   const { componentRegistry, contentMap } = context;
-
 
   if (id && id in page.view) {
     // console.log('Found section for id:', id, page.view[id]);
@@ -255,6 +266,7 @@ const renderElement = (
       type,
       { ...props, id },
       <Section
+        key={id}
         section={section}
         sectionName={id as keyof LocalPageView}
         className={props.className}
@@ -271,7 +283,7 @@ const renderElement = (
       ))
     : null;
 
-  return createElement(type, { ...props, key: id || `${type}` }, childElements, componentRegistry);
+  return createElement(type, { ...props, id: id || type }, childElements, componentRegistry);
 };
 
 // Update BlockRenderer to use our extended type
@@ -385,10 +397,9 @@ const Section = ({ section, sectionName: id, className, selectedBlockId, onSelec
         })}
         ref={setNodeRef}
         >
-
           {section.blocks?.map((block: Block, index: number) => {
             return (
-              <BlockRenderer block={block as BlockConfig}>
+              <BlockRenderer block={block as BlockConfig} key={`${block.id}-${index}`}>
                 {(blockContext) => {
                     const Component = blockTypes[block.type as keyof typeof blockTypes];
                     return Component ? (

@@ -89,8 +89,6 @@ export function GlobalStateProvider({ offer, session: defaultSession, children }
         }
       window.newPrev = newPrev[block.id];
 
-        console.log('🥕', block, prev, hook, newPrev[block.id])
-
         return {
           ...prev,
           [block.id]: [...(newPrev[block.id] || []), hook]

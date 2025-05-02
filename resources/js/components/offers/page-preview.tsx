@@ -1,18 +1,12 @@
-import { type Page, type ViewSection, type Block, type BlockContent, type PageView, type TextContent, type IconContent } from '@/types/offer';
-import { cn } from '@/lib/utils';
+import { type Page, type Block} from '@/types/offer';
 import LayoutPreview from './layout-preview';
-import BlockEditor from './block-editor';
-import { useState, useRef, useEffect, useContext } from 'react';
-import { X, Save, Type, Calendar, DollarSign, Mail, Lock, Link, ChevronDown, Circle, CheckSquare, ToggleLeft, List, Heading1, Square as ButtonIcon, Image as ImageIcon, AtSign, User, Phone, MapPin, Package, CreditCard } from 'lucide-react';
-import { v4 as uuidv4 } from 'uuid';
-import { BlockType, DRAG_TYPES } from './layout-preview';
-import Edit, { useEditor } from '@/pages/offers/Edit';
+import { useState, useEffect } from 'react';
+import { useEditor } from '@/pages/offers/Edit';
 
 interface PreviewProps {
   page: Page;
   onUpdatePage?: (page: Page) => void;
 }
-
 
 export function findBlockInPage(page: Page, blockId: string): Block | null {
     if (!page || !page.view) {
@@ -31,48 +25,6 @@ export function findBlockInPage(page: Page, blockId: string): Block | null {
     }
 
     return null;
-}
-
-// Helper function to find nested blocks
-function findNestedBlock(blocks: Block[], blockId: string): Block | null {
-    for (const block of blocks) {
-        if (block.id === blockId) return block;
-
-        if (block.children) {
-            const nestedBlock = findNestedBlock(block.children, blockId);
-            if (nestedBlock) return nestedBlock;
-        }
-    }
-
-    return null;
-}
-
-// Helper function to convert style object to className string
-export function styleToClassName(style: Record<string, string>): string {
-    // This is a simple implementation - you might want to expand this
-    // to handle more complex style conversions
-    const classNames: string[] = [];
-
-    if (style.textAlign) {
-        const alignmentMap: Record<string, string> = {
-            'left': 'text-left',
-            'center': 'text-center',
-            'right': 'text-right',
-            'justify': 'text-justify'
-        };
-        classNames.push(alignmentMap[style.textAlign] || '');
-    }
-
-    if (style.color) {
-        // This is simplified - in a real app you'd map colors to Tailwind classes
-        classNames.push(`text-[${style.color}]`);
-    }
-
-    if (style.backgroundColor) {
-        classNames.push(`bg-[${style.backgroundColor}]`);
-    }
-
-    return classNames.join(' ');
 }
 
 // Helper function to update a block in the page
@@ -111,9 +63,9 @@ export default function PagePreview({ page, onUpdatePage }: PreviewProps) {
   const selectedBlock = selectedBlockId ? findBlockInPage(livePreviewPage, selectedBlockId) : null;
 
 
-  useEffect(() => {
-      console.log('Current selected block:', selectedBlock);
-  }, [selectedBlock]);
+  // useEffect(() => {
+  //     console.log('Current selected block:', selectedBlock);
+  // }, [selectedBlock]);
 
   const handleBlockUpdate = (updatedBlock: Block) => {
       if (!updatedBlock.id) return;
