@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Database\Traits\UuidRouteKey;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
@@ -9,7 +11,8 @@ use Illuminate\Support\Facades\Storage;
 
 class Media extends Model
 {
-    use HasFactory;
+    use HasFactory,
+        UuidRouteKey;
 
     protected $table = 'medias';
 
@@ -21,6 +24,7 @@ class Media extends Model
         'disk',
         'path',
         'status',
+        'uuid',
         'meta',
     ];
 
@@ -51,9 +55,10 @@ class Media extends Model
      */
     public function getUrlAttribute(): string
     {
-        return $this->disk === 's3'
-            ? \Storage::disk('s3')->url($this->path)
-            : \Storage::disk('public')->url($this->path);
+        return Storage::disk($this->disk)->url($this->path);
+//        return $this->disk === 's3'
+//            ? \Storage::disk('s3')->url($this->path)
+//            : \Storage::disk('public')->url($this->path);
     }
 
     public function getSignedUrl($expiration = 60)
@@ -61,7 +66,7 @@ class Media extends Model
         // Use processed version if available
         $path = $this->path;
 
-        return Storage::disk('private')->temporaryUrl(
+        return Storage::disk($this->disk)->temporaryUrl(
             $path,
             now()->addMinutes($expiration)
         );

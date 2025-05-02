@@ -26,7 +26,6 @@ class MediaController extends Controller
         $extension = pathinfo($request->filename, PATHINFO_EXTENSION);
         $uuid = Str::uuid();
         $filename = $uuid.'.'.$extension;
-        //        $path = 'uploads/' . $filename;
 
         $key = sprintf(
             'm/%s/%s.%s',
@@ -34,6 +33,7 @@ class MediaController extends Controller
             Str::slug(pathinfo($filename, PATHINFO_FILENAME)),
             $extension
         );
+        $disk = config('filesystems.default');
 
         // Create a pending media record
         $media = Media::create([
@@ -41,15 +41,20 @@ class MediaController extends Controller
             'filename' => $filename,
             'mime_type' => $request->mime_type,
             'size' => $request->size,
-            'disk' => 's3',
+            'disk' => $disk,
             'path' => $key,
+            'uuid' => $uuid,
             'status' => Media::STATUS_PENDING,
             'meta' => [
                 'upload_started_at' => now(),
             ],
         ]);
 
-        ['url' => $uploadUrl, 'headers' => $headers] = Storage::disk('private')->temporaryUploadUrl(
+        ['url' => $uploadUrl, 'headers' => $headers] = $disk === 'local'
+            ? [
+                'url' => route('medias.upload', $media),
+                'headers' => [],
+            ] : Storage::disk($disk)->temporaryUploadUrl(
             $key,
             now()->addMinutes(10)
         );
@@ -64,6 +69,15 @@ class MediaController extends Controller
         ], 201);
     }
 
+    public function upload(Media $media, Request $request)
+    {
+        Storage::disk($media->disk)->put(
+            $media->path,
+            $request->getContent(),
+            'private'
+        );
+    }
+
     /**
      * Finalize a media upload
      */
@@ -76,7 +90,7 @@ class MediaController extends Controller
         }
 
         // Verify the file exists in S3
-        if (! Storage::disk('private')->exists($media->path)) {
+        if (! Storage::disk($media->disk)->exists($media->path)) {
             throw ValidationException::withMessages([
                 'media' => ['The file has not been uploaded.'],
             ]);
@@ -91,7 +105,7 @@ class MediaController extends Controller
         ]);
 
         return response()->json([
-            'media' => new MediaResource($media->refresh()),
+            'data' => new MediaResource($media->refresh()),
         ]);
     }
 }

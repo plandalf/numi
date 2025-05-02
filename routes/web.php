@@ -230,7 +230,13 @@ Route::middleware(['auth', 'organization'])->group(function () {
 // Media routes
 Route::middleware(['auth'])->group(function () {
     Route::post('/medias/upload-url', [MediaController::class, 'generateUploadUrl'])->name('medias.upload-url');
+    Route::put('/medias/{media}/upload', [MediaController::class, 'upload'])->name('medias.upload');
     Route::post('/medias/{media}/finalize', [MediaController::class, 'finalizeUpload'])->name('medias.finalize');
+});
+
+Route::get('m/{media}/{filename}', function (\App\Models\Media $media) {
+
+    return redirect()->away($media->getSignedUrl(60));
 });
 
 require __DIR__.'/settings.php';

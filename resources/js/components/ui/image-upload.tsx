@@ -101,9 +101,9 @@ export function ImageUpload({
                     const objectUrl = URL.createObjectURL(file);
                     setPreviewUrl(objectUrl);
                     console.log(objectUrl);
-                    
+
                     // Pass entire media object instead of just ID
-                    onChange?.(responseData.media);
+                    onChange?.(responseData.data.path);
                 });
 
         } catch (error) {
