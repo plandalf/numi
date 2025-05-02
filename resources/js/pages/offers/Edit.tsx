@@ -462,7 +462,7 @@ function Edit({ offer, themes, showNameDialog }: EditProps) {
 }
 
 function parseDndId(id: string): { type: string; id: string } {
-  const [type, ...rest] = id.split(":");
+  const [type, ...rest] = id?.split(":") || [];
   return { type, id: rest.join(":") };
 }
 
@@ -537,12 +537,8 @@ function EditApp() {
     taxes: 10,
     shipping: 5
   }
-
-
   const [prototype, setPrototype] = useState<null | { sectionId: string; index: number }>();
   const [activeItem, setActiveItem] = useState<any>(null);
-
-  const [activeBlock, setActiveBlock] = useState<any>(null);
 
   function setSections(newSections: ViewSection[]) {
     setData(update(data, { view: { pages: { [selectedPage]: { view: { $set: newSections } } } } }));
@@ -562,16 +558,16 @@ function EditApp() {
 
   function handleDragOver(event: DragOverEvent) {
 
-    if (prototype && !event.over) {
-      console.log('🐴 REMOVE PROROTPEP', { prototype, event });
-      return;
-    }
+    // if (prototype && !event.over) {
+    //   console.log('🐴 REMOVE PROROTPEP', { prototype, event });
+    //   return;
+    // }
 
     // if over = null
-    if (!event.active || !event.over) return;
+    // if (!event.active || !event.over) return;
 
     const activeId = event.active.id;
-    const overId = event.over.id;
+    const overId = event.over?.id;
 
     const { type: activeType, id: activeRawId } = parseDndId(activeId);
     const { type: overType, id: overRawId } = parseDndId(overId);
@@ -663,15 +659,14 @@ function EditApp() {
         // Not over a valid drop target, remove prototype if it exists
         if (prototype) {
           let newSections = sections;
-          const oldSectionIdx = findSectionIndexById(newSections, prototype.sectionId);
-          if (oldSectionIdx !== -1) {
-            newSections = update(newSections, {
-              [oldSectionIdx]: {
-                blocks: { $splice: [[prototype.index, 1]] }
-              }
-            });
-            setSections(newSections);
-          }
+          newSections = update(newSections, {
+            [prototype.sectionId]: {
+              blocks: { $splice: [[prototype.index, 1]] }
+            }
+          });
+          setSections(newSections);
+          // if (oldSectionIdx !== -1) {
+          // }
           setPrototype(null);
         }
       }
@@ -683,10 +678,12 @@ function EditApp() {
       const sections = data.view.pages[selectedPage].view;
 
       // Find current section/block
-      const fromSectionId = String(event.active.data.current?.sortable.containerId?.split(':')[1]);
+      const fromSectionId = String(event.active.data.current?.sortable?.containerId?.split(':')[1]);
+
+      if (!fromSectionId) return;
 
       const blockIdx = findBlockIndexById(sections[fromSectionId]?.blocks || [], String(activeRawId));
-      // console.log('blockIdx', blockIdx);
+
 
       if (!fromSectionId || blockIdx === -1) return;
       let newSections = sections;
@@ -698,14 +695,11 @@ function EditApp() {
         }
       });
 
-      // console.log('newSections', { fromSectionId, blockIdx, newSections });
-
       // Insert into new location
       if (overType === 'block') {
-        const toSectionId = event.over.data.current?.sortable.containerId?.split(':')[1];
+        const toSectionId = event.over.data.current?.sortable?.containerId?.split(':')[1];
 
-        const o =  event.over.data ;
-        // console.log("🧑‍🎤 ", { toSectionId, newSections,o, overRawId })
+        if (!toSectionId) return;
 
         const overBlockIdx = getOverBlockIndex(newSections[toSectionId], overRawId);
         if (toSectionId === -1 || overBlockIdx === -1) return;
@@ -858,6 +852,8 @@ function DragOverlayPreview({ item }: { item: any }) {
       </div>
     )
   }
+
+  // todo: the preview
 
   return (
     <div>
