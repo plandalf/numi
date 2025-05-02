@@ -69,7 +69,7 @@ class OffersController extends Controller
         // Load the offer with its theme and slots
         $offer->load(['slots', 'theme']);
 
-        return Inertia::render('offers/Edit', [
+        return Inertia::render('offers/edit', [
             'offer' => new OfferResource($offer),
             'showNameDialog' => session('showNameDialog', false),
             'themes' => ThemeResource::collection($themes),
