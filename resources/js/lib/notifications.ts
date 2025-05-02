@@ -9,7 +9,7 @@ interface FlashMessage {
 /**
  * Show a toast notification
  */
-export const showToast = (message: string, type: 'success' | 'error' | 'info' | 'warning' = 'info') => {
+export const showToast = (message: React.ReactNode, type: 'success' | 'error' | 'info' | 'warning' = 'info') => {
     switch (type) {
         case 'success':
             toast.success(message);

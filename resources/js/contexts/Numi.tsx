@@ -80,7 +80,11 @@ export const Appearance = {
   }),
   border: () => ({
     type: 'border',
-    defaultValue: '1px solid #ccc',
+    defaultValue: '1px',
+  }),
+  borderColor: () => ({
+    type: 'borderColor',
+    defaultValue: '#ccc',
   }),
 }
 

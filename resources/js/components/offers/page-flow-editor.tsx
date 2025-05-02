@@ -55,6 +55,40 @@ const NODE_WIDTH = 250;
 const NODE_HEIGHT = 150;
 const GRID_SPACING = 20;
 
+export function generateDefaultPage({ 
+    id, type, position 
+}: { 
+    id?: string;
+    type: PageType; 
+    position: XYPosition 
+}): Page {
+    if (!id) {
+        id = `page_${Math.random().toString(36).substr(2, 9)}`;
+    }
+
+    console.log('Creating new page:', { id, type, position });
+    
+    return {
+        id,
+        name: 'New Page',
+        type,
+        position,
+        view: {
+            promo: { blocks: [] },
+            title: { blocks: [] },
+            action: { blocks: [] },
+            content: { blocks: [] }
+        },
+        layout: { sm: 'split-checkout@v1' },
+        provides: [],
+        next_page: {
+            branches: [],
+            default_next_page: null
+        }
+    };
+}
+
+
 function PageNode({ data, id }: { data: { page: Page; isStart?: boolean }; id: string }) {
     const { page, isStart } = data;
     const { setNodes, getNode } = useReactFlow();
@@ -635,27 +669,8 @@ export default function PageFlowEditor({ view, onUpdateFlow }: PageFlowEditorPro
         if (!pendingPosition) return;
 
         const id = `page_${Math.random().toString(36).substr(2, 9)}`;
-        console.log('Creating new page:', { id, type, position: pendingPosition });
-        
-        // Create the new page
-        const newPage: Page = {
-            id,
-            name: 'New Page',
-            type,
-            position: pendingPosition,
-            view: {
-                promo: { blocks: [] },
-                title: { blocks: [] },
-                action: { blocks: [] },
-                content: { blocks: [] }
-            },
-            layout: { sm: 'split-checkout@v1' },
-            provides: [],
-            next_page: {
-                branches: [],
-                default_next_page: null
-            }
-        };
+
+        const newPage = generateDefaultPage({ id, type, position: pendingPosition });
 
         // Create updated pages object
         const updatedPages = {

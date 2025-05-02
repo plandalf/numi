@@ -192,6 +192,7 @@ export interface Block {
         color?: string;
         textColor?: string;
         borderColor?: string;
+        border?: string;
         [key: string]: string | undefined;
     };
     validation?: {

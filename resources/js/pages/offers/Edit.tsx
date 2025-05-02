@@ -1,6 +1,6 @@
-import AppOfferLayout from '@/layouts/app/app-offer-layout';
+import AppOfferLayout, { PREVIEW_SIZES } from '@/layouts/app/app-offer-layout';
 import { Block, Offer, ViewSection, type OfferView, type Page, type PageType } from '@/types/offer';
-import { Head } from '@inertiajs/react';
+import { Head, useForm } from '@inertiajs/react';
 import {
     Dialog,
     DialogContent,
@@ -18,9 +18,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { cn } from '@/lib/utils';
-import { MoreVertical, ArrowRightToLine, FileText, CheckSquare } from 'lucide-react';
+import { MoreVertical, ArrowRightToLine, FileText, CheckSquare, Plus } from 'lucide-react';
 import PagePreview from '@/components/offers/page-preview';
-import PageFlowEditor from '@/components/offers/page-flow-editor';
+import PageFlowEditor, { generateDefaultPage } from '@/components/offers/page-flow-editor';
 import { ReactFlowProvider } from '@xyflow/react';
 import update from "immutability-helper";
 import { Type, SquareStack, Image, CreditCard, List } from 'lucide-react';
@@ -34,6 +34,8 @@ import { allElementTypes, CustomElementIcon, Sidebar } from '@/components/offers
 import { Theme } from '@/types/theme';
 import { PageShare } from '@/components/offers/page-share';
 import { CheckoutSession, IntegrationClient } from '@/types/checkout';
+import { toast } from 'sonner';
+import { showToast } from '@/lib/notifications';
 
 
 export interface EditProps {
@@ -142,6 +144,14 @@ interface EditorContextType {
 
   viewMode: 'editor' | 'preview' | 'share';
   setViewMode: React.Dispatch<React.SetStateAction<'editor' | 'preview' | 'share'>>;
+  previewSize: {
+    width: number;
+    height: number;
+  };
+  setPreviewSize: React.Dispatch<React.SetStateAction<{
+    width: number;
+    height: number;
+  }>>;
 
   handleSave: () => void;
   handleNameSubmit: (e: React.FormEvent) => void;
@@ -163,6 +173,27 @@ export function useEditor() {
   return ctx;
 }
 
+function generateDefaultView(){
+  const defaultPage = generateDefaultPage({ type: 'page', position: { x: 100, y: 100 } });
+
+  return {
+    pages: {
+      [defaultPage.id]: defaultPage
+    },
+    first_page: defaultPage.id
+  }
+}
+
+type EditFormData = {
+  name: string;
+  view: {
+    first_page: string;
+    pages: Record<string, Page>;
+  };
+  theme: Theme | null;
+  [key: string]: any; // Allow additional properties for form data
+}
+
 export function EditorProvider({ offer, themes, showNameDialog, children }: React.PropsWithChildren<EditProps>) {
   // --- move all state/logic from Edit here ---
   const [isNameDialogOpen, setIsNameDialogOpen] = useState(false);
@@ -175,19 +206,32 @@ export function EditorProvider({ offer, themes, showNameDialog, children }: Reac
   const [showAddPageDialog, setShowAddPageDialog] = useState(false);
   const [isReady, setIsReady] = useState(false);
   const [viewMode, setViewMode] = useState<'editor' | 'preview' | 'share'>('editor');
+  const [previewSize, setPreviewSize] = useState<{
+    width: number;
+    height: number;
+  }>(PREVIEW_SIZES.desktop);
 
-  // const { data, setData, put, processing, errors, setDefaults } = useForm({
-  //   name: offer.name,
-  //   view: offer.view
-  // });
-
-  const [data, setData] = useState({
+  const { data, setData, put, processing, errors, setDefaults } = useForm<EditFormData>({
     name: offer.name,
     view: offer.view,
     theme: offer.theme,
   });
 
-  const [errors, setErrors] = useState({});
+  console.log(data);
+
+  useEffect(() => {
+    if(!offer.view) {
+      const defaultView = generateDefaultView();
+
+      setData({
+        name: offer.name,
+        view: defaultView,
+        theme: offer.theme,
+      });
+
+      setSelectedPage(defaultView.first_page);
+    }
+  }, [offer.view]);
 
   useEffect(() => {
     if (showNameDialog) {
@@ -200,17 +244,24 @@ export function EditorProvider({ offer, themes, showNameDialog, children }: Reac
       setIsReady(true);
       return;
     }
-    // put(route('offers.update', offer.id), {
-    //   preserveScroll: true,
-    //   onSuccess: (a) => {
-    //     setDefaults();
-    //   }
-    // });
+
   }, [data]);
 
-  const handleSave = useCallback(() => {}, [
-    setData
-  ]);
+  const handleSave = () => {
+    put(route('offers.update', offer.id), {
+      onError: (error: Record<string, string[]>) => {
+        const errorMessages = Object.values(error).flat();
+        toast.error(<>
+          <p>Failed to save offer</p>
+          <ul className='list-disc list-inside'>
+            {errorMessages.map((e: string) => {
+              return <li key={e}>{e}</li>
+            })}
+          </ul>
+        </>);
+      },
+    });
+  };
 
   const handleNameSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -245,7 +296,6 @@ export function EditorProvider({ offer, themes, showNameDialog, children }: Reac
       }
     };
     setData(update(data, { view: { pages: { $set: updatedPages } }}));
-    handleSave();
     setEditingPageName(null);
   };
 
@@ -375,6 +425,7 @@ export function EditorProvider({ offer, themes, showNameDialog, children }: Reac
       first_page: Object.keys(data.view.pages).length === 0 ? id : data.view.first_page
     };
     setData(update(data, { view: { $set: updatedView }}));
+    
     handleSave();
     setShowAddPageDialog(false);
   };
@@ -447,6 +498,7 @@ export function EditorProvider({ offer, themes, showNameDialog, children }: Reac
     selectedBlockId, setSelectedBlockId,
 
     viewMode, setViewMode,
+    previewSize, setPreviewSize,
 
   };
   return <EditorContext.Provider value={value}>{children}</EditorContext.Provider>;
@@ -829,8 +881,6 @@ function EditApp() {
 
       <AddPageDialog />
 
-      <EditNameDialog />
-
       {/* <div className="text-xs absolute bottom-0 w-[500px] right-0 border-t border-border bg-white h-full overflow-scroll">
         <pre>{JSON.stringify(data.view.pages[selectedPage], null, 2)}</pre>
       </div> */}
@@ -906,6 +956,7 @@ function Toolbar() {
     selectedPage, setSelectedPage,
     editingPageName, setEditingPageName,
     pageNameInput, setPageNameInput,
+    setShowAddPageDialog,
     handlePageNameSave,
     handlePageNameClick,
     handlePageAction,
@@ -990,13 +1041,13 @@ function Toolbar() {
                 )}
               </div>
             ))}
-            {/* <button
+            <button
               onClick={() => setShowAddPageDialog(true)}
               className="flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium bg-secondary text-secondary-foreground hover:bg-secondary/90"
             >
               <Plus className="w-4 h-4" />
               Add Page
-            </button> */}
+            </button>
           </div>
 
           {/* <div className="flex items-center gap-4">
@@ -1028,7 +1079,7 @@ function Toolbar() {
 
 function PageLogicDialog() {
 
-    const { showPageLogic, setShowPageLogic, data } = useEditor();
+    const { showPageLogic, setShowPageLogic, data, setData, handleSave } = useEditor();
 
   return (
     <Dialog open={showPageLogic} onOpenChange={setShowPageLogic}>
@@ -1061,47 +1112,6 @@ function PageLogicDialog() {
   )
 }
 
-function EditNameDialog() {
-
-    const { isNameDialogOpen, setIsNameDialogOpen, data, setData, handleNameSubmit, errors, processing } = useEditor();
-
-  return (
-    <Dialog open={isNameDialogOpen} onOpenChange={setIsNameDialogOpen}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Name your offer</DialogTitle>
-          <DialogDescription>
-            Give your offer a name that describes what you're selling.
-          </DialogDescription>
-        </DialogHeader>
-        <form onSubmit={handleNameSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="name">Name</Label>
-            <Input
-              id="name"
-              value={data.name}
-              onChange={e => setData('name', e.target.value)}
-              placeholder="Enter offer name"
-              autoFocus
-            />
-            {errors.name && (
-              <p className="text-sm text-red-500">{errors.name}</p>
-            )}
-          </div>
-          <div className="flex justify-end">
-            <button
-              type="submit"
-              className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-              disabled={processing}
-            >
-              Save
-            </button>
-          </div>
-        </form>
-      </DialogContent>
-    </Dialog>
-  )
-}
 
 function AddPageDialog() {
 

@@ -2,6 +2,7 @@ import { BlockContextType } from "@/types/blocks";
 import Numi, { Appearance } from "@/contexts/Numi";
 import cx from "classnames";
 import { useCheckoutState } from "@/pages/Checkout";
+import { cn } from "@/lib/utils";
 
 // Does Submitting of field forms.
 function ButtonBlockComponent({ context }: { context: BlockContextType }) {
@@ -17,22 +18,24 @@ function ButtonBlockComponent({ context }: { context: BlockContextType }) {
   const [type] = Numi.useStateEnumeration({
     name: 'type',
     initialValue: 'submit',
-    options: ['submit', 'button', 'reset'],
+    options: ['submit', 'button', 'markdown', 'reset'],
     labels: {
       submit: 'Submit',
       button: 'Button',
+      markdown: 'Markdown',
       reset: 'Reset',
     },
     inspector: 'select',
     label: 'Type',
-  })
+  });
 
   const appearance = Numi.useAppearance([
     Appearance.alignment(['left', 'center', 'right', 'expand']),
     Appearance.backgroundColor(),
     Appearance.textColor(),
     Appearance.fontWeight(['normal', 'semibold']),
-    Appearance.border()
+    Appearance.border(),
+    Appearance.borderColor(),
   ]);
 
   const onClick = Numi.useEventCallback({
@@ -40,7 +43,12 @@ function ButtonBlockComponent({ context }: { context: BlockContextType }) {
   });
 
   return (
-    <div className="space-y-2">
+    <div className={cn("space-y-2 flex", {
+      "justify-start": appearance.alignment === 'left',
+      "justify-center": appearance.alignment === 'center',
+      "justify-end": appearance.alignment === 'right',
+      "justify-stretch": appearance.alignment === 'expand',
+    })}>
       <button
         type={type}
         disabled={type === 'submit' && isSubmitting}
@@ -49,12 +57,13 @@ function ButtonBlockComponent({ context }: { context: BlockContextType }) {
           "hover:cursor-pointer hover:brightness-90 active:brightness-85": !isSubmitting,
           "w-full": appearance.alignment === 'expand',
           "font-semibold": appearance.fontWeight === 'semibold',
+          "font-bold": appearance.fontWeight === 'bold',
           "opacity-50 cursor-not-allowed": isSubmitting,
         })}
         style={{
           backgroundColor: appearance.backgroundColor || 'white',
           color: appearance.textColor || 'black',
-          border: appearance.border || '1px solid #ccc',
+          border: `${appearance.border} solid ${appearance.borderColor}`,
         }}
         onClick={onClick}
       >
