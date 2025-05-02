@@ -18,7 +18,7 @@ import ThemePreviewCard from './theme-preview-card';
 import { Search } from 'lucide-react';
 import SearchBar from './search-bar';
 import { router, usePage } from '@inertiajs/react';
-import { EditProps } from '@/pages/offers/Edit';
+import { EditProps } from '@/pages/offers/edit';
 
 interface ThemeSidebarPanelProps {
   themes: Theme[];

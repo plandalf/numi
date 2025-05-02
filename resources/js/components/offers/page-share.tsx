@@ -1,4 +1,4 @@
-import { useEditor } from "@/pages/offers/Edit";
+import { useEditor } from "@/pages/offers/edit";
 import { router } from "@inertiajs/react";
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";

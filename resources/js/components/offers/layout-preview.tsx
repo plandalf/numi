@@ -11,7 +11,7 @@ import { GlobalStateContext } from '@/pages/Checkout';
 import { useDroppable } from '@dnd-kit/core';
 import cx from 'classnames';
 import { rectSortingStrategy, SortableContext, useSortable } from '@dnd-kit/sortable';
-import { useEditor } from '@/pages/offers/Edit';
+import { useEditor } from '@/pages/offers/edit';
 
 // Local interfaces that match the actual structure
 interface LocalPageView extends OfferPageView {
