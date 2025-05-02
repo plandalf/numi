@@ -50,10 +50,10 @@ function openOfferPopup() {
 </script>
 <button onclick="openOfferPopup()">Open Offer</button>`;
           case 'fullscreen':
-              return `<script src="${window.location.origin}/embed.js"></script>
+              return `<script src="${window.location.origin}/js/v1.js"></script>
 <button data-numi-offer="${offer.id}" data-type="fullscreen">Open Offer</button>`;
           case 'slider':
-              return `<script src="${window.location.origin}/embed.js"></script>
+              return `<script src="${window.location.origin}/js/v1.js"></script>
 <button data-numi-offer="${offer.id}" data-type="slider">Open Offer</button>`;
           default:
               return '';

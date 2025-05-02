@@ -3,13 +3,12 @@ import { AppShell } from '@/components/app-shell';
 
 import { Button } from '@/components/ui/button';
 import { Link, router } from '@inertiajs/react';
-import { ArrowLeft, CircleCheck, Eye, Flame, Folder, HomeIcon, LayoutGrid, Menu, Pencil, Redo, Search, Share, Undo, ChevronDown, X, DollarSign } from 'lucide-react';
+import { ArrowLeft, CircleCheck, Eye, Flame, Pencil, Share, ChevronDown, X, DollarSign } from 'lucide-react';
 
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { useState } from 'react';
-import { Separator } from '@/components/ui/separator';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
@@ -36,52 +35,43 @@ interface AppHeaderProps {
     setIsNameDialogOpen: (open: boolean) => void;
 }
 
+export const PREVIEW_SIZES = {
+    'desktop': {
+        width: 1024,
+        height: 575,
+    },
+    'mobile': {
+        width: 390,
+        height: 575,
+    },
+}
+
 function OfferHeader({ offer, isNameDialogOpen, setIsNameDialogOpen }: AppHeaderProps) {
-    const [name, setName] = useState(offer.name);
     const [status, setStatus] = useState(offer.status);
     const isMobile = useIsMobile();
-    const { viewMode, setViewMode } = useEditor();
+    const { data, setData, viewMode, setViewMode, setPreviewSize, handleSave } = useEditor();
+    
+    const [name, setName] = useState(data.name);
 
     const [showPublishDialog, setShowPublishDialog] = useState(false);
 
     // Preview mode state
     const [previewType, setPreviewType] = useState<'desktop' | 'mobile'>('desktop');
-    const [previewDevice, setPreviewDevice] = useState<string>('iphone_14');
-
-    // Device lists
-    const mobileDevices = [
-      { label: 'iPhone 14', value: 'iphone_14', width: 390, height: 844 },
-      { label: 'iPhone SE', value: 'iphone_se', width: 375, height: 667 },
-      { label: 'iPhone 13 Pro Max', value: 'iphone_13_pro_max', width: 428, height: 926 },
-      { label: 'Samsung S23', value: 'samsung_s23', width: 412, height: 915 },
-      { label: 'Google Pixel 7', value: 'pixel_7', width: 412, height: 915 },
-      { label: 'OnePlus 11', value: 'oneplus_11', width: 412, height: 919 },
-      { label: 'iPhone XR', value: 'iphone_xr', width: 414, height: 896 },
-      { label: 'iPhone 12 Mini', value: 'iphone_12_mini', width: 360, height: 780 },
-      { label: 'Samsung Note 20', value: 'note_20', width: 412, height: 915 },
-      { label: 'iPhone 8 Plus', value: 'iphone_8_plus', width: 414, height: 736 },
-    ];
-    const desktopDevices = [
-      { label: '1024 x 768', value: '1024x768', width: 1024, height: 768 },
-      { label: '1280 x 800', value: '1280x800', width: 1280, height: 800 },
-      { label: '1366 x 768', value: '1366x768', width: 1366, height: 768 },
-      { label: '1440 x 900', value: '1440x900', width: 1440, height: 900 },
-      { label: '1536 x 864', value: '1536x864', width: 1536, height: 864 },
-      { label: '1600 x 900', value: '1600x900', width: 1600, height: 900 },
-      { label: '1680 x 1050', value: '1680x1050', width: 1680, height: 1050 },
-      { label: '1920 x 1080', value: '1920x1080', width: 1920, height: 1080 },
-      { label: '2048 x 1152', value: '2048x1152', width: 2048, height: 1152 },
-      { label: '2560 x 1440', value: '2560x1440', width: 2560, height: 1440 },
-    ];
-    const currentDevice = previewType === 'mobile'
-      ? mobileDevices.find(d => d.value === previewDevice)
-      : desktopDevices.find(d => d.value === previewDevice);
-    const deviceOptions = previewType === 'mobile' ? mobileDevices : desktopDevices;
+    const onPreviewSizeChange = (size: 'desktop' | 'mobile') => {
+        setPreviewType(size);
+        setPreviewSize(PREVIEW_SIZES[size]);
+    }
 
     const handleNameSubmit = (e: React.FormEvent) => {
         e.preventDefault();
+
+        setData({
+            ...data,
+            name,
+        });
+
         router.put(route('offers.update', offer.id), {
-            name: name,
+            name,
         }, {
             preserveScroll: true,
             preserveState: true,
@@ -140,7 +130,7 @@ function OfferHeader({ offer, isNameDialogOpen, setIsNameDialogOpen }: AppHeader
                                 variant='ghost'
                                 size="sm"
                                 className={cn('rounded px-4 py-2 text-sm font-medium w-24', previewType === 'desktop' && 'bg-white text-black shadow')}
-                                onClick={() => setPreviewType('desktop')}
+                                onClick={() => onPreviewSizeChange('desktop')}
                             >
                                 Desktop
                             </Button>
@@ -148,34 +138,11 @@ function OfferHeader({ offer, isNameDialogOpen, setIsNameDialogOpen }: AppHeader
                                 variant='ghost'
                                 size="sm"
                                 className={cn('rounded px-4 py-2 text-sm font-medium w-24', previewType === 'mobile' ? 'bg-white text-black shadow' : 'text-gray-900')}
-                                onClick={() => setPreviewType('mobile')}
+                                onClick={() => onPreviewSizeChange('mobile')}
                             >
                                 Mobile
                             </Button>
                         </div>
-                        <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" className="text-[#A3B6D6] px-2 py-1 flex items-center justify-between gap-1 text-sm font-medium w-40">
-                                    {currentDevice ? (
-                                        <span>{currentDevice.label}</span>
-                                    ) : (
-                                        <span>Select device</span>
-                                    )}
-                                    <ChevronDown className="w-4 h-4 ml-1" />
-                                </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                                {deviceOptions.map(device => (
-                                    <DropdownMenuItem
-                                        key={device.value}
-                                        onClick={() => setPreviewDevice(device.value)}
-                                        className={cn(previewDevice === device.value && 'font-bold text-sm')}
-                                    >
-                                        <span>{device.label}</span>
-                                    </DropdownMenuItem>
-                                ))}
-                            </DropdownMenuContent>
-                        </DropdownMenu>
                     </div>
                     <div className="flex items-center space-x-3 h-full flex-shrink-0">
                         <Button
@@ -256,7 +223,7 @@ function OfferHeader({ offer, isNameDialogOpen, setIsNameDialogOpen }: AppHeader
                           </Button>
                         </div>
                       </div>
-                      <Button className="w-full mt-2" variant="outline">
+                      <Button className="w-full mt-2" variant="outline" onClick={() => setViewMode('share')}>
                         More sharing options
                       </Button>
                     </div>
@@ -282,7 +249,12 @@ function OfferHeader({ offer, isNameDialogOpen, setIsNameDialogOpen }: AppHeader
                     {isMobile && <DollarSign className="size-4" />}
                     {!isMobile && 'Pricing'}
                 </Button>
-                <Button className="flex flex-row gap-x-2" variant="outline-transparent" tooltip="Save the current changes">
+                <Button 
+                    className="flex flex-row gap-x-2" 
+                    variant="outline-transparent" 
+                    tooltip="Save the current changes"
+                    onClick={handleSave}
+                >
                     <CircleCheck className="size-4" />
                     {!isMobile && 'Save'}
                 </Button>
@@ -303,10 +275,11 @@ function OfferHeader({ offer, isNameDialogOpen, setIsNameDialogOpen }: AppHeader
                             <Label htmlFor="name">Name</Label>
                             <Input
                                 id="name"
-                                value={name}
+                                value={data.name}
                                 onChange={e => setName(e.target.value)}
                                 placeholder="Enter offer name"
                                 autoFocus
+                                autoComplete="off"
                             />
                         </div>
                         <div className="flex justify-end">

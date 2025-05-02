@@ -157,9 +157,17 @@ export const Inspector = ({
                   {globalState.hookUsage[block.id].some(h => h.name === 'border') && (
                     <EnumerationEditor
                       label='Border'
-                      value={block.appearance?.border || '0px'}
+                      value={block.appearance?.border || '1px'}
                       onChange={value => onUpdate({ ...block, appearance: { ...block.appearance, border: value } })}
-                      options={[ '0px', '4px', '8px', '12px', '16px', '24px', '32px' ]}
+                      options={[ 'none', '1px', '2px', '3px', '4px', '5px', '6px', '7px', '8px', '9px', '10px' ]}
+                    />
+                  )}
+                  {/* Border Color*/}
+                  {globalState.hookUsage[block.id].some(h => h.name === 'borderColor') && (
+                    <ColorPickerEditor
+                      label='Border Color'
+                      value={block.appearance?.borderColor || '#000'}
+                      onChange={value => onUpdate({ ...block, appearance: { ...block.appearance, borderColor: value } })}
                     />
                   )}
                 </div>

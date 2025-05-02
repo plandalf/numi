@@ -12,6 +12,7 @@ use App\Http\Requests\Offer\OfferThemeUpdateRequest;
 use App\Http\Requests\StoreOfferVariantRequest;
 use App\Http\Requests\UpdateOfferVariantRequest;
 use App\Http\Requests\UpdateThemeRequest;
+use App\Http\Requests\Offer\OfferUpdateRequest;
 use App\Http\Resources\OfferResource;
 use App\Http\Resources\ProductResource;
 use App\Http\Resources\ThemeResource;
@@ -58,12 +59,6 @@ class OffersController extends Controller
 
     public function edit(Offer $offer, Request $request): Response
     {
-        // if (is_null($offer->view)) {
-        $json = json_decode(file_get_contents(base_path('resources/view-example.json')), true);
-        $offer->view = $json;
-        $offer->save();
-        // }
-
         $organizationThemes = Theme::where('organization_id', $request->user()->current_organization_id)
             ->whereDoesntHave('offer')
             ->get();
@@ -83,20 +78,11 @@ class OffersController extends Controller
         ]);
     }
 
-    public function update(Request $request, Offer $offer): \Illuminate\Http\RedirectResponse
+    public function update(OfferUpdateRequest $request, Offer $offer)
     {
-        $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'description' => ['nullable', 'string'],
-            'image_url' => ['nullable', 'string', 'url'],
-            'properties' => ['nullable', 'array'],
-            'view' => ['nullable', 'array'],
-            'product_image_id' => ['nullable'],
-        ]);
+        $offer->update($request->validated());
 
-        $offer->update($validated);
-
-        return back()->with('success', 'Product updated successfully');
+        return redirect()->back()->with('success', 'Offer updated successfully');
     }
 
     public function destroy(Offer $offer): \Illuminate\Http\RedirectResponse
