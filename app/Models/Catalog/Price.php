@@ -100,7 +100,7 @@ class Price extends Model
         'cancel_after_cycles' => 'integer',
     ];
 
-    protected $childTypes = [
+    protected array $childTypes = [
         'graduated' => GraduatedCharge::class,
         'one_time' => OneTimeCharge::class,
         'volume' => VolumeCharge::class,

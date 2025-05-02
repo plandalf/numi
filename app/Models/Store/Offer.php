@@ -6,7 +6,9 @@ use App\Database\Model;
 use App\Database\Traits\UuidRouteKey;
 use App\Models\Media;
 use App\Models\Theme;
+use App\Observers\OfferObserver;
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -25,6 +27,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property Carbon|null $deleted_at
  * @property string $uuid
  */
+#[ObservedBy(OfferObserver::class)]
 class Offer extends Model
 {
     /** @use HasFactory<\Database\Factories\OfferFactory> */
@@ -73,6 +76,11 @@ class Offer extends Model
     public function theme(): BelongsTo
     {
         return $this->belongsTo(Theme::class);
+    }
+
+    public function screenshot(): BelongsTo
+    {
+        return $this->belongsTo(Media::class, 'screenshot_id');
     }
 
     public function scopePublished($query)

@@ -14,6 +14,7 @@ use App\Http\Controllers\SequencesController;
 use App\Http\Controllers\Settings\ProfileController;
 use App\Http\Controllers\TemplateController;
 use App\Http\Resources\OfferResource;
+use App\Models\Catalog\Price;
 use App\Models\ResourceEvent;
 use App\Models\Store\Offer;
 use App\Workflows\RunSequenceWorkflow;
@@ -21,9 +22,7 @@ use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use Workflow\WorkflowStub;
 
-Route::get('/', function () {
-    return Inertia::render('welcome');
-})->name('home');
+Route::redirect('/', '/dashboard')->name('home');
 
 Route::get('/workflow-test', function () {
 
@@ -111,7 +110,10 @@ Route::get('/workflow-test', function () {
         $wf->id(),
     );
 
-})->name('test');
+})->name('workflow-test');
+
+Route::get('test', function () {
+});
 
 // get offer controller
 // redirect to

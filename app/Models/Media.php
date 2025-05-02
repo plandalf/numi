@@ -56,9 +56,6 @@ class Media extends Model
     public function getUrlAttribute(): string
     {
         return Storage::disk($this->disk)->url($this->path);
-//        return $this->disk === 's3'
-//            ? \Storage::disk('s3')->url($this->path)
-//            : \Storage::disk('public')->url($this->path);
     }
 
     public function getSignedUrl($expiration = 60)

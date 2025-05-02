@@ -53,4 +53,8 @@ return [
         'webhook_secret' => env('STRIPE_TEST_WEBHOOK_SECRET'),
     ],
 
+    'cloudflare' => [
+        'account_id' => env('CLOUDFRONT_ACCOUNT_ID'),
+        'auth_token' => env('CLOUDFRONT_AUTH_TOKEN'),
+    ],
 ];
