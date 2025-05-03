@@ -54,7 +54,7 @@ return [
     ],
 
     'cloudflare' => [
-        'account_id' => env('CLOUDFRONT_ACCOUNT_ID'),
-        'auth_token' => env('CLOUDFRONT_AUTH_TOKEN'),
+        'account_id' => env('CLOUDFLARE_ACCOUNT_ID'),
+        'auth_token' => env('CLOUDFLARE_AUTH_TOKEN'),
     ],
 ];

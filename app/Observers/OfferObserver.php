@@ -19,6 +19,8 @@ class OfferObserver
      */
     public function updated(Offer $offer): void
     {
+        logger()->info(logname(), ['offer' => $offer->id]);
+
         dispatch(new TakeOfferScreenshotJob($offer));
     }
 

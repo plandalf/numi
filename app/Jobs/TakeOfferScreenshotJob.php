@@ -20,6 +20,7 @@ class TakeOfferScreenshotJob implements ShouldQueue
     public function handle(): void
     {
         if (empty(config('services.cloudflare.account_id'))) {
+            logger()->info(logname('no-cloudflare'));
             return;
         }
 
