@@ -27,7 +27,7 @@ export default function Login({ status, canResetPassword, organization }: LoginP
     const { data, setData, post, processing, errors, reset } = useForm<Required<LoginForm>>({
         email: '',
         password: '',
-        remember: false,
+        remember: true,
     });
 
     const submit: FormEventHandler = (e) => {
@@ -38,14 +38,14 @@ export default function Login({ status, canResetPassword, organization }: LoginP
     };
 
     return (
-        <AuthLayout 
+        <AuthLayout
             title={organization
                 ? <div className="flex flex-row justify-center items-center gap-4">
                     <Building2 className="h-6 w-6 text-primary" />
                     Join {organization.name}
                 </div>
                 : "Log in to your account"
-            } 
+            }
             description="Enter your email and password below to log in"
         >
             <Head title="Log in" />
@@ -90,16 +90,16 @@ export default function Login({ status, canResetPassword, organization }: LoginP
                         <InputError message={errors.password} />
                     </div>
 
-                    <div className="flex items-center space-x-3">
-                        <Checkbox
-                            id="remember"
-                            name="remember"
-                            checked={data.remember}
-                            onClick={() => setData('remember', !data.remember)}
-                            tabIndex={3}
-                        />
-                        <Label htmlFor="remember">Remember me</Label>
-                    </div>
+                    {/*<div className="flex items-center space-x-3">*/}
+                    {/*    <Checkbox*/}
+                    {/*        id="remember"*/}
+                    {/*        name="remember"*/}
+                    {/*        checked={data.remember}*/}
+                    {/*        onClick={() => setData('remember', !data.remember)}*/}
+                    {/*        tabIndex={3}*/}
+                    {/*    />*/}
+                    {/*    <Label htmlFor="remember">Remember me</Label>*/}
+                    {/*</div>*/}
 
                     <Button type="submit" className="mt-4 w-full" tabIndex={4} disabled={processing}>
                         {processing && <LoaderCircle className="h-4 w-4 animate-spin" />}
