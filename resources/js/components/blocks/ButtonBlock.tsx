@@ -1,7 +1,7 @@
 import { BlockContextType } from "@/types/blocks";
 import Numi, { Appearance } from "@/contexts/Numi";
 import cx from "classnames";
-import { useCheckoutState } from "@/pages/Checkout";
+import { useCheckoutState } from "@/pages/checkout-main";
 
 // Does Submitting of field forms.
 function ButtonBlockComponent({ context }: { context: BlockContextType }) {

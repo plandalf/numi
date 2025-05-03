@@ -3,8 +3,8 @@
 import { BlockConfig, BlockContextType } from "@/types/blocks";
 import { createContext, useContext, useEffect, useState } from "react";
 import get from "lodash/get";
-import { CheckoutState, GlobalStateContext } from "@/pages/Checkout";
 import { Theme } from "@/types/theme";
+import { CheckoutState, GlobalStateContext } from '@/pages/checkout-main';
 
 export const BlockContext = createContext<BlockContextType>({
   blockId: '',
@@ -194,12 +194,12 @@ class Numi {
       session
     } = useContext(GlobalStateContext);
 
-    useEffect(() => {
-      // Cleanup function
-      return () => {
-        // Any cleanup needed
-      };
-    }, []);
+    // useEffect(() => {
+    //   // Cleanup function
+    //   return () => {
+    //     // Any cleanup needed
+    //   };
+    // }, []);
 
     return {
       session,

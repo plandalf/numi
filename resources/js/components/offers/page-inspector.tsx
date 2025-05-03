@@ -1,5 +1,5 @@
 import { useEffect, useContext } from 'react';
-import { GlobalStateContext } from '@/pages/Checkout';
+import { GlobalStateContext } from '@/pages/checkout-main';
 import { JSONSchemaEditor } from '@/components/editor/json-schema-editor';
 import { Block } from '@/types/offer';
 import { Label } from '../ui/label';

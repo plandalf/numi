@@ -7,7 +7,7 @@ import { type PageView as OfferPageView, type PageSection, type FormSection } fr
 import { BlockConfig, FieldState, HookUsage, GlobalState, BlockContextType } from '@/types/blocks';
 import { BlockContext } from '@/contexts/Numi';
 import { blockTypes } from '@/components/blocks';
-import { GlobalStateContext } from '@/pages/Checkout';
+import { GlobalStateContext } from '@/pages/checkout-main';
 import { useDroppable } from '@dnd-kit/core';
 import cx from 'classnames';
 import { rectSortingStrategy, SortableContext, useSortable } from '@dnd-kit/sortable';

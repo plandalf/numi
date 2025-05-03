@@ -46,7 +46,7 @@ class CheckoutController extends Controller
 
         $checkout->load(['lineItems.slot', 'lineItems.price.integration']);
 
-        return Inertia::render('Checkout', [
+        return Inertia::render('checkout', [
             'offer' => $offer,
             'checkoutSession' => new CheckoutSessionResource($checkout),
         ]);

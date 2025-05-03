@@ -129,8 +129,7 @@ Route::get('/checkout/{checkout}', [CheckoutController::class, 'show'])
 // ->where('environment', 'live|test');
 
 Route::post('/checkouts/{checkoutSession}/mutations', [CheckoutSessionController::class, 'storeMutation'])
-    ->name('checkouts.mutations.store')
-    ->middleware(['web']);
+    ->name('checkouts.mutations.store');
 
 Route::middleware(['auth', 'verified'])->group(function () {
     // No access route
