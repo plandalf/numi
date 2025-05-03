@@ -8,14 +8,14 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::table('offers', function (Blueprint $table) {
+        Schema::table('store_offers', function (Blueprint $table) {
             $table->integer('screenshot_id')->nullable()->after('theme_id');
         });
     }
 
     public function down(): void
     {
-        Schema::table('offers', function (Blueprint $table) {
+        Schema::table('store_offers', function (Blueprint $table) {
             $table->dropColumn('screenshot_id');
         });
     }
