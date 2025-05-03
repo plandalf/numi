@@ -49,10 +49,6 @@ class CheckoutController extends Controller
         return Inertia::render('Checkout', [
             'offer' => $offer,
             'checkoutSession' => new CheckoutSessionResource($checkout),
-            'error' => null,
-            'collectorId' => Str::uuid(),
-            'embedDomain' => config('services.plandalf.embed_domain'),
-            'environment' => 'live',
         ]);
     }
 }

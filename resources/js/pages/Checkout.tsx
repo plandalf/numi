@@ -87,7 +87,6 @@ export function GlobalStateProvider({ offer, session: defaultSession, children }
         if (prev[block.id] && !(prev[block.id] instanceof Array)) {
           newPrev[block.id] = []
         }
-      window.newPrev = newPrev[block.id];
 
         return {
           ...prev,
