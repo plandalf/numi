@@ -101,7 +101,7 @@ function OfferHeader({ offer, isNameDialogOpen, setIsNameDialogOpen }: AppHeader
     };
 
     return (
-        <div className="border-sidebar-border/80 border-b bg-blue-950 flex justify-between h-14 items-center p-3 gap-x-4">
+        <div className="border-sidebar-border/80 border-b bg-primary flex justify-between h-14 items-center p-3 gap-x-4">
             {/* Left side */}
             <div className="flex gap-x-4 items-center min-w-0">
                 <Link href="/dashboard" prefetch>
