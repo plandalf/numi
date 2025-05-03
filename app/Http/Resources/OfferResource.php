@@ -30,6 +30,11 @@ class OfferResource extends JsonResource
                     'url' => $this->productImage->getSignedUrl(),
                 ];
             }),
+            'screenshot' => $this->whenLoaded('screenshot', function () {
+                return [
+                    'url' => url($this->screenshot->path),
+                ];
+            }, null),
             'status' => $this->status,
             'organization_id' => $this->organization_id,
             'view' => $this->view,

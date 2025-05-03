@@ -25,12 +25,13 @@ const breadcrumbs: BreadcrumbItem[] = [
 ];
 
 export default function Dashboard({ offers }: Props) {
+  console.log({offers})
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Dashboard" />
             <div className="flex h-full flex-1 flex-col gap-4 rounded-xl p-4">
                 <div className="flex justify-end">
-                    <Button 
+                    <Button
                         onClick={() => router.post(route('offers.store'))}
                     >
                         <Plus className="mr-2 h-4 w-4" />
@@ -40,8 +41,8 @@ export default function Dashboard({ offers }: Props) {
                 <div className="grid auto-rows-min gap-4 md:grid-cols-3">
                     {offers.length > 0 ? (
                         offers.map((offer) => (
-                            <Card 
-                                key={offer.id} 
+                            <Card
+                                key={offer.id}
                                 className="cursor-pointer transition-all hover:shadow-md"
                                 onClick={() => router.get(route('offers.edit', offer.id))}
                             >
@@ -52,7 +53,13 @@ export default function Dashboard({ offers }: Props) {
                                     </CardDescription>
                                 </CardHeader>
                                 <CardContent>
+                                  {offer.screenshot.url}
+                                  {offer.screenshot && (
+                                    <img src={offer.screenshot.url} alt="" />
+                                  )}
+                                  {!offer.screenshot && (
                                     <PlaceholderPattern className="h-32 w-full stroke-neutral-900/20 dark:stroke-neutral-100/20" />
+                                  )}
                                 </CardContent>
                             </Card>
                         ))

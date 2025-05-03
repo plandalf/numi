@@ -2,10 +2,12 @@
 
 namespace App\Jobs;
 
+use App\Models\Media;
 use App\Models\Store\Offer;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class TakeOfferScreenshotJob implements ShouldQueue
 {
@@ -29,9 +31,9 @@ class TakeOfferScreenshotJob implements ShouldQueue
                 'screenshotOptions' => [
                     'type' => 'jpeg',
                     'optimizeForSpeed' => true,
-                    'clip' => [
-                        'scale' => 0.5
-                    ],
+//                    'clip' => [
+//                        'scale' => 0.5
+//                    ],
                 ],
                 'viewport' => [
                     'width' => 1280,
@@ -43,25 +45,42 @@ class TakeOfferScreenshotJob implements ShouldQueue
                 ],
             ]);
 
-        \App\Models\Media::query()
+        if (!$res->ok()) {
+//            dd($res->json());
+            return;
+        }
+
+        $uuid = Str::uuid();
+        $filename =  $uuid.'.jpg';
+        $disk = config('filesystems.default');
+        $key = sprintf(
+            'm/%s/%s.%s',
+            $uuid,
+            Str::slug(pathinfo($filename, PATHINFO_FILENAME)),
+            'jpg'
+        );
+
+        $media = \App\Models\Media::query()
             ->create([
-                'original_filename' => null,
-                'filename' => null,
-                'mime_type' => null,
-                'size' => null,
-                'disk' => null,
-                'path' => null,
-                'status' => null,
-                'uuid' => null,
+                'original_filename' => $this->offer->getRouteKey().'-screenshot.jpg',
+                'filename' =>   $filename,
+                'mime_type' => 'image/jpeg',
+                'size' => $res->getBody()->getSize(),
+                'disk' => $disk,
+                'path' => $key,
+                'status' => Media::STATUS_READY,
+                'uuid' => $uuid,
                 'meta' => null,
             ]);
+//        dump($media);
 
-        Storage::put('screenshot.jpg', $res->body());
+        Storage::put($media->path, $res->body(), 'private');
 
     // media->mediable() // associate "screenshot"
 
-        Offer::withoutEvents(function () {
-//            $this->offer->screenshot()->associate($media);
+        Offer::withoutEvents(function () use ($media) {
+            $this->offer->screenshot()->associate($media);
+            $this->offer->save();
         });
     }
 }

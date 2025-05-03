@@ -15,6 +15,7 @@ use App\Http\Controllers\Settings\ProfileController;
 use App\Http\Controllers\TemplateController;
 use App\Http\Resources\OfferResource;
 use App\Models\Catalog\Price;
+use App\Models\Media;
 use App\Models\ResourceEvent;
 use App\Models\Store\Offer;
 use App\Workflows\RunSequenceWorkflow;
@@ -113,6 +114,12 @@ Route::get('/workflow-test', function () {
 })->name('workflow-test');
 
 Route::get('test', function () {
+
+    $offer = Offer::query()->first();
+    dispatch_sync(new \App\Jobs\TakeOfferScreenshotJob($offer));
+    $offer->refresh();
+    dd($offer->screenshot);
+    dump($offer->toArray());
 });
 
 // get offer controller
@@ -202,7 +209,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
             $offers = auth()->user()
                 ->currentOrganization
                 ->offers()
-                ->with(['theme'])
+                ->with(['theme', 'screenshot'])
                 ->get();
 
             return Inertia::render('dashboard', [
@@ -235,8 +242,7 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/medias/{media}/finalize', [MediaController::class, 'finalizeUpload'])->name('medias.finalize');
 });
 
-Route::get('m/{media}/{filename}', function (\App\Models\Media $media) {
-
+Route::get('m/{dir}/{media}.{extension}', function (string $dir, \App\Models\Media $media) {
     return redirect()->away($media->getSignedUrl(60));
 });
 
