@@ -53,7 +53,6 @@ export default function Dashboard({ offers }: Props) {
                                     </CardDescription>
                                 </CardHeader>
                                 <CardContent>
-                                  {offer.screenshot.url}
                                   {offer.screenshot && (
                                     <img src={offer.screenshot.url} alt="" />
                                   )}
