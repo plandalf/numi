@@ -1,6 +1,6 @@
 import { type Page, type ViewSection, type Block } from '@/types/offer';
-import { cn } from '@/lib/utils';
-import React, { useRef } from 'react';
+import { cn, isBlockVisible } from '@/lib/utils';
+import React, { useMemo, useRef } from 'react';
 import { CSS } from '@dnd-kit/utilities';
 import { useContext } from 'react';
 import { type PageView as OfferPageView, type PageSection, type FormSection } from '@/types/offer';
@@ -343,6 +343,16 @@ function BlockRenderer({ block, children }: {
     if (block) {
       setSelectedBlockId(block.id)
     }
+  }
+
+  const isVisible = useMemo(() => {
+    const visibility = block.appearance?.visibility;
+
+   return isBlockVisible({ fields: globalStateContext.fields }, visibility?.fn);
+  }, [block, globalStateContext]);
+
+  if(!isVisible) {
+    return null;
   }
 
   return (

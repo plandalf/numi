@@ -4,21 +4,21 @@ import { type Block, type Page as OfferPage, type OfferConfiguration, } from '@/
 import { cn } from '@/lib/utils';
 
 import { BlockConfig, FieldState, HookUsage } from '@/types/blocks';
-import { BlockContext } from '@/contexts/Numi';
 
 import { blockTypes } from '@/components/blocks';
 import axios from '@/lib/axios';
 import { CheckoutSession } from '@/types/checkout';
+import { BlockRenderer } from '@/components/checkout/block-renderer';
 // Form and validation context
 type FormData = Record<string, any>;
 type ValidationErrors = Record<string, string[]>;
-interface BlockContextType {
-  blockId: string;
-}
 
 // Contexts
 export const GlobalStateContext = createContext<GlobalState | null>(null);
+type Field = { id: string; name: string; value: any };
+
 export interface GlobalState {
+  fields: Record<string, Record<string, Field> | Field>;
   fieldStates: Record<string, FieldState>; // key is `${blockId}:${fieldName}`
   updateFieldState: (blockId: string, fieldName: string, value: any) => void;
   getFieldState: (blockId: string, fieldName: string) => FieldState | undefined;
@@ -82,7 +82,7 @@ export function GlobalStateProvider({ offer, session: defaultSession, children }
     if (!registeredHooks.has(hookKey)) {
       setRegisteredHooks(prev => new Set([...prev, hookKey]));
       setHookUsage(prev => {
-        const newPrev = {...prev};
+        const newPrev = { ...prev };
 
         if (prev[block.id] && !(prev[block.id] instanceof Array)) {
           newPrev[block.id] = []
@@ -209,9 +209,9 @@ export function GlobalStateProvider({ offer, session: defaultSession, children }
         }
       }
 
-      if(action === 'commit') {
+      if (action === 'commit') {
         const body = (await submissionProps?.() ?? {}) as { error?: string, confirmation_token?: string };
-        if(body.error) {
+        if (body.error) {
           setSubmitError(body.error);
           return false;
         }
@@ -252,8 +252,36 @@ export function GlobalStateProvider({ offer, session: defaultSession, children }
     }
   };
 
+  const fields = useMemo(() => {
+    // First reduction: Group fields by blockId
+    const groupedFields = Object.values(fieldStates).reduce((acc, field) => {
+      if (!acc[field.blockId]) {
+        acc[field.blockId] = [];
+      }
+      acc[field.blockId].push({
+        id: field.blockId,
+        name: field.fieldName,
+        value: field.value
+      });
+      return acc;
+    }, {} as Record<string, Array<{ id: string; name: string; value: any }>>);
+
+    return Object.entries(groupedFields).reduce((acc, [blockId, fields]) => {
+      if (fields.length === 1) {
+        acc[blockId] = fields[0];
+      } else {
+        acc[blockId] = fields.reduce((fieldAcc, field) => {
+          fieldAcc[field.name] = field;
+          return fieldAcc;
+        }, {} as Record<string, any>);
+      }
+      return acc;
+    }, {} as Record<string, { id: string; name: string; value: any } | Record<string, any>>);
+  }, [fieldStates]);
+
   // Create context value
   const value: GlobalState = {
+    fields,
     // Original GlobalState properties
     fieldStates,
     updateFieldState,
@@ -298,44 +326,6 @@ export const useCheckoutState = () => {
   }
   return context ?? {};
 };
-
-// Stubbed out BlockRenderer component that doesn't render anything
-// Block Renderer
-function BlockRenderer({ block, children }: {
-  block: BlockConfig,
-  children: (props: BlockContextType) => React.ReactNode
-}) {
-  const globalStateContext = useContext(GlobalStateContext);
-  if (!globalStateContext) {
-    throw new Error('BlockRenderer must be used within a GlobalStateProvider');
-  }
-
-  const blockContext: BlockContextType = {
-    blockId: block.id,
-    blockConfig: block,
-    globalState: globalStateContext,
-    registerField: (fieldName, defaultValue) => {
-      if (!globalStateContext.getFieldState(block.id, fieldName)) {
-        globalStateContext.updateFieldState(block.id, fieldName, defaultValue);
-      }
-    },
-    getFieldValue: (fieldName) => {
-      return globalStateContext.getFieldState(block.id, fieldName)?.value;
-    },
-    setFieldValue: (fieldName, value) => {
-      globalStateContext.updateFieldState(block.id, fieldName, value);
-    },
-    registerHook: (hook: HookUsage) => {
-      globalStateContext.registerHook(block, hook);
-    }
-  };
-
-  return (
-    <BlockContext.Provider value={blockContext}>
-      {children(blockContext)}
-    </BlockContext.Provider>
-  );
-}
 
 // Render a section of blocks - shows the block structure without actual rendering
 export const Section = ({ blocks, className }: { blocks: Block[], className?: string }) => {
@@ -680,7 +670,7 @@ export const useValidateFields = () => {
 
 
 
-  function validateAllFields () {
+  function validateAllFields() {
     const fields = Object.entries(fieldStates).reduce((acc, [key, state]) => {
       acc[key] = state.value;
       return acc;
@@ -752,40 +742,40 @@ function StateDisplay() {
     <div className="p-1 bg-gray-100 rounded">
       <table className="whitespace-pre-wrap">
         <thead>
-        <tr className="text-xs text-left">
-          <th className="px-1 overflow-hidden">Field</th>
-          <th className="px-1">Value</th>
-        </tr>
+          <tr className="text-xs text-left">
+            <th className="px-1 overflow-hidden">Field</th>
+            <th className="px-1">Value</th>
+          </tr>
         </thead>
         <tbody>
-        {Object.entries(globalState.fieldStates).map(([key, field]) => (
-          <tr key={key}>
-            <td className="px-1">{key}</td>
-            <td className="px-1">{JSON.stringify(field.value, null, 2)}</td>
-          </tr>
-        ))}
+          {Object.entries(globalState.fieldStates).map(([key, field]) => (
+            <tr key={key}>
+              <td className="px-1">{key}</td>
+              <td className="px-1">{JSON.stringify(field.value, null, 2)}</td>
+            </tr>
+          ))}
         </tbody>
         <tfoot>
-        <tr>
-          <td className="px-1">Page History</td>
-          <td className="px-1">{pageHistory.join(', ')}</td>
-        </tr>
-        <tr>
-          <td className="px-1">Completed Pages</td>
-          <td className="px-1">{completedPages.join(', ')}</td>
-        </tr>
-        <tr>
-          <td className="px-1">Navigation History</td>
-          <td className="px-1">
-            <div className="space-y-1">
-              {navigationHistory.map((entry: NavigationHistoryEntry, index: number) => (
-                <div key={index} className="text-xs">
-                  {new Date(entry.timestamp).toLocaleTimeString()} - {entry.direction}: {entry.pageId}
-                </div>
-              ))}
-            </div>
-          </td>
-        </tr>
+          <tr>
+            <td className="px-1">Page History</td>
+            <td className="px-1">{pageHistory.join(', ')}</td>
+          </tr>
+          <tr>
+            <td className="px-1">Completed Pages</td>
+            <td className="px-1">{completedPages.join(', ')}</td>
+          </tr>
+          <tr>
+            <td className="px-1">Navigation History</td>
+            <td className="px-1">
+              <div className="space-y-1">
+                {navigationHistory.map((entry: NavigationHistoryEntry, index: number) => (
+                  <div key={index} className="text-xs">
+                    {new Date(entry.timestamp).toLocaleTimeString()} - {entry.direction}: {entry.pageId}
+                  </div>
+                ))}
+              </div>
+            </td>
+          </tr>
         </tfoot>
       </table>
     </div>
