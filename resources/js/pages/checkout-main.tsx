@@ -255,7 +255,7 @@ export function GlobalStateProvider({ offer, session: defaultSession, children }
   const fields = useMemo(() => {
     // First reduction: Group fields by blockId
     const groupedFields = Object.values(fieldStates).reduce((acc, field) => {
-      if (!acc[field.blockId]) {
+      if (!acc[field.blockId] || !Array.isArray(acc[field.blockId])) {
         acc[field.blockId] = [];
       }
       acc[field.blockId].push({
