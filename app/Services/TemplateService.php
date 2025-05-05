@@ -9,6 +9,28 @@ use Illuminate\Support\Facades\DB;
 
 class TemplateService
 {
+
+
+    public function getGlobalTemplates()
+    {
+        return Template::query()
+            ->global()
+            ->with(['theme', 'organization'])
+            ->orderBy('created_at', 'desc')
+            ->get();
+    }
+
+    public function getGlobalTemplateCategories()
+    {
+        return Template::query()
+            ->global()
+            ->whereNotNull('category')
+            ->distinct()
+            ->pluck('category')
+            ->values()
+            ->all();
+    }
+
     /**
      * Create a new offer from a template.
      */

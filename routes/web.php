@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\CheckoutSessionController;
 use App\Http\Controllers\Billing\CheckoutController as BillingCheckoutController;
 use App\Http\Controllers\CheckoutController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\IntegrationsController;
 use App\Http\Controllers\MediaController;
 use App\Http\Controllers\NoAccessController;
@@ -205,18 +206,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::post('publish', [OffersController::class, 'publish'])->name('publish');
         });
 
-        Route::get('dashboard', function () {
-            $offers = auth()->user()
-                ->currentOrganization
-                ->offers()
-                ->with(['theme', 'screenshot'])
-                ->get();
-
-            return Inertia::render('dashboard', [
-                'offers' => OfferResource::collection($offers),
-            ]);
-        })->name('dashboard');
-
+        Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
         Route::get('/templates', [TemplateController::class, 'index'])->name('templates.index');
         Route::post('/templates/{template}/use', [TemplateController::class, 'useTemplate'])->name('templates.use');
 

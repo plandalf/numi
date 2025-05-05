@@ -11,7 +11,7 @@ interface StringEditorProps {
 }
 
 export const StringEditor: React.FC<StringEditorProps> = ({ label, placeholder, value, onChange, multiline }) => (
-  <div className="flex flex-col gap-2 mb-3">
+  <div className="flex flex-col gap-2">
     <Label className="text-sm capitalize">{label}</Label>
     {multiline ? (
       <Textarea 

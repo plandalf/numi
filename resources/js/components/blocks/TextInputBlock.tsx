@@ -2,6 +2,12 @@ import { BlockContextType } from "@/types/blocks";
 import Numi from "@/contexts/Numi";
 
 function TextInputBlockComponent({ context }: { context: BlockContextType }) {
+
+  const [id] = Numi.useStateString({
+    name: 'Field Name',
+    defaultValue: '',
+  });
+
   const [text, setText] = Numi.useStateString({
     name: 'value',
     defaultValue: 'SHIT',
@@ -31,10 +37,11 @@ function TextInputBlockComponent({ context }: { context: BlockContextType }) {
       <label htmlFor="">{label}</label>
       <div>
         <input 
-        className="border border-gray-300 rounded-md p-2"
-        type="text" 
-        value={text}
-        onChange={(e) => setText(e.target.value)} 
+          id={id}
+          className="border border-gray-300 rounded-md p-2"
+          type="text" 
+          value={text}
+          onChange={(e) => setText(e.target.value)} 
         />
       </div>
     </div>

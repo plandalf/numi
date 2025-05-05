@@ -9,7 +9,7 @@ interface AlignmentPickerProps {
 
 const AlignmentPicker: React.FC<AlignmentPickerProps> = ({ value, onChange, className }) => (
   <div className={cn('flex p-1 bg-[#EBEFFF] rounded-lg overflow-hidden', className)}>
-    {['left', 'center', 'right', 'expand'].map((align) => (
+    {['expand', 'left', 'center', 'right'].map((align) => (
       <button
         key={align}
         type="button"
@@ -19,11 +19,11 @@ const AlignmentPicker: React.FC<AlignmentPickerProps> = ({ value, onChange, clas
         )}
         onClick={() => onChange(align)}
       >
+        {align === 'expand' && <span className="inline-block w-5 h-5"><svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="4" y1="6" x2="18" y2="6" /><line x1="4" y1="10" x2="18" y2="10" /><line x1="4" y1="14" x2="18" y2="14" /></svg></span>}
         {align === 'left' && <span className="inline-block w-5 h-5"><svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="4" y1="6" x2="14" y2="6" /><line x1="4" y1="10" x2="18" y2="10" /><line x1="4" y1="14" x2="10" y2="14" /></svg></span>}
         {align === 'center' && <span className="inline-block w-5 h-5"><svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="6" y1="6" x2="16" y2="6" /><line x1="4" y1="10" x2="18" y2="10" /><line x1="6" y1="14" x2="16" y2="14" /></svg></span>}
         {align === 'right' && <span className="inline-block w-5 h-5"><svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="10" y1="6" x2="18" y2="6" /><line x1="4" y1="10" x2="18" y2="10" /><line x1="14" y1="14" x2="18" y2="14" /></svg></span>}
-        {align === 'expand' && <span className="inline-block w-5 h-5"><svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="4" y1="6" x2="18" y2="6" /><line x1="4" y1="10" x2="18" y2="10" /><line x1="4" y1="14" x2="18" y2="14" /></svg></span>}
-      </button>
+       </button>
     ))}
   </div>
 );

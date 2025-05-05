@@ -5,6 +5,9 @@ import { Head, router } from '@inertiajs/react';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { TemplateSelectorModal } from '@/components/templates/template-selector-modal';
+import { useState } from 'react';
+import { Template } from '@/types/template';
 
 interface Offer {
     id: number;
@@ -15,6 +18,8 @@ interface Offer {
 
 interface Props {
     offers: Offer[];
+    templates: Template[];
+    categories: string[];
 }
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -24,15 +29,16 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
-export default function Dashboard({ offers }: Props) {
-  console.log({offers})
+export default function Dashboard({ offers, templates, categories }: Props) {
+    const [isSelectorOpen, setIsSelectorOpen] = useState(false);
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Dashboard" />
             <div className="flex h-full flex-1 flex-col gap-4 rounded-xl p-4">
                 <div className="flex justify-end">
                     <Button
-                        onClick={() => router.post(route('offers.store'))}
+                        onClick={() => setIsSelectorOpen(true)}
                     >
                         <Plus className="mr-2 h-4 w-4" />
                         Create New Offer
@@ -69,6 +75,14 @@ export default function Dashboard({ offers }: Props) {
                     )}
                 </div>
             </div>
+
+            {/* Template Selector Modal */}
+            <TemplateSelectorModal
+                open={isSelectorOpen}
+                onOpenChange={setIsSelectorOpen}
+                templates={templates}
+                categories={categories}
+            />
         </AppLayout>
     );
 }

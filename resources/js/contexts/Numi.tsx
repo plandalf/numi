@@ -177,7 +177,7 @@ class Numi {
     };
   }
 
-  static useStateJsonSchema(props: { name: string; schema: { $schema: string; type: string; items: { type: string; properties: { key: { type: string; }; children: { type: string; items: { type: string; properties: { key: { type: string; }; label: { type: string; }; caption: { type: string; }; color: { type: string; }; prefixImage: { type: string; format: string; description: string; meta: { editor: string; }; }; prefixIcon: { type: string; description: string; meta: { editor: string; }; }; prefixText: { type: string; }; tooltip: { type: string; }; disabled: { type: string; }; hidden: { type: string; }; }; required: string[]; }; }; }; required: string[]; }; }}): Array<any> {
+  static useStateJsonSchema(props: { name: string; schema: { $schema: string; type: string; items: { type: string; properties: { key: { title: string; type: string; }; value: { title: string; type: string; }; children: { type: string; items: { type: string; properties: { key: { type: string; }; label: { type: string; }; caption: { type: string; }; color: { type: string; }; prefixImage: { type: string; format: string; description: string; meta: { editor: string; }; }; prefixIcon: { type: string; description: string; meta: { editor: string; }; }; prefixText: { type: string; }; tooltip: { type: string; }; disabled: { type: string; }; hidden: { type: string; }; }; required: string[]; }; }; }; required: string[]; }; }}): Array<any> {
 
     const blockContext = useContext(BlockContext);
 
@@ -335,7 +335,7 @@ class Numi {
     return [value, setValue];
   }
 
-  static useStateString(props: { name: string; defaultValue: string; inspector?: string }): [string, (value: string) => void, string] {
+  static useStateString(props: { name: string; defaultValue: string; inspector?: string, format?: string }): [string, (value: string) => void, string] {
     const blockContext = useContext(BlockContext);
 
 
@@ -368,7 +368,7 @@ class Numi {
     const value = props.inspector !== 'hidden'
       ? get(blockContext.blockConfig, `content.${props.name}`) ?? blockContext.getFieldValue(props.name) ?? props.defaultValue
       : blockContext.getFieldValue(props.name) ?? get(blockContext.blockConfig, `content.${props.name}`) ?? props.defaultValue;
-    const format = get(blockContext.blockConfig, `content.format`) ?? 'plain';
+    const format = get(blockContext.blockConfig, `content.format`) ?? props.format ?? 'plain';
 
     const setValue = (newValue: string) => {
       blockContext.setFieldValue(props.name, newValue);

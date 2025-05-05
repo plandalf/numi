@@ -63,11 +63,17 @@ function ButtonBlockComponent({ context }: { context: BlockContextType }) {
           "font-semibold": appearance.fontWeight === 'semibold',
           "font-bold": appearance.fontWeight === 'bold',
           "opacity-50 cursor-not-allowed": isSubmitting,
+          "border-none": appearance.border === 'none',
+          "border-[1px]": appearance.border === 'xs',
+          "border-[4px]": appearance.border === 'sm',
+          "border-[8px]": appearance.border === 'md',
+          "border-[12px]": appearance.border === 'lg',
+          "border-[16px]": appearance.border === 'xl',
         })}
         style={{
           backgroundColor: appearance.backgroundColor || 'white',
           color: appearance.textColor || 'black',
-          border: `${appearance.border} solid ${appearance.borderColor}`,
+          borderColor: `${appearance.borderColor || '#ccc'}`,
         }}
         onClick={onClick}
       >

@@ -318,9 +318,7 @@ function EditApp() {
             id: uuidv4(),
             type: activeRawId,
             object: 'block',
-            content: {
-              format: 'markdown',
-            }
+            content: {}
           };
 
           newSections = update(newSections, {

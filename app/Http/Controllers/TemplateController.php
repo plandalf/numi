@@ -22,19 +22,8 @@ class TemplateController extends Controller
      */
     public function index()
     {
-        $templates = Template::query()
-            ->global()
-            ->with(['theme', 'organization'])
-            ->orderBy('created_at', 'desc')
-            ->get();
-
-        $categories = Template::query()
-            ->global()
-            ->whereNotNull('category')
-            ->distinct()
-            ->pluck('category')
-            ->values()
-            ->all();
+        $templates = $this->templateService->getGlobalTemplates();
+        $categories = $this->templateService->getGlobalTemplateCategories();
 
         return Inertia::render('templates/index', [
             'templates' => TemplateResource::collection($templates),

@@ -10,6 +10,7 @@ function TextBlockComponent({ context }: { context: BlockContextType }) {
     name: 'value',
     defaultValue: 'Default Text!',
     inspector: 'multiline',
+    format: 'markdown',
   });
 
   const { fontWeight, fontSize } = context.blockConfig.appearance ?? {};

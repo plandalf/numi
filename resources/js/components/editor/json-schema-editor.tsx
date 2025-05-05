@@ -110,7 +110,7 @@ export function JSONSchemaEditor({
       });
     };
     return (
-      <div className="space-y-3">
+      <div className="space-y-4">
         {Object.entries(schema.properties).map(([propName, propSchema]) => {
           if (propSchema.meta?.editor === 'hidden') return null;
           return (
@@ -197,7 +197,7 @@ export function JSONSchemaEditor({
 
 function getDefaultForType(type: JsonSchemaType): any {
   switch (type) {
-    case 'string': return '1234';
+    case 'string': return '';
     case 'number': return 0;
     case 'boolean': return false;
     case 'object': return {};
