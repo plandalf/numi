@@ -16,7 +16,13 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
+import {
+  SidebarGroup,
+  SidebarGroupLabel,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem
+} from '@/components/ui/sidebar';
 import { useOrganizationSwitcher } from '@/hooks/use-organization-switcher';
 import { type SharedData } from '@/types';
 import { usePage } from '@inertiajs/react';
@@ -36,59 +42,61 @@ export function OrganizationSwitcher() {
     });
 
     return (
+      <SidebarGroup className="px-2 py-0 mb-2">
+        <SidebarGroupLabel>Organization</SidebarGroupLabel>
         <SidebarMenu>
-            <SidebarMenuItem>
-                <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                        <SidebarMenuButton size="lg">
-                            <Building2 className="mr-2 size-4" />
-                            <span className="flex-1 text-left">
-                                {auth.user.current_organization?.name ?? 'Select Organization'}
-                                </span>
-                            <ChevronDown className="ml-auto size-4" />
-                        </SidebarMenuButton>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent className="w-56">
-                        {auth.user.organizations.map((org) => (
-                            <DropdownMenuItem key={org.id} onClick={() => onSwitch?.(org.id)}>
-                                {org.name}
-                            </DropdownMenuItem>
-                        ))}
-                        <DropdownMenuSeparator />
-                        <Dialog open={isOpen} onOpenChange={setIsOpen}>
-                            <DialogTrigger asChild>
-                                <DropdownMenuItem>
-                                    <Plus className="mr-2 size-4" />
-                                    Create Organization
-                                </DropdownMenuItem>
-                            </DialogTrigger>
-                            <DialogContent>
-                                <DialogHeader>
-                                    <DialogTitle>Create new organization</DialogTitle>
-                                    <DialogDescription>
-                                        Use separate organizations to manage multiple clients or companies.
-                                        To join an existing organization, ask to be invited as a team member.
-                                    </DialogDescription>
-                                </DialogHeader>
-                                <div className="grid gap-4 py-4">
-                                    <div className="grid gap-2">
-                                        <Label htmlFor="name">Organization name</Label>
-                                        <Input
-                                            id="name"
-                                            value={name}
-                                            onChange={(e) => setName(e.target.value)}
-                                            placeholder="Acme Corp"
-                                        />
-                                    </div>
-                                </div>
-                                <div className="flex justify-end">
-                                    <Button onClick={() => onCreate?.(name)}>Create Organization</Button>
-                                </div>
-                            </DialogContent>
-                        </Dialog>
-                    </DropdownMenuContent>
-                </DropdownMenu>
-            </SidebarMenuItem>
+          <SidebarMenuItem >
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <SidebarMenuButton size="md" className="">
+                  <Building2 className="mr-2 size-4" />
+                  <span className="flex-1 text-left">{auth.user.current_organization?.name ?? 'Select Organization'}</span>
+                  <ChevronDown className="ml-auto size-4" />
+                </SidebarMenuButton>
+              </DropdownMenuTrigger>
+
+              <DropdownMenuContent className="w-56">
+                {auth.user.organizations.map((org) => (
+                  <DropdownMenuItem key={org.id} onClick={() => onSwitch?.(org.id)}>
+                    {org.name}
+                  </DropdownMenuItem>
+                ))}
+                <DropdownMenuSeparator />
+                <Dialog open={isOpen} onOpenChange={setIsOpen}>
+                  <DialogTrigger asChild>
+                    <DropdownMenuItem>
+                      <Plus className="mr-2 size-4" />
+                      Create Organization
+                    </DropdownMenuItem>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Create new organization</DialogTitle>
+                      <DialogDescription>
+                        Use separate organizations to manage multiple clients or companies.
+                        To join an existing organization, ask to be invited as a team member.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="grid gap-4 py-4">
+                      <div className="grid gap-2">
+                        <Label htmlFor="name">Organization name</Label>
+                        <Input
+                          id="name"
+                          value={name}
+                          onChange={(e) => setName(e.target.value)}
+                          placeholder="Acme Corp"
+                        />
+                      </div>
+                    </div>
+                    <div className="flex justify-end">
+                      <Button onClick={() => onCreate?.(name)}>Create Organization</Button>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </SidebarMenuItem>
         </SidebarMenu>
+      </SidebarGroup>
     );
-} 
+}

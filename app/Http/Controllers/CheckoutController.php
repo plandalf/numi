@@ -36,7 +36,8 @@ class CheckoutController extends Controller
 
         $offer = $checkout->offer;
 
-        $json = json_decode(file_get_contents(base_path('resources/view-example.json')), true);
+//        $json = json_decode(file_get_contents(base_path('resources/view-example.json')), true);
+        $json = $offer->view;
 
         /**
          * @todo Replace with the actual view json
