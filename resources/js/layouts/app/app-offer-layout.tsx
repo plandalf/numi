@@ -12,7 +12,7 @@ import { useState } from 'react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import { useEditor } from '@/pages/offers/edit';
+import { useEditor } from '@/contexts/offer/editor-context';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { PublishStatusCard } from '@/components/offers/publish-status-card';
 

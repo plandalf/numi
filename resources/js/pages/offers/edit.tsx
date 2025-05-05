@@ -1,6 +1,6 @@
-import AppOfferLayout, { PREVIEW_SIZES } from '@/layouts/app/app-offer-layout';
-import { Block, Offer, ViewSection, type OfferView, type Page, type PageType } from '@/types/offer';
-import { Head, useForm } from '@inertiajs/react';
+import AppOfferLayout from '@/layouts/app/app-offer-layout';
+import { Block, Offer, ViewSection, type PageType } from '@/types/offer';
+import { Head } from '@inertiajs/react';
 import {
     Dialog,
     DialogContent,
@@ -15,28 +15,24 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { useEffect, useState, useRef, useCallback } from 'react';
+import { useContext, useState } from 'react';
 import { cn } from '@/lib/utils';
 import { MoreVertical, ArrowRightToLine, FileText, CheckSquare, Plus } from 'lucide-react';
 import PagePreview from '@/components/offers/page-preview';
-import PageFlowEditor, { generateDefaultPage } from '@/components/offers/page-flow-editor';
+import PageFlowEditor from '@/components/offers/page-flow-editor';
 import { ReactFlowProvider } from '@xyflow/react';
 import update from "immutability-helper";
-import { Type, SquareStack, Image, CreditCard, List } from 'lucide-react';
+import { CreditCard } from 'lucide-react';
 import { GlobalStateProvider } from '@/pages/checkout-main';
-import { DndContext, DragOverlay, useDraggable, closestCenter, DragStartEvent, useDroppable, useDndMonitor, DragPendingEvent, useSensor, PointerSensor, useSensors, rectIntersection, DragOverEvent, DragEndEvent } from "@dnd-kit/core";
+import { DndContext, DragOverlay, DragStartEvent, useSensor, PointerSensor, useSensors, rectIntersection, DragOverEvent, DragEndEvent } from "@dnd-kit/core";
 
-import { blockTypes, getBlockMeta } from '@/components/blocks';
 import { v4 as uuidv4 } from 'uuid';
-import React, { createContext, useContext } from 'react';
+import React from 'react';
 import { allElementTypes, CustomElementIcon, Sidebar } from '@/components/offers/sidebar';
 import { Theme } from '@/types/theme';
 import { PageShare } from '@/components/offers/page-share';
 import { CheckoutSession, IntegrationClient } from '@/types/checkout';
-import { toast } from 'sonner';
-import { showToast } from '@/lib/notifications';
-
+import { EditorProvider, useEditor } from '@/contexts/offer/editor-context';
 
 export interface EditProps {
     offer: Offer;
@@ -46,465 +42,13 @@ export interface EditProps {
     showNameDialog?: boolean;
 }
 
-
 const PAGE_TYPE_ICONS: Record<PageType, React.ReactNode> = {
     entry: <ArrowRightToLine className="w-4 h-4" />,
     page: <FileText className="w-4 h-4" />,
-    ending: <CheckSquare className="w-4 h-4" />
+    ending: <CheckSquare className="w-4 h-4" />,
+    payment: <CreditCard className="w-4 h-4" />
 };
 
-// Add icons to block types
-const BLOCK_ICONS = {
-  'text': <Type className="w-4 h-4" />,
-  'heading': <Type className="w-4 h-4 font-bold" />,
-  'button': <SquareStack className="w-4 h-4" />,
-  'image': <Image className="w-4 h-4" />,
-  'payment': <CreditCard className="w-4 h-4" />,
-  'list': <List className="w-4 h-4" />
-};
-
-// Block item component for the Editor sidebar
-interface BlockItemProps {
-  blockType: typeof blockTypes[keyof typeof blockTypes];
-}
-
-// note: tempaltes?
-
-const BlockTemplateItem = ({ id, blockType }: BlockItemProps) => {
-
-  const meta = getBlockMeta(id);
-
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-  } = useDraggable({
-    id: `template:${id}`,
-  });
-
-  const style = {
-    border: '1px dashed black',
-  };
-
-  return (
-    <div
-      ref={setNodeRef}
-      {...attributes}
-      {...listeners}
-      style={style}
-      className={cn(
-        "flex items-center gap-2 p-2 rounded cursor-move border border-border hover:bg-muted transition-all",
-      )}
-    >
-      <span className="text-muted-foreground">{BLOCK_ICONS[blockType.id as keyof typeof BLOCK_ICONS]}</span>
-      <span className="text-sm">{meta.icon} {meta.title}</span>
-    </div>
-  );
-};
-
-// --- Editor Context ---
-interface EditorContextType {
-  data: any;
-  setData: typeof setData;
-  put: typeof put;
-  processing: boolean;
-  errors: any;
-  setDefaults: typeof setDefaults;
-
-  themes: Theme[];
-
-  isNameDialogOpen: boolean;
-  setIsNameDialogOpen: React.Dispatch<React.SetStateAction<boolean>>;
-
-  selectedPage: string;
-  setSelectedPage: React.Dispatch<React.SetStateAction<string>>;
-
-  editingPageName: string | null;
-  setEditingPageName: React.Dispatch<React.SetStateAction<string | null>>;
-
-  pageNameInput: string;
-  setPageNameInput: React.Dispatch<React.SetStateAction<string>>;
-
-  showPageLogic: boolean;
-  setShowPageLogic: React.Dispatch<React.SetStateAction<boolean>>;
-
-  inputRef: React.RefObject<HTMLInputElement>;
-
-  isRenamingFromDropdown: boolean;
-  setIsRenamingFromDropdown: React.Dispatch<React.SetStateAction<boolean>>;
-
-  showAddPageDialog: boolean;
-  setShowAddPageDialog: React.Dispatch<React.SetStateAction<boolean>>;
-
-  isReady: boolean;
-  setIsReady: React.Dispatch<React.SetStateAction<boolean>>;
-
-  selectedBlockId: string | null;
-  setSelectedBlockId: React.Dispatch<React.SetStateAction<string | null>>;
-
-  viewMode: 'editor' | 'preview' | 'share';
-  setViewMode: React.Dispatch<React.SetStateAction<'editor' | 'preview' | 'share'>>;
-  previewSize: {
-    width: number;
-    height: number;
-  };
-  setPreviewSize: React.Dispatch<React.SetStateAction<{
-    width: number;
-    height: number;
-  }>>;
-
-  handleSave: () => void;
-  handleNameSubmit: (e: React.FormEvent) => void;
-  handlePageNameClick: (pageId: string, currentName: string) => void;
-  handlePageNameSave: (pageId: string) => void;
-  handlePageAction: (pageId: string, action: 'rename' | 'duplicate' | 'delete') => void;
-  handlePageUpdate: (updatedPage: Page) => void;
-  getOrderedPages: (view: OfferView) => [string, Page][];
-  handleAddPage: (type: PageType) => void;
-  offer: Offer;
-  updateBlock: (block: Block) => void;
-}
-
-const EditorContext = createContext<EditorContextType | undefined>(undefined);
-
-export function useEditor() {
-  const ctx = useContext(EditorContext);
-  if (!ctx) throw new Error('useEditor must be used within an EditorProvider');
-  return ctx;
-}
-
-function generateDefaultView(){
-  const defaultPage = generateDefaultPage({ type: 'page', position: { x: 100, y: 100 } });
-
-  return {
-    pages: {
-      [defaultPage.id]: defaultPage
-    },
-    first_page: defaultPage.id
-  }
-}
-
-type EditFormData = {
-  name: string;
-  view: {
-    first_page: string;
-    pages: Record<string, Page>;
-  };
-  theme: Theme | null;
-  [key: string]: any; // Allow additional properties for form data
-}
-
-export function EditorProvider({ offer, themes, showNameDialog, children }: React.PropsWithChildren<EditProps>) {
-  // --- move all state/logic from Edit here ---
-  const [isNameDialogOpen, setIsNameDialogOpen] = useState(false);
-  const [selectedPage, setSelectedPage] = useState<string>(offer.view?.first_page);
-  const [editingPageName, setEditingPageName] = useState<string | null>(null);
-  const [pageNameInput, setPageNameInput] = useState("");
-  const [showPageLogic, setShowPageLogic] = useState(false);
-  const inputRef = useRef<HTMLInputElement>(null);
-  const [isRenamingFromDropdown, setIsRenamingFromDropdown] = useState(false);
-  const [showAddPageDialog, setShowAddPageDialog] = useState(false);
-  const [isReady, setIsReady] = useState(false);
-  const [viewMode, setViewMode] = useState<'editor' | 'preview' | 'share'>('editor');
-  const [previewSize, setPreviewSize] = useState<{
-    width: number;
-    height: number;
-  }>(PREVIEW_SIZES.desktop);
-
-  const { data, setData, put, processing, errors, setDefaults } = useForm<EditFormData>({
-    name: offer.name,
-    view: offer.view,
-    theme: offer.theme,
-  });
-
-  console.log(data);
-
-  useEffect(() => {
-    if(!offer.view) {
-      const defaultView = generateDefaultView();
-
-      setData({
-        name: offer.name,
-        view: defaultView,
-        theme: offer.theme,
-      });
-
-      setSelectedPage(defaultView.first_page);
-    }
-  }, [offer.view]);
-
-  useEffect(() => {
-    if (showNameDialog) {
-      setIsNameDialogOpen(true);
-    }
-  }, [showNameDialog]);
-
-  useEffect(() => {
-    if (!isReady) {
-      setIsReady(true);
-      return;
-    }
-
-  }, [data]);
-
-  const handleSave = () => {
-    put(route('offers.update', offer.id), {
-      onError: (error: Record<string, string[]>) => {
-        const errorMessages = Object.values(error).flat();
-        toast.error(<>
-          <p>Failed to save offer</p>
-          <ul className='list-disc list-inside'>
-            {errorMessages.map((e: string) => {
-              return <li key={e}>{e}</li>
-            })}
-          </ul>
-        </>);
-      },
-    });
-  };
-
-  const handleNameSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    put(route('offers.update', offer.id), {
-      onSuccess: () => setIsNameDialogOpen(false),
-    });
-  };
-
-  const handlePageNameClick = (pageId: string, currentName: string) => {
-    if (pageId === selectedPage) {
-      setEditingPageName(pageId);
-      setPageNameInput(currentName);
-      setTimeout(() => {
-        inputRef.current?.focus();
-        inputRef.current?.select();
-      }, 0);
-    } else {
-      setSelectedPage(pageId);
-    }
-  };
-
-  const handlePageNameSave = (pageId: string) => {
-    if (isRenamingFromDropdown) {
-      setIsRenamingFromDropdown(false);
-      return;
-    }
-    const updatedPages = {
-      ...data.view.pages,
-      [pageId]: {
-        ...data.view.pages[pageId],
-        name: pageNameInput
-      }
-    };
-    setData(update(data, { view: { pages: { $set: updatedPages } }}));
-    setEditingPageName(null);
-  };
-
-  const handlePageAction = (pageId: string, action: 'rename' | 'duplicate' | 'delete') => {
-    switch (action) {
-      case 'rename':
-        setIsRenamingFromDropdown(true);
-        handlePageNameClick(pageId, data.view.pages[pageId].name);
-        break;
-      case 'duplicate':
-        const sourcePage = data.view.pages[pageId];
-        const newId = `page_${Math.random().toString(36).substr(2, 9)}`;
-        const newPage = {
-          ...sourcePage,
-          id: newId,
-          name: `${sourcePage.name} (Copy)`
-        };
-        const updatedPages = {
-          ...data.view.pages,
-          [newId]: newPage
-        };
-        setData(update(data, { view: { pages: { $set: updatedPages } }}));
-        setTimeout(() => { handleSave(); }, 0);
-        break;
-      case 'delete':
-        const pagesToUpdate = { ...data.view.pages };
-        delete pagesToUpdate[pageId];
-        Object.keys(pagesToUpdate).forEach(pageKey => {
-          const page = pagesToUpdate[pageKey];
-          if (page.next_page.default_next_page === pageId) {
-            pagesToUpdate[pageKey] = {
-              ...page,
-              next_page: {
-                ...page.next_page,
-                default_next_page: null
-              }
-            };
-          }
-          if (page.next_page.branches) {
-            pagesToUpdate[pageKey] = {
-              ...page,
-              next_page: {
-                ...page.next_page,
-                branches: page.next_page.branches.map((branch: { next_page: string | null }) =>
-                  branch.next_page === pageId
-                    ? { ...branch, next_page: null }
-                    : branch
-                )
-              }
-            };
-          }
-        });
-        setData(update(data, { view: { pages: { $set: pagesToUpdate } }}));
-        if (selectedPage === pageId) {
-          const remainingPageIds = Object.keys(pagesToUpdate);
-          if (remainingPageIds.length > 0) {
-            const firstPageId = data.view.first_page;
-            const newSelectedPageId = (firstPageId && pagesToUpdate[firstPageId])
-              ? firstPageId
-              : remainingPageIds[0];
-            setSelectedPage(newSelectedPageId);
-          }
-        }
-        setTimeout(() => { handleSave(); }, 0);
-        break;
-    }
-  };
-
-  const handlePageUpdate = (updatedPage: Page) => {
-    if (!isReady) return;
-    const updatedView = {
-      ...data.view,
-      pages: {
-        ...data.view.pages,
-        [selectedPage]: updatedPage
-      }
-    };
-    setData(update(data, { view: { $set: updatedView }}));
-  };
-
-  const getOrderedPages = (view: OfferView): [string, Page][] => {
-    const orderedPages: [string, Page][] = [];
-    const visitedPages = new Set<string>();
-    let currentPageId: string | null = view.first_page;
-    while (currentPageId && view.pages[currentPageId] && !visitedPages.has(currentPageId)) {
-      const currentPage: Page = view.pages[currentPageId];
-      orderedPages.push([currentPageId, currentPage]);
-      visitedPages.add(currentPageId);
-      currentPageId = currentPage.next_page?.default_next_page ?? null;
-    }
-    Object.entries(view.pages).forEach(([pageId, page]) => {
-      if (!visitedPages.has(pageId)) {
-        orderedPages.push([pageId, page]);
-        visitedPages.add(pageId);
-      }
-    });
-    return orderedPages;
-  };
-
-  const handleAddPage = (type: PageType) => {
-    const id = `page_${Math.random().toString(36).substr(2, 9)}`;
-    const newPage: Page = {
-      id,
-      name: type === 'entry' ? 'Entry Page' : type === 'ending' ? 'Ending Page' : 'New Page',
-      type,
-      position: { x: 0, y: 0 },
-      view: {
-        promo: { blocks: [] },
-        title: { blocks: [] },
-        action: { blocks: [] },
-        content: { blocks: [] }
-      },
-      layout: { sm: 'split-checkout@v1' },
-      provides: [],
-      next_page: {
-        branches: [],
-        default_next_page: null
-      }
-    };
-    const updatedPages = {
-      ...data.view.pages,
-      [id]: newPage
-    };
-    const updatedView = {
-      ...data.view,
-      pages: updatedPages,
-      first_page: Object.keys(data.view.pages).length === 0 ? id : data.view.first_page
-    };
-    setData(update(data, { view: { $set: updatedView }}));
-    
-    handleSave();
-    setShowAddPageDialog(false);
-  };
-
-  const updateBlock = (block: Block) => {
-    // console.log('updateBlock', block)
-    // set the entire page all at once
-    // blocks is an array on the section
-
-    // find block in all sections
-    const page = {...data.view.pages[selectedPage]};
-
-    const sectionId = Object.keys(page.view).find((section) => {
-      const x = page.view[section].blocks.findIndex((b) => b.id === block.id)
-
-      // console.log("🚵‍♀️", { section, x })
-      if (x === -1) return false;
-
-      return section;
-    });
-
-    if (!sectionId) return;
-
-    const blockIndex = page.view[sectionId].blocks.findIndex((b) => b.id === block.id);
-
-    // page.view[section].blocks[blockIndex] = block;
-
-    const thePage = update(page, { view: { [sectionId]: { blocks: { $set: page.view[sectionId].blocks.map((b, i) => i === blockIndex ? block : b) } } } });
-
-    // const thePage = update(page, { view: { [blockIndex]: { blocks: { $set: block } } } });
-    // gotta find the section first
-
-    if (blockIndex === -1) return;
-
-    setData(update(data, { view: { pages: { [selectedPage]: { view: { $set: thePage.view } } } } }));
-
-  }
-
-  const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null);
-
-  const value: EditorContextType = {
-    data,
-    setData,
-    // put,
-    // processing,
-    errors,
-    // setDefaults,
-    isNameDialogOpen, setIsNameDialogOpen,
-    selectedPage, setSelectedPage,
-    editingPageName, setEditingPageName,
-    pageNameInput, setPageNameInput,
-    showPageLogic, setShowPageLogic,
-    inputRef,
-    isRenamingFromDropdown, setIsRenamingFromDropdown,
-    showAddPageDialog, setShowAddPageDialog,
-    isReady, setIsReady,
-    handleSave,
-    handleNameSubmit,
-    handlePageNameClick,
-    handlePageNameSave,
-    handlePageAction,
-    handlePageUpdate,
-    getOrderedPages,
-    handleAddPage,
-
-    offer,
-    themes,
-    updateBlock,
-
-    selectedBlockId, setSelectedBlockId,
-
-    viewMode, setViewMode,
-    previewSize, setPreviewSize,
-
-  };
-  return <EditorContext.Provider value={value}>{children}</EditorContext.Provider>;
-}
-
-// --- Refactored Edit component ---
 function Edit({ offer, themes, showNameDialog }: EditProps) {
   return (
     <EditorProvider offer={offer} themes={themes} showNameDialog={showNameDialog}>
@@ -531,38 +75,13 @@ function getOverBlockIndex(section: ViewSection, overBlockId: string) {
   return section.blocks.findIndex((block: Block) => block.id === overBlockId);
 }
 
-// --- Main App UI, now using useEditor() ---
 function EditApp() {
   const {
     data,
     setData,
-    processing,
-    errors,
-    setDefaults,
-    isNameDialogOpen, setIsNameDialogOpen,
-    selectedPage, setSelectedPage,
-    editingPageName, setEditingPageName,
-    pageNameInput, setPageNameInput,
-    showPageLogic, setShowPageLogic,
-    inputRef,
-    isRenamingFromDropdown, setIsRenamingFromDropdown,
-    showAddPageDialog, setShowAddPageDialog,
-    isReady, setIsReady,
-    handleSave,
-    handleNameSubmit,
-    handlePageNameClick,
-    handlePageNameSave,
-    handlePageAction,
-    handlePageUpdate,
-    getOrderedPages,
-    handleAddPage,
+    selectedPage,
     offer,
-
-    selectedBlockId,
-    setSelectedBlockId
   } = useEditor();
-
-
 
   const session: CheckoutSession = {
     id: '123',
@@ -609,14 +128,6 @@ function EditApp() {
   }
 
   function handleDragOver(event: DragOverEvent) {
-
-    // if (prototype && !event.over) {
-    //   console.log('🐴 REMOVE PROROTPEP', { prototype, event });
-    //   return;
-    // }
-
-    // if over = null
-    // if (!event.active || !event.over) return;
 
     const activeId = event.active.id;
     const overId = event.over?.id;
@@ -947,9 +458,8 @@ function MainContent() {
 
 function Toolbar() {
   const {
-    data, setData, processing, errors, setDefaults,
-    isNameDialogOpen, setIsNameDialogOpen,
-    selectedPage, setSelectedPage,
+    data, 
+    selectedPage,
     editingPageName, setEditingPageName,
     pageNameInput, setPageNameInput,
     setShowAddPageDialog,

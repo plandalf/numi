@@ -1,7 +1,7 @@
 import { type Page, type Block} from '@/types/offer';
 import LayoutPreview from './layout-preview';
 import { useState, useEffect } from 'react';
-import { useEditor } from '@/pages/offers/edit';
+import { useEditor } from '@/contexts/offer/editor-context';
 
 interface PreviewProps {
   page: Page;

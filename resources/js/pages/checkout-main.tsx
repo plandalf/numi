@@ -258,11 +258,11 @@ export function GlobalStateProvider({ offer, session: defaultSession, children }
       if (!acc[field.blockId]) {
         acc[field.blockId] = [];
       }
-      acc[field.blockId].push({
+      acc[field.blockId] = [{
         id: field.blockId,
         name: field.fieldName,
         value: field.value
-      });
+      }];
       return acc;
     }, {} as Record<string, Array<{ id: string; name: string; value: any }>>);
 
