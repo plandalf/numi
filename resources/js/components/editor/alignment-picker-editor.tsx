@@ -9,7 +9,7 @@ interface AlignmentPickerEditorProps {
 }
 
 export const AlignmentPickerEditor: React.FC<AlignmentPickerEditorProps> = ({ label, value, onChange }) => (
-  <div className="flex flex-row gap-3 mb-3 items-center justify-between">
+  <div className="flex flex-row gap-3 items-center justify-between">
     <Label className="text-sm capitalize">{label}</Label>
     <AlignmentPicker value={value} onChange={onChange} />
   </div>

@@ -16,12 +16,6 @@ function DetailListBlockComponent({ context }: { context: BlockContextType }) {
             type: "string",
             meta: { editor: "hidden" }
           },
-          children: {
-            type: "array",
-            items: {
-              $ref: "#"  
-            }
-          },
           label: {
             title: "Label",
             type: "string" 

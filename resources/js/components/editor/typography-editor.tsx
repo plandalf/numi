@@ -14,7 +14,7 @@ interface TypographyEditorProps {
 export const TypographyEditor: React.FC<TypographyEditorProps> = ({ label, value, onChange, fonts, weights }) => {
   const [size = '', font = '', weight = ''] = value || [];
   return (
-    <div className="flex flex-col gap-2 mb-3">
+    <div className="flex flex-col gap-2">
       <Label className="text-sm capitalize">{label}</Label>
       <div className="flex gap-2">
         <Input

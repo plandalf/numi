@@ -12,8 +12,8 @@ function PlanDescriptorComponent({ context }: { context: BlockContextType }) {
   const { fontWeight, fontSize, textColor } = context.blockConfig.appearance ?? {};
   const isMarkdown = format === 'markdown';
 
-  if (context.blockConfig.appearance?.isHidden) {
-    return <div>{context.blockConfig.id} is hidden!</div>
+  if (context.blockConfig.appearance?.hidden) {
+    return null;
   }
 
   return (

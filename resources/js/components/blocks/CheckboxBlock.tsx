@@ -4,6 +4,11 @@ import { Switch } from "@/components/ui/switch";
 
 function CheckboxBlockComponent({ context }: { context: BlockContextType }) {
 
+  const [id] = Numi.useStateString({
+    name: 'Field Name',
+    defaultValue: '',
+  });
+
   const [checked, setChecked] = Numi.useStateBoolean({
     name: 'value',
     defaultValue: false,
@@ -48,12 +53,9 @@ function CheckboxBlockComponent({ context }: { context: BlockContextType }) {
 
   return (
     <div>
-      {/*<div className="text-xs bg-gray-100">*/}
-      {/*  CheckboxBlockComponent: {context.blockId} label:{label} {checked ? 'checked' : 'unchecked'} {appearance}</div>*/}
-      {/*<div>*/}
       {appearance === 'checkbox' && (
         <div>
-          <input type="checkbox" name={context.blockId} checked={checked} onChange={handleChange} /> {label}
+          <input id={id} type="checkbox" name={context.blockId} checked={checked} onChange={handleChange} /> {label}
         </div>
       )}
       {appearance === 'switch' && (

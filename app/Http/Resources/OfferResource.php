@@ -17,8 +17,6 @@ class OfferResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
-        $theme = $this->theme ? $this->theme : new Theme;
-
         return [
             'id' => $this->getRouteKey(),
             'name' => $this->name,
@@ -40,7 +38,11 @@ class OfferResource extends JsonResource
             'view' => $this->view,
             'properties' => $this->properties,
             'slots' => SlotResource::collection($this->whenLoaded('slots')),
-            'theme' => new ThemeResource($theme),
+            'theme' => $this->whenLoaded('theme', function () {
+                return new ThemeResource($this->theme);
+            }, function () {
+                return new ThemeResource(new Theme);
+            }),
             'created_at' => $this->created_at?->toISOString(),
             'updated_at' => $this->updated_at?->toISOString(),
         ];

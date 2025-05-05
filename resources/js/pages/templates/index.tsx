@@ -14,17 +14,13 @@ interface Props {
     categories: string[];
 }
 
-export default function Templates({ templates: initialTemplates, categories }: Props) {
-    const [searchQuery, setSearchQuery] = useState('');
+export default function Templates({ templates, categories }: Props) {
     const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-    const [templates, setTemplates] = useState(initialTemplates);
     const [isSelectorOpen, setIsSelectorOpen] = useState(false);
 
     const filteredTemplates = templates.filter(template => {
-        const matchesSearch = template.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            template.description?.toLowerCase().includes(searchQuery.toLowerCase());
         const matchesCategory = !selectedCategory || template.category === selectedCategory;
-        return matchesSearch && matchesCategory;
+        return matchesCategory;
     });
 
     return (
@@ -79,7 +75,7 @@ export default function Templates({ templates: initialTemplates, categories }: P
                 <TemplateSelectorModal
                     open={isSelectorOpen}
                     onOpenChange={setIsSelectorOpen}
-                    templates={initialTemplates}
+                    templates={templates}
                     categories={categories}
                 />
             </div>

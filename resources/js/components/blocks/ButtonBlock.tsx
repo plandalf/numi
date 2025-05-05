@@ -2,6 +2,7 @@ import { BlockContextType } from "@/types/blocks";
 import Numi, { Appearance } from "@/contexts/Numi";
 import cx from "classnames";
 import { useCheckoutState } from "@/pages/checkout-main";
+import { cn } from "@/lib/utils";
 
 // Does Submitting of field forms.
 function ButtonBlockComponent({ context }: { context: BlockContextType }) {
@@ -25,22 +26,33 @@ function ButtonBlockComponent({ context }: { context: BlockContextType }) {
     },
     inspector: 'select',
     label: 'Type',
-  })
+  });
 
   const appearance = Numi.useAppearance([
     Appearance.alignment(['left', 'center', 'right', 'expand']),
     Appearance.backgroundColor(),
     Appearance.textColor(),
     Appearance.fontWeight(['normal', 'semibold']),
-    Appearance.border()
+    Appearance.border(),
+    Appearance.borderColor(),
+    Appearance.hidden(),
   ]);
 
   const onClick = Numi.useEventCallback({
     name: 'click',
   });
 
+  if (appearance.hidden) {
+    return null;
+  }
+
   return (
-    <div className="space-y-2">
+    <div className={cn("space-y-2 flex", {
+      "justify-start": appearance.alignment === 'left',
+      "justify-center": appearance.alignment === 'center',
+      "justify-end": appearance.alignment === 'right',
+      "justify-stretch": appearance.alignment === 'expand',
+    })}>
       <button
         type={type}
         disabled={type === 'submit' && isSubmitting}
@@ -49,12 +61,19 @@ function ButtonBlockComponent({ context }: { context: BlockContextType }) {
           "hover:cursor-pointer hover:brightness-90 active:brightness-85": !isSubmitting,
           "w-full": appearance.alignment === 'expand',
           "font-semibold": appearance.fontWeight === 'semibold',
+          "font-bold": appearance.fontWeight === 'bold',
           "opacity-50 cursor-not-allowed": isSubmitting,
+          "border-none": appearance.border === 'none',
+          "border-[1px]": appearance.border === 'xs',
+          "border-[4px]": appearance.border === 'sm',
+          "border-[8px]": appearance.border === 'md',
+          "border-[12px]": appearance.border === 'lg',
+          "border-[16px]": appearance.border === 'xl',
         })}
         style={{
           backgroundColor: appearance.backgroundColor || 'white',
           color: appearance.textColor || 'black',
-          border: appearance.border || '1px solid #ccc',
+          borderColor: `${appearance.borderColor || '#ccc'}`,
         }}
         onClick={onClick}
       >

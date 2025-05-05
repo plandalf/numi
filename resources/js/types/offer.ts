@@ -192,7 +192,9 @@ export interface Block {
         color?: string;
         textColor?: string;
         borderColor?: string;
-        [key: string]: string | undefined;
+        border?: string;
+        hidden?: boolean;
+        [key: string]: string | boolean | undefined;
     };
     validation?: {
         isRequired?: boolean;

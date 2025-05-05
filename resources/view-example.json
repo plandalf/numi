@@ -58,13 +58,15 @@
                             "type": "option_selector",
                             "content": {
                                 "options": [
-                                    "monthly",
-                                    "yearly"
+                                    {
+                                        "label": "yearly",
+                                        "value": "Yearly"
+                                    },
+                                    {
+                                        "label": "monthly",
+                                        "value": "Monthly"
+                                    }
                                 ],
-                                "labels": {
-                                    "monthly": "Monthly",
-                                    "yearly": "Yearly"
-                                },
                                 "value": "yearly"
                             },
                             "object": "field"

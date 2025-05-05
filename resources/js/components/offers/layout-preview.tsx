@@ -11,7 +11,7 @@ import { GlobalStateContext } from '@/pages/checkout-main';
 import { useDroppable } from '@dnd-kit/core';
 import cx from 'classnames';
 import { rectSortingStrategy, SortableContext, useSortable } from '@dnd-kit/sortable';
-import { useEditor } from '@/pages/offers/Edit';
+import { useEditor } from '@/contexts/offer/editor-context';
 
 // Local interfaces that match the actual structure
 interface LocalPageView extends OfferPageView {
@@ -53,7 +53,6 @@ interface LayoutPreviewProps {
     selectedBlockId?: string | null;
     onSelectBlock?: (blockId: string) => void;
     onAddBlock?: (section: keyof LocalPageView, blockType: BlockType, index?: number) => void;
-
 }
 
 interface SectionProps {
@@ -259,7 +258,7 @@ const renderElement = (
   } = element;
   const { componentRegistry, contentMap } = context;
 
-  if (id && id in page.view) {
+  if (id && page?.view && id in page?.view) {
     // console.log('Found section for id:', id, page.view[id]);
     const section = page.view[id];
     return createElement(
@@ -439,7 +438,7 @@ export default function LayoutPreview({ page, selectedBlockId, onSelectBlock, on
   };
 
   return (
-    <div className="w-full aspect-video bg-gray-50 overflow-hidden">
+    <div className="h-full w-full aspect-video bg-gray-50 overflow-hidden">
       <TailwindLayoutRenderer
         layoutConfig={layoutConfig}
         page={page}

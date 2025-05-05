@@ -10,7 +10,7 @@ import { Plus, Pencil, Trash2, Loader2 } from 'lucide-react';
 import SlotForm from '@/components/offers/SlotForm';
 import { toast } from 'sonner';
 import { formatMoney } from "@/lib/utils";
-import { EditorProvider } from './Edit';
+import { EditorProvider } from '@/contexts/offer/editor-context';
 
 interface PricingPageProps extends PageProps {
     offer: OfferType;

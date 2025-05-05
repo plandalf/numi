@@ -41,13 +41,12 @@ export const AccordionSection: React.FC<AccordionSectionProps> = ({
         collapsible
         value={open}
         onValueChange={setOpen}
-        className="rounded-xl space-y-2"
       >
         {items.map((item, i) => (
           <AccordionItem
             key={i}
             value={`section-${i}`}
-            className="rounded-lg border-none shadow-none"
+            className="rounded-lg border-none shadow-none space-y-4"
           >
             <AccordionTrigger 
               className={cn(

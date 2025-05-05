@@ -4,6 +4,11 @@ import { cx } from "class-variance-authority";
 
 function OptionSelectorComponent({ context }: { context: BlockContextType }) {
 
+  const [id] = Numi.useStateString({
+    name: 'Field Name',
+    defaultValue: '',
+  });
+
   const [value, setValue] = Numi.useStateString({
     name: 'value',
     defaultValue: '',
@@ -13,12 +18,23 @@ function OptionSelectorComponent({ context }: { context: BlockContextType }) {
   const [options] = Numi.useStateJsonSchema({
     name: 'options',
     schema: {
-      $schema: 'http://json-schema.org/draft-07/schema#',
-      type: 'array',
+      $schema: "http://json-schema.org/draft-07/schema#",
+      type: "array",
       items: {
-        type: 'string',
-      },
-    },
+        type: "object",
+        properties: {
+          label: {
+            title: "Label",
+            type: "string" 
+          },
+          value: { 
+            title: "Value",
+            type: "string" 
+          },
+        },
+        required: ["label", "value"]
+      }
+    }
   });
 
   const [appearance] = Numi.useStateEnumeration({
@@ -33,29 +49,28 @@ function OptionSelectorComponent({ context }: { context: BlockContextType }) {
     label: 'Appearance',
   });
 
-  // const onChange = Numi.useEventCallback({ name: 'change' })
-
   return (
     <div>
-      {/*<div className="text-xs bg-gray-100">OptionSelectorComponent: {context.blockId}</div>*/}
       {appearance === 'select' && (
-        <select value={value} onChange={(e) => setValue(e.target.value)}>
+        <select id={id} value={value} onChange={(e) => setValue(e.target.value)} >
           {(context.blockConfig.content?.options || []).map((option: any) => (
-            <option value={option}>{context.blockConfig.content.labels[option] ?? option}</option>
+            <option value={option.value}>{option.label}</option>
           ))}
         </select>
       )}
       {appearance === 'segmented' && (
-        <div className="flex gap-2">
-          {(context.blockConfig.content?.options || []).map((option: any) => (
+        <div className="flex">
+          <input id={id} type='hidden' value={value} />
+          {(context.blockConfig.content?.options || options).map((option: any) => (
             <button
-            type="button"
-            className={cx({
-              "border border-gray-300 rounded-md p-2": true,
-              "bg-gray-100 text-gray-600": value === option,
-            })}
-            onClick={() => setValue(option)}
-            key={option}>{context.blockConfig.content.labels[option] ?? option}</button>
+              type="button"
+              className={cx({
+                "border border-gray-300 rounded-md p-2 cursor-pointer": true,
+                "bg-gray-100 text-gray-600": value === option.value,
+              })}
+              onClick={() => setValue(option?.value)}
+              key={option.value}
+            >{option?.label}</button>
           ))}
         </div>
       )}
