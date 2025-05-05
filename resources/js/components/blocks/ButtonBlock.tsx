@@ -35,11 +35,16 @@ function ButtonBlockComponent({ context }: { context: BlockContextType }) {
     Appearance.fontWeight(['normal', 'semibold']),
     Appearance.border(),
     Appearance.borderColor(),
+    Appearance.hidden(),
   ]);
 
   const onClick = Numi.useEventCallback({
     name: 'click',
   });
+
+  if (appearance.hidden) {
+    return null;
+  }
 
   return (
     <div className={cn("space-y-2 flex", {

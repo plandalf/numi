@@ -120,93 +120,110 @@ export const Inspector = ({
               {globalState.hookUsage[block.id]?.some((hook) => hook.type === 'appearance') && (
                 <div className="mb-6">
                   <h3 className="mb-2 font-semibold">Appearance</h3>
-                  {/* Alignment Selector */}
-                  {globalState.hookUsage[block.id].some(h => h.name === 'alignment') && (
-                    <AlignmentPickerEditor
-                      label="Alignment"
-                      value={block.appearance?.alignment || 'left'}
-                      onChange={align => onUpdate({ ...block, appearance: { ...block.appearance, alignment: align } })}
-                    />
-                  )}
-                  {/* Color Picker (backgroundColor, textColor) */}
-                  {['backgroundColor', 'textColor'].map((colorType) => globalState.hookUsage[block.id].some(h => h.name === colorType) && (
-                    <ColorPickerEditor
-                      key={colorType}
-                      label={colorType === 'backgroundColor' ? 'Background' : 'Text'}
-                      value={block.appearance?.[colorType] || '#6800FF'}
-                      onChange={color => onUpdate({
-                        ...block,
-                        appearance: {
-                          ...block.appearance,
-                          [colorType]: color,
-                        },
-                      })}
-                    />
-                  ))}
-                  {/* Font Weight Selector */}
-                  {globalState.hookUsage[block.id].some(h => h.name === 'fontWeight') && (
-                    <EnumerationEditor
-                      label="Font Weight"
-                      value={block.appearance?.fontWeight || 'normal'}
-                      onChange={value => onUpdate({ ...block, appearance: { ...block.appearance, fontWeight: value } })}
-                      options={['normal', 'semibold', 'bold']}
-                      labels={{ normal: 'Normal', semibold: 'Semibold', bold: 'Bold' }}
-                    />
-                  )}
-                  {/* Border */}
-                  {globalState.hookUsage[block.id].some(h => h.name === 'border') && (
-                    <EnumerationEditor
-                      label='Border'
-                      value={block.appearance?.border || '1px'}
-                      onChange={value => onUpdate({ ...block, appearance: { ...block.appearance, border: value } })}
-                      options={[ 'none', '1px', '2px', '3px', '4px', '5px', '6px', '7px', '8px', '9px', '10px' ]}
-                    />
-                  )}
-                  {/* Border Color*/}
-                  {globalState.hookUsage[block.id].some(h => h.name === 'borderColor') && (
-                    <ColorPickerEditor
-                      label='Border Color'
-                      value={block.appearance?.borderColor || '#000'}
-                      onChange={value => onUpdate({ ...block, appearance: { ...block.appearance, borderColor: value } })}
-                    />
-                  )}
+                  {globalState.hookUsage[block.id]
+                    .filter((hook) => hook.type === 'appearance')
+                    .map((hook) => {
+                      switch (hook.name) {
+                        case 'alignment':
+                          return (
+                            <AlignmentPickerEditor
+                              key={hook.name}
+                              label="Alignment"
+                              value={typeof block.appearance?.alignment === 'string' ? block.appearance.alignment : 'left'}
+                              onChange={align => onUpdate({ ...block, appearance: { ...block.appearance, alignment: align } })}
+                            />
+                          );
+                        case 'backgroundColor':
+                        case 'textColor':
+                          const colorValue = block.appearance?.[hook.name];
+                          return (
+                            <ColorPickerEditor
+                              key={hook.name}
+                              label={hook.name === 'backgroundColor' ? 'Background' : 'Text'}
+                              value={typeof colorValue === 'string' ? colorValue : '#6800FF'}
+                              onChange={color => onUpdate({
+                                ...block,
+                                appearance: {
+                                  ...block.appearance,
+                                  [hook.name]: color,
+                                },
+                              })}
+                            />
+                          );
+                        case 'fontWeight':
+                          return (
+                            <EnumerationEditor
+                              key={hook.name}
+                              label="Font Weight"
+                              value={typeof block.appearance?.fontWeight === 'string' ? block.appearance.fontWeight : 'normal'}
+                              onChange={value => onUpdate({ ...block, appearance: { ...block.appearance, fontWeight: value } })}
+                              options={['normal', 'semibold', 'bold']}
+                              labels={{ normal: 'Normal', semibold: 'Semibold', bold: 'Bold' }}
+                            />
+                          );
+                        case 'border':
+                          return (
+                            <EnumerationEditor
+                              key={hook.name}
+                              label='Border'
+                              value={block.appearance?.border || '1px'}
+                              onChange={value => onUpdate({ ...block, appearance: { ...block.appearance, border: value } })}
+                              options={['none', '1px', '2px', '3px', '4px', '5px', '6px', '7px', '8px', '9px', '10px']}
+                            />
+                          );
+                        case 'borderColor':
+                          return (
+                            <ColorPickerEditor
+                              key={hook.name}
+                              label='Border Color'
+                              value={block.appearance?.borderColor || '#000'}
+                              onChange={value => onUpdate({ ...block, appearance: { ...block.appearance, borderColor: value } })}
+                            />
+                          );
+                        case 'hidden':
+                          return (
+                            <BooleanEditor
+                              key={hook.name}
+                              label='Hidden'
+                              value={block.appearance?.hidden || hook.defaultValue}
+                              onChange={value => onUpdate({ ...block, appearance: { ...block.appearance, hidden: value } })}
+                            />
+                          );
+                        default:
+                          return null;
+                      }
+                    })}
                 </div>
               )}
 
               {/* Validation Section - Only show if block implements useValidation */}
               {globalState.hookUsage[block.id]?.some((hook) => hook.type === 'validation') && (
-                <>
-                  <h3 className="mt-6 mb-2 font-semibold">Validation</h3>
-                  <div className="flex items-center gap-2 mb-4">
-                    <Checkbox
-                      checked={block.validation?.isRequired ?? false}
-                      onCheckedChange={(checked) => handleValidationChange('isRequired', !!checked)}
-                    />
-                    <Label className="mb-0">Is required?</Label>
-                  </div>
-                </>
+                <div className="flex items-center gap-2 mb-4">
+                  <Checkbox
+                    checked={block.validation?.isRequired ?? false}
+                    onCheckedChange={(checked) => handleValidationChange('isRequired', !!checked)}
+                  />
+                  <Label className="mb-0">Required</Label>
+                </div>
               )}
 
               {/* Interaction Section - Only show if block implements useInteraction */}
               {globalState.hookUsage[block.id]?.some((hook) => hook.type === 'interaction') && (
-                <>
-                  <h3 className="mb-2 font-semibold">Interaction</h3>
-                  <div className="flex items-center gap-2">
-                    <Checkbox
-                      checked={block.interaction?.isDisabled ?? false}
-                      onCheckedChange={(checked) => {
-                        onUpdate({
-                          ...block,
-                          interaction: {
-                            ...block.interaction,
-                            isDisabled: !!checked,
-                          },
-                        });
-                      }}
-                    />
-                    <Label className="mb-0">Is disabled?</Label>
-                  </div>
-                </>
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    checked={block.interaction?.isDisabled ?? false}
+                    onCheckedChange={(checked) => {
+                      onUpdate({
+                        ...block,
+                        interaction: {
+                          ...block.interaction,
+                          isDisabled: !!checked,
+                        },
+                      });
+                    }}
+                  />
+                  <Label className="mb-0">Disabled?</Label>
+                </div>
               )}
             </div>
           )}

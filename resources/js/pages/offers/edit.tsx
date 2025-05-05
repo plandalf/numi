@@ -201,7 +201,7 @@ function EditApp() {
         }
         // Insert prototype
         const protoBlock: BlockData = {
-          id: '__proto__',
+          id: uuidv4(),
           object: 'block',
           type: activeRawId,
           content: {
@@ -319,6 +319,7 @@ function EditApp() {
             type: activeRawId,
             object: 'block',
             content: {
+              format: 'markdown',
             }
           };
 

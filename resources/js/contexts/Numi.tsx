@@ -86,6 +86,10 @@ export const Appearance = {
     type: 'borderColor',
     defaultValue: '#ccc',
   }),
+  hidden: () => ({
+    type: 'hidden',
+    defaultValue: false,
+  }),
 }
 
 // Add these interfaces before the Numi class
