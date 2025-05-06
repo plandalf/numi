@@ -1,6 +1,6 @@
 import { Head, Link, router, usePage } from "@inertiajs/react";
 import AppLayout from "@/layouts/app-layout";
-import { type Price, type Product } from '@/types/offer';
+import { type Price } from '@/types/offer';
 import { type BreadcrumbItem } from '@/types';
 import { type PageProps as InertiaPageProps } from '@inertiajs/core';
 
@@ -14,6 +14,8 @@ import PriceForm from "@/components/prices/PriceForm";
 import ProductForm from "@/components/Products/ProductForm";
 import { toast } from "sonner";
 import { Integration } from "@/types/integration";
+import AddExistingStripePriceDialog from "@/components/Products/AddExistingStripePriceDialog";
+import { Product } from "@/types/product";
 
 interface ProductShowPageProps extends InertiaPageProps {
     product: Product;
@@ -27,11 +29,17 @@ export default function Show() {
 
     const [isPriceFormOpen, setIsPriceFormOpen] = useState(false);
     const [editingPrice, setEditingPrice] = useState<Price | undefined>(undefined);
-    const [isProductFormOpen, setIsProductFormOpen] = useState(false);
 
+    const [isAddExistingStripePriceDialogOpen, setIsAddExistingStripePriceDialogOpen] = useState(false);
     const openPriceForm = (price?: Price) => {
         setEditingPrice(price);
-        setIsPriceFormOpen(true);
+
+        /** Check if product is connected to an integration */
+        if(product.integration_id) {
+          setIsAddExistingStripePriceDialogOpen(true);
+        } else {
+          setIsPriceFormOpen(true);
+        }
     }
 
     const handleDeletePrice = (priceId: number) => {
@@ -66,12 +74,6 @@ export default function Show() {
                         <p className="text-sm text-muted-foreground">
                             {product.lookup_key}
                         </p>
-                    </div>
-                    <div className="flex space-x-2">
-                        <ProductForm trigger={<Button variant="outline" onClick={() => setIsProductFormOpen(true)}>
-                            <Edit className="w-4 h-4 mr-2" /> Edit Product
-                        </Button>} initialData={product} />
-                        {/* Add other actions */}
                     </div>
                 </div>
 
@@ -150,6 +152,11 @@ export default function Show() {
                     product={product}
                     initialData={editingPrice}
                     listPrices={listPrices || []}
+                />
+                <AddExistingStripePriceDialog
+                    open={isAddExistingStripePriceDialogOpen}
+                    onOpenChange={setIsAddExistingStripePriceDialogOpen}
+                    product={product}
                 />
             </div>
         </AppLayout>

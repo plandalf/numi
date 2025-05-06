@@ -81,8 +81,8 @@ class StoreRequest extends FormRequest
             'properties' => ['nullable', 'array'],
             // TODO: Add validation for tiered/volume/graduated/package properties if needed
 
-            'gateway_provider' => ['nullable', 'string', 'max:255'],
-            'gateway_price_id' => ['nullable', 'string', 'max:255'],
+            'gateway_prices' => ['array'],
+            'gateway_prices.*' => ['string', 'max:255'],
             'is_active' => ['boolean'],
         ];
     }

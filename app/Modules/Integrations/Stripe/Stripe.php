@@ -13,6 +13,7 @@ use App\Modules\Integrations\Contracts\CanCreateSubscription;
 use App\Modules\Integrations\Contracts\CanSetupIntent;
 use App\Modules\Integrations\Contracts\HasPrices;
 use App\Modules\Integrations\Contracts\HasProducts;
+use App\Modules\Integrations\Stripe\Actions\ImportStripePriceAction;
 use App\Modules\Integrations\Stripe\Actions\ImportStripeProductAction;
 use Stripe\StripeClient;
 
@@ -228,6 +229,11 @@ class Stripe extends AbstractIntegration implements CanCreateSubscription, CanSe
             $gatewayPrices,
             $productAttrs
         );
+    }
+
+    public function importPrice(Product $product, array $gatewayPrices = [])
+    {
+        return (new ImportStripePriceAction)($product, $gatewayPrices);
     }
 
     public function createPaymentIntent(array $data = [])
