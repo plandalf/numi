@@ -10,13 +10,16 @@ import AppLayout from '@/layouts/app-layout';
 import { Template } from '@/types/template';
 
 interface Props {
-    templates: Template[];
+    globalTemplates: Template[];
+    organizationTemplates: Template[];
     categories: string[];
 }
 
-export default function Templates({ templates, categories }: Props) {
+export default function Templates({ globalTemplates, organizationTemplates, categories }: Props) {
     const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
     const [isSelectorOpen, setIsSelectorOpen] = useState(false);
+
+    const templates = [...organizationTemplates, ...globalTemplates];
 
     const filteredTemplates = templates.filter(template => {
         const matchesCategory = !selectedCategory || template.category === selectedCategory;

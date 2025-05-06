@@ -16,12 +16,6 @@ Route::middleware(['auth', 'organization', 'subscription'])->group(function () {
     Route::get('settings/password', [PasswordController::class, 'edit'])->name('password.edit');
     Route::put('settings/password', [PasswordController::class, 'update'])->name('password.update');
 
-    Route::get('settings/themes', [ThemeController::class, 'index'])->name('themes.list');
-    Route::post('settings/themes', [ThemeController::class, 'store'])->name('themes.store');
-    Route::get('settings/themes/{theme}', [ThemeController::class, 'edit'])->name('themes.edit');
-    Route::put('settings/themes/{theme}', [ThemeController::class, 'update'])->name('themes.update');
-    Route::delete('settings/themes/{theme}', [ThemeController::class, 'destroy'])->name('themes.destroy');
-
     Route::get('settings/appearance', function () {
         return Inertia::render('settings/appearance');
     })->name('appearance');

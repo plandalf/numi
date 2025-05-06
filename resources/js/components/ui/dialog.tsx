@@ -54,6 +54,10 @@ function DialogContent({
     <DialogPortal data-slot="dialog-portal">
       <DialogOverlay />
       <DialogPrimitive.Content
+        onCloseAutoFocus={(event) => {
+          event.preventDefault();
+          document.body.style.pointerEvents = '';
+        }}
         data-slot="dialog-content"
         onWheel={(e) => e.stopPropagation()}
         className={cn(

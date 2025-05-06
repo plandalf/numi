@@ -5,6 +5,7 @@ import React, { createContext, useContext, useState, useRef, useEffect } from 'r
 import update from "immutability-helper";
 import { toast } from 'sonner';
 import { generateDefaultPage } from '@/components/offers/page-flow-editor';
+import { Template } from '@/types/template';
 
 interface EditorContextType {
   data: any;
@@ -14,7 +15,9 @@ interface EditorContextType {
   errors: any;
   setDefaults: (data: any) => void;
 
-  themes: Theme[];
+  organizationThemes: Theme[];
+  organizationTemplates: Template[];
+  globalThemes: Theme[];
 
   isNameDialogOpen: boolean;
   setIsNameDialogOpen: React.Dispatch<React.SetStateAction<boolean>>;
@@ -100,12 +103,14 @@ type EditFormData = {
 
 export interface EditProps {
   offer: Offer;
-  themes: Theme[];
+  organizationThemes: Theme[];
+  organizationTemplates: Template[];
+  globalThemes: Theme[];
   showNameDialog?: boolean;
   children: React.ReactNode;
 }
 
-export function EditorProvider({ offer, themes, showNameDialog, children }: EditProps) {
+export function EditorProvider({ offer, organizationThemes, organizationTemplates, globalThemes, showNameDialog, children }: EditProps) {
   const [isNameDialogOpen, setIsNameDialogOpen] = useState(false);
   const [selectedPage, setSelectedPage] = useState<string>(offer.view?.first_page);
   const [editingPageName, setEditingPageName] = useState<string | null>(null);
@@ -125,6 +130,7 @@ export function EditorProvider({ offer, themes, showNameDialog, children }: Edit
     name: offer.name,
     view: offer.view,
     theme: offer.theme,
+    screenshot: offer.screenshot,
   });
 
   useEffect(() => {
@@ -135,6 +141,7 @@ export function EditorProvider({ offer, themes, showNameDialog, children }: Edit
         name: offer.name,
         view: defaultView,
         theme: offer.theme,
+        screenshot: offer.screenshot,
       });
 
       setSelectedPage(defaultView.first_page);
@@ -183,8 +190,7 @@ export function EditorProvider({ offer, themes, showNameDialog, children }: Edit
       setPageNameInput(currentName);
       setTimeout(() => {
         inputRef.current?.focus();
-        inputRef.current?.select();
-      }, 0);
+      }, 250);
     } else {
       setSelectedPage(pageId);
     }
@@ -384,7 +390,9 @@ export function EditorProvider({ offer, themes, showNameDialog, children }: Edit
     getOrderedPages,
     handleAddPage,
     offer,
-    themes,
+    organizationThemes,
+    organizationTemplates,
+    globalThemes,
     updateBlock,
     selectedBlockId, setSelectedBlockId,
     viewMode, setViewMode,

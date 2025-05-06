@@ -38,7 +38,7 @@ export interface ThemeComponentStyling {
 export interface ThemeProperties extends ThemeColor, ThemeTypography, ThemeComponentStyling {};
 
 export interface Theme extends ThemeProperties {
-  id: number;
+  id: string;
   name: string;
   created_at: string;
   updated_at: string;

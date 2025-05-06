@@ -63,10 +63,6 @@ export default function PagePreview({ page, onUpdatePage }: PreviewProps) {
   const selectedBlock = selectedBlockId ? findBlockInPage(livePreviewPage, selectedBlockId) : null;
 
 
-  // useEffect(() => {
-  //     console.log('Current selected block:', selectedBlock);
-  // }, [selectedBlock]);
-
   const handleBlockUpdate = (updatedBlock: Block) => {
       if (!updatedBlock.id) return;
 
@@ -90,10 +86,10 @@ return (
   <div className="h-full flex">
     <div className="flex-1 flex items-center justify-center p-8 h-full overflow-auto">
       <div
-        className="transition-all bg-background rounded-lg shadow-lg w-full max-w-5xl"
+        className="transition-all bg-background rounded-lg shadow-lg w-full h-full max-w-5xl"
         style={{
-          width: previewSize.width,
-          height: previewSize.height,
+          maxWidth: previewSize.width,
+          maxHeight: previewSize.height,
         }}
       >
         {/* The layout preview - using live preview page */}

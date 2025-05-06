@@ -1,18 +1,23 @@
 <?php
 
-namespace App\Http\Controllers\Settings;
+namespace App\Http\Controllers;
 
 use App\Enums\Theme\FontElement;
 use App\Enums\Theme\WeightElement;
 use App\Http\Controllers\Controller;
-use App\Http\Requests\UpdateThemeRequest;
+use App\Http\Requests\CreateUpdateThemeRequest;
 use App\Http\Resources\ThemeResource;
 use App\Models\Theme;
+use App\Services\ThemeService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
 class ThemeController extends Controller
 {
+    public function __construct(
+        protected ThemeService $themeService
+    ) {}
+
     /**
      * Show the themes page
      */
@@ -28,15 +33,15 @@ class ThemeController extends Controller
     /**
      * Store a new theme
      */
-    public function store(Request $request)
+    public function store(CreateUpdateThemeRequest $request)
     {
-        $theme = Theme::create([
+        $this->themeService->createTheme([
             'organization_id' => $request->user()->current_organization_id,
+            ...$request->validated(),
         ]);
 
-        return redirect()->route('themes.edit', [
-            'theme' => new ThemeResource($theme),
-        ]);
+        return redirect()->back()->with('success', 'Theme saved successfully');
+
     }
 
     /**
@@ -54,7 +59,7 @@ class ThemeController extends Controller
     /**
      * Update the theme.
      */
-    public function update(UpdateThemeRequest $request, Theme $theme)
+    public function update(CreateUpdateThemeRequest $request, Theme $theme)
     {
         // Update the theme with the validated data
         $theme->fill($request->validated());

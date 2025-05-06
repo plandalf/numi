@@ -8,17 +8,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { TemplateSelectorModal } from '@/components/templates/template-selector-modal';
 import { useState } from 'react';
 import { Template } from '@/types/template';
-
-interface Offer {
-    id: number;
-    name: string;
-    created_at: string;
-    updated_at: string;
-}
+import { Offer } from '@/types/offer';
 
 interface Props {
     offers: Offer[];
-    templates: Template[];
+    globalTemplates: Template[];
+    organizationTemplates: Template[];
     categories: string[];
 }
 
@@ -29,7 +24,7 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
-export default function Dashboard({ offers, templates, categories }: Props) {
+export default function Dashboard({ offers, globalTemplates, organizationTemplates, categories }: Props) {
     const [isSelectorOpen, setIsSelectorOpen] = useState(false);
 
     return (
@@ -80,7 +75,7 @@ export default function Dashboard({ offers, templates, categories }: Props) {
             <TemplateSelectorModal
                 open={isSelectorOpen}
                 onOpenChange={setIsSelectorOpen}
-                templates={templates}
+                templates={[...organizationTemplates, ...globalTemplates]}
                 categories={categories}
             />
         </AppLayout>

@@ -38,11 +38,7 @@ class OfferResource extends JsonResource
             'view' => $this->view,
             'properties' => $this->properties,
             'slots' => SlotResource::collection($this->whenLoaded('slots')),
-            'theme' => $this->whenLoaded('theme', function () {
-                return new ThemeResource($this->theme);
-            }, function () {
-                return new ThemeResource(new Theme);
-            }),
+            'theme' => new ThemeResource($this?->theme ?? new Theme),
             'created_at' => $this->created_at?->toISOString(),
             'updated_at' => $this->updated_at?->toISOString(),
         ];

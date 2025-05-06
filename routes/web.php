@@ -13,10 +13,8 @@ use App\Http\Controllers\PriceController;
 use App\Http\Controllers\ProductsController;
 use App\Http\Controllers\SequencesController;
 use App\Http\Controllers\Settings\ProfileController;
+use App\Http\Controllers\ThemeController;
 use App\Http\Controllers\TemplateController;
-use App\Http\Resources\OfferResource;
-use App\Models\Catalog\Price;
-use App\Models\Media;
 use App\Models\ResourceEvent;
 use App\Models\Store\Offer;
 use App\Workflows\RunSequenceWorkflow;
@@ -189,7 +187,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::get('pricing', [OffersController::class, 'pricing'])->name('pricing');
 
             Route::get('settings/theme', [OffersController::class, 'settingsTheme'])->name('settings.theme');
-            Route::post('theme', [OffersController::class, 'storeAsSavedTheme'])->name('store.saved-theme');
             Route::put('theme', [OffersController::class, 'updateTheme'])->name('update.theme');
 
             // Add Slot routes
@@ -208,7 +205,15 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
         Route::get('/templates', [TemplateController::class, 'index'])->name('templates.index');
+        Route::post('/templates', [TemplateController::class, 'store'])->name('templates.store');
+        Route::put('/templates/{template}', [TemplateController::class, 'update'])->name('templates.update');
         Route::post('/templates/{template}/use', [TemplateController::class, 'useTemplate'])->name('templates.use');
+
+        Route::get('/themes', [ThemeController::class, 'index'])->name('themes.index');
+        Route::post('/themes', [ThemeController::class, 'store'])->name('themes.store');
+        Route::put('/themes/{theme}', [ThemeController::class, 'update'])->name('themes.update');
+        Route::get('/themes/{theme}', [ThemeController::class, 'edit'])->name('themes.edit');
+        Route::delete('/themes/{theme}', [ThemeController::class, 'destroy'])->name('themes.destroy');
 
         // Media Upload Route
         Route::post('media', [MediaController::class, 'store'])->name('media.store');

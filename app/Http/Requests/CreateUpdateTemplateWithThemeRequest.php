@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace App\Http\Requests\Offer;
+namespace App\Http\Requests;
 
 use App\Http\Requests\CreateUpdateThemeRequest;
 use Illuminate\Foundation\Http\FormRequest;
 
-class OfferUpdateRequest extends FormRequest
+class CreateUpdateTemplateWithThemeRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -26,7 +26,9 @@ class OfferUpdateRequest extends FormRequest
     {
         $baseRules = [
             'name' => ['string', 'max:255'],
+            'category' => ['string', 'max:255'],
             'view' => ['nullable', 'array'],
+            'preview_images' => ['nullable', 'array'],
         ];
 
         // Only include theme validation if theme data is present
@@ -55,10 +57,10 @@ class OfferUpdateRequest extends FormRequest
     public function messages(): array
     {
         $baseMessages = [
-            'name.required' => 'The offer name is required.',
-            'name.max' => 'The offer name cannot exceed 255 characters.',
-            'image_url.url' => 'The image URL must be a valid URL.',
-            'product_image_id.exists' => 'The selected product image does not exist.',
+            'name.required' => 'The template name is required.',
+            'name.max' => 'The template name cannot exceed 255 characters.',
+            'category.required' => 'The template category is required.',
+            'category.max' => 'The template category cannot exceed 255 characters.',
         ];
 
         // Only include theme messages if theme data is present

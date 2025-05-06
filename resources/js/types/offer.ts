@@ -22,6 +22,10 @@ export interface Offer {
     transaction_webhook_url: string | null;
     slots: OfferSlot[];
     theme: Theme | null;
+    screenshot: {
+        id: number;
+        url: string;
+    } | null;
     created_at: string;
     updated_at: string;
 

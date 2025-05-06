@@ -41,6 +41,7 @@ import { ScrollArea } from '../ui/scroll-area';
 import SearchBar from './search-bar';
 import { usePage } from '@inertiajs/react';
 import cx from 'classnames';
+import { PageLayers } from './page-layers';
 
 type SidebarTab = 'elements' | 'products' | 'themes' | 'settings' | 'layers';
 
@@ -169,11 +170,12 @@ export const allElementTypes = [
 
 
 export function Sidebar() {
-  const { fonts, weights } = usePage<EditProps>().props;
   const [activeTab, setActiveTab] = useState<SidebarTab>('elements');
   const [searchQuery, setSearchQuery] = useState('');
+
   const {
-    themes,
+    globalThemes,
+    organizationThemes,
     data,
     setData,
     selectedPage,
@@ -183,10 +185,7 @@ export function Sidebar() {
     viewMode,
   } = useEditor();
 
-  // console.log(data);
-
   const isEditorMode = viewMode === 'editor';
-
 
   // Content for each tab
   const renderTabContent = () => {
@@ -281,69 +280,10 @@ export function Sidebar() {
             )}
           </div>
         );
-      case 'layers': {
-        // Get blocks for the selected page
-        const page = data.view.pages[selectedPage];
-        const blocks: Block[] = [];
-        if (page && page.view) {
-          Object.values(page.view).forEach((section: any) => {
-            if (section && Array.isArray(section.blocks)) {
-              blocks.push(...section.blocks);
-            }
-          });
-        }
+      case 'layers':
         return (
-          <div className="flex flex-col h-full">
-            <div className="flex-1 overflow-y-auto p-4">
-              <div className="flex flex-col gap-3">
-                {blocks.length === 0 ? (
-                  <div className="text-muted-foreground text-center py-8">No blocks on this page.</div>
-                ) : (
-                  blocks.map((block, idx) => {
-                    const meta = getBlockMeta(block.type as keyof typeof blockTypes);
-                    return (
-                      <button
-                        key={block.id}
-                        className={cn(
-                          'flex items-center justify-between w-full px-4 py-2 rounded-lg bg-[#EBEFFF] hover:bg-[#EBEFFF]/75 transition-colors group cursor-pointer',
-                          selectedBlockId === block.id && 'ring-2 ring-primary bg-primary/10'
-                        )}
-                        onClick={() => setSelectedBlockId(block.id)}
-                        type="button"
-                      >
-                        <div className="flex items-center justify-between w-full">
-                          <span className="font-medium text-sm text-left text-black/90">
-                            {meta?.title ?? block.type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())} {blocks.length > 1 ? idx + 1 : ''}
-                          </span>
-                          <CircleChevronRight className="w-4 h-4 text-muted-foreground" />
-                        </div>
-                      </button>
-                    );
-                  })
-                )}
-              </div>
-              <Button
-                variant="default"
-                className="w-full mt-6 bg-gray-900 text-white hover:bg-gray-800 flex items-center justify-center gap-2"
-                onClick={() => setActiveTab('elements')}
-              >
-                <span>Add another element</span>
-                <DiamondPlus className="w-4 h-4" />
-              </Button>
-            </div>
-            <div className="p-4 flex-shrink-0">
-              <Button
-                variant="outline"
-                className="w-full flex items-center justify-between"
-                type="button"
-              >
-                Save experience as a new template
-                <SquarePlus className="w-4 h-4 text-muted-foreground" />
-              </Button>
-            </div>
-          </div>
+          <PageLayers onAddNewElementClick={() => setActiveTab('elements')} />
         );
-      }
       case 'products':
         return (
           <div className="p-4">
@@ -364,13 +304,7 @@ export function Sidebar() {
         );
       case 'themes':
         return (
-          <PageTheme
-            themes={themes}
-            currentTheme={data.theme}
-            onThemeChange={theme => setData({ ...data, theme })}
-            fonts={fonts}
-            weights={weights}
-          />
+          <PageTheme />
         );
       default:
         return null;

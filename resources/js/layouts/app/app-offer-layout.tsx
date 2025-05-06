@@ -15,6 +15,7 @@ import { cn } from '@/lib/utils';
 import { useEditor } from '@/contexts/offer/editor-context';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { PublishStatusCard } from '@/components/offers/publish-status-card';
+import { toast } from 'sonner';
 
 interface Offer {
     id: number;
@@ -76,6 +77,10 @@ function OfferHeader({ offer, isNameDialogOpen, setIsNameDialogOpen }: AppHeader
             preserveScroll: true,
             preserveState: true,
             onSuccess: () => setIsNameDialogOpen(false),
+            onError: (e) => {
+                console.log(e);
+                toast.error('Failed to update offer name');
+            },
         });
     };
 
@@ -148,7 +153,10 @@ function OfferHeader({ offer, isNameDialogOpen, setIsNameDialogOpen }: AppHeader
                         <Button
                             variant="outline"
                             tooltip="Exit the current preview mode"
-                            onClick={() => setViewMode('editor')}
+                            onClick={() => {
+                                setViewMode('editor');
+                                setPreviewSize(PREVIEW_SIZES['desktop']);
+                            }}
                             className={cn(
                                 "transition-colors"
                             )}
@@ -275,7 +283,7 @@ function OfferHeader({ offer, isNameDialogOpen, setIsNameDialogOpen }: AppHeader
                             <Label htmlFor="name">Name</Label>
                             <Input
                                 id="name"
-                                value={data.name}
+                                value={name}
                                 onChange={e => setName(e.target.value)}
                                 placeholder="Enter offer name"
                                 autoFocus

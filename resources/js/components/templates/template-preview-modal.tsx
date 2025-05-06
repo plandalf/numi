@@ -55,7 +55,7 @@ export function TemplatePreviewModal({ template, open, onOpenChange }: TemplateP
                 <div className="relative aspect-[16/9] ">
                     {/* Carousel */}
                     <div className="relative h-full">
-                        {template.preview_images.map((image, index) => (
+                        {template?.preview_images?.map((image, index) => (
                             <div
                                 key={index}
                                 className={cn(
@@ -73,7 +73,7 @@ export function TemplatePreviewModal({ template, open, onOpenChange }: TemplateP
                     </div>
 
                     {/* Navigation Buttons */}
-                    {template.preview_images.length > 1 && (
+                    {template?.preview_images?.length > 1 && (
                         <>
                             <button
                                 onClick={handlePrevious}
