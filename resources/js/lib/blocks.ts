@@ -1,6 +1,15 @@
 import { RuleGroup, VisibilityRule } from '@/components/editor/condition-visibility-editor';
 import get from 'lodash/get';
 
+
+export const hasVisibilityCondition = (visibility?: boolean | { conditional: RuleGroup }) => {
+  if (typeof visibility === 'undefined') return false;
+
+  if(typeof visibility === 'boolean') return true;
+
+  return typeof visibility === 'object' && 'conditional' in visibility;
+};
+
 export const isBlockVisible = (
   context: Record<string, unknown>,
   visibility?: boolean | { conditional: RuleGroup }
