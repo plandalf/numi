@@ -29,7 +29,7 @@ export function PageShare() {
   const { offer, setViewMode } = useEditor();
   const [showQrCode, setShowQrCode] = useState(false);
   const [showEmbedInfo, setShowEmbedInfo] = useState(false);
-  const [selectedEmbedType, setSelectedEmbedType] = useState('standard');
+  const [selectedEmbedType, setSelectedEmbedType] = useState();
 
   const offerUrl = `${window.location.origin}/o/${offer.id}`;
 
@@ -125,8 +125,8 @@ function openOfferPopup() {
                   onValueChange={(value) => {
                       if (value) {
                           setSelectedEmbedType(value);
-                          setShowEmbedInfo(true);
                       }
+                      setShowEmbedInfo(true);
                   }}
                   className="grid grid-cols-4 gap-2"
               >

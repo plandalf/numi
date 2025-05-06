@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\CreateUpdateTemplateWithThemeRequest;
 use App\Http\Resources\TemplateResource;
 use App\Models\Template;
 use App\Services\TemplateService;
@@ -10,23 +11,23 @@ use Inertia\Inertia;
 
 class TemplateController extends Controller
 {
-    protected TemplateService $templateService;
-
-    public function __construct(TemplateService $templateService)
+    public function __construct(
+        protected TemplateService $templateService)
     {
-        $this->templateService = $templateService;
     }
 
     /**
      * Display a listing of global templates.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $templates = $this->templateService->getGlobalTemplates();
+        $globalTemplates = $this->templateService->getGlobalTemplates();
+        $organizationTemplates = $this->templateService->getOrganizationTemplates($request->user()->current_organization_id);
         $categories = $this->templateService->getGlobalTemplateCategories();
 
         return Inertia::render('templates/index', [
-            'templates' => TemplateResource::collection($templates),
+            'globalTemplates' => TemplateResource::collection($globalTemplates),
+            'organizationTemplates' => TemplateResource::collection($organizationTemplates),
             'categories' => $categories,
         ]);
     }
@@ -42,5 +43,27 @@ class TemplateController extends Controller
         );
 
         return redirect()->route('offers.edit', $offer);
+    }
+
+    public function store(CreateUpdateTemplateWithThemeRequest $request)
+    {
+        $this->templateService->createTemplateWithTheme([
+            'organization_id' => $request->user()->current_organization_id,
+            ...$request->validated(),
+        ]);
+
+        return redirect()->back()->with('success', 'Template created successfully');
+    }
+
+    public function update(Template $template, CreateUpdateTemplateWithThemeRequest $request)
+    {
+        $this->templateService->updateTemplateWithTheme(
+            $template,
+            [
+                'organization_id' => $request->user()->current_organization_id,
+                ...$request->validated(),
+            ]
+        );
+        return redirect()->back()->with('success', 'Template updated successfully');
     }
 }

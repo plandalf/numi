@@ -14,12 +14,9 @@ import ThemePreviewCard from './theme-preview-card';
 import SearchBar from './search-bar';
 import { router, usePage } from '@inertiajs/react';
 import { EditProps } from '@/pages/offers/edit';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import { useEditor } from '@/contexts/offer/editor-context';
 
-interface ThemeSidebarPanelProps {
-  themes: Theme[];
-  currentTheme: Theme;
-  onThemeChange: (theme: Theme) => void;
-}
 
 const colorFields = [
   { key: 'primary_color', label: 'Primary' },
@@ -58,17 +55,23 @@ const componentFields = [
   { key: 'shadow_lg', label: 'Shadow (Large)', type: 'shadow' },
 ];
 
-export const PageTheme: React.FC<ThemeSidebarPanelProps> = ({ themes = [], currentTheme, onThemeChange }) => {
-  
-  const { offer, fonts, weights } = usePage<EditProps>().props;
+export const PageTheme: React.FC = () => {
+
+  const { organizationThemes, globalThemes, data, setData } = useEditor();
+  const { fonts, weights } = usePage<EditProps>().props;
   const [tab, setTab] = useState<'all' | 'custom'>('all');
-  const [theme, setTheme] = useState<Theme>(currentTheme);
+  const [theme, setTheme] = useState<Theme>(data.theme);
   const [openSection, setOpenSection] = useState<string>('colors');
   const [name, setName] = useState('');
   const [search, setSearch] = useState('');
   const [saving, setSaving] = useState(false);
   const [nameError, setNameError] = useState<string | null>(null);
 
+  const [themeSettingTab, setThemeSettingTab] = useState<'new' | 'saved'>('new');
+  const [selectedThemeId, setSelectedThemeId] = useState<string>('');
+  const [selectThemeError, setSelectThemeError] = useState<string | null>(null);
+
+  const onThemeChange = (theme: Theme) => setData({ ...data, theme });
 
   // Update parent on local theme change
   const handleThemeChange = (key: keyof Theme, value: any) => {
@@ -104,25 +107,49 @@ export const PageTheme: React.FC<ThemeSidebarPanelProps> = ({ themes = [], curre
   };
 
   // Filter themes by search
-  const filteredThemes = themes.filter(t =>
+  const filteredThemes = [...organizationThemes, ...globalThemes].filter(t =>
     (t.name || '').toLowerCase().includes(search.toLowerCase())
   );
 
   const handleSaveTheme = () => {
-    if (!name.trim()) {
-      setNameError('Theme name is required.');
+    if (!selectedThemeId) {
+      setSelectThemeError('Please select a theme to update to.');
       return;
     }
-    setNameError(null);
-    setSaving(true);
-    const payload = { ...theme, name };
 
-    router.post(route('offers.store.saved-theme', offer.id), payload, {
-      onSuccess: () => setSaving(false),
+    setSelectThemeError(null);
+    setSaving(true);
+
+    const { name, ...payload } = theme;
+    router.put(route('themes.update', selectedThemeId), payload, {
+      onSuccess: () => {
+        setSaving(false);
+      },
       onError: () => setSaving(false),
     });
   };
 
+  const handleCreateTheme = () => {
+    if (!name.trim()) {
+      setNameError('Theme name is required.');
+      return;
+    }
+
+    setNameError(null);
+    setSaving(true);
+
+    const payload = { ...theme, name };
+
+    router.post(route('themes.store'), payload, {
+      onSuccess: () => {
+        setSaving(false);
+        setName('');
+      },
+      onError: () => setSaving(false),
+    });
+  }
+
+  
   return (
     <div className="flex flex-col h-full p-4">
       <Tabs value={tab} onValueChange={v => setTab(v as 'all' | 'custom')} className="w-full">
@@ -168,7 +195,7 @@ export const PageTheme: React.FC<ThemeSidebarPanelProps> = ({ themes = [], curre
                 >
                   <span className="font-medium text-sm text-left">Colors</span>
                 </AccordionTrigger>
-                <AccordionContent className="bg-white rounded-b-lg px-2 pt-2">
+                <AccordionContent className="bg-white rounded-b-lg px-2 pt-2 space-y-3">
                   {colorFields.map(f => (
                     <ColorPickerEditor
                       key={f.key}
@@ -196,7 +223,7 @@ export const PageTheme: React.FC<ThemeSidebarPanelProps> = ({ themes = [], curre
                 >
                   <span className="font-medium text-sm text-left">Typography</span>
                 </AccordionTrigger>
-                <AccordionContent className="bg-white rounded-b-lg">
+                <AccordionContent className="bg-white rounded-b-lg space-y-3">
                   {typographyFields.map(f => {
                     if (f.type === 'font') {
                       return (
@@ -243,7 +270,7 @@ export const PageTheme: React.FC<ThemeSidebarPanelProps> = ({ themes = [], curre
                 >
                   <span className="font-medium text-sm text-left">Components</span>
                 </AccordionTrigger>
-                <AccordionContent className="bg-white rounded-b-lg">
+                <AccordionContent className="bg-white rounded-b-lg space-y-3">
                   {componentFields.map(f => {
                     if (f.type === 'border') {
                       return (
@@ -289,24 +316,57 @@ export const PageTheme: React.FC<ThemeSidebarPanelProps> = ({ themes = [], curre
                 >
                   <span className="font-medium text-sm text-left">Theme Settings</span>
                 </AccordionTrigger>
-                <AccordionContent className="bg-white rounded-b-lg flex flex-col">
-                  <StringEditor
-                    label="Theme name"
-                    value={name}
-                    onChange={v => setName(v)}
-                    placeholder="e.g. My Theme"
-                  />
-                  {nameError && <div className="text-xs text-red-500 mb-2">{nameError}</div>}
-                  <Button
-                    className="w-full mb-2"
-                    onClick={handleSaveTheme}
-                    disabled={saving}
-                  >
-                    {saving ? 'Saving...' : 'Save Theme'}
-                  </Button>
-                  <div className="text-sm text-muted-foreground">
-                    Save this theme to use it on other experiences.
-                  </div>
+                <AccordionContent className="bg-white rounded-b-lg flex flex-col gap-2">
+                  <Tabs value={themeSettingTab} onValueChange={v => setThemeSettingTab(v as 'new' | 'saved')} className="w-full">
+                    <TabsList className="grid grid-cols-2">
+                      <TabsTrigger value="new" disabled={saving}>Create new theme</TabsTrigger>
+                      <TabsTrigger value="saved" disabled={saving}>Update to existing</TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="new" className="space-y-3">
+                      <StringEditor
+                        value={name}
+                        onChange={v => setName(v)}
+                        placeholder="e.g. My Theme"
+                      />
+                      {nameError && <div className="text-xs text-red-500">{nameError}</div>}
+                      <Button
+                        className="w-full mb-2"
+                        onClick={handleCreateTheme}
+                        disabled={saving}
+                      >
+                        {saving 
+                          ? 'Creating...' 
+                          : 'Create Theme'
+                        }
+                      </Button>
+                      <div className="text-sm text-muted-foreground">
+                        Save this theme to use it on other experiences.
+                      </div>
+                    </TabsContent>
+                    <TabsContent value="saved" className="space-y-3">
+                      <EnumerationEditor
+                        placeholder="Select a theme"
+                        value={selectedThemeId}
+                        onChange={setSelectedThemeId}
+                        options={organizationThemes.map(t => t.id)}
+                        labels={organizationThemes.reduce((acc, t) => ({
+                          ...acc,
+                          [t.id]: t.name ?? 'Untitled theme'
+                        }), {})}
+                      />
+                      {selectThemeError && <div className="text-xs text-red-500">{selectThemeError}</div>}
+                      <Button
+                        className="w-full mb-2"
+                        onClick={handleSaveTheme}
+                        disabled={saving}
+                      >
+                        {saving 
+                          ? 'Updating...' 
+                          : 'Update Theme'
+                        }
+                      </Button>
+                    </TabsContent>
+                  </Tabs>
                 </AccordionContent>
               </AccordionItem>
             </Accordion>

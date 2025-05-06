@@ -4,7 +4,8 @@ import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from '.
 import { CardIconPanel } from '../ui/card-icon-panel';
 
 interface EnumerationEditorProps {
-  label: string;
+  label?: string;
+  placeholder?: string;
   value: string;
   onChange: (value: string) => void;
   options: string[];
@@ -13,9 +14,9 @@ interface EnumerationEditorProps {
   inspector?: string;
 }
 
-export const EnumerationEditor: React.FC<EnumerationEditorProps> = ({ label, value, onChange, options, icons, labels, inspector }) => (
+export const EnumerationEditor: React.FC<EnumerationEditorProps> = ({ label, placeholder = 'Select an option', value, onChange, options, icons, labels, inspector }) => (
   <div className="flex flex-col gap-3">
-    <Label className="text-sm capitalize">{label}</Label>
+    {label && <Label className="text-sm">{label}</Label>}
     {inspector && inspector === 'card' ? (
       <CardIconPanel
         options={options}
@@ -27,7 +28,7 @@ export const EnumerationEditor: React.FC<EnumerationEditorProps> = ({ label, val
     ) : (
       <Select value={value} onValueChange={onChange}>
         <SelectTrigger>
-          <SelectValue placeholder="Select an option" />
+          <SelectValue placeholder={placeholder} />
         </SelectTrigger>
         <SelectContent>
           {options.map(option => (

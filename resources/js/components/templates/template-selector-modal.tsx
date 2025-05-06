@@ -63,7 +63,7 @@ export function TemplateSelectorModal({
                         </div>
 
                         {/* Template Grid with Scroll */}
-                        <div className="flex-1 overflow-x-hidden overflow-y-auto pb-6 min-h-[700px]">
+                        <div className="flex-1 overflow-y-auto pb-6 max-h-[60vh]">
                             <TemplateGrid
                                 templates={filteredTemplates}
                                 className="grid grid-cols-1 xl:grid-cols-2 2xl:grid-cols-3 gap-6 mb-20"

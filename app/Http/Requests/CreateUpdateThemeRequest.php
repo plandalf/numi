@@ -3,8 +3,9 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Facades\Auth;
 
-class UpdateThemeRequest extends FormRequest
+class CreateUpdateThemeRequest extends FormRequest
 {
     protected $colorFields = [
         'primary_color',
@@ -57,6 +58,7 @@ class UpdateThemeRequest extends FormRequest
     {
         $rules = [
             'name' => ['string', 'nullable', 'max:255'],
+            'theme_id' => ['string', 'exists:themes,id,organization_id,' . Auth::user()->current_organization_id],
         ];
 
         // Add color field rules

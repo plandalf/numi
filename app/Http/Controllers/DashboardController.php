@@ -17,8 +17,10 @@ class DashboardController extends Controller
 
     public function index(Request $request)
     {
-        $templates = $this->templateService->getGlobalTemplates();
+        $globalTemplates = $this->templateService->getGlobalTemplates();
+        $organizationTemplates = $this->templateService->getOrganizationTemplates($request->user()->current_organization_id);
         $categories = $this->templateService->getGlobalTemplateCategories();
+
         $offers = $request->user()
             ->currentOrganization
             ->offers()
@@ -26,7 +28,8 @@ class DashboardController extends Controller
             ->get();
 
         return Inertia::render('dashboard', [
-            'templates' => TemplateResource::collection($templates),
+            'globalTemplates' => TemplateResource::collection($globalTemplates),
+            'organizationTemplates' => TemplateResource::collection($organizationTemplates),
             'categories' => $categories,
             'offers' => OfferResource::collection($offers),
         ]);

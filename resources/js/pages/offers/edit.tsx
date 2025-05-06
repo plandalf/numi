@@ -33,12 +33,15 @@ import { Theme } from '@/types/theme';
 import { PageShare } from '@/components/offers/page-share';
 import { CheckoutSession, IntegrationClient } from '@/types/checkout';
 import { EditorProvider, useEditor } from '@/contexts/offer/editor-context';
+import { Template } from '@/types/template';
 
 export interface EditProps {
     offer: Offer;
     fonts: string[];
     weights: string[];
-    themes: Theme[];
+    organizationThemes: Theme[];
+    organizationTemplates: Template[];
+    globalThemes: Theme[];
     showNameDialog?: boolean;
 }
 
@@ -49,9 +52,15 @@ const PAGE_TYPE_ICONS: Record<PageType, React.ReactNode> = {
     payment: <CreditCard className="w-4 h-4" />
 };
 
-function Edit({ offer, themes, showNameDialog }: EditProps) {
+function Edit({ offer, organizationThemes, organizationTemplates, globalThemes, showNameDialog }: EditProps) {
   return (
-    <EditorProvider offer={offer} themes={themes} showNameDialog={showNameDialog}>
+    <EditorProvider
+      offer={offer}
+      organizationThemes={organizationThemes}
+      organizationTemplates={organizationTemplates}
+      globalThemes={globalThemes}
+      showNameDialog={showNameDialog}
+    >
       <EditApp />
     </EditorProvider>
   );
@@ -457,10 +466,12 @@ function MainContent() {
 
 function Toolbar() {
   const {
-    data, 
+    data,
+    inputRef,
     selectedPage,
     editingPageName, setEditingPageName,
     pageNameInput, setPageNameInput,
+    setIsRenamingFromDropdown,
     setShowAddPageDialog,
     handlePageNameSave,
     handlePageNameClick,
@@ -477,14 +488,21 @@ function Toolbar() {
           viewMode === 'preview' ? "justify-center" : "justify-between"
         )}>
           <div className="flex items-center gap-2 overflow-x-auto">
+            <button
+              onClick={() => setShowAddPageDialog(true)}
+              className="flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium bg-transparent text-secondary-foreground hover:bg-white border-1 border-gray-300/50 cursor-pointer"
+            >
+              <Plus className="w-4 h-4" />
+              Add Page
+            </button>
             {getOrderedPages(data.view).map(([pageId, page]) => (
               <div
                 key={pageId}
                 className={cn(
-                  "flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium whitespace-nowrap",
+                  "flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium whitespace-nowrap ",
                   selectedPage === pageId
                     ? "bg-white border-1 border-teal-600"
-                    : "bg-transparent border-none"
+                    : "bg-transparent border-none cursor-pointer"
                 )}
               >
                 {editingPageName === pageId ? (
@@ -503,18 +521,17 @@ function Toolbar() {
                       }
                     }}
                     className={cn(
-                      "h-6 px-1 py-0 w-[120px]",
-                      selectedPage === pageId
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-secondary text-secondary-foreground"
+                      "h-5 px-1 py-0 w-[100px]",
+                      "focus:!outline-none focus:!ring-0 focus:!ring-offset-0",
+                      "!shadow-none !border-none !outline-none !ring-none",
                     )}
                   />
                 ) : (
                   <button
                     onClick={() => handlePageNameClick(pageId, page.name)}
-                    className="focus:outline-none flex items-center gap-2"
+                    className="focus:outline-none flex items-center gap-2 cursor-pointer"
                   >
-                    <span className="text-muted-foreground">
+                    <span className="text-muted-foreground ">
                       {PAGE_TYPE_ICONS[page.type]}
                     </span>
                     {page.name}
@@ -546,13 +563,6 @@ function Toolbar() {
                 )}
               </div>
             ))}
-            <button
-              onClick={() => setShowAddPageDialog(true)}
-              className="flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium bg-secondary text-secondary-foreground hover:bg-secondary/90"
-            >
-              <Plus className="w-4 h-4" />
-              Add Page
-            </button>
           </div>
 
           {/* <div className="flex items-center gap-4">

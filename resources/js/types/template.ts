@@ -2,7 +2,7 @@ import { Organization } from ".";
 import { Theme } from "./theme";
 
 export interface Template {
-  id: number;
+  id: string;
   name: string;
   description: string | null;
   category: string;

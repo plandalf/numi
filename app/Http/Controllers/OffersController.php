@@ -11,16 +11,20 @@ use App\Http\Requests\Offer\OfferSlotUpdateRequest;
 use App\Http\Requests\Offer\OfferThemeUpdateRequest;
 use App\Http\Requests\StoreOfferVariantRequest;
 use App\Http\Requests\UpdateOfferVariantRequest;
-use App\Http\Requests\UpdateThemeRequest;
+use App\Http\Requests\CreateUpdateThemeRequest;
 use App\Http\Requests\Offer\OfferUpdateRequest;
 use App\Http\Resources\OfferResource;
 use App\Http\Resources\ProductResource;
+use App\Http\Resources\TemplateResource;
 use App\Http\Resources\ThemeResource;
 use App\Models\Catalog\Product;
 use App\Models\Organization;
 use App\Models\Store\Offer;
 use App\Models\Store\Slot;
+use App\Models\Template;
 use App\Models\Theme;
+use App\Services\TemplateService;
+use App\Services\ThemeService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -29,6 +33,12 @@ use Inertia\Response;
 
 class OffersController extends Controller
 {
+    public function __construct(
+        protected TemplateService $templateService,
+        protected ThemeService $themeService
+    ) {
+    }
+
     public function index(): Response
     {
         return Inertia::render('offers/index', [
@@ -59,20 +69,26 @@ class OffersController extends Controller
 
     public function edit(Offer $offer, Request $request): Response
     {
-        $organizationThemes = Theme::where('organization_id', $request->user()->current_organization_id)
-            ->whereDoesntHave('offer')
-            ->get();
+        $organizationThemes = $this->themeService->getOrganizationThemes(
+            $request->user()->current_organization_id,
+            true
+        );
 
-        $globalThemes = Theme::whereNull('organization_id')->get();
-        $themes = $organizationThemes->merge($globalThemes);
+        $globalThemes = $this->themeService->getGlobalThemes();
+
+        $organizationTemplates = $this->templateService->getOrganizationTemplates(
+            $request->user()->current_organization_id
+        );
 
         // Load the offer with its theme and slots
-        $offer->load(['slots', 'theme']);
+        $offer->load(['slots', 'theme', 'screenshot']);
 
         return Inertia::render('offers/edit', [
             'offer' => new OfferResource($offer),
             'showNameDialog' => session('showNameDialog', false),
-            'themes' => ThemeResource::collection($themes),
+            'organizationThemes' => ThemeResource::collection($organizationThemes),
+            'organizationTemplates' => TemplateResource::collection($organizationTemplates),
+            'globalThemes' => ThemeResource::collection($globalThemes),
             'fonts' => FontElement::values(),
             'weights' => WeightElement::values(),
         ]);
@@ -80,7 +96,36 @@ class OffersController extends Controller
 
     public function update(OfferUpdateRequest $request, Offer $offer)
     {
-        $offer->update($request->validated());
+        $forUpdate = [];
+
+        if($request->validated('name')) {
+            $forUpdate['name'] = $request->validated('name');
+        }
+        
+        if($request->validated('view')) {
+            $forUpdate['view'] = $request->validated('view');
+        }
+
+        if ($request->validated('theme')) {
+            if ($offer->theme_id) {
+                // Update existing theme
+                $offer->theme->update([
+                    'name' => 'Theme for ' . $offer->name,
+                    'organization_id' => $offer->organization_id,
+                    ...$request->validated('theme'),
+                ]);
+            } else {
+                // Create new theme and associate it with the offer
+                $theme = Theme::create([
+                    'name' => 'Theme for ' . $offer->name,
+                    'organization_id' => $offer->organization_id,
+                    ...$request->validated('theme'),
+                ]);
+                $forUpdate['theme_id'] = $theme->id;
+            }
+        }
+
+        $offer->update($forUpdate);
 
         return redirect()->back()->with('success', 'Offer updated successfully');
     }
@@ -240,15 +285,6 @@ class OffersController extends Controller
         return back()->with('success', 'Theme updated successfully.');
     }
 
-    public function storeAsSavedTheme(UpdateThemeRequest $request): \Illuminate\Http\RedirectResponse
-    {
-        Theme::create([
-            'organization_id' => $request->user()->current_organization_id,
-            ...$request->validated(),
-        ]);
-
-        return back()->with('success', 'Theme saved successfully.');
-    }
 
     public function publish(Offer $offer): \Illuminate\Http\RedirectResponse
     {
