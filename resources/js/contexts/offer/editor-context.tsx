@@ -79,7 +79,7 @@ export function useEditor() {
     return ctx;
   }
 
-  
+
 function generateDefaultView() {
   const defaultPage = generateDefaultPage({ type: 'page', position: { x: 100, y: 100 } });
 
@@ -338,7 +338,7 @@ export function EditorProvider({ offer, organizationThemes, organizationTemplate
       first_page: Object.keys(data.view.pages).length === 0 ? id : data.view.first_page
     };
     setData(update(data, { view: { $set: updatedView }}));
-    
+
     handleSave();
     setShowAddPageDialog(false);
   };
@@ -347,7 +347,7 @@ export function EditorProvider({ offer, organizationThemes, organizationTemplate
     const page = {...data.view.pages[selectedPage]};
 
     const sectionId = Object.keys(page.view).find((section) => {
-      const x = page.view[section].blocks.findIndex((b) => b.id === block.id)
+      const x = page.view[section].blocks?.findIndex((b) => b.id === block.id) ?? -1;
       if (x === -1) return false;
       return section;
     });

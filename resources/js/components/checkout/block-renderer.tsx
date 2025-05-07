@@ -1,5 +1,5 @@
 import { BlockContext } from '@/contexts/Numi';
-import { isBlockVisible } from '@/lib/utils';
+import { isBlockVisible } from '@/lib/blocks';
 import { GlobalStateContext } from '@/pages/checkout-main';
 import { BlockConfig, BlockContextType, FieldState, HookUsage } from '@/types/blocks';
 import { useContext, useMemo } from 'react';
@@ -36,7 +36,7 @@ export function BlockRenderer({ block, children }: {
   const isVisible = useMemo(() => {
     const visibility = block.appearance?.visibility;
 
-    return isBlockVisible({ fields: globalStateContext.fields }, visibility?.fn);
+    return isBlockVisible({ fields: globalStateContext.fields }, visibility);
   }, [block, globalStateContext]);
 
   if (!isVisible) {

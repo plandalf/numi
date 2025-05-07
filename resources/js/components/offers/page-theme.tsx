@@ -13,10 +13,8 @@ import { AccordionItem } from '../ui/accordion';
 import ThemePreviewCard from './theme-preview-card';
 import SearchBar from './search-bar';
 import { router, usePage } from '@inertiajs/react';
-import { EditProps } from '@/pages/offers/edit';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { useEditor } from '@/contexts/offer/editor-context';
-
+import type { EditProps } from '@/pages/offers/edit';
 
 const colorFields = [
   { key: 'primary_color', label: 'Primary' },
@@ -149,7 +147,7 @@ export const PageTheme: React.FC = () => {
     });
   }
 
-  
+
   return (
     <div className="flex flex-col h-full p-4">
       <Tabs value={tab} onValueChange={v => setTab(v as 'all' | 'custom')} className="w-full">
@@ -158,8 +156,8 @@ export const PageTheme: React.FC = () => {
           <TabsTrigger value="custom">Custom Theme</TabsTrigger>
         </TabsList>
         <TabsContent value="all">
-          <SearchBar 
-            placeholder="Search themes" 
+          <SearchBar
+            placeholder="Search themes"
             value={search}
             onChange={setSearch}
           />
@@ -185,7 +183,7 @@ export const PageTheme: React.FC = () => {
                 value="colors"
                 className="rounded-lg border-none shadow-none"
               >
-                <AccordionTrigger 
+                <AccordionTrigger
                   className={cn(
                     'flex items-center justify-between w-full p-4 py-3',
                     'rounded-lg transition-colors group cursor-pointer',
@@ -213,7 +211,7 @@ export const PageTheme: React.FC = () => {
                 value="typography"
                 className="rounded-lg border-none shadow-none"
               >
-                <AccordionTrigger 
+                <AccordionTrigger
                   className={cn(
                     'flex items-center justify-between w-full px-4 py-3 mb-2',
                     'rounded-lg transition-colors group cursor-pointer',
@@ -260,7 +258,7 @@ export const PageTheme: React.FC = () => {
                 value="components"
                 className="rounded-lg border-none shadow-none"
               >
-                <AccordionTrigger 
+                <AccordionTrigger
                   className={cn(
                     'flex items-center justify-between w-full px-4 py-3 mb-2',
                     'rounded-lg transition-colors group cursor-pointer',
@@ -306,7 +304,7 @@ export const PageTheme: React.FC = () => {
                 value="theme-settings"
                 className="rounded-lg border-none shadow-none"
               >
-                <AccordionTrigger 
+                <AccordionTrigger
                   className={cn(
                     'flex items-center justify-between w-full px-4 py-3 mb-2',
                     'rounded-lg transition-colors group cursor-pointer',
@@ -334,8 +332,8 @@ export const PageTheme: React.FC = () => {
                         onClick={handleCreateTheme}
                         disabled={saving}
                       >
-                        {saving 
-                          ? 'Creating...' 
+                        {saving
+                          ? 'Creating...'
                           : 'Create Theme'
                         }
                       </Button>
@@ -360,8 +358,8 @@ export const PageTheme: React.FC = () => {
                         onClick={handleSaveTheme}
                         disabled={saving}
                       >
-                        {saving 
-                          ? 'Updating...' 
+                        {saving
+                          ? 'Updating...'
                           : 'Update Theme'
                         }
                       </Button>
@@ -377,4 +375,4 @@ export const PageTheme: React.FC = () => {
   );
 };
 
-export default PageTheme; 
+export default PageTheme;
