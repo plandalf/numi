@@ -46,6 +46,8 @@ export const PageLayers: React.FC<PageLayersProps> = ({ onAddNewElementClick }) 
     });
   }
 
+  console.log(page.view);
+
   const closeDialog = () => {
     setDialogOpen(false);
     setTemplateName('');
@@ -151,7 +153,7 @@ export const PageLayers: React.FC<PageLayersProps> = ({ onAddNewElementClick }) 
       </div>
       <div className="p-4 flex-shrink-0">
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogTrigger className="w-full">
+          <DialogTrigger asChild className="w-full flex items-center justify-between">
             <Button
               variant="outline"
               className="w-full flex items-center justify-between"
@@ -168,7 +170,7 @@ export const PageLayers: React.FC<PageLayersProps> = ({ onAddNewElementClick }) 
             <DialogDescription>
               <Tabs value={layerTemplateTab} onValueChange={v => setLayerTemplateTab(v as 'new' | 'saved')} className="w-full">
                 <TabsList className="grid grid-cols-2">
-                  <TabsTrigger value="new" disabled={saving}>Create new theme</TabsTrigger>
+                  <TabsTrigger value="new" disabled={saving}>Create new template</TabsTrigger>
                   <TabsTrigger value="saved" disabled={saving}>Update to existing</TabsTrigger>
                 </TabsList>
                 <TabsContent value="new" className="space-y-3">
@@ -191,7 +193,7 @@ export const PageLayers: React.FC<PageLayersProps> = ({ onAddNewElementClick }) 
                     }
                   </Button>
                   <div className="text-sm text-muted-foreground">
-                    Save this theme to use it on other experiences.
+                    Save this template to use it on other experiences.
                   </div>
                 </TabsContent>
                 <TabsContent value="saved" className="space-y-3">

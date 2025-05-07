@@ -1,130 +1,23 @@
 import React, { useState } from 'react';
 import { cn } from '@/lib/utils';
-import { blockTypes, getBlockMeta, blockMetas } from '@/components/blocks';
 import { findBlockInPage } from '@/components/offers/page-preview';
 import { Inspector } from '@/components/offers/page-inspector';
-import { EditProps } from '@/pages/offers/edit';
 import { useEditor } from '@/contexts/offer/editor-context';
-import { Block } from '@/types/offer';
 import {
-  Type,
-  SquareStack,
-  Image as ImageIcon,
-  CreditCard,
-  List,
-  Bell,
-  X,
   DiamondPlus,
   LayoutPanelLeft,
   Paintbrush,
-  Unplug,
   Settings2,
   Package,
-  MessageSquare,
-  Play,
-  AlignLeft,
-  ArrowLeft,
-  ArrowRight,
-  SquareCheck,
-  FormInput,
-  ToggleLeft,
-  Search,
   ChevronLeft,
-  CircleChevronRight,
-  SquarePlus
 } from 'lucide-react';
-import { useDraggable } from '@dnd-kit/core';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import PageTheme from './page-theme';
 import { ScrollArea } from '../ui/scroll-area';
-import SearchBar from './search-bar';
-import { usePage } from '@inertiajs/react';
-import cx from 'classnames';
 import { PageLayers } from './page-layers';
+import { PageElements } from './page-elements';
 
 type SidebarTab = 'elements' | 'products' | 'themes' | 'settings' | 'layers';
-
-interface CustomElementIconProps {
-  type: keyof typeof blockTypes;
-}
-
-export const CustomElementIcon = ({ type }: CustomElementIconProps) => {
-    switch(type) {
-        case 'text':
-            return <AlignLeft className="w-6 h-6" />;
-        case 'quote':
-            return <MessageSquare className="w-6 h-6" />;
-        case 'detail_list':
-            return <LayoutPanelLeft className="w-6 h-6" />;
-        case 'button':
-            return <SquareStack className="w-6 h-6" />;
-        case 'checkbox':
-            return <SquareCheck className="w-6 h-6" />;
-        case 'option_selector':
-            return <ArrowLeft className="w-6 h-6 inline-block" />;
-        case 'text_input':
-            return <FormInput className="w-6 h-6" />;
-        case 'checkout_summary':
-            return <CreditCard className="w-6 h-6" />;
-        default:
-            return null;
-    }
-};
-
-// BlockTemplateItem component with revamped UI for card style
-interface BlockItemProps {
-  blockType: string;
-  title: string;
-}
-
-const BlockTemplateItem = ({ blockType, title }: BlockItemProps) => {
-
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    isDragging,
-  } = useDraggable({
-    id: `template:${blockType}`,
-  });
-
-  return (
-    <div
-      ref={setNodeRef}
-      {...attributes}
-      {...listeners}
-      className={cx({
-        "flex flex-col items-center justify-center rounded-md cursor-move transition-all min-h-20 w-full": true,
-        "opacity-60": isDragging,
-      })}
-    >
-      <div className="flex items-center justify-center bg-slate-800 rounded-md w-full h-14 mb-2">
-        <span className="text-white">
-          <CustomElementIcon type={blockType as keyof typeof blockTypes} />
-        </span>
-      </div>
-      <span className="text-sm text-black">{title}</span>
-    </div>
-  );
-};
-
-// Category section component
-interface ElementCategoryProps {
-  title: string;
-  children: React.ReactNode;
-}
-
-const ElementCategory = ({ title, children }: ElementCategoryProps) => {
-  return (
-    <div className="flex flex-col gap-4 mb-6">
-      <h3 className="text-sm text-black/50 font-light">{title}</h3>
-      <div className="grid grid-cols-3 gap-2">
-        {children}
-      </div>
-    </div>
-  );
-};
 
 // Define proper type for the iconButtons array
 type IconButton = {
@@ -132,7 +25,6 @@ type IconButton = {
   tab: string;
   label: string;
 };
-
 
 const iconButtons: IconButton[] = [
   { icon: <DiamondPlus className="size-5" />, tab: 'elements', label: 'Elements' },
@@ -144,40 +36,13 @@ const iconButtons: IconButton[] = [
   // { icon: <Bell className="size-5" />, tab: 'inspector', label: 'Notifications' },
 ];
 
-// Mapping for block elements
-const baseElements = [
-  { type: 'text', title: 'Text Block' },
-  { type: 'quote', title: 'Quote' },
-  { type: 'detail_list', title: 'Detail List' },
-];
-
-const interactiveElements = [
-  { type: 'button', title: 'Button' },
-  { type: 'checkbox', title: 'Checkbox' },
-  { type: 'option_selector', title: 'Option Slide' },
-  { type: 'text_input', title: 'Entry Field' },
-];
-
-const paymentElements = [
-  { type: 'checkout_summary', title: 'Payment' },
-];
-
-export const allElementTypes = [
-  ...baseElements,
-  ...interactiveElements,
-  ...paymentElements,
-];
-
 
 export function Sidebar() {
   const [activeTab, setActiveTab] = useState<SidebarTab>('elements');
   const [searchQuery, setSearchQuery] = useState('');
 
   const {
-    globalThemes,
-    organizationThemes,
     data,
-    setData,
     selectedPage,
     selectedBlockId,
     setSelectedBlockId,
@@ -206,79 +71,8 @@ export function Sidebar() {
 
     switch (activeTab) {
       case 'elements':
-        // Filter elements based on search query
-        const filteredBaseElements = baseElements.filter(element =>
-          element.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          element.type.toLowerCase().includes(searchQuery.toLowerCase())
-        );
-
-        const filteredInteractiveElements = interactiveElements.filter(element =>
-          element.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          element.type.toLowerCase().includes(searchQuery.toLowerCase())
-        );
-
-        const filteredPaymentElements = paymentElements.filter(element =>
-          element.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          element.type.toLowerCase().includes(searchQuery.toLowerCase())
-        );
-
-        // Check if any category has elements after filtering
-        const hasBaseElements = filteredBaseElements.length > 0;
-        const hasInteractiveElements = filteredInteractiveElements.length > 0;
-        const hasPaymentElements = filteredPaymentElements.length > 0;
-
         return (
-          <div className="p-4 space-y-6 overflow-y-auto">
-            <SearchBar
-              placeholder="Search for elements"
-              value={searchQuery}
-              onChange={setSearchQuery}
-            />
-
-            {searchQuery && !hasBaseElements && !hasInteractiveElements && !hasPaymentElements ? (
-              <div className="text-center py-8 text-muted-foreground">
-                No elements found matching "{searchQuery}"
-              </div>
-            ) : (
-              <>
-                {(hasBaseElements || !searchQuery) && (
-                  <ElementCategory title="Base Elements">
-                    {filteredBaseElements.map((element) => (
-                      <BlockTemplateItem
-                        key={element.type}
-                        blockType={element.type}
-                        title={element.title}
-                      />
-                    ))}
-                  </ElementCategory>
-                )}
-
-                {(hasInteractiveElements || !searchQuery) && (
-                  <ElementCategory title="Interactive Elements">
-                    {filteredInteractiveElements.map((element) => (
-                      <BlockTemplateItem
-                        key={element.type}
-                        blockType={element.type}
-                        title={element.title}
-                      />
-                    ))}
-                  </ElementCategory>
-                )}
-
-                {(hasPaymentElements || !searchQuery) && (
-                  <ElementCategory title="Payments">
-                    {filteredPaymentElements.map((element) => (
-                      <BlockTemplateItem
-                        key={element.type}
-                        blockType={element.type}
-                        title={element.title}
-                      />
-                    ))}
-                  </ElementCategory>
-                )}
-              </>
-            )}
-          </div>
+          <PageElements />
         );
       case 'layers':
         return (

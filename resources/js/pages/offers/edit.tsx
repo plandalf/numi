@@ -28,12 +28,14 @@ import { DndContext, DragOverlay, DragStartEvent, useSensor, PointerSensor, useS
 
 import { v4 as uuidv4 } from 'uuid';
 import React from 'react';
-import { allElementTypes, CustomElementIcon, Sidebar } from '@/components/offers/sidebar';
+import { Sidebar } from '@/components/offers/sidebar';
 import { Theme } from '@/types/theme';
 import { PageShare } from '@/components/offers/page-share';
 import { CheckoutSession, IntegrationClient } from '@/types/checkout';
 import { EditorProvider, useEditor } from '@/contexts/offer/editor-context';
 import { Template } from '@/types/template';
+
+import { allElementTypes, CustomElementIcon } from '@/components/offers/page-elements';
 
 export interface EditProps {
     offer: Offer;
