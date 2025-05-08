@@ -3,84 +3,121 @@ import { Separator } from '../ui/separator';
 import { CircleAlert, CircleCheck, CirclePlus, Plus } from 'lucide-react';
 import { usePage } from '@inertiajs/react';
 import { EditProps } from '@/pages/offers/Edit';
-import { Price, Product } from '@/types/offer';
+import { OfferProduct, Price, Product } from '@/types/offer';
 import { Kebab } from '../ui/kebab';
 import { AddNewProductDialog } from './dialogs/AddNewProductDialog';
 import ProductForm from '../Products/ProductForm';
 import { useState } from 'react';
 import SlotForm from './SlotForm';
 import AddProductForm from './add-product-from';
+import { toast } from 'sonner';
+import { router } from '@inertiajs/react';
 
-const Products = ({ products }: { products: Product[] }) => {
-  return (
-    <div>
-      <div className="text-sm">Product</div>
-      <div className="mt-2 flex flex-col gap-3.5">
-        {products.map((product) => (
-          <ItemCard key={product.id} name={product.name} />
-        ))}
-      </div>
-    </div>
-  )
-}
-
-const Prices = ({ prices }: { prices: Price[] }) => {
-  return (
-    <div>
-      <div className="text-sm">Prices</div>
-      <div className="mt-2 flex flex-col gap-3.5">
-        {prices.map((prices) => (
-          <ItemCard key={prices.id} name={prices.name ?? prices.lookup_key ?? prices.id.toString()} />
-        ))}
-      </div>
-    </div>
-  )
-}
-
-const ItemCard = ({ name }: { name: string }) => {
-  return (
-    <div className="flex gap-3 border rounded-md px-4 py-2 text-[#5A618B] items-center justify-between">
-      <CircleCheck className="h-full mt-0.5" />
-      <div className="text-sm">{name}</div>
-      <Kebab items={[
-        {
-          label: 'Edit',
-          onClick: () => {
-            console.log('edit');
-          }
-        },
-        {
-          label: 'Delete',
-          onClick: () => {
-            console.log('delete');
-          }
-        }
-      ]} />
-    </div>
-  )
-}
 export const PageProducts = () => {
   const { products, offer } = usePage<EditProps>().props;
-  const selectedPrices = offer.prices ?? [];
-  const selectedProducts = selectedPrices?.map((price) => price.product).filter((product) => !!product) ?? [];
+  const selectedProducts = offer.products ?? [];
 
   const [isProductFormOpen, setIsProductFormOpen] = useState(false);
   const [isAddNewProductDialogOpen, setIsAddNewProductDialogOpen] = useState(false);
-  const [isSlotFormOpen, setIsSlotFormOpen] = useState(false);
+  const [addExistingProductDialogProps, setAddExistingProductDialogProps] = useState({
+    open: false,
+    tab: 'product'
+  });
+  const [selectedProduct, setSelectedProduct] = useState<OfferProduct>();
+
+  const Products = ({ products }: { products: OfferProduct[] }) => {
+    const handleEdit = (product: OfferProduct) => {
+      setSelectedProduct(product);
+      setAddExistingProductDialogProps({
+        open: true,
+        tab: 'product'
+      });
+    }
+
+    const handleDelete = (product: OfferProduct) => {
+      const toastId = toast.loading(`Deleting product...`);
+
+      router.delete(route("offers.products.destroy", { offer: offer.id, offerProduct: product.store_offer_product_id }), {
+        preserveScroll: true,
+        onSuccess: () => {
+          toast.success(`Product deleted successfully`, { id: toastId });
+        },
+        onError: (errors) => {
+          toast.error(`Failed to delete product: ${Object.values(errors).flat().join(", ")}`, { id: toastId });
+        },
+      });
+    }
+    return (
+      <div className="flex flex-col gap-3.5">
+        {products.map((product) => (
+          <div key={product.id}>
+            <div>
+              <div className="text-sm">Product</div>
+              <div className="mt-2 flex flex-col gap-3.5">
+                <ItemCard key={product.id} item={product} onEdit={() => handleEdit(product)} onDelete={() => handleDelete(product)} />
+              </div>
+            </div>
+            <Prices prices={product.prices ?? []} product={product} />
+          </div>
+        ))}
+      </div>
+    )
+  }
+
+  const Prices = ({ prices, product }: { prices: Price[], product: OfferProduct }) => {
+    const handleEdit = () => {
+      setSelectedProduct(product);
+      setAddExistingProductDialogProps({
+        open: true,
+        tab: 'pricing'
+      });
+    }
+
+    return (
+      <div>
+        <div className="text-sm">Prices</div>
+        <div className="mt-2 flex flex-col gap-3.5">
+          {prices.map((price) => (
+            <ItemCard key={price.id} item={price} onEdit={handleEdit} />
+          ))}
+        </div>
+      </div>
+    )
+  }
+
+  const ItemCard = ({ item, onEdit, onDelete }: { item: Price | Product, onEdit: () => void, onDelete?: () => void }) => {
+    const options = [
+      {
+        label: 'Edit',
+        onClick: onEdit
+      }
+    ]
+
+    if (onDelete) {
+      options.push({
+        label: 'Delete',
+        onClick: onDelete
+      })
+    }
+    return (
+      <div className="flex gap-3 border rounded-md px-4 py-2 text-[#5A618B] items-center justify-between">
+        <CircleCheck className="h-full mt-0.5" />
+        <div className="text-sm">{item.name} ({item.lookup_key})</div>
+        <Kebab items={options} />
+      </div>
+    )
+  }
 
   return (
     <div className="flex flex-col h-full px-4 py-3.5">
       <h1>Default Product</h1>
       <Separator className="my-3.5" />
       <div>
-        {products.length > 0 && (
-         <>
-          <div className="flex flex-col gap-3.5">
+        {selectedProducts.length > 0 && (
+          <>
             <Products products={selectedProducts} />
-            <Prices prices={selectedPrices} />
-          </div>
-          <Separator className="my-3.5" />
-         </>
+            <Separator className="my-3.5" />
+          </>
 
         )}
         <Button
@@ -109,15 +146,19 @@ export const PageProducts = () => {
       <AddNewProductDialog
         open={isAddNewProductDialogOpen}
         onOpenChange={setIsAddNewProductDialogOpen}
-        onSellExistingProductClick={() => { setIsSlotFormOpen(true) }}
-        onSellNewProductClick={() => { setIsProductFormOpen(true) }} />
+        onSellExistingProductClick={() => { setIsAddNewProductDialogOpen(false); setAddExistingProductDialogProps({ open: true, tab: 'product' }) }}
+        onSellNewProductClick={() => { setIsAddNewProductDialogOpen(false); setIsProductFormOpen(true) }} />
 
-      <AddProductForm
-                open={isSlotFormOpen}
-                onOpenChange={setIsSlotFormOpen}
-                offerId={1}
-                products={products}
-                />
+      {addExistingProductDialogProps.open && (
+        <AddProductForm
+          open
+          onOpenChange={() => { setAddExistingProductDialogProps({ open: false, tab: 'product' }); setSelectedProduct(undefined) }}
+          offerId={offer.id}
+          products={products}
+          initialProduct={selectedProduct}
+          tab={addExistingProductDialogProps.tab as 'product' | 'pricing'}
+        />
+      )}
       <ProductForm open={isProductFormOpen} onOpenChange={setIsProductFormOpen} />
     </div>
   );

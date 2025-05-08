@@ -4,15 +4,14 @@ declare(strict_types=1);
 
 namespace App\Actions\Price;
 
-use App\Http\Requests\Price\StoreRequest;
 use App\Models\Catalog\Price;
 use App\Models\Catalog\Product;
 use App\Models\Organization;
-use App\Modules\Integrations\Contracts\HasPrices;
+use Illuminate\Http\Request;
 
 class StorePrice
 {
-    public function __invoke(Product $product, StoreRequest $request): Price
+    public function __invoke(Product $product, Request $request)
     {
         // Validation ensures product belongs to the current organization
         $validated = $request->validated();
@@ -44,7 +43,5 @@ class StorePrice
 
         //     $price->save();
         // }
-
-        return $price;
     }
 }

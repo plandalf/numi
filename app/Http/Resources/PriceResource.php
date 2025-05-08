@@ -40,6 +40,7 @@ class PriceResource extends JsonResource
             'archived_at' => $this->archived_at?->toISOString(),
             'created_at' => $this->created_at?->toISOString(),
             'updated_at' => $this->updated_at?->toISOString(),
+            'product' => new ProductResource($this->whenLoaded('product')),
         ];
     }
 }

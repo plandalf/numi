@@ -61,10 +61,7 @@ class ImportStripePriceAction
         // Prepare the price data
         $priceData = [
             'product_id' => $product->id,
-            'organization_id' => $product->organization_id,
-            'integration_id' => $this->stripeClientWrapper->integration->id,
             'gateway_provider' => IntegrationType::STRIPE,
-            'gateway_price_id' => $stripePrice->id,
             'lookup_key' => $stripePrice->lookup_key ?? $stripePrice->id,
             'name' => $stripePrice->nickname ?? $product->name,
             'scope' => 'list', // Default to list for imported prices
@@ -73,6 +70,7 @@ class ImportStripePriceAction
             'currency' => new Currency($stripePrice->currency),
             'is_active' => $stripePrice->active,
             'properties' => $this->extractProperties($stripePrice),
+            'deleted_at' => null
         ];
 
         // Add recurring fields if applicable
@@ -81,15 +79,25 @@ class ImportStripePriceAction
             $priceData['recurring_interval_count'] = $stripePrice->recurring->interval_count;
         }
 
-        // Use updateOrCreate to either update an existing price or create a new one
-        return Price::updateOrCreate(
-            [
-                'organization_id' => $product->organization_id,
-                'integration_id' => $this->stripeClientWrapper->integration->id,
-                'gateway_price_id' => $stripePrice->id,
-            ],
-            $priceData
-        );
+        // Check if a record with this unique constraint already exists
+        $existingPrice = Price::withTrashed()->where([
+            'organization_id' => $product->organization_id,
+            'integration_id' => $this->stripeClientWrapper->integration->id,
+            'gateway_price_id' => $stripePrice->id
+        ])->first();
+
+        if ($existingPrice) {
+            // Update existing record
+            $existingPrice->update($priceData);
+            return $existingPrice;
+        } else {
+            // Create new record
+            $priceData['organization_id'] = $product->organization_id;
+            $priceData['integration_id'] = $this->stripeClientWrapper->integration->id;
+            $priceData['gateway_price_id'] = $stripePrice->id;
+
+            return Price::create($priceData);
+        }
     }
 
     /**

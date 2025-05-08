@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Actions\Price\DestroyPrice;
 use App\Actions\Price\StorePrice;
 use App\Actions\Price\UpdatePrice;
+use App\Http\Requests\Price\ImportRequest;
 use App\Http\Requests\Price\StoreRequest as PriceStoreRequest;
 use App\Http\Requests\Price\UpdateRequest as PriceUpdateRequest;
 use App\Models\Catalog\Price;
@@ -25,6 +26,14 @@ class PriceController extends Controller
         // Redirect back to the product show page
         return redirect()->route('products.show', [$product])
             ->with('success', 'Price created successfully.'); // Optional success message
+    }
+
+    public function import(ImportRequest $request, Product $product, StorePrice $storePrice): RedirectResponse
+    {
+        $price = $storePrice($product, $request);
+
+        return redirect()->route('products.show', [$product])
+            ->with('success', 'Price imported successfully.'); // Optional success message
     }
 
     /**

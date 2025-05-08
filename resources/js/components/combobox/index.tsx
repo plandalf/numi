@@ -41,7 +41,7 @@ export function Combobox({
   className,
   onSelect,
   selected: defaultSelected = "",
-  hideSearch = false,
+  hideSearch = true,
   required = false,
   multiple = false,
   ...props
