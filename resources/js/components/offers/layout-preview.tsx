@@ -1,5 +1,6 @@
 import { type Page, type ViewSection, type Block } from '@/types/offer';
-import { cn, isBlockVisible } from '@/lib/utils';
+import { isBlockVisible } from '@/lib/blocks';
+import { cn } from '@/lib/utils';
 import React, { useMemo, useRef } from 'react';
 import { CSS } from '@dnd-kit/utilities';
 import { useContext } from 'react';
@@ -12,6 +13,8 @@ import { useDroppable } from '@dnd-kit/core';
 import cx from 'classnames';
 import { rectSortingStrategy, SortableContext, useSortable } from '@dnd-kit/sortable';
 import { useEditor } from '@/contexts/offer/editor-context';
+import { hasVisibilityCondition as hasVisibilityConditionFn } from "@/lib/blocks";
+import { Badge } from '../ui/badge';
 
 // Local interfaces that match the actual structure
 interface LocalPageView extends OfferPageView {
@@ -347,12 +350,10 @@ function BlockRenderer({ block, children }: {
   const isVisible = useMemo(() => {
     const visibility = block.appearance?.visibility;
 
-   return isBlockVisible({ fields: globalStateContext.fields }, visibility?.fn);
+   return isBlockVisible({ fields: globalStateContext.fields }, visibility);
   }, [block, globalStateContext]);
 
-  if(!isVisible) {
-    return null;
-  }
+  const hasVisibilityCondition = useMemo(() => hasVisibilityConditionFn(block.appearance?.visibility), [block.appearance?.visibility]);
 
   return (
     <div
@@ -370,8 +371,13 @@ function BlockRenderer({ block, children }: {
         <div className={cx({
           "hidden group-hover:block absolute text-xs bg-gray-100 border font-semibold right-0 top-0": true,
           "!block": selectedBlockId === block.id,
+          "opacity-50": !isVisible,
         })}>{block.id}</div>
         {children(blockContext)}
+        {hasVisibilityCondition && <Badge variant="outline" className={cn("absolute top-0 right-0", {
+          "bg-green-500": isVisible,
+          "bg-red-500": !isVisible,
+        })}>Conditional: {isVisible ? 'visible' : 'hidden'}</Badge>}
       </BlockContext.Provider>
     </div>
   );

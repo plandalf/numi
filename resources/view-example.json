@@ -54,20 +54,21 @@
                 "content": {
                     "blocks": [
                         {
-                            "id": "option_selector",
+                            "id": "plan-toggle",
                             "type": "option_selector",
                             "content": {
-                                "options": [
+                                "toggleType": "tab",
+                                "defaultTab": "monthly-1",
+                                "items": [
                                     {
-                                        "label": "yearly",
-                                        "value": "Yearly"
+                                        "key": "monthly-1",
+                                        "label": "Single issue"
                                     },
                                     {
-                                        "label": "monthly",
-                                        "value": "Monthly"
+                                        "key": "4-issues",
+                                        "label": "4 issues"
                                     }
-                                ],
-                                "value": "yearly"
+                                ]
                             },
                             "object": "field"
                         },
@@ -78,11 +79,6 @@
                                 "value": false,
                                 "appearance": "switch"
                             },
-                            "appearance": {
-                                "visibility": {
-                                    "fn": "{{fields.option_selector.value === 'yearly'}}"
-                                }
-                            },
                             "object": "field"
                         },
                         {
@@ -90,11 +86,6 @@
                             "type": "text",
                             "content": {
                                 "value": "You'll be charged $100 for the first month and then $100 per month thereafter"
-                            },
-                            "appearance": {
-                                "visibility": {
-                                    "fn": "{{fields['checkbox-recurring'].value == true}}"
-                                }
                             },
                             "object": "block"
                         },

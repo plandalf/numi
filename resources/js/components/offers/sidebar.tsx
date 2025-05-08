@@ -16,6 +16,7 @@ import PageTheme from './page-theme';
 import { ScrollArea } from '../ui/scroll-area';
 import { PageLayers } from './page-layers';
 import { PageElements } from './page-elements';
+import PageProducts from './page-products';
 
 type SidebarTab = 'elements' | 'products' | 'themes' | 'settings' | 'layers';
 
@@ -80,12 +81,7 @@ export function Sidebar() {
         );
       case 'products':
         return (
-          <div className="p-4">
-            <h3 className="text-md font-medium">Products</h3>
-            <p className="text-xs text-muted-foreground mt-2">
-              Coming soon - Add products to your offer.
-            </p>
-          </div>
+          <PageProducts />
         );
       case 'settings':
         return (

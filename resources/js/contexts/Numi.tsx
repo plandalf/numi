@@ -1,8 +1,9 @@
 // Numi hooks
 
-import { BlockConfig, BlockContextType } from "@/types/blocks";
-import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { BlockConfig, BlockContextType, HookUsage } from "@/types/blocks";
+import { createContext, useContext, useEffect, useState, useRef, useCallback, useMemo } from "react";
 import get from "lodash/get";
+import debounce from "lodash/debounce";
 import { Theme } from "@/types/theme";
 import { CheckoutState, GlobalStateContext } from '@/pages/checkout-main';
 
@@ -11,17 +12,17 @@ export const BlockContext = createContext<BlockContextType>({
   blockConfig: {} as BlockConfig,
   globalState: {
     fieldStates: {},
-    updateFieldState: () => {},
+    updateFieldState: () => { },
     getFieldState: () => undefined,
-    registerHook: () => {},
+    registerHook: () => { },
     hookUsage: {}
   },
 
 
-  registerField: () => {},
+  registerField: () => { },
   getFieldValue: () => undefined,
-  setFieldValue: () => {},
-  registerHook: () => {},
+  setFieldValue: () => { },
+  registerHook: () => { },
   theme: undefined
 });
 
@@ -63,15 +64,17 @@ export const Appearance = {
     defaultValue: 'left'
   }),
 
-  backgroundColor: (options: string[] = ['primary', 'secondary', 'success', 'danger', 'warning', 'info', 'light', 'dark']) => ({
-    type: 'backgroundColor',
+  backgroundColor: (type: "backgroundColor" | "activeBackgroundColor" | "inactiveBackgroundColor" = "backgroundColor", label: string = 'Background Color', options: string[] = ['primary', 'secondary', 'success', 'danger', 'warning', 'info', 'light', 'dark']) => ({
+    type,
     options,
-    defaultValue: 'primary'
+    defaultValue: 'primary',
+    label
   }),
   textColor: (options: string[] = []) => ({
     type: 'textColor',
     options,
-    defaultValue: 'primary'
+    defaultValue: 'primary',
+    label: 'Text Color'
   }),
   fontWeight: (options: string[] = ['normal', 'semibold', 'bold']) => ({
     type: 'fontWeight',
@@ -90,7 +93,24 @@ export const Appearance = {
     type: 'hidden',
     defaultValue: false,
   }),
+  visibility: () => ({
+    type: 'visibility',
+    defaultValue: {
+      conditional: []
+    }
+  }),
 }
+
+export const Conditions = {
+  onClickEvent: () => ({
+    type: 'onClickEvent',
+  }),
+
+  visibility: () => ({
+    type: 'visibility',
+  }),
+}
+
 
 // Add these interfaces before the Numi class
 interface CheckoutOptions {
@@ -233,7 +253,7 @@ class Numi {
             defaultValue: prop.defaultValue,
             options: prop.options,
             inspector: 'select',
-            label: prop.type.charAt(0).toUpperCase() + prop.type.slice(1)
+            label: prop.label || prop.type.charAt(0).toUpperCase() + prop.type.slice(1)
           });
         }
       });
@@ -261,31 +281,58 @@ class Numi {
 
   static useStateEnumeration(props: {
     name: string;
-    initialValue: string;
+    initialValue?: string;
     options: string[];
-    labels: Record<string, string>;
+    labels?: Record<string, string>;
     inspector: string;
     label: string;
     icons?: Record<string, React.ReactNode>;
-  }): [any] {
+  }): [any, (newValue: any) => void, (hook: Partial<HookUsage>) => void] {
     const blockContext = useContext(BlockContext);
+    const [hook, setHook] = useState<HookUsage>({
+      name: props.name,
+      type: 'enumeration',
+      defaultValue: props.initialValue,
+      options: props.options,
+      labels: props.labels,
+      icons: props.icons,
+      inspector: props.inspector,
+      label: props.label,
+    });
 
+    // Create a ref to hold the debounced function
+    const debouncedUpdateRef = useRef<ReturnType<typeof debounce> | null>(null);
+
+    // Initialize the debounced function on first render
     useEffect(() => {
-      blockContext.registerHook({
-        name: props.name,
-        type: 'enumeration',
-        defaultValue: props.initialValue,
-        options: props.options,
-        labels: props.labels,
-        icons: props.icons,
-        inspector: props.inspector,
-        label: props.label,
-      });
+      debouncedUpdateRef.current = debounce((newHook: Partial<HookUsage>) => {
+        setHook(prevHook => ({...prevHook, ...newHook}));
+      }, 300); // 300ms delay
+
+      // Cleanup function to cancel pending debounced calls
+      return () => {
+        if (debouncedUpdateRef.current) {
+          debouncedUpdateRef.current.cancel();
+        }
+      };
     }, []);
 
-    const value = get(blockContext.blockConfig, `content.${props.name}`) ?? props.initialValue;
+    useEffect(() => {
+      blockContext.registerHook(hook);
+    }, [hook]);
 
-    return [value];
+    const value = get(blockContext.blockConfig, `content.${props.name}`) ?? props.initialValue;
+    const setValue = (newValue: any) => {
+      blockContext.setFieldValue(props.name, newValue);
+    };
+
+    const updateHook = useCallback((newHook: Partial<HookUsage>) => {
+      if (debouncedUpdateRef.current) {
+        debouncedUpdateRef.current(newHook);
+      }
+    }, []);
+
+    return [value, setValue, updateHook];
   }
 
   static useStateBoolean(props: { name: string; defaultValue: boolean; label?: string; inspector?: string }): [boolean, (value: boolean) => void] {
@@ -371,6 +418,56 @@ class Numi {
     return [value, setValue, format];
   }
 
+  static useStateNumber(props: {
+    name: string;
+    defaultValue: number;
+    min?: number;
+    max?: number;
+    label?: string;
+    inspector?: string;
+  }): [number, (value: number) => void] {
+    const blockContext = useContext(BlockContext);
+
+    useEffect(() => {
+      blockContext.registerHook({
+        name: props.name,
+        type: 'number',
+        defaultValue: props.defaultValue,
+        min: props.min,
+        max: props.max,
+        inspector: props.inspector ?? 'slider',
+        label: props.label,
+      });
+
+      const existingState = blockContext.globalState.getFieldState(
+        blockContext.blockId,
+        props.name
+      );
+
+      if (!existingState) {
+        // Use block config value as initial value if it exists
+        const initialValue = blockContext.blockConfig.content[props.name] ?? props.defaultValue;
+        blockContext.globalState.updateFieldState(
+          blockContext.blockId,
+          props.name,
+          initialValue
+        );
+      }
+    }, [blockContext.blockId, props.name]);
+
+    // For editor-editable values (not hidden), prioritize block config
+    // For runtime-editable values (hidden), prioritize field state
+    const value = props.inspector !== 'hidden'
+      ? Number(get(blockContext.blockConfig, `content.${props.name}`)) ?? Number(blockContext.getFieldValue(props.name)) ?? props.defaultValue
+      : Number(blockContext.getFieldValue(props.name)) ?? Number(get(blockContext.blockConfig, `content.${props.name}`)) ?? props.defaultValue;
+
+    const setValue = (newValue: number) => {
+      blockContext.setFieldValue(props.name, newValue);
+    };
+
+    return [value, setValue];
+  }
+
   static useRuntimeString(props: { name: string; defaultValue: string }): [string, (value: string) => void] {
     const blockContext = useContext(BlockContext);
 
@@ -436,8 +533,8 @@ const NumiEditorContext = createContext<{
 }>({
   blocks: [],
   selectedBlock: null,
-  setSelectedBlock: () => {},
-  updateBlock: () => {},
+  setSelectedBlock: () => { },
+  updateBlock: () => { },
 });
 
 export default Numi;

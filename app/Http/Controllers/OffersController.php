@@ -16,6 +16,7 @@ use App\Http\Requests\Offer\OfferUpdateRequest;
 use App\Http\Resources\OfferResource;
 use App\Http\Resources\ProductResource;
 use App\Http\Resources\TemplateResource;
+use App\Http\Resources\SlotResource;
 use App\Http\Resources\ThemeResource;
 use App\Models\Catalog\Product;
 use App\Models\Organization;
@@ -80,8 +81,15 @@ class OffersController extends Controller
             $request->user()->current_organization_id
         );
 
+        $products = Product::query()
+            ->where('organization_id', $offer->organization_id)
+            ->with(['prices' => function ($query) {
+                $query->active();
+            }])
+            ->get();
+
         // Load the offer with its theme and slots
-        $offer->load(['slots', 'theme', 'screenshot']);
+        $offer->load(['slots.defaultPrice.product', 'theme', 'screenshot']);
 
         return Inertia::render('offers/edit', [
             'offer' => new OfferResource($offer),
@@ -91,6 +99,7 @@ class OffersController extends Controller
             'globalThemes' => ThemeResource::collection($globalThemes),
             'fonts' => FontElement::values(),
             'weights' => WeightElement::values(),
+            'products' => ProductResource::collection($products),
         ]);
     }
 
@@ -101,7 +110,7 @@ class OffersController extends Controller
         if($request->validated('name')) {
             $forUpdate['name'] = $request->validated('name');
         }
-        
+
         if($request->validated('view')) {
             $forUpdate['view'] = $request->validated('view');
         }

@@ -1,3 +1,4 @@
+import { RuleGroup } from "@/components/editor/condition-visibility-editor";
 import type { Theme } from "@/types/theme";
 
 // Types
@@ -8,6 +9,7 @@ export interface BlockConfig {
     content: Record<string, any>;
     interaction?: Record<string, any>;
     appearance?: Record<string, any>;
+    conditions?: Record<string, any>;
     validation?: Record<string, any>;
 }
 
@@ -22,13 +24,16 @@ export interface FieldState {
 
 export interface HookUsage {
     name: string;
-    type: 'boolean' | 'string' | 'validation' | 'interaction' | 'enumeration' | 'jsonSchema' | 'appearance' | 'eventCallback';
+    type: 'boolean' | 'string' | 'validation' | 'interaction' | 'enumeration' | 'jsonSchema' | 'appearance' | 'eventCallback' | 'number' | 'conditions';
     defaultValue: any;
     inspector?: string;
     schema?: any; // For jsonSchema type
     options?: string[]; // For enumeration type
     labels?: Record<string, string>; // For enumeration type labels
     label?: string; // For display label
+    min?: number; // For number type
+    max?: number; // For number type
+    items?: any[];
   }
 
 export interface GlobalState {
@@ -55,7 +60,7 @@ export interface BlockContextType {
 
 // Add after the Editor component but before the Welcome component
 // JSONSchema Editor Components
-export type JsonSchemaType = 'string' | 'number' | 'boolean' | 'object' | 'array' | 'null' | 'color';
+export type JsonSchemaType = 'string' | 'number' | 'boolean' | 'object' | 'array' | 'null' | 'color' | 'appearance';
 
 export interface JsonSchemaProperty {
   type: JsonSchemaType | JsonSchemaType[];
@@ -69,6 +74,7 @@ export interface JsonSchemaProperty {
   };
   $ref?: string;
   required?: string[];
+  visibility?: boolean | RuleGroup;
 }
 
 export interface JsonSchema {
@@ -81,4 +87,5 @@ export interface JsonSchema {
   meta?: {
     editor?: string;
   };
+  visibility?: boolean | RuleGroup;
 }

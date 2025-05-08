@@ -6,6 +6,8 @@ import { StringEditor } from "./string-editor";
 import { BooleanEditor } from "./boolean-editor";
 import { ColorPickerEditor } from "./color-picker-editor";
 import React from "react";
+import { ConditionVisibilityEditor } from "./condition-visibility-editor";
+import { ConditionOnClickEditor } from "./condition-onclick-editor";
 
 export function JSONSchemaEditor({
   schema,
@@ -193,6 +195,34 @@ export function JSONSchemaEditor({
     );
   }
 
+  if('meta' in schema && schema.meta?.editor === 'appearanceEditor') {
+    return (
+      <div className="mb-6">
+      <h3 className="mb-2 font-semibold">Conditions</h3>
+      <div className="flex items-center gap-2">
+      {/* {schema['onClickEvent'] && (
+        <ConditionOnClickEditor
+          label="On Click Event"
+          value={value?.['onClickEvent'] ?? []}
+          onChange={() => void 0}
+        />
+      )} */}
+
+      {schema['visibility'] && (
+        <ConditionVisibilityEditor
+          value={value?.['visibility']?.['conditional'] ?? []}
+          onChange={(value) => onChange({
+            ...value,
+            visibility: {
+              conditional: value
+            }
+          })}
+        />
+      )}
+      </div>
+    </div>
+    );
+  }
   // Fallback for unsupported types
   return (
     <div className="p-2 text-red-500 text-sm">

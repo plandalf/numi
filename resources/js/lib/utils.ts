@@ -1,7 +1,6 @@
 import { type ClassValue, clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { format } from 'date-fns';
-import { template, templateSettings} from 'lodash';
 
 export function cn(...inputs: ClassValue[]) {
     return twMerge(clsx(inputs));
@@ -61,22 +60,3 @@ export function getDaySuffix(day: number): string {
         default: return 'th';
     }
 }
-
-export const isBlockVisible = (context: Record<string, unknown>, fn?: string) => {
-  if (!fn) {
-    return true;
-  }
-  try {
-    templateSettings.interpolate = /{{([\s\S]+?)}}/g;
-    const compile = template(fn);
-    const result = compile(context);
-
-    console.log('Visibility evaluation:', { fn, context, result });
-
-    return result === 'true';
-  } catch (e) {
-    //technically not an error, but a missing field
-    console.log('Visibility evaluation error:', { fn, context }, e);
-    return false;
-  }
-};
