@@ -14,11 +14,9 @@ import ThemePreviewCard from './theme-preview-card';
 import SearchBar from './search-bar';
 import { router, usePage } from '@inertiajs/react';
 import { EditProps } from '@/pages/offers/edit';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { useEditor } from '@/contexts/offer/editor-context';
 
-
-const colorFields = [
+export const colorFields = [
   { key: 'primary_color', label: 'Primary' },
   { key: 'secondary_color', label: 'Secondary' },
   { key: 'canvas_color', label: 'Canvas' },
@@ -35,7 +33,14 @@ const colorFields = [
   { key: 'highlight_color', label: 'Highlight' },
 ];
 
-const typographyFields = [
+export const getThemeColors = (theme: Theme) => {
+  return colorFields.reduce((acc, f) => ({
+    ...acc,
+    [f.label]: theme?.[f.key as keyof Theme] as string ?? ''
+  }), {});
+};
+
+export const typographyFields = [
   { key: 'main_font', label: 'Main Font', type: 'font' },
   { key: 'mono_font', label: 'Mono Font', type: 'font' },
   { key: 'h1_typography', label: 'Heading 1', type: 'typography' },
@@ -48,7 +53,7 @@ const typographyFields = [
   { key: 'body_typography', label: 'Body', type: 'typography' },
 ];
 
-const componentFields = [
+export const componentFields = [
   { key: 'border_radius', label: 'Border Radius', type: 'border' },
   { key: 'shadow_sm', label: 'Shadow (Small)', type: 'shadow' },
   { key: 'shadow_md', label: 'Shadow (Medium)', type: 'shadow' },
@@ -202,6 +207,7 @@ export const PageTheme: React.FC = () => {
                       label={f.label}
                       value={theme?.[f.key as keyof Theme] as string ?? ''}
                       onChange={v => handleThemeChange(f.key as keyof Theme, v)}
+                      type='advanced'
                     />
                   ))}
                 </AccordionContent>
