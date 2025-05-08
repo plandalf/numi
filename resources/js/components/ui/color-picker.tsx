@@ -2,15 +2,18 @@ import React from 'react';
 import { Slider } from './slider';
 import { cn } from '@/lib/utils';
 import { Separator } from './separator';
+import { AdvancedColorPicker } from './color-picker-advanced';
 
-interface ColorPickerProps {
+export interface ColorPickerProps {
   value: string; // #RRGGBB or #RRGGBBAA
   onChange: (hexWithAlpha: string) => void;
   className?: string;
+  type?: 'simple' | 'advanced';
+  themeColors?: Record<string, string>;
 }
 
 // Utility: parse hex to {rgb, alpha}
-function parseHexAlpha(hex: string) {
+export function parseHexAlpha(hex: string) {
   let rgb = hex.slice(0, 7);
   let alpha = 255;
   if (hex.length === 9) {
@@ -25,7 +28,11 @@ function combineHexAlpha(rgb: string, alpha: number) {
   return rgb + a;
 }
 
-export const ColorPicker: React.FC<ColorPickerProps> = ({ value, onChange, className }) => {
+export const ColorPicker: React.FC<ColorPickerProps> = (props) => {
+  if (props.type === 'advanced') {
+    return <AdvancedColorPicker {...props} />;
+  }
+  const { value, onChange, className, type = 'simple' } = props;
   const { rgb, alpha } = parseHexAlpha(value);
   const percent = Math.round((alpha / 255) * 100);
 
@@ -38,7 +45,7 @@ export const ColorPicker: React.FC<ColorPickerProps> = ({ value, onChange, class
           onChange={e => onChange(combineHexAlpha(e.target.value, alpha))}
           className="w-8 h-8 rounded-xl cursor-pointer border-none"
         />
-        <span className="text-xs w-14 text-left">{rgb}</span>
+        <span className="text-xs w-14 text-left">{rgb.toUpperCase()}</span>
       </div>
       <Separator orientation="vertical" className="bg-gray-300/50 !h-8" />
       <div className="flex-1 min-w-[100px]">
@@ -54,4 +61,6 @@ export const ColorPicker: React.FC<ColorPickerProps> = ({ value, onChange, class
       <span className="w-10 text-xs text-left">{percent}%</span>
     </div>
   );
-}; 
+};
+
+export { AdvancedColorPicker }; 

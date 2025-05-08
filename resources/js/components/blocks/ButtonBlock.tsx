@@ -3,6 +3,7 @@ import Numi, { Appearance } from "@/contexts/Numi";
 import cx from "classnames";
 import { useCheckoutState } from "@/pages/checkout-main";
 import { cn } from "@/lib/utils";
+import { useMemo } from "react";
 
 // Does Submitting of field forms.
 function ButtonBlockComponent({ context }: { context: BlockContextType }) {
@@ -42,39 +43,45 @@ function ButtonBlockComponent({ context }: { context: BlockContextType }) {
     name: 'click',
   });
 
+  const buttonStyles = useMemo(() => ({
+    backgroundColor: appearance.backgroundColor || 'white',
+    color: appearance.textColor || 'black',
+    borderColor: `${appearance.borderColor || '#ccc'}`,
+  }), [appearance.backgroundColor, appearance.textColor, appearance.borderColor]);
+
+  const buttonClasses = useMemo(() => cx({
+    "border border-gray-300 rounded-md p-2": true,
+    "hover:cursor-pointer hover:brightness-90 active:brightness-85": !isSubmitting,
+    "w-full": appearance.alignment === 'expand',
+    "font-semibold": appearance.fontWeight === 'semibold',
+    "font-bold": appearance.fontWeight === 'bold',
+    "opacity-50 cursor-not-allowed": isSubmitting,
+    "border-none": appearance.border === 'none',
+    "border-[1px]": appearance.border === 'xs',
+    "border-[4px]": appearance.border === 'sm',
+    "border-[8px]": appearance.border === 'md',
+    "border-[12px]": appearance.border === 'lg',
+    "border-[16px]": appearance.border === 'xl',
+  }), [appearance.alignment, appearance.fontWeight, appearance.border, isSubmitting]);
+
+  const containerClasses = useMemo(() => cn("space-y-2 flex", {
+    "justify-start": appearance.alignment === 'left',
+    "justify-center": appearance.alignment === 'center',
+    "justify-end": appearance.alignment === 'right',
+    "justify-stretch": appearance.alignment === 'expand',
+  }), [appearance.alignment]);
+
   if (appearance.hidden) {
     return null;
   }
 
   return (
-    <div className={cn("space-y-2 flex", {
-      "justify-start": appearance.alignment === 'left',
-      "justify-center": appearance.alignment === 'center',
-      "justify-end": appearance.alignment === 'right',
-      "justify-stretch": appearance.alignment === 'expand',
-    })}>
+    <div className={containerClasses}>
       <button
         type={type}
         disabled={type === 'submit' && isSubmitting}
-        className={cx({
-          "border border-gray-300 rounded-md p-2": true,
-          "hover:cursor-pointer hover:brightness-90 active:brightness-85": !isSubmitting,
-          "w-full": appearance.alignment === 'expand',
-          "font-semibold": appearance.fontWeight === 'semibold',
-          "font-bold": appearance.fontWeight === 'bold',
-          "opacity-50 cursor-not-allowed": isSubmitting,
-          "border-none": appearance.border === 'none',
-          "border-[1px]": appearance.border === 'xs',
-          "border-[4px]": appearance.border === 'sm',
-          "border-[8px]": appearance.border === 'md',
-          "border-[12px]": appearance.border === 'lg',
-          "border-[16px]": appearance.border === 'xl',
-        })}
-        style={{
-          backgroundColor: appearance.backgroundColor || 'white',
-          color: appearance.textColor || 'black',
-          borderColor: `${appearance.borderColor || '#ccc'}`,
-        }}
+        className={buttonClasses}
+        style={buttonStyles}
         onClick={onClick}
       >
         {type === 'submit' && isSubmitting ? (

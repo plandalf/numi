@@ -1,7 +1,7 @@
 // Numi hooks
 
 import { BlockConfig, BlockContextType, HookUsage } from "@/types/blocks";
-import { createContext, useContext, useEffect, useState, useRef, useCallback } from "react";
+import { createContext, useContext, useEffect, useState, useRef, useCallback, useMemo } from "react";
 import get from "lodash/get";
 import debounce from "lodash/debounce";
 import { Theme } from "@/types/theme";
@@ -236,20 +236,15 @@ class Numi {
 
   static useAppearance(appearanceProps: any[]): Record<string, any> {
     const blockContext = useContext(BlockContext);
-    const [appearance, setAppearance] = useState<Record<string, any>>({});
 
-    useEffect(() => {
+    return useMemo(() => {
+      const appearance: Record<string, any> = {};
+      
       // Register each appearance property
       appearanceProps.forEach(prop => {
         if (prop.type) {
           // Get the value from block config or use default
-          const value = blockContext.blockConfig.appearance?.[prop.type] || prop.defaultValue;
-
-          // Update the appearance state
-          setAppearance(prev => ({
-            ...prev,
-            [prop.type]: value
-          }));
+          appearance[prop.type] = blockContext.blockConfig.appearance?.[prop.type] || prop.defaultValue;
 
           // Register the hook
           blockContext.registerHook({
@@ -262,10 +257,9 @@ class Numi {
           });
         }
       });
-    }, []);
-    // }, [blockContext.blockId, appearanceProps]);
 
-    return appearance;
+      return appearance;
+    }, [blockContext.blockConfig.appearance, blockContext.blockId]);
   }
 
   static useInteraction(): { isDisabled: any; } {

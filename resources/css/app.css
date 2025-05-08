@@ -168,3 +168,33 @@
         @apply bg-background text-foreground;
     }
 }
+
+
+.numi-color-picker .react-colorful {
+    width: 100%;
+    min-height: 300px;
+    gap: 12px;
+}
+
+.numi-color-picker .react-colorful__saturation {
+    border-radius: 5px;
+    margin: 0;
+}
+
+.numi-color-picker .react-colorful__hue {
+    order: 1;
+  }
+
+.numi-color-picker .react-colorful__hue,
+.numi-color-picker .react-colorful__alpha {
+    height: 12px;
+    border-radius: 5px;
+}
+
+.numi-color-picker .react-colorful__hue-pointer,
+.numi-color-picker .react-colorful__alpha-pointer, 
+.numi-color-picker .react-colorful__saturation-pointer {
+    width: 12px;
+    height: 12px;
+    border-width: 3.5px;
+}

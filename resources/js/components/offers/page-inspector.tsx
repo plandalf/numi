@@ -14,8 +14,14 @@ import { AlignmentPickerEditor } from '@/components/editor/alignment-picker-edit
 import { NumberEditor } from '../editor/number-editor';
 import { ConditionOnClickEditor } from '../editor/condition-onclick-editor';
 import { ConditionVisibilityEditor } from '../editor/condition-visibility-editor';
+import { useEditor } from '@/contexts/offer/editor-context';
+import { getThemeColors } from './page-theme';
 
 export const AppearanceEditor = ({ globalState, block, onUpdate }: { globalState: GlobalState | null, block: Block, onUpdate: (block: Block) => void }) => {
+  
+  const { data } = useEditor();
+  const themeColors = getThemeColors(data.theme);
+  
   if (!globalState) return null;
   return (
     <div className="space-y-4">
@@ -50,6 +56,8 @@ export const AppearanceEditor = ({ globalState, block, onUpdate }: { globalState
                       [hook.name]: color,
                     },
                   })}
+                  type='advanced'
+                  themeColors={themeColors}
                 />
               );
             case 'fontWeight':
@@ -81,6 +89,8 @@ export const AppearanceEditor = ({ globalState, block, onUpdate }: { globalState
                   label='Border Color'
                   value={block.appearance?.borderColor || '#000'}
                   onChange={value => onUpdate({ ...block, appearance: { ...block.appearance, borderColor: value } })}
+                  type='advanced'
+                  themeColors={themeColors}
                 />
               );
             case 'hidden':
@@ -147,6 +157,7 @@ const ValidationSection = ({ block, onUpdate }: { block: Block, onUpdate: (block
     });
   };
 
+  const themeColors = getThemeColors(data.theme);
 
   return (
     <>
@@ -195,7 +206,8 @@ export const Inspector = ({
   onSave: () => void;
 }) => {
   const globalState = useContext(GlobalStateContext);
-
+  const { data } = useEditor();
+  const themeColors = getThemeColors(data.theme);
   // Update local state when incoming block changes
   // useEffect(() => {
   //   if (!block) return;
@@ -278,6 +290,8 @@ export const Inspector = ({
                       label={hook.label || hook.name}
                       value={block.content?.[hook.name] ?? hook.defaultValue}
                       onChange={value => handleContentChange(hook.name, value)}
+                      type='advanced'
+                      themeColors={themeColors}
                     />
                   ) : hook.type === 'string' ? (
                     <StringEditor
@@ -307,6 +321,7 @@ export const Inspector = ({
                       schema={hook.schema}
                       value={block.content?.[hook.name] || []}
                       onChange={newValue => handleContentChange(hook.name, newValue)}
+                      themeColors={themeColors}
                     />
                   ) : hook.type === 'appearance' ? (
                     <AppearanceEditor globalState={globalState} block={block} onUpdate={onUpdate} />

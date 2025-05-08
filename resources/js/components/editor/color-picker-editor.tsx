@@ -1,16 +1,14 @@
 import React from 'react';
 import { Label } from '../ui/label';
-import { ColorPicker } from '../ui/color-picker';
+import { ColorPicker, ColorPickerProps } from '../ui/color-picker';
 
-interface ColorPickerEditorProps {
+interface ColorPickerEditorProps extends ColorPickerProps {
   label: string;
-  value: string;
-  onChange: (color: string) => void;
 }
 
-export const ColorPickerEditor: React.FC<ColorPickerEditorProps> = ({ label, value, onChange }) => (
+export const ColorPickerEditor: React.FC<ColorPickerEditorProps> = ({ label, value, onChange, type, themeColors }) => (
   <div className="flex flex-col gap-3">
     <Label className="text-sm capitalize">{label}</Label>
-    <ColorPicker value={value} onChange={onChange} />
+    <ColorPicker value={value} onChange={onChange} type={type} themeColors={themeColors} />
   </div>
 ); 

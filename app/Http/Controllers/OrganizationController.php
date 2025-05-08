@@ -47,19 +47,17 @@ class OrganizationController extends Controller
             'name' => ['required', 'string', 'max:255'],
         ]);
 
-        return DB::transaction(function () use ($validated, $request) {
-            $organization = Organization::create([
-                ...$validated,
-                'trial_ends_at' => now()->addDays(
-                    (int) config('cashier.trial_days')
-                ),
-            ]);
+        $organization = Organization::create([
+            ...$validated,
+            'trial_ends_at' => now()->addDays(
+                (int) config('cashier.trial_days')
+            ),
+        ]);
 
-            $organization->users()->attach($request->user());
-            $request->user()->switchOrganization($organization);
+        $organization->users()->attach($request->user());
+        $request->user()->switchOrganization($organization);
 
-            return redirect()->route('dashboard');
-        });
+        return redirect()->route('dashboard');
     }
 
     /**
@@ -165,7 +163,7 @@ class OrganizationController extends Controller
 
         $user->switchOrganization($organization);
 
-        return redirect()->back();
+        return redirect()->route('dashboard');
     }
 
     public function settings(): Response
