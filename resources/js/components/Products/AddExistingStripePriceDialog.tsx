@@ -32,7 +32,7 @@ export default function AddExistingStripePriceDialog({
 
     const toastId = toast.loading(`Creating prices...`);
 
-    router.post(route("products.store"), body, {
+    router.post(route("products.prices.import", { product: product.id }), body, {
       preserveScroll: true,
       onSuccess: () => {
         toast.success(`Prices created successfully`, { id: toastId });

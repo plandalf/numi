@@ -108,9 +108,6 @@ export const AppearanceEditor = ({ globalState, block, onUpdate }: { globalState
 }
 
 export const ConditionsSection = ({ globalState, block, onUpdate }: { globalState: GlobalState | null, block: Block, onUpdate: (block: Block) => void }) => {
-  if (globalState?.hookUsage[block.id].some(h => h.name === 'visibility')) {
-    console.log("albbert", block);
-  }
   return (
     <div className="mb-6">
       <h3 className="mb-2 font-semibold">Conditions</h3>

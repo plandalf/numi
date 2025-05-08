@@ -22,7 +22,7 @@ export interface Offer {
     properties: Record<string, any> | null;
     transaction_webhook_url: string | null;
     slots: OfferSlot[];
-    prices: Price[];
+    products: OfferProduct[];
     theme: Theme | null;
     screenshot: {
         id: number;
@@ -72,8 +72,13 @@ export interface Price {
     product?: Product | null;
 }
 
+export interface OfferProduct extends Product {
+    store_offer_product_id: number;
+}
+
 export interface Product {
     id: number;
+    store_offer_product_id?: number | null;
     name: string;
     lookup_key: string;
     integration_id: number;

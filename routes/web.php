@@ -179,6 +179,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         Route::resource('products', ProductsController::class);
         Route::resource('sequences', SequencesController::class);
+        Route::post('products/{product}/prices/import', [PriceController::class, 'import'])->name('products.prices.import');
         Route::resource('products.prices', PriceController::class);
 
         Route::get('/integrations/{integrationType}/callback', [IntegrationsController::class, 'callback']);
@@ -195,6 +196,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
             Route::get('settings/theme', [OffersController::class, 'settingsTheme'])->name('settings.theme');
             Route::put('theme', [OffersController::class, 'updateTheme'])->name('update.theme');
+
+            // Offer Prices routes
+            Route::post('/products', [OffersController::class, 'storeProduct'])->name('products.store');
+            Route::put('/products/{offerProduct}', [OffersController::class, 'updateProduct'])->name('products.update');
+
+            Route::delete('/product/{offerProduct}', [OffersController::class, 'destroyProduct'])->name('products.destroy');
+            Route::delete('/product/{offerProduct}/price/{priceId}', [OffersController::class, 'destroyPrice'])->name('product.prices.destroy');
 
             // Add Slot routes
             Route::post('/slots', [OffersController::class, 'storeSlot'])->name('slots.store');
