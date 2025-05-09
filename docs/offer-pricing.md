@@ -15,13 +15,20 @@ line_items[<NAME>][<ATTRIBUTE>] = <VALUE>
 
 **Note on `{{PRICE_ID}}`**: The `price` attribute of a line item stores a `{{PRICE_ID}}`. This ID can point to different types of prices, such as a one-time purchase price or a recurring subscription price. The system managing these Price IDs will handle the distinction.
 
--- required prices
+### required prices
+
+```
 line_items[primary][price]    = {{PRICE_ID}} 
 line_items[primary][quantity] = 1 
 line_items[primary][required] = true 
+```
   
--- optional prices
-All items, including those considered "optional" for the end-user, are defined in the Offer and thus initialized in the Checkout's `line_items`. Optional items have `required: false`.
+### optional prices
+
+All items, including those considered "optional" for the end-user, are defined in the Offer and thus initialized in the 
+Checkout's `line_items`. Optional items have `required: false`.
+
+```
 line_items[addon-1][price]     = {{PRICE_ID}} 
 line_items[addon-1][quantity]  = 1 
 line_items[addon-1][required]  = false
@@ -29,6 +36,7 @@ line_items[addon-1][required]  = false
 line_items[addon-2][price]     = {{PRICE_ID}} 
 line_items[addon-2][quantity]  = 1
 line_items[addon-2][required]  = false
+```
 
 
 # Initializing Checkouts
@@ -83,47 +91,46 @@ Options:
 
 # Use cases
 
-## selling a book 
+## selling a book
 
-**Offer Setup (Data Configuration):**
+### Offer Setup (Data Configuration)
 *   Define one "Offer Item":
     *   `Item Name (ID)`: `book`
     *   `Price ID`: `{{book_price}}`
     *   `Quantity`: `1`
     *   `Initially Required`: True
 
-**Initial Checkout State:**
-`line_items[book][price]    = {{book_price}}`
-`line_items[book][quantity] = 1`
-`line_items[book][required] = true`
+### Initial Checkout State
+```
+line_items[book][price]    = {{book_price}}
+line_items[book][quantity] = 1
+line_items[book][required] = true
+```
 
-**End-User Checkout UI & Interactions (Design Focus):**
+### End-User Checkout UI & Interactions (Design Focus)
 The user sees the book listed. In this simple scenario, there are typically no UI elements to change this item.
 
 
 ## selling a book and an optional pencil
 
-**Offer Setup (Data Configuration):**
-1.  "Offer Item Configuration" for the book:
+### Offer Setup (Data Configuration)
+1.  "Offer Item" for the book:
     *   `Item Name (ID)`: `book`
     *   `Price ID`: `{{book_price}}`
     *   `Quantity`: `1`
-    *   `Initially Required`: True
-2.  "Offer Item Configuration" for the pencil:
-    *   `Item Name (ID)`: `accessory`
-    *   `Price ID`: `{{pencil_price}}`
-    *   `Quantity`: `1`
     *   `Initially Required`: False
 
-**Initial Checkout State:**
-`line_items[book][price]      = {{book_price}}`
-`line_items[book][quantity]   = 1`
-`line_items[book][required]   = true`
-`line_items[accessory][price]    = {{pencil_price}}`
-`line_items[accessory][quantity] = 1`
-`line_items[accessory][required] = false`
+### Initial Checkout State
+```
+line_items[book][price]      = {{book_price}}
+line_items[book][quantity]   = 1
+line_items[book][required]   = true
+line_items[accessory][price]    = {{pencil_price}}
+line_items[accessory][quantity] = 1
+line_items[accessory][required] = false
+```
 
-**End-User Checkout UI & Interactions (Design Focus):**
+### End-User Checkout UI & Interactions (Design Focus)
 *   The book is listed as a primary item.
 *   A UI checkbox (or similar toggle) is displayed, e.g., labeled "Add Pencil ({{pencil_price_formatted}})".
     *   When user checks it, the UI triggers: `checkout.setItem('accessory', {required: true})`
@@ -132,19 +139,21 @@ The user sees the book listed. In this simple scenario, there are typically no U
 
 ## Selling the option to buy 1 book or 4 books
 
-**Offer Setup (Data Configuration):**
-1.  "Offer Item Configuration" for the book:
+### Offer Setup (Data Configuration)
+1.  "Offer Item" for the book:
     *   `Item Name (ID)`: `book`
     *   `Price ID`: `{{book_price}}`
     *   `Quantity`: `1`
     *   `Initially Required`: True
 
-**Initial Checkout State:**
-`line_items[book][price]    = {{book_price}}`
-`line_items[book][quantity] = 1`
-`line_items[book][required] = true`
+### Initial Checkout State
+```
+line_items[book][price]    = {{book_price}}
+line_items[book][quantity] = 1
+line_items[book][required] = true
+```
 
-**End-User Checkout UI & Interactions (Design Focus):**
+### End-User Checkout UI & Interactions (Design Focus)
 *   A UI radio button group is displayed:
     *   Option 1: Label "Buy 1 Book"
     *   Option 2: Label "Buy 4 Books"
@@ -156,19 +165,21 @@ The user sees the book listed. In this simple scenario, there are typically no U
 
 ## Selling the option to buy black book or red book
 
-**Offer Setup (Data Configuration):**
-1.  "Offer Item Configuration" for the book:
+### Offer Setup (Data Configuration)
+1.  "Offer Item" for the book:
     *   `Item Name (ID)`: `book`
     *   `Price ID`: `{{black_book_price}}` (This sets the initial selection)
     *   `Quantity`: `1`
     *   `Initially Required`: True
 
-**Initial Checkout State:**
-`line_items[book][price]    = {{black_book_price}}`
-`line_items[book][quantity] = 1`
-`line_items[book][required] = true`
+### Initial Checkout State
+```
+line_items[book][price]    = {{black_book_price}}
+line_items[book][quantity] = 1
+line_items[book][required] = true
+```
 
-**End-User Checkout UI & Interactions (Design Focus):**
+### End-User Checkout UI & Interactions (Design Focus)
 *   A UI radio button group is displayed:
     *   Option 1: Label "Buy Black Book ({{black_book_price_formatted}})"
     *   Option 2: Label "Buy Red Book ({{red_book_price_formatted}})"
@@ -181,7 +192,7 @@ The user sees the book listed. In this simple scenario, there are typically no U
 
 This use case highlights how one primary choice can change the core product, and an independent choice can add an accessory. The complexity lies in the Green Book Subscription option being conditional on the Black Book selection.
 
-**Offer Setup (Data Configuration):**
+### Offer Setup (Data Configuration)
 1.  "Offer Item" for the main publication:
     *   `Item Name (ID)`: `main_offering`
     *   `Price ID`: `{{red_book_price}}` (Initial default)
@@ -193,15 +204,17 @@ This use case highlights how one primary choice can change the core product, and
     *   `Quantity`: `1`
     *   `Initially Required`: `false`
 
-**Initial Checkout State:**
-*   `line_items[main_offering][price] = {{red_book_price}}`
-*   `line_items[main_offering][quantity] = 1`
-*   `line_items[main_offering][required] = true`
-*   `line_items[pencil_addon][price] = {{green_pencil_subscription_price}}`
-*   `line_items[pencil_addon][quantity] = 1`
-*   `line_items[pencil_addon][required] = false`
+### Initial Checkout State
+```
+line_items[main_offering][price] = {{red_book_price}}
+line_items[main_offering][quantity] = 1
+line_items[main_offering][required] = true
+line_items[pencil_addon][price] = {{green_pencil_subscription_price}}
+line_items[pencil_addon][quantity] = 1
+line_items[pencil_addon][required] = false
+```
 
-**End-User Checkout UI & Interactions (Design Focus):**
+### End-User Checkout UI & Interactions (Design Focus)
 
 1.  **Book Selection (Radio Group):**
     *   Controls the base `price` of the `main_offering` item.
@@ -253,7 +266,7 @@ This use case highlights how one primary choice can change the core product, and
 *   **User unchecks the "Add Pencil Subscription" checkbox:**
     *   `checkout.setItem('pencil_addon', {required: false})`
 
-**Checkout Outcome Example:**
+### Checkout Outcome Example
 If user selects "Red Book" and checks "Add Pencil Subscription":
 *   One-time payment initiated for `{{red_book_price}}`.
 *   A new subscription is created for `{{green_pencil_subscription_price}}`.
