@@ -49,13 +49,14 @@ When a checkout is started, it takes the `line_items` template from the Offer (a
 
 The "checkout builder" is the interface where an administrator or marketer configures an Offer. They will define the set of available items and their default properties. This configuration forms the data template for new checkouts.
 
-**Offer Item Configuration:** Defines a single potential item within the offer.
-    *   `Item Name (ID)`: e.g., `book`, `accessory`. This is the unique identifier used when calling `checkout.setItem(ID, ...)`.
-    *   `Default Price ID`: The initial `{{PRICE_ID}}` for this item when the checkout is first created.
-    *   `Default Quantity`: The initial quantity for this item.
-    *   `Initially Required`: Boolean.
-        *   If `true`, this item starts with `required: true` in the checkout's `line_items`.
-        *   If `false`, this item starts with `required: false`. Typically, such an item would be presented as an optional add-on in the UI, and a user interaction (e.g., checking a box) would trigger `checkout.setItem(ID, {required: true})`.
+**Offer Item:** Defines a single potential item within the offer.
+
+*   `Item Name (ID)`: e.g., `book`, `accessory`. This is the unique identifier used when calling `checkout.setItem(ID, ...)`.
+*   `Default Price ID`: The initial `{{PRICE_ID}}` for this item when the checkout is first created.
+*   `Default Quantity`: The initial quantity for this item.
+*   `Initially Required`: Boolean.
+    *   If `true`, this item starts with `required: true` in the checkout's `line_items`.
+    *   If `false`, this item starts with `required: false`. Typically, such an item would be presented as an optional add-on in the UI, and a user interaction (e.g., checking a box) would trigger `checkout.setItem(ID, {required: true})`.
 
 # Designing UI Interactions with `setItem()`
 
@@ -65,25 +66,25 @@ The `checkout.setItem(ID, {OPTIONS})` function is the sole mechanism for dynamic
 
 *   **UI Components as Triggers:** Your UI elements (e.g., a radio button selection, a checkbox tick, a quantity stepper click) are the triggers.
 *   **Event Handlers Call `setItem()`:** When a user interacts with a trigger, the corresponding UI event handler is responsible for constructing and executing the `checkout.setItem()` call.
-*   **`ID` Parameter:** The `ID` in `checkout.setItem(ID, ...)` must match the `Item Name (ID)` of an `Offer Item Configuration`.
+*   **`ID` Parameter:** The `ID` in `checkout.setItem(ID, ...)` must match the `Item Name (ID)` of an `Offer Item`.
 *   **`OPTIONS` Parameter:** This object specifies what attributes of the identified line item to change.
     *   `price`: To change the `{{PRICE_ID}}` of the line item.
     *   `quantity`: To change the quantity of the line item.
     *   `required`: To change the `required` status (Boolean) of the line item (e.g., for selecting/deselecting an optional add-on).
 
-The backend `Offer Item Configuration` defines *what* is available and its defaults. The frontend UI design determines *how* the user interacts to modify these items via `setItem()`.
+The backend `Offer Item` defines *what* is available and its defaults. The frontend UI design determines *how* the user interacts to modify these items via `setItem()`.
 
 # Functions
 
-## setItems() 
+### setItems() 
 
 `checkout.setItems(ID, {OPTIONS})`
 
-The only **function** we need to make the whole thing work 
+The only **function** we need to make the experience work 
 
-setItem has 2 attributes (arguments):
+`setItem` has 2 attributes (arguments):
 - ID      : which tells the checkout which line_item we're referencing
-- OPTIONS : a list of options telling the checkout what to change
+- OPTIONS : a list of options telling the checkout exactly what to change
 
 Options:
 - price
