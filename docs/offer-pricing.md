@@ -50,12 +50,12 @@ When a checkout is started, it takes the `line_items` template from the Offer (a
 The "checkout builder" is the interface where an administrator or marketer configures an Offer. They will define the set of available items and their default properties. This configuration forms the data template for new checkouts.
 
 **Offer Item Configuration:** Defines a single potential item within the offer.
-*   `Item Name (ID)`: e.g., `book`, `accessory`. This is the unique identifier used when calling `checkout.setItem(ID, ...)`.
-*   `Default Price ID`: The initial `{{PRICE_ID}}` for this item when the checkout is first created.
-*   `Default Quantity`: The initial quantity for this item.
-*   `Initially Required`: Boolean.
-  *   If `true`, this item starts with `required: true` in the checkout's `line_items`.
-  *   If `false`, this item starts with `required: false`. Typically, such an item would be presented as an optional add-on in the UI, and a user interaction (e.g., checking a box) would trigger `checkout.setItem(ID, {required: true})`.
+    *   `Item Name (ID)`: e.g., `book`, `accessory`. This is the unique identifier used when calling `checkout.setItem(ID, ...)`.
+    *   `Default Price ID`: The initial `{{PRICE_ID}}` for this item when the checkout is first created.
+    *   `Default Quantity`: The initial quantity for this item.
+    *   `Initially Required`: Boolean.
+        *   If `true`, this item starts with `required: true` in the checkout's `line_items`.
+        *   If `false`, this item starts with `required: false`. Typically, such an item would be presented as an optional add-on in the UI, and a user interaction (e.g., checking a box) would trigger `checkout.setItem(ID, {required: true})`.
 
 # Designing UI Interactions with `setItem()`
 
@@ -96,11 +96,11 @@ Options:
 ## selling a book
 
 ### Offer Setup (Data Configuration)
-*   Define one "Offer Item":
-  *   `Item Name (ID)`: `book`
-  *   `Price ID`: `{{book_price}}`
-  *   `Quantity`: `1`
-  *   `Initially Required`: True
+1. "Offer Item" for the book:
+    *   `Item Name (ID)`: `book`
+    *   `Price ID`: `{{book_price}}`
+    *   `Quantity`: `1`
+    *   `Initially Required`: True
 
 ### Initial Checkout State
 ```
@@ -116,11 +116,16 @@ The user sees the book listed. In this simple scenario, there are typically no U
 ## selling a book and an optional pencil
 
 ### Offer Setup (Data Configuration)
-1.  "Offer Item" for the book:
-  *   `Item Name (ID)`: `book`
-  *   `Price ID`: `{{book_price}}`
-  *   `Quantity`: `1`
-  *   `Initially Required`: False
+1. "Offer Item" for the book:
+    *   `Item Name (ID)`: `book`
+    *   `Price ID`: `{{book_price}}`
+    *   `Quantity`: `1`
+    *   `Initially Required`: False
+2. "Offer Item" for the pencil:
+    *   `Item Name (ID)`: `accessory`
+    *   `Price ID`: `{{pencil_price}}`
+    *   `Quantity`: `1`
+    *   `Initially Required`: False
 
 ### Initial Checkout State
 ```
@@ -142,11 +147,11 @@ line_items[accessory][required] = false
 ## Selling the option to buy 1 book or 4 books
 
 ### Offer Setup (Data Configuration)
-1.  "Offer Item" for the book:
-  *   `Item Name (ID)`: `book`
-  *   `Price ID`: `{{book_price}}`
-  *   `Quantity`: `1`
-  *   `Initially Required`: True
+1. "Offer Item" for the book:
+    *   `Item Name (ID)`: `book`
+    *   `Price ID`: `{{book_price}}`
+    *   `Quantity`: `1`
+    *   `Initially Required`: True
 
 ### Initial Checkout State
 ```
@@ -168,11 +173,11 @@ line_items[book][required] = true
 ## Selling the option to buy black book or red book
 
 ### Offer Setup (Data Configuration)
-1.  "Offer Item" for the book:
-  *   `Item Name (ID)`: `book`
-  *   `Price ID`: `{{black_book_price}}` (This sets the initial selection)
-  *   `Quantity`: `1`
-  *   `Initially Required`: True
+1. "Offer Item" for the book:
+    *   `Item Name (ID)`: `book`
+    *   `Price ID`: `{{black_book_price}}` (This sets the initial selection)
+    *   `Quantity`: `1`
+    *   `Initially Required`: True
 
 ### Initial Checkout State
 ```
@@ -195,16 +200,16 @@ line_items[book][required] = true
 This use case highlights how one primary choice can change the core product, and an independent choice can add an accessory. The complexity lies in the Green Book Subscription option being conditional on the Black Book selection.
 
 ### Offer Setup (Data Configuration)
-1.  "Offer Item" for the main publication:
-  *   `Item Name (ID)`: `main_offering`
-  *   `Price ID`: `{{red_book_price}}` (Initial default)
-  *   `Quantity`: `1`
-  *   `Initially Required`: `true`
-2.  "Offer Item" for the optional pencil subscription:
-  *   `Item Name (ID)`: `pencil_addon`
-  *   `Price ID`: `{{green_pencil_subscription_price}}`
-  *   `Quantity`: `1`
-  *   `Initially Required`: `false`
+1. "Offer Item" for the main publication:
+    *   `Item Name (ID)`: `main_offering`
+    *   `Price ID`: `{{red_book_price}}` (Initial default)
+    *   `Quantity`: `1`
+    *   `Initially Required`: `true`
+2. "Offer Item" for the optional pencil subscription:
+    *   `Item Name (ID)`: `pencil_addon`
+    *   `Price ID`: `{{green_pencil_subscription_price}}`
+    *   `Quantity`: `1`
+    *   `Initially Required`: `false`
 
 ### Initial Checkout State
 ```
