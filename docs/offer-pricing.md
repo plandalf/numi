@@ -223,55 +223,55 @@ line_items[pencil_addon][required] = false
 
 ### End-User Checkout UI & Interactions (Design Focus)
 
-1.  **Book Selection (Radio Group):**
-  *   Controls the base `price` of the `main_offering` item.
-  *   Options:
-    *   "Red Book" (Formatted price e.g., `{{red_book_price_formatted}}`)
-    *   "Black Book" (Formatted price e.g., `{{black_book_price_formatted}}`)
-  *   *Initial UI State*: "Red Book" is selected.
+1. Book Selection (Radio Group):
+    *   Controls the base `price` of the `main_offering` item.
+    *   Options:
+        *   "Red Book" (Formatted price e.g., `{{red_book_price_formatted}}`)
+        *   "Black Book" (Formatted price e.g., `{{black_book_price_formatted}}`)
+    *   Initial UI State: "Red Book" is selected.
 
-2.  **Green Book Subscription Upgrade (Checkbox):**
-  *   Label: "Switch to Green Book Subscription" (Formatted price e.g., `{{green_book_subscription_price_formatted_per_interval}}`)
-  *   *UI Visibility*: This checkbox is ONLY visible if the "Black Book" radio option is currently selected.
-  *   *Initial UI State*: Hidden (because "Red Book" is initially selected). If "Black Book" radio becomes selected, this checkbox appears and is initially unchecked.
+2. Green Book Subscription Upgrade (Checkbox):
+    *   Label: "Switch to Green Book Subscription" (Formatted price e.g., `{{green_book_subscription_price_formatted_per_interval}}`)
+    *   UI Visibility: This checkbox is ONLY visible if the "Black Book" radio option is currently selected.
+    *   Initial UI State: Hidden (because "Red Book" is initially selected). If "Black Book" radio becomes selected, this checkbox appears and is initially unchecked.
 
-3.  **Pencil Add-on (Checkbox):**
-  *   Label: "Add Pencil Subscription" (Formatted price e.g., `{{green_pencil_subscription_price_formatted_per_interval}}`)
-  *   *Initial UI State*: Unchecked. This is independent of the book choices.
+3. Pencil Add-on (Checkbox):
+    *   Label: "Add Pencil Subscription" (Formatted price e.g., `{{green_pencil_subscription_price_formatted_per_interval}}`)
+    *   Initial UI State: Unchecked. This is independent of the book choices.
 
-**User Interactions & `setItems` Calls (Triggered by UI Event Handlers):**
+### User Interactions & `setItems` Calls (Triggered by UI Event Handlers):
 
-*   **User selects "Red Book" radio option:**
-  *   `checkout.setItem('main_offering', {price: '{{red_book_price}}'})`
-  *   *UI Update Effects*:
-    *   "Red Book" radio is selected.
-    *   "Green Book Subscription" checkbox becomes hidden (its checked state is effectively reset/irrelevant).
+*   User selects "Red Book" radio option:
+    *   `checkout.setItem('main_offering', {price: '{{red_book_price}}'})`
+    *   UI Update Effects:
+        *   "Red Book" radio is selected.
+        *   "Green Book Subscription" checkbox becomes hidden (its checked state is effectively reset/irrelevant).
 
-*   **User selects "Black Book" radio option:**
-  *   `checkout.setItem('main_offering', {price: '{{black_book_price}}'})`
-  *   *UI Update Effects*:
-    *   "Black Book" radio is selected.
-    *   "Green Book Subscription" checkbox becomes visible.
+*   User selects "Black Book" radio option:
+    *   `checkout.setItem('main_offering', {price: '{{black_book_price}}'})`
+    *   UI Update Effects:
+        *   "Black Book" radio is selected.
+        *   "Green Book Subscription" checkbox becomes visible.
 
-*   **User checks the "Green Book Subscription" checkbox:**
-  *   (This action is only possible if the "Green Book Subscription" checkbox is visible, meaning "Black Book" radio is selected).
-  *   `checkout.setItem('main_offering', {price: '{{green_book_subscription_price}}'})`
-  *   *UI Update Effects*:
-    *   "Green Book Subscription" checkbox is checked.
-    *   "Black Book" radio remains selected (due to green checkbox visibility being dependent on it).
+*   User checks the "Green Book Subscription" checkbox:
+    *   (This action is only possible if the "Green Book Subscription" checkbox is visible, meaning "Black Book" radio is selected).
+    *   `checkout.setItem('main_offering', {price: '{{green_book_subscription_price}}'})`
+    *   UI Update Effects:
+        *   "Green Book Subscription" checkbox is checked.
+        *   "Black Book" radio remains selected (due to green checkbox visibility being dependent on it).
 
-*   **User unchecks the "Green Book Subscription" checkbox:**
-  *   (This action implies it was previously checked, and "Black Book" radio is selected).
-  *   `checkout.setItem('main_offering', {price: '{{black_book_price}}'})`
-  *   *UI Update Effects*:
-    *   "Green Book Subscription" checkbox is unchecked.
-    *   "Black Book" radio remains selected.
+*   User unchecks the "Green Book Subscription" checkbox:
+    *   (This action implies it was previously checked, and "Black Book" radio is selected).
+    *   `checkout.setItem('main_offering', {price: '{{black_book_price}}'})`
+    *   UI Update Effects:
+        *   "Green Book Subscription" checkbox is unchecked.
+        *   "Black Book" radio remains selected.
 
-*   **User checks the "Add Pencil Subscription" checkbox:**
-  *   `checkout.setItem('pencil_addon', {required: true})`
+*   User checks the "Add Pencil Subscription" checkbox:
+    *   `checkout.setItem('pencil_addon', {required: true})`
 
-*   **User unchecks the "Add Pencil Subscription" checkbox:**
-  *   `checkout.setItem('pencil_addon', {required: false})`
+*   User unchecks the "Add Pencil Subscription" checkbox:
+    *   `checkout.setItem('pencil_addon', {required: false})`
 
 ### Checkout Outcome Example
 If user selects "Red Book" and checks "Add Pencil Subscription":
