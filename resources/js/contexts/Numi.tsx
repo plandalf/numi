@@ -297,6 +297,11 @@ class Numi {
     }, [hook]);
 
     const value = get(blockContext.blockConfig, `content.${props.name}`) ?? props.initialValue;
+
+    useEffect(() => {
+      setValue(value);
+    }, []);
+
     const setValue = (newValue: any) => {
       blockContext.setFieldValue(props.name, newValue);
     };
