@@ -36,9 +36,6 @@ class OfferProductStoreRequest extends FormRequest
                 Rule::exists('catalog_products', 'id')->where(function ($query) use ($organizationId) {
                     return $query->where('organization_id', $organizationId);
                 }),
-                Rule::unique('store_offer_products', 'product_id')->where(function ($query) {
-                    return $query->where('offer_id', $this->route('offer')->id);
-                })->ignore($this->route('offerProduct.id') ?? null),
             ],
             'prices' => ['array'],
             'prices.*' => [

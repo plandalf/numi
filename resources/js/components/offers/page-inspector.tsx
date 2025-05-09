@@ -107,30 +107,6 @@ export const AppearanceEditor = ({ globalState, block, onUpdate }: { globalState
   );
 }
 
-export const ConditionsSection = ({ globalState, block, onUpdate }: { globalState: GlobalState | null, block: Block, onUpdate: (block: Block) => void }) => {
-  return (
-    <div className="mb-6">
-      <h3 className="mb-2 font-semibold">Conditions</h3>
-      <div className="flex items-center gap-2 bg-[#F7F9FF] rounded-md p-2">
-        {globalState?.hookUsage[block.id].some(h => h.name === 'onClickEvent') && (
-          <ConditionOnClickEditor
-            label="On Click Event"
-            value={block.conditions?.onClickEvent || []}
-            onChange={() => void 0}
-          />
-        )}
-
-        {globalState?.hookUsage[block.id].some(h => h.name === 'visibility') && (
-          <ConditionVisibilityEditor
-            value={block.conditions?.visibility || []}
-            onChange={value => onUpdate({ ...block, conditions: { ...block.conditions, visibility: value } })}
-          />
-        )}
-      </div>
-    </div>
-  );
-}
-
 const ValidationSection = ({ block, onUpdate }: { block: Block, onUpdate: (block: Block) => void }) => {
   const handleValidationChange = (fieldName: string, value: boolean) => {
     if (!block) return;
@@ -161,6 +137,14 @@ const ValidationSection = ({ block, onUpdate }: { block: Block, onUpdate: (block
 export const InteractionSection = ({ globalState, block, onUpdate }: { globalState: GlobalState | null, block: Block, onUpdate: (block: Block) => void }) => {
   return (
     <>
+    <div className="space-y-4">
+    <h3 className="mb-2 font-semibold">Interaction</h3>
+      <ConditionOnClickEditor
+        label="On Click Event"
+        value={block.interaction?.onClick || []}
+        onChange={value => onUpdate({ ...block, interaction: { ...block.interaction, onClick: value } })}
+
+      />
       <div className="flex items-center gap-2">
         <Checkbox
           checked={block.interaction?.isDisabled ?? false}
@@ -175,6 +159,7 @@ export const InteractionSection = ({ globalState, block, onUpdate }: { globalSta
           }}
         />
         <Label className="mb-0">Disabled?</Label>
+      </div>
       </div>
     </>
   );
@@ -311,8 +296,6 @@ export const Inspector = ({
                     <ValidationSection block={block} onUpdate={onUpdate} />
                   ) : hook.type === 'interaction' ? (
                     <InteractionSection globalState={globalState} block={block} onUpdate={onUpdate} />
-                  ) : hook.type === 'conditions' ? (
-                    <ConditionsSection globalState={globalState} block={block} onUpdate={onUpdate} />
                   ) : null}
                 </div>
               ))}
