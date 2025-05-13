@@ -11,7 +11,6 @@ import { EnumerationEditor } from '@/components/editor/enumeration-editor';
 import { FileEditor } from '@/components/editor/file-editor';
 import { ColorPickerEditor } from '@/components/editor/color-picker-editor';
 import { AlignmentPickerEditor } from '@/components/editor/alignment-picker-editor';
-import { NumberEditor } from '../editor/number-editor';
 import { ConditionOnClickEditor } from '../editor/condition-onclick-editor';
 import { ConditionVisibilityEditor } from '../editor/condition-visibility-editor';
 import { useEditor } from '@/contexts/offer/editor-context';

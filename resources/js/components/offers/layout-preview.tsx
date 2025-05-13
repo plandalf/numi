@@ -384,18 +384,25 @@ function BlockRenderer({ block, children }: {
 }
 
 // Section Component
-const Section = ({ section, sectionName: id, className, selectedBlockId, onSelectBlock }: SectionProps) => {
+const Section = ({ section, sectionName: id, className }: SectionProps) => {
 
+  const { selectedSectionId } = useEditor();
   const { setNodeRef, isOver, active } = useDroppable({
     id: `section:${id}`,
   })
+
+  const backgroundColor = (section as any)?.style?.backgroundColor;
 
   return (
     <div
       className={cn(
         "relative",
-        className
+        className,
+        selectedSectionId === id && 'border-2 border-solid border-blue-500'
       )}
+      style={{
+        backgroundColor
+      }}
     >
       <div className="">
 
@@ -412,7 +419,7 @@ const Section = ({ section, sectionName: id, className, selectedBlockId, onSelec
         })}
         ref={setNodeRef}
         >
-          {section.blocks?.map((block: Block, index: number) => {
+          {section?.blocks?.map((block: Block, index: number) => {
             return (
               <BlockRenderer block={block as BlockConfig} key={`${block.id}-${index}`}>
                 {(blockContext) => {

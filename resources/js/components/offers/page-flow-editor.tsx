@@ -5,7 +5,6 @@ import {
     Background,
     useNodesState,
     useEdgesState,
-    addEdge,
     Connection,
     Edge,
     Node,
@@ -14,18 +13,14 @@ import {
     NodeTypes,
     EdgeTypes,
     XYPosition,
-    OnConnectStartParams,
     OnConnectStart,
     OnConnectEnd,
     Handle,
     Position,
-    useOnViewportChange,
-    getNodesBounds,
-    useViewport,
     getBezierPath
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import { Flag, Plus, ArrowRight, ArrowRightToLine, X } from 'lucide-react';
+import { Flag, Plus, X } from 'lucide-react';
 import { type Page, type OfferView, type PageType } from '@/types/offer';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -74,10 +69,38 @@ export function generateDefaultPage({
         type,
         position,
         view: {
-            promo: { blocks: [] },
-            title: { blocks: [] },
-            action: { blocks: [] },
-            content: { blocks: [] }
+            title: {
+                id: 'title',
+                label: 'Title',
+                style: {
+                    backgroundColor: '#FBF9FA'
+                },
+                blocks: []
+            },
+            content: {
+                id: 'content',
+                label: 'Content',
+                style: {
+                    backgroundColor: '#FBF9FA'
+                },
+                blocks: []
+            },
+            action: {
+                id: 'action',
+                label: 'Action',
+                style: {
+                    backgroundColor: '#FFFFFF'
+                },
+                blocks: []
+            },
+            promo: {
+                id: 'promo',
+                label: 'Promo',
+                style: {
+                    backgroundColor: '#EFF6FF'
+                },
+                blocks: []
+            },
         },
         layout: { sm: 'split-checkout@v1' },
         provides: [],

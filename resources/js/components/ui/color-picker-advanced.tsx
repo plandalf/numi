@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { ColorPicker as SimpleColorPicker, ColorPickerProps, parseHexAlpha } from './color-picker';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from './dropdown-menu';
@@ -19,16 +19,46 @@ export const AdvancedColorPicker: React.FC<AdvancedColorPickerProps> = ({
 }) => {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
-  const matchedTheme = Object.entries(themeColors).find(([_, colorValue]) => colorValue.toLowerCase() === value.toLowerCase());
+  const [hexInput, setHexInput] = useState('');
+  const [opacityInput, setOpacityInput] = useState('');
+
+  const matchedTheme = Object.entries(themeColors).find(([_, colorValue]) => colorValue?.toLowerCase() === value?.toLowerCase());
+
+  const { rgb, alpha } = parseHexAlpha(value);
+  const percent = Math.round((alpha / 255) * 100);
+
+  useEffect(() => {
+    setHexInput(rgb.toUpperCase());
+    setOpacityInput(percent.toString());
+  }, [value]);
+
+  const handleHexChange = (newHex: string) => {
+    const filteredHex = newHex.replace('#', '').replace(/[^0-9A-Fa-f]/g, '').slice(0, 6);
+    setHexInput(filteredHex);
+    
+    if (filteredHex.length === 6) {
+      const currentOpacity = parseInt(opacityInput) || 0;
+      const newAlpha = Math.round((currentOpacity / 100) * 255);
+      onChange(`#${filteredHex}${newAlpha.toString(16).padStart(2, '0')}`);
+    }
+  };
+
+  const handleOpacityChange = (newOpacity: string) => {
+    const filteredOpacity = newOpacity.replace(/[^0-9]/g, '');
+    setOpacityInput(filteredOpacity);
+    
+    const numOpacity = parseInt(filteredOpacity);
+    if (!isNaN(numOpacity) && numOpacity >= 0 && numOpacity <= 100) {
+      const newAlpha = Math.round((numOpacity / 100) * 255);
+      onChange(`${rgb}${newAlpha.toString(16).padStart(2, '0')}`);
+    }
+  };
 
   const filteredThemeColors = Object.entries(themeColors).filter(
     ([name, colorValue]) =>
       name.toLowerCase().includes(search.toLowerCase()) ||
       colorValue.toLowerCase().includes(search.toLowerCase())
   );
-
-  const { rgb, alpha } = parseHexAlpha(value);
-  const percent = Math.round((alpha / 255) * 100);
 
   const hasThemeColors = Object.keys(themeColors).length > 0;
 
@@ -68,9 +98,22 @@ export const AdvancedColorPicker: React.FC<AdvancedColorPickerProps> = ({
               onChange={onChange}
             />
             <div className="flex items-center gap-2 border border-gray-300/50 rounded-md px-2 py-1 h-8">
-              <span className="flex-1 text-xs text-left">{rgb.toUpperCase()}</span>
+              <input
+                type="text"
+                value={hexInput}
+                onChange={(e) => handleHexChange(e.target.value)}
+                className="flex-1 text-xs text-left bg-transparent border-none focus:outline-none focus:ring-0 p-0"
+                placeholder="#000000"
+              />
               <Separator orientation="vertical" className="bg-gray-300/50 !h-8" />
-              <span className="min-w-12 text-xs text-left">{percent}%</span>
+              <input
+                type="text"
+                value={opacityInput}
+                onChange={(e) => handleOpacityChange(e.target.value)}
+                className="w-12 text-xs text-left bg-transparent border-none focus:outline-none focus:ring-0 p-0"
+                placeholder="100"
+              />
+              <span className="text-xs text-gray-500">%</span>
             </div>
           </TabsContent>
           <TabsContent value="theme">

@@ -2,7 +2,7 @@ import { TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
 import { DialogDescription, DialogTitle } from "../ui/dialog";
 import { DialogContent, DialogHeader } from "../ui/dialog";
 import { useEditor } from "@/contexts/offer/editor-context";
-import { Block } from "@/types/offer";
+import { Block, PageView } from "@/types/offer";
 import { blockTypes, getBlockMeta } from '@/components/blocks';
 import { cn } from "@/lib/utils";
 import { CircleChevronRight, DiamondPlus, SquarePlus } from "lucide-react";
@@ -25,6 +25,8 @@ export const PageLayers: React.FC<PageLayersProps> = ({ onAddNewElementClick }) 
     selectedPage,
     selectedBlockId,
     setSelectedBlockId,
+    selectedSectionId,
+    setSelectedSectionId,
   } = useEditor();
 
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -35,18 +37,29 @@ export const PageLayers: React.FC<PageLayersProps> = ({ onAddNewElementClick }) 
   const [selectTemplateError, setSelectTemplateError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   
-  // Get blocks for the selected page
+  // Get sections and blocks for the selected page
   const page = data.view.pages[selectedPage];
-  const blocks: Block[] = [];
+  const sections: { id: string; name: string; blocks: Block[] }[] = [];
+  
   if (page && page.view) {
-    Object.values(page.view).forEach((section: any) => {
+    Object.entries(page.view as PageView).forEach(([sectionId, section]) => {
       if (section && Array.isArray(section.blocks)) {
-        blocks.push(...section.blocks);
+        sections.push({
+          id: sectionId,
+          name: section?.label ?? sectionId.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+          blocks: section.blocks
+        });
       }
     });
   }
 
-  console.log(page.view);
+  // Sort sections in chronological order
+  const sortedSections = sections.sort((a, b) => {
+    const order = ['title', 'content', 'action', 'promo'];
+    const aIndex = order.findIndex(section => a.id.toLowerCase().includes(section));
+    const bIndex = order.findIndex(section => b.id.toLowerCase().includes(section));
+    return aIndex - bIndex;
+  });
 
   const closeDialog = () => {
     setDialogOpen(false);
@@ -116,30 +129,47 @@ export const PageLayers: React.FC<PageLayersProps> = ({ onAddNewElementClick }) 
     <div className="flex flex-col h-full">
       <div className="flex-1 overflow-y-auto p-4">
         <div className="flex flex-col gap-3">
-          {blocks.length === 0 ? (
-            <div className="text-muted-foreground text-center py-8">No blocks on this page.</div>
+          {sortedSections.length === 0 ? (
+            <div className="text-muted-foreground text-center py-8">No sections on this page.</div>
           ) : (
-            blocks.map((block, idx) => {
-              const meta = getBlockMeta(block.type as keyof typeof blockTypes);
-              return (
-                <button
-                  key={block.id}
+            sortedSections.map((section) => (
+              <div key={section.id} className="flex flex-col gap-2">
+                <div
                   className={cn(
-                    'flex items-center justify-between w-full px-4 py-2 rounded-lg bg-[#EBEFFF] hover:bg-[#EBEFFF]/75 transition-colors group cursor-pointer',
-                    selectedBlockId === block.id && 'ring-2 ring-primary bg-primary/10'
+                    "px-4 py-2 bg-gray-200 hover:bg-gray-200/75 rounded-lg transition-colors group cursor-pointer",
+                    selectedSectionId === section.id && 'ring-2 ring-primary bg-primary/10'
                   )}
-                  onClick={() => setSelectedBlockId(block.id)}
-                  type="button"
+                  onClick={() => setSelectedSectionId(section.id)}
                 >
-                  <div className="flex items-center justify-between w-full">
-                    <span className="font-medium text-sm text-left text-black/90">
-                      {meta?.title ?? block.type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())} {blocks.length > 1 ? idx + 1 : ''}
-                    </span>
-                    <CircleChevronRight className="w-4 h-4 text-muted-foreground" />
-                  </div>
-                </button>
-              );
-            })
+                  <span className="font-medium text-sm text-black/90">
+                    {section.name}
+                  </span>
+                </div>
+                <div className="ml-4 flex flex-col gap-2">
+                  {section.blocks.map((block, idx) => {
+                    const meta = getBlockMeta(block.type as keyof typeof blockTypes);
+                    return (
+                      <button
+                        key={block.id}
+                        className={cn(
+                          'flex items-center justify-between w-full px-4 py-2 rounded-lg bg-[#EBEFFF] hover:bg-[#EBEFFF]/75 transition-colors group cursor-pointer',
+                          selectedBlockId === block.id && 'ring-2 ring-primary bg-primary/10'
+                        )}
+                        onClick={() => setSelectedBlockId(block.id)}
+                        type="button"
+                      >
+                        <div className="flex items-center justify-between w-full">
+                          <span className="font-medium text-sm text-left text-black/90">
+                            {meta?.title ?? block.type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())} {section.blocks.length > 1 ? idx + 1 : ''}
+                          </span>
+                          <CircleChevronRight className="w-4 h-4 text-muted-foreground" />
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ))
           )}
         </div>
         <Button
@@ -165,7 +195,7 @@ export const PageLayers: React.FC<PageLayersProps> = ({ onAddNewElementClick }) 
           </DialogTrigger>
           <DialogContent className="w-[400px]">
             <DialogHeader>
-              <DialogTitle  >Save experience as a new template</DialogTitle>
+              <DialogTitle>Save experience as a new template</DialogTitle>
             </DialogHeader>
             <DialogDescription>
               <Tabs value={layerTemplateTab} onValueChange={v => setLayerTemplateTab(v as 'new' | 'saved')} className="w-full">

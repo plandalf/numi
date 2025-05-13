@@ -6,19 +6,22 @@ import { TemplateRequestBanner } from './template-request-banner';
 import { TemplateCategories } from './template-categories';
 import { TemplateGrid } from './template-grid';
 import { Template } from '@/types/template';
+import { Button } from '../ui/button';
 
 interface TemplateSelectorModalProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     templates: Template[];
     categories: string[];
+    onCreateNew?: () => void;
 }
 
 export function TemplateSelectorModal({ 
     open, 
     onOpenChange,
     templates: initialTemplates,
-    categories 
+    categories,
+    onCreateNew,
 }: TemplateSelectorModalProps) {
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -35,7 +38,15 @@ export function TemplateSelectorModal({
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="!max-w-7xl max-h-[90vh] p-0 border-none">
                 <DialogHeader className="px-6 pt-6 flex flex-row items-center justify-between">
-                    <DialogTitle className="text-2xl">Pick a template</DialogTitle>
+                    <DialogTitle className="text-2xl flex flex-row items-center gap-2">
+                        Pick a template
+                    </DialogTitle>
+                    {onCreateNew && (
+                        <Button className="mr-5" variant="default" size="sm" onClick={onCreateNew}>
+                            Create from scratch
+                        </Button>
+                    )}
+                    
                 </DialogHeader>
 
                 <div className="flex justify-center items-center px-6">

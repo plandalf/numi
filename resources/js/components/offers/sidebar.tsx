@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { cn } from '@/lib/utils';
-import { findBlockInPage } from '@/components/offers/page-preview';
+import { findBlockInPage, findSectionInPage } from '@/components/offers/page-preview';
 import { Inspector } from '@/components/offers/page-inspector';
+import { SectionInspector } from '@/components/offers/page-section-inspector';
 import { useEditor } from '@/contexts/offer/editor-context';
 import {
   DiamondPlus,
@@ -47,6 +48,8 @@ export function Sidebar() {
     selectedPage,
     selectedBlockId,
     setSelectedBlockId,
+    selectedSectionId,
+    setSelectedSectionId,
     updateBlock,
     viewMode,
   } = useEditor();
@@ -55,6 +58,16 @@ export function Sidebar() {
 
   // Content for each tab
   const renderTabContent = () => {
+    if (selectedSectionId) {
+      return (
+        <SectionInspector
+          key={selectedSectionId}
+          sectionId={selectedSectionId}
+          onClose={() => setSelectedSectionId(null)}
+        />
+      );
+    }
+
     if (selectedBlockId) {
       const block = findBlockInPage(data.view.pages[selectedPage], selectedBlockId);
       if (!block) return null;
@@ -104,6 +117,7 @@ export function Sidebar() {
   const onTabClick = (tab: SidebarTab) => {
     setActiveTab(tab);
     setSelectedBlockId(null);
+    setSelectedSectionId(null);
   }
 
   return (
@@ -173,6 +187,20 @@ export function Sidebar() {
               </Button>
               <h2 className="text-lg font-bold truncate">
                 {findBlockInPage(data.view.pages[selectedPage], selectedBlockId)?.type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+              </h2>
+            </div>
+          ) : selectedSectionId ? (
+            <div className="flex items-center gap-2 w-full">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+                onClick={() => setSelectedSectionId(null)}
+              >
+                <ChevronLeft className="size-6" />
+              </Button>
+              <h2 className="text-lg font-bold truncate">
+                {findSectionInPage(data.view.pages[selectedPage], selectedSectionId)?.label ?? selectedSectionId.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
               </h2>
             </div>
           ) : (

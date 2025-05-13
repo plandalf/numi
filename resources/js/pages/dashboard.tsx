@@ -29,10 +29,14 @@ export default function Dashboard({ offers, globalTemplates, organizationTemplat
 
     const templates = [...organizationTemplates, ...globalTemplates];
 
+    const createNewOffer = () => {
+        router.post(route('offers.store'), {});
+    };
+
     const handleCreateOffer = () => {
         if (templates.length === 0) {
             // If no templates available, create offer directly
-            router.post(route('offers.store'), {});
+            createNewOffer();
         } else {
             // If templates available, show template selector
             setIsSelectorOpen(true);
@@ -89,6 +93,7 @@ export default function Dashboard({ offers, globalTemplates, organizationTemplat
                 onOpenChange={setIsSelectorOpen}
                 templates={templates}
                 categories={categories}
+                onCreateNew={createNewOffer}
             />
         </AppLayout>
     );
