@@ -4,20 +4,20 @@ namespace Database\Factories\Store;
 
 use App\Models\Catalog\Price;
 use App\Models\Store\Offer;
-use App\Models\Store\Slot;
+use App\Models\Store\OfferItem;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Store\Slot>
+ * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Store\OfferItem>
  */
-class SlotFactory extends Factory
+class OfferItemFactory extends Factory
 {
     /**
      * The name of the factory's corresponding model.
      *
      * @var string
      */
-    protected $model = Slot::class;
+    protected $model = OfferItem::class;
 
     /**
      * Define the model's default state.

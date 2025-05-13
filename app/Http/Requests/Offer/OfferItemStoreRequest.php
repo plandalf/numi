@@ -6,28 +6,22 @@ namespace App\Http\Requests\Offer;
 
 use App\Models\Catalog\Price;
 use App\Models\Store\Offer;
-use App\Models\Store\Slot;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
 
-class OfferSlotUpdateRequest extends FormRequest
+class OfferItemStoreRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
      */
     public function authorize(): bool
     {
-        return true;
         $offer = $this->route('offer');
-        $slot = $this->route('slot');
 
         // Ensure the offer belongs to the user's current organization
-        // and the slot belongs to the offer
         return $offer instanceof Offer
-            && $slot instanceof Slot
-            && $offer->organization_id === Auth::user()->currentOrganization->id
-            && $slot->offer_id === $offer->id;
+            && $offer->organization_id === Auth::user()->currentOrganization->id;
     }
 
     /**
@@ -38,26 +32,21 @@ class OfferSlotUpdateRequest extends FormRequest
     public function rules(): array
     {
         $offer = $this->route('offer');
-        $slot = $this->route('slot');
         $organizationId = Auth::user()->currentOrganization->id;
 
         return [
-            'name' => ['sometimes', 'required', 'string', 'max:255'],
+            'name' => ['required', 'string', 'max:255'],
             'key' => [
-                'sometimes',
                 'required',
                 'string',
                 'max:255',
-                // Key must be unique within the *offer*
-                // Use the actual table name from Slot model if different
-                // $slot->getTable()
-                // Rule::unique('store_offer_slots')->where(function ($query) use ($offer) {
-                //     return $query->where('offer_id', $offer->id);
-                // })->ignore($slot->id), // Ignore the current slot being updated
+                Rule::unique('store_offer_items')->where(function ($query) use ($offer) {
+                    return $query->where('offer_id', $offer->id);
+                }),
                 'regex:/^[a-z0-9_]+$/', // Ensure key is snake_case and alphanumeric
             ],
-            'sort_order' => ['sometimes', 'required', 'integer', 'min:0'],
-            'is_required' => ['sometimes', 'required', 'boolean'],
+            'sort_order' => ['required', 'integer', 'min:0'],
+            'is_required' => ['required', 'boolean'],
             'default_price_id' => [
                 'nullable',
                 'integer',

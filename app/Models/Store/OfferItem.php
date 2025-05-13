@@ -7,11 +7,11 @@ use App\Models\Catalog\Price;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class Slot extends Model
+class OfferItem extends Model
 {
     use HasFactory;
 
-    protected $table = 'store_offer_slots';
+    protected $table = 'store_offer_items';
 
     protected $fillable = [
         'offer_id',
@@ -28,7 +28,7 @@ class Slot extends Model
     ];
 
     /**
-     * Get the offer that owns the slot.
+     * Get the offer that owns the offer item.
      */
     public function offer(): BelongsTo
     {
@@ -36,7 +36,7 @@ class Slot extends Model
     }
 
     /**
-     * Get the default price associated with the slot.
+     * Get the default price associated with the offer item.
      */
     public function defaultPrice(): BelongsTo
     {

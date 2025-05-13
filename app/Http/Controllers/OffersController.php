@@ -7,25 +7,22 @@ namespace App\Http\Controllers;
 use App\Enums\Theme\FontElement;
 use App\Enums\Theme\WeightElement;
 use App\Http\Requests\Offer\OfferProductStoreRequest;
-use App\Http\Requests\Offer\OfferSlotStoreRequest;
-use App\Http\Requests\Offer\OfferSlotUpdateRequest;
+use App\Http\Requests\Offer\OfferItemStoreRequest;
+use App\Http\Requests\Offer\OfferItemUpdateRequest;
 use App\Http\Requests\Offer\OfferThemeUpdateRequest;
 use App\Http\Requests\StoreOfferVariantRequest;
 use App\Http\Requests\UpdateOfferVariantRequest;
-use App\Http\Requests\CreateUpdateThemeRequest;
 use App\Http\Requests\Offer\OfferUpdateRequest;
 use App\Http\Resources\OfferResource;
 use App\Http\Resources\ProductResource;
 use App\Http\Resources\TemplateResource;
-use App\Http\Resources\SlotResource;
 use App\Http\Resources\ThemeResource;
 use App\Models\Catalog\Product;
 use App\Models\Organization;
 use App\Models\Store\Offer;
 use App\Models\Store\OfferPrice;
 use App\Models\Store\OfferProduct;
-use App\Models\Store\Slot;
-use App\Models\Template;
+use App\Models\Store\OfferItem;
 use App\Models\Theme;
 use App\Services\TemplateService;
 use App\Services\ThemeService;
@@ -58,9 +55,9 @@ class OffersController extends Controller
             'organization_id' => $organization->id,
         ]);
 
-        $offer->slots()->create([
+        $offer->offerItems()->create([
             'key' => 'primary',
-            'name' => 'Primary Slot',
+            'name' => 'Primary Item',
             'is_required' => true,
             'sort_order' => 0,
             'default_price_id' => null,
@@ -91,8 +88,8 @@ class OffersController extends Controller
             }])
             ->get();
 
-        // Load the offer with its theme and slots
-        $offer->load(['slots.defaultPrice.product', 'theme', 'screenshot']);
+        // Load the offer with its theme and items
+        $offer->load(['offerItems.defaultPrice.product', 'theme', 'screenshot']);
 
         return Inertia::render('offers/edit', [
             'offer' => new OfferResource($offer),
@@ -144,7 +141,7 @@ class OffersController extends Controller
 
     public function destroy(Offer $offer): \Illuminate\Http\RedirectResponse
     {
-        $offer->slots()->delete();
+        $offer->offerItems()->delete();
         $offer->delete();
 
         return redirect()->route('offers.index')->with('success', 'Offer and all associated data deleted successfully');
@@ -154,7 +151,7 @@ class OffersController extends Controller
     {
         // $this->authorizeOrganizationAccess($offer);
 
-        $offer->load('slots.defaultPrice');
+        $offer->load('offerItems.defaultPrice');
 
         $products = Product::query()
             ->where('organization_id', $offer->organization_id)
@@ -164,7 +161,7 @@ class OffersController extends Controller
             ->get();
 
         return Inertia::render('offers/pricing', [
-            'offer' => new OfferResource($offer->load(['slots.defaultPrice'])),
+            'offer' => new OfferResource($offer->load(['offerItems.defaultPrice'])),
             'products' => ProductResource::collection($products),
         ]);
     }
@@ -239,25 +236,25 @@ class OffersController extends Controller
         return redirect()->back()->with('success', 'Price deleted successfully.');
     }
 
-    public function storeSlot(OfferSlotStoreRequest $request, Offer $offer): \Illuminate\Http\RedirectResponse
+    public function storeOfferItem(OfferItemStoreRequest $request, Offer $offer): \Illuminate\Http\RedirectResponse
     {
         $validated = $request->validated();
         $validated['offer_id'] = $offer->id;
 
-        Slot::create($validated);
+        OfferItem::create($validated);
 
-        return redirect()->route('offers.pricing', $offer)->with('success', 'Slot created successfully.');
+        return redirect()->route('offers.pricing', $offer)->with('success', 'Offer item created successfully.');
     }
 
-    public function updateSlot(OfferSlotUpdateRequest $request, Offer $offer, Slot $slot): \Illuminate\Http\RedirectResponse
+    public function updateStoreItem(OfferItemUpdateRequest $request, Offer $offer, OfferItem $offerItem): \Illuminate\Http\RedirectResponse
     {
-        // Authorization is handled by OfferSlotUpdateRequest
+        // Authorization is handled by OfferItemUpdateRequest
         $validated = $request->validated();
-        // Update the slot with validated data
-        $slot->update($validated);
+        // Update the offerItem with validated data
+        $offerItem->update($validated);
 
         // Redirect back to the pricing page
-        return redirect()->route('offers.pricing', $offer)->with('success', 'Slot updated successfully.');
+        return redirect()->route('offers.pricing', $offer)->with('success', 'Offer item updated successfully.');
     }
 
     public function storeVariant(StoreOfferVariantRequest $request, Offer $offer): \Illuminate\Http\RedirectResponse
@@ -304,42 +301,42 @@ class OffersController extends Controller
     public function integrate(Offer $offer): Response
     {
         return Inertia::render('offers/integrate', [
-            'offer' => new OfferResource($offer->load('slots')),
+            'offer' => new OfferResource($offer->load('offerItems')),
         ]);
     }
 
     public function sharing(Offer $offer): Response
     {
         return Inertia::render('offers/sharing', [
-            'offer' => new OfferResource($offer->load('slots')),
+            'offer' => new OfferResource($offer->load('offerItems')),
         ]);
     }
 
     public function settings(Offer $offer): Response
     {
         return Inertia::render('offers/settings', [
-            'offer' => new OfferResource($offer->load('slots')),
+            'offer' => new OfferResource($offer->load('offerItems')),
         ]);
     }
 
     public function settingsCustomization(Offer $offer): Response
     {
         return Inertia::render('offers/settings/customization', [
-            'offer' => new OfferResource($offer->load('slots')),
+            'offer' => new OfferResource($offer->load('offerItems')),
         ]);
     }
 
     public function settingsNotifications(Offer $offer): Response
     {
         return Inertia::render('offers/settings/notifications', [
-            'offer' => new OfferResource($offer->load('slots')),
+            'offer' => new OfferResource($offer->load('offerItems')),
         ]);
     }
 
     public function settingsAccess(Offer $offer): Response
     {
         return Inertia::render('offers/settings/access', [
-            'offer' => new OfferResource($offer->load('slots')),
+            'offer' => new OfferResource($offer->load('offerItems')),
         ]);
     }
 

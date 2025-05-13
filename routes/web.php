@@ -204,10 +204,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::delete('/product/{offerProduct}', [OffersController::class, 'destroyProduct'])->name('products.destroy');
             Route::delete('/product/{offerProduct}/price/{priceId}', [OffersController::class, 'destroyPrice'])->name('product.prices.destroy');
 
-            // Add Slot routes
-            Route::post('/slots', [OffersController::class, 'storeSlot'])->name('slots.store');
-            Route::put('/slots/{slot}', [OffersController::class, 'updateSlot'])->name('slots.update');
-            // Route::delete('/slots/{slot}', [OffersController::class, 'destroySlot'])->name('slots.destroy'); // Add if needed
+            // Add offerItem routes
+            Route::post('/items', [OffersController::class, 'storeOfferItem'])->name('items.store');
+            Route::put('/items/{offerItem}', [OffersController::class, 'updateOfferItem'])->name('items.update');
+            // Route::delete('/items/{offerItem}', [OffersController::class, 'destroyItem'])->name('items.destroy'); // Add if needed
 
             Route::get('integrate', [OffersController::class, 'integrate'])->name('integrate');
             Route::get('sharing', [OffersController::class, 'sharing'])->name('sharing');

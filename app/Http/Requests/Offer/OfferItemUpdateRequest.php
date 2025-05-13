@@ -6,22 +6,28 @@ namespace App\Http\Requests\Offer;
 
 use App\Models\Catalog\Price;
 use App\Models\Store\Offer;
+use App\Models\Store\OfferItem;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
 
-class OfferSlotStoreRequest extends FormRequest
+class OfferItemUpdateRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
      */
     public function authorize(): bool
     {
+        return true;
         $offer = $this->route('offer');
+        $offerItem = $this->route('offerItem');
 
         // Ensure the offer belongs to the user's current organization
+        // and the offerItem belongs to the offer
         return $offer instanceof Offer
-            && $offer->organization_id === Auth::user()->currentOrganization->id;
+            && $offerItem instanceof OfferItem
+            && $offer->organization_id === Auth::user()->currentOrganization->id
+            && $offerItem->offer_id === $offer->id;
     }
 
     /**
@@ -32,21 +38,26 @@ class OfferSlotStoreRequest extends FormRequest
     public function rules(): array
     {
         $offer = $this->route('offer');
+        $offerItem = $this->route('offerItem');
         $organizationId = Auth::user()->currentOrganization->id;
 
         return [
-            'name' => ['required', 'string', 'max:255'],
+            'name' => ['sometimes', 'required', 'string', 'max:255'],
             'key' => [
+                'sometimes',
                 'required',
                 'string',
                 'max:255',
-                Rule::unique('store_offer_slots')->where(function ($query) use ($offer) {
-                    return $query->where('offer_id', $offer->id);
-                }),
+                // Key must be unique within the *offer*
+                // Use the actual table name from OfferItem model if different
+                // $offerItem->getTable()
+                // Rule::unique('store_offer_items')->where(function ($query) use ($offer) {
+                //     return $query->where('offer_id', $offer->id);
+                // })->ignore($offerItem->id), // Ignore the current offerItem being updated
                 'regex:/^[a-z0-9_]+$/', // Ensure key is snake_case and alphanumeric
             ],
-            'sort_order' => ['required', 'integer', 'min:0'],
-            'is_required' => ['required', 'boolean'],
+            'sort_order' => ['sometimes', 'required', 'integer', 'min:0'],
+            'is_required' => ['sometimes', 'required', 'boolean'],
             'default_price_id' => [
                 'nullable',
                 'integer',
