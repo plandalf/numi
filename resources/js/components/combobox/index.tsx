@@ -84,9 +84,15 @@ export function Combobox({
   const getSelectedLabels = () => {
     if (multiple) {
       const values = Array.isArray(value) ? value : [];
-      return values
+      const selectedLabels = values
         .map((v) => items.find((item) => item.value === v)?.label)
-        .filter(Boolean);
+        .filter(Boolean) as string[];
+
+      if (selectedLabels.length <= 2) {
+        return selectedLabels;
+      }
+
+      return [`${selectedLabels[0]}, ${selectedLabels[1]}, +${selectedLabels.length - 2}`];
     }
     return value
       ? [items.find((item) => item.value === value)?.label].filter(Boolean)
@@ -102,16 +108,24 @@ export function Combobox({
           aria-expanded={open}
           aria-required={required}
           className={cn(
-            "w-full justify-between",
+            "w-full justify-between overflow-hidden",
             required &&
               (!value || (Array.isArray(value) && value.length === 0)) &&
               "border-red-500",
             className,
           )}
         >
-          <span className="truncate">
+          <span className="truncate flex-1 text-left">
             {getSelectedLabels().length > 0
-              ? getSelectedLabels().join(", ")
+              ? multiple && Array.isArray(value) && value.length > 2
+                ? (() => {
+                    const labels = value
+                      .slice(0, 2)
+                      .map(v => items.find(item => item.value === v)?.label)
+                      .filter(Boolean);
+                    return `${labels.join(", ")} +${value.length - 2}`;
+                  })()
+                : getSelectedLabels().join(", ")
               : placeholder}
             {required &&
               (!value || (Array.isArray(value) && value.length === 0)) && (

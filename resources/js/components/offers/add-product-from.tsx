@@ -10,37 +10,78 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Trash2, Loader2, CircleCheck } from "lucide-react";
-import { useState, useEffect } from "react";
-import { OfferProduct, type Price, type Product } from "@/types/offer";
+import { useState, useEffect, useMemo } from "react";
+import { OfferItem, OfferProduct, type Price, type Product } from "@/types/offer";
 import { toast } from "sonner";
 import { formatMoney } from "@/lib/utils";
 import { router } from '@inertiajs/react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Combobox } from "@/components/combobox";
 
+/**
+ * Generates an ordinal name based on a number
+ * @param num - The number to convert to an ordinal name
+ * @returns The ordinal name (Primary, Secondary, Third, etc.)
+ */
+export function generateName(num: number): string {
+  const ordinals: Record<number, string> = {
+    1: "Primary",
+    2: "Secondary",
+    3: "Third",
+    4: "Fourth",
+    5: "Fifth",
+    6: "Sixth",
+    7: "Seventh",
+    8: "Eighth",
+    9: "Ninth",
+    10: "Tenth",
+    11: "Eleventh",
+    12: "Twelfth",
+    13: "Thirteenth",
+    14: "Fourteenth",
+    15: "Fifteenth",
+    16: "Sixteenth",
+    17: "Seventeenth",
+    18: "Eighteenth",
+    19: "Nineteenth",
+    20: "Twentieth"
+  };
+
+  // Return the named ordinal if available, otherwise use a numeric format
+  return `${ordinals[num] || num.toString()} item`;
+}
+
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  initialProduct?: OfferProduct;
+  initialData?: OfferItem;
   offerId: number;
   products: Product[];
   tab?: 'product' | 'pricing';
+  offerItemsCount: number;
+}
+
+interface AddOfferItemFormData {
+  [key: string]: any;
+  name: string;
+  key: string;
+  sort_order?: number;
+  is_required?: boolean;
+  default_price_id?: number | null;
 }
 
 export default function AddProductForm({
   open,
   onOpenChange,
-  initialProduct,
+  initialData,
   offerId,
   products,
-  tab: defaultTab = 'product'
+  tab: defaultTab = 'product',
+  offerItemsCount
 }: Props) {
-  const isEditing = !!initialProduct;
+  const isEditing = !!initialData;
   const [activeTab, setActiveTab] = useState<string>(defaultTab);
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(initialProduct ? products.find(p => p.id === initialProduct.id) || null : null);
-  const [selectedPrices, setSelectedPrices] = useState<string[]>(initialProduct?.prices?.map(price => price.id.toString()) || []);
-
-  const [processing, setProcessing] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(initialData ? products.find(p => p.id === initialData.prices[0]?.product_id) || null : null);
 
   // Format products for combobox
   const productOptions = products.map(product => ({
@@ -54,44 +95,50 @@ export default function AddProductForm({
     setSelectedProduct(product || null);
   };
 
+  const defaultName = generateName(offerItemsCount + 1);
+  const defaultKey = defaultName.toLowerCase().replace(/\s+/g, '_');
+
+  const { data, setData, post, put, processing, errors, reset } = useForm<AddOfferItemFormData>({
+    name: initialData?.name || defaultName,
+    key: initialData?.key || defaultKey,
+    prices: initialData?.prices?.map(price => price.id.toString()) || [],
+  });
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setProcessing(true);
-    const productName = selectedProduct?.name || 'this product';
-    const toastId = toast.loading(isEditing ? `Updating ${productName}...` : `Creating ${productName}...`);
 
-    // Include selected prices in the submission data
-    const formData = {
-      product_id: selectedProduct?.id,
-      prices: selectedPrices,
+    const itemName = data.name || 'this slot';
+    const toastId = toast.loading(isEditing ? `Updating ${itemName}...` : `Creating ${itemName}...`);
+
+    const options = {
+        preserveScroll: true,
+        onSuccess: () => {
+            toast.success(`Slot ${itemName} ${isEditing ? 'updated' : 'created'} successfully`, { id: toastId });
+            onOpenChange(false);
+        },
+        onError: (errors: any) => {
+            toast.error(`Failed to ${isEditing ? 'update' : 'create'} slot: ${Object.values(errors).flat().join(", ")}`, { id: toastId });
+        },
     };
 
     if (isEditing) {
-      router.put(route('offers.products.update', { offer: offerId, offerProduct: initialProduct?.store_offer_product_id }), formData, {
-        onSuccess: () => {
-          toast.success(`${productName} updated successfully`, { id: toastId });
-          onOpenChange(false);
-          setProcessing(false);
-        },
-        onError: (errors: any) => {
-          toast.error(`Failed to update product: ${Object.values(errors).flat().join(", ")}`, { id: toastId });
-          setProcessing(false);
-        },
-      });
+        put(route('offers.items.update', { offer: offerId, offerItem: initialData.id }), options);
     } else {
-      router.post(route('offers.products.store', { offer: offerId }), formData, {
-        preserveScroll: true,
-        onSuccess: () => {
-          toast.success(`Product ${productName} created successfully`, { id: toastId });
-          onOpenChange(false);
-          setProcessing(false);
-        },
-        onError: (errors: any) => {
-          toast.error(`Failed to create product: ${Object.values(errors).flat().join(", ")}`, { id: toastId });
-          setProcessing(false);
-        },
-      });
+        post(route('offers.items.store', { offer: offerId }), options);
     }
+  };
+
+  const pricesOptions = useMemo(() => {
+    return (selectedProduct?.prices || []).map(price => ({
+      value: price.id.toString(),
+      label: price.name || `${price.type} - ${formatMoney(price.amount, price.currency)}`
+    }));
+  }, [selectedProduct]);
+
+
+  const handlePriceSelect = (priceIds: string[]) => {
+    const newPrices = [...data.prices.filter((id: string) => !pricesOptions.flatMap(option => option.value).includes(id)), ...priceIds];
+    setData('prices', newPrices);
   };
 
   return (
@@ -106,7 +153,7 @@ export default function AddProductForm({
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="product">Details</TabsTrigger>
+            <TabsTrigger value="product">Product</TabsTrigger>
             <TabsTrigger value="pricing" disabled={!selectedProduct}>Pricing</TabsTrigger>
           </TabsList>
 
@@ -123,76 +170,57 @@ export default function AddProductForm({
                     modal
                   />
                 </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="key">Lookup Key</Label>
-                  <Input
-                    id="key"
-                    autoComplete="off"
-                    value={selectedProduct?.lookup_key}
-                    placeholder="e.g., primary_license"
-                    disabled
-                  />
-                  <p className="text-sm text-muted-foreground">
-                    A unique identifier for this product within your organization. Will update automatically based on name.
-                  </p>
-                </div>
               </div>
             </TabsContent>
 
             <TabsContent value="pricing" className="space-y-4">
               <div className="space-y-4">
-                {selectedProduct ? (
-                  <>
-                    <div>
-                      <Label>Select Price</Label>
-                      <div className="grid gap-2">
-                        <Combobox
-                          className="mt-1 w-full"
-                          items={(selectedProduct.prices || []).map(price => ({
-                            value: price.id.toString(),
-                            label: price.name || `${price.type} - ${formatMoney(price.amount, price.currency)}`
-                          }))}
-                          placeholder="Select prices"
-                          selected={selectedPrices}
-                          onSelect={(value) => {
-                            const ids = typeof value === 'string' ? [value] : value;
-                            setSelectedPrices(ids);
-                          }}
-                          required
-                          multiple
-                          modal
-                        />
-                      </div>
+                <div className="grid gap-4">
+                  <div className="grid gap-2">
+                    <Label>Select Price</Label>
+                    <div className="grid gap-2">
+                      <Combobox
+                        className="mt-1 w-full"
+                        items={(selectedProduct?.prices || []).map(price => ({
+                          value: price.id.toString(),
+                          label: price.name || `${price.type} - ${formatMoney(price.amount, price.currency)}`
+                        }))}
+                        placeholder="Select prices"
+                        selected={data.prices}
+                        onSelect={(value) => {
+                          const ids = typeof value === 'string' ? [value] : value;
+                          handlePriceSelect(ids);
+                        }}
+                        required
+                        multiple
+                        modal
+                      />
                     </div>
-
-                    <div className="flex flex-col gap-2 overflow-y-auto max-h-[200px]">
-                      <Label>Your selected prices show here</Label>
-                      {selectedPrices.map((priceId) => {
-                        const price = selectedProduct.prices?.find((p) => p.id.toString() === priceId);
-                        if (!price) return null;
-
-                        return (
-                          <div key={priceId} className="flex justify-between bg-[#191D3A] rounded-md p-2 px-4 text-white text-sm">
-                            <div className="flex items-center gap-2">
-                              <CircleCheck className="w-5 h-5" />
-                              <h3>{price.name || `${price.type}`}</h3>
-                              <p className="text-xs">-</p>
-                              <p>{formatMoney(price.amount, price.currency)}</p>
-                            </div>
-                            <Trash2
-                              className="w-5 h-5 hover:text-red-500 cursor-pointer"
-                              onClick={() => setSelectedPrices(selectedPrices.filter(id => id !== priceId))}
-                            />
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </>
-                ) : (
-                  <div className="text-center py-8 text-gray-500">
-                    Please select a product first
                   </div>
-                )}
+
+                  <div className="flex flex-col gap-2 overflow-y-auto max-h-[200px]">
+                    <Label>Your selected prices show here</Label>
+                    {data.prices.map((priceId: string) => {
+                      const price = selectedProduct?.prices?.find((p) => p.id.toString() === priceId);
+                      if (!price) return null;
+
+                      return (
+                        <div key={priceId} className="flex justify-between bg-[#191D3A] rounded-md p-2 px-4 text-white text-sm">
+                          <div className="flex items-center gap-2">
+                            <CircleCheck className="w-5 h-5" />
+                            <h3>{price.name || `${price.type}`}</h3>
+                            <p className="text-xs">-</p>
+                            <p>{formatMoney(price.amount, price.currency)}</p>
+                          </div>
+                          <Trash2
+                            className="w-5 h-5 hover:text-red-500 cursor-pointer"
+                            onClick={() => setData('prices', data.prices.filter((id: string) => id !== priceId))}
+                          />
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
               </div>
             </TabsContent>
 
@@ -200,7 +228,7 @@ export default function AddProductForm({
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={processing}>
                 Cancel
               </Button>
-              {activeTab === 'pricing' && (<Button type="submit" disabled={processing || selectedPrices.length === 0} className="relative">
+              {activeTab === 'pricing' && (<Button type="submit" disabled={processing || data.prices.length === 0} className="relative">
                 <span className={`${processing ? 'opacity-0' : 'opacity-100'} transition-opacity`}>
                   Save
                 </span>

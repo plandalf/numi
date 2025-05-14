@@ -42,10 +42,9 @@ class OfferItemUpdateRequest extends FormRequest
         $organizationId = Auth::user()->currentOrganization->id;
 
         return [
-            'name' => ['sometimes', 'required', 'string', 'max:255'],
+            'name' => ['sometimes', 'string', 'max:255'],
             'key' => [
                 'sometimes',
-                'required',
                 'string',
                 'max:255',
                 // Key must be unique within the *offer*
@@ -56,8 +55,8 @@ class OfferItemUpdateRequest extends FormRequest
                 // })->ignore($offerItem->id), // Ignore the current offerItem being updated
                 'regex:/^[a-z0-9_]+$/', // Ensure key is snake_case and alphanumeric
             ],
-            'sort_order' => ['sometimes', 'required', 'integer', 'min:0'],
-            'is_required' => ['sometimes', 'required', 'boolean'],
+            'sort_order' => ['sometimes', 'integer', 'min:0'],
+            'is_required' => ['sometimes', 'boolean'],
             'default_price_id' => [
                 'nullable',
                 'integer',
@@ -66,6 +65,11 @@ class OfferItemUpdateRequest extends FormRequest
                         ->where('is_active', true);
                 }),
             ],
+            'prices' => ['array'],
+            'prices.*' => ['integer', Rule::exists('catalog_prices', 'id')->where(function ($query) use ($organizationId) {
+                return $query->where('organization_id', $organizationId)
+                    ->where('is_active', true);
+            })],
         ];
     }
 

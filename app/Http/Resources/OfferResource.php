@@ -38,11 +38,10 @@ class OfferResource extends JsonResource
             'organization_id' => $this->organization_id,
             'view' => $this->view,
             'properties' => $this->properties,
-            'offer_items' => OfferItemResource::collection($this->whenLoaded('offerItems')),
+            'items' => OfferItemResource::collection($this->whenLoaded('offerItems')),
             'theme' => new ThemeResource($this?->theme ?? new Theme),
             'created_at' => $this->created_at?->toISOString(),
             'updated_at' => $this->updated_at?->toISOString(),
-            'products' => OfferProductResource::collection($this->whenLoaded('offerProducts')),
         ];
     }
 }

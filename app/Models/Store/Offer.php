@@ -74,20 +74,6 @@ class Offer extends Model
         return $this->hasMany(OfferItem::class);
     }
 
-    /**
-     * Get the offer prices for the offer.
-     */
-    public function offerPrices(): HasMany
-    {
-        return $this->hasMany(OfferPrice::class);
-    }
-
-
-    public function offerProducts(): HasMany
-    {
-        return $this->hasMany(OfferProduct::class);
-    }
-
     public function theme(): BelongsTo
     {
         return $this->belongsTo(Theme::class);
@@ -121,15 +107,5 @@ class Offer extends Model
     public function isArchived(): bool
     {
         return $this->status === self::STATUS_ARCHIVED;
-    }
-
-    /**
-     * Get all products with their associated prices for this offer.
-     *
-     * @return \Illuminate\Database\Eloquent\Relations\HasManyThrough
-     */
-    public function productsWithPrices()
-    {
-        return $this->offerProducts()->with(['product', 'offerPrices.price']);
     }
 }

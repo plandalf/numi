@@ -5,7 +5,7 @@ namespace App\Http\Resources;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
-class OfferItemResource extends JsonResource
+class OfferPriceResource extends JsonResource
 {
     /**
      * Transform the resource into an array.
@@ -15,7 +15,7 @@ class OfferItemResource extends JsonResource
     public function toArray(Request $request): array
     {
         return array_merge(parent::toArray($request), [
-            'prices' => PriceResource::collection($this->whenLoaded('prices')),
+            'prices' => OfferPriceResource::collection($this->whenLoaded('offerPrices')),
         ]);
     }
 }

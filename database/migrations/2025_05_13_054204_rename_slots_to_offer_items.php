@@ -20,6 +20,14 @@ return new class extends Migration
         Schema::table('order_items', function (Blueprint $table) {
             $table->renameColumn('slot_id', 'offer_item_id');
         });
+
+        Schema::create('store_offer_prices', function (Blueprint $table) {
+            $table->id();
+            $table->unsignedBigInteger('offer_item_id');
+            $table->unsignedBigInteger('price_id');
+            $table->softDeletes();
+            $table->timestamps();
+        });
     }
 
     /**
@@ -36,5 +44,7 @@ return new class extends Migration
         Schema::table('order_items', function (Blueprint $table) {
             $table->renameColumn('offer_item_id', 'slot_id');
         });
+
+        Schema::dropIfExists('store_offer_prices');
     }
 };

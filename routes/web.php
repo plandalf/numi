@@ -197,16 +197,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::get('settings/theme', [OffersController::class, 'settingsTheme'])->name('settings.theme');
             Route::put('theme', [OffersController::class, 'updateTheme'])->name('update.theme');
 
-            // Offer Prices routes
-            Route::post('/products', [OffersController::class, 'storeProduct'])->name('products.store');
-            Route::put('/products/{offerProduct}', [OffersController::class, 'updateProduct'])->name('products.update');
-
-            Route::delete('/product/{offerProduct}', [OffersController::class, 'destroyProduct'])->name('products.destroy');
-            Route::delete('/product/{offerProduct}/price/{priceId}', [OffersController::class, 'destroyPrice'])->name('product.prices.destroy');
-
             // Add offerItem routes
             Route::post('/items', [OffersController::class, 'storeOfferItem'])->name('items.store');
             Route::put('/items/{offerItem}', [OffersController::class, 'updateOfferItem'])->name('items.update');
+            Route::delete('/items/{offerItem}', [OffersController::class, 'destroyOfferItem'])->name('items.destroy');
             // Route::delete('/items/{offerItem}', [OffersController::class, 'destroyItem'])->name('items.destroy'); // Add if needed
 
             Route::get('integrate', [OffersController::class, 'integrate'])->name('integrate');

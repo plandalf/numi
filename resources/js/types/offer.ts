@@ -22,7 +22,7 @@ export interface Offer {
     };
     properties: Record<string, any> | null;
     transaction_webhook_url: string | null;
-    slots: OfferSlot[];
+    items: OfferItem[];
     products: OfferProduct[];
     theme: Theme | null;
     screenshot: {
@@ -34,7 +34,7 @@ export interface Offer {
 
 }
 
-export interface OfferSlot {
+export interface OfferItem {
     id: number;
     name: string;
     key: string;
@@ -45,7 +45,7 @@ export interface OfferSlot {
     created_at: string;
     updated_at: string;
     product: Product | null;
-    price: Price[];
+    prices: Price[];
 }
 
 export interface Price {

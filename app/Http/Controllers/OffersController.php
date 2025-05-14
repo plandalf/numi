@@ -6,7 +6,6 @@ namespace App\Http\Controllers;
 
 use App\Enums\Theme\FontElement;
 use App\Enums\Theme\WeightElement;
-use App\Http\Requests\Offer\OfferProductStoreRequest;
 use App\Http\Requests\Offer\OfferItemStoreRequest;
 use App\Http\Requests\Offer\OfferItemUpdateRequest;
 use App\Http\Requests\Offer\OfferThemeUpdateRequest;
@@ -14,15 +13,16 @@ use App\Http\Requests\StoreOfferVariantRequest;
 use App\Http\Requests\UpdateOfferVariantRequest;
 use App\Http\Requests\Offer\OfferUpdateRequest;
 use App\Http\Resources\OfferResource;
+use App\Http\Resources\PriceResource;
 use App\Http\Resources\ProductResource;
 use App\Http\Resources\TemplateResource;
 use App\Http\Resources\ThemeResource;
+use App\Models\Catalog\Price;
 use App\Models\Catalog\Product;
 use App\Models\Organization;
 use App\Models\Store\Offer;
-use App\Models\Store\OfferPrice;
-use App\Models\Store\OfferProduct;
 use App\Models\Store\OfferItem;
+use App\Models\Store\OfferPrice;
 use App\Models\Theme;
 use App\Services\TemplateService;
 use App\Services\ThemeService;
@@ -89,7 +89,7 @@ class OffersController extends Controller
             ->get();
 
         // Load the offer with its theme and items
-        $offer->load(['offerItems.defaultPrice.product', 'theme', 'screenshot']);
+        $offer->load(['offerItems.prices', 'theme', 'screenshot']);
 
         return Inertia::render('offers/edit', [
             'offer' => new OfferResource($offer),
@@ -166,43 +166,48 @@ class OffersController extends Controller
         ]);
     }
 
-    public function storeProduct(OfferProductStoreRequest $request, Offer $offer): \Illuminate\Http\RedirectResponse
+    public function storeOfferItem(OfferItemStoreRequest $request, Offer $offer): \Illuminate\Http\RedirectResponse
     {
         $validated = $request->validated();
-        $prices = $validated['prices'];
-
-        $offerProduct = OfferProduct::create([
+        $offerItem = OfferItem::create([
+            'name' => $validated['name'],
+            'key' => $validated['key'],
+            'is_required' => $validated['is_required'] ?? false,
             'offer_id' => $offer->id,
-            'product_id' => $validated['product_id'],
         ]);
 
-        foreach ($prices as $price) {
-            OfferPrice::create([
-                'offer_id' => $offer->id,
+        $prices = $validated['prices'];
+
+        foreach ($prices as $key => $price) {
+            $offerItem->offerPrices()->create([
                 'price_id' => $price,
-                'offer_product_id' => $offerProduct->id,
             ]);
+
+            if ($key === 0) {
+                $offerItem->default_price_id = $price;
+                $offerItem->save();
+            }
         }
 
-        return redirect()->back()->with('success', 'Product created successfully.');
+        return redirect()->back()->with('success', 'Offer item created successfully.');
     }
 
-    public function updateProduct(OfferProductStoreRequest $request, Offer $offer, OfferProduct $offerProduct): \Illuminate\Http\RedirectResponse
+    public function updateOfferItem(OfferItemUpdateRequest $request, Offer $offer, OfferItem $offerItem): \Illuminate\Http\RedirectResponse
     {
         $validated = $request->validated();
         $prices = $validated['prices'];
 
-        $offerProduct->update([
-            'product_id' => $validated['product_id'],
+        $offerItem->update([
+            'name' => $validated['name'],
+            'is_required' => $validated['is_required'] ?? false,
         ]);
 
-        $offerProduct->offerPrices()->delete();
+        $offerItem->offerPrices()->delete();
         foreach ($prices as $price) {
             OfferPrice::updateOrCreate(
                 [
-                    'offer_id' => $offer->id,
+                    'offer_item_id' => $offerItem->id,
                     'price_id' => $price,
-                    'offer_product_id' => $offerProduct->id,
                 ],
                 [
                     'deleted_at' => null,
@@ -210,51 +215,16 @@ class OffersController extends Controller
             );
         }
 
-        return redirect()->back()->with('success', 'Product updated successfully.');
-    }
-
-    public function destroyProduct(Offer $offer, OfferProduct $offerProduct): \Illuminate\Http\RedirectResponse
-    {
-        if($offer->id !== $offerProduct->offer_id) {
-            return redirect()->back()->with('error', 'You are not authorized to delete this product.');
-        }
-
-        $offerProduct->delete();
-        $offerProduct->offerPrices()->delete();
-
-        return redirect()->back()->with('success', 'Product deleted successfully.');
-    }
-
-    public function destroyPrice(Offer $offer, OfferProduct $offerProduct, $priceId): \Illuminate\Http\RedirectResponse
-    {
-        if($offer->id !== $offerProduct->offer_id) {
-            return redirect()->back()->with('error', 'You are not authorized to delete this product.');
-        }
-
-        $offerProduct->offerPrices()->where('price_id', $priceId)->delete();
-
-        return redirect()->back()->with('success', 'Price deleted successfully.');
-    }
-
-    public function storeOfferItem(OfferItemStoreRequest $request, Offer $offer): \Illuminate\Http\RedirectResponse
-    {
-        $validated = $request->validated();
-        $validated['offer_id'] = $offer->id;
-
-        OfferItem::create($validated);
-
-        return redirect()->route('offers.pricing', $offer)->with('success', 'Offer item created successfully.');
-    }
-
-    public function updateStoreItem(OfferItemUpdateRequest $request, Offer $offer, OfferItem $offerItem): \Illuminate\Http\RedirectResponse
-    {
-        // Authorization is handled by OfferItemUpdateRequest
-        $validated = $request->validated();
-        // Update the offerItem with validated data
-        $offerItem->update($validated);
-
         // Redirect back to the pricing page
-        return redirect()->route('offers.pricing', $offer)->with('success', 'Offer item updated successfully.');
+        return redirect()->back()->with('success', 'Offer item updated successfully.');
+    }
+
+    public function destroyOfferItem(Offer $offer, OfferItem $offerItem): \Illuminate\Http\RedirectResponse
+    {
+        $offerItem->delete();
+        $offerItem->offerPrices()->delete();
+
+        return redirect()->back()->with('success', 'Offer item deleted successfully.');
     }
 
     public function storeVariant(StoreOfferVariantRequest $request, Offer $offer): \Illuminate\Http\RedirectResponse

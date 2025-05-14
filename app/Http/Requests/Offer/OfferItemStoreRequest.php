@@ -41,20 +41,17 @@ class OfferItemStoreRequest extends FormRequest
                 'string',
                 'max:255',
                 Rule::unique('store_offer_items')->where(function ($query) use ($offer) {
-                    return $query->where('offer_id', $offer->id);
+                    return $query->where('offer_id', $offer->id)->whereNull('deleted_at');
                 }),
                 'regex:/^[a-z0-9_]+$/', // Ensure key is snake_case and alphanumeric
             ],
-            'sort_order' => ['required', 'integer', 'min:0'],
-            'is_required' => ['required', 'boolean'],
-            'default_price_id' => [
-                'nullable',
-                'integer',
-                Rule::exists('catalog_prices', 'id')->where(function ($query) use ($organizationId) {
-                    return $query->where('organization_id', $organizationId)
-                        ->where('is_active', true);
-                }),
-            ],
+            'sort_order' => ['integer', 'min:0'],
+            'is_required' => ['boolean'],
+            'prices' => ['array'],
+            'prices.*' => ['integer', Rule::exists('catalog_prices', 'id')->where(function ($query) use ($organizationId) {
+                return $query->where('organization_id', $organizationId)
+                    ->where('is_active', true);
+            })],
         ];
     }
 
