@@ -51,7 +51,7 @@ function OptionSelector({ action, value, onChange }: OptionSelectorProps) {
   const { offer } = usePage<EditProps>().props;
 
   if (action === 'set_price') {
-    const prices = offer.products.flatMap(p => p.prices || []);
+    const prices = offer.items.flatMap(i => i.prices || []);
     const priceOptions = prices.map(p => ({
       value: p.lookup_key || p.id.toString(),
       label: `${p.name || p.lookup_key || p.id} (${p.currency.toUpperCase()} ${p.amount / 100})`,

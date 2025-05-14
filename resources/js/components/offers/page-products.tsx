@@ -1,6 +1,6 @@
 import { Button } from '@/components/ui/button';
 import { Separator } from '../ui/separator';
-import { CircleAlert, CircleCheck, CirclePlus, Plus } from 'lucide-react';
+import { CircleAlert, CircleCheck, CirclePlus, Plus, PlusIcon } from 'lucide-react';
 import { usePage } from '@inertiajs/react';
 import { EditProps } from '@/pages/offers/edit';
 import { OfferItem, OfferProduct, Price, Product } from '@/types/offer';
@@ -26,6 +26,13 @@ export const PageProducts = () => {
     tab: 'product'
   });
   const [selectedOfferItem, setSelectedOfferItem] = useState<OfferItem>();
+  const [selectedProduct, setSelectedProduct] = useState<Product | null | undefined>(null);
+
+  const handleExistingProductOnClose = () => {
+    setAddExistingProductDialogProps({ open: false, tab: 'product' });
+    setSelectedOfferItem(undefined);
+    setSelectedProduct(null);
+  }
 
   const OfferItems = ({ offerItems }: { offerItems: OfferItem[] }) => {
     const handleEdit = (offerItem: OfferItem) => {
@@ -49,6 +56,23 @@ export const PageProducts = () => {
         },
       });
     }
+
+    const handleToggleRequired = (item: OfferItem, checked: boolean) => {
+      const toastId = toast.loading(`Updating product...`);
+
+      router.put(route("offers.items.update", { offer: offer.id, offerItem: item.id }), {
+        is_required: checked
+      }, {
+        preserveScroll: true,
+        onSuccess: () => {
+          toast.success(`Product updated successfully`, { id: toastId });
+        },
+        onError: (errors) => {
+          toast.error(`Failed to update product: ${Object.values(errors).flat().join(", ")}`, { id: toastId });
+        },
+      });
+    }
+
     return (
       <div className="flex flex-col gap-3.5">
         {offerItems.map((item, key) => (
@@ -63,12 +87,15 @@ export const PageProducts = () => {
                 onClick: () => handleDelete(item)
               }]} />
             </div>
-            <div className="flex gap-3 mt-2 rounded-md p-2 text-[#5A618B] items-center justify-between flex-col border bg-[#F7F9FF]">
-              <div className="flex bg-white border rounded-md px-4 py-2 text-[#5A618B] items-center justify-between w-full">
+            <div className="flex gap-3 mt-2 rounded-md p-2 items-center justify-between flex-col border bg-[#F7F9FF]">
+              <div className="flex bg-white border rounded-md px-4 py-2 items-center justify-between w-full">
                 <div>Required</div>
-                <Switch />
+                <Switch defaultChecked={item.is_required} onCheckedChange={(checked) => handleToggleRequired(item, checked)} />
               </div>
               <Prices prices={item.prices ?? []} offerItem={item} />
+              <div className="flex bg-white border rounded-md px-4 py-2 items-center w-full justify-center hover:bg-gray-50 cursor-pointer" onClick={() => handleEdit(item)}>
+                <PlusIcon className="w-4 h-4" /> Add another price
+              </div>
             </div>
           </div>
         ))}
@@ -77,30 +104,46 @@ export const PageProducts = () => {
   }
 
   const Prices = ({ prices, offerItem }: { prices: Price[], offerItem: OfferItem }) => {
-    const handleEdit = () => {
+    const handleEdit = (price: Price) => {
       setSelectedOfferItem(offerItem);
+      setSelectedProduct(price.product);
       setAddExistingProductDialogProps({
         open: true,
         tab: 'pricing'
       });
     }
 
-    const options = [
-      {
-        label: 'Edit',
-        onClick: handleEdit
-      }
-    ]
+    const handleMakeDefault = (price: Price) => {
+      const toastId = toast.loading(`Updating product...`);
+
+      router.put(route("offers.items.update", { offer: offer.id, offerItem: offerItem.id }), {
+        default_price_id: price.id
+      }, {
+        preserveScroll: true,
+        onSuccess: () => {
+          toast.success(`Product updated successfully`, { id: toastId });
+        },
+      });
+    }
 
     return (
       <>
         {prices.map((price) => (
-          <div className="flex bg-white border rounded-md px-4 py-2 text-[#5A618B] items-center justify-between w-full">
-            <div className="text-sm">{price.name}</div>
-            {price.id === offerItem.default_price_id && (
-              <Badge variant="secondary">Default</Badge>
-            )}
-            <Kebab items={options} />
+          <div className="flex bg-white border rounded-md px-4 py-2 items-center justify-between w-full">
+            <div className="flex flex-col gap-1">
+              <div className="text-sm font-bold">{price.product?.name || price.name}</div>
+              <div className="text-xs">{price.name} {price.currency.toUpperCase()} ${price.amount / 100}</div>
+              {price.id === offerItem.default_price_id && (
+                <Badge variant="secondary">Default</Badge>
+              )}
+            </div>
+            <Kebab items={[{
+              label: 'Make default',
+              onClick: () => handleMakeDefault(price)
+            }, {
+              label: 'Edit',
+              onClick: () => handleEdit(price)
+            }]} />
           </div>
         ))}
       </>
@@ -149,12 +192,13 @@ export const PageProducts = () => {
       {addExistingProductDialogProps.open && (
         <AddProductForm
           open
-          onOpenChange={() => { setAddExistingProductDialogProps({ open: false, tab: 'product' }); setSelectedOfferItem(undefined) }}
+          onOpenChange={handleExistingProductOnClose}
           offerId={offer.id}
           products={products}
           initialData={selectedOfferItem}
           tab={addExistingProductDialogProps.tab as 'product' | 'pricing'}
           offerItemsCount={offerItems.length}
+          selectedProduct={selectedProduct}
         />
       )}
       <ProductForm open={isProductFormOpen} onOpenChange={setIsProductFormOpen} />

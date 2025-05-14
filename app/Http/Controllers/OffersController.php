@@ -37,8 +37,7 @@ class OffersController extends Controller
     public function __construct(
         protected TemplateService $templateService,
         protected ThemeService $themeService
-    ) {
-    }
+    ) {}
 
     public function index(): Response
     {
@@ -89,7 +88,7 @@ class OffersController extends Controller
             ->get();
 
         // Load the offer with its theme and items
-        $offer->load(['offerItems.prices', 'theme', 'screenshot']);
+        $offer->load(['offerItems.prices.product', 'theme', 'screenshot']);
 
         return Inertia::render('offers/edit', [
             'offer' => new OfferResource($offer),
@@ -107,11 +106,11 @@ class OffersController extends Controller
     {
         $forUpdate = [];
 
-        if($request->validated('name')) {
+        if ($request->validated('name')) {
             $forUpdate['name'] = $request->validated('name');
         }
 
-        if($request->validated('view')) {
+        if ($request->validated('view')) {
             $forUpdate['view'] = $request->validated('view');
         }
 
@@ -195,24 +194,38 @@ class OffersController extends Controller
     public function updateOfferItem(OfferItemUpdateRequest $request, Offer $offer, OfferItem $offerItem): \Illuminate\Http\RedirectResponse
     {
         $validated = $request->validated();
-        $prices = $validated['prices'];
+        $prices = $validated['prices'] ?? null;
+        $name = $validated['name'] ?? null;
+        $isRequired = $validated['is_required'] ?? null;
+        $defaultPriceId = $validated['default_price_id'] ?? null;
 
-        $offerItem->update([
-            'name' => $validated['name'],
-            'is_required' => $validated['is_required'] ?? false,
-        ]);
+        if($name) {
+            $offerItem->name = $name;
+        }
 
-        $offerItem->offerPrices()->delete();
-        foreach ($prices as $price) {
-            OfferPrice::updateOrCreate(
-                [
-                    'offer_item_id' => $offerItem->id,
-                    'price_id' => $price,
-                ],
-                [
-                    'deleted_at' => null,
-                ]
-            );
+        if ($isRequired !== null) {
+            $offerItem->is_required = $isRequired;
+        }
+
+        if ($defaultPriceId) {
+            $offerItem->default_price_id = $defaultPriceId;
+        }
+
+        $offerItem->save();
+
+        if ($prices) {
+            $offerItem->offerPrices()->delete();
+            foreach ($prices as $price) {
+                OfferPrice::updateOrCreate(
+                    [
+                        'offer_item_id' => $offerItem->id,
+                        'price_id' => $price,
+                    ],
+                    [
+                        'deleted_at' => null,
+                    ]
+                );
+            }
         }
 
         // Redirect back to the pricing page

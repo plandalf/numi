@@ -59,6 +59,7 @@ interface Props {
   products: Product[];
   tab?: 'product' | 'pricing';
   offerItemsCount: number;
+  selectedProduct?: Product | null;
 }
 
 interface AddOfferItemFormData {
@@ -77,12 +78,14 @@ export default function AddProductForm({
   offerId,
   products,
   tab: defaultTab = 'product',
-  offerItemsCount
+  offerItemsCount,
+  selectedProduct: defaultSelectedProduct
 }: Props) {
   const isEditing = !!initialData;
   const [activeTab, setActiveTab] = useState<string>(defaultTab);
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(initialData ? products.find(p => p.id === initialData.prices[0]?.product_id) || null : null);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(initialData ? products.find(p => p.id === defaultSelectedProduct?.id) || null : null);
 
+  console.log("selectedProduct", selectedProduct);
   // Format products for combobox
   const productOptions = products.map(product => ({
     value: product.id.toString(),
@@ -101,6 +104,7 @@ export default function AddProductForm({
   const { data, setData, post, put, processing, errors, reset } = useForm<AddOfferItemFormData>({
     name: initialData?.name || defaultName,
     key: initialData?.key || defaultKey,
+    is_required: initialData?.is_required || offerItemsCount === 0,
     prices: initialData?.prices?.map(price => price.id.toString()) || [],
   });
 
