@@ -71,7 +71,7 @@ export function generateDefaultPage({
         view: {
             title: {
                 id: 'title',
-                label: 'Title',
+                label: 'Title Section',
                 style: {
                     backgroundColor: '#FBF9FA'
                 },
@@ -79,7 +79,7 @@ export function generateDefaultPage({
             },
             content: {
                 id: 'content',
-                label: 'Content',
+                label: 'Content Section',
                 style: {
                     backgroundColor: '#FBF9FA'
                 },
@@ -87,7 +87,7 @@ export function generateDefaultPage({
             },
             action: {
                 id: 'action',
-                label: 'Action',
+                label: 'Action Section',
                 style: {
                     backgroundColor: '#FFFFFF'
                 },
@@ -95,7 +95,7 @@ export function generateDefaultPage({
             },
             promo: {
                 id: 'promo',
-                label: 'Promo',
+                label: 'Promo Section',
                 style: {
                     backgroundColor: '#EFF6FF'
                 },
