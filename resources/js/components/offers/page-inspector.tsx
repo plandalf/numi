@@ -38,7 +38,7 @@ export const AppearanceEditor = ({ globalState, block, onUpdate }: { globalState
   })) as StyleItem[];
 
 
-  const onStyleChange = (key: string, value: string) => {
+  const onStyleChange = (key: string, value: string | boolean) => {
     onUpdate({
       ...block,
       appearance: { ...block.appearance, [key]: value }
@@ -53,7 +53,9 @@ export const AppearanceEditor = ({ globalState, block, onUpdate }: { globalState
   };
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-3 mb-6">
+      <h3 className="font-semibold">Appearance</h3>
+      <Label className="text-sm">Styles</Label>
       <StyleEditor items={styleItems} onChange={onStyleChange} onDelete={onStyleDelete} themeColors={themeColors} />
       {visibilityHook && (
         <ConditionVisibilityEditor
@@ -181,107 +183,107 @@ export const Inspector = ({
     </div>;
   }
 
+  const hooks = globalState?.hookUsage[block.id]?.filter((hook: HookUsage) => hook.inspector !== 'hidden') || [];
 
-  /**
-     * Preserve the order of hooks in the inspector
-     */
-  let appearanceFound = false;
-  let validationFound = false;
-  let interactionFound = false;
-  let conditionsFound = false;
-  const hooks = globalState?.hookUsage[block.id]
-    ?.filter((hook: HookUsage) => hook.inspector !== 'hidden')
-    ?.filter((hook: HookUsage) => {
-      if (hook.type === 'appearance') {
-        if (appearanceFound) return false;
-        appearanceFound = true;
-        return true;
-      }
-      if (hook.type === 'validation') {
-        if (validationFound) return false;
-        validationFound = true;
-        return true;
-      }
-      if (hook.type === 'interaction') {
-        if (interactionFound) return false;
-        interactionFound = true;
-        return true;
-      }
+  // Group hooks by type
+  const groupedHooks = hooks.reduce((acc, hook) => {
+    if (!acc[hook.type]) {
+      acc[hook.type] = [];
+    }
+    acc[hook.type].push(hook);
+    return acc;
+  }, {} as Record<string, HookUsage[]>);
 
-      if (hook.type === 'conditions') {
-        if (conditionsFound) return false;
-        conditionsFound = true;
-        return true;
-      }
-
-      return true;
-    });
-
+  // Define the order of sections
+  const sectionOrder = [
+    { type: 'other', label: 'Properties' },
+    { type: 'appearance', label: 'Appearance' },
+    { type: 'validation', label: 'Validation' },
+    { type: 'interaction', label: 'Interaction' },
+    { type: 'conditions', label: 'Conditions' }
+  ];
 
   return (
     <div className="p-4">
       {block && globalState?.hookUsage?.[block.id] && (
         <div>
-          <div className="space-y-4">
-            {hooks?.filter((hook: HookUsage) => hook.inspector !== 'hidden')
-              .map((hook: HookUsage) => (
-                <div key={hook.name} className="mb-4">
-                  {hook.type === 'string' && hook.inspector === 'file' ? (
-                    <FileEditor
-                      label={hook.label || hook.name}
-                      value={block.content?.[hook.name]}
-                      onChange={value => handleContentChange(hook.name, value)}
-                      preview={block.content?.[hook.name]?.url}
-                    />
-                  ) : hook.type === 'string' && hook.inspector === 'colorPicker' ? (
-                    <ColorPickerEditor
-                      label={hook.label || hook.name}
-                      value={block.content?.[hook.name] ?? hook.defaultValue}
-                      onChange={value => handleContentChange(hook.name, value)}
-                      type='advanced'
-                      themeColors={themeColors}
-                    />
-                  ) : hook.type === 'string' ? (
-                    <StringEditor
-                      label={hook.label || hook.name}
-                      value={block.content?.[hook.name] ?? hook.defaultValue}
-                      onChange={value => handleContentChange(hook.name, value)}
-                      multiline={hook.inspector === 'multiline'}
-                    />
-                  ) : hook.type === 'boolean' ? (
-                    <BooleanEditor
-                      label={hook.label || hook.name}
-                      value={block.content?.[hook.name] ?? hook.defaultValue}
-                      onChange={value => handleContentChange(hook.name, value)}
-                    />
-                  ) : hook.type === 'enumeration' ? (
-                    <EnumerationEditor
-                      label={hook.label || hook.name}
-                      value={block.content?.[hook.name] ?? hook.defaultValue}
-                      onChange={value => handleContentChange(hook.name, value)}
-                      options={hook.options || []}
-                      icons={hook.icons}
-                      inspector={hook.inspector}
-                      labels={hook.labels}
-                    />
-                  ) : hook.type === 'jsonSchema' && hook.schema ? (
-                    <JSONSchemaEditor
-                      schema={hook.schema}
-                      value={block.content?.[hook.name] || []}
-                      onChange={newValue => handleContentChange(hook.name, newValue)}
-                      themeColors={themeColors}
-                    />
-                  ) : hook.type === 'appearance' ? (
+          <div className="space-y-6">
+            {sectionOrder.map(({ type, label }) => {
+              // For 'other' type, combine all non-special types
+              const sectionHooks = type === 'other' 
+                ? hooks.filter(hook => !['appearance', 'validation', 'interaction', 'conditions'].includes(hook.type))
+                : groupedHooks[type] || [];
+
+              if (sectionHooks.length === 0) return null;
+
+              return (
+                <div key={type} className="space-y-4">
+                  {type === 'appearance' ? (
                     <AppearanceEditor globalState={globalState} block={block} onUpdate={onUpdate} />
-                  ) : hook.type === 'validation' ? (
+                  ) : type === 'validation' ? (
                     <ValidationSection block={block} onUpdate={onUpdate} />
-                  ) : hook.type === 'interaction' ? (
+                  ) : type === 'interaction' ? (
                     <InteractionSection globalState={globalState} block={block} onUpdate={onUpdate} />
-                  ) : hook.type === 'conditions' ? (
+                  ) : type === 'conditions' ? (
                     <ConditionsSection globalState={globalState} block={block} onUpdate={onUpdate} />
-                  ) : null}
+                  ) : (
+                    <>
+                      <h3 className="font-semibold">{label}</h3>
+                      {sectionHooks.map((hook: HookUsage) => (
+                        <div key={hook.name} className="mb-4">
+                          {hook.type === 'string' && hook.inspector === 'file' ? (
+                          <FileEditor
+                            label={hook.label || hook.name}
+                            value={block.content?.[hook.name]}
+                            onChange={value => handleContentChange(hook.name, value)}
+                            preview={block.content?.[hook.name]?.url}
+                          />
+                        ) : hook.type === 'string' && hook.inspector === 'colorPicker' ? (
+                          <ColorPickerEditor
+                            label={hook.label || hook.name}
+                            value={block.content?.[hook.name] ?? hook.defaultValue}
+                            onChange={value => handleContentChange(hook.name, value)}
+                            type='advanced'
+                            themeColors={themeColors}
+                          />
+                        ) : hook.type === 'string' ? (
+                          <StringEditor
+                            label={hook.label || hook.name}
+                            value={block.content?.[hook.name] ?? hook.defaultValue}
+                            onChange={value => handleContentChange(hook.name, value)}
+                            multiline={hook.inspector === 'multiline'}
+                          />
+                        ) : hook.type === 'boolean' ? (
+                          <BooleanEditor
+                            label={hook.label || hook.name}
+                            value={block.content?.[hook.name] ?? hook.defaultValue}
+                            onChange={value => handleContentChange(hook.name, value)}
+                          />
+                        ) : hook.type === 'enumeration' ? (
+                          <EnumerationEditor
+                            label={hook.label || hook.name}
+                            value={block.content?.[hook.name] ?? hook.defaultValue}
+                            onChange={value => handleContentChange(hook.name, value)}
+                            options={hook.options || []}
+                            icons={hook.icons}
+                            inspector={hook.inspector}
+                            labels={hook.labels}
+                          />
+                        ) : hook.type === 'jsonSchema' && hook.schema ? (
+                          <JSONSchemaEditor
+                            schema={hook.schema}
+                            value={block.content?.[hook.name] || []}
+                            onChange={newValue => handleContentChange(hook.name, newValue)}
+                            themeColors={themeColors}
+                          />
+                        ) : null}
+                      </div>
+                    ))}
+                    </>
+                  )}
                 </div>
-              ))}
+              );
+            })}
           </div>
         </div>
       )}

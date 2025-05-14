@@ -20,7 +20,7 @@ export interface StyleItem {
   name: string;
   label: string;
   value?: string | boolean;
-  defaultValue: string;
+  defaultValue: string | boolean;
   inspector: 'colorPicker' | 'alignmentPicker' | 'select' | 'checkbox';
   options?: Record<string, string>;
 }
