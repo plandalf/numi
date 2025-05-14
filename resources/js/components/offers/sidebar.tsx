@@ -19,6 +19,8 @@ import { PageLayers } from './page-layers';
 import { PageElements } from './page-elements';
 import PageProducts from './page-products';
 
+import { DeleteBlockDialog } from './dialogs/delete-block-dialog';
+
 type SidebarTab = 'elements' | 'products' | 'themes' | 'settings' | 'layers';
 
 // Define proper type for the iconButtons array
@@ -52,9 +54,17 @@ export function Sidebar() {
     setSelectedSectionId,
     updateBlock,
     viewMode,
+    deleteBlock,
   } = useEditor();
 
   const isEditorMode = viewMode === 'editor';
+
+  const handleDeleteBlock = () => {
+    if (selectedBlockId) {
+      deleteBlock(selectedBlockId);
+      setSelectedBlockId(null);
+    }
+  };
 
   // Content for each tab
   const renderTabContent = () => {
@@ -176,18 +186,21 @@ export function Sidebar() {
         {/* Upper right: Label */}
         <div className="h-14 flex items-center px-4 border-b border-border min-h-14 flex-shrink-0">
           {selectedBlockId ? (
-            <div className="flex items-center gap-2 w-full">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8"
-                onClick={() => setSelectedBlockId(null)}
-              >
-                <ChevronLeft className="size-6" />
-              </Button>
-              <h2 className="text-lg font-bold truncate">
-                {findBlockInPage(data.view.pages[selectedPage], selectedBlockId)?.type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
-              </h2>
+            <div className="flex items-center justify-between w-full">
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={() => setSelectedBlockId(null)}
+                >
+                  <ChevronLeft className="size-6" />
+                </Button>
+                <h2 className="text-lg font-bold truncate">
+                  {findBlockInPage(data.view.pages[selectedPage], selectedBlockId)?.type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                </h2>
+              </div>
+              <DeleteBlockDialog onDelete={handleDeleteBlock} />
             </div>
           ) : selectedSectionId ? (
             <div className="flex items-center gap-2 w-full">

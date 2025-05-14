@@ -1,3 +1,4 @@
+import * as React from "react";
 import { TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
 import { DialogDescription, DialogTitle } from "../ui/dialog";
 import { DialogContent, DialogHeader } from "../ui/dialog";
@@ -5,7 +6,7 @@ import { useEditor } from "@/contexts/offer/editor-context";
 import { Block, PageView } from "@/types/offer";
 import { blockTypes, getBlockMeta } from '@/components/blocks';
 import { cn } from "@/lib/utils";
-import { CircleChevronRight, DiamondPlus, SquarePlus } from "lucide-react";
+import { ChevronRight, CircleChevronRight, DiamondPlus, SquarePlus, Trash2 } from "lucide-react";
 import { Button } from "../ui/button";
 import { Dialog, DialogTrigger } from "../ui/dialog";
 import { Tabs } from "../ui/tabs";
@@ -13,6 +14,7 @@ import { StringEditor } from "../editor/string-editor";
 import { EnumerationEditor } from "../editor/enumeration-editor";
 import { useState } from "react";
 import { router } from "@inertiajs/react";
+import { Separator } from "../ui/separator";
 
 export interface PageLayersProps {
   onAddNewElementClick: () => void;
@@ -27,6 +29,7 @@ export const PageLayers: React.FC<PageLayersProps> = ({ onAddNewElementClick }) 
     setSelectedBlockId,
     selectedSectionId,
     setSelectedSectionId,
+    deleteBlock,
   } = useEditor();
 
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -128,53 +131,61 @@ export const PageLayers: React.FC<PageLayersProps> = ({ onAddNewElementClick }) 
   return (
     <div className="flex flex-col h-full">
       <div className="flex-1 overflow-y-auto p-4">
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col">
           {sortedSections.length === 0 ? (
             <div className="text-muted-foreground text-center py-8">No sections on this page.</div>
           ) : (
-            sortedSections.map((section) => (
-              <div key={section.id} className="flex flex-col gap-2">
-                <div
-                  className={cn(
-                    "px-4 py-2 bg-gray-200 hover:bg-gray-200/75 rounded-lg transition-colors group cursor-pointer",
-                    selectedSectionId === section.id && 'ring-2 ring-primary bg-primary/10'
+            sortedSections.map((section, index) => (
+              <React.Fragment key={section.id}>
+                {index > 0 && <Separator className="my-2" />}
+                <div className="flex flex-col gap-2 mb-2">
+                  <div
+                    className={cn(
+                      "px-4 py-2 transition-all group cursor-pointer flex flex-row items-center gap-x-2 w-fit",
+                      selectedSectionId === section.id && 'ring-2 ring-primary bg-primary/10'
+                    )}
+                    onClick={() => setSelectedSectionId(section.id)}
+                  >
+                    <span className="font-bold text-base text-black/90">
+                      {section.name}
+                    </span>
+                    <ChevronRight className="w-4 h-4 text-black/90 group-hover:ml-1 transition-all" />
+                  </div>
+                  {section.blocks.length > 0 && (
+                    <div className="flex flex-col gap-2">
+                      {section.blocks.map((block, idx) => {
+                        const meta = getBlockMeta(block.type as keyof typeof blockTypes);
+                      return (
+                        <button
+                          key={block.id}
+                          className={cn(
+                            'flex items-center justify-between w-full px-4 py-2 rounded-lg bg-[#EBEFFF] hover:bg-[#EBEFFF]/75 transition-colors group cursor-pointer',
+                            selectedBlockId === block.id && 'ring-2 ring-primary bg-primary/10'
+                          )}
+                          onClick={() => setSelectedBlockId(block.id)}
+                          type="button"
+                        >
+                          <div className="flex items-center justify-between w-full">
+                            <span className="font-medium text-sm text-left text-black/60 group-hover:text-black transition-colors">
+                              {meta?.title ?? block.type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())} {section.blocks.length > 1 ? idx + 1 : ''}
+                            </span>
+                            <div className="flex items-center gap-2">
+                              <CircleChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-black transition-all group-hover:mr-1" />
+                            </div>
+                          </div>
+                        </button>
+                      );
+                    })}
+                    </div>
                   )}
-                  onClick={() => setSelectedSectionId(section.id)}
-                >
-                  <span className="font-medium text-sm text-black/90">
-                    {section.name}
-                  </span>
                 </div>
-                <div className="ml-4 flex flex-col gap-2">
-                  {section.blocks.map((block, idx) => {
-                    const meta = getBlockMeta(block.type as keyof typeof blockTypes);
-                    return (
-                      <button
-                        key={block.id}
-                        className={cn(
-                          'flex items-center justify-between w-full px-4 py-2 rounded-lg bg-[#EBEFFF] hover:bg-[#EBEFFF]/75 transition-colors group cursor-pointer',
-                          selectedBlockId === block.id && 'ring-2 ring-primary bg-primary/10'
-                        )}
-                        onClick={() => setSelectedBlockId(block.id)}
-                        type="button"
-                      >
-                        <div className="flex items-center justify-between w-full">
-                          <span className="font-medium text-sm text-left text-black/90">
-                            {meta?.title ?? block.type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())} {section.blocks.length > 1 ? idx + 1 : ''}
-                          </span>
-                          <CircleChevronRight className="w-4 h-4 text-muted-foreground" />
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
+              </React.Fragment>
             ))
           )}
         </div>
         <Button
           variant="default"
-          className="w-full mt-6 bg-gray-900 text-white hover:bg-gray-800 flex items-center justify-center gap-2"
+          className="w-full mt-4 bg-gray-900 text-white hover:bg-gray-800 flex items-center justify-center gap-2"
           onClick={onAddNewElementClick}
         >
           <span>Add another element</span>

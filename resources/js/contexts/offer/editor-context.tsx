@@ -73,6 +73,7 @@ interface EditorContextType {
   offer: Offer;
   updateBlock: (block: Block) => void;
   updateSection: (sectionId: string, section: any) => void;
+  deleteBlock: (blockId: string) => void;
 }
 
 export const EditorContext = createContext<EditorContextType | null>(null);
@@ -382,6 +383,24 @@ export function EditorProvider({ offer, organizationThemes, organizationTemplate
     });
   };
 
+  const deleteBlock = (blockId: string) => {
+    const page = {...data.view.pages[selectedPage]};
+
+    const sectionId = Object.keys(page.view).find((section) => {
+      const x = page.view[section].blocks?.findIndex((b) => b.id === blockId) ?? -1;
+      if (x === -1) return false;
+      return section;
+    });
+
+    if (!sectionId) return;
+
+    const updatedBlocks = page.view[sectionId].blocks.filter((b) => b.id !== blockId);
+    const thePage = update(page, { view: { [sectionId]: { blocks: { $set: updatedBlocks } } } });
+
+    setData(update(data, { view: { pages: { [selectedPage]: { view: { $set: thePage.view } } } } }));
+    setSelectedBlockId(null);
+  };
+
   const value: EditorContextType = {
     data,
     setData,
@@ -418,6 +437,7 @@ export function EditorProvider({ offer, organizationThemes, organizationTemplate
     setSelectedSectionId: onSelectSection,
     viewMode, setViewMode,
     previewSize, setPreviewSize,
+    deleteBlock,
   };
 
   return <EditorContext.Provider value={value}>{children}</EditorContext.Provider>;

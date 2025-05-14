@@ -244,7 +244,6 @@ const renderElement = (
     props?: ComponentProps;
     children?: Array<any>;
     id?: string;
-    className?: string;
   } | null,
   page: LocalPage,
   context: {
@@ -258,8 +257,7 @@ const renderElement = (
     type,
     props = {},
     children = [],
-    id,
-    className
+    id
   } = element;
   const { componentRegistry, contentMap } = context;
 
@@ -279,7 +277,7 @@ const renderElement = (
         style: { backgroundColor },
         className: cn(
           "relative",
-          className,
+          props.className,
           selectedSectionId === id && 'shadow-[inset_0_0_0_1.5px_#3B82F6]'
         )
       },
