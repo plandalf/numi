@@ -1,5 +1,5 @@
 import { BlockContextType } from "@/types/blocks";
-import Numi, { Appearance } from "@/contexts/Numi";
+import Numi, { Style } from "@/contexts/Numi";
 import cx from "classnames";
 import { useCheckoutState } from "@/pages/checkout-main";
 import { cn } from "@/lib/utils";
@@ -29,14 +29,14 @@ function ButtonBlockComponent({ context }: { context: BlockContextType }) {
     label: 'Type',
   });
 
-  const appearance = Numi.useAppearance([
-    Appearance.alignment(['left', 'center', 'right', 'expand']),
-    Appearance.backgroundColor(),
-    Appearance.textColor(),
-    Appearance.fontWeight(['normal', 'semibold']),
-    Appearance.border(),
-    Appearance.borderColor(),
-    Appearance.hidden(),
+  const appearance = Numi.useStyle([
+    Style.alignment('Alignment', {}, 'left'),
+    Style.backgroundColor('Background Color', 'backgroundColor', {}, '#FFFFFF'),
+    Style.textColor('Text Color', {}, '#000000'),
+    Style.fontWeight('Font Weight', {}, 'normal'),
+    Style.border('Border', {}, 'none'),
+    Style.borderColor('Border Color', {}, '#000000'),
+    Style.hidden('Hidden', {}, false),
   ]);
 
   const onClick = Numi.useEventCallback({

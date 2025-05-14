@@ -8,10 +8,12 @@ import { Separator } from './separator';
 import SearchBar from '../offers/search-bar';
 
 interface AdvancedColorPickerProps extends Omit<ColorPickerProps, 'type'> {
+  trigger?: React.ReactNode;
   themeColors?: Record<string, string>;
 }
 
 export const AdvancedColorPicker: React.FC<AdvancedColorPickerProps> = ({
+  trigger,
   value,
   onChange,
   themeColors = [],
@@ -65,11 +67,12 @@ export const AdvancedColorPicker: React.FC<AdvancedColorPickerProps> = ({
   return (
     <DropdownMenu open={open} onOpenChange={setOpen}>
       <DropdownMenuTrigger asChild>
-        <button
-          className={cn(
-            'flex items-center gap-4 border border-gray-300/50 rounded-lg px-2 py-1.5 w-full cursor-pointer',
-            className
-          )}
+        {trigger ? trigger : (
+          <button
+            className={cn(
+              'flex items-center gap-4 border border-gray-300/50 rounded-lg px-2 py-1.5 w-full cursor-pointer',
+              className
+            )}
         >
           <span
             className="w-5.5 h-5.5 rounded-sm border"
@@ -77,8 +80,9 @@ export const AdvancedColorPicker: React.FC<AdvancedColorPickerProps> = ({
           />
           <span className="text-xs">
             {matchedTheme ? matchedTheme[0] : rgb.toUpperCase()}
-          </span>
-        </button>
+            </span>
+          </button>
+        )}
       </DropdownMenuTrigger>
       <DropdownMenuContent side="right" className={cn(
         'p-4 w-[320px] h-[450px] bg-white rounded-lg shadow-lg z-50',

@@ -1,12 +1,12 @@
-import Numi, { Appearance } from "@/contexts/Numi";
+import Numi, { Style } from "@/contexts/Numi";
 import { BlockContextType } from "@/types/blocks";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useEffect, useRef } from "react";
 
 function OptionSelectorComponent({ context }: { context: BlockContextType }) {
-  const appearance = Numi.useAppearance([
-    Appearance.backgroundColor('activeBackgroundColor', 'Selected'),
-    Appearance.backgroundColor('inactiveBackgroundColor', 'Unselected'),
+  const appearance = Numi.useStyle([
+    Style.backgroundColor('Selected', 'activeBackgroundColor', {}, '#000000'),
+    Style.backgroundColor('Unselected', 'inactiveBackgroundColor', {}, '#FFFFFF'),
   ]);
 
   const [items] = Numi.useStateJsonSchema({

@@ -10,6 +10,7 @@ export interface ColorPickerProps {
   className?: string;
   type?: 'simple' | 'advanced';
   themeColors?: Record<string, string>;
+  trigger?: React.ReactNode;
 }
 
 // Utility: parse hex to {rgb, alpha}

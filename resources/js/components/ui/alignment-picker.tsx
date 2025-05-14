@@ -1,10 +1,18 @@
 import React from 'react';
 import { cn } from '@/lib/utils';
+import { AlignCenter, AlignJustify, AlignLeft, AlignRight } from 'lucide-react';
 
 interface AlignmentPickerProps {
   value: string;
   onChange: (value: string) => void;
   className?: string;
+}
+
+export const alignmentIcons = {
+  expand: <AlignJustify className="size-4" />,
+  left: <AlignLeft className="size-4" />,
+  center: <AlignCenter className="size-4" />,
+  right: <AlignRight className="size-4" />,
 }
 
 const AlignmentPicker: React.FC<AlignmentPickerProps> = ({ value, onChange, className }) => (
@@ -19,10 +27,7 @@ const AlignmentPicker: React.FC<AlignmentPickerProps> = ({ value, onChange, clas
         )}
         onClick={() => onChange(align)}
       >
-        {align === 'expand' && <span className="inline-block w-5 h-5"><svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="4" y1="6" x2="18" y2="6" /><line x1="4" y1="10" x2="18" y2="10" /><line x1="4" y1="14" x2="18" y2="14" /></svg></span>}
-        {align === 'left' && <span className="inline-block w-5 h-5"><svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="4" y1="6" x2="14" y2="6" /><line x1="4" y1="10" x2="18" y2="10" /><line x1="4" y1="14" x2="10" y2="14" /></svg></span>}
-        {align === 'center' && <span className="inline-block w-5 h-5"><svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="6" y1="6" x2="16" y2="6" /><line x1="4" y1="10" x2="18" y2="10" /><line x1="6" y1="14" x2="16" y2="14" /></svg></span>}
-        {align === 'right' && <span className="inline-block w-5 h-5"><svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="10" y1="6" x2="18" y2="6" /><line x1="4" y1="10" x2="18" y2="10" /><line x1="14" y1="14" x2="18" y2="14" /></svg></span>}
+        {alignmentIcons[align as keyof typeof alignmentIcons]}
        </button>
     ))}
   </div>

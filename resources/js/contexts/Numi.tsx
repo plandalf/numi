@@ -57,47 +57,126 @@ function TestComponent() {
   )
 }
 
-export const Appearance = {
-  alignment: (options: string[] = ['left', 'center', 'right', 'expand']) => ({
+export interface StyleArgs {
+  options?: Record<string, string>;
+  inspector?: string;
+}
+
+
+export const Style = {
+  alignment: (
+    label: string = 'Alignment',
+    args: StyleArgs,
+    defaultValue: string = 'left',
+  ) => ({
+    label,
     type: 'alignment',
-    options,
-    defaultValue: 'left'
+    options: args.options ?? {
+      left: 'Left',
+      center: 'Center',
+      right: 'Right',
+      expand: 'Expand',
+    } as Record<string, string>,
+    defaultValue,
+    inspector: args.inspector ?? 'alignmentPicker',
   }),
 
-  backgroundColor: (type: "backgroundColor" | "activeBackgroundColor" | "inactiveBackgroundColor" = "backgroundColor", label: string = 'Background Color', options: string[] = ['primary', 'secondary', 'success', 'danger', 'warning', 'info', 'light', 'dark']) => ({
+  backgroundColor: (
+    label: string = 'Background Color',
+    type: "backgroundColor" | "activeBackgroundColor" | "inactiveBackgroundColor" = "backgroundColor",
+    args: StyleArgs,
+    defaultValue: string,
+  ) => ({
+    label,
     type,
-    options,
-    defaultValue: 'primary',
-    label
+    options: args.options,
+    defaultValue,
+    inspector: args.inspector ?? 'colorPicker',
   }),
-  textColor: (options: string[] = []) => ({
+  textColor: (
+    label: string = 'Text Color',
+    args: StyleArgs,
+    defaultValue: string,
+  ) => ({
+    label,
     type: 'textColor',
-    options,
-    defaultValue: 'primary',
-    label: 'Text Color'
+    options: [],
+    defaultValue,
+    inspector: args.inspector ?? 'colorPicker',
   }),
-  fontWeight: (options: string[] = ['normal', 'semibold', 'bold']) => ({
+  fontSize: (
+    label: string = 'Font Size',
+    args: StyleArgs,
+    defaultValue: string = 'sm',
+  ) => ({
+    label,
+    type: 'fontSize',
+    options: args.options ?? {
+      xs: 'Extra Small',
+      sm: 'Small',
+      md: 'Medium',
+      lg: 'Large',
+      xl: 'Extra Large',
+    },
+    defaultValue,
+    inspector: args.inspector ?? 'select',
+  }),
+  fontWeight: (
+    label: string = 'Font Weight',
+    args: StyleArgs,
+    defaultValue: string = 'normal',
+  ) => ({
+    label,
     type: 'fontWeight',
-    options,
-    defaultValue: 'normal'
+    options: args.options ?? { normal: 'Normal', semibold: 'Semibold', bold: 'Bold' },
+    defaultValue,
+    inspector: args.inspector ?? 'select',
   }),
-  border: () => ({
+  border: (
+    label: string = 'Border',
+    args: StyleArgs,
+    defaultValue: string = 'none',
+  ) => ({
+    label,
     type: 'border',
-    defaultValue: '1px',
+    options: args.options ?? { none: 'None', xs: 'Extra Small', sm: 'Small', md: 'Medium', lg: 'Large', xl: 'Extra Large' },
+    defaultValue,
+    inspector: args.inspector ?? 'select',
   }),
-  borderColor: () => ({
+  borderColor: (
+    label: string = 'Border Color',
+    args: StyleArgs,
+    defaultValue: string = '#FFFFFF',
+  ) => ({
+    label,
     type: 'borderColor',
-    defaultValue: '#ccc',
+    options: [],
+    defaultValue,
+    inspector: args.inspector ?? 'colorPicker',
   }),
-  hidden: () => ({
+  hidden: (
+    label: string = 'Hidden',
+    args: StyleArgs,
+    defaultValue: boolean = false,
+  ) => ({
+    label,
     type: 'hidden',
-    defaultValue: false,
+    options: [],
+    defaultValue,
+    inspector: args.inspector ?? 'checkbox',
   }),
-  visibility: () => ({
-    type: 'visibility',
+  visibility: (
+    label: string = 'Visibility',
+    args: StyleArgs,
     defaultValue: {
       conditional: []
     }
+  ) => ({
+    label,
+    type: 'visibility',
+    options: [],
+    defaultValue,
+    inspector: args.inspector ?? 'visibility',
   }),
 }
 
@@ -234,7 +313,7 @@ class Numi {
     };
   }
 
-  static useAppearance(appearanceProps: any[]): Record<string, any> {
+  static useStyle(appearanceProps: any[]): Record<string, any> {
     const blockContext = useContext(BlockContext);
 
     return useMemo(() => {
@@ -252,7 +331,7 @@ class Numi {
             type: 'appearance',
             defaultValue: prop.defaultValue,
             options: prop.options,
-            inspector: 'select',
+            inspector: prop.inspector,
             label: prop.label || prop.type.charAt(0).toUpperCase() + prop.type.slice(1)
           });
         }

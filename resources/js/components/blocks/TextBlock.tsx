@@ -1,6 +1,6 @@
 import { BlockContextType } from "@/types/blocks";
 import ReactMarkdown from 'react-markdown';
-import Numi, { Appearance } from "@/contexts/Numi";
+import Numi, { Style } from "@/contexts/Numi";
 import { cn } from "@/lib/utils";
 
 
@@ -16,8 +16,8 @@ function TextBlockComponent({ context }: { context: BlockContextType }) {
   const { fontWeight, fontSize } = context.blockConfig.appearance ?? {};
   const isMarkdown = format === 'markdown';
 
-  const appearance = Numi.useAppearance([
-    Appearance.hidden(),
+  const appearance = Numi.useStyle([
+    Style.hidden('Hidden', {}, false),
   ]);
 
   if (appearance.hidden) {

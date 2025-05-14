@@ -15,6 +15,7 @@ import { ConditionOnClickEditor } from '../editor/condition-onclick-editor';
 import { ConditionVisibilityEditor } from '../editor/condition-visibility-editor';
 import { useEditor } from '@/contexts/offer/editor-context';
 import { getThemeColors } from './page-theme';
+import { StyleEditor, StyleItem } from '../editor/style-editor';
 
 export const AppearanceEditor = ({ globalState, block, onUpdate }: { globalState: GlobalState | null, block: Block, onUpdate: (block: Block) => void }) => {
   
@@ -22,96 +23,44 @@ export const AppearanceEditor = ({ globalState, block, onUpdate }: { globalState
   const themeColors = getThemeColors(data.theme);
   
   if (!globalState) return null;
+
+  const appearanceHooks = globalState.hookUsage[block.id].filter((hook) => hook.type === 'appearance' && hook.name !== 'visibility');
+
+  const visibilityHook = globalState.hookUsage[block.id].find((hook) => hook.name === 'visibility');
+
+  const styleItems = appearanceHooks.map((hook) => ({
+    name: hook.name,
+    label: hook.label,
+    value: block.appearance?.[hook.name],
+    defaultValue: hook.defaultValue,
+    inspector: hook.inspector,
+    options: hook.options,
+  })) as StyleItem[];
+
+
+  const onStyleChange = (key: string, value: string) => {
+    onUpdate({
+      ...block,
+      appearance: { ...block.appearance, [key]: value }
+    });
+  };
+
+  const onStyleDelete = (key: string) => {
+    onUpdate({
+      ...block,
+      appearance: { ...block.appearance, [key]: undefined }
+    });
+  };
+
   return (
-    <div className="space-y-4">
-      <h3 className="mb-2 font-semibold">Appearance</h3>
-      {globalState.hookUsage[block.id]
-        .filter((hook) => hook.type === 'appearance')
-        .map((hook) => {
-          switch (hook.name) {
-            case 'alignment':
-              return (
-                <AlignmentPickerEditor
-                  key={hook.name}
-                  label="Alignment"
-                  value={typeof block.appearance?.alignment === 'string' ? block.appearance.alignment : 'left'}
-                  onChange={align => onUpdate({ ...block, appearance: { ...block.appearance, alignment: align } })}
-                />
-              );
-            case 'backgroundColor':
-            case 'activeBackgroundColor':
-            case 'inactiveBackgroundColor':
-            case 'textColor':
-              const colorValue = block.appearance?.[hook.name];
-              return (
-                <ColorPickerEditor
-                  key={hook.name}
-                  label={hook.label || 'Text'}
-                  value={typeof colorValue === 'string' ? colorValue : '#6800FF'}
-                  onChange={color => onUpdate({
-                    ...block,
-                    appearance: {
-                      ...block.appearance,
-                      [hook.name]: color,
-                    },
-                  })}
-                  type='advanced'
-                  themeColors={themeColors}
-                />
-              );
-            case 'fontWeight':
-              return (
-                <EnumerationEditor
-                  key={hook.name}
-                  label="Font Weight"
-                  value={typeof block.appearance?.fontWeight === 'string' ? block.appearance.fontWeight : 'normal'}
-                  onChange={value => onUpdate({ ...block, appearance: { ...block.appearance, fontWeight: value } })}
-                  options={['normal', 'semibold', 'bold']}
-                  labels={{ normal: 'Normal', semibold: 'Semibold', bold: 'Bold' }}
-                />
-              );
-            case 'border':
-              return (
-                <EnumerationEditor
-                  key={hook.name}
-                  label='Border'
-                  value={block.appearance?.border || 'none'}
-                  onChange={value => onUpdate({ ...block, appearance: { ...block.appearance, border: value } })}
-                  options={['none', 'xs', 'sm', 'md', 'lg', 'xl']}
-                  labels={{ none: 'None', xs: 'Extra Small', sm: 'Small', md: 'Medium', lg: 'Large', xl: 'Extra Large' }}
-                />
-              );
-            case 'borderColor':
-              return (
-                <ColorPickerEditor
-                  key={hook.name}
-                  label='Border Color'
-                  value={block.appearance?.borderColor || '#000'}
-                  onChange={value => onUpdate({ ...block, appearance: { ...block.appearance, borderColor: value } })}
-                  type='advanced'
-                  themeColors={themeColors}
-                />
-              );
-            case 'hidden':
-              return (
-                <BooleanEditor
-                  key={hook.name}
-                  label='Hidden'
-                  value={block.appearance?.hidden || hook.defaultValue}
-                  onChange={value => onUpdate({ ...block, appearance: { ...block.appearance, hidden: value } })}
-                />
-              );
-            case 'visibility':
-              return (
-                <ConditionVisibilityEditor
-                  value={block.appearance?.visibility?.conditional || []}
-                  onChange={value => onUpdate({ ...block, appearance: { ...block.appearance, visibility: { conditional: value } } })}
-                />
-              );
-            default:
-              return null;
-          }
-        })}
+    <div className="flex flex-col gap-3">
+      <StyleEditor items={styleItems} onChange={onStyleChange} onDelete={onStyleDelete} themeColors={themeColors} />
+      {visibilityHook && (
+        <ConditionVisibilityEditor
+          value={block.appearance?.visibility?.conditional || []}
+          onChange={value => onUpdate({ ...block, appearance: { ...block.appearance, visibility: { conditional: value } } })}
+        />
+      )}
     </div>
   );
 }

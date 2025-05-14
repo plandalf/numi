@@ -1,4 +1,4 @@
-import Numi, { Appearance, Conditions } from "@/contexts/Numi";
+import Numi, { Style, Conditions } from "@/contexts/Numi";
 import { BlockContextType } from "@/types/blocks";
 import { Switch } from "@/components/ui/switch";
 
@@ -51,9 +51,11 @@ function CheckboxBlockComponent({ context }: { context: BlockContextType }) {
 
   const { isDisabled } = Numi.useInteraction();
 
-  const appearance = Numi.useAppearance([
-    Appearance.backgroundColor(),
-    Appearance.visibility(),
+  const appearance = Numi.useStyle([
+    Style.backgroundColor('Background Color', 'backgroundColor', {}, '#FFFFFF'),
+    Style.visibility('Visibility', {}, {
+      conditional: []
+    }),
   ]);
 
   return (
