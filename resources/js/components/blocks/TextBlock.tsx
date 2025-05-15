@@ -17,7 +17,7 @@ function TextBlockComponent({ context }: { context: BlockContextType }) {
   const isMarkdown = format === 'markdown';
 
   const appearance = Numi.useStyle([
-    Style.hidden('Hidden', {}, false),
+    Style.hidden('hidden', 'Hidden', {}, false),
   ]);
 
   if (appearance.hidden) {

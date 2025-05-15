@@ -5,8 +5,8 @@ import { useEffect, useRef } from "react";
 
 function OptionSelectorComponent({ context }: { context: BlockContextType }) {
   const appearance = Numi.useStyle([
-    Style.backgroundColor('Selected', 'activeBackgroundColor', {}, '#000000'),
-    Style.backgroundColor('Unselected', 'inactiveBackgroundColor', {}, '#FFFFFF'),
+    Style.backgroundColor('activeBackgroundColor', 'Selected', {}, '#000000'),
+    Style.backgroundColor('inactiveBackgroundColor', 'Unselected', {}, '#FFFFFF'),
   ]);
 
   const [items] = Numi.useStateJsonSchema({

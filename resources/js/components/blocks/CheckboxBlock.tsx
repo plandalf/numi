@@ -52,8 +52,8 @@ function CheckboxBlockComponent({ context }: { context: BlockContextType }) {
   const { isDisabled } = Numi.useInteraction();
 
   const appearance = Numi.useStyle([
-    Style.backgroundColor('Background Color', 'backgroundColor', {}, '#FFFFFF'),
-    Style.visibility('Visibility', {}, {
+    Style.backgroundColor('backgroundColor', 'Background Color', {}, '#FFFFFF'),
+    Style.visibility('visibility', 'Visibility', {}, {
       conditional: []
     }),
   ]);

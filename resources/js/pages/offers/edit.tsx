@@ -37,9 +37,11 @@ import { Template } from '@/types/template';
 import { PageProps } from '@inertiajs/core';
 
 import { allElementTypes, CustomElementIcon } from '@/components/offers/page-elements';
+import { Font } from '@/types';
+import WebFont from 'webfontloader';
 export interface EditProps extends PageProps {
     offer: Offer;
-    fonts: string[];
+    fonts: Font[];
     weights: string[];
     organizationThemes: Theme[];
     organizationTemplates: Template[];
@@ -55,7 +57,16 @@ const PAGE_TYPE_ICONS: Record<PageType, React.ReactNode> = {
     payment: <CreditCard className="w-4 h-4" />
 };
 
-function Edit({ offer, organizationThemes, organizationTemplates, globalThemes, showNameDialog }: EditProps) {
+function Edit({ offer, organizationThemes, organizationTemplates, globalThemes, showNameDialog, fonts }: EditProps) {
+
+  WebFont.load({
+    google: {
+      families: fonts?.reduce<string[]>((items, font) => {
+        return [...items, font.name];
+      }, []),
+    },
+  });
+
   return (
     <EditorProvider
       offer={offer}

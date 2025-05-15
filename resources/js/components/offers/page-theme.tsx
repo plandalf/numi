@@ -15,6 +15,7 @@ import SearchBar from './search-bar';
 import { router, usePage } from '@inertiajs/react';
 import { EditProps } from '@/pages/offers/edit';
 import { useEditor } from '@/contexts/offer/editor-context';
+import { FontEditor } from '../editor/font-editor';
 
 export const colorFields = [
   { key: 'primary_color', label: 'Primary' },
@@ -63,7 +64,7 @@ export const componentFields = [
 export const PageTheme: React.FC = () => {
 
   const { organizationThemes, globalThemes, data, setData } = useEditor();
-  const { fonts, weights } = usePage<EditProps>().props;
+  const { fonts } = usePage<EditProps>().props;
   const [tab, setTab] = useState<'all' | 'custom'>('all');
   const [theme, setTheme] = useState<Theme>(data.theme);
   const [openSection, setOpenSection] = useState<string>('colors');
@@ -233,12 +234,12 @@ export const PageTheme: React.FC = () => {
                   {typographyFields.map(f => {
                     if (f.type === 'font') {
                       return (
-                        <EnumerationEditor
+                        <FontEditor
                           key={f.key}
                           label={f.label}
                           value={theme?.[f.key as keyof Theme] as string ?? ''}
                           onChange={v => handleThemeChange(f.key as keyof Theme, v)}
-                          options={fonts}
+                          fonts={fonts}
                         />
                       );
                     }
@@ -250,7 +251,6 @@ export const PageTheme: React.FC = () => {
                           value={theme?.[f.key as keyof Theme] as string[] ?? ['', '', '']}
                           onChange={v => handleThemeChange(f.key as keyof Theme, v)}
                           fonts={fonts}
-                          weights={weights}
                         />
                       );
                     }

@@ -59,18 +59,36 @@ function TestComponent() {
 
 export interface StyleArgs {
   options?: Record<string, string>;
+  config?: Record<string, any>;
   inspector?: string;
 }
 
+export interface FontValue {
+  font?: string;
+  weight?: string;
+  size?: string;
+  lineHeight?: string;
+  letterSpacing?: string;
+  alignmentHorizontal?: string;
+  alignmentVertical?: string;
+}
+
+export interface BorderValue {
+  width?: string;
+  stroke?: string;
+  style?: string;
+  radius?: string;
+}
 
 export const Style = {
   alignment: (
+    type: string = 'alignment',
     label: string = 'Alignment',
     args: StyleArgs,
     defaultValue: string = 'left',
   ) => ({
     label,
-    type: 'alignment',
+    type,
     options: args.options ?? {
       left: 'Left',
       center: 'Center',
@@ -82,8 +100,8 @@ export const Style = {
   }),
 
   backgroundColor: (
-    label: string = 'Background Color',
     type: "backgroundColor" | "activeBackgroundColor" | "inactiveBackgroundColor" = "backgroundColor",
+    label: string = 'Background Color',
     args: StyleArgs,
     defaultValue: string,
   ) => ({
@@ -94,78 +112,71 @@ export const Style = {
     inspector: args.inspector ?? 'colorPicker',
   }),
   textColor: (
+    type: string = 'textColor',
     label: string = 'Text Color',
     args: StyleArgs,
     defaultValue: string,
   ) => ({
     label,
-    type: 'textColor',
+    type,
     options: [],
     defaultValue,
     inspector: args.inspector ?? 'colorPicker',
   }),
-  fontSize: (
-    label: string = 'Font Size',
+
+  font: (
+    type: string = 'font',
+    label: string = 'Font',
     args: StyleArgs,
-    defaultValue: string = 'sm',
+    defaultValue: FontValue,
   ) => ({
     label,
-    type: 'fontSize',
-    options: args.options ?? {
-      xs: 'Extra Small',
-      sm: 'Small',
-      md: 'Medium',
-      lg: 'Large',
-      xl: 'Extra Large',
-    },
+    type,
+    options: [],
     defaultValue,
-    inspector: args.inspector ?? 'select',
+    inspector: args.inspector ?? 'fontPicker',
+    config: args.config ?? {}
   }),
-  fontWeight: (
-    label: string = 'Font Weight',
-    args: StyleArgs,
-    defaultValue: string = 'normal',
-  ) => ({
-    label,
-    type: 'fontWeight',
-    options: args.options ?? { normal: 'Normal', semibold: 'Semibold', bold: 'Bold' },
-    defaultValue,
-    inspector: args.inspector ?? 'select',
-  }),
+
+
   border: (
+    type: string = 'border',
     label: string = 'Border',
     args: StyleArgs,
-    defaultValue: string = 'none',
+    defaultValue: BorderValue,
   ) => ({
     label,
-    type: 'border',
-    options: args.options ?? { none: 'None', xs: 'Extra Small', sm: 'Small', md: 'Medium', lg: 'Large', xl: 'Extra Large' },
+    type,
+    options: [],
     defaultValue,
-    inspector: args.inspector ?? 'select',
+    inspector: args.inspector ?? 'borderPicker',
   }),
   borderColor: (
+    type: string = 'borderColor',
     label: string = 'Border Color',
     args: StyleArgs,
     defaultValue: string = '#FFFFFF',
   ) => ({
     label,
-    type: 'borderColor',
+    type,
     options: [],
     defaultValue,
     inspector: args.inspector ?? 'colorPicker',
   }),
   hidden: (
+    type: string = 'hidden',
     label: string = 'Hidden',
     args: StyleArgs,
     defaultValue: boolean = false,
   ) => ({
     label,
-    type: 'hidden',
+    type,
     options: [],
     defaultValue,
     inspector: args.inspector ?? 'checkbox',
   }),
   visibility: (
+    type: string = 'visibility',
     label: string = 'Visibility',
     args: StyleArgs,
     defaultValue: {
@@ -173,7 +184,7 @@ export const Style = {
     }
   ) => ({
     label,
-    type: 'visibility',
+    type,
     options: [],
     defaultValue,
     inspector: args.inspector ?? 'visibility',
@@ -332,7 +343,8 @@ class Numi {
             defaultValue: prop.defaultValue,
             options: prop.options,
             inspector: prop.inspector,
-            label: prop.label || prop.type.charAt(0).toUpperCase() + prop.type.slice(1)
+            label: prop.label || prop.type.charAt(0).toUpperCase() + prop.type.slice(1),
+            config: prop.config ?? {}
           });
         }
       });

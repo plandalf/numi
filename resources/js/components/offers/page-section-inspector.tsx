@@ -1,8 +1,8 @@
 import { useEditor } from "@/contexts/offer/editor-context";
-import { ColorPickerEditor } from "../editor/color-picker-editor";
 import { getThemeColors } from "./page-theme";
 import { StyleEditor, type StyleItem } from "../editor/style-editor";
 import { Style } from "@/contexts/Numi";
+import { Label } from "../ui/label";
 
 interface SectionInspectorProps {
   sectionId: string;
@@ -37,7 +37,7 @@ export function SectionInspector({ sectionId, onClose }: SectionInspectorProps) 
   };
 
   const styleItems: StyleItem[] = [
-    Style.backgroundColor('Background Color', 'backgroundColor', {}, '#FFFFFF'),
+    Style.backgroundColor('backgroundColor', 'Background Color', {}, '#FFFFFF'),
   ].map(style => ({
     name: style.type,
     label: style.label,
@@ -49,18 +49,16 @@ export function SectionInspector({ sectionId, onClose }: SectionInspectorProps) 
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex-1 overflow-y-auto p-4">
-        <div className="space-y-6">
-          <div className="space-y-2">
-            <StyleEditor
-              items={styleItems}
-              onChange={handleStyleChange}
-              onDelete={handleStyleDelete}
-              themeColors={themeColors}
-            />
-          </div>
+      <div className="flex flex-col gap-3 mb-6 overflow-y-auto p-4">
+        <h3 className="font-semibold">Appearance</h3>
+        <Label className="text-sm">Styles</Label>
+          <StyleEditor
+            items={styleItems}
+            onChange={handleStyleChange}
+            onDelete={handleStyleDelete}
+            themeColors={themeColors}
+          />
         </div>
-      </div>
     </div>
   );
 } 

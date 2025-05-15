@@ -10,15 +10,17 @@ import { BooleanEditor } from '@/components/editor/boolean-editor';
 import { EnumerationEditor } from '@/components/editor/enumeration-editor';
 import { FileEditor } from '@/components/editor/file-editor';
 import { ColorPickerEditor } from '@/components/editor/color-picker-editor';
-import { AlignmentPickerEditor } from '@/components/editor/alignment-picker-editor';
 import { ConditionOnClickEditor } from '../editor/condition-onclick-editor';
 import { ConditionVisibilityEditor } from '../editor/condition-visibility-editor';
 import { useEditor } from '@/contexts/offer/editor-context';
 import { getThemeColors } from './page-theme';
 import { StyleEditor, StyleItem } from '../editor/style-editor';
+import { usePage } from '@inertiajs/react';
+import { EditProps } from '@/pages/offers/edit';
 
 export const AppearanceEditor = ({ globalState, block, onUpdate }: { globalState: GlobalState | null, block: Block, onUpdate: (block: Block) => void }) => {
   
+  const { fonts } = usePage<EditProps>().props;
   const { data } = useEditor();
   const themeColors = getThemeColors(data.theme);
   
@@ -35,6 +37,7 @@ export const AppearanceEditor = ({ globalState, block, onUpdate }: { globalState
     defaultValue: hook.defaultValue,
     inspector: hook.inspector,
     options: hook.options,
+    config: hook.config,
   })) as StyleItem[];
 
 
@@ -56,7 +59,13 @@ export const AppearanceEditor = ({ globalState, block, onUpdate }: { globalState
     <div className="flex flex-col gap-3 mb-6">
       <h3 className="font-semibold">Appearance</h3>
       <Label className="text-sm">Styles</Label>
-      <StyleEditor items={styleItems} onChange={onStyleChange} onDelete={onStyleDelete} themeColors={themeColors} />
+      <StyleEditor
+        items={styleItems}
+        onChange={onStyleChange}
+        onDelete={onStyleDelete}
+        themeColors={themeColors}
+        fonts={fonts}
+      />
       {visibilityHook && (
         <ConditionVisibilityEditor
           value={block.appearance?.visibility?.conditional || []}

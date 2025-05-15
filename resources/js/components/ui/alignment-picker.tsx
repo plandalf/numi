@@ -6,6 +6,7 @@ interface AlignmentPickerProps {
   value: string;
   onChange: (value: string) => void;
   className?: string;
+  options?: string[];
 }
 
 export const alignmentIcons = {
@@ -15,19 +16,19 @@ export const alignmentIcons = {
   right: <AlignRight className="size-4" />,
 }
 
-const AlignmentPicker: React.FC<AlignmentPickerProps> = ({ value, onChange, className }) => (
+const AlignmentPicker: React.FC<AlignmentPickerProps> = ({ value, onChange, className, options }) => (
   <div className={cn('flex p-1 bg-[#EBEFFF] rounded-lg overflow-hidden', className)}>
-    {['expand', 'left', 'center', 'right'].map((align) => (
+    {(options ?? ['expand', 'left', 'center', 'right']).map((option) => (
       <button
-        key={align}
+        key={option}
         type="button"
         className={cn(
           'px-4 py-1 flex items-center justify-center rounded cursor-pointer',
-          value === align ? 'bg-white text-black' : 'text-[#7C7BA1]'
+          value === option ? 'bg-white text-black' : 'text-[#7C7BA1]'
         )}
-        onClick={() => onChange(align)}
+        onClick={() => onChange(option)}
       >
-        {alignmentIcons[align as keyof typeof alignmentIcons]}
+        {alignmentIcons[option as keyof typeof alignmentIcons]}
        </button>
     ))}
   </div>
