@@ -17,8 +17,6 @@ export const BlockContext = createContext<BlockContextType>({
     registerHook: () => { },
     hookUsage: {}
   },
-
-
   registerField: () => { },
   getFieldValue: () => undefined,
   setFieldValue: () => { },
@@ -27,35 +25,6 @@ export const BlockContext = createContext<BlockContextType>({
 });
 
 
-
-// adding an item
-function TestComponent() {
-
-  // modifying:
-
-  const {
-    addItem// checkout.items.add ->
-  } = Numi.useCheckout();
-  // returns some kind of modification promise?
-  // setModifying(addItem().then(() => {
-  // setModifying(null)
-  // }))
-
-  // need "loading" state for adding an item
-  // need validation
-  // need errors
-
-  return (
-    <div>
-      <button onClick={() => addItem({
-        name: 'Test Item',
-        price: 100,
-        quantity: 1,
-        image: 'https://placehold.co/60x60.png',
-      })}>Add Item</button>
-    </div>
-  )
-}
 
 export const Appearance = {
   alignment: (options: string[] = ['left', 'center', 'right', 'expand']) => ({
