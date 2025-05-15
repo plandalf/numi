@@ -33,6 +33,7 @@ export type ComboboxProps = {
   hideSearch?: boolean;
   required?: boolean;
   multiple?: boolean;
+  disabled?: boolean;
 } & PopoverProps;
 
 export function Combobox({
@@ -44,6 +45,7 @@ export function Combobox({
   hideSearch = true,
   required = false,
   multiple = false,
+  disabled = false,
   ...props
 }: ComboboxProps) {
   const [open, setOpen] = React.useState(false);
@@ -107,11 +109,13 @@ export function Combobox({
           role="combobox"
           aria-expanded={open}
           aria-required={required}
+          disabled={disabled}
           className={cn(
             "w-full justify-between overflow-hidden",
             required &&
               (!value || (Array.isArray(value) && value.length === 0)) &&
               "border-red-500",
+            disabled && "opacity-50 cursor-not-allowed",
             className,
           )}
         >

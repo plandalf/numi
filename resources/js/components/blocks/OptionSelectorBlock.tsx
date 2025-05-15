@@ -1,8 +1,10 @@
 import Numi, { Appearance, BlockContext } from "@/contexts/Numi";
 import { BlockContextType } from "@/types/blocks";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { useContext, useEffect, useRef } from "react";
+import { useContext, useEffect, useMemo, useRef, useCallback } from "react";
 import { get } from "lodash";
+import { useEditor } from "@/contexts/offer/editor-context";
+import { useDebounce } from "@/hooks/use-debounce";
 
 // Define interfaces for the item structure
 interface ItemType {
@@ -13,6 +15,7 @@ interface ItemType {
 function OptionSelectorComponent({ context }: { context: BlockContextType }) {
   const blockContext = useContext(BlockContext);
   const options = get(blockContext.blockConfig, `content.items`, {}) as ItemType[];
+  const { updateBlock } = useEditor();
 
   const [selectedTab, setSelectedTab, updateHook] = Numi.useStateEnumeration({
     name: 'selectedTab',
@@ -57,15 +60,68 @@ function OptionSelectorComponent({ context }: { context: BlockContextType }) {
     Appearance.visibility(),
   ]);
 
+  const interactionElements = useMemo(() => {
+    return Array.isArray(items) ? items.filter(item => item.key).map(item => ({ value: item.key, label: item.label })) : [];
+  }, [items]);
+
+  const { isDisabled, updateHook: updateInteractionHook } = Numi.useInteraction(interactionElements);
+
+  const debouncedUpdate = useCallback(
+    (items: ItemType[], currentInteraction: any) => {
+      if (!Array.isArray(items) || items.length === 0) return;
+
+      const itemKeys = items.filter(item => item.key).map(item => item.key);
+      updateHook({ options: itemKeys });
+      updateInteractionHook({
+        options: items
+          .filter(item => item.key)
+          .map(item => ({
+            value: item.key as string,
+            label: item.label || item.key as string
+          }))
+      });
+
+      // Get existing onClick actions and filter out null actions
+      const existingOnClick = (currentInteraction?.onClick || [])
+        .filter((action: { element: string; action: string; value: string } | null) => action)
+        // Filter out actions whose elements don't exist in current items
+        .filter((action: { element: string; action: string; value: string }) =>
+          itemKeys.includes(action.element)
+        );
+
+      // Create a map of existing actions by element
+      const existingActionsMap = new Map(
+        existingOnClick.map((action: { element: string; action: string; value: string }) => [action.element, action])
+      );
+
+      // Create new actions for items that don't have them
+      const newActions = items
+        .filter(item => item.key && !existingActionsMap.has(item.key))
+        .map(item => ({ element: item.key, action: 'set_item', value: '' }));
+
+      // Combine existing and new actions
+      const updatedOnClick = [...existingOnClick, ...newActions];
+
+      const newInteraction = {
+        onClick: updatedOnClick
+      };
+
+      if (JSON.stringify(newInteraction) !== JSON.stringify(currentInteraction)) {
+        updateBlock({
+          ...blockContext.blockConfig,
+          interaction: newInteraction
+        });
+      }
+    },
+    [updateHook, updateInteractionHook, updateBlock, blockContext.blockConfig]
+  );
+
+  const debouncedItems = useDebounce(items, 300);
+  const debouncedInteraction = useDebounce(blockContext.blockConfig.interaction, 300);
+
   useEffect(() => {
-    if (!Array.isArray(items) || items.length === 0) return;
-
-    const itemKeys = items.filter(item => item.key).map(item => item.key);
-    updateHook({ options: itemKeys });
-
-  }, [options]);
-
-  const { isDisabled } = Numi.useInteraction();
+    debouncedUpdate(debouncedItems, debouncedInteraction);
+  }, [debouncedItems, debouncedInteraction, debouncedUpdate]);
 
   return (
     <div className="p-4">

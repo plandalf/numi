@@ -12,7 +12,7 @@ import { FileEditor } from '@/components/editor/file-editor';
 import { ColorPickerEditor } from '@/components/editor/color-picker-editor';
 import { AlignmentPickerEditor } from '@/components/editor/alignment-picker-editor';
 import { NumberEditor } from '../editor/number-editor';
-import { ConditionOnClickEditor } from '../editor/condition-onclick-editor';
+import { InteractionEventEditor } from '../editor/interaction-event-editor';
 import { ConditionVisibilityEditor } from '../editor/condition-visibility-editor';
 
 export const AppearanceEditor = ({ globalState, block, onUpdate }: { globalState: GlobalState | null, block: Block, onUpdate: (block: Block) => void }) => {
@@ -135,14 +135,16 @@ const ValidationSection = ({ block, onUpdate }: { block: Block, onUpdate: (block
 }
 
 export const InteractionSection = ({ globalState, block, onUpdate }: { globalState: GlobalState | null, block: Block, onUpdate: (block: Block) => void }) => {
+  const interactionHook = globalState?.hookUsage[block.id]?.find((hook) => hook.type === 'interaction');
   return (
     <>
     <div className="space-y-4">
     <h3 className="mb-2 font-semibold">Interaction</h3>
-      <ConditionOnClickEditor
-        label="On Click Event"
+      <InteractionEventEditor
+        label="OnClick"
         value={block.interaction?.onClick || []}
         onChange={value => onUpdate({ ...block, interaction: { ...block.interaction, onClick: value } })}
+        elementOptions={(interactionHook?.options ?? []) as Record<'value' | 'label', string>[]}
 
       />
       <div className="flex items-center gap-2">

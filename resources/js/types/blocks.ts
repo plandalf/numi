@@ -28,7 +28,7 @@ export interface HookUsage {
     defaultValue: any;
     inspector?: string;
     schema?: any; // For jsonSchema type
-    options?: string[]; // For enumeration type
+    options?: string[] | Record<'value' | 'label', string>[]; // For enumeration type
     labels?: Record<string, string>; // For enumeration type labels
     label?: string; // For display label
     min?: number; // For number type

@@ -237,20 +237,45 @@ class Numi {
     return appearance;
   }
 
-  static useInteraction(): { isDisabled: any; } {
+  static useInteraction(elements?: Record<'value' | 'label', string>[]): { isDisabled: any; updateHook: (hook: Partial<HookUsage>) => void } {
     const blockContext = useContext(BlockContext);
+    const [hook, setHook] = useState<HookUsage>({
+      name: 'interaction',
+      type: 'interaction',
+      defaultValue: false,
+      options: elements,
+    });
+
+    // Create a ref to hold the debounced function
+    const debouncedUpdateRef = useRef<ReturnType<typeof debounce> | null>(null);
+
+    // Initialize the debounced function on first render
+    useEffect(() => {
+      debouncedUpdateRef.current = debounce((newHook: Partial<HookUsage>) => {
+        setHook(prevHook => ({...prevHook, ...newHook}));
+      }, 300); // 300ms delay
+
+      // Cleanup function to cancel pending debounced calls
+      return () => {
+        if (debouncedUpdateRef.current) {
+          debouncedUpdateRef.current.cancel();
+        }
+      };
+    }, []);
 
     useEffect(() => {
-      // blockContext.registerHook('interaction', {
-      //   // args?
-      // });
-      blockContext.registerHook({
-        type: 'interaction',
-      });
+      blockContext.registerHook(hook);
+    }, [hook]);
+
+    const updateHook = useCallback((newHook: Partial<HookUsage>) => {
+      if (debouncedUpdateRef.current) {
+        debouncedUpdateRef.current(newHook);
+      }
     }, []);
 
     return {
       isDisabled: blockContext.blockConfig.interaction?.isDisabled ?? false,
+      updateHook
     }
   }
 

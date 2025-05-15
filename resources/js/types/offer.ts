@@ -1,6 +1,6 @@
 import { RuleGroup } from "@/components/editor/condition-visibility-editor";
 import { Theme } from "./theme";
-import { OnClickAction } from "@/components/editor/condition-onclick-editor";
+import { OnClickAction } from "@/components/editor/interaction-event-editor";
 
 export interface Offer {
     id: number;
