@@ -52,7 +52,7 @@ export const AccordionSection: React.FC<AccordionSectionProps> = ({
             >
               <span className="font-medium text-sm text-left">{getSectionTitle(item, i)}</span>
             </AccordionTrigger>
-            <AccordionContent className="bg-white rounded-b-lg">
+            <AccordionContent className="bg-transparent rounded-b-lg">
               {renderSection(item, i)}
             </AccordionContent>
           </AccordionItem>
