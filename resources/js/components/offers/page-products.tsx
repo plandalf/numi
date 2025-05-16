@@ -2,7 +2,7 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '../ui/separator';
 import { CircleAlert, CircleCheck, CirclePlus, Plus } from 'lucide-react';
 import { usePage } from '@inertiajs/react';
-import { EditProps } from '@/pages/offers/Edit';
+import { EditProps } from '@/pages/offers/edit';
 import { Price, Product } from '@/types/offer';
 import { Kebab } from '../ui/kebab';
 import { AddNewProductDialog } from './dialogs/AddNewProductDialog';

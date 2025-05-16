@@ -27,13 +27,29 @@ const breadcrumbs: BreadcrumbItem[] = [
 export default function Dashboard({ offers, globalTemplates, organizationTemplates, categories }: Props) {
     const [isSelectorOpen, setIsSelectorOpen] = useState(false);
 
+    const templates = [...organizationTemplates, ...globalTemplates];
+
+    const createNewOffer = () => {
+        router.post(route('offers.store'), {});
+    };
+
+    const handleCreateOffer = () => {
+        if (templates.length === 0) {
+            // If no templates available, create offer directly
+            createNewOffer();
+        } else {
+            // If templates available, show template selector
+            setIsSelectorOpen(true);
+        }
+    };
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Dashboard" />
             <div className="flex h-full flex-1 flex-col gap-4 rounded-xl p-4">
                 <div className="flex justify-end">
                     <Button
-                        onClick={() => setIsSelectorOpen(true)}
+                        onClick={handleCreateOffer}
                     >
                         <Plus className="mr-2 h-4 w-4" />
                         Create New Offer
@@ -75,8 +91,9 @@ export default function Dashboard({ offers, globalTemplates, organizationTemplat
             <TemplateSelectorModal
                 open={isSelectorOpen}
                 onOpenChange={setIsSelectorOpen}
-                templates={[...organizationTemplates, ...globalTemplates]}
+                templates={templates}
                 categories={categories}
+                onCreateNew={createNewOffer}
             />
         </AppLayout>
     );

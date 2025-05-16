@@ -13,6 +13,7 @@ use App\Http\Requests\StoreOfferVariantRequest;
 use App\Http\Requests\UpdateOfferVariantRequest;
 use App\Http\Requests\CreateUpdateThemeRequest;
 use App\Http\Requests\Offer\OfferUpdateRequest;
+use App\Http\Resources\FontResource;
 use App\Http\Resources\OfferResource;
 use App\Http\Resources\ProductResource;
 use App\Http\Resources\TemplateResource;
@@ -97,7 +98,7 @@ class OffersController extends Controller
             'organizationThemes' => ThemeResource::collection($organizationThemes),
             'organizationTemplates' => TemplateResource::collection($organizationTemplates),
             'globalThemes' => ThemeResource::collection($globalThemes),
-            'fonts' => FontElement::values(),
+            'fonts' => FontResource::collection(FontElement::cases()),
             'weights' => WeightElement::values(),
             'products' => ProductResource::collection($products),
         ]);

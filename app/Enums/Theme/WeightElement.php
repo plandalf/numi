@@ -11,6 +11,8 @@ enum WeightElement: string
     case MEDIUM = '500';
     case SEMI_BOLD = '600';
     case BOLD = '700';
+    case EXTRA_BOLD = '800';
+    case BLACK = '900';
 
     public static function values(): array
     {

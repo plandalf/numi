@@ -1,11 +1,12 @@
+import * as React from "react";
 import { TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
 import { DialogDescription, DialogTitle } from "../ui/dialog";
 import { DialogContent, DialogHeader } from "../ui/dialog";
 import { useEditor } from "@/contexts/offer/editor-context";
-import { Block } from "@/types/offer";
+import { Block, PageView } from "@/types/offer";
 import { blockTypes, getBlockMeta } from '@/components/blocks';
 import { cn } from "@/lib/utils";
-import { CircleChevronRight, DiamondPlus, SquarePlus } from "lucide-react";
+import { ChevronRight, CircleChevronRight, DiamondPlus, SquarePlus, Trash2 } from "lucide-react";
 import { Button } from "../ui/button";
 import { Dialog, DialogTrigger } from "../ui/dialog";
 import { Tabs } from "../ui/tabs";
@@ -13,6 +14,7 @@ import { StringEditor } from "../editor/string-editor";
 import { EnumerationEditor } from "../editor/enumeration-editor";
 import { useState } from "react";
 import { router } from "@inertiajs/react";
+import { Separator } from "../ui/separator";
 
 export interface PageLayersProps {
   onAddNewElementClick: () => void;
@@ -25,6 +27,9 @@ export const PageLayers: React.FC<PageLayersProps> = ({ onAddNewElementClick }) 
     selectedPage,
     selectedBlockId,
     setSelectedBlockId,
+    selectedSectionId,
+    setSelectedSectionId,
+    deleteBlock,
   } = useEditor();
 
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -35,16 +40,29 @@ export const PageLayers: React.FC<PageLayersProps> = ({ onAddNewElementClick }) 
   const [selectTemplateError, setSelectTemplateError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   
-  // Get blocks for the selected page
+  // Get sections and blocks for the selected page
   const page = data.view.pages[selectedPage];
-  const blocks: Block[] = [];
+  const sections: { id: string; name: string; blocks: Block[] }[] = [];
+  
   if (page && page.view) {
-    Object.values(page.view).forEach((section: any) => {
+    Object.entries(page.view as PageView).forEach(([sectionId, section]) => {
       if (section && Array.isArray(section.blocks)) {
-        blocks.push(...section.blocks);
+        sections.push({
+          id: sectionId,
+          name: section?.label ?? sectionId.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+          blocks: section.blocks
+        });
       }
     });
   }
+
+  // Sort sections in chronological order
+  const sortedSections = sections.sort((a, b) => {
+    const order = ['title', 'content', 'action', 'promo'];
+    const aIndex = order.findIndex(section => a.id.toLowerCase().includes(section));
+    const bIndex = order.findIndex(section => b.id.toLowerCase().includes(section));
+    return aIndex - bIndex;
+  });
 
   const closeDialog = () => {
     setDialogOpen(false);
@@ -113,36 +131,61 @@ export const PageLayers: React.FC<PageLayersProps> = ({ onAddNewElementClick }) 
   return (
     <div className="flex flex-col h-full">
       <div className="flex-1 overflow-y-auto p-4">
-        <div className="flex flex-col gap-3">
-          {blocks.length === 0 ? (
-            <div className="text-muted-foreground text-center py-8">No blocks on this page.</div>
+        <div className="flex flex-col">
+          {sortedSections.length === 0 ? (
+            <div className="text-muted-foreground text-center py-8">No sections on this page.</div>
           ) : (
-            blocks.map((block, idx) => {
-              const meta = getBlockMeta(block.type as keyof typeof blockTypes);
-              return (
-                <button
-                  key={block.id}
-                  className={cn(
-                    'flex items-center justify-between w-full px-4 py-2 rounded-lg bg-[#EBEFFF] hover:bg-[#EBEFFF]/75 transition-colors group cursor-pointer',
-                    selectedBlockId === block.id && 'ring-2 ring-primary bg-primary/10'
-                  )}
-                  onClick={() => setSelectedBlockId(block.id)}
-                  type="button"
-                >
-                  <div className="flex items-center justify-between w-full">
-                    <span className="font-medium text-sm text-left text-black/90">
-                      {meta?.title ?? block.type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())} {blocks.length > 1 ? idx + 1 : ''}
+            sortedSections.map((section, index) => (
+              <React.Fragment key={section.id}>
+                {index > 0 && <Separator className="my-2" />}
+                <div className="flex flex-col gap-2 mb-2">
+                  <div
+                    className={cn(
+                      "px-4 py-2 transition-all group cursor-pointer flex flex-row items-center gap-x-2 w-fit",
+                      selectedSectionId === section.id && 'ring-2 ring-primary bg-primary/10'
+                    )}
+                    onClick={() => setSelectedSectionId(section.id)}
+                  >
+                    <span className="font-bold text-base text-black/90">
+                      {section.name}
                     </span>
-                    <CircleChevronRight className="w-4 h-4 text-muted-foreground" />
+                    <ChevronRight className="w-4 h-4 text-black/90 group-hover:ml-1 transition-all" />
                   </div>
-                </button>
-              );
-            })
+                  {section.blocks.length > 0 && (
+                    <div className="flex flex-col gap-2">
+                      {section.blocks.map((block, idx) => {
+                        const meta = getBlockMeta(block.type as keyof typeof blockTypes);
+                      return (
+                        <button
+                          key={block.id}
+                          className={cn(
+                            'flex items-center justify-between w-full px-4 py-2 rounded-lg bg-[#EBEFFF] hover:bg-[#EBEFFF]/75 transition-colors group cursor-pointer',
+                            selectedBlockId === block.id && 'ring-2 ring-primary bg-primary/10'
+                          )}
+                          onClick={() => setSelectedBlockId(block.id)}
+                          type="button"
+                        >
+                          <div className="flex items-center justify-between w-full">
+                            <span className="font-medium text-sm text-left text-black/60 group-hover:text-black transition-colors">
+                              {meta?.title ?? block.type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())} {section.blocks.length > 1 ? idx + 1 : ''}
+                            </span>
+                            <div className="flex items-center gap-2">
+                              <CircleChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-black transition-all group-hover:mr-1" />
+                            </div>
+                          </div>
+                        </button>
+                      );
+                    })}
+                    </div>
+                  )}
+                </div>
+              </React.Fragment>
+            ))
           )}
         </div>
         <Button
           variant="default"
-          className="w-full mt-6 bg-gray-900 text-white hover:bg-gray-800 flex items-center justify-center gap-2"
+          className="w-full mt-4 bg-gray-900 text-white hover:bg-gray-800 flex items-center justify-center gap-2"
           onClick={onAddNewElementClick}
         >
           <span>Add another element</span>
@@ -151,7 +194,7 @@ export const PageLayers: React.FC<PageLayersProps> = ({ onAddNewElementClick }) 
       </div>
       <div className="p-4 flex-shrink-0">
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogTrigger className="w-full">
+          <DialogTrigger asChild className="w-full flex items-center justify-between">
             <Button
               variant="outline"
               className="w-full flex items-center justify-between"
@@ -163,12 +206,12 @@ export const PageLayers: React.FC<PageLayersProps> = ({ onAddNewElementClick }) 
           </DialogTrigger>
           <DialogContent className="w-[400px]">
             <DialogHeader>
-              <DialogTitle  >Save experience as a new template</DialogTitle>
+              <DialogTitle>Save experience as a new template</DialogTitle>
             </DialogHeader>
             <DialogDescription>
               <Tabs value={layerTemplateTab} onValueChange={v => setLayerTemplateTab(v as 'new' | 'saved')} className="w-full">
                 <TabsList className="grid grid-cols-2">
-                  <TabsTrigger value="new" disabled={saving}>Create new theme</TabsTrigger>
+                  <TabsTrigger value="new" disabled={saving}>Create new template</TabsTrigger>
                   <TabsTrigger value="saved" disabled={saving}>Update to existing</TabsTrigger>
                 </TabsList>
                 <TabsContent value="new" className="space-y-3">
@@ -191,7 +234,7 @@ export const PageLayers: React.FC<PageLayersProps> = ({ onAddNewElementClick }) 
                     }
                   </Button>
                   <div className="text-sm text-muted-foreground">
-                    Save this theme to use it on other experiences.
+                    Save this template to use it on other experiences.
                   </div>
                 </TabsContent>
                 <TabsContent value="saved" className="space-y-3">

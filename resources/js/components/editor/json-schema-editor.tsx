@@ -16,6 +16,7 @@ export function JSONSchemaEditor({
   onChange,
   rootSchema,
   isRootArray = true,
+  themeColors,
 }: {
   schema: JsonSchema | JsonSchemaProperty;
   path?: string;
@@ -23,10 +24,10 @@ export function JSONSchemaEditor({
   onChange: (newValue: any) => void;
   rootSchema?: JsonSchema;
   isRootArray?: boolean;
+  themeColors?: Record<string, string>;
 }) {
   const schemaToUse = rootSchema || schema;
 
-  console.log(schema);
 
   // Handle $ref references
   if ('$ref' in schema && schema.$ref) {
@@ -39,6 +40,7 @@ export function JSONSchemaEditor({
           onChange={onChange}
           rootSchema={rootSchema}
           isRootArray={isRootArray}
+          themeColors={themeColors}
         />
       );
     }
@@ -94,6 +96,7 @@ export function JSONSchemaEditor({
             onChange={(newValue) => handleItemChange(index, newValue)}
             rootSchema={rootSchema}
             isRootArray={false}
+            themeColors={themeColors}
           />
         )}
         getSectionTitle={(_, i) => `Section ${i + 1}`}
@@ -123,6 +126,7 @@ export function JSONSchemaEditor({
               onChange={(newValue) => handlePropertyChange(propName, newValue)}
               rootSchema={rootSchema}
               isRootArray={isRootArray}
+              themeColors={themeColors}
             />
           );
         })}
@@ -162,6 +166,8 @@ export function JSONSchemaEditor({
         label={schema.title || path.split('.').pop() || 'Color'}
         value={value || '#FFFFFF'}
         onChange={onChange}
+        type='advanced'
+        themeColors={themeColors}
       />
     );
   }

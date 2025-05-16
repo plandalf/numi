@@ -1,7 +1,7 @@
 // Numi hooks
 
 import { BlockConfig, BlockContextType, HookUsage } from "@/types/blocks";
-import { createContext, useContext, useEffect, useState, useRef, useCallback } from "react";
+import { createContext, useContext, useEffect, useState, useRef, useCallback, useMemo } from "react";
 import get from "lodash/get";
 import debounce from "lodash/debounce";
 import { Theme } from "@/types/theme";
@@ -25,48 +25,191 @@ export const BlockContext = createContext<BlockContextType>({
 });
 
 
+function TestComponent() {
 
-export const Appearance = {
-  alignment: (options: string[] = ['left', 'center', 'right', 'expand']) => ({
-    type: 'alignment',
-    options,
-    defaultValue: 'left'
-  }),
+  // modifying:
 
-  backgroundColor: (type: "backgroundColor" | "activeBackgroundColor" | "inactiveBackgroundColor" = "backgroundColor", label: string = 'Background Color', options: string[] = ['primary', 'secondary', 'success', 'danger', 'warning', 'info', 'light', 'dark']) => ({
+  const {
+    addItem// checkout.items.add ->
+  } = Numi.useCheckout();
+  // returns some kind of modification promise?
+  // setModifying(addItem().then(() => {
+  // setModifying(null)
+  // }))
+
+  // need "loading" state for adding an item
+  // need validation
+  // need errors
+
+  return (
+    <div>
+      <button onClick={() => addItem({
+        name: 'Test Item',
+        price: 100,
+        quantity: 1,
+        image: 'https://placehold.co/60x60.png',
+      })}>Add Item</button>
+    </div>
+  )
+}
+
+export interface StyleArgs {
+  options?: Record<string, string>;
+  config?: Record<string, any>;
+  inspector?: string;
+}
+
+export interface FontValue {
+  font?: string;
+  weight?: string;
+  size?: string;
+  lineHeight?: string;
+  letterSpacing?: string;
+  alignmentHorizontal?: string;
+  alignmentVertical?: string;
+}
+
+export interface BorderValue {
+  width?: string;
+  style?: string;
+}
+
+export const Style = {
+  alignment: (
+    type: string = 'alignment',
+    label: string = 'Alignment',
+    args: StyleArgs,
+    defaultValue: string = 'left',
+  ) => ({
+    label,
     type,
-    options,
-    defaultValue: 'primary',
-    label
+    options: args.options ?? {
+      left: 'Left',
+      center: 'Center',
+      right: 'Right',
+      expand: 'Expand',
+    } as Record<string, string>,
+    defaultValue,
+    inspector: args.inspector ?? 'alignmentPicker',
   }),
-  textColor: (options: string[] = []) => ({
-    type: 'textColor',
-    options,
-    defaultValue: 'primary',
-    label: 'Text Color'
+
+  backgroundColor: (
+    type: "backgroundColor" | "activeBackgroundColor" | "inactiveBackgroundColor" = "backgroundColor",
+    label: string = 'Background Color',
+    args: StyleArgs,
+    defaultValue: string,
+  ) => ({
+    label,
+    type,
+    options: args.options,
+    defaultValue,
+    inspector: args.inspector ?? 'colorPicker',
   }),
-  fontWeight: (options: string[] = ['normal', 'semibold', 'bold']) => ({
-    type: 'fontWeight',
-    options,
-    defaultValue: 'normal'
+  textColor: (
+    type: string = 'textColor',
+    label: string = 'Text Color',
+    args: StyleArgs,
+    defaultValue: string,
+  ) => ({
+    label,
+    type,
+    options: [],
+    defaultValue,
+    inspector: args.inspector ?? 'colorPicker',
   }),
-  border: () => ({
-    type: 'border',
-    defaultValue: '1px',
+
+  font: (
+    type: string = 'font',
+    label: string = 'Font',
+    args: StyleArgs,
+    defaultValue: FontValue,
+  ) => ({
+    label,
+    type,
+    options: [],
+    defaultValue,
+    inspector: args.inspector ?? 'fontPicker',
+    config: args.config ?? {}
   }),
-  borderColor: () => ({
-    type: 'borderColor',
-    defaultValue: '#ccc',
+
+
+  border: (
+    type: string = 'border',
+    label: string = 'Border',
+    args: StyleArgs,
+    defaultValue: BorderValue,
+  ) => ({
+    label,
+    type,
+    options: [],
+    defaultValue,
+    inspector: args.inspector ?? 'borderPicker',
   }),
-  hidden: () => ({
-    type: 'hidden',
-    defaultValue: false,
+
+  borderRadius: (
+    type: string = 'borderRadius',
+    label: string = 'Border Radius',
+    args: StyleArgs,
+    defaultValue: string = '1px',
+  ) => ({
+    label,
+    type,
+    options: [],
+    defaultValue,
+    inspector: args.inspector ?? 'borderRadiusPicker',
   }),
-  visibility: () => ({
-    type: 'visibility',
+
+  borderColor: (
+    type: string = 'borderColor',
+    label: string = 'Border Color',
+    args: StyleArgs,
+    defaultValue: string = '#FFFFFF',
+  ) => ({
+    label,
+    type,
+    options: [],
+    defaultValue,
+    inspector: args.inspector ?? 'colorPicker',
+  }),
+
+  shadow: (
+    type: string = 'shadow',
+    label: string = 'Shadow',
+    args: StyleArgs,
+    defaultValue: string = '0px 0px 0px 0px #000000',
+  ) => ({
+    label,
+    type,
+    options: [],
+    defaultValue,
+    inspector: args.inspector ?? 'shadowPicker',
+  }),
+  
+  hidden: (
+    type: string = 'hidden',
+    label: string = 'Hidden',
+    args: StyleArgs,
+    defaultValue: boolean = false,
+  ) => ({
+    label,
+    type,
+    options: [],
+    defaultValue,
+    inspector: args.inspector ?? 'checkbox',
+  }),
+  visibility: (
+    type: string = 'visibility',
+    label: string = 'Visibility',
+    args: StyleArgs,
     defaultValue: {
       conditional: []
     }
+  ) => ({
+    label,
+    type,
+    options: [],
+    defaultValue,
+    inspector: args.inspector ?? 'visibility',
   }),
 }
 
@@ -203,22 +346,17 @@ class Numi {
     };
   }
 
-  static useAppearance(appearanceProps: any[]): Record<string, any> {
+  static useStyle(appearanceProps: any[]): Record<string, any> {
     const blockContext = useContext(BlockContext);
-    const [appearance, setAppearance] = useState<Record<string, any>>({});
 
-    useEffect(() => {
+    return useMemo(() => {
+      const appearance: Record<string, any> = {};
+      
       // Register each appearance property
       appearanceProps.forEach(prop => {
         if (prop.type) {
           // Get the value from block config or use default
-          const value = blockContext.blockConfig.appearance?.[prop.type] || prop.defaultValue;
-
-          // Update the appearance state
-          setAppearance(prev => ({
-            ...prev,
-            [prop.type]: value
-          }));
+          appearance[prop.type] = blockContext.blockConfig.appearance?.[prop.type] || prop.defaultValue;
 
           // Register the hook
           blockContext.registerHook({
@@ -226,15 +364,15 @@ class Numi {
             type: 'appearance',
             defaultValue: prop.defaultValue,
             options: prop.options,
-            inspector: 'select',
-            label: prop.label || prop.type.charAt(0).toUpperCase() + prop.type.slice(1)
+            inspector: prop.inspector,
+            label: prop.label || prop.type.charAt(0).toUpperCase() + prop.type.slice(1),
+            config: prop.config ?? {}
           });
         }
       });
-    }, []);
-    // }, [blockContext.blockId, appearanceProps]);
 
-    return appearance;
+      return appearance;
+    }, [blockContext.blockConfig.appearance, blockContext.blockId]);
   }
 
   static useInteraction(): { isDisabled: any; } {

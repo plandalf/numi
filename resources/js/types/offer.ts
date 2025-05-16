@@ -271,6 +271,9 @@ export type PageType = 'page' | 'entry' | 'payment' | 'ending';
 
 export type PageSection = {
     blocks: Block[];
+    id?: string;
+    label?: string;
+    style?: Record<string, string>;
 };
 
 export type FormSection = {
