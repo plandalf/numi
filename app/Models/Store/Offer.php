@@ -3,6 +3,7 @@
 namespace App\Models\Store;
 
 use App\Database\Model;
+use App\Database\Traits\HasSqids;
 use App\Database\Traits\UuidRouteKey;
 use App\Models\Media;
 use App\Models\Theme;
@@ -14,6 +15,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Models\Catalog\Price;
+use Illuminate\Support\Str;
 
 /**
  * @property int $organization_id
@@ -34,7 +36,7 @@ class Offer extends Model
     /** @use HasFactory<\Database\Factories\OfferFactory> */
     use HasFactory,
         SoftDeletes,
-        UuidRouteKey;
+        HasSqids;
 
     protected $table = 'store_offers';
 
@@ -63,6 +65,15 @@ class Offer extends Model
     const STATUS_PUBLISHED = 'published';
 
     const STATUS_ARCHIVED = 'archived';
+
+    public static function boot()
+    {
+        parent::boot();
+
+        static::creating(function ($offer) {
+            $offer->uuid ??= Str::uuid()->toString();
+        });
+    }
 
     public function productImage(): BelongsTo
     {

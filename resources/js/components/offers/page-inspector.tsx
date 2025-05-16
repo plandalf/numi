@@ -217,7 +217,7 @@ export const Inspector = ({
                     <AppearanceEditor globalState={globalState} block={block} onUpdate={onUpdate} />
                   ) : type === 'validation' ? (
                     <ValidationSection block={block} onUpdate={onUpdate} />
-                  ) : hook.type === 'interaction' || hook.type === 'eventCallback' ? (
+                  ) : type === 'interaction' || type === 'eventCallback' ? (
                     <InteractionSection globalState={globalState} block={block} onUpdate={onUpdate} />
                   ) : type === 'conditions' ? (
                     <ConditionsSection globalState={globalState} block={block} onUpdate={onUpdate} />

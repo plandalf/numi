@@ -62,7 +62,7 @@ function ButtonBlockComponent({ context }: { context: BlockContextType }) {
   const borderRadius = appearance?.borderRadius;
   const shadow = appearance?.shadow as string;
 
-  const onClick = Numi.useEventCallback({
+  const { executeCallbacks } = Numi.useEventCallback({
     name: 'click',
   });
 
@@ -112,7 +112,7 @@ function ButtonBlockComponent({ context }: { context: BlockContextType }) {
         disabled={type === 'submit' && isSubmitting}
         className={buttonClasses}
         style={buttonStyles}
-        onClick={onClick}
+        onClick={() => executeCallbacks('button', 'onClick')}
       >
         {type === 'submit' && isSubmitting ? (
           <div className="flex items-center justify-center space-x-2">
