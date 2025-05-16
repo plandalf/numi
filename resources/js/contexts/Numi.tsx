@@ -117,21 +117,9 @@ class CheckoutSDK {
   }
 }
 
-class Numi {
-
-  // get static checkout ?
-  // static useCheckout(options: CheckoutOptions = {}): CheckoutSDK {
-  //   const [checkout] = useState(() => {
-  //     // Create a checkout instance with provided options
-  //     const instance = new CheckoutSDK(options);
-
-  //     return instance;
-  //   });
-
-  //   return checkout;
-  // }
-
-  static useEventCallback(props: { name: string; }) {
+// Convert class to const object with hooks
+const Numi = {
+  useEventCallback(props: { name: string; }) {
     const blockContext = useContext(BlockContext);
 
     useEffect(() => {
@@ -142,32 +130,22 @@ class Numi {
       });
     }, []);
 
-    // allow calling something event is called
-    // const checkout = Numi.useCheckout();
-
     return () => {
-      // "on click happened, basically"
-      // run the actions set up for this block
       if (blockContext.blockConfig.interaction?.onClick) {
         for (const callback of blockContext.blockConfig.interaction.onClick) {
-          // this will only be a "named" action
           switch (callback.action) {
             case 'setSlot':
-              // checkout.setSlot(callback.slot, callback.price); // todo: other options too?!
               break;
             case 'setField':
               blockContext.setFieldValue(callback.field, callback.value);
               break;
           }
-          // action();//
         }
       }
-      // Hook was called!
     };
-  }
+  },
 
-  static useStateJsonSchema(props: { name: string; schema: { $schema: string; type: string; items: { type: string; properties: { key: { title: string; type: string; }; value: { title: string; type: string; }; children: { type: string; items: { type: string; properties: { key: { type: string; }; label: { type: string; }; caption: { type: string; }; color: { type: string; }; prefixImage: { type: string; format: string; description: string; meta: { editor: string; }; }; prefixIcon: { type: string; description: string; meta: { editor: string; }; }; prefixText: { type: string; }; tooltip: { type: string; }; disabled: { type: string; }; hidden: { type: string; }; }; required: string[]; }; }; }; required: string[]; }; }}): Array<any> {
-
+  useStateJsonSchema(props: { name: string; schema: { $schema: string; type: string; items: { type: string; properties: { key: { title: string; type: string; }; value: { title: string; type: string; }; children: { type: string; items: { type: string; properties: { key: { type: string; }; label: { type: string; }; caption: { type: string; }; color: { type: string; }; prefixImage: { type: string; format: string; description: string; meta: { editor: string; }; }; prefixIcon: { type: string; description: string; meta: { editor: string; }; }; prefixText: { type: string; }; tooltip: { type: string; }; disabled: { type: string; }; hidden: { type: string; }; }; required: string[]; }; }; }; required: string[]; }; }}): Array<any> {
     const blockContext = useContext(BlockContext);
 
     useEffect(() => {
@@ -179,48 +157,47 @@ class Numi {
       });
     }, []);
 
-    // options list data must match
     const data = get(blockContext.blockConfig, `content.${props.name}`, {});
-
-    // return options
     return [data];
-  }
+  },
 
-  static useCheckout(options: CheckoutOptions = {}): CheckoutState {
-    const {
-      session
-    } = useContext(GlobalStateContext);
-
-    // useEffect(() => {
-    //   // Cleanup function
-    //   return () => {
-    //     // Any cleanup needed
-    //   };
-    // }, []);
+  useCheckout(options: CheckoutOptions = {}): CheckoutState {
+    const globalState = useContext(GlobalStateContext);
+    const session = globalState?.session ?? null;
 
     return {
       session,
+      currentPageId: '',
+      pageHistory: [],
+      completedPages: [],
+      formData: {},
+      errors: {},
+      isValid: true,
+      isSubmitting: false,
+      isSubmitted: false,
+      isDirty: false,
+      isPristine: true,
+      isTouched: false,
+      isUntouched: true,
+      isFocused: false,
+      isBlurred: true,
     };
-  }
+  },
 
-  static useAppearance(appearanceProps: any[]): Record<string, any> {
+  useAppearance(appearanceProps: any[]): Record<string, any> {
     const blockContext = useContext(BlockContext);
     const [appearance, setAppearance] = useState<Record<string, any>>({});
 
     useEffect(() => {
-      // Register each appearance property
       appearanceProps.forEach(prop => {
         if (prop.type) {
-          // Get the value from block config or use default
           const value = blockContext.blockConfig.appearance?.[prop.type] || prop.defaultValue;
 
-          // Update the appearance state
           setAppearance(prev => ({
             ...prev,
             [prop.type]: value
           }));
 
-          // Register the hook
           blockContext.registerHook({
             name: prop.type,
             type: 'appearance',
@@ -232,29 +209,27 @@ class Numi {
         }
       });
     }, []);
-    // }, [blockContext.blockId, appearanceProps]);
 
     return appearance;
-  }
+  },
 
-  static useInteraction(): { isDisabled: any; } {
+  useInteraction(): { isDisabled: boolean } {
     const blockContext = useContext(BlockContext);
 
     useEffect(() => {
-      // blockContext.registerHook('interaction', {
-      //   // args?
-      // });
       blockContext.registerHook({
+        name: 'interaction',
         type: 'interaction',
+        defaultValue: false
       });
     }, []);
 
     return {
       isDisabled: blockContext.blockConfig.interaction?.isDisabled ?? false,
-    }
-  }
+    };
+  },
 
-  static useStateEnumeration(props: {
+  useStateEnumeration(props: {
     name: string;
     initialValue?: string;
     options: string[];
@@ -270,21 +245,17 @@ class Numi {
       defaultValue: props.initialValue,
       options: props.options,
       labels: props.labels,
-      icons: props.icons,
       inspector: props.inspector,
       label: props.label,
     });
 
-    // Create a ref to hold the debounced function
     const debouncedUpdateRef = useRef<ReturnType<typeof debounce> | null>(null);
 
-    // Initialize the debounced function on first render
     useEffect(() => {
       debouncedUpdateRef.current = debounce((newHook: Partial<HookUsage>) => {
         setHook(prevHook => ({...prevHook, ...newHook}));
-      }, 300); // 300ms delay
+      }, 300);
 
-      // Cleanup function to cancel pending debounced calls
       return () => {
         if (debouncedUpdateRef.current) {
           debouncedUpdateRef.current.cancel();
@@ -308,9 +279,9 @@ class Numi {
     }, []);
 
     return [value, setValue, updateHook];
-  }
+  },
 
-  static useStateBoolean(props: { name: string; defaultValue: boolean; label?: string; inspector?: string }): [boolean, (value: boolean) => void] {
+  useStateBoolean(props: { name: string; defaultValue: boolean; label?: string; inspector?: string }): [boolean, (value: boolean) => void] {
     const blockContext = useContext(BlockContext);
 
     useEffect(() => {
@@ -328,7 +299,6 @@ class Numi {
       );
 
       if (!existingState) {
-        // Use block config value as initial value if it exists
         const initialValue = blockContext.blockConfig.content[props.name] ?? props.defaultValue;
         blockContext.globalState.updateFieldState(
           blockContext.blockId,
@@ -338,8 +308,6 @@ class Numi {
       }
     }, [blockContext.blockId, props.name]);
 
-    // For editor-editable values (checkbox inspector), prioritize block config
-    // Otherwise, use field state for runtime values
     const value = props.inspector === 'checkbox'
       ? blockContext.blockConfig.content[props.name] ?? blockContext.getFieldValue(props.name) ?? props.defaultValue
       : blockContext.getFieldValue(props.name) ?? blockContext.blockConfig.content[props.name] ?? props.defaultValue;
@@ -349,11 +317,10 @@ class Numi {
     };
 
     return [value, setValue];
-  }
+  },
 
-  static useStateString(props: { name: string; defaultValue: string; inspector?: string, format?: string }): [string, (value: string) => void, string] {
+  useStateString(props: { name: string; defaultValue: string; inspector?: string, format?: string }): [string, (value: string) => void, string] {
     const blockContext = useContext(BlockContext);
-
 
     useEffect(() => {
       blockContext.registerHook({
@@ -369,7 +336,6 @@ class Numi {
       );
 
       if (!existingState) {
-        // Use block config value as initial value if it exists
         const initialValue = blockContext.blockConfig.content[props.name] ?? props.defaultValue;
         blockContext.globalState.updateFieldState(
           blockContext.blockId,
@@ -379,8 +345,6 @@ class Numi {
       }
     }, [blockContext.blockId, props.name]);
 
-    // For editor-editable values (not hidden), prioritize block config
-    // For runtime-editable values (hidden), prioritize field state
     const value = props.inspector !== 'hidden'
       ? get(blockContext.blockConfig, `content.${props.name}`) ?? blockContext.getFieldValue(props.name) ?? props.defaultValue
       : blockContext.getFieldValue(props.name) ?? get(blockContext.blockConfig, `content.${props.name}`) ?? props.defaultValue;
@@ -391,9 +355,9 @@ class Numi {
     };
 
     return [value, setValue, format];
-  }
+  },
 
-  static useStateNumber(props: {
+  useStateNumber(props: {
     name: string;
     defaultValue: number;
     min?: number;
@@ -420,7 +384,6 @@ class Numi {
       );
 
       if (!existingState) {
-        // Use block config value as initial value if it exists
         const initialValue = blockContext.blockConfig.content[props.name] ?? props.defaultValue;
         blockContext.globalState.updateFieldState(
           blockContext.blockId,
@@ -430,20 +393,18 @@ class Numi {
       }
     }, [blockContext.blockId, props.name]);
 
-    // For editor-editable values (not hidden), prioritize block config
-    // For runtime-editable values (hidden), prioritize field state
     const value = props.inspector !== 'hidden'
-      ? Number(get(blockContext.blockConfig, `content.${props.name}`)) ?? Number(blockContext.getFieldValue(props.name)) ?? props.defaultValue
-      : Number(blockContext.getFieldValue(props.name)) ?? Number(get(blockContext.blockConfig, `content.${props.name}`)) ?? props.defaultValue;
+      ? Number(get(blockContext.blockConfig, `content.${props.name}`)) || Number(blockContext.getFieldValue(props.name)) || props.defaultValue
+      : Number(blockContext.getFieldValue(props.name)) || Number(get(blockContext.blockConfig, `content.${props.name}`)) || props.defaultValue;
 
     const setValue = (newValue: number) => {
       blockContext.setFieldValue(props.name, newValue);
     };
 
     return [value, setValue];
-  }
+  },
 
-  static useRuntimeString(props: { name: string; defaultValue: string }): [string, (value: string) => void] {
+  useRuntimeString(props: { name: string; defaultValue: string }): [string, (value: string) => void] {
     const blockContext = useContext(BlockContext);
 
     const value = props.name in blockContext.blockConfig.content
@@ -455,12 +416,13 @@ class Numi {
     };
 
     return [value, setValue];
-  }
+  },
 
-  static useValidation(props: { rules: Record<string, any> }): {
+  useValidation(props: { rules: Record<string, any> }): {
     isValid: boolean;
     errors: string[];
     validate: (value: any) => boolean;
+    isRequired: boolean;
   } {
     const blockContext = useContext(BlockContext);
     const [isValid, setIsValid] = useState(true);
@@ -468,7 +430,9 @@ class Numi {
 
     useEffect(() => {
       blockContext.registerHook({
+        name: 'validation',
         type: 'validation',
+        defaultValue: null,
         rules: props.rules,
       });
     }, []);
@@ -476,7 +440,6 @@ class Numi {
     const validate = (value: any) => {
       const newErrors: string[] = [];
 
-      // Check required validation
       if (props.rules.isRequired && (!value || value === '')) {
         newErrors.push('This field is required');
       }
@@ -492,13 +455,13 @@ class Numi {
       validate,
       isRequired: blockContext.blockConfig.validation?.isRequired ?? false
     };
-  }
+  },
 
-  static useTheme(): Theme | undefined {
+  useTheme(): Theme | undefined {
     const blockContext = useContext(BlockContext);
     return blockContext.theme;
   }
-}
+};
 
 const NumiEditorContext = createContext<{
   blocks: BlockConfig[];

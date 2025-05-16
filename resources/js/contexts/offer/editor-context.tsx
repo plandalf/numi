@@ -164,7 +164,7 @@ export function EditorProvider({ offer, organizationThemes, organizationTemplate
   const handleSave = () => {
     put(route('offers.update', offer.id), {
       onError: (error: any) => {
-        const errorMessages = Object.values(error).flat();
+        const errorMessages = Object.values(error).flat() as string[];
         toast.error(<>
           <p>Failed to save offer</p>
           <ul className='list-disc list-inside'>
@@ -218,7 +218,7 @@ export function EditorProvider({ offer, organizationThemes, organizationTemplate
         setIsRenamingFromDropdown(true);
         handlePageNameClick(pageId, data.view.pages[pageId].name);
         break;
-      case 'duplicate':
+      case 'duplicate': {
         const sourcePage = data.view.pages[pageId];
         const newId = `page_${Math.random().toString(36).substr(2, 9)}`;
         const newPage = {
@@ -233,7 +233,8 @@ export function EditorProvider({ offer, organizationThemes, organizationTemplate
         setData(update(data, { view: { pages: { $set: updatedPages } }}));
         setTimeout(() => { handleSave(); }, 0);
         break;
-      case 'delete':
+      }
+      case 'delete': {
         const pagesToUpdate = { ...data.view.pages };
         delete pagesToUpdate[pageId];
         Object.keys(pagesToUpdate).forEach(pageKey => {
@@ -274,6 +275,7 @@ export function EditorProvider({ offer, organizationThemes, organizationTemplate
         }
         setTimeout(() => { handleSave(); }, 0);
         break;
+      }
     }
   };
 

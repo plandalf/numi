@@ -36,7 +36,7 @@ export const AppearanceEditor = ({ globalState, block, onUpdate }: { globalState
             case 'backgroundColor':
             case 'activeBackgroundColor':
             case 'inactiveBackgroundColor':
-            case 'textColor':
+            case 'textColor': {
               const colorValue = block.appearance?.[hook.name];
               return (
                 <ColorPickerEditor
@@ -52,6 +52,7 @@ export const AppearanceEditor = ({ globalState, block, onUpdate }: { globalState
                   })}
                 />
               );
+            }
             case 'fontWeight':
               return (
                 <EnumerationEditor

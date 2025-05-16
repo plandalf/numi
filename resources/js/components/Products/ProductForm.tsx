@@ -13,13 +13,6 @@ import { Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { type Product } from "@/types/product"; // Assuming you have a Product type
 import { toast } from "sonner";
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue
-} from "@/components/ui/select";
 interface Props {
     open: boolean;
     onOpenChange: (open: boolean) => void;
@@ -32,8 +25,8 @@ const slugify = (text: string): string => {
         .toLowerCase()
         .trim()
         .replace(/\s+/g, '_')        // Replace spaces with _
-        .replace(/[^\w\-]+/g, '')    // Remove all non-word chars
-        .replace(/\-\-+/g, '_')      // Replace multiple - with single _
+        .replace(/[^\w-]+/g, '')    // Remove all non-word chars
+        .replace(/--+/g, '_')      // Replace multiple - with single _
         .replace(/^-+/, '')          // Trim - from start of text
         .replace(/-+$/, '');         // Trim - from end of text
 };

@@ -18,7 +18,7 @@ import { Badge } from '../ui/badge';
 
 // Local interfaces that match the actual structure
 interface LocalPageView extends OfferPageView {
-    [key: string]: PageSection | FormSection | undefined;
+    [key: string]: PageSection;
 }
 
 function getBlockComponent(type: string): React.ComponentType<any> | null {
@@ -261,7 +261,7 @@ const renderElement = (
   } = element;
   const { componentRegistry, contentMap } = context;
 
-  if (id && page?.view && id in page?.view) {
+  if (id && page?.view && page.view[id]) {
     // console.log('Found section for id:', id, page.view[id]);
     const section = page.view[id];
     return createElement(

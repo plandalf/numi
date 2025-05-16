@@ -22,10 +22,10 @@ export const slugify = (text: string): string => {
         .toLowerCase()
         .trim()
         .replace(/\s+/g, '_')        // Replace spaces with _
-        .replace(/[^\w_\-]+/g, '')   // Allow underscores and hyphens
-        .replace(/[\_\-]+/g, '_')    // Replace multiple _ or - with single _
-        .replace(/^_+/, '')         // Trim _ from start
-        .replace(/_+$/, '');        // Trim _ from end
+        .replace(/[^\w_-]+/g, '')    // Allow underscores and hyphens
+        .replace(/[_-]+/g, '_')      // Replace multiple _ or - with single _
+        .replace(/^_+/, '')          // Trim _ from start
+        .replace(/_+$/, '');         // Trim _ from end
 };
 
 

@@ -1,13 +1,13 @@
 import { Head } from '@inertiajs/react';
 import { useState, createContext, useContext, useMemo } from 'react';
-import { type Block, type Page as OfferPage, type OfferConfiguration, } from '@/types/offer';
+import { type Block, type Page, type OfferConfiguration, type PageType } from '@/types/offer';
 import { cn } from '@/lib/utils';
 
 import { BlockConfig, FieldState, HookUsage } from '@/types/blocks';
 
 import { blockTypes } from '@/components/blocks';
 import axios from '@/lib/axios';
-import { CheckoutSession } from '@/types/checkout';
+import { CheckoutSession, CheckoutItem } from '@/types/checkout';
 import { BlockRenderer } from '@/components/checkout/block-renderer';
 // Form and validation context
 type FormData = Record<string, any>;
@@ -25,7 +25,6 @@ export interface GlobalState {
   registerHook: (block: BlockConfig, hook: HookUsage) => void;
   hookUsage: Record<string, HookUsage[]>;
 
-
   // Form functionality
   errors: ValidationErrors;
   setErrors: (errors: ValidationErrors) => void;
@@ -34,14 +33,19 @@ export interface GlobalState {
   setSubmitError: (error: string | null) => void;
   isSubmitting: boolean;
   setSubmitting: (submitting: boolean) => void;
+  setFieldError: (field: string, error: string | null) => void;
 
   // Validation
-  // validatePage: (pageId: string) => boolean;
   validateField: (fieldId: string) => boolean;
 
   // Submission
   submitPage: (pageId: string) => Promise<boolean>;
   setPageSubmissionProps: (callback: () => Promise<unknown>) => void;
+
+  // Offer and session
+  offer: OfferConfiguration;
+  session: CheckoutSession;
+  setSession: (session: CheckoutSession) => void;
 }
 
 export function GlobalStateProvider({ offer, session: defaultSession, children }: { offer: OfferConfiguration, session: CheckoutSession, children: React.ReactNode }) {
@@ -56,6 +60,20 @@ export function GlobalStateProvider({ offer, session: defaultSession, children }
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [isSubmitting, setSubmitting] = useState<boolean>(false);
 
+  // Set field error function
+  const setFieldError = (field: string, error: string | null) => {
+    setErrors(prev => {
+      if (error === null) {
+        const newErrors = { ...prev };
+        delete newErrors[field];
+        return newErrors;
+      }
+      return {
+        ...prev,
+        [field]: [error]
+      };
+    });
+  };
 
   // Update field state function
   const updateFieldState = (blockId: string, fieldName: string, value: any) => {
@@ -111,8 +129,6 @@ export function GlobalStateProvider({ offer, session: defaultSession, children }
   const clearErrors = () => {
     setErrors({});
   };
-
-
 
   // Validation functions
   const validateField = (fieldId: string): boolean => {
@@ -187,8 +203,6 @@ export function GlobalStateProvider({ offer, session: defaultSession, children }
     return true;
   };
 
-
-
   // Helper to get field value by ID
   const getFieldValue = (fieldId: string): any => {
     const state = Object.values(fieldStates).find(state => state.blockId === fieldId);
@@ -212,7 +226,7 @@ export function GlobalStateProvider({ offer, session: defaultSession, children }
         return fieldStates[field]?.value;
       });
 
-      let params: Record<string, any> = {
+      const params: Record<string, any> = {
         action,
         metadata: {
           fields: fieldStates,
@@ -293,14 +307,11 @@ export function GlobalStateProvider({ offer, session: defaultSession, children }
   // Create context value
   const value: GlobalState = {
     fields,
-    // Original GlobalState properties
     fieldStates,
     updateFieldState,
     getFieldState,
     registerHook,
     hookUsage,
-
-    // Form
     errors,
     setErrors,
     clearErrors,
@@ -310,16 +321,11 @@ export function GlobalStateProvider({ offer, session: defaultSession, children }
     setSubmitting,
     submitPage,
     setPageSubmissionProps,
-    // Validation
-    // validatePage,
     validateField,
-
-    // Submission
-    // submitPage,
-    // submit
     offer,
     session,
-    setSession
+    setSession,
+    setFieldError
   };
 
   return (
@@ -333,9 +339,9 @@ export function GlobalStateProvider({ offer, session: defaultSession, children }
 export const useCheckoutState = () => {
   const context = useContext(GlobalStateContext);
   if (!context) {
-    // throw new Error('useCheckoutState must be used within a GlobalStateProvider');
+    return {} as GlobalState;
   }
-  return context ?? {};
+  return context;
 };
 
 // Render a section of blocks - shows the block structure without actual rendering
@@ -359,10 +365,6 @@ export const Section = ({ blocks, className }: { blocks: Block[], className?: st
     </div>
   );
 };
-
-
-
-
 
 export const layoutConfig = {
   "name": "SplitCheckout@v1.1",
@@ -437,10 +439,8 @@ export const layoutConfig = {
   }
 }
 
-
 export type CheckoutState = {
-
-  session: CheckoutSession;
+  session: CheckoutSession | null;
   currentPageId: string;
   pageHistory: string[];
   completedPages: string[];
@@ -450,9 +450,7 @@ export type CheckoutState = {
   loading: boolean;
   error: string | null;
 
-  // fields?
-
-  addItem: (item: Omit<Item, 'id'>) => Promise<void>;
+  addItem: (item: Omit<CheckoutItem, 'id'>) => Promise<void>;
   removeItem: (id: string) => void;
   clear: () => void;
   total: () => number;
@@ -669,40 +667,34 @@ export const useNavigation = (): NavigationContextType => {
 };
 
 export const useValidateFields = () => {
-  const { fieldStates, setFieldError } = useCheckoutState()
+  const { fieldStates, setFieldError } = useCheckoutState();
 
-  const validateField = (name, value) => {
+  const validateField = (name: string, value: any) => {
     if (!value) {
       // setFieldError(name, `${name} is required`)
     } else {
       // setFieldError(name, null)  // Clear error if valid
     }
-  }
-
-
+  };
 
   function validateAllFields() {
     const fields = Object.entries(fieldStates).reduce((acc, [key, state]) => {
-      acc[key] = state.value;
+      if (state && typeof state === 'object' && 'value' in state) {
+        acc[key] = state.value;
+      }
       return acc;
     }, {} as Record<string, any>);
 
-    console.log('validateAllFields', { fieldStates, fields })
+    console.log('validateAllFields', { fieldStates, fields });
     // Validate each field
     Object.keys(fields).forEach((field) => {
-      const value = fields[field].value
-      validateField(field, value)
-    })
+      const value = fields[field];
+      validateField(field, value);
+    });
 
-    return new Promise(async (resolve, reject) => {
-      // Optionally: Trigger backend validation here
-      // const errors = await backendValidateFields(field)
-      // Object.keys(errors).forEach((field) => {
-      // setFieldError(field, errors[field])
-      // })
-
-      resolve({})
-    })
+    return new Promise((resolve) => {
+      resolve({});
+    });
   }
 
   const backendValidateFields = async (fields: Record<string, any>) => {
@@ -792,7 +784,6 @@ function StateDisplay() {
     </div>
   );
 }
-
 
 export function PageNotFound() {
   return (

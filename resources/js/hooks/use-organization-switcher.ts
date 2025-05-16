@@ -17,7 +17,8 @@ export function useOrganizationSwitcher({
   onSwitch,
   onCreate,
 }: OrganizationSwitcherProps): OrganizationSwitcherResponse {
-  const { auth } = usePage<SharedData>().props;
+  const page = usePage();
+  const auth = (page.props as unknown as SharedData).auth;
 
   const handleCreate = (name: string) => {
     router.post(route('organizations.store'), { name }, {
@@ -36,7 +37,7 @@ export function useOrganizationSwitcher({
   };
    
   return {
-    currentOrganization: auth?.user?.current_organization!,
+    currentOrganization: auth?.user?.current_organization ?? auth?.user?.organizations[0],
     organizations: auth?.user?.organizations ?? [],
     onSwitch: handleSwitch,
     onCreate: handleCreate,

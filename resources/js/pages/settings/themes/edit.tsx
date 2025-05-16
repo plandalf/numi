@@ -154,9 +154,12 @@ export default function Edit({ theme, fonts, weights }: Props) {
                     </div>
                 );
 
-            case FieldType.Typography:
+            case FieldType.Typography: {
                 console.log(value);
-                const [size = '', font = '', weight = ''] = (value as string[]) || [];
+                let size = '', font = '', weight = '';
+                if (Array.isArray(value)) {
+                    [size = '', font = '', weight = ''] = value;
+                }
                 return (
                     <div key={field.key} className="space-y-4">
                         <Label>{label}</Label>
@@ -205,6 +208,7 @@ export default function Edit({ theme, fonts, weights }: Props) {
                         </div>
                     </div>
                 );
+            }
 
             case FieldType.Size:
             case FieldType.Shadow:

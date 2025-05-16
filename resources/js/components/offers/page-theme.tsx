@@ -282,8 +282,8 @@ export const PageTheme: React.FC = () => {
                       );
                     }
                     if (f.type === 'shadow') {
-                      let label = f.label;
-                      let key = f.key;
+                      const label = f.label;
+                      const key = f.key;
                       return (
                         <ShadowPickerEditor
                           key={key}

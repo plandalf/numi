@@ -206,7 +206,7 @@ export function Sidebar() {
     }
 
     switch (activeTab) {
-      case 'elements':
+      case 'elements': {
         // Filter elements based on search query
         const filteredBaseElements = baseElements.filter(element =>
           element.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -281,6 +281,7 @@ export function Sidebar() {
             )}
           </div>
         );
+      }
       case 'layers':
         return (
           <PageLayers onAddNewElementClick={() => setActiveTab('elements')} />

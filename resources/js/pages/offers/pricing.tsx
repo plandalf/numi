@@ -35,26 +35,26 @@ export default function Pricing() {
     const [isSlotFormOpen, setIsSlotFormOpen] = useState(false);
     const [editingSlot, setEditingSlot] = useState<any | null>(null);
 
-    const handleDeleteVariant = (variant: OfferVariant) => {
-        if (confirm(`Are you sure you want to delete the variant "${variant.name || 'Unnamed Variant'}"?`)) {
-            const toastId = toast.loading(`Deleting variant ${variant.name || 'Unnamed Variant'}...`);
+    // function handleDeleteVariant(variant: OfferVariant) {
+    //     if (confirm(`Are you sure you want to delete the variant "${variant.name || 'Unnamed Variant'}"?`)) {
+    //         const toastId = toast.loading(`Deleting variant ${variant.name || 'Unnamed Variant'}...`);
 
-            const { delete: destroy, processing } = useForm();
-            destroy(route('offers.variants.destroy', { offer: offer.id, variant: variant.id }), {
-                preserveScroll: true,
-                onSuccess: () => {
-                    toast.success(`Variant ${variant.name || 'Unnamed Variant'} deleted successfully`, {
-                        id: toastId,
-                    });
-                },
-                onError: (error: any) => {
-                    toast.error(`Failed to delete variant: ${error.message || 'Unknown error'}`, {
-                        id: toastId,
-                    });
-                }
-            });
-        }
-    };
+    //         const { delete: destroy, processing } = useForm();
+    //         destroy(route('offers.variants.destroy', { offer: offer.id, variant: variant.id }), {
+    //             preserveScroll: true,
+    //             onSuccess: () => {
+    //                 toast.success(`Variant ${variant.name || 'Unnamed Variant'} deleted successfully`, {
+    //                     id: toastId,
+    //                 });
+    //             },
+    //             onError: (error: any) => {
+    //                 toast.error(`Failed to delete variant: ${error.message || 'Unknown error'}`, {
+    //                     id: toastId,
+    //                 });
+    //             }
+    //         });
+    //     }
+    // };
 
     const layoutOffer = {
         id: offer.id,

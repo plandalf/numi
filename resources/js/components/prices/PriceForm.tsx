@@ -136,7 +136,7 @@ export default function PriceForm({
             setPackageConfig(initialData?.properties?.package || { size: 1, unit_amount: 0 });
             setIsLookupKeyManuallyEdited(!!initialData?.lookup_key); // Set based on initial data
         }
-    }, [open, initialData, reset, defaultCurrency, setData]);
+    }, [open, initialData, reset, defaultCurrency, setData, getInitialFormData]);
 
     // Update lookup_key when name changes (if not manually edited)
     useEffect(() => {
