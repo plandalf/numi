@@ -3,9 +3,9 @@ import { cn } from '@/lib/utils';
 import { Grip, SunDim, X } from 'lucide-react';
 import { Separator } from './separator';
 import { Label } from './label';
-import { RangeSlider } from './range-slider';
 import { ColorPicker } from './color-picker';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './select';
+import { DragAdjuster } from './drag-adjuster';
 export interface ShadowPickerConfig {
   hideLabel?: boolean;
 }
@@ -79,8 +79,7 @@ const ShadowPicker: React.FC<ShadowPickerProps> = ({ value, onChange, onClose, c
           <div className="flex flex-row gap-2 border border-gray-300/50 rounded-lg items-center px-2 p-1">
             <span className="text-sm px-1">X</span>
             <Separator orientation="vertical" className="bg-gray-300/50 !h-5" />
-            <RangeSlider
-              label="X Position"
+            <DragAdjuster
               value={shadow.x}
               onChange={val => handleChange('x', val)}
               min={-100}
@@ -90,15 +89,15 @@ const ShadowPicker: React.FC<ShadowPickerProps> = ({ value, onChange, onClose, c
                 type="number"
                 readOnly
                 value={shadow.x}
-                className="cursor-pointer w-27 h-6.5 text-start text-xs bg-transparent border-none text-center outline-none"
+                title='Drag and drop to adjust'
+                className="cursor-ew-resize w-27 h-6.5 text-start text-xs bg-transparent border-none text-center outline-none"
               />
-            </RangeSlider>
+            </DragAdjuster>
           </div>
           <div className="flex flex-row gap-2 border border-gray-300/50 rounded-lg items-center px-2 p-1">
             <span className="text-sm px-1">Y</span>
             <Separator orientation="vertical" className="bg-gray-300/50 !h-5" />
-            <RangeSlider
-              label="Y Position"
+            <DragAdjuster
               value={shadow.y}
               onChange={val => handleChange('y', val)}
               min={-100}
@@ -108,9 +107,10 @@ const ShadowPicker: React.FC<ShadowPickerProps> = ({ value, onChange, onClose, c
                 type="number"
                 readOnly
                 value={shadow.y}
-                className="cursor-pointer w-27 h-6.5 text-start text-xs bg-transparent border-none text-center outline-none"
+                title='Drag and drop to adjust'
+                className="cursor-ew-resize w-27 h-6.5 text-start text-xs bg-transparent border-none text-center outline-none"
               />
-            </RangeSlider>
+            </DragAdjuster>
           </div>
         </div>
       </div>
@@ -120,8 +120,7 @@ const ShadowPicker: React.FC<ShadowPickerProps> = ({ value, onChange, onClose, c
         <div className="flex flex-row gap-2 border border-gray-300/50 rounded-lg items-center px-2 p-1">
           <SunDim className="size-4" />
           <Separator orientation="vertical" className="bg-gray-300/50 !h-5" />
-          <RangeSlider
-            label="Blur"
+          <DragAdjuster
             value={shadow.blur}
             onChange={val => handleChange('blur', val)}
             min={0}
@@ -131,9 +130,10 @@ const ShadowPicker: React.FC<ShadowPickerProps> = ({ value, onChange, onClose, c
               type="number"
               readOnly
               value={shadow.blur}
-              className="cursor-pointer w-27 h-6.5 text-start text-xs bg-transparent border-none text-center outline-none"
+              title='Drag and drop to adjust'
+              className="cursor-ew-resize w-27 h-6.5 text-start text-xs bg-transparent border-none text-center outline-none"
             />
-          </RangeSlider>
+          </DragAdjuster>
         </div>
       </div>
 
@@ -142,8 +142,7 @@ const ShadowPicker: React.FC<ShadowPickerProps> = ({ value, onChange, onClose, c
         <div className="flex flex-row gap-2 border border-gray-300/50 rounded-lg items-center px-2 p-1">
           <Grip className="size-4" />
           <Separator orientation="vertical" className="bg-gray-300/50 !h-5" />
-          <RangeSlider
-            label="Spread"
+          <DragAdjuster
             value={shadow.spread}
             onChange={val => handleChange('spread', val)}
             min={0}
@@ -153,9 +152,10 @@ const ShadowPicker: React.FC<ShadowPickerProps> = ({ value, onChange, onClose, c
               type="number"
               readOnly
               value={shadow.spread}
-              className="cursor-pointer w-27 h-6.5 text-start text-xs bg-transparent border-none text-center outline-none"
+              title='Drag and drop to adjust'
+              className="cursor-ew-resize w-27 h-6.5 text-start text-xs bg-transparent border-none text-center outline-none"
             />
-          </RangeSlider>
+          </DragAdjuster>
         </div>
       </div>
 

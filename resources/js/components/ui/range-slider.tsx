@@ -12,6 +12,8 @@ interface RangeSliderProps {
   step?: number;
   label?: string;
   formatValue?: (value: number) => string;
+  side?: 'left' | 'right' | 'top' | 'bottom';
+  align?: 'start' | 'center' | 'end';
 }
 
 export const RangeSlider: React.FC<RangeSliderProps> = ({
@@ -23,6 +25,8 @@ export const RangeSlider: React.FC<RangeSliderProps> = ({
   step = 1,
   label = 'Value',
   formatValue = (val) => `${val}px`,
+  side = 'right',
+  align = 'center',
 }) => {
   const [open, setOpen] = React.useState(false);
 
@@ -31,7 +35,7 @@ export const RangeSlider: React.FC<RangeSliderProps> = ({
       <PopoverTrigger asChild>
         {children}
       </PopoverTrigger>
-      <PopoverContent className="w-50 p-4" side="right" align="center">
+      <PopoverContent className="w-50 p-4" side={side} align={align}>
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <Label>{label}</Label>

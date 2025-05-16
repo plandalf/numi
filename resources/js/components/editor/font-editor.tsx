@@ -20,7 +20,7 @@ export const FontEditor: React.FC<FontEditorProps> = ({ label, placeholder = 'Se
     <div className="flex flex-col gap-3">
       {label && <Label className="text-sm">{label}</Label>}
       <Select value={value} onValueChange={onChange}>
-        <SelectTrigger className="truncate" style={{ fontFamily: value }}>
+        <SelectTrigger className="truncate bg-white" style={{ fontFamily: value }}>
           <SelectValue placeholder={placeholder} />
         </SelectTrigger>
         <SelectContent>

@@ -6,7 +6,7 @@ import {  X } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './select';
 import { Input } from './input';
 import { BorderValue } from '@/contexts/Numi';
-import { RangeSlider } from './range-slider';
+import { DragAdjuster } from './drag-adjuster';
 
 export interface BorderPickerConfig {
   hideLabel?: boolean;
@@ -69,21 +69,21 @@ export const BorderPicker: React.FC<BorderPickerProps> = ({
       <div className="flex flex-row gap-2 w-full items-center">
         <Label className="min-w-[80px]">Width</Label>
         <div className="flex flex-row gap-2 w-full">
-          <RangeSlider
+          <DragAdjuster
             value={getRadiusValue(localWidth)}
             onChange={handleWidthChange}
-            label="Border Width"
             max={40}
           >
             <div title='Border Width' className="flex flex-row gap-2 bg-gray-200/50 rounded-md py-2 px-3 items-center  w-full">
               <svg width="19" height="18" viewBox="0 0 19 18" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M16.5 16H2.5V11.3331H16.5V16Z" fill="#808ABF"/><path d="M16.5 8.53311H2.5V5.73311H16.5V8.53311Z" fill="#808ABF"/><path d="M16.5 2.93311H2.5V2H16.5V2.93311Z" fill="#808ABF"/></svg>
               <Input
                 readOnly
-                className="cursor-pointer w-12 border-none shadow-none focus:!ring-0 focus:border-none h-5 p-0"
+                title='Drag and drop to adjust'
+                className="cursor-ew-resize w-12 border-none shadow-none focus:!ring-0 focus:border-none h-5 p-0"
                 value={localWidth}
               />
             </div>
-          </RangeSlider>
+          </DragAdjuster>
         </div>
       </div>
       <div className="flex flex-row gap-2 w-full items-center">

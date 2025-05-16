@@ -21,11 +21,11 @@ import { usePage } from '@inertiajs/react';
 import { EditProps } from '@/pages/offers/edit';
 
 export const AppearanceEditor = ({ globalState, block, onUpdate }: { globalState: GlobalState | null, block: Block, onUpdate: (block: Block) => void }) => {
-  
+
   const { fonts } = usePage<EditProps>().props;
   const { data } = useEditor();
   const themeColors = getThemeColors(data.theme);
-  
+
   if (!globalState) return null;
 
   const appearanceHooks = globalState.hookUsage[block.id].filter((hook) => hook.type === 'appearance' && hook.name !== 'visibility');
@@ -91,7 +91,7 @@ const ValidationSection = ({ block, onUpdate }: { block: Block, onUpdate: (block
     });
   };
 
-  const themeColors = getThemeColors(data.theme);
+  // const themeColors = getThemeColors(data.theme);
 
   return (
     <>
@@ -154,11 +154,6 @@ export const Inspector = ({
   const { data } = useEditor();
   const themeColors = getThemeColors(data.theme);
   // Update local state when incoming block changes
-  // useEffect(() => {
-  //   if (!block) return;
-  //   console.log('Inspector received block:', block.id, block.type);
-  //   // setSelectedBlock(block);
-  // }, [block]);
 
   const handleContentChange = (fieldName: string, value: any) => {
     if (!block) return;
@@ -205,7 +200,7 @@ export const Inspector = ({
           <div className="space-y-6">
             {sectionOrder.map(({ type, label }) => {
               // For 'other' type, combine all non-special types
-              const sectionHooks = type === 'other' 
+              const sectionHooks = type === 'other'
                 ? hooks.filter(hook => !['appearance', 'validation', 'interaction', 'conditions'].includes(hook.type))
                 : groupedHooks[type] || [];
 
@@ -223,57 +218,59 @@ export const Inspector = ({
                     <ConditionsSection globalState={globalState} block={block} onUpdate={onUpdate} />
                   ) : (
                     <>
-                      <h3 className="font-semibold">{label}</h3>
-                      {sectionHooks.map((hook: HookUsage) => (
-                        <div key={hook.name} className="mb-4">
-                          {hook.type === 'string' && hook.inspector === 'file' ? (
-                          <FileEditor
-                            label={hook.label || hook.name}
-                            value={block.content?.[hook.name]}
-                            onChange={value => handleContentChange(hook.name, value)}
-                            preview={block.content?.[hook.name]?.url}
-                          />
-                        ) : hook.type === 'string' && hook.inspector === 'colorPicker' ? (
-                          <ColorPickerEditor
-                            label={hook.label || hook.name}
-                            value={block.content?.[hook.name] ?? hook.defaultValue}
-                            onChange={value => handleContentChange(hook.name, value)}
-                            type='advanced'
-                            themeColors={themeColors}
-                          />
-                        ) : hook.type === 'string' ? (
-                          <StringEditor
-                            label={hook.label || hook.name}
-                            value={block.content?.[hook.name] ?? hook.defaultValue}
-                            onChange={value => handleContentChange(hook.name, value)}
-                            multiline={hook.inspector === 'multiline'}
-                          />
-                        ) : hook.type === 'boolean' ? (
-                          <BooleanEditor
-                            label={hook.label || hook.name}
-                            value={block.content?.[hook.name] ?? hook.defaultValue}
-                            onChange={value => handleContentChange(hook.name, value)}
-                          />
-                        ) : hook.type === 'enumeration' ? (
-                          <EnumerationEditor
-                            label={hook.label || hook.name}
-                            value={block.content?.[hook.name] ?? hook.defaultValue}
-                            onChange={value => handleContentChange(hook.name, value)}
-                            options={hook.options || []}
-                            icons={hook.icons}
-                            inspector={hook.inspector}
-                            labels={hook.labels}
-                          />
-                        ) : hook.type === 'jsonSchema' && hook.schema ? (
-                          <JSONSchemaEditor
-                            schema={hook.schema}
-                            value={block.content?.[hook.name] || []}
-                            onChange={newValue => handleContentChange(hook.name, newValue)}
-                            themeColors={themeColors}
-                          />
-                        ) : null}
-                      </div>
-                    ))}
+                    <h3 className="font-semibold">{label}</h3>
+                      <div className="flex flex-col gap-2 p-2.5 border rounded-md border-gray-200 bg-gray-100/50 h-full">
+                        {sectionHooks.map((hook: HookUsage) => (
+                          <div key={hook.name} className="mb-4">
+                            {hook.type === 'string' && hook.inspector === 'file' ? (
+                            <FileEditor
+                              label={hook.label || hook.name}
+                              value={block.content?.[hook.name]}
+                              onChange={value => handleContentChange(hook.name, value)}
+                              preview={block.content?.[hook.name]?.url}
+                            />
+                          ) : hook.type === 'string' && hook.inspector === 'colorPicker' ? (
+                            <ColorPickerEditor
+                              label={hook.label || hook.name}
+                              value={block.content?.[hook.name] ?? hook.defaultValue}
+                              onChange={value => handleContentChange(hook.name, value)}
+                              type='advanced'
+                              themeColors={themeColors}
+                            />
+                          ) : hook.type === 'string' ? (
+                            <StringEditor
+                              label={hook.label || hook.name}
+                              value={block.content?.[hook.name] ?? hook.defaultValue}
+                              onChange={value => handleContentChange(hook.name, value)}
+                              multiline={hook.inspector === 'multiline'}
+                            />
+                          ) : hook.type === 'boolean' ? (
+                            <BooleanEditor
+                              label={hook.label || hook.name}
+                              value={block.content?.[hook.name] ?? hook.defaultValue}
+                              onChange={value => handleContentChange(hook.name, value)}
+                            />
+                          ) : hook.type === 'enumeration' ? (
+                            <EnumerationEditor
+                              label={hook.label || hook.name}
+                              value={block.content?.[hook.name] ?? hook.defaultValue}
+                              onChange={value => handleContentChange(hook.name, value)}
+                              options={hook.options || []}
+                              icons={hook.icons}
+                              inspector={hook.inspector}
+                              labels={hook.labels}
+                            />
+                          ) : hook.type === 'jsonSchema' && hook.schema ? (
+                            <JSONSchemaEditor
+                              schema={hook.schema}
+                              value={block.content?.[hook.name] || []}
+                              onChange={newValue => handleContentChange(hook.name, newValue)}
+                              themeColors={themeColors}
+                            />
+                          ) : null}
+                        </div>
+                      ))}
+                    </div>
                     </>
                   )}
                 </div>

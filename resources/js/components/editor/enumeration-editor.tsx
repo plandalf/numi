@@ -27,7 +27,7 @@ export const EnumerationEditor: React.FC<EnumerationEditorProps> = ({ label, pla
       />
     ) : (
       <Select value={value} onValueChange={onChange}>
-        <SelectTrigger>
+        <SelectTrigger className="bg-white">
           <SelectValue placeholder={placeholder} />
         </SelectTrigger>
         <SelectContent>

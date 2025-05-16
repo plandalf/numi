@@ -17,6 +17,7 @@ export const StringEditor: React.FC<StringEditorProps> = ({ label, placeholder, 
     {label && <Label className="text-sm capitalize">{label}</Label>}
     {multiline ? (
       <Textarea
+        className="bg-white"
         value={value}
         onChange={e => onChange(e.target.value)}
         rows={5}
@@ -25,7 +26,7 @@ export const StringEditor: React.FC<StringEditorProps> = ({ label, placeholder, 
     ) : (
       <input
         type="text"
-        className="border border-gray-300 rounded-md p-1.75 w-full text-sm"
+        className="bg-white border border-gray-300 rounded-md p-1.75 w-full text-sm"
         value={value}
         onChange={e => onChange(e.target.value)}
         placeholder={placeholder}
