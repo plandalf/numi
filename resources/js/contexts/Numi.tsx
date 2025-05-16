@@ -133,8 +133,10 @@ class Numi {
 
   static useEventCallback(props: { name: string; elements?: Record<'value' | 'label', string>[] }): {
     callbacks: any[];
-    updateHook: (hook: Partial<HookUsage>) => void
+    updateHook: (hook: Partial<HookUsage>) => void;
+    executeCallbacks: (element: string) => void;
   } {
+    const checkout = Numi.useCheckout();
     const blockContext = useContext(BlockContext);
     const [hook, setHook] = useState<HookUsage>({
       name: props.name,
@@ -170,9 +172,27 @@ class Numi {
       }
     }, []);
 
+    const executeCallbacks = useCallback((element: string) => {
+      if (blockContext.blockConfig.interaction?.onClick) {
+        const callbacks = blockContext.blockConfig.interaction.onClick.filter(callback => callback.element === element);
+
+        for (const callback of callbacks) {
+          switch (callback.action) {
+            case 'setSlot':
+              // checkout.setSlot(callback.slot, callback.price);
+              break;
+            case 'setItem':
+              checkout.updateLineItem(callback.value.item, callback.value.price);
+              break;
+          }
+        }
+      }
+    }, [blockContext]);
+
     return {
       callbacks: blockContext.blockConfig.interaction?.onClick ?? [],
-      updateHook
+      updateHook,
+      executeCallbacks
     };
   }
 
@@ -197,9 +217,7 @@ class Numi {
   }
 
   static useCheckout(options: CheckoutOptions = {}): CheckoutState {
-    const {
-      session
-    } = useContext(GlobalStateContext);
+    const checkout = useContext(GlobalStateContext);
 
     // useEffect(() => {
     //   // Cleanup function
@@ -208,9 +226,7 @@ class Numi {
     //   };
     // }, []);
 
-    return {
-      session,
-    };
+    return checkout;
   }
 
   static useAppearance(appearanceProps: any[]): Record<string, any> {
