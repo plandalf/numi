@@ -21,11 +21,11 @@ import { usePage } from '@inertiajs/react';
 import { EditProps } from '@/pages/offers/edit';
 
 export const AppearanceEditor = ({ globalState, block, onUpdate }: { globalState: GlobalState | null, block: Block, onUpdate: (block: Block) => void }) => {
-  
+
   const { fonts } = usePage<EditProps>().props;
   const { data } = useEditor();
   const themeColors = getThemeColors(data.theme);
-  
+
   if (!globalState) return null;
 
   const appearanceHooks = globalState.hookUsage[block.id].filter((hook) => hook.type === 'appearance' && hook.name !== 'visibility');
@@ -91,7 +91,7 @@ const ValidationSection = ({ block, onUpdate }: { block: Block, onUpdate: (block
     });
   };
 
-  const themeColors = getThemeColors(data.theme);
+  // const themeColors = getThemeColors(data.theme);
 
   return (
     <>
@@ -200,7 +200,7 @@ export const Inspector = ({
           <div className="space-y-6">
             {sectionOrder.map(({ type, label }) => {
               // For 'other' type, combine all non-special types
-              const sectionHooks = type === 'other' 
+              const sectionHooks = type === 'other'
                 ? hooks.filter(hook => !['appearance', 'validation', 'interaction', 'conditions'].includes(hook.type))
                 : groupedHooks[type] || [];
 
