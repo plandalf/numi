@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Actions\Checkout\CommitCheckoutAction;
 use App\Actions\Checkout\CreateCheckoutSessionAction;
 use App\Http\Controllers\Controller;
+use App\Models\Catalog\Price;
 use App\Models\Checkout\CheckoutSession;
 use Exception;
 use Illuminate\Http\JsonResponse;
@@ -33,6 +34,16 @@ class CheckoutSessionController extends Controller
                 break;
             case 'commit':
                 return $this->commit($checkoutSession, $request);
+            case 'setItem':
+                $price = Price::where('lookup_key', $request->input('price_id'))->firstOrFail();
+                $checkoutSession->lineItems()->updateOrCreate([
+                    'offer_item_id' => $request->input('offer_item_id'),
+                ], [
+                    'price_id' => $price->id,
+                ]);
+                return response()->json([
+                    'message' => 'Item added to checkout',
+                ]);
             default:
                 abort(400);
         }

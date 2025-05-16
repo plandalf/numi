@@ -45,7 +45,7 @@ export default function SetItemAction({ value, onChange }: SetItemActionProps) {
           placeholder="Select an item"
           modal
           hideSearch
-          disabled={offerItemsOptions.length === 1}
+          // disabled={offerItemsOptions.length === 1}
         />
       </div>
       <div className="flex flex-row gap-2 items-center">

@@ -5,7 +5,7 @@ import { useContext, useEffect, useMemo, useRef, useCallback } from "react";
 import { get } from "lodash";
 import { useEditor } from "@/contexts/offer/editor-context";
 import { useDebounce } from "@/hooks/use-debounce";
-
+import { useCheckoutState } from "@/pages/checkout-main";
 // Define interfaces for the item structure
 interface ItemType {
   key: string;
@@ -15,6 +15,7 @@ interface ItemType {
 function OptionSelectorComponent({ context }: { context: BlockContextType }) {
   const blockContext = useContext(BlockContext);
   const options = get(blockContext.blockConfig, `content.items`, {}) as ItemType[];
+  const { updateLineItem } = useCheckoutState();
 
   const [selectedTab, setSelectedTab, updateSelectedTabHook] = Numi.useStateEnumeration({
     name: 'selectedTab',
@@ -63,7 +64,7 @@ function OptionSelectorComponent({ context }: { context: BlockContextType }) {
     return Array.isArray(items) ? items.filter(item => item.key).map(item => ({ value: item.key, label: item.label })) : [];
   }, [items]);
 
-  const { callbacks: onClick, updateHook: updateInteractionHook, updateHook: updateEventCallbackHook } = Numi.useEventCallback({ name: 'onClick', elements: interactionElements });
+  const { callbacks: onClicks, updateHook: updateInteractionHook } = Numi.useEventCallback({ name: 'onClick', elements: interactionElements });
 
   const debouncedUpdate = useCallback(
     (items: ItemType[], currentInteraction: any) => {
@@ -125,7 +126,17 @@ function OptionSelectorComponent({ context }: { context: BlockContextType }) {
 
   const handleTabChange = useCallback((value: string) => {
     setSelectedTab(value);
-  }, [setSelectedTab, onClick]);
+
+    const events = onClicks.filter(click => click.element === value);
+
+    for (const event of events) {
+      switch (event.action) {
+        case 'setItem':
+          updateLineItem(event.value.item, event.value.price);
+          break;
+      }
+    }
+  }, [setSelectedTab, onClicks]);
 
 
   // useEffect(() => {

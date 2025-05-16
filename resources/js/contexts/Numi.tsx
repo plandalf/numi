@@ -133,8 +133,7 @@ class Numi {
 
   static useEventCallback(props: { name: string; elements?: Record<'value' | 'label', string>[] }): {
     callbacks: any[];
-    updateHook: (hook: Partial<HookUsage>) => void;
-    executeCallbacks: () => void;
+    updateHook: (hook: Partial<HookUsage>) => void
   } {
     const blockContext = useContext(BlockContext);
     const [hook, setHook] = useState<HookUsage>({
@@ -171,25 +170,9 @@ class Numi {
       }
     }, []);
 
-    const executeCallbacks = useCallback(() => {
-      if (blockContext.blockConfig.interaction?.onClick) {
-        for (const callback of blockContext.blockConfig.interaction.onClick) {
-          switch (callback.action) {
-            case 'setSlot':
-              // checkout.setSlot(callback.slot, callback.price);
-              break;
-            case 'setItem':
-              blockContext.setFieldValue(callback.field, callback.value);
-              break;
-          }
-        }
-      }
-    }, [blockContext]);
-
     return {
       callbacks: blockContext.blockConfig.interaction?.onClick ?? [],
-      updateHook,
-      executeCallbacks
+      updateHook
     };
   }
 

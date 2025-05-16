@@ -42,6 +42,9 @@ export interface GlobalState {
   // Submission
   submitPage: (pageId: string) => Promise<boolean>;
   setPageSubmissionProps: (callback: () => Promise<unknown>) => void;
+
+  // Line Items
+  updateLineItem: (offerItemId: string, price: string) => Promise<void>;
 }
 
 export function GlobalStateProvider({ offer, session: defaultSession, children }: { offer: OfferConfiguration, session: CheckoutSession, children: React.ReactNode }) {
@@ -250,6 +253,15 @@ export function GlobalStateProvider({ offer, session: defaultSession, children }
     }
   };
 
+  const updateLineItem = async (offerItemId: string, price: string) => {
+    const response = await axios.post(`/checkouts/${session.id}/mutations`, {
+      action: 'setItem',
+      offer_item_id: offerItemId,
+      price_id: price
+    });
+    return response.data;
+  };
+
   const backendValidateFields = async (fields: Record<string, any>) => {
     // Call API to validate fields
     try {
@@ -313,6 +325,7 @@ export function GlobalStateProvider({ offer, session: defaultSession, children }
     // Validation
     // validatePage,
     validateField,
+    updateLineItem,
 
     // Submission
     // submitPage,
