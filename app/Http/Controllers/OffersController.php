@@ -168,10 +168,12 @@ class OffersController extends Controller
     public function storeOfferItem(OfferItemStoreRequest $request, Offer $offer): \Illuminate\Http\RedirectResponse
     {
         $validated = $request->validated();
+
+        $isRequired = $validated['is_required'] || $offer->offerItems->count() === 0;
         $offerItem = OfferItem::create([
             'name' => $validated['name'],
             'key' => $validated['key'],
-            'is_required' => $validated['is_required'] ?? false,
+            'is_required' => $isRequired,
             'offer_id' => $offer->id,
         ]);
 
@@ -182,7 +184,7 @@ class OffersController extends Controller
                 'price_id' => $price,
             ]);
 
-            if ($key === 0) {
+            if ($key === 0 && $isRequired) {
                 $offerItem->default_price_id = $price;
                 $offerItem->save();
             }
