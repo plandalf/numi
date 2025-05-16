@@ -3,6 +3,7 @@
 namespace App\Models\Store;
 
 use App\Database\Model;
+use App\Database\Traits\HasSqids;
 use App\Database\Traits\UuidRouteKey;
 use App\Models\Media;
 use App\Models\Theme;
@@ -33,7 +34,7 @@ class Offer extends Model
     /** @use HasFactory<\Database\Factories\OfferFactory> */
     use HasFactory,
         SoftDeletes,
-        UuidRouteKey;
+        HasSqids;
 
     protected $table = 'store_offers';
 
