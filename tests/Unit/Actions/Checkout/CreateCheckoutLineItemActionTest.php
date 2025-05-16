@@ -7,7 +7,7 @@ use App\Models\Catalog\Price;
 use App\Models\Checkout\CheckoutLineItem;
 use App\Models\Checkout\CheckoutSession;
 use App\Models\Organization;
-use App\Models\Store\Slot;
+use App\Models\Store\OfferItem;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -36,19 +36,19 @@ class CreateCheckoutLineItemActionTest extends TestCase
             'amount' => 1000, // $10.00
         ]);
 
-        $slot = Slot::factory()->create([
+        $offerItem = OfferItem::factory()->create([
             'default_price_id' => $price->id,
         ]);
 
         // Act
-        $lineItem = $this->action->execute($checkoutSession, $slot);
+        $lineItem = $this->action->execute($checkoutSession, $offerItem);
 
         // Assert
         $this->assertInstanceOf(CheckoutLineItem::class, $lineItem);
         $this->assertEquals($checkoutSession->organization_id, $lineItem->organization_id);
         $this->assertEquals($checkoutSession->id, $lineItem->checkout_session_id);
-        $this->assertEquals($slot->default_price_id, $lineItem->price_id);
-        $this->assertEquals($slot->id, $lineItem->slot_id);
+        $this->assertEquals($offerItem->default_price_id, $lineItem->price_id);
+        $this->assertEquals($offerItem->id, $lineItem->offer_item_id);
         $this->assertEquals(1, $lineItem->quantity);
     }
 }

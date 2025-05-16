@@ -5,13 +5,14 @@ import {
   AccordionTrigger,
   AccordionContent,
 } from "./accordion";
-import { CircleChevronRight, Plus } from "lucide-react";
+import { CircleChevronRight, Plus, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "./button";
 
 interface AccordionSectionProps {
   items: any[];
   onAdd?: () => void;
+  onDelete?: (index: number) => void;
   renderSection: (item: any, index: number) => React.ReactNode;
   getSectionTitle?: (item: any, index: number) => string;
   addLabel?: string;
@@ -21,6 +22,7 @@ interface AccordionSectionProps {
 export const AccordionSection: React.FC<AccordionSectionProps> = ({
   items,
   onAdd,
+  onDelete,
   renderSection,
   getSectionTitle = (item, i) => `Section ${i + 1}`,
   addLabel = "Add another section",
@@ -51,6 +53,23 @@ export const AccordionSection: React.FC<AccordionSectionProps> = ({
               )}
             >
               <span className="font-medium text-sm text-left">{getSectionTitle(item, i)}</span>
+              {onDelete && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDelete(i);
+                  }}
+                  className={cn(
+                    "p-1 ml-auto mr-2 h-6 w-6",
+                    open === `section-${i}` ? "text-white hover:text-white/80" : "text-gray-500 hover:text-gray-700"
+                  )}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              )}
             </AccordionTrigger>
             <AccordionContent className="bg-transparent rounded-b-lg">
               {renderSection(item, i)}

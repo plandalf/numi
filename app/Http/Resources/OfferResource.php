@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Models\Store\OfferItem;
 use App\Models\Theme;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -37,7 +38,7 @@ class OfferResource extends JsonResource
             'organization_id' => $this->organization_id,
             'view' => $this->view,
             'properties' => $this->properties,
-            'slots' => SlotResource::collection($this->whenLoaded('slots')),
+            'items' => OfferItemResource::collection($this->whenLoaded('offerItems')),
             'theme' => new ThemeResource($this?->theme ?? new Theme),
             'created_at' => $this->created_at?->toISOString(),
             'updated_at' => $this->updated_at?->toISOString(),

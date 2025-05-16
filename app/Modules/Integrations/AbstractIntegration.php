@@ -10,4 +10,6 @@ abstract class AbstractIntegration
     public function __construct(protected Integration $integration) {}
 
     abstract public function importProduct(array $attrs = []): ?Product;
+
+    abstract public function importPrice(Product $product, array $attrs = []);
 }

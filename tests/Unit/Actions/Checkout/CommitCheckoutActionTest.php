@@ -84,7 +84,7 @@ class CommitCheckoutActionTest extends TestCase
                         'order_id' => $order->id,
                         'organization_id' => $order->organization_id,
                         'price_id' => $lineItem->price_id,
-                        'slot_id' => $lineItem->slot_id,
+                        'offer_item_id' => $lineItem->offer_item_id,
                         'quantity' => $lineItem->quantity,
                     ]);
                 });

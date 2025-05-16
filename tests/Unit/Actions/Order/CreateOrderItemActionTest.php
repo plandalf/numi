@@ -8,7 +8,7 @@ use App\Models\Checkout\CheckoutLineItem;
 use App\Models\Order\Order;
 use App\Models\Order\OrderItem;
 use App\Models\Organization;
-use App\Models\Store\Slot;
+use App\Models\Store\OfferItem;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -33,16 +33,16 @@ class CreateOrderItemActionTest extends TestCase
             'amount' => 9999, // $99.99
         ]);
 
-        // Create a Slot with the price
-        $slot = Slot::factory()->create([
+        // Create a offerItem with the price
+        $offerItem = OfferItem::factory()->create([
             'default_price_id' => $price->id,
         ]);
 
-        // Create a CheckoutLineItem with the price and slot
+        // Create a CheckoutLineItem with the price and offerItem
         $checkoutLineItem = CheckoutLineItem::factory()->create([
             'organization_id' => $organization->id,
             'price_id' => $price->id,
-            'slot_id' => $slot->id,
+            'offer_item_id' => $offerItem->id,
             'quantity' => 2,
         ]);
 
@@ -56,7 +56,7 @@ class CreateOrderItemActionTest extends TestCase
         $this->assertEquals($organization->id, $orderItem->organization_id);
         $this->assertEquals($order->id, $orderItem->order_id);
         $this->assertEquals($checkoutLineItem->price_id, $orderItem->price_id);
-        $this->assertEquals($checkoutLineItem->slot_id, $orderItem->slot_id);
+        $this->assertEquals($checkoutLineItem->offer_item_id, $orderItem->offer_item_id);
         $this->assertEquals($checkoutLineItem->quantity, $orderItem->quantity);
         $this->assertEquals([], $orderItem->metadata);
     }

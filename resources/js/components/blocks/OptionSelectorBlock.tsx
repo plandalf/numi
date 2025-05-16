@@ -1,9 +1,30 @@
-import Numi, { Style } from "@/contexts/Numi";
+import Numi, { Style, BlockContext } from "@/contexts/Numi";
 import { BlockContextType } from "@/types/blocks";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { useEffect, useRef } from "react";
+import { useContext, useEffect, useMemo, useRef, useCallback } from "react";
+import { get } from "lodash";
+import { useEditor } from "@/contexts/offer/editor-context";
+import { useDebounce } from "@/hooks/use-debounce";
+import { useCheckoutState } from "@/pages/checkout-main";
+// Define interfaces for the item structure
+interface ItemType {
+  key: string;
+  label?: string;
+}
 
 function OptionSelectorComponent({ context }: { context: BlockContextType }) {
+
+  const blockContext = useContext(BlockContext);
+  const options = get(blockContext.blockConfig, `content.items`, {}) as ItemType[];
+
+  const [selectedTab, setSelectedTab, updateSelectedTabHook] = Numi.useStateEnumeration({
+    name: 'selectedTab',
+    initialValue: options[0]?.key ?? undefined,
+    options: Array.isArray(options) ? options?.filter((item) => item.key).map((item) => item.key) : [],
+    inspector: 'select',
+    label: 'Default (Selected Tab)',
+  });
+
   const appearance = Numi.useStyle([
     Style.backgroundColor('activeBackgroundColor', 'Selected', {}, '#000000'),
     Style.backgroundColor('inactiveBackgroundColor', 'Unselected', {}, '#FFFFFF'),
@@ -18,28 +39,18 @@ function OptionSelectorComponent({ context }: { context: BlockContextType }) {
         type: "object",
         properties: {
           key: {
-            title: "Key",
+            title: "Value",
             type: "string",
           },
           children: {
             type: "array",
             items: {
-              $ref: "#"
+              type: "object"
             }
           },
           label: {
             title: "Label",
             type: "string"
-          },
-          appearance: {
-            meta: { editor: "appearanceEditor" },
-            visibility: {
-              meta: { editor: "visibilityEditor" },
-              conditional: {
-                rules: [],
-                action: 'show'
-              }
-            }
           }
         },
         required: ["key"]
@@ -47,34 +58,82 @@ function OptionSelectorComponent({ context }: { context: BlockContextType }) {
     }
   });
 
-  const prevItemsKeyRef = useRef("");
-  const [selectedTab, setSelectedTab, updateHook] = Numi.useStateEnumeration({
-    name: 'selectedTab',
-    initialValue: items[0]?.key ?? undefined,
-    options: Array.isArray(items) ? items?.map((item) => item.key) : [],
-    inspector: 'hidden',
-    label: 'Selected Tab',
-  });
-
-  // fix circular dependency
-  useEffect(() => {
-    if (!Array.isArray(items) || items.length === 0) return;
-
-    const itemsKeyString = items.map(item => item.key).join(',');
-
-    if (prevItemsKeyRef.current !== itemsKeyString) {
-      prevItemsKeyRef.current = itemsKeyString;
-
-      const itemKeys = items.map(item => item.key);
-      updateHook({ options: itemKeys });
-
-      setSelectedTab(itemKeys[0]);
-    }
+  const interactionElements = useMemo(() => {
+    return Array.isArray(items) ? items.filter(item => item.key).map(item => ({ value: item.key, label: item.label })) : [];
   }, [items]);
+
+  const { callbacks: onClicks, updateHook: updateInteractionHook, executeCallbacks } = Numi.useEventCallback({ name: 'onClick', elements: interactionElements });
+
+  const debouncedUpdate = useCallback(
+    (items: ItemType[], currentInteraction: any) => {
+      if (!Array.isArray(items) || items.length === 0) return;
+
+      const itemKeys = items.filter(item => item.key).map(item => item.key);
+      updateSelectedTabHook({ options: itemKeys });
+
+      // Update the event elements options
+      updateInteractionHook({
+        options: items
+          .filter(item => item.key)
+          .map(item => ({
+            value: item.key as string,
+            label: item.label || item.key as string
+          }))
+      });
+
+      // // Get existing onClick actions and filter out null actions
+      // const existingOnClick = (currentInteraction?.onClick || [])
+      //   .filter((action: { element: string; action: string; value: string } | null) => action)
+      //   // Filter out actions whose elements don't exist in current items
+      //   .filter((action: { element: string; action: string; value: string }) =>
+      //     itemKeys.includes(action.element)
+      //   );
+
+      // // Create a map of existing actions by element
+      // const existingActionsMap = new Map(
+      //   existingOnClick.map((action: { element: string; action: string; value: string }) => [action.element, action])
+      // );
+
+      // // Create new actions for items that don't have them
+      // const newActions = items
+      //   .filter(item => item.key && !existingActionsMap.has(item.key))
+      //   .map(item => ({ element: item.key, action: 'setItem', value: '' }));
+
+      // // Combine existing and new actions
+      // const updatedOnClick = [...existingOnClick, ...newActions];
+
+      // const newInteraction = {
+      //   onClick: updatedOnClick
+      // };
+
+      // console.log("newInteraction", newInteraction, JSON.stringify(newInteraction) !== JSON.stringify(currentInteraction));
+
+      // if (JSON.stringify(newInteraction) !== JSON.stringify(currentInteraction)) {
+      //   updateEventCallbackHook(newInteraction);
+      // }
+    },
+    [updateSelectedTabHook, updateInteractionHook, blockContext.blockConfig]
+  );
+
+  /** @todo automatically create interaction elements based on number of tabs(items) */
+  const debouncedItems = useDebounce(items, 300);
+  const debouncedInteraction = useDebounce(blockContext.blockConfig.interaction, 300);
+  useEffect(() => {
+    debouncedUpdate(debouncedItems, debouncedInteraction);
+  }, [debouncedItems, debouncedInteraction, debouncedUpdate]);
+
+  const handleTabChange = useCallback((value: string) => {
+    setSelectedTab(value);
+    executeCallbacks(value, 'onClick');
+  }, [executeCallbacks]);
+
+  useEffect(() => {
+    executeCallbacks(selectedTab, 'onClick');
+  }, []);
 
   return (
     <div className="p-4">
-      <Tabs defaultValue={selectedTab} onValueChange={setSelectedTab} className="w-full">
+      <Tabs defaultValue={selectedTab} onValueChange={handleTabChange} className="w-full">
         <TabsList className="mb-2 h-auto p-0 w-full">
           {Array.isArray(items) && items.map((item) => (
             <TabsTrigger key={item.key} value={item.key} className="w-full h-10" style={{ backgroundColor: item.key === selectedTab ? appearance.activeBackgroundColor : appearance.inactiveBackgroundColor }}>
