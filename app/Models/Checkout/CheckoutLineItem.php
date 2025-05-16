@@ -19,6 +19,7 @@ class CheckoutLineItem extends Model
         'offer_item_id',
         'quantity',
         'organization_id',
+        'deleted_at',
     ];
 
     protected $casts = [

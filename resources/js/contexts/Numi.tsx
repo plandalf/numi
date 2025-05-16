@@ -6,6 +6,7 @@ import get from "lodash/get";
 import debounce from "lodash/debounce";
 import { Theme } from "@/types/theme";
 import { CheckoutState, GlobalStateContext } from '@/pages/checkout-main';
+import { CallbackType } from "@/components/editor/interaction-event-editor";
 
 export const BlockContext = createContext<BlockContextType>({
   blockId: '',
@@ -134,7 +135,7 @@ class Numi {
   static useEventCallback(props: { name: string; elements?: Record<'value' | 'label', string>[] }): {
     callbacks: any[];
     updateHook: (hook: Partial<HookUsage>) => void;
-    executeCallbacks: (element: string) => void;
+    executeCallbacks: (element: string, type: CallbackType) => void;
   } {
     const checkout = Numi.useCheckout();
     const blockContext = useContext(BlockContext);
@@ -172,17 +173,16 @@ class Numi {
       }
     }, []);
 
-    const executeCallbacks = useCallback((element: string) => {
-      if (blockContext.blockConfig.interaction?.onClick) {
-        const callbacks = blockContext.blockConfig.interaction.onClick.filter(callback => callback.element === element);
-
+    const executeCallbacks = useCallback((element: string, type: CallbackType) => {
+      if (blockContext.blockConfig.interaction?.[type]) {
+        const callbacks = blockContext.blockConfig.interaction[type].filter(callback => callback?.element === element);
         for (const callback of callbacks) {
           switch (callback.action) {
             case 'setSlot':
               // checkout.setSlot(callback.slot, callback.price);
               break;
             case 'setItem':
-              checkout.updateLineItem(callback.value.item, callback.value.price);
+              checkout.updateLineItem(callback.value);
               break;
           }
         }

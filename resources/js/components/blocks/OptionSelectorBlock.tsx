@@ -123,13 +123,18 @@ function OptionSelectorComponent({ context }: { context: BlockContextType }) {
     debouncedUpdate(debouncedItems, debouncedInteraction);
   }, [debouncedItems, debouncedInteraction, debouncedUpdate]);
 
+  const handleTabChange = useCallback((value: string) => {
+    setSelectedTab(value);
+    executeCallbacks(value, 'onClick');
+  }, [executeCallbacks]);
+
   useEffect(() => {
-    executeCallbacks(selectedTab);
-  }, [selectedTab]);
+    executeCallbacks(selectedTab, 'onClick');
+  }, []);
 
   return (
     <div className="p-4">
-      <Tabs defaultValue={selectedTab} onValueChange={setSelectedTab} className="w-full">
+      <Tabs defaultValue={selectedTab} onValueChange={handleTabChange} className="w-full">
         <TabsList className="mb-2 h-auto p-0 w-full">
           {Array.isArray(items) && items.map((item) => (
             <TabsTrigger key={item.key} value={item.key} className="w-full h-10" style={{ backgroundColor: item.key === selectedTab ? appearance.activeBackgroundColor : appearance.inactiveBackgroundColor }}>

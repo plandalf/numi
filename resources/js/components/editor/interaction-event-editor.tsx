@@ -20,6 +20,7 @@ const ACTION_OPTIONS = [
 
 type OnClickActionValue = SetItemActionValue | string;
 
+export type CallbackType = 'onClick' | 'onChange' | 'onTabChange';
 export interface OnClickAction {
   action: string;
   element: string;
@@ -153,7 +154,7 @@ export const InteractionEventEditor: React.FC<Pick<ActionEditorProps, 'label' | 
         const value = action.value as SetItemActionValue;
         const item = offer.items.find(i => i.id.toString() === value.item);
         if (item) {
-          return `Set ${item.name} to ${value.price}`;
+          return `${action.element}: Set ${item.name} to ${value.price}`;
         }
         return `Set line item to ${value.price}`;
       } else if (action.element) {

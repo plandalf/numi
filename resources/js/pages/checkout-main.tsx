@@ -9,6 +9,7 @@ import { blockTypes } from '@/components/blocks';
 import axios from '@/lib/axios';
 import { CheckoutSession } from '@/types/checkout';
 import { BlockRenderer } from '@/components/checkout/block-renderer';
+import { SetItemActionValue } from '@/components/actions/set-item-action';
 // Form and validation context
 type FormData = Record<string, any>;
 type ValidationErrors = Record<string, string[]>;
@@ -253,11 +254,13 @@ export function GlobalStateProvider({ offer, session: defaultSession, children }
     }
   };
 
-  const updateLineItem = async (offerItemId: string, price: string) => {
+  const updateLineItem = async ({ item, price, quantity, required }: SetItemActionValue) => {
     const response = await axios.post(`/checkouts/${session.id}/mutations`, {
       action: 'setItem',
-      offer_item_id: offerItemId,
-      price_id: price
+      offer_item_id: item,
+      price_id: price ?? undefined,
+      quantity: quantity ?? undefined,
+      required: required ?? undefined
     });
     return response.data;
   };

@@ -7,6 +7,7 @@ use App\Actions\Checkout\CreateCheckoutSessionAction;
 use App\Http\Controllers\Controller;
 use App\Models\Catalog\Price;
 use App\Models\Checkout\CheckoutSession;
+use App\Models\Store\OfferItem;
 use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -35,15 +36,49 @@ class CheckoutSessionController extends Controller
             case 'commit':
                 return $this->commit($checkoutSession, $request);
             case 'setItem':
-                $price = Price::where('lookup_key', $request->input('price_id'))->firstOrFail();
+                /** @todo Create Request validation class for this */
+                $required = $request->input('required');
+                $priceId = $request->input('price_id');
+                $quantity = $request->input('quantity');
+
+                $args = [];
+
+                if(!$request->has('offer_item_id')) {
+                    return response()->json([
+                        'message' => 'Offer item ID is required',
+                    ], 400);
+                }
+
+                if($request->has('price_id')) {
+                    $price = Price::where('lookup_key', $priceId)->firstOrFail();
+                    $args['price_id'] = $price->id;
+                } else {
+                    $offerItem = OfferItem::where('id', $request->input('offer_item_id'))->firstOrFail();
+                    $args['price_id'] = $offerItem->default_price_id;
+                }
+
+                if($request->has('quantity')) {
+                    $args['quantity'] = $quantity;
+                }
+
+                if($request->has('required')) {
+                    if(!$required) {
+                        $checkoutSession->lineItems()->where('offer_item_id', $request->input('offer_item_id'))->delete();
+
+                        return redirect()->back()->with('success', 'Item removed from checkout');
+                    }
+                }
+
                 $checkoutSession->lineItems()->updateOrCreate([
                     'offer_item_id' => $request->input('offer_item_id'),
                 ], [
-                    'price_id' => $price->id,
+                    ...$args,
+                    'organization_id' => $checkoutSession->organization_id,
+                    'deleted_at' => null,
                 ]);
-                return response()->json([
-                    'message' => 'Item added to checkout',
-                ]);
+
+
+                return redirect()->back()->with('success', 'Item added to checkout');
             default:
                 abort(400);
         }
