@@ -86,6 +86,7 @@ class Price extends Model
         'archived_at',
 
         'integration_id',
+        'deleted_at'
     ];
 
     protected $casts = [

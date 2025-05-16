@@ -9,7 +9,7 @@ use App\Models\Checkout\CheckoutLineItem;
 use App\Models\Checkout\CheckoutSession;
 use App\Models\Organization;
 use App\Models\Store\Offer;
-use App\Models\Store\Slot;
+use App\Models\Store\OfferItem;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Mockery;
 use Tests\TestCase;
@@ -58,34 +58,34 @@ class CreateCheckoutSessionActionTest extends TestCase
             'amount' => 2000, // $20.00
         ]);
 
-        $slot1 = Slot::factory()->create([
+        $offerItem1 = OfferItem::factory()->create([
             'offer_id' => $offer->id,
             'default_price_id' => $price1->id,
         ]);
 
-        $slot2 = Slot::factory()->create([
+        $offerItem2 = OfferItem::factory()->create([
             'offer_id' => $offer->id,
             'default_price_id' => $price2->id,
         ]);
 
-        $slot3 = Slot::factory()->create([
+        $offerItem3 = OfferItem::factory()->create([
             'offer_id' => $offer->id,
-            'default_price_id' => null, // This slot should be skipped
+            'default_price_id' => null, // This offerItem should be skipped
         ]);
 
-        // Mock the CreateCheckoutLineItemAction for each slot with a default_price_id
+        // Mock the CreateCheckoutLineItemAction for each offerItem with a default_price_id
         $this->createCheckoutLineItemAction
             ->expects('execute')
             ->twice()
-            ->andReturnUsing(function ($checkoutSession, $slot) {
+            ->andReturnUsing(function ($checkoutSession, $offerItem) {
                 // Get the price amount directly from the database to avoid lazy loading
-                $priceAmount = Price::find($slot->default_price_id)->amount;
+                $priceAmount = Price::find($offerItem->default_price_id)->amount;
 
                 return CheckoutLineItem::factory()->create([
                     'organization_id' => $checkoutSession->organization_id,
                     'checkout_session_id' => $checkoutSession->id,
-                    'price_id' => $slot->default_price_id,
-                    'slot_id' => $slot->id,
+                    'price_id' => $offerItem->default_price_id,
+                    'offer_item_id' => $offerItem->id,
                     'quantity' => 1,
                 ]);
             });
@@ -98,7 +98,7 @@ class CreateCheckoutSessionActionTest extends TestCase
         $this->assertEquals($offer->organization_id, $checkoutSession->organization_id);
         $this->assertEquals($offer->id, $checkoutSession->offer_id);
 
-        // Verify that line items were created for slots with default_price_id
+        // Verify that line items were created for offerItems with default_price_id
         $this->assertEquals(2, $checkoutSession->lineItems()->count());
     }
 }

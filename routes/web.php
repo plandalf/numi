@@ -179,6 +179,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         Route::resource('products', ProductsController::class);
         Route::resource('sequences', SequencesController::class);
+        Route::post('products/{product}/prices/import', [PriceController::class, 'import'])->name('products.prices.import');
         Route::resource('products.prices', PriceController::class);
 
         Route::get('/integrations/{integrationType}/callback', [IntegrationsController::class, 'callback']);
@@ -196,10 +197,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::get('settings/theme', [OffersController::class, 'settingsTheme'])->name('settings.theme');
             Route::put('theme', [OffersController::class, 'updateTheme'])->name('update.theme');
 
-            // Add Slot routes
-            Route::post('/slots', [OffersController::class, 'storeSlot'])->name('slots.store');
-            Route::put('/slots/{slot}', [OffersController::class, 'updateSlot'])->name('slots.update');
-            // Route::delete('/slots/{slot}', [OffersController::class, 'destroySlot'])->name('slots.destroy'); // Add if needed
+            // Add offerItem routes
+            Route::post('/items', [OffersController::class, 'storeOfferItem'])->name('items.store');
+            Route::put('/items/{offerItem}', [OffersController::class, 'updateOfferItem'])->name('items.update');
+            Route::delete('/items/{offerItem}', [OffersController::class, 'destroyOfferItem'])->name('items.destroy');
+            // Route::delete('/items/{offerItem}', [OffersController::class, 'destroyItem'])->name('items.destroy'); // Add if needed
 
             Route::get('integrate', [OffersController::class, 'integrate'])->name('integrate');
             Route::get('sharing', [OffersController::class, 'sharing'])->name('sharing');

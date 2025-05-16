@@ -90,13 +90,12 @@ class ProductsController extends Controller
 
         $product->load([
             'prices' => function ($query) {
-                $query->active()->latest();
+                $query->latest();
             },
         ]);
 
         $listPrices = $product->prices()
             ->list()
-            ->active()
             ->get();
 
         $organizationId = Auth::user()->currentOrganization->id;

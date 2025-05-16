@@ -10,7 +10,9 @@ import { BooleanEditor } from '@/components/editor/boolean-editor';
 import { EnumerationEditor } from '@/components/editor/enumeration-editor';
 import { FileEditor } from '@/components/editor/file-editor';
 import { ColorPickerEditor } from '@/components/editor/color-picker-editor';
-import { ConditionOnClickEditor } from '../editor/condition-onclick-editor';
+import { AlignmentPickerEditor } from '@/components/editor/alignment-picker-editor';
+import { NumberEditor } from '../editor/number-editor';
+import { InteractionEventEditor } from '../editor/interaction-event-editor';
 import { ConditionVisibilityEditor } from '../editor/condition-visibility-editor';
 import { useEditor } from '@/contexts/offer/editor-context';
 import { getThemeColors } from './page-theme';
@@ -76,33 +78,6 @@ export const AppearanceEditor = ({ globalState, block, onUpdate }: { globalState
   );
 }
 
-export const ConditionsSection = ({ globalState, block, onUpdate }: { globalState: GlobalState | null, block: Block, onUpdate: (block: Block) => void }) => {
-  if (globalState?.hookUsage[block.id].some(h => h.name === 'visibility')) {
-    console.log("albbert", block);
-  }
-  return (
-    <div className="mb-6">
-      <h3 className="mb-2 font-semibold">Conditions</h3>
-      <div className="flex items-center gap-2 bg-[#F7F9FF] rounded-md p-2">
-        {globalState?.hookUsage[block.id].some(h => h.name === 'onClickEvent') && (
-          <ConditionOnClickEditor
-            label="On Click Event"
-            value={block.conditions?.onClickEvent || []}
-            onChange={() => void 0}
-          />
-        )}
-
-        {globalState?.hookUsage[block.id].some(h => h.name === 'visibility') && (
-          <ConditionVisibilityEditor
-            value={block.conditions?.visibility || []}
-            onChange={value => onUpdate({ ...block, conditions: { ...block.conditions, visibility: value } })}
-          />
-        )}
-      </div>
-    </div>
-  );
-}
-
 const ValidationSection = ({ block, onUpdate }: { block: Block, onUpdate: (block: Block) => void }) => {
   const handleValidationChange = (fieldName: string, value: boolean) => {
     if (!block) return;
@@ -132,8 +107,18 @@ const ValidationSection = ({ block, onUpdate }: { block: Block, onUpdate: (block
 }
 
 export const InteractionSection = ({ globalState, block, onUpdate }: { globalState: GlobalState | null, block: Block, onUpdate: (block: Block) => void }) => {
+  const interactionHook = globalState?.hookUsage[block.id]?.find((hook) => hook.type === 'interaction' || hook.type === 'eventCallback');
   return (
     <>
+    <div className="space-y-4">
+    <h3 className="mb-2 font-semibold">Interaction</h3>
+      <InteractionEventEditor
+        label="OnClick"
+        value={block.interaction?.onClick || []}
+        onChange={value => onUpdate({ ...block, interaction: { ...block.interaction, onClick: value } })}
+        elementOptions={(interactionHook?.options ?? []) as Record<'value' | 'label', string>[]}
+
+      />
       <div className="flex items-center gap-2">
         <Checkbox
           checked={block.interaction?.isDisabled ?? false}
@@ -148,6 +133,7 @@ export const InteractionSection = ({ globalState, block, onUpdate }: { globalSta
           }}
         />
         <Label className="mb-0">Disabled?</Label>
+      </div>
       </div>
     </>
   );
@@ -231,7 +217,7 @@ export const Inspector = ({
                     <AppearanceEditor globalState={globalState} block={block} onUpdate={onUpdate} />
                   ) : type === 'validation' ? (
                     <ValidationSection block={block} onUpdate={onUpdate} />
-                  ) : type === 'interaction' ? (
+                  ) : hook.type === 'interaction' || hook.type === 'eventCallback' ? (
                     <InteractionSection globalState={globalState} block={block} onUpdate={onUpdate} />
                   ) : type === 'conditions' ? (
                     <ConditionsSection globalState={globalState} block={block} onUpdate={onUpdate} />

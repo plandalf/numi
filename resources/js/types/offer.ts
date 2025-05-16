@@ -1,5 +1,6 @@
 import { RuleGroup } from "@/components/editor/condition-visibility-editor";
 import { Theme } from "./theme";
+import { OnClickAction } from "@/components/editor/interaction-event-editor";
 
 export interface Offer {
     id: number;
@@ -21,8 +22,8 @@ export interface Offer {
     };
     properties: Record<string, any> | null;
     transaction_webhook_url: string | null;
-    slots: OfferSlot[];
-    prices: Price[];
+    items: OfferItem[];
+    products: OfferProduct[];
     theme: Theme | null;
     screenshot: {
         id: number;
@@ -33,7 +34,7 @@ export interface Offer {
 
 }
 
-export interface OfferSlot {
+export interface OfferItem {
     id: number;
     name: string;
     key: string;
@@ -44,7 +45,7 @@ export interface OfferSlot {
     created_at: string;
     updated_at: string;
     product: Product | null;
-    price: Price[];
+    prices: Price[];
 }
 
 export interface Price {
@@ -72,8 +73,13 @@ export interface Price {
     product?: Product | null;
 }
 
+export interface OfferProduct extends Product {
+    store_offer_product_id: number;
+}
+
 export interface Product {
     id: number;
+    store_offer_product_id?: number | null;
     name: string;
     lookup_key: string;
     integration_id: number;
@@ -193,6 +199,7 @@ export interface Block {
     };
     interaction?: {
         isDisabled?: boolean;
+        onClick: OnClickAction[];
         [key: string]: any;
     };
     appearance?: {

@@ -18,14 +18,14 @@ class CreateCheckoutSessionAction
             'offer_id' => $offer->id,
         ]);
 
-        foreach ($offer->slots as $slot) {
-            if (! $slot->default_price_id) {
+        foreach ($offer->offerItems as $offerItem) {
+            if (! $offerItem->default_price_id) {
                 continue;
             }
 
             $this->createCheckoutLineItemAction->execute(
-                checkoutSession: $checkoutSession,
-                slot: $slot
+                $checkoutSession,
+                $offerItem
             );
         }
 

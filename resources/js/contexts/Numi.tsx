@@ -6,6 +6,7 @@ import get from "lodash/get";
 import debounce from "lodash/debounce";
 import { Theme } from "@/types/theme";
 import { CheckoutState, GlobalStateContext } from '@/pages/checkout-main';
+import { CallbackType } from "@/components/editor/interaction-event-editor";
 
 export const BlockContext = createContext<BlockContextType>({
   blockId: '',
@@ -274,38 +275,67 @@ class Numi {
   //   return checkout;
   // }
 
-  static useEventCallback(props: { name: string; }) {
+  static useEventCallback(props: { name: string; elements?: Record<'value' | 'label', string>[] }): {
+    callbacks: any[];
+    updateHook: (hook: Partial<HookUsage>) => void;
+    executeCallbacks: (element: string, type: CallbackType) => void;
+  } {
+    const checkout = Numi.useCheckout();
     const blockContext = useContext(BlockContext);
+    const [hook, setHook] = useState<HookUsage>({
+      name: props.name,
+      type: 'eventCallback',
+      defaultValue: null,
+      options: props.elements,
+    });
 
+    // Create a ref to hold the debounced function
+    const debouncedUpdateRef = useRef<ReturnType<typeof debounce> | null>(null);
+
+    // Initialize the debounced function on first render
     useEffect(() => {
-      blockContext.registerHook({
-        name: props.name,
-        type: 'eventCallback',
-        defaultValue: null,
-      });
+      debouncedUpdateRef.current = debounce((newHook: Partial<HookUsage>) => {
+        setHook(prevHook => ({...prevHook, ...newHook}));
+      }, 300); // 300ms delay
+
+      // Cleanup function to cancel pending debounced calls
+      return () => {
+        if (debouncedUpdateRef.current) {
+          debouncedUpdateRef.current.cancel();
+        }
+      };
     }, []);
 
-    // allow calling something event is called
-    // const checkout = Numi.useCheckout();
+    useEffect(() => {
+      blockContext.registerHook(hook);
+    }, [hook]);
 
-    return () => {
-      // "on click happened, basically"
-      // run the actions set up for this block
-      if (blockContext.blockConfig.interaction?.onClick) {
-        for (const callback of blockContext.blockConfig.interaction.onClick) {
-          // this will only be a "named" action
+    const updateHook = useCallback((newHook: Partial<HookUsage>) => {
+      if (debouncedUpdateRef.current) {
+        debouncedUpdateRef.current(newHook);
+      }
+    }, []);
+
+    const executeCallbacks = useCallback((element: string, type: CallbackType) => {
+      if (blockContext.blockConfig.interaction?.[type]) {
+        const callbacks = blockContext.blockConfig.interaction[type].filter(callback => callback?.element === element);
+        for (const callback of callbacks) {
           switch (callback.action) {
             case 'setSlot':
-              // checkout.setSlot(callback.slot, callback.price); // todo: other options too?!
+              // checkout.setSlot(callback.slot, callback.price);
               break;
-            case 'setField':
-              blockContext.setFieldValue(callback.field, callback.value);
+            case 'setItem':
+              checkout.updateLineItem(callback.value);
               break;
           }
-          // action();//
         }
       }
-      // Hook was called!
+    }, [blockContext]);
+
+    return {
+      callbacks: blockContext.blockConfig.interaction?.onClick ?? [],
+      updateHook,
+      executeCallbacks
     };
   }
 
@@ -330,9 +360,7 @@ class Numi {
   }
 
   static useCheckout(options: CheckoutOptions = {}): CheckoutState {
-    const {
-      session
-    } = useContext(GlobalStateContext);
+    const checkout = useContext(GlobalStateContext);
 
     // useEffect(() => {
     //   // Cleanup function
@@ -341,9 +369,7 @@ class Numi {
     //   };
     // }, []);
 
-    return {
-      session,
-    };
+    return checkout;
   }
 
   static useStyle(appearanceProps: any[]): Record<string, any> {
@@ -375,20 +401,44 @@ class Numi {
     }, [blockContext.blockConfig.appearance, blockContext.blockId]);
   }
 
-  static useInteraction(): { isDisabled: any; } {
+  static useInteraction(): { isDisabled: any; updateHook: (hook: Partial<HookUsage>) => void } {
     const blockContext = useContext(BlockContext);
+    const [hook, setHook] = useState<HookUsage>({
+      name: 'interaction',
+      type: 'interaction',
+      defaultValue: false,
+    });
+
+    // Create a ref to hold the debounced function
+    const debouncedUpdateRef = useRef<ReturnType<typeof debounce> | null>(null);
+
+    // Initialize the debounced function on first render
+    useEffect(() => {
+      debouncedUpdateRef.current = debounce((newHook: Partial<HookUsage>) => {
+        setHook(prevHook => ({...prevHook, ...newHook}));
+      }, 300); // 300ms delay
+
+      // Cleanup function to cancel pending debounced calls
+      return () => {
+        if (debouncedUpdateRef.current) {
+          debouncedUpdateRef.current.cancel();
+        }
+      };
+    }, []);
 
     useEffect(() => {
-      // blockContext.registerHook('interaction', {
-      //   // args?
-      // });
-      blockContext.registerHook({
-        type: 'interaction',
-      });
+      blockContext.registerHook(hook);
+    }, [hook]);
+
+    const updateHook = useCallback((newHook: Partial<HookUsage>) => {
+      if (debouncedUpdateRef.current) {
+        debouncedUpdateRef.current(newHook);
+      }
     }, []);
 
     return {
       isDisabled: blockContext.blockConfig.interaction?.isDisabled ?? false,
+      updateHook
     }
   }
 
@@ -435,6 +485,11 @@ class Numi {
     }, [hook]);
 
     const value = get(blockContext.blockConfig, `content.${props.name}`) ?? props.initialValue;
+
+    useEffect(() => {
+      setValue(value);
+    }, []);
+
     const setValue = (newValue: any) => {
       blockContext.setFieldValue(props.name, newValue);
     };

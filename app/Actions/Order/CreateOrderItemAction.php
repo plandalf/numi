@@ -18,7 +18,7 @@ class CreateOrderItemAction
             'organization_id' => $order->organization_id,
             'order_id' => $order->id,
             'price_id' => $checkoutLineItem->price_id,
-            'slot_id' => $checkoutLineItem->slot_id,
+            'offer_item_id' => $checkoutLineItem->offer_item_id,
             'quantity' => $checkoutLineItem->quantity,
             'metadata' => [], // Can be extended to include additional metadata if needed
         ]);

@@ -4,17 +4,17 @@ namespace App\Actions\Checkout;
 
 use App\Models\Checkout\CheckoutLineItem;
 use App\Models\Checkout\CheckoutSession;
-use App\Models\Store\Slot;
+use App\Models\Store\OfferItem;
 
 class CreateCheckoutLineItemAction
 {
-    public function execute(CheckoutSession $checkoutSession, Slot $slot): CheckoutLineItem
+    public function execute(CheckoutSession $checkoutSession, OfferItem $offerItem): CheckoutLineItem
     {
         return CheckoutLineItem::create([
             'organization_id' => $checkoutSession->organization_id,
             'checkout_session_id' => $checkoutSession->id,
-            'price_id' => $slot->default_price_id,
-            'slot_id' => $slot->id,
+            'price_id' => $offerItem->default_price_id,
+            'offer_item_id' => $offerItem->id,
             'quantity' => 1,
         ]);
     }

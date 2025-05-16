@@ -4,6 +4,7 @@ namespace App\Models\Order;
 
 use App\Enums\OrderStatus;
 use App\Models\Catalog\Price;
+use App\Models\Store\OfferItem;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -30,7 +31,7 @@ class OrderItem extends Model
     protected $fillable = [
         'order_id',
         'price_id',
-        'slot_id',
+        'offer_item_id',
         'quantity',
         'metadata',
         'organization_id',
@@ -64,6 +65,14 @@ class OrderItem extends Model
     public function price(): BelongsTo
     {
         return $this->belongsTo(Price::class);
+    }
+
+    /**
+     * Get the offer item associated with the order item.
+     */
+    public function offerItem(): BelongsTo
+    {
+        return $this->belongsTo(OfferItem::class, 'offer_item_id');
     }
 
     /**
