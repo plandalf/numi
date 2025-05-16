@@ -73,6 +73,11 @@ export interface FontValue {
   alignmentVertical?: string;
 }
 
+export interface DimensionValue {
+  width?: string;
+  height?: string;
+}
+
 export interface BorderValue {
   width?: string;
   style?: string;
@@ -120,6 +125,20 @@ export const Style = {
     options: [],
     defaultValue,
     inspector: args.inspector ?? 'colorPicker',
+  }),
+
+  dimensions: (
+    type: string = 'dimensions',
+    label: string = 'Dimensions',
+    args: StyleArgs,
+    defaultValue: DimensionValue,
+  ) => ({
+    label,
+    type,
+    options: [],
+    defaultValue,
+    inspector: args.inspector ?? 'dimensionPicker',
+    config: args.config ?? {}
   }),
 
   font: (
@@ -360,7 +379,7 @@ class Numi {
       appearanceProps.forEach(prop => {
         if (prop.type) {
           // Get the value from block config or use default
-          appearance[prop.type] = blockContext.blockConfig.appearance?.[prop.type] || prop.defaultValue;
+          appearance[prop.type] = blockContext.blockConfig.appearance?.[prop.type];
 
           // Register the hook
           blockContext.registerHook({
