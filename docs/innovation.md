@@ -15,6 +15,8 @@ Our platform embodies six fundamental capabilities that redefine what's possible
 ## Mission Statement
 We empower businesses with the most flexible, programmable, and presentable checkout and billing platform ever created. By combining open-source principles with the CREATE framework, we adapt to your business. We deliver automation, customization, and value at every step of your revenue journey.
 
+![./plandalf-gimli.jpg](./plandalf-gimli.jpg)
+
 ---
 
 # C: Customizable UI, Templates, Blocks, Styles

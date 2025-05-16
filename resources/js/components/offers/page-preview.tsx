@@ -1,4 +1,4 @@
-import { type Page, type Block} from '@/types/offer';
+import { type Page, type Block, PageSection} from '@/types/offer';
 import LayoutPreview from './layout-preview';
 import { useState, useEffect } from 'react';
 import { useEditor } from '@/contexts/offer/editor-context';
@@ -25,6 +25,24 @@ export function findBlockInPage(page: Page, blockId: string): Block | null {
     }
 
     return null;
+}
+
+export function findSectionInPage(page: Page, sectionId: string): PageSection | null {
+  if (!page || !page.view) {
+      console.error('Invalid page or view in findSectionInPage');
+      return null;
+  }
+
+  const sections = Object.keys(page.view);
+
+  for (const sectionName of sections) {
+      const section = page.view[sectionName];
+      if (!section || !section.blocks) continue;
+
+      if (section.id === sectionId) return section;
+  }
+
+  return null;
 }
 
 // Helper function to update a block in the page

@@ -1,4 +1,4 @@
-import Numi, { Appearance, BlockContext } from "@/contexts/Numi";
+import Numi, { Style, BlockContext } from "@/contexts/Numi";
 import { BlockContextType } from "@/types/blocks";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useContext, useEffect, useMemo, useRef, useCallback } from "react";
@@ -13,6 +13,7 @@ interface ItemType {
 }
 
 function OptionSelectorComponent({ context }: { context: BlockContextType }) {
+
   const blockContext = useContext(BlockContext);
   const options = get(blockContext.blockConfig, `content.items`, {}) as ItemType[];
 
@@ -24,6 +25,10 @@ function OptionSelectorComponent({ context }: { context: BlockContextType }) {
     label: 'Default (Selected Tab)',
   });
 
+  const appearance = Numi.useStyle([
+    Style.backgroundColor('activeBackgroundColor', 'Selected', {}, '#000000'),
+    Style.backgroundColor('inactiveBackgroundColor', 'Unselected', {}, '#FFFFFF'),
+  ]);
 
   const [items] = Numi.useStateJsonSchema({
     name: 'items',
@@ -52,12 +57,6 @@ function OptionSelectorComponent({ context }: { context: BlockContextType }) {
       }
     }
   });
-
-  const appearance = Numi.useAppearance([
-    Appearance.backgroundColor('activeBackgroundColor', 'Selected'),
-    Appearance.backgroundColor('inactiveBackgroundColor', 'Unselected'),
-    Appearance.visibility(),
-  ]);
 
   const interactionElements = useMemo(() => {
     return Array.isArray(items) ? items.filter(item => item.key).map(item => ({ value: item.key, label: item.label })) : [];
