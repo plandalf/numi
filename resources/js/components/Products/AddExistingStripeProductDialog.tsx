@@ -1,7 +1,5 @@
-import { Link } from '@inertiajs/react';
 import { Boxes, CircleCheck, CircleChevronRight, Plus, Trash, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
 import {
   Dialog,
   DialogContent,
@@ -11,7 +9,6 @@ import {
 } from '@/components/ui/dialog';
 import { useState, useEffect, useMemo } from 'react';
 import { router } from '@inertiajs/react';
-import { route } from 'ziggy-js';
 import { Combobox } from '@/components/combobox';
 import { Label } from '../ui/label';
 import { Input } from '../ui/input';
