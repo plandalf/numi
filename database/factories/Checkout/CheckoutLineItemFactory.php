@@ -6,7 +6,7 @@ use App\Models\Catalog\Price;
 use App\Models\Checkout\CheckoutLineItem;
 use App\Models\Checkout\CheckoutSession;
 use App\Models\Organization;
-use App\Models\Store\Slot;
+use App\Models\Store\OfferItem;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -34,7 +34,7 @@ class CheckoutLineItemFactory extends Factory
             'organization_id' => Organization::factory(),
             'checkout_session_id' => CheckoutSession::factory(),
             'price_id' => Price::factory(),
-            'slot_id' => Slot::factory(),
+            'offer_item_id' => OfferItem::factory(),
             'quantity' => $quantity,
         ];
     }

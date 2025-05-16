@@ -4,21 +4,154 @@ namespace App\Enums\Theme;
 
 enum FontElement: string
 {
+    case ROBOTO = 'Roboto';
+    case OPEN_SANS = 'Open Sans';
+    case LATO = 'Lato';
+    case MONTSERRAT = 'Montserrat';
+    case POPPINS = 'Poppins';
+    case SOURCE_SANS_PRO = 'Source Sans Pro';
     case ROBOTO_MONO = 'Roboto Mono';
     case INTER = 'Inter';
-    case ARIAL = 'Arial';
-    case HELVETICA = 'Helvetica';
-    case VERDANA = 'Verdana';
-    case TAHOMA = 'Tahoma';
-    case TREBUCHET_MS = 'Trebuchet MS';
-    case GEORGIA = 'Georgia';
-    case GARAMOND = 'Garamond';
-    case TIMES_NEW_ROMAN = 'Times New Roman';
-    case PALATINO = 'Palatino';
-    case BOOKMAN = 'Bookman';
-    case COMIC_SANS_MS = 'Comic Sans MS';
-    case IMPACT = 'Impact';
-    case INSTRUMENT_SANS = 'Instrument Sans';
+    case OSWALD = 'Oswald';
+    case RALEWAY = 'Raleway';
+    case ROBOTO_CONDENSED = 'Roboto Condensed';
+    case PT_SANS = 'PT Sans';
+    case NOTO_SANS = 'Noto Sans';
+    case UBUNTU = 'Ubuntu';
+    case PLAYFAIR_DISPLAY = 'Playfair Display';
+
+    public function getFontWeights(): array
+    {
+        return match($this) {
+            self::ROBOTO => [
+                WeightElement::THIN->value,
+                WeightElement::LIGHT->value,
+                WeightElement::REGULAR->value,
+                WeightElement::MEDIUM->value,
+                WeightElement::BOLD->value,
+                WeightElement::BLACK->value,
+            ],
+            self::OPEN_SANS => [
+                WeightElement::LIGHT->value,
+                WeightElement::REGULAR->value,
+                WeightElement::MEDIUM->value,
+                WeightElement::SEMI_BOLD->value,
+                WeightElement::BOLD->value,
+                WeightElement::EXTRA_BOLD->value,
+            ],
+            self::LATO => [
+                WeightElement::THIN->value,
+                WeightElement::LIGHT->value,
+                WeightElement::REGULAR->value,
+                WeightElement::BOLD->value,
+                WeightElement::BLACK->value,
+            ],
+            self::MONTSERRAT => [
+                WeightElement::THIN->value,
+                WeightElement::EXTRA_LIGHT->value,
+                WeightElement::LIGHT->value,
+                WeightElement::REGULAR->value,
+                WeightElement::MEDIUM->value,
+                WeightElement::SEMI_BOLD->value,
+                WeightElement::BOLD->value,
+                WeightElement::EXTRA_BOLD->value,
+                WeightElement::BLACK->value,
+            ],
+            self::POPPINS => [
+                WeightElement::THIN->value,
+                WeightElement::EXTRA_LIGHT->value,
+                WeightElement::LIGHT->value,
+                WeightElement::REGULAR->value,
+                WeightElement::MEDIUM->value,
+                WeightElement::SEMI_BOLD->value,
+                WeightElement::BOLD->value,
+                WeightElement::EXTRA_BOLD->value,
+            ],
+            self::SOURCE_SANS_PRO => [
+                WeightElement::EXTRA_LIGHT->value,
+                WeightElement::LIGHT->value,
+                WeightElement::REGULAR->value,
+                WeightElement::SEMI_BOLD->value,
+                WeightElement::BOLD->value,
+                WeightElement::BLACK->value,
+            ],
+            self::ROBOTO_MONO => [
+                WeightElement::THIN->value,
+                WeightElement::LIGHT->value,
+                WeightElement::REGULAR->value,
+                WeightElement::MEDIUM->value,
+                WeightElement::BOLD->value,
+            ],
+            self::INTER => [
+                WeightElement::THIN->value,
+                WeightElement::EXTRA_LIGHT->value,
+                WeightElement::LIGHT->value,
+                WeightElement::REGULAR->value,
+                WeightElement::MEDIUM->value,
+                WeightElement::SEMI_BOLD->value,
+                WeightElement::BOLD->value,
+                WeightElement::EXTRA_BOLD->value,
+                WeightElement::BLACK->value,
+            ],
+            self::OSWALD => [
+                WeightElement::LIGHT->value,
+                WeightElement::REGULAR->value,
+                WeightElement::MEDIUM->value,
+                WeightElement::SEMI_BOLD->value,
+                WeightElement::BOLD->value,
+            ],
+            self::RALEWAY => [
+                WeightElement::THIN->value,
+                WeightElement::EXTRA_LIGHT->value,
+                WeightElement::LIGHT->value,
+                WeightElement::REGULAR->value,
+                WeightElement::MEDIUM->value,
+                WeightElement::SEMI_BOLD->value,
+                WeightElement::BOLD->value,
+                WeightElement::EXTRA_BOLD->value,
+            ],
+            self::ROBOTO_CONDENSED => [
+                WeightElement::LIGHT->value,
+                WeightElement::REGULAR->value,
+                WeightElement::BOLD->value,
+            ],
+            self::PT_SANS => [
+                WeightElement::REGULAR->value,
+                WeightElement::BOLD->value,
+            ],
+            self::NOTO_SANS => [
+                WeightElement::THIN->value,
+                WeightElement::EXTRA_LIGHT->value,
+                WeightElement::LIGHT->value,
+                WeightElement::REGULAR->value,
+                WeightElement::MEDIUM->value,
+                WeightElement::SEMI_BOLD->value,
+                WeightElement::BOLD->value,
+                WeightElement::EXTRA_BOLD->value,
+                WeightElement::BLACK->value,
+            ],
+            self::UBUNTU => [
+                WeightElement::LIGHT->value,
+                WeightElement::REGULAR->value,
+                WeightElement::MEDIUM->value,
+                WeightElement::BOLD->value,
+            ],
+            self::PLAYFAIR_DISPLAY => [
+                WeightElement::REGULAR->value,
+                WeightElement::MEDIUM->value,
+                WeightElement::SEMI_BOLD->value,
+                WeightElement::BOLD->value,
+                WeightElement::EXTRA_BOLD->value,
+                WeightElement::BLACK->value,
+            ],
+        };
+    }
+
+
+    public function getCssFontFamily(): string
+    {
+        return "'{$this->value}', sans-serif";
+    }
 
     public static function values(): array
     {

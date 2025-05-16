@@ -5,9 +5,6 @@ import { EnumerationEditor } from "./enumeration-editor";
 import { StringEditor } from "./string-editor";
 import { BooleanEditor } from "./boolean-editor";
 import { ColorPickerEditor } from "./color-picker-editor";
-import React from "react";
-import { ConditionVisibilityEditor } from "./condition-visibility-editor";
-import { ConditionOnClickEditor } from "./condition-onclick-editor";
 
 export function JSONSchemaEditor({
   schema,
@@ -16,6 +13,7 @@ export function JSONSchemaEditor({
   onChange,
   rootSchema,
   isRootArray = true,
+  themeColors,
 }: {
   schema: JsonSchema | JsonSchemaProperty;
   path?: string;
@@ -23,10 +21,10 @@ export function JSONSchemaEditor({
   onChange: (newValue: any) => void;
   rootSchema?: JsonSchema;
   isRootArray?: boolean;
+  themeColors?: Record<string, string>;
 }) {
   const schemaToUse = rootSchema || schema;
 
-  console.log(schema);
 
   // Handle $ref references
   if ('$ref' in schema && schema.$ref) {
@@ -39,6 +37,7 @@ export function JSONSchemaEditor({
           onChange={onChange}
           rootSchema={rootSchema}
           isRootArray={isRootArray}
+          themeColors={themeColors}
         />
       );
     }
@@ -82,10 +81,16 @@ export function JSONSchemaEditor({
       newItems[index] = newItemValue;
       onChange(newItems);
     };
+    const handleDeleteItem = (index: number) => {
+      const newItems = [...items];
+      newItems.splice(index, 1);
+      onChange(newItems);
+    };
     return (
       <AccordionSection
         items={items}
         onAdd={isRootArray ? handleAddItem : undefined}
+        onDelete={isRootArray ? handleDeleteItem : undefined}
         renderSection={(item, index) => (
           <JSONSchemaEditor
             schema={schema.items as JsonSchemaProperty}
@@ -94,6 +99,7 @@ export function JSONSchemaEditor({
             onChange={(newValue) => handleItemChange(index, newValue)}
             rootSchema={rootSchema}
             isRootArray={false}
+            themeColors={themeColors}
           />
         )}
         getSectionTitle={(_, i) => `Section ${i + 1}`}
@@ -123,6 +129,7 @@ export function JSONSchemaEditor({
               onChange={(newValue) => handlePropertyChange(propName, newValue)}
               rootSchema={rootSchema}
               isRootArray={isRootArray}
+              themeColors={themeColors}
             />
           );
         })}
@@ -162,6 +169,8 @@ export function JSONSchemaEditor({
         label={schema.title || path.split('.').pop() || 'Color'}
         value={value || '#FFFFFF'}
         onChange={onChange}
+        type='advanced'
+        themeColors={themeColors}
       />
     );
   }
@@ -189,34 +198,6 @@ export function JSONSchemaEditor({
     );
   }
 
-  if('meta' in schema && schema.meta?.editor === 'appearanceEditor') {
-    return (
-      <div className="mb-6">
-      <h3 className="mb-2 font-semibold">Conditions</h3>
-      <div className="flex items-center gap-2">
-      {/* {schema['onClickEvent'] && (
-        <ConditionOnClickEditor
-          label="On Click Event"
-          value={value?.['onClickEvent'] ?? []}
-          onChange={() => void 0}
-        />
-      )} */}
-
-      {schema['visibility'] && (
-        <ConditionVisibilityEditor
-          value={value?.['visibility']?.['conditional'] ?? []}
-          onChange={(value) => onChange({
-            ...value,
-            visibility: {
-              conditional: value
-            }
-          })}
-        />
-      )}
-      </div>
-    </div>
-    );
-  }
   // Fallback for unsupported types
   return (
     <div className="p-2 text-red-500 text-sm">

@@ -125,21 +125,21 @@ const layoutConfig = {
                 "type": "flex",
                 "id": "header",
                 "props": {
-                  "className": "flex flex-col flex-grow space-y-6 p-6 overflow-y-auto"
+                  "className": "flex flex-col flex-grow overflow-y-auto"
                 },
                 "children": [
                   {
                     "id": "title",
                     "type": "box",
                     "props": {
-                      "className": "space-y-1"
+                      "className": "space-y-1 p-6"
                     }
                   },
                   {
                     "id": "content",
                     "type": "flex",
                     "props": {
-                      "className": "flex flex-col flex-grow space-y-2"
+                      "className": "flex flex-col flex-grow space-y-2 p-6"
                     }
                   }
                 ]
@@ -210,21 +210,21 @@ const TailwindLayoutRenderer = ({
     // Default components
     box: (props: ComponentProps) => {
       return (
-        <div key={props.id} className={cn("relative", props.className)}>
+        <div key={props.id} className={cn("relative", props.className)} style={props.style}>
           {props.children}
         </div>
       );
     },
     flex: (props: ComponentProps) => {
       return (
-        <div key={props.id} className={cn('flex', props.className)}>
+        <div key={props.id} className={cn('flex', props.className)} style={props.style}>
           {props.children}
         </div>
       )
     },
     grid: (props: ComponentProps) => {
       return (
-        <div key={props.id} className={cn('grid', props.className)}>
+        <div key={props.id} className={cn('grid', props.className)} style={props.style}>
           {props.children}
         </div>
       )
@@ -261,17 +261,29 @@ const renderElement = (
   } = element;
   const { componentRegistry, contentMap } = context;
 
-  if (id && page?.view && page.view[id]) {
-    // console.log('Found section for id:', id, page.view[id]);
+  const { selectedSectionId } = useEditor();
+
+  if (id && page?.view && id in page?.view) {
+
     const section = page.view[id];
+
+    const backgroundColor = (section as any)?.style?.backgroundColor;
     return createElement(
       type,
-      { ...props, id },
+      {
+        ...props,
+        id,
+        style: { backgroundColor },
+        className: cn(
+          "relative",
+          props.className,
+          selectedSectionId === id && 'shadow-[inset_0_0_0_1.5px_#3B82F6]'
+        )
+      },
       <Section
         key={id}
         section={section}
         sectionName={id as keyof LocalPageView}
-        className={props.className}
       />,
       componentRegistry
     );
@@ -384,21 +396,14 @@ function BlockRenderer({ block, children }: {
 }
 
 // Section Component
-const Section = ({ section, sectionName: id, className, selectedBlockId, onSelectBlock }: SectionProps) => {
+const Section = ({ section, sectionName: id }: SectionProps) => {
 
   const { setNodeRef, isOver, active } = useDroppable({
     id: `section:${id}`,
   })
 
   return (
-    <div
-      className={cn(
-        "relative",
-        className
-      )}
-    >
-      <div className="">
-
+    <>
       <SortableContext
         id={`section:${id}`}
         items={(section?.blocks || [])?.map(block => `block:${block.id}`)}
@@ -406,13 +411,13 @@ const Section = ({ section, sectionName: id, className, selectedBlockId, onSelec
       >
         <div
          className={cx({
-          "border border-transparent min-h-20" : true,
+          "border border-transparent min-h-20 w-full" : true,
           'border-red-500': active,
           'border-blue-500': isOver,
         })}
         ref={setNodeRef}
         >
-          {section.blocks?.map((block: Block, index: number) => {
+          {section?.blocks?.map((block: Block, index: number) => {
             return (
               <BlockRenderer block={block as BlockConfig} key={`${block.id}-${index}`}>
                 {(blockContext) => {
@@ -430,8 +435,7 @@ const Section = ({ section, sectionName: id, className, selectedBlockId, onSelec
           })}
         </div>
         </SortableContext>
-      </div>
-    </div>
+    </>
   );
 };
 

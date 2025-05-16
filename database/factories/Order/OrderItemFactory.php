@@ -6,7 +6,7 @@ use App\Models\Catalog\Price;
 use App\Models\Order\Order;
 use App\Models\Order\OrderItem;
 use App\Models\Organization;
-use App\Models\Store\Slot;
+use App\Models\Store\OfferItem;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -34,7 +34,7 @@ class OrderItemFactory extends Factory
             'organization_id' => Organization::factory(),
             'order_id' => Order::factory(),
             'price_id' => Price::factory(),
-            'slot_id' => Slot::factory(),
+            'offer_item_id' => OfferItem::factory(),
             'quantity' => $quantity,
         ];
     }

@@ -211,7 +211,7 @@ type PriceStepProps = {
   productId: string;
 }
 
-const PriceStep = ({ integrationId, onClickSave, onClickBack, selectedPrices, setSelectedPrices, productId }: PriceStepProps) => {
+export const PriceStep = ({ integrationId, onClickSave, onClickBack, selectedPrices, setSelectedPrices, productId }: PriceStepProps) => {
   const [prices, setPrices] = useState<StripePrice[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 

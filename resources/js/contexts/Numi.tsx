@@ -1,11 +1,12 @@
 // Numi hooks
 
 import { BlockConfig, BlockContextType, HookUsage } from "@/types/blocks";
-import { createContext, useContext, useEffect, useState, useRef, useCallback } from "react";
+import { createContext, useContext, useEffect, useState, useRef, useCallback, useMemo } from "react";
 import get from "lodash/get";
 import debounce from "lodash/debounce";
 import { Theme } from "@/types/theme";
 import { CheckoutState, GlobalStateContext } from '@/pages/checkout-main';
+import { CallbackType } from "@/components/editor/interaction-event-editor";
 
 export const BlockContext = createContext<BlockContextType>({
   blockId: '',
@@ -25,48 +26,191 @@ export const BlockContext = createContext<BlockContextType>({
 });
 
 
+function TestComponent() {
 
-export const Appearance = {
-  alignment: (options: string[] = ['left', 'center', 'right', 'expand']) => ({
-    type: 'alignment',
-    options,
-    defaultValue: 'left'
-  }),
+  // modifying:
 
-  backgroundColor: (type: "backgroundColor" | "activeBackgroundColor" | "inactiveBackgroundColor" = "backgroundColor", label: string = 'Background Color', options: string[] = ['primary', 'secondary', 'success', 'danger', 'warning', 'info', 'light', 'dark']) => ({
+  const {
+    addItem// checkout.items.add ->
+  } = Numi.useCheckout();
+  // returns some kind of modification promise?
+  // setModifying(addItem().then(() => {
+  // setModifying(null)
+  // }))
+
+  // need "loading" state for adding an item
+  // need validation
+  // need errors
+
+  return (
+    <div>
+      <button onClick={() => addItem({
+        name: 'Test Item',
+        price: 100,
+        quantity: 1,
+        image: 'https://placehold.co/60x60.png',
+      })}>Add Item</button>
+    </div>
+  )
+}
+
+export interface StyleArgs {
+  options?: Record<string, string>;
+  config?: Record<string, any>;
+  inspector?: string;
+}
+
+export interface FontValue {
+  font?: string;
+  weight?: string;
+  size?: string;
+  lineHeight?: string;
+  letterSpacing?: string;
+  alignmentHorizontal?: string;
+  alignmentVertical?: string;
+}
+
+export interface BorderValue {
+  width?: string;
+  style?: string;
+}
+
+export const Style = {
+  alignment: (
+    type: string = 'alignment',
+    label: string = 'Alignment',
+    args: StyleArgs,
+    defaultValue: string = 'left',
+  ) => ({
+    label,
     type,
-    options,
-    defaultValue: 'primary',
-    label
+    options: args.options ?? {
+      left: 'Left',
+      center: 'Center',
+      right: 'Right',
+      expand: 'Expand',
+    } as Record<string, string>,
+    defaultValue,
+    inspector: args.inspector ?? 'alignmentPicker',
   }),
-  textColor: (options: string[] = []) => ({
-    type: 'textColor',
-    options,
-    defaultValue: 'primary',
-    label: 'Text Color'
+
+  backgroundColor: (
+    type: "backgroundColor" | "activeBackgroundColor" | "inactiveBackgroundColor" = "backgroundColor",
+    label: string = 'Background Color',
+    args: StyleArgs,
+    defaultValue: string,
+  ) => ({
+    label,
+    type,
+    options: args.options,
+    defaultValue,
+    inspector: args.inspector ?? 'colorPicker',
   }),
-  fontWeight: (options: string[] = ['normal', 'semibold', 'bold']) => ({
-    type: 'fontWeight',
-    options,
-    defaultValue: 'normal'
+  textColor: (
+    type: string = 'textColor',
+    label: string = 'Text Color',
+    args: StyleArgs,
+    defaultValue: string,
+  ) => ({
+    label,
+    type,
+    options: [],
+    defaultValue,
+    inspector: args.inspector ?? 'colorPicker',
   }),
-  border: () => ({
-    type: 'border',
-    defaultValue: '1px',
+
+  font: (
+    type: string = 'font',
+    label: string = 'Font',
+    args: StyleArgs,
+    defaultValue: FontValue,
+  ) => ({
+    label,
+    type,
+    options: [],
+    defaultValue,
+    inspector: args.inspector ?? 'fontPicker',
+    config: args.config ?? {}
   }),
-  borderColor: () => ({
-    type: 'borderColor',
-    defaultValue: '#ccc',
+
+
+  border: (
+    type: string = 'border',
+    label: string = 'Border',
+    args: StyleArgs,
+    defaultValue: BorderValue,
+  ) => ({
+    label,
+    type,
+    options: [],
+    defaultValue,
+    inspector: args.inspector ?? 'borderPicker',
   }),
-  hidden: () => ({
-    type: 'hidden',
-    defaultValue: false,
+
+  borderRadius: (
+    type: string = 'borderRadius',
+    label: string = 'Border Radius',
+    args: StyleArgs,
+    defaultValue: string = '1px',
+  ) => ({
+    label,
+    type,
+    options: [],
+    defaultValue,
+    inspector: args.inspector ?? 'borderRadiusPicker',
   }),
-  visibility: () => ({
-    type: 'visibility',
+
+  borderColor: (
+    type: string = 'borderColor',
+    label: string = 'Border Color',
+    args: StyleArgs,
+    defaultValue: string = '#FFFFFF',
+  ) => ({
+    label,
+    type,
+    options: [],
+    defaultValue,
+    inspector: args.inspector ?? 'colorPicker',
+  }),
+
+  shadow: (
+    type: string = 'shadow',
+    label: string = 'Shadow',
+    args: StyleArgs,
+    defaultValue: string = '0px 0px 0px 0px #000000',
+  ) => ({
+    label,
+    type,
+    options: [],
+    defaultValue,
+    inspector: args.inspector ?? 'shadowPicker',
+  }),
+  
+  hidden: (
+    type: string = 'hidden',
+    label: string = 'Hidden',
+    args: StyleArgs,
+    defaultValue: boolean = false,
+  ) => ({
+    label,
+    type,
+    options: [],
+    defaultValue,
+    inspector: args.inspector ?? 'checkbox',
+  }),
+  visibility: (
+    type: string = 'visibility',
+    label: string = 'Visibility',
+    args: StyleArgs,
     defaultValue: {
       conditional: []
     }
+  ) => ({
+    label,
+    type,
+    options: [],
+    defaultValue,
+    inspector: args.inspector ?? 'visibility',
   }),
 }
 
@@ -117,31 +261,85 @@ class CheckoutSDK {
   }
 }
 
-// Convert class to const object with hooks
-const Numi = {
-  useEventCallback(props: { name: string; }) {
-    const blockContext = useContext(BlockContext);
 
+class Numi {
+
+  // get static checkout ?
+  // static useCheckout(options: CheckoutOptions = {}): CheckoutSDK {
+  //   const [checkout] = useState(() => {
+  //     // Create a checkout instance with provided options
+  //     const instance = new CheckoutSDK(options);
+
+  //     return instance;
+  //   });
+
+  //   return checkout;
+  // }
+
+  static useEventCallback(props: { name: string; elements?: Record<'value' | 'label', string>[] }): {
+    callbacks: any[];
+    updateHook: (hook: Partial<HookUsage>) => void;
+    executeCallbacks: (element: string, type: CallbackType) => void;
+  } {
+    const checkout = Numi.useCheckout();
+
+    const blockContext = useContext(BlockContext);
+    const [hook, setHook] = useState<HookUsage>({
+      name: props.name,
+      type: 'eventCallback',
+      defaultValue: null,
+      options: props.elements,
+    });
+
+    // Create a ref to hold the debounced function
+    const debouncedUpdateRef = useRef<ReturnType<typeof debounce> | null>(null);
+
+    // Initialize the debounced function on first render
     useEffect(() => {
-      blockContext.registerHook({
-        name: props.name,
-        type: 'eventCallback',
-        defaultValue: null,
-      });
+      debouncedUpdateRef.current = debounce((newHook: Partial<HookUsage>) => {
+        setHook(prevHook => ({...prevHook, ...newHook}));
+      }, 300); // 300ms delay
+
+      // Cleanup function to cancel pending debounced calls
+      return () => {
+        if (debouncedUpdateRef.current) {
+          debouncedUpdateRef.current.cancel();
+        }
+      };
     }, []);
 
-    return () => {
-      if (blockContext.blockConfig.interaction?.onClick) {
-        for (const callback of blockContext.blockConfig.interaction.onClick) {
+
+    useEffect(() => {
+      blockContext.registerHook(hook);
+    }, [hook]);
+
+    const updateHook = useCallback((newHook: Partial<HookUsage>) => {
+      if (debouncedUpdateRef.current) {
+        debouncedUpdateRef.current(newHook);
+      }
+    }, []);
+
+    const executeCallbacks = useCallback((element: string, type: CallbackType) => {
+      if (blockContext.blockConfig.interaction?.[type]) {
+        const callbacks = blockContext.blockConfig.interaction[type].filter(callback => callback?.element === element);
+        for (const callback of callbacks) {
           switch (callback.action) {
             case 'setSlot':
+              // checkout.setSlot(callback.slot, callback.price);
               break;
-            case 'setField':
-              blockContext.setFieldValue(callback.field, callback.value);
+            case 'setItem':
+              checkout.updateLineItem(callback.value);
               break;
           }
         }
       }
+
+    }, [blockContext]);
+
+    return {
+      callbacks: blockContext.blockConfig.interaction?.onClick ?? [],
+      updateHook,
+      executeCallbacks
     };
   },
 
@@ -159,75 +357,89 @@ const Numi = {
 
     const data = get(blockContext.blockConfig, `content.${props.name}`, {});
     return [data];
-  },
+
+  }
+
+  static useCheckout(options: CheckoutOptions = {}): CheckoutState {
+    const checkout = useContext(GlobalStateContext);
 
   useCheckout(options: CheckoutOptions = {}): CheckoutState {
     const globalState = useContext(GlobalStateContext);
     const session = globalState?.session ?? null;
 
-    return {
-      session,
-      currentPageId: '',
-      pageHistory: [],
-      completedPages: [],
-      formData: {},
-      errors: {},
-      isValid: true,
-      isSubmitting: false,
-      isSubmitted: false,
-      isDirty: false,
-      isPristine: true,
-      isTouched: false,
-      isUntouched: true,
-      isFocused: false,
-      isBlurred: true,
-    };
-  },
+    return checkout;
+  }
 
-  useAppearance(appearanceProps: any[]): Record<string, any> {
+  static useStyle(appearanceProps: any[]): Record<string, any> {
     const blockContext = useContext(BlockContext);
-    const [appearance, setAppearance] = useState<Record<string, any>>({});
 
-    useEffect(() => {
+    return useMemo(() => {
+      const appearance: Record<string, any> = {};
+      
+      // Register each appearance property
       appearanceProps.forEach(prop => {
         if (prop.type) {
-          const value = blockContext.blockConfig.appearance?.[prop.type] || prop.defaultValue;
-
-          setAppearance(prev => ({
-            ...prev,
-            [prop.type]: value
-          }));
+          // Get the value from block config or use default
+          appearance[prop.type] = blockContext.blockConfig.appearance?.[prop.type] || prop.defaultValue;
 
           blockContext.registerHook({
             name: prop.type,
             type: 'appearance',
             defaultValue: prop.defaultValue,
             options: prop.options,
-            inspector: 'select',
-            label: prop.label || prop.type.charAt(0).toUpperCase() + prop.type.slice(1)
+            inspector: prop.inspector,
+            label: prop.label || prop.type.charAt(0).toUpperCase() + prop.type.slice(1),
+            config: prop.config ?? {}
           });
         }
       });
+
+      return appearance;
+    }, [blockContext.blockConfig.appearance, blockContext.blockId]);
+  }
+
+  static useInteraction(): { isDisabled: any; updateHook: (hook: Partial<HookUsage>) => void } {
+
+    const blockContext = useContext(BlockContext);
+    const [hook, setHook] = useState<HookUsage>({
+      name: 'interaction',
+      type: 'interaction',
+      defaultValue: false,
+    });
+
+    // Create a ref to hold the debounced function
+    const debouncedUpdateRef = useRef<ReturnType<typeof debounce> | null>(null);
+
+    // Initialize the debounced function on first render
+    useEffect(() => {
+      debouncedUpdateRef.current = debounce((newHook: Partial<HookUsage>) => {
+        setHook(prevHook => ({...prevHook, ...newHook}));
+      }, 300); // 300ms delay
+
+      // Cleanup function to cancel pending debounced calls
+      return () => {
+        if (debouncedUpdateRef.current) {
+          debouncedUpdateRef.current.cancel();
+        }
+      };
     }, []);
 
-    return appearance;
-  },
-
-  useInteraction(): { isDisabled: boolean } {
-    const blockContext = useContext(BlockContext);
-
     useEffect(() => {
-      blockContext.registerHook({
-        name: 'interaction',
-        type: 'interaction',
-        defaultValue: false
-      });
+      blockContext.registerHook(hook);
+    }, [hook]);
+
+    const updateHook = useCallback((newHook: Partial<HookUsage>) => {
+      if (debouncedUpdateRef.current) {
+        debouncedUpdateRef.current(newHook);
+      }
     }, []);
 
     return {
       isDisabled: blockContext.blockConfig.interaction?.isDisabled ?? false,
-    };
-  },
+
+      updateHook
+    }
+  }
 
   useStateEnumeration(props: {
     name: string;
@@ -268,6 +480,11 @@ const Numi = {
     }, [hook]);
 
     const value = get(blockContext.blockConfig, `content.${props.name}`) ?? props.initialValue;
+
+    useEffect(() => {
+      setValue(value);
+    }, []);
+
     const setValue = (newValue: any) => {
       blockContext.setFieldValue(props.name, newValue);
     };

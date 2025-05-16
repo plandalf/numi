@@ -19,7 +19,7 @@ import {
 import { GlobalStateContext } from '@/pages/checkout-main';
 import { QueryBuilder, RuleGroupType } from 'react-querybuilder';
 import 'react-querybuilder/dist/query-builder.css';
-import { Trash2, ChevronDown } from 'lucide-react';
+import { Trash2, ChevronDown, Eye } from 'lucide-react';
 import { Combobox } from '../combobox';
 import { Badge } from '../ui/badge';
 
@@ -338,6 +338,7 @@ export const AddVisibilityCondition: React.FC<{
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button variant="secondary" className="w-full flex items-center justify-center gap-2">
+          <Eye className="w-4 h-4" />
           Visibility
           {conditionCount > 0 && (
             <Badge variant="secondary" className="bg-primary/20 text-primary">

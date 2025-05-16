@@ -64,3 +64,8 @@ export enum Modules {
     BILLING = 'billing',
 }
 
+export interface Font {
+    name: string;
+    weights: string[];
+    css_font_family?: string
+}

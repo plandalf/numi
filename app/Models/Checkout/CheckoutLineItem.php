@@ -3,7 +3,7 @@
 namespace App\Models\Checkout;
 
 use App\Models\Catalog\Price;
-use App\Models\Store\Slot;
+use App\Models\Store\OfferItem;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -16,9 +16,10 @@ class CheckoutLineItem extends Model
     protected $fillable = [
         'checkout_session_id',
         'price_id',
-        'slot_id',
+        'offer_item_id',
         'quantity',
         'organization_id',
+        'deleted_at',
     ];
 
     protected $casts = [
@@ -40,17 +41,17 @@ class CheckoutLineItem extends Model
         return $this->belongsTo(CheckoutSession::class);
     }
 
-    public function slot()
+    public function offerItem()
     {
-        return $this->belongsTo(Slot::class, 'slot_id');
+        return $this->belongsTo(OfferItem::class, 'offer_item_id');
     }
 
     public function getLineItemAttribute()
     {
         return [
             'id' => $this->id,
-            'slot' => $this->slot->name,
-            'name' => $this->slot->name,
+            'offer_item' => $this->offerItem->name,
+            'name' => $this->offerItem->name,
             'quantity' => $this->quantity,
             'subtotal' => $this->price->calculateAmount()->getAmount(),
             // 'taxes' => $this->price->calculateTaxes()->getAmount(),

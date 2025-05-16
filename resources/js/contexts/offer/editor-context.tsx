@@ -46,7 +46,10 @@ interface EditorContextType {
   setIsReady: React.Dispatch<React.SetStateAction<boolean>>;
 
   selectedBlockId: string | null;
-  setSelectedBlockId: React.Dispatch<React.SetStateAction<string | null>>;
+  setSelectedBlockId: (blockId: string | null) => void;
+
+  selectedSectionId: string | null;
+  setSelectedSectionId: (sectionId: string | null) => void;
 
   viewMode: 'editor' | 'preview' | 'share';
   setViewMode: React.Dispatch<React.SetStateAction<'editor' | 'preview' | 'share'>>;
@@ -69,9 +72,11 @@ interface EditorContextType {
   handleAddPage: (type: PageType) => void;
   offer: Offer;
   updateBlock: (block: Block) => void;
+  updateSection: (sectionId: string, section: any) => void;
+  deleteBlock: (blockId: string) => void;
 }
 
-export const EditorContext = createContext<EditorContextType | undefined>(undefined);
+export const EditorContext = createContext<EditorContextType | null>(null);
 
 export function useEditor() {
     const ctx = useContext(EditorContext);
@@ -311,29 +316,17 @@ export function EditorProvider({ offer, organizationThemes, organizationTemplate
   };
 
   const handleAddPage = (type: PageType) => {
+
     const id = `page_${Math.random().toString(36).substr(2, 9)}`;
-    const newPage: Page = {
-      id,
-      name: type === 'entry' ? 'Entry Page' : type === 'ending' ? 'Ending Page' : 'New Page',
-      type,
-      position: { x: 0, y: 0 },
-      view: {
-        promo: { blocks: [] },
-        title: { blocks: [] },
-        action: { blocks: [] },
-        content: { blocks: [] }
-      },
-      layout: { sm: 'split-checkout@v1' },
-      provides: [],
-      next_page: {
-        branches: [],
-        default_next_page: null
-      }
-    };
+
     const updatedPages = {
       ...data.view.pages,
-      [id]: newPage
+      [id]: {
+        ...generateDefaultPage({ id, type, position: { x: 0, y: 0 } }),
+        name: type === 'entry' ? 'Entry Page' : type === 'ending' ? 'Ending Page' : 'New Page',
+      }
     };
+    
     const updatedView = {
       ...data.view,
       pages: updatedPages,
@@ -366,6 +359,49 @@ export function EditorProvider({ offer, organizationThemes, organizationTemplate
   }
 
   const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null);
+  const [selectedSectionId, setSelectedSectionId] = useState<string | null>(null);
+
+  const onSelectBlock = (blockId: string | null) => {
+    setSelectedBlockId(blockId);
+    setSelectedSectionId(null);
+  }
+
+  const onSelectSection = (sectionId: string | null) => {
+    setSelectedSectionId(sectionId);
+    setSelectedBlockId(null);
+  }
+
+  const updateSection = (sectionId: string, section: any) => {
+    setData(prev => {
+      const newData = { ...prev };
+      const page = newData.view.pages[selectedPage];
+      if (page && page.view) {
+        page.view[sectionId] = {
+          ...page.view[sectionId],
+          ...section
+        };
+      }
+      return newData;
+    });
+  };
+
+  const deleteBlock = (blockId: string) => {
+    const page = {...data.view.pages[selectedPage]};
+
+    const sectionId = Object.keys(page.view).find((section) => {
+      const x = page.view[section].blocks?.findIndex((b) => b.id === blockId) ?? -1;
+      if (x === -1) return false;
+      return section;
+    });
+
+    if (!sectionId) return;
+
+    const updatedBlocks = page.view[sectionId].blocks.filter((b) => b.id !== blockId);
+    const thePage = update(page, { view: { [sectionId]: { blocks: { $set: updatedBlocks } } } });
+
+    setData(update(data, { view: { pages: { [selectedPage]: { view: { $set: thePage.view } } } } }));
+    setSelectedBlockId(null);
+  };
 
   const value: EditorContextType = {
     data,
@@ -396,9 +432,14 @@ export function EditorProvider({ offer, organizationThemes, organizationTemplate
     organizationTemplates,
     globalThemes,
     updateBlock,
-    selectedBlockId, setSelectedBlockId,
+    updateSection,
+    selectedBlockId,
+    setSelectedBlockId: onSelectBlock,
+    selectedSectionId,
+    setSelectedSectionId: onSelectSection,
     viewMode, setViewMode,
     previewSize, setPreviewSize,
+    deleteBlock,
   };
 
   return <EditorContext.Provider value={value}>{children}</EditorContext.Provider>;

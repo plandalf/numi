@@ -45,7 +45,7 @@ class CheckoutController extends Controller
         $json['first_page'] = $checkout->metadata['current_page_id'] ?? $json['first_page'];
         $offer->view = $json;
 
-        $checkout->load(['lineItems.slot', 'lineItems.price.integration']);
+        $checkout->load(['lineItems.offerItem', 'lineItems.price.integration']);
 
         return Inertia::render('checkout', [
             'offer' => $offer,

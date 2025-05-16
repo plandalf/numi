@@ -2,7 +2,7 @@ import AppOfferLayout from '@/layouts/app/app-offer-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, usePage, useForm } from '@inertiajs/react';
 import { PageProps } from '@inertiajs/core';
-import { type Offer as OfferType, type OfferVariant, type Product, type Price, OfferSlot } from '@/types/offer';
+import { type Offer as OfferType, type OfferVariant, type Product, type Price, OfferItem } from '@/types/offer';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -29,6 +29,7 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
+/** @deprecated */
 export default function Pricing() {
     const { offer, products, defaultCurrency } = usePage<PricingPageProps>().props;
 
@@ -87,7 +88,7 @@ export default function Pricing() {
                     </CardHeader>
                     <CardContent>
                         <div className="space-y-4">
-                            {offer.slots?.map((slot: OfferSlot) => (
+                            {offer.slots?.map((slot: OfferItem) => (
                                 <div key={slot.id} className="flex items-center justify-between p-4 border rounded-lg">
                                     <div>
                                         <h3 className="font-medium">{slot.name || 'Unnamed Slot'}</h3>

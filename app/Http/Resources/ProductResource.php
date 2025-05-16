@@ -22,6 +22,7 @@ class ProductResource extends JsonResource
             'id' => $this->id,
             'name' => $this->name,
             'lookup_key' => $this->lookup_key,
+            'gateway_product_id' => $this->gateway_product_id,
             // 'description' => $this->description,
             // 'media_id' => $this->media_id,
             // 'is_active' => $this->is_active,

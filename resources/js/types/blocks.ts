@@ -27,8 +27,9 @@ export interface HookUsage {
     type: 'boolean' | 'string' | 'validation' | 'interaction' | 'enumeration' | 'jsonSchema' | 'appearance' | 'eventCallback' | 'number' | 'conditions';
     defaultValue: any;
     inspector?: string;
+    config?: Record<string, any>; // Configuration settings for the hook if there are any
     schema?: any; // For jsonSchema type
-    options?: string[]; // For enumeration type
+    options?: string[] | Record<'value' | 'label', string>[]; // For enumeration type
     labels?: Record<string, string>; // For enumeration type labels
     label?: string; // For display label
     min?: number; // For number type

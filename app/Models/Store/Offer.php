@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use App\Models\Catalog\Price;
 
 /**
  * @property int $organization_id
@@ -69,9 +70,9 @@ class Offer extends Model
         return $this->belongsTo(Media::class, 'product_image_id');
     }
 
-    public function slots(): HasMany
+    public function offerItems(): HasMany
     {
-        return $this->hasMany(Slot::class);
+        return $this->hasMany(OfferItem::class);
     }
 
     public function theme(): BelongsTo

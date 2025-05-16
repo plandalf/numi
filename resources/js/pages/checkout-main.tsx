@@ -9,6 +9,7 @@ import { blockTypes } from '@/components/blocks';
 import axios from '@/lib/axios';
 import { CheckoutSession, CheckoutItem } from '@/types/checkout';
 import { BlockRenderer } from '@/components/checkout/block-renderer';
+import { SetItemActionValue } from '@/components/actions/set-item-action';
 // Form and validation context
 type FormData = Record<string, any>;
 type ValidationErrors = Record<string, string[]>;
@@ -42,10 +43,8 @@ export interface GlobalState {
   submitPage: (pageId: string) => Promise<boolean>;
   setPageSubmissionProps: (callback: () => Promise<unknown>) => void;
 
-  // Offer and session
-  offer: OfferConfiguration;
-  session: CheckoutSession;
-  setSession: (session: CheckoutSession) => void;
+  // Line Items
+  updateLineItem: (offerItemId: string, price: string) => Promise<void>;
 }
 
 export function GlobalStateProvider({ offer, session: defaultSession, children }: { offer: OfferConfiguration, session: CheckoutSession, children: React.ReactNode }) {
@@ -264,6 +263,17 @@ export function GlobalStateProvider({ offer, session: defaultSession, children }
     }
   };
 
+  const updateLineItem = async ({ item, price, quantity, required }: SetItemActionValue) => {
+    const response = await axios.post(`/checkouts/${session.id}/mutations`, {
+      action: 'setItem',
+      offer_item_id: item,
+      price_id: price ?? undefined,
+      quantity: quantity ?? undefined,
+      required: required ?? undefined
+    });
+    return response.data;
+  };
+
   const backendValidateFields = async (fields: Record<string, any>) => {
     // Call API to validate fields
     try {
@@ -322,6 +332,7 @@ export function GlobalStateProvider({ offer, session: defaultSession, children }
     submitPage,
     setPageSubmissionProps,
     validateField,
+    updateLineItem,
     offer,
     session,
     setSession,
