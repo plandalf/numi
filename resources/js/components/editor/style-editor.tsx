@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Button } from '../ui/button';
-import { PlusIcon, Type } from 'lucide-react';
+import { PlusIcon, Ruler, Type } from 'lucide-react';
 import { Label } from '../ui/label';
 import { Separator } from '../ui/separator';
 import {
@@ -16,17 +16,27 @@ import { Kebab } from '../ui/kebab';
 import { Checkbox } from '../ui/checkbox';
 import { Font } from '@/types';
 import { FontPicker, WEIGHT_LABELS } from '../ui/font-picker';
-import { BorderValue, FontValue } from '@/contexts/Numi';
+import { BorderValue, DimensionValue, FontValue } from '@/contexts/Numi';
 import { BorderPicker } from '../ui/border-picker';
 import { BorderRadiusPicker } from '../ui/border-radius-picker';
 import ShadowPicker from '../ui/shadow-picker';
+import { DimensionPicker } from '../ui/dimension-picker';
 
 export interface StyleItem {
   name: string;
   label: string;
   value?: any;
   defaultValue: any;
-  inspector: 'colorPicker' | 'alignmentPicker' | 'fontPicker' | 'borderPicker' | 'borderRadiusPicker' | 'shadowPicker' | 'select' | 'checkbox';
+  inspector: 
+    'colorPicker'
+    | 'alignmentPicker' 
+    | 'fontPicker' 
+    | 'borderPicker' 
+    | 'borderRadiusPicker' 
+    | 'dimensionPicker'
+    | 'shadowPicker' 
+    | 'select' 
+    | 'checkbox';
   options?: Record<string, any>;
   config?: Record<string, any>;
 }
@@ -146,6 +156,35 @@ const StyleItemValuePreview = ({
           </DropdownMenuContent>
         </DropdownMenu>
       );
+    
+    case 'dimensionPicker':
+      const dimensionValue = value as DimensionValue;
+      const dimensionValueAsTitle = `${dimensionValue.width} x ${dimensionValue.height}`;
+
+      return (
+        <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
+          <DropdownMenuTrigger asChild>
+            <span className="flex-1 flex flex-row gap-2 items-center cursor-pointer">
+              <Ruler className="size-5 border border-gray-200 rounded p-0.5" />
+              <span
+                className="text-xs capitalize truncate max-w-[85px]"
+                title={dimensionValueAsTitle}
+              >
+                {dimensionValueAsTitle}
+              </span>
+            </span>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" side="right" className="justify-center">
+            <DimensionPicker
+              className="w-full max-w-[300px]"
+              value={dimensionValue}
+              onChange={(value) => onChange(item.name, value as DimensionValue)}
+              onClose={() => setIsOpen(false)}
+              config={item.config}
+            />
+          </DropdownMenuContent>
+        </DropdownMenu>
+      );
     case 'borderRadiusPicker':
       return (
         <BorderRadiusPicker
@@ -221,7 +260,7 @@ export const StyleEditor: React.FC<StyleEditorProps> = ({
       {itemsWithValue?.map((item) => (
         <div key={item.name} className="h-9 flex flex-row gap-2 items-center bg-white rounded-md border border-gray-200">
           <Label title={item.label} className="ml-2 text-sm w-28 truncate">{item.label}</Label>
-          <Separator orientation="vertical" className="h-full" />
+          <Separator orientation="vertical" className="!h-5" />
           <div className="flex-1 flex flex-row gap-2 items-center justify-between">
             <StyleItemValuePreview item={item} onChange={onChange} themeColors={themeColors} fonts={fonts} />
             <Kebab
