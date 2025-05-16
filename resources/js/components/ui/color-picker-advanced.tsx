@@ -63,7 +63,24 @@ export const AdvancedColorPicker: React.FC<AdvancedColorPickerProps> = ({
   );
 
   const hasThemeColors = Object.keys(themeColors).length > 0;
-
+  <div className="flex items-center gap-2 border border-gray-300/50 rounded-md px-2 py-1 h-8">
+  <input
+    type="text"
+    value={hexInput}
+    onChange={(e) => handleHexChange(e.target.value)}
+    className="flex-1 text-xs text-left bg-transparent border-none focus:outline-none focus:ring-0 p-0"
+    placeholder="#000000"
+  />
+  <Separator orientation="vertical" className="bg-gray-300/50 !h-8" />
+  <input
+    type="text"
+    value={opacityInput}
+    onChange={(e) => handleOpacityChange(e.target.value)}
+    className="w-12 text-xs text-left bg-transparent border-none focus:outline-none focus:ring-0 p-0"
+    placeholder="100"
+  />
+  <span className="text-xs text-gray-500">%</span>
+</div>
   return (
     <DropdownMenu open={open} onOpenChange={setOpen}>
       <DropdownMenuTrigger asChild>
@@ -73,14 +90,20 @@ export const AdvancedColorPicker: React.FC<AdvancedColorPickerProps> = ({
               'flex items-center gap-4 border border-gray-300/50 rounded-lg px-2 py-1.5 w-full cursor-pointer',
               className
             )}
-        >
-          <span
-            className="w-5.5 h-5.5 rounded-sm border"
-            style={{ background: value }}
-          />
-          <span className="text-xs">
-            {matchedTheme ? matchedTheme[0] : rgb.toUpperCase()}
-            </span>
+          >
+            <div className='flex items-center gap-2'>
+              <span
+                className="w-5.5 h-5.5 rounded-sm border"
+                style={{ background: value }}
+              />
+              <span className="text-xs">
+                {matchedTheme ? matchedTheme[0] : rgb.toUpperCase()}
+              </span>
+            </div>
+            <div className='flex items-center gap-2'>
+              <Separator orientation="vertical" className="bg-gray-300/50 !h-4" />
+              <span className="text-xs text-end">{opacityInput} %</span>
+            </div>
           </button>
         )}
       </DropdownMenuTrigger>

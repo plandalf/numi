@@ -75,9 +75,7 @@ export interface FontValue {
 
 export interface BorderValue {
   width?: string;
-  stroke?: string;
   style?: string;
-  radius?: string;
 }
 
 export const Style = {
@@ -151,6 +149,20 @@ export const Style = {
     defaultValue,
     inspector: args.inspector ?? 'borderPicker',
   }),
+
+  borderRadius: (
+    type: string = 'borderRadius',
+    label: string = 'Border Radius',
+    args: StyleArgs,
+    defaultValue: string = '1px',
+  ) => ({
+    label,
+    type,
+    options: [],
+    defaultValue,
+    inspector: args.inspector ?? 'borderRadiusPicker',
+  }),
+
   borderColor: (
     type: string = 'borderColor',
     label: string = 'Border Color',
@@ -163,6 +175,20 @@ export const Style = {
     defaultValue,
     inspector: args.inspector ?? 'colorPicker',
   }),
+
+  shadow: (
+    type: string = 'shadow',
+    label: string = 'Shadow',
+    args: StyleArgs,
+    defaultValue: string = '0px 0px 0px 0px #000000',
+  ) => ({
+    label,
+    type,
+    options: [],
+    defaultValue,
+    inspector: args.inspector ?? 'shadowPicker',
+  }),
+  
   hidden: (
     type: string = 'hidden',
     label: string = 'Hidden',

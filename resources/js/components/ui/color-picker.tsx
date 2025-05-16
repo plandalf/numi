@@ -38,7 +38,7 @@ export const ColorPicker: React.FC<ColorPickerProps> = (props) => {
   const percent = Math.round((alpha / 255) * 100);
 
   return (
-    <div className={cn('flex items-center gap-2 border border-gray-300/50 rounded-lg px-2 py-1 relative', className)}>
+    <div className={cn('flex items-center gap-2 border border-gray-300/50 rounded-md px-2 py-1 relative', className)}>
       <div className="flex items-center gap-2">
         <input
           type="color"

@@ -18,13 +18,15 @@ import { Font } from '@/types';
 import { FontPicker, WEIGHT_LABELS } from '../ui/font-picker';
 import { BorderValue, FontValue } from '@/contexts/Numi';
 import { BorderPicker } from '../ui/border-picker';
+import { BorderRadiusPicker } from '../ui/border-radius-picker';
+import ShadowPicker from '../ui/shadow-picker';
 
 export interface StyleItem {
   name: string;
   label: string;
   value?: any;
   defaultValue: any;
-  inspector: 'colorPicker' | 'alignmentPicker' | 'fontPicker' | 'borderPicker' | 'select' | 'checkbox';
+  inspector: 'colorPicker' | 'alignmentPicker' | 'fontPicker' | 'borderPicker' | 'borderRadiusPicker' | 'shadowPicker' | 'select' | 'checkbox';
   options?: Record<string, any>;
   config?: Record<string, any>;
 }
@@ -118,7 +120,7 @@ const StyleItemValuePreview = ({
       );
     case 'borderPicker':
       const borderValue = value as BorderValue;
-      const borderValueAsTitle = `${borderValue.stroke}, ${borderValue.width}, ${borderValue.style}`;
+      const borderValueAsTitle = `${borderValue.width}, ${borderValue.style}`;
 
       return (
         <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
@@ -140,6 +142,41 @@ const StyleItemValuePreview = ({
               onChange={(value) => onChange(item.name, value as BorderValue)}
               onClose={() => setIsOpen(false)}
               config={item.config}
+            />
+          </DropdownMenuContent>
+        </DropdownMenu>
+      );
+    case 'borderRadiusPicker':
+      return (
+        <BorderRadiusPicker
+          className="w-full max-w-[300px]"
+          value={value}
+          onChange={(value) => onChange(item.name, value as BorderValue)}
+          min={item.config?.min}
+          max={item.config?.max}
+        />
+      );
+    case 'shadowPicker':
+      return (
+        <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
+          <DropdownMenuTrigger asChild>
+            <span className="flex-1 flex flex-row gap-2 items-center cursor-pointer">
+              <svg width="20" height="20" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1 1C0.447715 1 0 1.44772 0 2V13C0 13.5523 0.447715 14 1 14H14C14.5523 14 15 13.5523 15 13V2C15 1.44772 14.5523 1 14 1H1ZM7.5 10.625C9.22589 10.625 10.625 9.22589 10.625 7.5C10.625 5.77411 9.22589 4.375 7.5 4.375C5.77411 4.375 4.375 5.77411 4.375 7.5C4.375 9.22589 5.77411 10.625 7.5 10.625Z" fill="currentColor" fill-rule="evenodd" clip-rule="evenodd"></path></svg>
+              <span
+                className="text-xs capitalize truncate max-w-[85px]"
+                title={value}
+              >
+                {value}
+              </span>
+            </span>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" side="right" className="justify-center">
+            <ShadowPicker
+              className="w-full max-w-[300px]"
+              value={value}
+              onChange={(value) => onChange(item.name, value as BorderValue)}
+              onClose={() => setIsOpen(false)}
+              themeColors={themeColors}
             />
           </DropdownMenuContent>
         </DropdownMenu>

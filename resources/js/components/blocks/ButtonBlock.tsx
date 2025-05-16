@@ -35,7 +35,7 @@ function ButtonBlockComponent({ context }: { context: BlockContextType }) {
     Style.textColor('textColor', 'Text Color', {}, '#000000'),
     Style.font(
       'font',
-      'Font',
+      'Button Font',
       {
         config: {
           hideVerticalAlignment: true,
@@ -50,13 +50,17 @@ function ButtonBlockComponent({ context }: { context: BlockContextType }) {
         letterSpacing: '0px',
       },
     ),
-    Style.border('border', 'Border', {}, { stroke: 'outside', width: '1px', style: 'solid', radius: '5px' }),
+    Style.border('border', 'Button Border', {}, { width: '1px', style: 'solid' }),
+    Style.borderRadius('borderRadius', 'Button Radius', {}, '5px'),
     Style.borderColor('borderColor', 'Border Color', {}, '#000000'),
+    Style.shadow('shadow', 'Button Shadow', {}, '0px 0px 0px 0px #000000'),
     Style.hidden('hidden', 'Hidden', {}, false),
   ]);
 
   const font = appearance?.font as FontValue;
   const border = appearance?.border as BorderValue;
+  const borderRadius = appearance?.borderRadius;
+  const shadow = appearance?.shadow as string;
 
   const onClick = Numi.useEventCallback({
     name: 'click',
@@ -73,8 +77,9 @@ function ButtonBlockComponent({ context }: { context: BlockContextType }) {
     borderColor: `${appearance.borderColor || '#ccc'}`,
     borderWidth: border.width,
     borderStyle: border.style,
-    borderRadius: border.radius,
-  }), [appearance, font, border]);
+    borderRadius : borderRadius ?? '3px',
+    boxShadow: shadow,
+  }), [appearance, font, border, borderRadius, shadow]);
 
   const buttonClasses = useMemo(() => cx({
     "border border-gray-300 rounded-md p-2": true,
