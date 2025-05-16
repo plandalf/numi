@@ -5,7 +5,7 @@ import { Label } from './label';
 import {  X } from 'lucide-react';
 import { Input } from './input';
 import { DimensionValue } from '@/contexts/Numi';
-import { RangeSlider } from './range-slider';
+import { DragAdjuster } from './drag-adjuster';
 
 export interface DimensionPickerConfig {
   hideLabel?: boolean;
@@ -79,10 +79,9 @@ export const DimensionPicker: React.FC<DimensionPickerProps> = ({
         <div className="flex flex-row gap-2 w-full items-center">
           <Label className="min-w-[80px]">Width</Label>
           <div className="flex flex-row gap-2 w-full">
-            <RangeSlider
+            <DragAdjuster
               value={getRadiusValue(localWidth)}
               onChange={handleWidthChange}
-              label="Width"
               min={minWidth}
               max={maxWidth}
             >
@@ -94,7 +93,7 @@ export const DimensionPicker: React.FC<DimensionPickerProps> = ({
                   value={localWidth}
                 />
               </div>
-            </RangeSlider>
+            </DragAdjuster>
           </div>
         </div>
       )}
@@ -102,10 +101,9 @@ export const DimensionPicker: React.FC<DimensionPickerProps> = ({
         <div className="flex flex-row gap-2 w-full items-center">
           <Label className="min-w-[80px]">Height</Label>
           <div className="flex flex-row gap-2 w-full">
-            <RangeSlider
+            <DragAdjuster
               value={getRadiusValue(localHeight)}
               onChange={handleHeightChange}
-              label="Height"
               min={minHeight}
               max={maxHeight}
             >
@@ -117,7 +115,7 @@ export const DimensionPicker: React.FC<DimensionPickerProps> = ({
                 value={localHeight}
               />
               </div>
-            </RangeSlider>
+            </DragAdjuster>
           </div>
         </div>
       )}
