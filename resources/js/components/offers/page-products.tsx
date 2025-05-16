@@ -133,6 +133,8 @@ export const PageProducts = () => {
             <div className="flex flex-col gap-1">
               <div className="text-sm font-bold">{price.product?.name || price.name}</div>
               <div className="text-xs">{price.name} {price.currency.toUpperCase()} ${price.amount / 100}</div>
+              {price.lookup_key && <div className="text-xs">{price.lookup_key}</div>}
+
               {price.id === offerItem.default_price_id && (
                 <Badge variant="secondary">Default</Badge>
               )}

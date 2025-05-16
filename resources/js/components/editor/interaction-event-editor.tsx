@@ -15,7 +15,7 @@ import { Combobox } from '../combobox';
 import SetItemAction, { SetItemActionValue } from '../actions/set-item-action';
 
 const ACTION_OPTIONS = [
-  { value: 'set_item', label: 'Set line item' }
+  { value: 'setItem', label: 'Set line item' }
 ];
 
 type OnClickActionValue = SetItemActionValue | string;
@@ -43,7 +43,7 @@ interface ActionSelectorProps {
 
 function ActionSelector({ action, value, onChange }: ActionSelectorProps) {
   switch (action) {
-    case 'set_item':
+    case 'setItem':
       return <SetItemAction value={value as SetItemActionValue} onChange={onChange} />;
     default:
       return null;
@@ -111,7 +111,7 @@ export const AddActionDialog: React.FC<ActionEditorProps> = ({ label, value, onC
                   <Label className="block">Action</Label>
                   <Combobox
                     items={ACTION_OPTIONS}
-                    selected={'set_item'}
+                    selected={'setItem'}
                     className="max-w-[200px]"
                     onSelect={(selected) => handleFieldChange(idx, 'action', selected as string)}
                     placeholder="Action..."
@@ -148,7 +148,7 @@ export const InteractionEventEditor: React.FC<Pick<ActionEditorProps, 'label' | 
   const getActionDescription = (action: OnClickAction) => {
     if (!action.action) return null;
 
-    if (action.action === 'set_item') {
+    if (action.action === 'setItem') {
       if (action.value) {
         const value = action.value as SetItemActionValue;
         const item = offer.items.find(i => i.id.toString() === value.item);

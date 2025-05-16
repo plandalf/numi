@@ -15,9 +15,8 @@ interface ItemType {
 function OptionSelectorComponent({ context }: { context: BlockContextType }) {
   const blockContext = useContext(BlockContext);
   const options = get(blockContext.blockConfig, `content.items`, {}) as ItemType[];
-  const { updateBlock } = useEditor();
 
-  const [selectedTab, setSelectedTab, updateHook] = Numi.useStateEnumeration({
+  const [selectedTab, setSelectedTab, updateSelectedTabHook] = Numi.useStateEnumeration({
     name: 'selectedTab',
     initialValue: options[0]?.key ?? undefined,
     options: Array.isArray(options) ? options?.filter((item) => item.key).map((item) => item.key) : [],
@@ -64,14 +63,16 @@ function OptionSelectorComponent({ context }: { context: BlockContextType }) {
     return Array.isArray(items) ? items.filter(item => item.key).map(item => ({ value: item.key, label: item.label })) : [];
   }, [items]);
 
-  const { isDisabled, updateHook: updateInteractionHook } = Numi.useInteraction(interactionElements);
+  const { callbacks: onClick, updateHook: updateInteractionHook, updateHook: updateEventCallbackHook } = Numi.useEventCallback({ name: 'onClick', elements: interactionElements });
 
   const debouncedUpdate = useCallback(
     (items: ItemType[], currentInteraction: any) => {
       if (!Array.isArray(items) || items.length === 0) return;
 
       const itemKeys = items.filter(item => item.key).map(item => item.key);
-      updateHook({ options: itemKeys });
+      updateSelectedTabHook({ options: itemKeys });
+
+      // Update the event elements options
       updateInteractionHook({
         options: items
           .filter(item => item.key)
@@ -81,51 +82,59 @@ function OptionSelectorComponent({ context }: { context: BlockContextType }) {
           }))
       });
 
-      // Get existing onClick actions and filter out null actions
-      const existingOnClick = (currentInteraction?.onClick || [])
-        .filter((action: { element: string; action: string; value: string } | null) => action)
-        // Filter out actions whose elements don't exist in current items
-        .filter((action: { element: string; action: string; value: string }) =>
-          itemKeys.includes(action.element)
-        );
+      // // Get existing onClick actions and filter out null actions
+      // const existingOnClick = (currentInteraction?.onClick || [])
+      //   .filter((action: { element: string; action: string; value: string } | null) => action)
+      //   // Filter out actions whose elements don't exist in current items
+      //   .filter((action: { element: string; action: string; value: string }) =>
+      //     itemKeys.includes(action.element)
+      //   );
 
-      // Create a map of existing actions by element
-      const existingActionsMap = new Map(
-        existingOnClick.map((action: { element: string; action: string; value: string }) => [action.element, action])
-      );
+      // // Create a map of existing actions by element
+      // const existingActionsMap = new Map(
+      //   existingOnClick.map((action: { element: string; action: string; value: string }) => [action.element, action])
+      // );
 
-      // Create new actions for items that don't have them
-      const newActions = items
-        .filter(item => item.key && !existingActionsMap.has(item.key))
-        .map(item => ({ element: item.key, action: 'set_item', value: '' }));
+      // // Create new actions for items that don't have them
+      // const newActions = items
+      //   .filter(item => item.key && !existingActionsMap.has(item.key))
+      //   .map(item => ({ element: item.key, action: 'setItem', value: '' }));
 
-      // Combine existing and new actions
-      const updatedOnClick = [...existingOnClick, ...newActions];
+      // // Combine existing and new actions
+      // const updatedOnClick = [...existingOnClick, ...newActions];
 
-      const newInteraction = {
-        onClick: updatedOnClick
-      };
+      // const newInteraction = {
+      //   onClick: updatedOnClick
+      // };
 
-      if (JSON.stringify(newInteraction) !== JSON.stringify(currentInteraction)) {
-        updateBlock({
-          ...blockContext.blockConfig,
-          interaction: newInteraction
-        });
-      }
+      // console.log("newInteraction", newInteraction, JSON.stringify(newInteraction) !== JSON.stringify(currentInteraction));
+
+      // if (JSON.stringify(newInteraction) !== JSON.stringify(currentInteraction)) {
+      //   updateEventCallbackHook(newInteraction);
+      // }
     },
-    [updateHook, updateInteractionHook, updateBlock, blockContext.blockConfig]
+    [updateSelectedTabHook, updateInteractionHook, blockContext.blockConfig]
   );
 
-  const debouncedItems = useDebounce(items, 300);
-  const debouncedInteraction = useDebounce(blockContext.blockConfig.interaction, 300);
+  /** @todo automatically create interaction elements based on number of tabs(items) */
+  // const debouncedItems = useDebounce(items, 300);
+  // const debouncedInteraction = useDebounce(blockContext.blockConfig.interaction, 300);
+  // useEffect(() => {
+  //   debouncedUpdate(debouncedItems, debouncedInteraction);
+  // }, [debouncedItems, debouncedInteraction, debouncedUpdate]);
 
-  useEffect(() => {
-    debouncedUpdate(debouncedItems, debouncedInteraction);
-  }, [debouncedItems, debouncedInteraction, debouncedUpdate]);
+  const handleTabChange = useCallback((value: string) => {
+    setSelectedTab(value);
+  }, [setSelectedTab, onClick]);
+
+
+  // useEffect(() => {
+  //   console.log("selectedTab", selectedTab);
+  // }, [ ]);
 
   return (
     <div className="p-4">
-      <Tabs defaultValue={selectedTab} onValueChange={setSelectedTab} className="w-full">
+      <Tabs defaultValue={selectedTab} onValueChange={handleTabChange} className="w-full">
         <TabsList className="mb-2 h-auto p-0 w-full">
           {Array.isArray(items) && items.map((item) => (
             <TabsTrigger key={item.key} value={item.key} className="w-full h-10" style={{ backgroundColor: item.key === selectedTab ? appearance.activeBackgroundColor : appearance.inactiveBackgroundColor }}>

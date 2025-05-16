@@ -135,7 +135,7 @@ const ValidationSection = ({ block, onUpdate }: { block: Block, onUpdate: (block
 }
 
 export const InteractionSection = ({ globalState, block, onUpdate }: { globalState: GlobalState | null, block: Block, onUpdate: (block: Block) => void }) => {
-  const interactionHook = globalState?.hookUsage[block.id]?.find((hook) => hook.type === 'interaction');
+  const interactionHook = globalState?.hookUsage[block.id]?.find((hook) => hook.type === 'interaction' || hook.type === 'eventCallback');
   return (
     <>
     <div className="space-y-4">
@@ -296,7 +296,7 @@ export const Inspector = ({
                     <AppearanceEditor globalState={globalState} block={block} onUpdate={onUpdate} />
                   ) : hook.type === 'validation' ? (
                     <ValidationSection block={block} onUpdate={onUpdate} />
-                  ) : hook.type === 'interaction' ? (
+                  ) : hook.type === 'interaction' || hook.type === 'eventCallback' ? (
                     <InteractionSection globalState={globalState} block={block} onUpdate={onUpdate} />
                   ) : null}
                 </div>

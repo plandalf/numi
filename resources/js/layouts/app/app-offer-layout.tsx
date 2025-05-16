@@ -51,7 +51,7 @@ function OfferHeader({ offer, isNameDialogOpen, setIsNameDialogOpen }: AppHeader
     const [status, setStatus] = useState(offer.status);
     const isMobile = useIsMobile();
     const { data, setData, viewMode, setViewMode, setPreviewSize, handleSave } = useEditor();
-    
+
     const [name, setName] = useState(data.name);
 
     const [showPublishDialog, setShowPublishDialog] = useState(false);
@@ -246,20 +246,8 @@ function OfferHeader({ offer, isNameDialogOpen, setIsNameDialogOpen }: AppHeader
                     {!isMobile && 'Share'}
                 </Button>
                 <Button
-                    variant="outline"
-                    tooltip="Preview the design of the Offer."
-                    onClick={() =>  window.location.href = `${window.location.origin}/offers/${offer.id}/pricing`}
-                    className={cn(
-                        "transition-colors",
-                        isPreviewMode ? "bg-primary text-primary-foreground" : ""
-                    )}
-                >
-                    {isMobile && <DollarSign className="size-4" />}
-                    {!isMobile && 'Pricing'}
-                </Button>
-                <Button 
-                    className="flex flex-row gap-x-2" 
-                    variant="outline-transparent" 
+                    className="flex flex-row gap-x-2"
+                    variant="outline-transparent"
                     tooltip="Save the current changes"
                     onClick={handleSave}
                 >
