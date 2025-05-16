@@ -31,6 +31,13 @@ Route::get('/workflow-test', function () {
     $order->checkout_session_id = 1;
     $order->status = \App\Enums\OrderStatus::COMPLETED;
     $order->save();
+
+
+    $order = \App\Models\Order\Order::find($order->id);
+
+    dd($order->toArray());
+
+
     $event = new ResourceEvent;
     $event->action = 'c';
     $event->organization_id = 1;

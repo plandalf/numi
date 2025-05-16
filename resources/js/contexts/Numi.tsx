@@ -17,8 +17,6 @@ export const BlockContext = createContext<BlockContextType>({
     registerHook: () => { },
     hookUsage: {}
   },
-
-
   registerField: () => { },
   getFieldValue: () => undefined,
   setFieldValue: () => { },
@@ -27,8 +25,6 @@ export const BlockContext = createContext<BlockContextType>({
 });
 
 
-
-// adding an item
 function TestComponent() {
 
   // modifying:
