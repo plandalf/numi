@@ -152,12 +152,14 @@ function DetailListBlockComponent({ context }: { context: BlockContextType }) {
   const dataToRender = items && items.length > 0 ? items : [];
 
   return (
-    <div className="">
-      <div className="space-y-1">
-        {dataToRender.map((item: any) => renderDetailItem(item))}
-      </div>
+    <div className="border">
+      {dataToRender && dataToRender.length > 0 && (
+        <div className="space-y-1">
+          {dataToRender.map((item: any) => renderDetailItem(item))}
+        </div>
+      )}
 
-      {(!items || items.length === 0) && (
+      {(!dataToRender || dataToRender.length === 0) && (
         <div className="text-xs text-gray-500 mt-2 p-1 bg-gray-50 rounded">
           Note: Showing sample data. Edit in the JSONSchema editor to customize.
         </div>

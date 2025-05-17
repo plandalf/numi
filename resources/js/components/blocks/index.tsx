@@ -8,6 +8,7 @@ import PlanDescriptorComponent from "./PlanDescriptorBlock";
 import QuoteBlockComponent from "./QuoteBlock";
 import TextBlockComponent from "./TextBlock";
 import TextInputBlockComponent from "./TextInputBlock";
+import ImageBlockComponent from '@/components/blocks/ImageBlock';
 
 export const blockTypes = {
   text: TextBlockComponent,
@@ -15,6 +16,7 @@ export const blockTypes = {
   text_input: TextInputBlockComponent,
   detail_list: DetailListBlockComponent,
   button: ButtonBlockComponent,
+  image: ImageBlockComponent,
   quote: QuoteBlockComponent,
   option_selector: OptionSelectorComponent,
   checkout_summary: CheckoutSummaryComponent,
@@ -60,6 +62,12 @@ export const blockMetas: Record<keyof typeof blockTypes, BlockMeta> = {
     icon: '🔘',
     description: 'A block for actions and triggers.',
   },
+  image: {
+    id: 'image',
+    title: 'Image Block',
+    icon: '🔘',
+    description: 'Add custom images to your checkout',
+  },
   quote: {
     id: 'quote',
     title: 'Quote Block',
@@ -97,7 +105,6 @@ export const blockMetas: Record<keyof typeof blockTypes, BlockMeta> = {
  * Usage: const meta = getBlockMeta('text');
  */
 export function getBlockMeta(blockKey: keyof typeof blockTypes): BlockMeta | undefined {
-  // console.log('blockMetas', blockMetas, blockKey);
   return blockMetas[blockKey];
 }
 

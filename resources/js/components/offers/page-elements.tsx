@@ -8,7 +8,7 @@ import {
   AlignLeft,
   ArrowLeft,
   SquareCheck,
-  FormInput,
+  FormInput, ImageIcon, ShoppingCartIcon
 } from 'lucide-react';
 import { useDraggable } from '@dnd-kit/core';
 import SearchBar from './search-bar';
@@ -34,8 +34,12 @@ export const CustomElementIcon = ({ type }: CustomElementIconProps) => {
         return <ArrowLeft className="w-6 h-6 inline-block" />;
     case 'text_input':
         return <FormInput className="w-6 h-6" />;
+    case 'image':
+      return <ImageIcon className="w-6 h-6" />;
+    case 'payment_method':
+      return <CreditCard className="w-6 h-6"/>;
     case 'checkout_summary':
-        return <CreditCard className="w-6 h-6" />;
+        return <ShoppingCartIcon className="w-6 h-6" />;
     default:
         return null;
   }
@@ -73,7 +77,7 @@ const BlockTemplateItem = ({ blockType, title }: BlockItemProps) => {
           <CustomElementIcon type={blockType as keyof typeof blockTypes} />
         </span>
       </div>
-      <span className="text-sm text-black">{title}</span>
+      <div className="text-sm text-black whitespace-nowrap text-xs">{title}</div>
     </div>
   );
 };
@@ -83,6 +87,7 @@ const baseElements = [
   { type: 'text', title: 'Text Block' },
   { type: 'quote', title: 'Quote' },
   { type: 'detail_list', title: 'Detail List' },
+  { type: 'image', title: 'Image Block' },
 ];
 
 const interactiveElements = [
@@ -93,7 +98,8 @@ const interactiveElements = [
 ];
 
 const paymentElements = [
-  { type: 'checkout_summary', title: 'Payment' },
+  { type: 'checkout_summary', title: 'Order Summary' },
+  { type: 'payment_method', title: 'Payment Method' },
 ];
 
 export const allElementTypes = [
