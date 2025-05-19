@@ -53,6 +53,47 @@ export interface BorderValue {
   style?: string;
 }
 
+export interface JSONSchemaValue {
+  $schema: string;
+  type: string;
+  items: {
+    type: string;
+    properties: {
+      key: { title: string; type: string; };
+      value: { title: string; type: string; };
+      children: {
+        type: string;
+        items: {
+          type: string;
+          properties: {
+            key: { type: string; };
+            label: { type: string; };
+            caption: { type: string; };
+            color: { type: string; };
+            prefixImage: {
+              type: string;
+              format: string;
+              description: string;
+              meta: { editor: string; };
+            };
+            prefixIcon: {
+              type: string;
+              description: string;
+              meta: { editor: string; };
+            };
+            prefixText: { type: string; };
+            tooltip: { type: string; };
+            disabled: { type: string; };
+            hidden: { type: string; };
+          };
+          required: string[];
+        };
+      };
+    };
+    required: string[];
+  };
+};
+
 export type SpacingValue = 'default' | null | string;
 
 export const Appearance = {
@@ -325,8 +366,12 @@ const Numi = {
     };
   },
 
-  useStateJsonSchema(props: { name: string; schema: { $schema: string; type: string; items: { type: string; properties: { key: { title: string; type: string; }; value: { title: string; type: string; }; children: { type: string; items: { type: string; properties: { key: { type: string; }; label: { type: string; }; caption: { type: string; }; color: { type: string; }; prefixImage: { type: string; format: string; description: string; meta: { editor: string; }; }; prefixIcon: { type: string; description: string; meta: { editor: string; }; }; prefixText: { type: string; }; tooltip: { type: string; }; disabled: { type: string; }; hidden: { type: string; }; }; required: string[]; }; }; }; required: string[]; }; }}): Array<any> {
-
+  useStateJsonSchema(props: {
+    name: string;
+    schema: JSONSchemaValue,
+    defaultValue: any,
+  }): Array<any> {
+                  
     const blockContext = useContext(BlockContext);
 
     useEffect(() => {
@@ -334,9 +379,9 @@ const Numi = {
         name: props.name,
         type: 'jsonSchema',
         schema: props.schema,
-        defaultValue: {}
+        defaultValue: props.defaultValue ?? {}
       });
-    }, []);
+    }, [blockContext.blockId, props.name]);
 
     // options list data must match
     const data = get(blockContext.blockConfig, `content.${props.name}`, {});

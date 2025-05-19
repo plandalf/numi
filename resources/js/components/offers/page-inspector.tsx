@@ -299,7 +299,7 @@ export const Inspector = ({
                           ) : hook.type === 'jsonSchema' && hook.schema ? (
                             <JSONSchemaEditor
                               schema={hook.schema}
-                              value={block.content?.[hook.name] || []}
+                              value={block.content?.[hook.name] || hook.defaultValue}
                               onChange={newValue => handleContentChange(hook.name, newValue)}
                               themeColors={themeColors}
                             />

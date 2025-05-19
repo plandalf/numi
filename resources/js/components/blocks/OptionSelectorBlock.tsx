@@ -59,7 +59,14 @@ function OptionSelectorComponent({ context }: { context: BlockContextType }) {
         },
         required: ["key"]
       }
-    }
+    },
+    defaultValue: [{
+      label: 'Option One',
+      key: 'option-one'
+    }, {
+      label: 'Option Two',
+      key: 'option-two'
+    }],
   });
 
   const interactionElements = useMemo(() => {
@@ -136,17 +143,15 @@ function OptionSelectorComponent({ context }: { context: BlockContextType }) {
   }, []);
 
   return (
-    <div className="p-4">
-      <Tabs defaultValue={selectedTab} onValueChange={handleTabChange} className="w-full">
-        <TabsList className="mb-2 h-auto p-0 w-full">
-          {Array.isArray(items) && items.map((item) => (
-            <TabsTrigger key={item.key} value={item.key} className="w-full h-10" style={{ backgroundColor: item.key === selectedTab ? style.activeBackgroundColor : style.inactiveBackgroundColor }}>
-              {item.label}
-            </TabsTrigger>
-          ))}
-        </TabsList>
-      </Tabs>
-    </div>
+    <Tabs defaultValue={selectedTab} onValueChange={handleTabChange} className="w-full">
+      <TabsList className="h-auto p-0 w-full">
+        {Array.isArray(items) && items.map((item) => (
+          <TabsTrigger key={item.key} value={item.key} className="w-full h-10" style={{ backgroundColor: item.key === selectedTab ? style.activeBackgroundColor : style.inactiveBackgroundColor }}>
+            {item.label}
+          </TabsTrigger>
+        ))}
+      </TabsList>
+    </Tabs>
   );
 }
 

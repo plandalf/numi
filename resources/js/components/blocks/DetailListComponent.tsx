@@ -68,9 +68,13 @@ function DetailListBlockComponent({ context }: { context: BlockContextType }) {
         },
         required: ["key"]
       }
-    }
+    },
+    defaultValue: [{
+      label: 'Item 1',
+      caption: 'Item 1 caption',
+      prefixIcon: 'circle'
+    }],
   });
-
     
   const appearance = Numi.useAppearance([
     Appearance.padding('padding', 'Padding', {}),

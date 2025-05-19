@@ -5,6 +5,7 @@ import { EnumerationEditor } from "./enumeration-editor";
 import { StringEditor } from "./string-editor";
 import { BooleanEditor } from "./boolean-editor";
 import { ColorPickerEditor } from "./color-picker-editor";
+import { useEffect } from "react";
 
 export function JSONSchemaEditor({
   schema,
@@ -24,7 +25,11 @@ export function JSONSchemaEditor({
   themeColors?: Record<string, string>;
 }) {
   const schemaToUse = rootSchema || schema;
-
+  
+  // Trigger the change of the value once upon initial render
+  useEffect(() => {
+    onChange(value);
+  }, []);
 
   // Handle $ref references
   if ('$ref' in schema && schema.$ref) {
