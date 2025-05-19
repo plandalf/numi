@@ -86,7 +86,7 @@ export function useEditor() {
 
 
 function generateDefaultView() {
-  const defaultPage = generateDefaultPage({ type: 'page', position: { x: 100, y: 100 } });
+  const defaultPage = generateDefaultPage({ type: 'entry', position: { x: 100, y: 100 } });
 
   return {
     pages: {

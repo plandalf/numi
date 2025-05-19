@@ -58,10 +58,9 @@ function ButtonBlockComponent({ context }: { context: BlockContextType }) {
   ]);
 
   const appearance = Numi.useAppearance([
-    // named!
-    Appearance.padding('')
+    Appearance.padding('Padding', 'Padding', {}),
+    Appearance.spacing('Spacing', 'Spacing', {})
   ]);
-  // appearance.padding ? // needs validation in the fields!
 
   const font = style?.font as FontValue;
   const border = style?.border as BorderValue;
