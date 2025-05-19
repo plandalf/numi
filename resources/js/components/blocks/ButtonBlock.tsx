@@ -12,6 +12,7 @@ function ButtonBlockComponent({ context }: { context: BlockContextType }) {
   // console.log({ isSubmitting, submitError });
 
   const [text] = Numi.useStateString({
+    label: 'Text',
     name: 'value',
     defaultValue: 'Submit',
   });

@@ -10,6 +10,7 @@ function CheckoutSummaryComponent({ context }: { context: BlockContextType }) {
   });
 
   const [title] = Numi.useStateString({
+    label: 'Title',
     name: 'title',
     defaultValue: 'Order Summary',
   });
@@ -27,6 +28,7 @@ function CheckoutSummaryComponent({ context }: { context: BlockContextType }) {
   });
 
   const [discountCode, setDiscountCode] = Numi.useStateString({
+    label: 'Discount Code',
     name: 'discountCode',
     defaultValue: '',
     inspector: 'hidden',

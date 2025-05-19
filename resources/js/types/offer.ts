@@ -285,6 +285,7 @@ export type PageSection = {
     id?: string;
     label?: string;
     style?: Record<string, string>;
+    appearance?: Record<string, string>;
 };
 
 export type FormSection = {

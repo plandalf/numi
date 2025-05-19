@@ -17,12 +17,14 @@ function StripeElementsComponent({ context }: { context: BlockContextType }) {
   const [stripePromise, setStripePromise] = useState<Stripe | null>(null);
 
   const [title] = Numi.useStateString({
+    label: 'Title',
     name: 'title',
     defaultValue: 'Payment Information',
     inspector: 'text',
   });
 
   const [description] = Numi.useStateString({
+    label: 'Description',
     name: 'description',
     defaultValue: 'Enter your payment details to complete your purchase',
     inspector: 'text',

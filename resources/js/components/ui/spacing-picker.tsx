@@ -138,6 +138,7 @@ export const SpacingPicker = ({
               onChange={handleCustomInputChange}
               onBlur={handleCustomInputBlur}
               placeholder="e.g., 10px"
+              title="Drag to adjust"
               className={`flex-grow cursor-ew-resize ${validationError ? 'border-red-500' : ''}`}
             />
           </DragAdjuster>

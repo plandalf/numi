@@ -9,6 +9,7 @@ import rehypeRaw from "rehype-raw";
 // Block Components
 function TextBlockComponent({ context }: { context: BlockContextType }) {
   const [text, setText, format] = Numi.useStateString({
+    label: 'Text',
     name: 'value',
     defaultValue: 'Default Text!',
     inspector: 'multiline',

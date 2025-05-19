@@ -7,11 +7,13 @@ import { Check } from "lucide-react";
 function CheckboxBlockComponent({ context }: { context: BlockContextType }) {
 
   const [id] = Numi.useStateString({
-    name: 'Field Name',
+    label: 'Field Name',
+    name: 'id',
     defaultValue: '',
   });
 
   const [checked, setChecked] = Numi.useStateBoolean({
+    label: 'Checked',
     name: 'value',
     defaultValue: false,
     inspector: 'hidden',
@@ -30,6 +32,7 @@ function CheckboxBlockComponent({ context }: { context: BlockContextType }) {
   });
 
   const [label] = Numi.useStateString({
+    label: 'Label',
     name: 'label',
     defaultValue: 'Checked?',
   });

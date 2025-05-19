@@ -1,7 +1,7 @@
 import { type Page, type ViewSection, type Block } from '@/types/offer';
 import { isBlockVisible } from '@/lib/blocks';
 import { cn } from '@/lib/utils';
-import React, { useMemo, useRef } from 'react';
+import React, { CSSProperties, useMemo, useRef } from 'react';
 import { CSS } from '@dnd-kit/utilities';
 import { useContext } from 'react';
 import { type PageView as OfferPageView, type PageSection, type FormSection } from '@/types/offer';
@@ -65,7 +65,7 @@ interface SectionProps {
     selectedBlockId?: string | null;
     onSelectBlock?: (blockId: string) => void;
     onAddBlock?: (section: keyof LocalPageView, blockType: BlockType, index?: number) => void;
-
+    style?: CSSProperties;
 }
 
 interface BlockRendererProps {
@@ -268,13 +268,25 @@ const renderElement = (
 
     const section = page.view[id];
 
-    const backgroundColor = (section as any)?.style?.backgroundColor;
+    const backgroundColor = (section as PageSection)?.style?.backgroundColor;
+    const padding = (section as PageSection)?.appearance?.padding;
+    const spacing = (section as PageSection)?.appearance?.spacing;
+
+    const sectionContainerStyle = useMemo(() => ({
+      backgroundColor,
+      padding,
+    }), [backgroundColor, padding, spacing]);
+
+    const sectionStyle = useMemo(() => ({
+      rowGap: spacing
+    }), [spacing]);
+
     return createElement(
       type,
       {
         ...props,
         id,
-        style: { backgroundColor },
+        style: sectionContainerStyle,
         className: cn(
           "relative",
           props.className,
@@ -285,6 +297,7 @@ const renderElement = (
         key={id}
         section={section}
         sectionName={id as keyof LocalPageView}
+        style={sectionStyle}
       />,
       componentRegistry
     );
@@ -397,7 +410,7 @@ function BlockRenderer({ block, children }: {
 }
 
 // Section Component
-const Section = ({ section, sectionName: id }: SectionProps) => {
+const Section = ({ section, sectionName: id, style }: SectionProps) => {
 
   const { setNodeRef, isOver, active } = useDroppable({
     id: `section:${id}`,
@@ -412,11 +425,12 @@ const Section = ({ section, sectionName: id }: SectionProps) => {
       >
         <div
          className={cx({
-          "border border-transparent min-h-20 w-full" : true,
-          'border-red-500': active,
-          'border-blue-500': isOver,
-        })}
-        ref={setNodeRef}
+            "flex flex-col border border-transparent min-h-4 w-full" : true,
+            'border-red-500': active,
+            'border-blue-500': isOver,
+          })}
+          ref={setNodeRef}
+          style={style}
         >
           {section?.blocks?.map((block: Block, index: number) => {
             return (

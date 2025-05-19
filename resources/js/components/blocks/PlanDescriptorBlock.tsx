@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 
 function PlanDescriptorComponent({ context }: { context: BlockContextType }) {
   const [text, setText, format] = Numi.useStateString({
+    label: 'Text',
     name: 'value',
     defaultValue: 'Plan Description',
   });

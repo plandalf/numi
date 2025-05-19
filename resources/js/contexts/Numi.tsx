@@ -53,12 +53,14 @@ export interface BorderValue {
   style?: string;
 }
 
+export type SpacingValue = 'default' | null | string;
+
 export const Appearance = {
   padding: (
     type: string = 'padding',
     label: string = 'Padding',
     args: HookArgs,
-    defaultValue: string = '{{theme.padding}}',
+    defaultValue: SpacingValue = '{{theme.padding}}',
   ) => ({
     type,
     label,
@@ -71,7 +73,7 @@ export const Appearance = {
     type: string = 'spacing',
     label: string = 'Spacing',
     args: HookArgs,
-    defaultValue: string = '{{theme.spacing}}',
+    defaultValue: SpacingValue = '{{theme.spacing}}',
   ) => ({
     type,
     label,
@@ -557,12 +559,13 @@ const Numi = {
     return [value, setValue];
   },
 
-  useStateString(props: { name: string; defaultValue: string; inspector?: string, format?: string }): [string, (value: string) => void, string] {
+  useStateString(props: { label: string; name: string; defaultValue: string; inspector?: string, format?: string }): [string, (value: string) => void, string] {
     const blockContext = useContext(BlockContext);
 
 
     useEffect(() => {
       blockContext.registerHook({
+        label: props.label,
         name: props.name,
         type: 'string',
         defaultValue: props.defaultValue,

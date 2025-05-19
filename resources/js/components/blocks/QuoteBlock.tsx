@@ -47,22 +47,26 @@ function QuoteBlockComponent({ context }: { context: BlockContextType }) {
   });
 
   const [quote] = Numi.useStateString({
+    label: 'Quote',
     name: 'quote',
     defaultValue: '',
     inspector: 'multiline',
   });
 
   const [author] = Numi.useStateString({
+    label: 'Author',
     name: 'author',
     defaultValue: '',
   });
 
   const [affiliation] = Numi.useStateString({
+    label: 'Affiliation',
     name: 'affiliation',
     defaultValue: '',
   });
 
   const [image] = Numi.useStateString({
+    label: 'Image',
     name: 'image',
     defaultValue: '',
     inspector: 'file',

@@ -5,17 +5,20 @@ import { useMemo } from "react";
 function TextInputBlockComponent({ context }: { context: BlockContextType }) {
 
   const [id] = Numi.useStateString({
-    name: 'Field Name',
+    label: 'Field Name',
+    name: 'id',
     defaultValue: '',
   });
 
   const [text, setText] = Numi.useStateString({
+    label: 'Text',
     name: 'value',
     defaultValue: 'SHIT',
     inspector: "hidden"
   });
 
   const [label] = Numi.useStateString({
+    label: 'Label',
     name: 'label',
     defaultValue: 'No Label',
   });
