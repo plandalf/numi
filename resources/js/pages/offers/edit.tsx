@@ -104,6 +104,7 @@ function EditApp() {
     setData,
     selectedPage,
     offer,
+    setSelectedBlockId
   } = useEditor();
 
   const session: CheckoutSession = {
@@ -349,6 +350,9 @@ function EditApp() {
               blocks: { $splice: [[prototype.index, 1, newBlock]] }
             }
           });
+
+          // Set the selectedBlockId to the newly created block
+          setSelectedBlockId(newBlock.id);
         }
       }
       setPrototype(null);
@@ -359,7 +363,9 @@ function EditApp() {
 
     // --- BLOCK DROP ---
     if (activeType === 'block') {
-      // No-op: all logic handled in dragOver for live reordering
+      console.log('block drop', activeRawId);
+      // Set the selectedBlockId to the dragged block
+      setSelectedBlockId(activeRawId);
       setActiveItem(null);
       return;
     }
