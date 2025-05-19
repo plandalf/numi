@@ -208,7 +208,7 @@ export const Style = {
     defaultValue,
     inspector: args.inspector ?? 'shadowPicker',
   }),
-  
+
   hidden: (
     type: string = 'hidden',
     label: string = 'Hidden',
@@ -225,9 +225,7 @@ export const Style = {
     type: string = 'visibility',
     label: string = 'Visibility',
     args: StyleArgs,
-    defaultValue: {
-      conditional: []
-    }
+    defaultValue?: any
   ) => ({
     label,
     type,
@@ -300,43 +298,18 @@ class Numi {
 
   static useEventCallback(props: { name: string; elements?: Record<'value' | 'label', string>[] }): {
     callbacks: any[];
-    updateHook: (hook: Partial<HookUsage>) => void;
     executeCallbacks: (element: string, type: CallbackType) => void;
   } {
     const checkout = Numi.useCheckout();
     const blockContext = useContext(BlockContext);
-    const [hook, setHook] = useState<HookUsage>({
-      name: props.name,
-      type: 'eventCallback',
-      defaultValue: null,
-      options: props.elements,
-    });
-
-    // Create a ref to hold the debounced function
-    const debouncedUpdateRef = useRef<ReturnType<typeof debounce> | null>(null);
-
-    // Initialize the debounced function on first render
-    useEffect(() => {
-      debouncedUpdateRef.current = debounce((newHook: Partial<HookUsage>) => {
-        setHook(prevHook => ({...prevHook, ...newHook}));
-      }, 300); // 300ms delay
-
-      // Cleanup function to cancel pending debounced calls
-      return () => {
-        if (debouncedUpdateRef.current) {
-          debouncedUpdateRef.current.cancel();
-        }
-      };
-    }, []);
 
     useEffect(() => {
-      blockContext.registerHook(hook);
-    }, [hook]);
-
-    const updateHook = useCallback((newHook: Partial<HookUsage>) => {
-      if (debouncedUpdateRef.current) {
-        debouncedUpdateRef.current(newHook);
-      }
+      blockContext.registerHook({
+        name: props.name,
+        type: 'eventCallback',
+        defaultValue: null,
+        options: props.elements,
+      });
     }, []);
 
     const executeCallbacks = useCallback((element: string, type: CallbackType) => {
@@ -357,12 +330,11 @@ class Numi {
 
     return {
       callbacks: blockContext.blockConfig.interaction?.onClick ?? [],
-      updateHook,
       executeCallbacks
     };
   }
 
-  static useStateJsonSchema(props: { name: string; schema: { $schema: string; type: string; items: { type: string; properties: { key: { title: string; type: string; }; value: { title: string; type: string; }; children: { type: string; items: { type: string; properties: { key: { type: string; }; label: { type: string; }; caption: { type: string; }; color: { type: string; }; prefixImage: { type: string; format: string; description: string; meta: { editor: string; }; }; prefixIcon: { type: string; description: string; meta: { editor: string; }; }; prefixText: { type: string; }; tooltip: { type: string; }; disabled: { type: string; }; hidden: { type: string; }; }; required: string[]; }; }; }; required: string[]; }; }}): Array<any> {
+  static useStateJsonSchema(props: { name: string; defaultValue?: any; schema: { $schema: string; type: string; items: { type: string; properties: { key: { title: string; type: string; }; value: { title: string; type: string; }; children: { type: string; items: { type: string; properties: { key: { type: string; }; label: { type: string; }; caption: { type: string; }; color: { type: string; }; prefixImage: { type: string; format: string; description: string; meta: { editor: string; }; }; prefixIcon: { type: string; description: string; meta: { editor: string; }; }; prefixText: { type: string; }; tooltip: { type: string; }; disabled: { type: string; }; hidden: { type: string; }; }; required: string[]; }; }; }; required: string[]; }; }}): Array<any> {
 
     const blockContext = useContext(BlockContext);
 
@@ -371,14 +343,12 @@ class Numi {
         name: props.name,
         type: 'jsonSchema',
         schema: props.schema,
-        defaultValue: {}
+        defaultValue: props.defaultValue || {}
       });
     }, []);
 
-    // options list data must match
-    const data = get(blockContext.blockConfig, `content.${props.name}`, {});
+    const data = get(blockContext.blockConfig, `content.${props.name}`, props.defaultValue || {});
 
-    // return options
     return [data];
   }
 
@@ -400,7 +370,7 @@ class Numi {
 
     return useMemo(() => {
       const appearance: Record<string, any> = {};
-      
+
       // Register each appearance property
       appearanceProps.forEach(prop => {
         if (prop.type) {

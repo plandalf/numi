@@ -79,6 +79,7 @@ function CheckboxBlockComponent({ context }: { context: BlockContextType }) {
     Style.borderRadius('borderRadius', 'Border Radius', {}, '5px'),
     Style.borderColor('borderColor', 'Border Color', {}, '#E5E5E5'),
     Style.hidden('hidden', 'Hidden', {}, false),
+    Style.visibility('visibility', 'Visibility', {}),
   ]);
 
   const font = appearance?.font as FontValue;
@@ -160,7 +161,7 @@ function CheckboxBlockComponent({ context }: { context: BlockContextType }) {
   return (
     <div>
       {style === 'checkbox' && (
-        isManuallyStyledCheckbox ? (    
+        isManuallyStyledCheckbox ? (
           <div className="flex items-center gap-2">
             <div className="relative inline-block justify-center">
               <input style={checkboxStyles} id={id} type="checkbox" name={context.blockId} checked={checked} onChange={handleChange} />

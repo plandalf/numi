@@ -190,7 +190,8 @@ export const Inspector = ({
     { type: 'appearance', label: 'Appearance' },
     { type: 'validation', label: 'Validation' },
     { type: 'interaction', label: 'Interaction' },
-    { type: 'conditions', label: 'Conditions' }
+    { type: 'eventCallback', label: 'Event Callback' },
+    { type: 'conditions', label: 'Conditions' },
   ];
 
   return (
@@ -201,7 +202,7 @@ export const Inspector = ({
             {sectionOrder.map(({ type, label }) => {
               // For 'other' type, combine all non-special types
               const sectionHooks = type === 'other'
-                ? hooks.filter(hook => !['appearance', 'validation', 'interaction', 'conditions'].includes(hook.type))
+                ? hooks.filter(hook => !['appearance', 'validation', 'interaction', 'conditions', 'eventCallback'].includes(hook.type))
                 : groupedHooks[type] || [];
 
               if (sectionHooks.length === 0) return null;
@@ -263,7 +264,7 @@ export const Inspector = ({
                           ) : hook.type === 'jsonSchema' && hook.schema ? (
                             <JSONSchemaEditor
                               schema={hook.schema}
-                              value={block.content?.[hook.name] || []}
+                              value={block.content?.[hook.name] ?? hook.defaultValue}
                               onChange={newValue => handleContentChange(hook.name, newValue)}
                               themeColors={themeColors}
                             />
