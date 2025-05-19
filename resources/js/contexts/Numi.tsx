@@ -27,37 +27,6 @@ export const BlockContext = createContext<BlockContextType>({
   theme: undefined
 });
 
-
-
-// adding an item
-function TestComponent() {
-
-  // modifying:
-
-  const {
-    addItem// checkout.items.add ->
-  } = Numi.useCheckout();
-  // returns some kind of modification promise?
-  // setModifying(addItem().then(() => {
-  // setModifying(null)
-  // }))
-
-  // need "loading" state for adding an item
-  // need validation
-  // need errors
-
-  return (
-    <div>
-      <button onClick={() => addItem({
-        name: 'Test Item',
-        price: 100,
-        quantity: 1,
-        image: 'https://placehold.co/60x60.png',
-      })}>Add Item</button>
-    </div>
-  )
-}
-
 export interface StyleArgs {
   options?: Record<string, string>;
   config?: Record<string, any>;
@@ -84,6 +53,32 @@ export interface BorderValue {
   style?: string;
 }
 
+export const Appearance = {
+  padding: (
+    type: string = 'padding',
+    label: string = 'Padding',
+    options: object = {},
+  ) => ({
+    type,
+    label,
+    defaultValue: '{{theme.padding}}',
+  }),
+  // validation!
+  // Every component of the margin string must end in px or be 0. Examples: 12px, 8px 8px 0
+
+  spacing: (
+    type: string = 'spacing',
+    label: string = 'Spacing',
+    options:object = {},
+  ) => ({
+    type,
+    label,
+    defaultValue: '10px',
+    inspector: '',
+    options: {},
+  }),
+}
+
 export const Style = {
   alignment: (
     type: string = 'alignment',
@@ -102,6 +97,9 @@ export const Style = {
     defaultValue,
     inspector: args.inspector ?? 'alignmentPicker',
   }),
+
+  // sectionPadding,
+  // sectionSpacing
 
   backgroundColor: (
     type: "backgroundColor" | "activeBackgroundColor" | "inactiveBackgroundColor" = "backgroundColor",
@@ -208,7 +206,7 @@ export const Style = {
     defaultValue,
     inspector: args.inspector ?? 'shadowPicker',
   }),
-  
+
   hidden: (
     type: string = 'hidden',
     label: string = 'Hidden',
@@ -260,45 +258,9 @@ interface CheckoutOptions {
   };
 }
 
-class CheckoutSDK {
-  private items: Array<{
-    name: string;
-    price: number;
-    quantity: number;
-    image: string;
-  }> = [];
+const Numi = {
 
-  constructor(options: CheckoutOptions = {}) {
-    if (options.initialState?.items) {
-      this.items = [...options.initialState.items];
-    }
-  }
-
-  addItem(item: {
-    name: string;
-    price: number;
-    quantity: number;
-    image: string;
-  }) {
-    this.items.push(item);
-  }
-}
-
-class Numi {
-
-  // get static checkout ?
-  // static useCheckout(options: CheckoutOptions = {}): CheckoutSDK {
-  //   const [checkout] = useState(() => {
-  //     // Create a checkout instance with provided options
-  //     const instance = new CheckoutSDK(options);
-
-  //     return instance;
-  //   });
-
-  //   return checkout;
-  // }
-
-  static useEventCallback(props: { name: string; elements?: Record<'value' | 'label', string>[] }): {
+  useEventCallback(props: { name: string; elements?: Record<'value' | 'label', string>[] }): {
     callbacks: any[];
     updateHook: (hook: Partial<HookUsage>) => void;
     executeCallbacks: (element: string, type: CallbackType) => void;
@@ -360,9 +322,9 @@ class Numi {
       updateHook,
       executeCallbacks
     };
-  }
+  },
 
-  static useStateJsonSchema(props: { name: string; schema: { $schema: string; type: string; items: { type: string; properties: { key: { title: string; type: string; }; value: { title: string; type: string; }; children: { type: string; items: { type: string; properties: { key: { type: string; }; label: { type: string; }; caption: { type: string; }; color: { type: string; }; prefixImage: { type: string; format: string; description: string; meta: { editor: string; }; }; prefixIcon: { type: string; description: string; meta: { editor: string; }; }; prefixText: { type: string; }; tooltip: { type: string; }; disabled: { type: string; }; hidden: { type: string; }; }; required: string[]; }; }; }; required: string[]; }; }}): Array<any> {
+  useStateJsonSchema(props: { name: string; schema: { $schema: string; type: string; items: { type: string; properties: { key: { title: string; type: string; }; value: { title: string; type: string; }; children: { type: string; items: { type: string; properties: { key: { type: string; }; label: { type: string; }; caption: { type: string; }; color: { type: string; }; prefixImage: { type: string; format: string; description: string; meta: { editor: string; }; }; prefixIcon: { type: string; description: string; meta: { editor: string; }; }; prefixText: { type: string; }; tooltip: { type: string; }; disabled: { type: string; }; hidden: { type: string; }; }; required: string[]; }; }; }; required: string[]; }; }}): Array<any> {
 
     const blockContext = useContext(BlockContext);
 
@@ -380,9 +342,9 @@ class Numi {
 
     // return options
     return [data];
-  }
+  },
 
-  static useCheckout(options: CheckoutOptions = {}): CheckoutState {
+  useCheckout(options: CheckoutOptions = {}): CheckoutState {
     const checkout = useContext(GlobalStateContext);
 
     // useEffect(() => {
@@ -393,16 +355,23 @@ class Numi {
     // }, []);
 
     return checkout;
-  }
+  },
 
-  static useStyle(appearanceProps: any[]): Record<string, any> {
+  useAppearance(appearanceProps: any[]) {
+
+    return [
+      // rounded corners!
+    ];
+  },
+
+  useStyle(styleProps: any[]): Record<string, any> {
     const blockContext = useContext(BlockContext);
 
     return useMemo(() => {
       const appearance: Record<string, any> = {};
-      
+
       // Register each appearance property
-      appearanceProps.forEach(prop => {
+      styleProps.forEach(prop => {
         if (prop.type) {
           // Get the value from block config or use default
           appearance[prop.type] = blockContext.blockConfig.appearance?.[prop.type];
@@ -422,9 +391,9 @@ class Numi {
 
       return appearance;
     }, [blockContext.blockConfig.appearance, blockContext.blockId]);
-  }
+  },
 
-  static useInteraction(): { isDisabled: any; updateHook: (hook: Partial<HookUsage>) => void } {
+  useInteraction(): { isDisabled: any; updateHook: (hook: Partial<HookUsage>) => void } {
     const blockContext = useContext(BlockContext);
     const [hook, setHook] = useState<HookUsage>({
       name: 'interaction',
@@ -463,9 +432,9 @@ class Numi {
       isDisabled: blockContext.blockConfig.interaction?.isDisabled ?? false,
       updateHook
     }
-  }
+  },
 
-  static useStateEnumeration(props: {
+  useStateEnumeration(props: {
     name: string;
     initialValue?: string;
     options: string[];
@@ -524,9 +493,9 @@ class Numi {
     }, []);
 
     return [value, setValue, updateHook];
-  }
+  },
 
-  static useStateBoolean(props: { name: string; defaultValue: boolean; label?: string; inspector?: string }): [boolean, (value: boolean) => void] {
+  useStateBoolean(props: { name: string; defaultValue: boolean; label?: string; inspector?: string }): [boolean, (value: boolean) => void] {
     const blockContext = useContext(BlockContext);
 
     useEffect(() => {
@@ -565,9 +534,9 @@ class Numi {
     };
 
     return [value, setValue];
-  }
+  },
 
-  static useStateString(props: { name: string; defaultValue: string; inspector?: string, format?: string }): [string, (value: string) => void, string] {
+  useStateString(props: { name: string; defaultValue: string; inspector?: string, format?: string }): [string, (value: string) => void, string] {
     const blockContext = useContext(BlockContext);
 
 
@@ -607,9 +576,9 @@ class Numi {
     };
 
     return [value, setValue, format];
-  }
+  },
 
-  static useStateNumber(props: {
+  useStateNumber(props: {
     name: string;
     defaultValue: number;
     min?: number;
@@ -657,9 +626,9 @@ class Numi {
     };
 
     return [value, setValue];
-  }
+  },
 
-  static useRuntimeString(props: { name: string; defaultValue: string }): [string, (value: string) => void] {
+  useRuntimeString(props: { name: string; defaultValue: string }): [string, (value: string) => void] {
     const blockContext = useContext(BlockContext);
 
     const value = props.name in blockContext.blockConfig.content
@@ -671,9 +640,9 @@ class Numi {
     };
 
     return [value, setValue];
-  }
+  },
 
-  static useValidation(props: { rules: Record<string, any> }): {
+  useValidation(props: { rules: Record<string, any> }): {
     isValid: boolean;
     errors: string[];
     validate: (value: any) => boolean;
@@ -708,24 +677,12 @@ class Numi {
       validate,
       isRequired: blockContext.blockConfig.validation?.isRequired ?? false
     };
-  }
+  },
 
-  static useTheme(): Theme | undefined {
+  useTheme(): Theme | undefined {
     const blockContext = useContext(BlockContext);
     return blockContext.theme;
-  }
+  },
 }
-
-const NumiEditorContext = createContext<{
-  blocks: BlockConfig[];
-  selectedBlock: BlockConfig | null;
-  setSelectedBlock: (block: BlockConfig | null) => void;
-  updateBlock: (updatedBlock: BlockConfig) => void;
-}>({
-  blocks: [],
-  selectedBlock: null,
-  setSelectedBlock: () => { },
-  updateBlock: () => { },
-});
 
 export default Numi;

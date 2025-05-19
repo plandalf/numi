@@ -1,5 +1,5 @@
 import { BlockContextType } from "@/types/blocks";
-import Numi, { BorderValue, FontValue, Style } from "@/contexts/Numi";
+import Numi, { Appearance, BorderValue, FontValue, Style } from '@/contexts/Numi';
 import cx from "classnames";
 import { useCheckoutState } from "@/pages/checkout-main";
 import { cn } from "@/lib/utils";
@@ -29,7 +29,7 @@ function ButtonBlockComponent({ context }: { context: BlockContextType }) {
     label: 'Type',
   });
 
-  const appearance = Numi.useStyle([
+  const style = Numi.useStyle([
     Style.alignment('alignment', 'Alignment', {}, 'left'),
     Style.backgroundColor('backgroundColor', 'Background Color', {}, '#FFFFFF'),
     Style.textColor('textColor', 'Text Color', {}, '#000000'),
@@ -57,51 +57,57 @@ function ButtonBlockComponent({ context }: { context: BlockContextType }) {
     Style.hidden('hidden', 'Hidden', {}, false),
   ]);
 
-  const font = appearance?.font as FontValue;
-  const border = appearance?.border as BorderValue;
-  const borderRadius = appearance?.borderRadius;
-  const shadow = appearance?.shadow as string;
+  const appearance = Numi.useAppearance([
+    // named!
+    Appearance.padding('')
+  ]);
+  // appearance.padding ? // needs validation in the fields!
+
+  const font = style?.font as FontValue;
+  const border = style?.border as BorderValue;
+  const borderRadius = style?.borderRadius;
+  const shadow = style?.shadow as string;
 
   const { executeCallbacks } = Numi.useEventCallback({
     name: 'click',
   });
 
   const buttonStyles = useMemo(() => ({
-    backgroundColor: appearance.backgroundColor || 'white',
-    color: appearance.textColor || 'black',
+    backgroundColor: style.backgroundColor || 'white',
+    color: style.textColor || 'black',
     fontFamily: font?.font,
     fontWeight: font?.weight,
     fontSize: font?.size,
     lineHeight: font?.lineHeight,
     letterSpacing: font?.letterSpacing,
-    borderColor: appearance.borderColor,
+    borderColor: style.borderColor,
     borderWidth: border?.width,
     borderStyle: border?.style,
     borderRadius : borderRadius ?? '3px',
     boxShadow: shadow,
-  }), [appearance, font, border, borderRadius, shadow]);
+  }), [style, font, border, borderRadius, shadow]);
 
   const buttonClasses = useMemo(() => cx({
     "border border-gray-300 rounded-md p-2": true,
     "hover:cursor-pointer hover:brightness-90 active:brightness-85": !isSubmitting,
-    "w-full": appearance.alignment === 'expand',
+    "w-full": style.alignment === 'expand',
     "opacity-50 cursor-not-allowed": isSubmitting,
-    "border-none": appearance.border === 'none',
-    "border-[1px]": appearance.border === 'xs',
-    "border-[4px]": appearance.border === 'sm',
-    "border-[8px]": appearance.border === 'md',
-    "border-[12px]": appearance.border === 'lg',
-    "border-[16px]": appearance.border === 'xl',
-  }), [appearance.alignment, appearance.fontWeight, appearance.border, isSubmitting]);
+    "border-none": style.border === 'none',
+    "border-[1px]": style.border === 'xs',
+    "border-[4px]": style.border === 'sm',
+    "border-[8px]": style.border === 'md',
+    "border-[12px]": style.border === 'lg',
+    "border-[16px]": style.border === 'xl',
+  }), [style.alignment, style.fontWeight, style.border, isSubmitting]);
 
   const containerClasses = useMemo(() => cn("space-y-2 flex", {
-    "justify-start": appearance.alignment === 'left',
-    "justify-center": appearance.alignment === 'center',
-    "justify-end": appearance.alignment === 'right',
-    "justify-stretch": appearance.alignment === 'expand',
-  }), [appearance.alignment]);
+    "justify-start": style.alignment === 'left',
+    "justify-center": style.alignment === 'center',
+    "justify-end": style.alignment === 'right',
+    "justify-stretch": style.alignment === 'expand',
+  }), [style.alignment]);
 
-  if (appearance.hidden) {
+  if (style.hidden) {
     return null;
   }
 
