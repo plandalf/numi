@@ -381,6 +381,9 @@ function BlockRenderer({ block, children }: {
 
   const hasVisibilityCondition = useMemo(() => hasVisibilityConditionFn(block.appearance?.visibility), [block.appearance?.visibility]);
 
+  // Show for input blocks
+  const hideBlockId = !['text_input', 'checkbox', 'checkout_summary'].includes(block.type);
+
   return (
     <div
       ref={setNodeRef}
@@ -394,11 +397,13 @@ function BlockRenderer({ block, children }: {
       })}
       onClick={handleClick}>
       <BlockContext.Provider value={blockContext}>
-        <div className={cx({
-          "hidden group-hover:block absolute text-xs bg-gray-100 border font-semibold right-0 top-0": true,
-          "!block": selectedBlockId === block.id,
-          "opacity-50": !isVisible,
-        })}>{block.id}</div>
+        {!hideBlockId && (
+          <div className={cx({
+            "hidden group-hover:block absolute text-xs bg-gray-100 border font-semibold right-0 top-0": true,
+            "!block": selectedBlockId === block.id,
+            "opacity-50": !isVisible,
+          })}>{block.id}</div>
+        )}
         {children(blockContext)}
         {hasVisibilityCondition && <Badge variant="outline" className={cn("absolute top-0 right-0", {
           "bg-green-500": isVisible,
