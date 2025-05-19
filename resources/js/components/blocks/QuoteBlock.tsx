@@ -1,4 +1,4 @@
-import Numi from "@/contexts/Numi";
+import Numi, { Appearance } from "@/contexts/Numi";
 import { BlockContextType } from "@/types/blocks";
 import cx from "classnames";
 
@@ -67,6 +67,12 @@ function QuoteBlockComponent({ context }: { context: BlockContextType }) {
     defaultValue: '',
     inspector: 'file',
   });
+
+  const appearance = Numi.useAppearance([
+    Appearance.padding('padding', 'Padding', {}),
+    Appearance.spacing('spacing', 'Spacing', {}),
+    Appearance.visibility('visibility', 'Visibility', {}, { conditional: [] }),
+  ]);
 
   return (
     <div className={cx("", {

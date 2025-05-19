@@ -8,6 +8,7 @@ interface DragAdjusterProps {
   max?: number;
   step?: number;
   formatValue?: (value: number) => string;
+  className?: string;
 }
 
 export const DragAdjuster: React.FC<DragAdjusterProps> = ({
@@ -18,6 +19,7 @@ export const DragAdjuster: React.FC<DragAdjusterProps> = ({
   max = 50,
   step = 1,
   formatValue = (val) => `${val}px`,
+  className = '',
 }) => {
   const [isDragging, setIsDragging] = React.useState(false);
   const [startX, setStartX] = React.useState(0);
@@ -61,7 +63,7 @@ export const DragAdjuster: React.FC<DragAdjusterProps> = ({
     <div 
       onMouseDown={handleMouseDown} 
       style={{ cursor: 'ew-resize' }}
-      className="!cursor-resize inline-block"
+      className={`!cursor-resize inline-block ${className}`}
     >
       {children}
     </div>

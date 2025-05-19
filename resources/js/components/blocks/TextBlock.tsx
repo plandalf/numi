@@ -1,9 +1,9 @@
 import { BlockContextType } from "@/types/blocks";
 import ReactMarkdown from 'react-markdown';
-import Numi, { BorderValue, FontValue, Style } from "@/contexts/Numi";
+import Numi, { Appearance, BorderValue, FontValue, Style } from "@/contexts/Numi";
 import { cn } from "@/lib/utils";
 import { useMemo } from "react";
-import { cx } from "class-variance-authority";
+import rehypeRaw from "rehype-raw";
 
 
 // Block Components
@@ -17,7 +17,13 @@ function TextBlockComponent({ context }: { context: BlockContextType }) {
 
   const isMarkdown = format === 'markdown';
 
-  const appearance = Numi.useStyle([
+  const appearance = Numi.useAppearance([
+    Appearance.padding('padding', 'Padding', {}),
+    Appearance.visibility('visibility', 'Visibility', {}, { conditional: [] }),
+  ]);
+
+  
+  const style = Numi.useStyle([
     Style.alignment('alignment', 'Alignment', {}, 'left'),
     Style.backgroundColor('backgroundColor', 'Background Color', {}, '#FFFFFF'),
     Style.textColor('textColor', 'Text Color', {}, '#000000'),
@@ -45,36 +51,44 @@ function TextBlockComponent({ context }: { context: BlockContextType }) {
     Style.hidden('hidden', 'Hidden', {}, false),
   ]);
 
-  const font = appearance?.font as FontValue;
-  const border = appearance?.border as BorderValue;
-  const borderRadius = appearance?.borderRadius;
-  const shadow = appearance?.shadow as string;
+  const font = style?.font as FontValue;
+  const border = style?.border as BorderValue;
+  const borderRadius = style?.borderRadius;
+  const shadow = style?.shadow as string;
+
+  const padding = appearance.padding;
 
   const textStyles = useMemo(() => ({
-    backgroundColor: appearance.backgroundColor || 'transparent',
-    color: `${appearance.textColor || 'black'}`,
+    backgroundColor: style.backgroundColor || 'transparent',
+    color: `${style.textColor || 'black'}`,
     fontFamily: font?.font,
     fontWeight: font?.weight,
     fontSize: font?.size,
     lineHeight: font?.lineHeight,
     letterSpacing: font?.letterSpacing,
-    borderColor: appearance.borderColor,
+    borderColor: style.borderColor,
     borderWidth: border?.width,
     borderStyle: border?.style,
     borderRadius : borderRadius ?? '3px',
     boxShadow: shadow,
-  }), [appearance, font, border, borderRadius, shadow]);
+    padding,
+  }), [style, font, border, borderRadius, shadow, padding]);
 
-  const buttonClasses = useMemo(() => cn("max-w-none p-2",{
-    "text-start": appearance.alignment === 'left',
-    "text-center": appearance.alignment === 'center',
-    "text-end": appearance.alignment === 'right',
-    "text-justify": appearance.alignment === 'expand',
-  }), [appearance.alignment, isMarkdown]);
+  const buttonClasses = useMemo(() => cn("max-w-none whitespace-pre-line",{
+    "text-start": style.alignment === 'left',
+    "text-center": style.alignment === 'center',
+    "text-end": style.alignment === 'right',
+    "text-justify": style.alignment === 'expand',
+  }), [style.alignment, isMarkdown]);
 
-  if (appearance.hidden) {
+  if (style.hidden) {
     return null;
   }
+
+  function preserveAllLineBreaks(text: string): string {
+    return text.replace(/\n/g, '<br/>');
+  }
+
 
   return (
     <div
@@ -83,7 +97,11 @@ function TextBlockComponent({ context }: { context: BlockContextType }) {
       style={textStyles}
     >
       {isMarkdown ? (
-        <ReactMarkdown>{text}</ReactMarkdown>
+        <ReactMarkdown
+          rehypePlugins={[rehypeRaw]}
+        >
+          {preserveAllLineBreaks(text)}
+        </ReactMarkdown>
       ) : (
         text
       )}

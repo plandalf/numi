@@ -65,7 +65,7 @@ export function generateDefaultPage({
     
     return {
         id,
-        name: 'New Page',
+        name: 'Entry Page',
         type,
         position,
         view: {

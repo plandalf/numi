@@ -1,4 +1,4 @@
-import Numi from "@/contexts/Numi";
+import Numi, { Appearance } from "@/contexts/Numi";
 import { BlockContextType } from "@/types/blocks";
 import cx from "classnames";
 
@@ -70,6 +70,13 @@ function DetailListBlockComponent({ context }: { context: BlockContextType }) {
       }
     }
   });
+
+    
+  const appearance = Numi.useAppearance([
+    Appearance.padding('padding', 'Padding', {}),
+    Appearance.spacing('spacing', 'Spacing', {}),
+    Appearance.visibility('visibility', 'Visibility', {}, { conditional: [] }),
+  ]);
 
   // Recursively render a detail list item and its children
   const renderDetailItem = (item: any, depth = 0) => {

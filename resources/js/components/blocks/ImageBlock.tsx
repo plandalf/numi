@@ -1,4 +1,4 @@
-import Numi, { Style } from "@/contexts/Numi";
+import Numi, { Appearance, Style } from "@/contexts/Numi";
 import { cn } from "@/lib/utils";
 import { useMemo } from "react";
 
@@ -11,11 +11,17 @@ function ImageBlockComponent() {
     inspector: 'file',
   });
 
-  const appearance = Numi.useStyle([
+  const style = Numi.useStyle([
     Style.alignment('alignment', 'Alignment', {}, 'left'),
     Style.border('border', 'Border', {}, { width: '1px', style: 'solid' }),
     Style.borderRadius('borderRadius', 'Border Radius', {}, '5px'),
     Style.borderColor('borderColor', 'Border Color', {}, '#000000'),
+  ]);    
+  
+  const appearance = Numi.useAppearance([
+    Appearance.padding('padding', 'Padding', {}),
+    Appearance.spacing('spacing', 'Spacing', {}),
+    Appearance.visibility('visibility', 'Visibility', {}, { conditional: [] }),
   ]);
 
   const src = useMemo(() => {
@@ -27,14 +33,13 @@ function ImageBlockComponent() {
 
   const classList = useMemo(() => {
     return cn('flex', {
-      'justify-start': appearance.alignment === 'left',
-      'justify-center': appearance.alignment === 'center',
-      'justify-end': appearance.alignment === 'right',
-      'w-full': appearance.alignment === 'expand',
+      'justify-start': style?.alignment === 'left',
+      'justify-center': style?.alignment === 'center',
+      'justify-end': style?.alignment === 'right',
+      'w-full': style?.alignment === 'expand',
     })
-  }, [appearance.alignment]);
+  }, [style.alignment]);
 
-  console.log({appearance})
   if (!image) {
     return (
       <div>Upload an image</div>
@@ -44,10 +49,10 @@ function ImageBlockComponent() {
   return (
     <div className={classList}>  
       <img src={src} alt=""  style={{
-        borderRadius: appearance.borderRadius,
-        borderColor: appearance.borderColor,
-        borderWidth: appearance.border?.width,
-        borderStyle: appearance.border?.style,
+        borderRadius: style?.borderRadius,
+        borderColor: style?.borderColor,
+        borderWidth: style?.border?.width,
+        borderStyle: style?.border?.style,
       }} />
     </div>
   )

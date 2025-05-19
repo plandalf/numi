@@ -1,4 +1,4 @@
-import Numi from "@/contexts/Numi";
+import Numi, { Appearance } from "@/contexts/Numi";
 import { formatMoney } from "@/lib/utils";
 import { BlockContextType } from "@/types/blocks";
 import { useState, useEffect } from "react";
@@ -37,6 +37,12 @@ function CheckoutSummaryComponent({ context }: { context: BlockContextType }) {
     defaultValue: true,
     inspector: 'checkbox',
   });
+  
+  const appearance = Numi.useAppearance([
+    Appearance.padding('padding', 'Padding', {}),
+    Appearance.spacing('spacing', 'Spacing', {}),
+    Appearance.visibility('visibility', 'Visibility', {}, { conditional: [] }),
+  ]);
 
   // Debug: Log to see what's happening with the value
   console.log('showDiscountForm value:', showDiscountForm);

@@ -1,5 +1,6 @@
 import { BlockContextType } from "@/types/blocks";
-import Numi from "@/contexts/Numi";
+import Numi, { Appearance } from "@/contexts/Numi";
+import { useMemo } from "react";
 
 function TextInputBlockComponent({ context }: { context: BlockContextType }) {
 
@@ -24,6 +25,12 @@ function TextInputBlockComponent({ context }: { context: BlockContextType }) {
       isRequired: true,
     },
   });
+  
+  const appearance = Numi.useAppearance([
+    Appearance.padding('padding', 'Padding', {}),
+    Appearance.spacing('spacing', 'Spacing', {}),
+    Appearance.visibility('visibility', 'Visibility', {}, { conditional: [] }),
+  ]);
 
   const { isDisabled } = Numi.useInteraction();
   // or, we wrap this manually?
@@ -32,10 +39,18 @@ function TextInputBlockComponent({ context }: { context: BlockContextType }) {
 
   // validation
 
+  const containerStyle = useMemo(() => {
+    return {
+      padding: appearance.padding,
+      rowGap: appearance.spacing,
+
+    };
+  }, [appearance]);
+
   return (
-    <div>
+    <div className='flex flex-col' style={containerStyle}>
       <label htmlFor="">{label}</label>
-      <div>
+      <div className="flex flex-row">
         <input 
           id={id}
           className="border border-gray-300 rounded-md p-2"

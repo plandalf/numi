@@ -202,7 +202,7 @@ export interface Block {
         onClick: OnClickAction[];
         [key: string]: any;
     };
-    appearance?: {
+    style?: {
         fontSize?: string;
         backgroundColor?: string;
         color?: string;
@@ -210,10 +210,14 @@ export interface Block {
         borderColor?: string;
         border?: string;
         hidden?: boolean;
+        [key: string]: string | boolean | { conditional: RuleGroup } | undefined;
+    };
+    appearance?: {
+        padding?: string;
+        spacing?: string;
         visibility?: {
           conditional: RuleGroup;
         }
-        [key: string]: string | boolean | { conditional: RuleGroup } | undefined;
     };
     validation?: {
         isRequired?: boolean;

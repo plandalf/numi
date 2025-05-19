@@ -59,7 +59,8 @@ function ButtonBlockComponent({ context }: { context: BlockContextType }) {
 
   const appearance = Numi.useAppearance([
     Appearance.padding('Padding', 'Padding', {}),
-    Appearance.spacing('Spacing', 'Spacing', {})
+    Appearance.spacing('Spacing', 'Spacing', {}),
+    Appearance.visibility('visibility', 'Visibility', {}, { conditional: [] }),
   ]);
 
   const font = style?.font as FontValue;

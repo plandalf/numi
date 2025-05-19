@@ -1,4 +1,4 @@
-import Numi, { Style, BlockContext } from "@/contexts/Numi";
+import Numi, { Style, BlockContext, Appearance } from "@/contexts/Numi";
 import { BlockContextType } from "@/types/blocks";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useContext, useEffect, useMemo, useRef, useCallback } from "react";
@@ -24,8 +24,12 @@ function OptionSelectorComponent({ context }: { context: BlockContextType }) {
     inspector: 'select',
     label: 'Default (Selected Tab)',
   });
-
-  const appearance = Numi.useStyle([
+    
+  const appearance = Numi.useAppearance([
+    Appearance.visibility('visibility', 'Visibility', {}, { conditional: [] }),
+  ]);
+  
+  const style = Numi.useStyle([
     Style.backgroundColor('activeBackgroundColor', 'Selected', {}, '#000000'),
     Style.backgroundColor('inactiveBackgroundColor', 'Unselected', {}, '#FFFFFF'),
   ]);
@@ -136,7 +140,7 @@ function OptionSelectorComponent({ context }: { context: BlockContextType }) {
       <Tabs defaultValue={selectedTab} onValueChange={handleTabChange} className="w-full">
         <TabsList className="mb-2 h-auto p-0 w-full">
           {Array.isArray(items) && items.map((item) => (
-            <TabsTrigger key={item.key} value={item.key} className="w-full h-10" style={{ backgroundColor: item.key === selectedTab ? appearance.activeBackgroundColor : appearance.inactiveBackgroundColor }}>
+            <TabsTrigger key={item.key} value={item.key} className="w-full h-10" style={{ backgroundColor: item.key === selectedTab ? style.activeBackgroundColor : style.inactiveBackgroundColor }}>
               {item.label}
             </TabsTrigger>
           ))}

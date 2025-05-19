@@ -4,38 +4,78 @@ import { JSONSchemaEditor } from '@/components/editor/json-schema-editor';
 import { Block } from '@/types/offer';
 import { Label } from '../ui/label';
 import { Checkbox } from '../ui/checkbox';;
-import type { HookUsage } from '@/types/blocks';
+import type { HookUsage, HookTypeSection } from '@/types/blocks';
 import { StringEditor } from '@/components/editor/string-editor';
 import { BooleanEditor } from '@/components/editor/boolean-editor';
 import { EnumerationEditor } from '@/components/editor/enumeration-editor';
 import { FileEditor } from '@/components/editor/file-editor';
 import { ColorPickerEditor } from '@/components/editor/color-picker-editor';
-import { AlignmentPickerEditor } from '@/components/editor/alignment-picker-editor';
-import { NumberEditor } from '../editor/number-editor';
 import { InteractionEventEditor } from '../editor/interaction-event-editor';
-import { ConditionVisibilityEditor } from '../editor/condition-visibility-editor';
+import { ConditionVisibilityEditor, RuleGroup } from '../editor/condition-visibility-editor';
 import { useEditor } from '@/contexts/offer/editor-context';
 import { getThemeColors } from './page-theme';
 import { StyleEditor, StyleItem } from '../editor/style-editor';
 import { usePage } from '@inertiajs/react';
 import { EditProps } from '@/pages/offers/edit';
+import { SpacingEditor } from '../editor/spacing-editor';
 
-export const AppearanceEditor = ({ globalState, block, onUpdate }: { globalState: GlobalState | null, block: Block, onUpdate: (block: Block) => void }) => {
+export const AppearanceSection = ({ globalState, block, onUpdate }: { globalState: GlobalState | null, block: Block, onUpdate: (block: Block) => void }) => {
+  if (!globalState) return null;
 
+  const appearanceHooks = globalState.hookUsage[block.id].filter((hook) => hook.type === 'appearance');
+
+  const onAppearanceChange = (key: string, value: string | RuleGroup | null) => {
+    onUpdate({
+      ...block,
+      appearance: { ...block.appearance, [key]: value }
+    });
+  }
+  
+  return (
+    <div className="flex flex-col gap-3 mb-6">
+      <h3 className="font-semibold">Appearance</h3>
+        {appearanceHooks.map((hook) => {
+          return (
+            <>
+              {hook.inspector === 'visibilityPicker' ? (
+                <ConditionVisibilityEditor
+                  key={hook.name}
+                  value={block.appearance?.visibility?.conditional || []}
+                  onChange={value => onAppearanceChange('visibility', { conditional: value })}
+                />
+              ) : hook.inspector === 'spacingPicker' ? (
+                <SpacingEditor
+                  key={hook.name}
+                  label={hook.label}
+                  value={block.appearance?.[hook.name]}
+                  onChangeProperty={value => onAppearanceChange(hook.name, value)}
+                />
+              ) : (
+                <div>
+                  {hook.name}
+                </div>
+              )}
+            </>
+          );
+        })}
+    </div>
+  );
+}
+
+const StyleSection = ({ globalState, block, onUpdate }: { globalState: GlobalState | null, block: Block, onUpdate: (block: Block) => void }) => {
+  
   const { fonts } = usePage<EditProps>().props;
   const { data } = useEditor();
   const themeColors = getThemeColors(data.theme);
 
   if (!globalState) return null;
 
-  const appearanceHooks = globalState.hookUsage[block.id].filter((hook) => hook.type === 'appearance' && hook.name !== 'visibility');
+  const styleHooks = globalState.hookUsage[block.id].filter((hook) => hook.type === 'style');
 
-  const visibilityHook = globalState.hookUsage[block.id].find((hook) => hook.name === 'visibility');
-
-  const styleItems = appearanceHooks.map((hook) => ({
+  const styleItems = styleHooks.map((hook) => ({
     name: hook.name,
     label: hook.label,
-    value: block.appearance?.[hook.name],
+    value: block.style?.[hook.name],
     defaultValue: hook.defaultValue,
     inspector: hook.inspector,
     options: hook.options,
@@ -46,21 +86,20 @@ export const AppearanceEditor = ({ globalState, block, onUpdate }: { globalState
   const onStyleChange = (key: string, value: string | boolean) => {
     onUpdate({
       ...block,
-      appearance: { ...block.appearance, [key]: value }
+      style: { ...block.style, [key]: value }
     });
   };
 
   const onStyleDelete = (key: string) => {
     onUpdate({
       ...block,
-      appearance: { ...block.appearance, [key]: undefined }
+      style: { ...block.style, [key]: undefined }
     });
   };
 
   return (
     <div className="flex flex-col gap-3 mb-6">
-      <h3 className="font-semibold">Appearance</h3>
-      <Label className="text-sm">Styles</Label>
+      <h3 className="font-semibold">Style</h3>
       <StyleEditor
         items={styleItems}
         onChange={onStyleChange}
@@ -68,14 +107,8 @@ export const AppearanceEditor = ({ globalState, block, onUpdate }: { globalState
         themeColors={themeColors}
         fonts={fonts}
       />
-      {visibilityHook && (
-        <ConditionVisibilityEditor
-          value={block.appearance?.visibility?.conditional || []}
-          onChange={value => onUpdate({ ...block, appearance: { ...block.appearance, visibility: { conditional: value } } })}
-        />
-      )}
     </div>
-  );
+  )
 }
 
 const ValidationSection = ({ block, onUpdate }: { block: Block, onUpdate: (block: Block) => void }) => {
@@ -188,6 +221,7 @@ export const Inspector = ({
   const sectionOrder = [
     { type: 'other', label: 'Properties' },
     { type: 'appearance', label: 'Appearance' },
+    { type: 'style', label: 'Style' },
     { type: 'validation', label: 'Validation' },
     { type: 'interaction', label: 'Interaction' },
     { type: 'conditions', label: 'Conditions' }
@@ -201,7 +235,7 @@ export const Inspector = ({
             {sectionOrder.map(({ type, label }) => {
               // For 'other' type, combine all non-special types
               const sectionHooks = type === 'other'
-                ? hooks.filter(hook => !['appearance', 'validation', 'interaction', 'conditions'].includes(hook.type))
+                ? hooks.filter(hook => !['appearance', 'style', 'validation', 'interaction', 'conditions'].includes(hook.type as HookTypeSection))
                 : groupedHooks[type] || [];
 
               if (sectionHooks.length === 0) return null;
@@ -209,7 +243,9 @@ export const Inspector = ({
               return (
                 <div key={type} className="space-y-4">
                   {type === 'appearance' ? (
-                    <AppearanceEditor globalState={globalState} block={block} onUpdate={onUpdate} />
+                    <AppearanceSection globalState={globalState} block={block} onUpdate={onUpdate} />
+                  ) : type === 'style' ? (
+                    <StyleSection globalState={globalState} block={block} onUpdate={onUpdate} />
                   ) : type === 'validation' ? (
                     <ValidationSection block={block} onUpdate={onUpdate} />
                   ) : type === 'interaction' || type === 'eventCallback' ? (

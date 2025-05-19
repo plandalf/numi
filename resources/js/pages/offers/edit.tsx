@@ -363,7 +363,6 @@ function EditApp() {
 
     // --- BLOCK DROP ---
     if (activeType === 'block') {
-      console.log('block drop', activeRawId);
       // Set the selectedBlockId to the dragged block
       setSelectedBlockId(activeRawId);
       setActiveItem(null);

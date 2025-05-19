@@ -1,4 +1,4 @@
-import Numi from "@/contexts/Numi";
+import Numi, { Appearance } from "@/contexts/Numi";
 import { BlockContextType } from "@/types/blocks";
 import { useState, useEffect, useRef } from "react";
 import { Elements, PaymentElement, useStripe, useElements, AddressElement } from '@stripe/react-stripe-js';
@@ -27,6 +27,12 @@ function StripeElementsComponent({ context }: { context: BlockContextType }) {
     defaultValue: 'Enter your payment details to complete your purchase',
     inspector: 'text',
   });
+  
+  const appearance = Numi.useAppearance([
+    Appearance.padding('padding', 'Padding', {}),
+    Appearance.spacing('spacing', 'Spacing', {}),
+    Appearance.visibility('visibility', 'Visibility', {}, { conditional: [] }),
+  ]);
 
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
