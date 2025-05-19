@@ -268,6 +268,12 @@ export function GlobalStateProvider({ offer, session: defaultSession, editor = f
       quantity: quantity ?? undefined,
       required: required ?? undefined
     });
+
+
+    if (response.status === 200) {
+      setSession(response.data);
+    }
+
     return response.data;
   };
 

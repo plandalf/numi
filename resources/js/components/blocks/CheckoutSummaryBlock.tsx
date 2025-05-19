@@ -58,21 +58,13 @@ function CheckoutSummaryComponent({ context }: { context: BlockContextType }) {
     <div className="border rounded-md p-4 bg-white shadow-sm">
       {/*<div className="text-xs bg-gray-100 p-1 mb-4 rounded">OrderSummaryComponent: {context.blockId}</div>*/}
 
-      {/* Debug controls */}
-      <div className="flex items-center space-x-2 mb-4 bg-gray-50 p-2 rounded text-sm">
-        <span>showDiscountForm:</span>
-        <span className={showDiscountForm ? "text-green-600 font-bold" : "text-red-600 font-bold"}>
-          {showDiscountForm ? "TRUE" : "FALSE"}
-        </span>
-      </div>
-
       <h3 className="text-lg font-medium mb-4">{title}</h3>
 
       {/* Order Items */}
       <div className="space-y-3 mb-4">
         {session.line_items.map((item: any) => (
           <div key={item.id} className="flex items-center gap-3">
-            {showImages && (
+            {showImages && item.image && (
               <div className="w-12 h-12 border rounded flex-shrink-0">
                 <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
               </div>
@@ -123,15 +115,19 @@ function CheckoutSummaryComponent({ context }: { context: BlockContextType }) {
           <span>{formatMoney(session.subtotal, session.currency)}</span>
         </div>
 
-        <div className="flex justify-between">
-          <span>Shipping</span>
-          <span>{formatMoney(session.shipping, session.currency)}</span>
-        </div>
+        {session.shipping > 0 && (
+          <div className="flex justify-between">
+            <span>Shipping</span>
+            <span>{formatMoney(session.shipping, session.currency)}</span>
+          </div>
+        )}
 
-        <div className="flex justify-between">
-          <span>Taxes</span>
-          <span>{formatMoney(session.taxes, session.currency)}</span>
-        </div>
+        {session.taxes > 0 && (
+          <div className="flex justify-between">
+            <span>Taxes</span>
+            <span>{formatMoney(session.taxes, session.currency)}</span>
+          </div>
+        )}
 
         {session.discount > 0 && (
           <div className="flex justify-between text-green-600">
