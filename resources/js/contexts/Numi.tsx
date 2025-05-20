@@ -297,7 +297,7 @@ class Numi {
   // }
 
   static useEventCallback(props: { name: string; elements?: Record<'value' | 'label', string>[]; events?: { label: string; events: Event[] }[] }): {
-    callbacks: any[];
+    interaction?: Record<string, any>;
     executeCallbacks: (type: Event, element?: string) => void;
   } {
     const checkout = Numi.useCheckout();
@@ -339,7 +339,7 @@ class Numi {
     }, [blockContext]);
 
     return {
-      callbacks: blockContext.blockConfig.interaction?.onClick ?? [],
+      interaction: blockContext.blockConfig.interaction,
       executeCallbacks
     };
   }

@@ -95,8 +95,9 @@ function ActionSelector({ action, value, onChange }: ActionSelectorProps) {
 
 export const AddActionDialog: React.FC<ActionEditorProps> = ({ label, value, onChange, open, onOpenChange, elementOptions, events }) => {
   const getDefaultElement = () => {
-    if (!elementOptions || elementOptions.length === 0) return '';
-    return elementOptions[0].value;
+    if(elementOptions && elementOptions.length === 1) return elementOptions[0].value;
+
+    return '';
   };
 
   const emptyAction: EventAction = { event: events?.[0]?.value as Event || Event.onClick, action: '', element: getDefaultElement(), value: '' };
