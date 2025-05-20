@@ -25,11 +25,7 @@ export function JSONSchemaEditor({
   themeColors?: Record<string, string>;
 }) {
   const schemaToUse = rootSchema || schema;
-  
-  // Trigger the change of the value once upon initial render
-  useEffect(() => {
-    onChange(value);
-  }, []);
+
 
   // Handle $ref references
   if ('$ref' in schema && schema.$ref) {

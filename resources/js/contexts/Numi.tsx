@@ -384,7 +384,7 @@ const Numi = {
     }, [blockContext.blockId, props.name]);
 
     // options list data must match
-    const data = get(blockContext.blockConfig, `content.${props.name}`, {});
+    const data = get(blockContext.blockConfig, `content.${props.name}`, props.defaultValue);
 
     // return options
     return [data];
