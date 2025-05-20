@@ -16,6 +16,7 @@ import {
 import { QRCodeSVG } from "qrcode.react";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
+import { toast } from 'sonner';
 
 const embedTypes = [
   { id: 'standard', icon: <Maximize className="size-6 text-white" />, name: 'Standard', description: 'Hosted link that opens in a new tab' },
@@ -34,8 +35,8 @@ export function PageShare() {
   const offerUrl = `${window.location.origin}/o/${offer.id}`;
 
   const copyToClipboard = (text: string) => {
-      navigator.clipboard.writeText(text);
-      // You might want to add a toast notification here
+    navigator.clipboard.writeText(text);
+    toast.success('URL copied to clipboard');
   };
 
   const getEmbedCode = (type: string) => {
@@ -65,9 +66,9 @@ function openOfferPopup() {
   return (
     <div className="max-w-2xl mx-auto space-y-8 py-12">
       <Card>
-          <CardHeader>
-            <PublishStatusCard isPublished={isPublished} />
-          </CardHeader>
+          {/*<CardHeader>*/}
+          {/*  <PublishStatusCard isPublished={isPublished} />*/}
+          {/*</CardHeader>*/}
           <CardContent className="space-y-2">
               <CardTitle>Experience link</CardTitle>
               <CardDescription>

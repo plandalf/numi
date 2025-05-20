@@ -49,8 +49,8 @@ export function OrganizationSwitcher() {
             <SidebarMenuItem >
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <SidebarMenuButton size="md" className="">
-                    <Building2 className="mr-2 size-4" />
+                  <SidebarMenuButton size="md" className="border border-slate-200">
+                    {/*<Building2 className="mr-2 size-4" />*/}
                     <span className="flex-1 text-left">{auth.user.current_organization?.name ?? 'Select Organization'}</span>
                     <ChevronDown className="ml-auto size-4" />
                   </SidebarMenuButton>
