@@ -1,7 +1,7 @@
 import Numi, { Appearance, Style } from "@/contexts/Numi";
 import { cn, formatMoney } from "@/lib/utils";
 import { BlockContextType } from "@/types/blocks";
-import { useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 
 function CheckoutSummaryComponent({ context }: { context: BlockContextType }) {
 
@@ -332,7 +332,7 @@ function CheckoutSummaryComponent({ context }: { context: BlockContextType }) {
       <div className="space-y-3 mb-4">
         {session.line_items.map((item: any) => (
           <div key={item.id} className="flex items-center gap-3">
-            {showImages && (
+            {showImages && item.image && (
               <div className="w-12 h-12 border rounded flex-shrink-0">
                 <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
               </div>
@@ -385,15 +385,20 @@ function CheckoutSummaryComponent({ context }: { context: BlockContextType }) {
           <span style={summaryTextStyle}>{formatMoney(session.subtotal, session.currency)}</span>
         </div>
 
+        {session.shipping > 0 && (
         <div className="flex justify-between">
           <span style={summaryTextStyle}>Shipping</span>
           <span style={summaryTextStyle}>{formatMoney(session.shipping, session.currency)}</span>
         </div>
+        )}
 
+
+        {session.taxes > 0 && (
         <div className="flex justify-between">
           <span style={summaryTextStyle}>Taxes</span>
           <span style={summaryTextStyle}>{formatMoney(session.taxes, session.currency)}</span>
         </div>
+        )}
 
         {session.discount > 0 && (
           <div className="flex justify-between text-green-600">

@@ -1,4 +1,5 @@
 import { RuleGroup } from "@/components/editor/condition-visibility-editor";
+import { Event } from "@/components/editor/interaction-event-editor";
 import type { Theme } from "@/types/theme";
 
 // Types
@@ -38,6 +39,7 @@ export interface HookUsage {
     min?: number; // For number type
     max?: number; // For number type
     items?: any[];
+    events?: { label: string; events: Event[] }[];
   }
 
 export interface GlobalState {

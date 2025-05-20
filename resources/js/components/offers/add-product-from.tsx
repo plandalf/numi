@@ -106,6 +106,7 @@ export default function AddProductForm({
     key: initialData?.key || defaultKey,
     is_required: initialData?.is_required || offerItemsCount === 0,
     prices: initialData?.prices?.map(price => price.id.toString()) || [],
+    default_price_id: initialData?.default_price_id || null,
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -143,6 +144,10 @@ export default function AddProductForm({
   const handlePriceSelect = (priceIds: string[]) => {
     const newPrices = [...data.prices.filter((id: string) => !pricesOptions.flatMap(option => option.value).includes(id)), ...priceIds];
     setData('prices', newPrices);
+
+    if(!data.default_price_id) {
+      setData('default_price_id', newPrices[0]);
+    }
   };
 
   return (

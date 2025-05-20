@@ -21,6 +21,7 @@ use App\Workflows\RunSequenceWorkflow;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use Workflow\WorkflowStub;
+use App\Http\Controllers\OrdersController;
 
 Route::redirect('/', '/dashboard')->name('home');
 
@@ -231,6 +232,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
         Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
         Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+
+        Route::get('/orders', [OrdersController::class, 'index'])->name('orders.index');
+        Route::get('/orders/{order:uuid}', [OrdersController::class, 'show'])->name('orders.show');
     });
 });
 

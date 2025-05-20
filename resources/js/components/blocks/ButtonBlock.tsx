@@ -4,6 +4,7 @@ import cx from "classnames";
 import { useCheckoutState } from "@/pages/checkout-main";
 import { cn } from "@/lib/utils";
 import { useMemo } from "react";
+import { Event, EVENT_LABEL_MAP } from "../editor/interaction-event-editor";
 
 // Does Submitting of field forms.
 function ButtonBlockComponent({ context }: { context: BlockContextType }) {
@@ -71,6 +72,16 @@ function ButtonBlockComponent({ context }: { context: BlockContextType }) {
 
   const { executeCallbacks } = Numi.useEventCallback({
     name: 'click',
+    elements: [
+      {
+        value: text,
+        label: text,
+      },
+    ],
+    events: [{
+      label: EVENT_LABEL_MAP[Event.onClick],
+      events: [Event.onClick],
+    }],
   });
 
   const buttonStyles = useMemo(() => ({
@@ -121,7 +132,7 @@ function ButtonBlockComponent({ context }: { context: BlockContextType }) {
         disabled={type === 'submit' && isSubmitting}
         className={buttonClasses}
         style={buttonStyles}
-        onClick={() => executeCallbacks('button', 'onClick')}
+        onClick={() => executeCallbacks(Event.onClick)}
       >
         {type === 'submit' && isSubmitting ? (
           <div className="flex items-center justify-center space-x-2">

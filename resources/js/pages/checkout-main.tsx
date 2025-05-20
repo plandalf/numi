@@ -46,9 +46,11 @@ export interface GlobalState {
 
   // Line Items
   updateLineItem: (offerItemId: string, price: string) => Promise<void>;
+
+  isEditor: boolean;
 }
 
-export function GlobalStateProvider({ offer, session: defaultSession, children }: { offer: OfferConfiguration, session: CheckoutSession, children: React.ReactNode }) {
+export function GlobalStateProvider({ offer, session: defaultSession, editor = false, children }: { offer: OfferConfiguration, session: CheckoutSession, editor?: boolean, children: React.ReactNode }) {
   // Field states for all blocks
   const [fieldStates, setFieldStates] = useState<Record<string, FieldState>>({});
   const [hookUsage, setHookUsage] = useState<Record<string, HookUsage[]>>({});
@@ -255,6 +257,10 @@ export function GlobalStateProvider({ offer, session: defaultSession, children }
   };
 
   const updateLineItem = async ({ item, price, quantity, required }: SetItemActionValue) => {
+    if (editor) {
+      return;
+    }
+
     const response = await axios.post(`/checkouts/${session.id}/mutations`, {
       action: 'setItem',
       offer_item_id: item,
@@ -262,6 +268,12 @@ export function GlobalStateProvider({ offer, session: defaultSession, children }
       quantity: quantity ?? undefined,
       required: required ?? undefined
     });
+
+
+    if (response.status === 200) {
+      setSession(response.data);
+    }
+
     return response.data;
   };
 
@@ -335,7 +347,9 @@ export function GlobalStateProvider({ offer, session: defaultSession, children }
     // submit
     offer,
     session,
-    setSession
+    setSession,
+
+    isEditor: editor
   };
 
   return (

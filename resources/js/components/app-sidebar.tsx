@@ -5,14 +5,24 @@ import { OrganizationSwitcher } from '@/components/organization-switcher';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
 import { type NavItem } from '@/types';
 import { Link } from '@inertiajs/react';
-import { HomeIcon, PackageSearchIcon, OrigamiIcon, BlocksIcon, ToyBrickIcon } from 'lucide-react';
+import {
+  HomeIcon,
+  PackageSearchIcon,
+  OrigamiIcon,
+  BlocksIcon,
+  ToyBrickIcon,
+  StoreIcon,
+  BrushIcon,
+ShoppingCartIcon,
+  PlugZapIcon, DatabaseZapIcon, BotIcon
+} from 'lucide-react';
 import AppLogo from './app-logo';
 
 const mainNavItems: NavItem[] = [
     {
-        title: 'Home',
+        title: 'Offers',
         href: '/dashboard',
-        icon: HomeIcon,
+        icon: StoreIcon,
     },
     {
         title: 'Products',
@@ -20,19 +30,24 @@ const mainNavItems: NavItem[] = [
         icon: PackageSearchIcon,
     },
     {
+      title: 'Orders',
+      href: '/orders',
+      icon: ShoppingCartIcon,
+  },
+    {
         title: 'Templates',
         href: '/templates',
-        icon: OrigamiIcon,
+        icon: BrushIcon,
     },
     {
         title: 'Integrations',
         href: '/integrations',
-        icon: BlocksIcon,
+        icon: PlugZapIcon,
     },
   {
         title: 'Sequences',
         href: '/sequences',
-        icon: ToyBrickIcon,
+        icon: BotIcon,
     },
 ];
 

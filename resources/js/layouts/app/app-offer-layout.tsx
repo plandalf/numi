@@ -95,6 +95,11 @@ function OfferHeader({ offer, isNameDialogOpen, setIsNameDialogOpen }: AppHeader
         setShowPublishDialog(true);
     };
 
+    const handleCopyOfferClick = () => {
+      navigator.clipboard.writeText(offerUrl);
+      toast.success('Copied to clipboard');
+    }
+
     return (
         <div className="border-sidebar-border/80 border-b bg-primary flex justify-between h-14 items-center p-3 gap-x-4">
             {/* Left side */}
@@ -225,7 +230,7 @@ function OfferHeader({ offer, isNameDialogOpen, setIsNameDialogOpen }: AppHeader
                             type="button"
                             size="sm"
                             className="px-3"
-                            onClick={() => navigator.clipboard.writeText(`htthttps://numi-main-tf0jzg.laravel.com/offer/${offer.id}`)}
+                            onClick={handleCopyOfferClick}
                           >
                             Copy
                           </Button>

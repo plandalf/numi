@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Actions\Checkout\CommitCheckoutAction;
 use App\Actions\Checkout\CreateCheckoutSessionAction;
 use App\Http\Controllers\Controller;
+use App\Http\Resources\Checkout\CheckoutSessionResource;
 use App\Models\Catalog\Price;
 use App\Models\Checkout\CheckoutSession;
 use App\Models\Store\OfferItem;
@@ -64,8 +65,9 @@ class CheckoutSessionController extends Controller
                 if($request->has('required')) {
                     if(!$required) {
                         $checkoutSession->lineItems()->where('offer_item_id', $request->input('offer_item_id'))->delete();
+                        $checkoutSession->load(['lineItems.offerItem', 'lineItems.price.integration']);
 
-                        return redirect()->back()->with('success', 'Item removed from checkout');
+                        return new CheckoutSessionResource($checkoutSession);
                     }
                 }
 
@@ -77,8 +79,8 @@ class CheckoutSessionController extends Controller
                     'deleted_at' => null,
                 ]);
 
-
-                return redirect()->back()->with('success', 'Item added to checkout');
+                $checkoutSession->load(['lineItems.offerItem', 'lineItems.price.integration']);
+                return new CheckoutSessionResource($checkoutSession);
             default:
                 abort(400);
         }

@@ -137,6 +137,7 @@ class ProcessOrder
             });
 
             $order->markAsCompleted();
+            $order->save();
 
             return $order;
         } catch (PaymentException $e) {

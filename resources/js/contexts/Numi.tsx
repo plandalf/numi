@@ -6,7 +6,7 @@ import get from "lodash/get";
 import debounce from "lodash/debounce";
 import { Theme } from "@/types/theme";
 import { CheckoutState, GlobalStateContext } from '@/pages/checkout-main';
-import { CallbackType } from "@/components/editor/interaction-event-editor";
+import { CallbackType, Event } from "@/components/editor/interaction-event-editor";
 
 export const BlockContext = createContext<BlockContextType>({
   blockId: '',
@@ -135,7 +135,7 @@ export const Appearance = {
     inspector: args?.inspector ?? 'spacingPicker',
     options: args?.options ?? {},
   }),
-  
+
 
   visibility: (
     type: string = 'visibility',
@@ -315,57 +315,47 @@ interface CheckoutOptions {
 
 const Numi = {
 
-  useEventCallback(props: { name: string; elements?: Record<'value' | 'label', string>[] }): {
-    callbacks: any[];
-    updateHook: (hook: Partial<HookUsage>) => void;
-    executeCallbacks: (element: string, type: CallbackType) => void;
-  } {
+  useEventCallback(
+    props: {
+      name: string;
+      elements?: Record<'value' | 'label', string>[],
+      events?: { label: string; events: Event[] }[],
+      interaction?: Record<string, any>,
+      executeCallbacks: (type: Event, element?: string) => void,
+    }
+  ) {
     const checkout = Numi.useCheckout();
     const blockContext = useContext(BlockContext);
-    const [hook, setHook] = useState<HookUsage>({
-      name: props.name,
-      type: 'eventCallback',
-      defaultValue: null,
-      options: props.elements,
-    });
-
-    // Create a ref to hold the debounced function
-    const debouncedUpdateRef = useRef<ReturnType<typeof debounce> | null>(null);
-
-    // Initialize the debounced function on first render
-    useEffect(() => {
-      debouncedUpdateRef.current = debounce((newHook: Partial<HookUsage>) => {
-        setHook(prevHook => ({...prevHook, ...newHook}));
-      }, 300); // 300ms delay
-
-      // Cleanup function to cancel pending debounced calls
-      return () => {
-        if (debouncedUpdateRef.current) {
-          debouncedUpdateRef.current.cancel();
-        }
-      };
-    }, []);
 
     useEffect(() => {
-      blockContext.registerHook(hook);
-    }, [hook]);
-
-    const updateHook = useCallback((newHook: Partial<HookUsage>) => {
-      if (debouncedUpdateRef.current) {
-        debouncedUpdateRef.current(newHook);
-      }
+      blockContext.registerHook({
+        name: props.name,
+        type: 'eventCallback',
+        defaultValue: null,
+        options: props.elements,
+        events: props.events ?? [],
+      });
     }, []);
 
-    const executeCallbacks = useCallback((element: string, type: CallbackType) => {
+    const executeCallbacks = useCallback((type: Event, element?: string) => {
       if (blockContext.blockConfig.interaction?.[type]) {
-        const callbacks = blockContext.blockConfig.interaction[type].filter(callback => callback?.element === element);
+        const callbacks = element
+          ? blockContext.blockConfig.interaction[type].filter((callback: { element?: string }) => callback?.element === element)
+          : blockContext.blockConfig.interaction[type];
+
         for (const callback of callbacks) {
           switch (callback.action) {
             case 'setSlot':
               // checkout.setSlot(callback.slot, callback.price);
               break;
+            case 'setLineItemQuantity':
+            case 'changeLineItemPrice':
+            case 'deactivateLineItem':
             case 'setItem':
               checkout.updateLineItem(callback.value);
+              break;
+            case 'redirect':
+              window.open(callback.value, '_blank');
               break;
           }
         }
@@ -373,8 +363,7 @@ const Numi = {
     }, [blockContext]);
 
     return {
-      callbacks: blockContext.blockConfig.interaction?.onClick ?? [],
-      updateHook,
+      interaction: blockContext.blockConfig.interaction,
       executeCallbacks
     };
   },
@@ -384,7 +373,7 @@ const Numi = {
     schema: JSONSchemaValue,
     defaultValue: any,
   }): Array<any> {
-                  
+
     const blockContext = useContext(BlockContext);
 
     useEffect(() => {
@@ -392,14 +381,12 @@ const Numi = {
         name: props.name,
         type: 'jsonSchema',
         schema: props.schema,
-        defaultValue: props.defaultValue ?? {}
+        defaultValue: props.defaultValue || {}
       });
     }, [blockContext.blockId, props.name]);
 
-    // options list data must match
-    const data = get(blockContext.blockConfig, `content.${props.name}`, props.defaultValue);
+    const data = get(blockContext.blockConfig, `content.${props.name}`, props.defaultValue || {});
 
-    // return options
     return [data];
   },
 
@@ -488,7 +475,7 @@ const Numi = {
     // Initialize the debounced function on first render
     useEffect(() => {
       debouncedUpdateRef.current = debounce((newHook: Partial<HookUsage>) => {
-        setHook(prevHook => ({...prevHook, ...newHook}));
+        setHook(prevHook => ({ ...prevHook, ...newHook }));
       }, 300); // 300ms delay
 
       // Cleanup function to cancel pending debounced calls
@@ -542,7 +529,7 @@ const Numi = {
     // Initialize the debounced function on first render
     useEffect(() => {
       debouncedUpdateRef.current = debounce((newHook: Partial<HookUsage>) => {
-        setHook(prevHook => ({...prevHook, ...newHook}));
+        setHook(prevHook => ({ ...prevHook, ...newHook }));
       }, 300); // 300ms delay
 
       // Cleanup function to cancel pending debounced calls

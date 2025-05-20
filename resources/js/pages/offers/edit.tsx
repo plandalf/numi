@@ -386,7 +386,7 @@ function EditApp() {
     <AppOfferLayout offer={offer}>
       <Head title={`Edit ${offer.name || 'Untitled Offer'}`} />
 
-      <GlobalStateProvider offer={data} session={session}>
+      <GlobalStateProvider offer={data} session={session} editor>
 
         <DndContext
           sensors={sensors}
