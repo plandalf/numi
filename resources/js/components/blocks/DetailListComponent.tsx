@@ -217,7 +217,7 @@ function DetailListBlockComponent({ context }: { context: BlockContextType }) {
             </div>
 
             {item.caption && (
-              <div className="text-sm text-gray-500" style={captionStyle}>{item.caption}</div>
+              <div className="text-sm text-gray-500 prose" style={captionStyle}>{item.caption}</div>
             )}
           </div>
         </div>
@@ -230,7 +230,7 @@ function DetailListBlockComponent({ context }: { context: BlockContextType }) {
   return (
     <div style={containerStyles}>
       {dataToRender && dataToRender.length > 0 && (
-        <div className="flex flex-col prose" style={innerContainerStyle}>
+        <div className="flex flex-col" style={innerContainerStyle}>
           {dataToRender.map((item: any) => renderDetailItem(item))}
         </div>
       )}
