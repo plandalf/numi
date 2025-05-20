@@ -2,6 +2,7 @@ import Numi, { Style } from "@/contexts/Numi";
 import { BlockContextType } from "@/types/blocks";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useEffect, useMemo, useCallback, useRef } from "react";
+import { Event, EVENT_LABEL_MAP } from "../editor/interaction-event-editor";
 
 function OptionSelectorComponent({ context }: { context: BlockContextType }) {
   const appearance = Numi.useStyle([
@@ -56,15 +57,22 @@ function OptionSelectorComponent({ context }: { context: BlockContextType }) {
     return Array.isArray(items) ? items.filter(item => item.key).map(item => ({ value: item.key, label: item.label })) : [];
   }, [items]);
 
-  const { executeCallbacks } = Numi.useEventCallback({ name: 'onClick', elements: interactionElements });
+  const { executeCallbacks } = Numi.useEventCallback({
+    name: 'onClick',
+    elements: interactionElements,
+    events: [{
+      label: EVENT_LABEL_MAP[Event.onClick],
+      events: [Event.onClick],
+    }]
+  });
 
   const handleTabChange = useCallback((value: string) => {
     setSelectedTab(value);
-    executeCallbacks(value, 'onClick');
+    executeCallbacks(Event.onClick, value);
   }, [executeCallbacks]);
 
   useEffect(() => {
-    executeCallbacks(selectedTab, 'onClick');
+    executeCallbacks(Event.onClick, selectedTab);
   }, []);
 
   const prevItemsRef = useRef(items);

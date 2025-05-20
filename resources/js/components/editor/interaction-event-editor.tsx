@@ -8,65 +8,122 @@ import {
   DialogTitle,
   DialogClose,
 } from '../ui/dialog';
-import { Trash2 } from 'lucide-react';
+import { MousePointerClick, Trash2 } from 'lucide-react';
 import { usePage } from '@inertiajs/react';
 import { EditProps } from '@/pages/offers/edit';
 import { Combobox } from '../combobox';
 import SetItemAction, { SetItemActionValue } from '../actions/set-item-action';
+import { Separator } from '../ui/separator';
+import RedirectToUrl from '../actions/redirect-to-url';
 
 const ACTION_OPTIONS = [
-  { value: 'setItem', label: 'Set line item' }
+  { value: 'changeLineItemPrice', label: 'Change line item price' },
+  { value: 'setLineItemQuantity', label: 'Set line item quantity' },
+  { value: 'deactivateLineItem', label: 'Deactivate line item' },
+  { value: 'setItem', label: 'Set line item (advanced)' },
+  { value: 'redirect', label: 'Redirect to URL' },
 ];
 
-type OnClickActionValue = SetItemActionValue | string;
+export enum Event {
+  onClick = 'onClick',
+  onSelect = 'onSelect',
+  onUnSelect = 'onUnSelect',
+}
 
-export type CallbackType = 'onClick' | 'onChange' | 'onTabChange';
-export interface OnClickAction {
+export const EVENT_LABEL_MAP = {
+  [Event.onClick]: 'Add On Click Action',
+  [Event.onSelect]: 'Choose Select/Unselect Action',
+  [Event.onUnSelect]: 'Choose Select/Unselect Action',
+}
+
+export const EVENTS = [
+  {
+    value: Event.onClick,
+    label: 'On Click'
+  },
+  {
+    value: Event.onSelect,
+    label: 'On Select'
+  },
+  {
+    value: Event.onUnSelect,
+    label: 'On Unselect'
+  },
+]
+type EventValue = SetItemActionValue | string;
+export interface EventAction {
+  event: Event;
   action: string;
   element: string;
-  value: OnClickActionValue;
+  value: EventValue;
 }
+
+export type GroupedEventActions = {
+  [key in Event]?: EventAction[];
+};
 
 interface ActionEditorProps {
   label: string;
-  value: OnClickAction[];
-  onChange: (value: OnClickAction[]) => void;
+  value: GroupedEventActions;
+  onChange: (value: GroupedEventActions) => void;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   elementOptions?: Record<'value' | 'label', string>[];
+  events?: Record<'value' | 'label', string>[];
+  event?: Event;
 }
 
 interface ActionSelectorProps {
   action: string;
-  value: OnClickActionValue;
-  onChange: (value: OnClickActionValue) => void;
+  value: EventValue;
+  onChange: (value: EventValue) => void;
 }
 
 function ActionSelector({ action, value, onChange }: ActionSelectorProps) {
   switch (action) {
+    case 'setLineItemQuantity':
+    case 'changeLineItemPrice':
+    case 'deactivateLineItem':
     case 'setItem':
-      return <SetItemAction value={value as SetItemActionValue} onChange={onChange} />;
+      return <SetItemAction value={value as SetItemActionValue} onChange={onChange} action={action} />;
+    case 'redirect':
+      return <RedirectToUrl value={value as string} onChange={onChange} />;
     default:
       return null;
   }
 }
 
-export const AddActionDialog: React.FC<ActionEditorProps> = ({ label, value, onChange, open, onOpenChange, elementOptions }) => {
-  const defaultValue = value.length > 0 ? value.map(v => ({ ...v, action: v.action || ACTION_OPTIONS[0].value })) : [{ action: ACTION_OPTIONS[0].value, element: '', value: '' }];
-  const [actions, setActions] = useState<OnClickAction[]>(defaultValue);
+export const AddActionDialog: React.FC<ActionEditorProps> = ({ label, value, onChange, open, onOpenChange, elementOptions, events }) => {
+  const getDefaultElement = () => {
+    if (!elementOptions || elementOptions.length === 0) return '';
+    return elementOptions[0].value;
+  };
 
-  console.log("element options", elementOptions);
-  const handleFieldChange = (idx: number, field: keyof OnClickAction, fieldValue: OnClickActionValue) => {
+  const emptyAction: EventAction = { event: events?.[0]?.value as Event || Event.onClick, action: '', element: getDefaultElement(), value: '' };
+
+  // Flatten the grouped actions into an array for the dialog
+  const flattenedActions = Object.values(value || {}).flat().filter(v => v);
+  const defaultValue = flattenedActions.length > 0
+    ? flattenedActions.map(v => ({
+        ...v,
+        event: v.event || events?.[0]?.value || Event.onClick,
+        action: v.action,
+        element: elementOptions?.some(opt => opt.value === v.element) ? v.element : getDefaultElement()
+      }))
+    : [emptyAction];
+
+  const [actions, setActions] = useState<EventAction[]>(defaultValue);
+
+  const handleFieldChange = (idx: number, field: keyof EventAction, fieldValue: EventValue) => {
     const updated = actions.map((item, i) =>
       i === idx ? { ...item, [field]: fieldValue } : item
     );
 
-    console.log('updated actions', updated);
     setActions(updated);
   };
 
   const handleAdd = () => {
-    const updated = [...actions, { action: ACTION_OPTIONS[0].value, element: '', value: '' }];
+    const updated = [...actions, emptyAction];
     setActions(updated);
   };
 
@@ -75,52 +132,85 @@ export const AddActionDialog: React.FC<ActionEditorProps> = ({ label, value, onC
     setActions(updated);
   };
 
+  const handleSave = () => {
+    // Group actions by event
+    const groupedActions = actions.reduce((acc, action) => {
+      const event = action.event;
+      if (!acc[event]) {
+        acc[event] = [];
+      }
+      acc[event].push(action);
+      return acc;
+    }, {} as GroupedEventActions);
+
+    // Ensure all events have at least an empty array
+    const eventsWithEmptyArrays = (events || EVENTS).reduce((acc, event) => {
+      acc[event.value as Event] = groupedActions[event.value as Event] || [];
+      return acc;
+    }, {} as GroupedEventActions);
+
+    onChange(eventsWithEmptyArrays);
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="md:min-w-[600px] flex flex-col">
+      <DialogContent className="md:min-w-[600px] flex flex-col max-h-[90vh] overflow-hidden">
         <DialogHeader>
           <DialogTitle>Edit {label} Actions</DialogTitle>
         </DialogHeader>
-        <div className="space-y-4">
+        <div className="space-y-4 overflow-y-auto pr-2">
           {actions.map((act, idx) => (
             <div key={idx} className="flex flex-col items-center ">
               <div className="flex flex-col border-b gap-2 p-4 mb-4 bg-[#F7F9FF] w-full rounded-md border">
                 <div className="flex flex-row justify-between w-full">
                   <div className="flex flex-row flex-wrap gap-2 items-center w-full">
-                  <Label className="block">{label}</Label>
+                  <Combobox
+                    items={events ?? []}
+                    selected={act.event}
+                    className="flex-1 min-w-[200px]"
+                    onSelect={(selected) => handleFieldChange(idx, 'event', selected as Event)}
+                    placeholder="Event..."
+                    hideSearch
+                    disabled={events?.length === 1}
+                    modal
+                  />
                   <Combobox
                     items={elementOptions ?? []}
                     selected={act.element}
-                    className="max-w-[200px]"
+                    className="flex-1 min-w-[200px]"
                     onSelect={(selected) => handleFieldChange(idx, 'element', selected as string)}
                     placeholder="Element..."
                     hideSearch
+                    disabled={elementOptions?.length === 1}
                     modal
                   />
                   </div>
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="ml-2"
+                    className="ml-2 shrink-0"
                     onClick={() => handleDelete(idx)}
                     aria-label="Delete action"
                   >
                     <Trash2 className="w-4 h-4" />
                   </Button>
                 </div>
-                <div className="flex flex-row flex-wrap gap-2 items-center w-full">
-                  <Label className="block">Action</Label>
+                <Separator className="w-full" />
+                <div className="flex flex-row gap-4 items-center w-full">
+                  <Label className="text-sm w-16">Action</Label>
                   <Combobox
                     items={ACTION_OPTIONS}
-                    selected={'setItem'}
-                    className="max-w-[200px]"
+                    selected={act.action}
+                    className="w-[300px]"
                     onSelect={(selected) => handleFieldChange(idx, 'action', selected as string)}
                     placeholder="Action..."
                     hideSearch
                     modal
-                    disabled //right now we only have one action
                   />
-                  <ActionSelector
+                </div>
+                <Separator className="w-full" />
+                <div className="flex flex-col gap-2 items-center w-full">
+                <ActionSelector
                     action={act.action}
                     value={act.value}
                     onChange={(value) => handleFieldChange(idx, 'value', value)}
@@ -132,21 +222,23 @@ export const AddActionDialog: React.FC<ActionEditorProps> = ({ label, value, onC
           <Button variant="secondary" onClick={handleAdd} className="mt-2">Add another action</Button>
         </div>
         <DialogClose asChild>
-          <Button variant="outline" className="mt-4 w-full" onClick={() => onChange(actions)}>Save</Button>
+          <Button variant="outline" className="mt-4 w-full" onClick={handleSave}>Save</Button>
         </DialogClose>
       </DialogContent>
     </Dialog>
   );
 };
 
-export const InteractionEventEditor: React.FC<Pick<ActionEditorProps, 'label' | 'value' | 'onChange' | 'elementOptions'>> = ({ label, value, onChange, elementOptions }) => {
+type InteractionEventEditorProps = Pick<ActionEditorProps, 'label' | 'value' | 'onChange' | 'elementOptions' | 'events'>;
+
+export const InteractionEventEditor: React.FC<InteractionEventEditorProps> = ({ label, value, onChange, elementOptions, events = EVENTS }) => {
   const [open, setOpen] = useState(false);
-  const [selectedActions, setSelectedActions] = useState<OnClickAction[]>(value || [{ action: '', element: '', value: '' }]);
   const [selectedActionIndex, setSelectedActionIndex] = useState<number>();
+  const [selectedEvent, setSelectedEvent] = useState<Event>();
 
   const { offer } = usePage<EditProps>().props;
 
-  const getActionDescription = (action: OnClickAction) => {
+  const getActionDescription = (action: EventAction) => {
     if (!action.action) return null;
 
     if (action.action === 'setItem') {
@@ -174,52 +266,61 @@ export const InteractionEventEditor: React.FC<Pick<ActionEditorProps, 'label' | 
     return action.action;
   };
 
-  const handleOnItemClick = (index: number, action: OnClickAction) => {
-    console.log('action selection index', index, action);
-    setSelectedActions([action]);
+  const handleOnItemClick = (event: Event, index: number, action: EventAction) => {
     setSelectedActionIndex(index);
+    setSelectedEvent(event);
     setOpen(true);
   }
 
   const handleOnDialogChange = (open: boolean) => {
     setOpen(open);
-    setSelectedActions([{ action: '', element: '', value: '' }]);
     setSelectedActionIndex(undefined);
+    setSelectedEvent(undefined);
   }
 
-  const handleOnSave = (actions: OnClickAction[]) => {
-    if (selectedActionIndex !== undefined) {
-      const updated = [...value];
-      updated[selectedActionIndex] = actions[0];
-      onChange(updated);
-    } else {
-      onChange([...value, ...actions].filter(action => action));
-    }
+  const handleOnSave = (groupedActions: GroupedEventActions) => {
+    onChange(groupedActions);
     handleOnDialogChange(false);
   }
 
   const handleOnCreate = () => {
     setOpen(true);
-    setSelectedActions([{ action: '', element: '', value: '' }]);
   }
 
   return (
     <div className='flex flex-col gap-2'>
-      {value.length > 0 && (
-        <div className="mb-2 space-y-1">
-          {value.map((action, index) => {
-            if (!action) return null;
-            const description = getActionDescription(action);
-            return description ? (
-              <div key={index} className="text-sm text-gray-700 p-1 hover:bg-gray-200 bg-gray-100 rounded-sm border p-2 cursor-pointer" onClick={() => handleOnItemClick(index, action)}>
-                {description}
-              </div>
-            ) : null;
-          })}
+      {Object.entries(value || {}).map(([event, actions]) => (
+        <div key={event} className="mb-4">
+          {events.length > 1 && <h3 className="text-sm font-semibold mb-2">{events?.find(e => e.value === event)?.label}</h3>}
+          <div className="space-y-1">
+            {actions.map((action, index) => {
+              if (!action) return null;
+              const description = getActionDescription(action);
+              return description ? (
+                <div
+                  key={index}
+                  className="text-sm text-gray-700 p-1 hover:bg-gray-200 bg-gray-100 rounded-sm border p-2 cursor-pointer"
+                  onClick={() => handleOnItemClick(event as Event, index, action)}
+                >
+                  {description}
+                </div>
+              ) : null;
+            })}
+          </div>
         </div>
-      )}
-      <Button variant="secondary" className="w-full bg-gray-900 text-white hover:bg-gray-800" onClick={handleOnCreate}>{label}</Button>
-      {open && <AddActionDialog label={label} value={selectedActions} elementOptions={elementOptions} onChange={handleOnSave} open onOpenChange={handleOnDialogChange} />}
+      ))}
+      <Button variant="secondary" className="w-full bg-gray-900 text-white hover:bg-gray-800" onClick={handleOnCreate}>
+        <MousePointerClick className="w-4 h-4" />
+      {label}
+      </Button>
+      {open && <AddActionDialog
+        label={label}
+        value={value || {}}
+        elementOptions={elementOptions}
+        onChange={handleOnSave}
+        events={events}
+        open
+        onOpenChange={handleOnDialogChange} />}
     </div>
   );
 };

@@ -6,7 +6,7 @@ import get from "lodash/get";
 import debounce from "lodash/debounce";
 import { Theme } from "@/types/theme";
 import { CheckoutState, GlobalStateContext } from '@/pages/checkout-main';
-import { CallbackType } from "@/components/editor/interaction-event-editor";
+import { Event } from "@/components/editor/interaction-event-editor";
 
 export const BlockContext = createContext<BlockContextType>({
   blockId: '',
@@ -296,9 +296,9 @@ class Numi {
   //   return checkout;
   // }
 
-  static useEventCallback(props: { name: string; elements?: Record<'value' | 'label', string>[] }): {
+  static useEventCallback(props: { name: string; elements?: Record<'value' | 'label', string>[]; events?: { label: string; events: Event[] }[] }): {
     callbacks: any[];
-    executeCallbacks: (element: string, type: CallbackType) => void;
+    executeCallbacks: (type: Event, element?: string) => void;
   } {
     const checkout = Numi.useCheckout();
     const blockContext = useContext(BlockContext);
@@ -309,19 +309,29 @@ class Numi {
         type: 'eventCallback',
         defaultValue: null,
         options: props.elements,
+        events: props.events ?? [],
       });
     }, []);
 
-    const executeCallbacks = useCallback((element: string, type: CallbackType) => {
+    const executeCallbacks = useCallback((type: Event, element?: string) => {
       if (blockContext.blockConfig.interaction?.[type]) {
-        const callbacks = blockContext.blockConfig.interaction[type].filter(callback => callback?.element === element);
+        const callbacks = element
+          ? blockContext.blockConfig.interaction[type].filter((callback: { element?: string }) => callback?.element === element)
+          : blockContext.blockConfig.interaction[type];
+
         for (const callback of callbacks) {
           switch (callback.action) {
             case 'setSlot':
               // checkout.setSlot(callback.slot, callback.price);
               break;
+            case 'setLineItemQuantity':
+            case 'changeLineItemPrice':
+            case 'deactivateLineItem':
             case 'setItem':
               checkout.updateLineItem(callback.value);
+              break;
+            case 'redirect':
+              window.open(callback.value, '_blank');
               break;
           }
         }
@@ -334,7 +344,7 @@ class Numi {
     };
   }
 
-  static useStateJsonSchema(props: { name: string; defaultValue?: any; schema: { $schema: string; type: string; items: { type: string; properties: { key: { title: string; type: string; }; value: { title: string; type: string; }; children: { type: string; items: { type: string; properties: { key: { type: string; }; label: { type: string; }; caption: { type: string; }; color: { type: string; }; prefixImage: { type: string; format: string; description: string; meta: { editor: string; }; }; prefixIcon: { type: string; description: string; meta: { editor: string; }; }; prefixText: { type: string; }; tooltip: { type: string; }; disabled: { type: string; }; hidden: { type: string; }; }; required: string[]; }; }; }; required: string[]; }; }}): Array<any> {
+  static useStateJsonSchema(props: { name: string; defaultValue?: any; schema: { $schema: string; type: string; items: { type: string; properties: { key: { title: string; type: string; }; value: { title: string; type: string; }; children: { type: string; items: { type: string; properties: { key: { type: string; }; label: { type: string; }; caption: { type: string; }; color: { type: string; }; prefixImage: { type: string; format: string; description: string; meta: { editor: string; }; }; prefixIcon: { type: string; description: string; meta: { editor: string; }; }; prefixText: { type: string; }; tooltip: { type: string; }; disabled: { type: string; }; hidden: { type: string; }; }; required: string[]; }; }; }; required: string[]; }; } }): Array<any> {
 
     const blockContext = useContext(BlockContext);
 
@@ -408,7 +418,7 @@ class Numi {
     // Initialize the debounced function on first render
     useEffect(() => {
       debouncedUpdateRef.current = debounce((newHook: Partial<HookUsage>) => {
-        setHook(prevHook => ({...prevHook, ...newHook}));
+        setHook(prevHook => ({ ...prevHook, ...newHook }));
       }, 300); // 300ms delay
 
       // Cleanup function to cancel pending debounced calls
@@ -462,7 +472,7 @@ class Numi {
     // Initialize the debounced function on first render
     useEffect(() => {
       debouncedUpdateRef.current = debounce((newHook: Partial<HookUsage>) => {
-        setHook(prevHook => ({...prevHook, ...newHook}));
+        setHook(prevHook => ({ ...prevHook, ...newHook }));
       }, 300); // 300ms delay
 
       // Cleanup function to cancel pending debounced calls

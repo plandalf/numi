@@ -10,8 +10,6 @@ import { BooleanEditor } from '@/components/editor/boolean-editor';
 import { EnumerationEditor } from '@/components/editor/enumeration-editor';
 import { FileEditor } from '@/components/editor/file-editor';
 import { ColorPickerEditor } from '@/components/editor/color-picker-editor';
-import { AlignmentPickerEditor } from '@/components/editor/alignment-picker-editor';
-import { NumberEditor } from '../editor/number-editor';
 import { InteractionEventEditor } from '../editor/interaction-event-editor';
 import { ConditionVisibilityEditor } from '../editor/condition-visibility-editor';
 import { useEditor } from '@/contexts/offer/editor-context';
@@ -110,30 +108,46 @@ export const InteractionSection = ({ globalState, block, onUpdate }: { globalSta
   const interactionHook = globalState?.hookUsage[block.id]?.find((hook) => hook.type === 'interaction' || hook.type === 'eventCallback');
   return (
     <>
-    <div className="space-y-4">
-    <h3 className="mb-2 font-semibold">Interaction</h3>
-      <InteractionEventEditor
-        label="OnClick"
-        value={block.interaction?.onClick || []}
-        onChange={value => onUpdate({ ...block, interaction: { ...block.interaction, onClick: value } })}
-        elementOptions={(interactionHook?.options ?? []) as Record<'value' | 'label', string>[]}
+      <div className="space-y-4">
+        <h3 className="mb-2 font-semibold">Interaction</h3>
+        {interactionHook?.events?.map((event) => {
+          const { values, options } = event.events.reduce<{
+            values: Array<Record<string, any[]>>;
+            options: Array<{ value: string; label: string }>;
+          }>(
+            (acc, e) => ({
+              values: [...acc.values, { [e]: block.interaction?.[e] || [] }],
+              options: [...acc.options, { value: e, label: e }],
+            }),
+            { values: [], options: [] }
+          );
 
-      />
-      <div className="flex items-center gap-2">
-        <Checkbox
-          checked={block.interaction?.isDisabled ?? false}
-          onCheckedChange={(checked) => {
-            onUpdate({
-              ...block,
-              interaction: {
-                ...block.interaction,
-                isDisabled: !!checked,
-              },
-            });
-          }}
-        />
-        <Label className="mb-0">Disabled?</Label>
-      </div>
+          return (
+            <InteractionEventEditor
+              key={event.label}
+              label={event.label}
+              value={Object.assign({}, ...values)}
+              onChange={value => onUpdate({ ...block, interaction: { ...block.interaction, ...value } })}
+              elementOptions={(interactionHook?.options ?? []) as Record<'value' | 'label', string>[]}
+              events={options}
+            />
+          )
+        })}
+        <div className="flex items-center gap-2">
+          <Checkbox
+            checked={block.interaction?.isDisabled ?? false}
+            onCheckedChange={(checked) => {
+              onUpdate({
+                ...block,
+                interaction: {
+                  ...block.interaction,
+                  isDisabled: !!checked,
+                },
+              });
+            }}
+          />
+          <Label className="mb-0">Disabled?</Label>
+        </div>
       </div>
     </>
   );
@@ -219,59 +233,59 @@ export const Inspector = ({
                     <ConditionsSection globalState={globalState} block={block} onUpdate={onUpdate} />
                   ) : (
                     <>
-                    <h3 className="font-semibold">{label}</h3>
+                      <h3 className="font-semibold">{label}</h3>
                       <div className="flex flex-col gap-2 p-2.5 border rounded-md border-gray-200 bg-gray-100/50 h-full">
                         {sectionHooks.map((hook: HookUsage) => (
                           <div key={hook.name} className="mb-4">
                             {hook.type === 'string' && hook.inspector === 'file' ? (
-                            <FileEditor
-                              label={hook.label || hook.name}
-                              value={block.content?.[hook.name]}
-                              onChange={value => handleContentChange(hook.name, value)}
-                              preview={block.content?.[hook.name]?.url}
-                            />
-                          ) : hook.type === 'string' && hook.inspector === 'colorPicker' ? (
-                            <ColorPickerEditor
-                              label={hook.label || hook.name}
-                              value={block.content?.[hook.name] ?? hook.defaultValue}
-                              onChange={value => handleContentChange(hook.name, value)}
-                              type='advanced'
-                              themeColors={themeColors}
-                            />
-                          ) : hook.type === 'string' ? (
-                            <StringEditor
-                              label={hook.label || hook.name}
-                              value={block.content?.[hook.name] ?? hook.defaultValue}
-                              onChange={value => handleContentChange(hook.name, value)}
-                              multiline={hook.inspector === 'multiline'}
-                            />
-                          ) : hook.type === 'boolean' ? (
-                            <BooleanEditor
-                              label={hook.label || hook.name}
-                              value={block.content?.[hook.name] ?? hook.defaultValue}
-                              onChange={value => handleContentChange(hook.name, value)}
-                            />
-                          ) : hook.type === 'enumeration' ? (
-                            <EnumerationEditor
-                              label={hook.label || hook.name}
-                              value={block.content?.[hook.name] ?? hook.defaultValue}
-                              onChange={value => handleContentChange(hook.name, value)}
-                              options={hook.options || []}
-                              icons={hook.icons}
-                              inspector={hook.inspector}
-                              labels={hook.labels}
-                            />
-                          ) : hook.type === 'jsonSchema' && hook.schema ? (
-                            <JSONSchemaEditor
-                              schema={hook.schema}
-                              value={block.content?.[hook.name] ?? hook.defaultValue}
-                              onChange={newValue => handleContentChange(hook.name, newValue)}
-                              themeColors={themeColors}
-                            />
-                          ) : null}
-                        </div>
-                      ))}
-                    </div>
+                              <FileEditor
+                                label={hook.label || hook.name}
+                                value={block.content?.[hook.name]}
+                                onChange={value => handleContentChange(hook.name, value)}
+                                preview={block.content?.[hook.name]?.url}
+                              />
+                            ) : hook.type === 'string' && hook.inspector === 'colorPicker' ? (
+                              <ColorPickerEditor
+                                label={hook.label || hook.name}
+                                value={block.content?.[hook.name] ?? hook.defaultValue}
+                                onChange={value => handleContentChange(hook.name, value)}
+                                type='advanced'
+                                themeColors={themeColors}
+                              />
+                            ) : hook.type === 'string' ? (
+                              <StringEditor
+                                label={hook.label || hook.name}
+                                value={block.content?.[hook.name] ?? hook.defaultValue}
+                                onChange={value => handleContentChange(hook.name, value)}
+                                multiline={hook.inspector === 'multiline'}
+                              />
+                            ) : hook.type === 'boolean' ? (
+                              <BooleanEditor
+                                label={hook.label || hook.name}
+                                value={block.content?.[hook.name] ?? hook.defaultValue}
+                                onChange={value => handleContentChange(hook.name, value)}
+                              />
+                            ) : hook.type === 'enumeration' ? (
+                              <EnumerationEditor
+                                label={hook.label || hook.name}
+                                value={block.content?.[hook.name] ?? hook.defaultValue}
+                                onChange={value => handleContentChange(hook.name, value)}
+                                options={hook.options || []}
+                                icons={hook.icons}
+                                inspector={hook.inspector}
+                                labels={hook.labels}
+                              />
+                            ) : hook.type === 'jsonSchema' && hook.schema ? (
+                              <JSONSchemaEditor
+                                schema={hook.schema}
+                                value={block.content?.[hook.name] ?? hook.defaultValue}
+                                onChange={newValue => handleContentChange(hook.name, newValue)}
+                                themeColors={themeColors}
+                              />
+                            ) : null}
+                          </div>
+                        ))}
+                      </div>
                     </>
                   )}
                 </div>

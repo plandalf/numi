@@ -1,6 +1,6 @@
 import { RuleGroup } from "@/components/editor/condition-visibility-editor";
 import { Theme } from "./theme";
-import { OnClickAction } from "@/components/editor/interaction-event-editor";
+import { EventAction } from "@/components/editor/interaction-event-editor";
 
 export interface Offer {
     id: number;
@@ -199,7 +199,9 @@ export interface Block {
     };
     interaction?: {
         isDisabled?: boolean;
-        onClick: OnClickAction[];
+        onClick?: EventAction[];
+        onSelect?: EventAction[];
+        onUnSelect?: EventAction[];
         [key: string]: any;
     };
     appearance?: {

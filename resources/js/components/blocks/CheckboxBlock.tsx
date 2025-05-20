@@ -3,6 +3,7 @@ import { BlockContextType } from "@/types/blocks";
 import { Switch } from "@/components/ui/switch";
 import { useMemo } from "react";
 import { Check } from "lucide-react";
+import { Event, EVENT_LABEL_MAP } from "../editor/interaction-event-editor";
 
 function CheckboxBlockComponent({ context }: { context: BlockContextType }) {
 
@@ -40,10 +41,6 @@ function CheckboxBlockComponent({ context }: { context: BlockContextType }) {
     defaultValue: false,
   });
 
-  function handleChange() {
-    setChecked(!checked);
-  }
-
   // validation rules~
   const { isValid, errors, validate } = Numi.useValidation({
     rules: {
@@ -51,7 +48,22 @@ function CheckboxBlockComponent({ context }: { context: BlockContextType }) {
     },
   });
 
-  const { isDisabled } = Numi.useInteraction();
+  const { executeCallbacks } = Numi.useEventCallback({
+    name: 'checkbox',
+    elements: [
+      { value: id, label: id }
+    ],
+    events: [{
+      label: EVENT_LABEL_MAP[Event.onSelect],
+      events: [Event.onSelect, Event.onUnSelect]
+    }],
+  });
+
+  function handleChange() {
+    const newChecked = !checked;
+    setChecked(newChecked);
+    executeCallbacks(newChecked ? Event.onSelect : Event.onUnSelect);
+  }
 
   const appearance = Numi.useStyle([
     Style.backgroundColor('activeBackgroundColor', 'Selected Color', {}, '#0374ff'),
