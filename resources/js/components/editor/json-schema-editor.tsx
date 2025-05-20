@@ -5,6 +5,7 @@ import { EnumerationEditor } from "./enumeration-editor";
 import { StringEditor } from "./string-editor";
 import { BooleanEditor } from "./boolean-editor";
 import { ColorPickerEditor } from "./color-picker-editor";
+import { useEffect } from "react";
 
 export function JSONSchemaEditor({
   schema,
@@ -102,7 +103,7 @@ export function JSONSchemaEditor({
             themeColors={themeColors}
           />
         )}
-        getSectionTitle={(_, i) => `Section ${i + 1}`}
+        getSectionTitle={(item, i) => item?.label ?? `Section ${i + 1}`}
         addLabel={isRootArray ? "Add another section" : undefined}
       />
     );

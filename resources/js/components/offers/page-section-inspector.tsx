@@ -1,15 +1,15 @@
 import { useEditor } from "@/contexts/offer/editor-context";
 import { getThemeColors } from "./page-theme";
 import { StyleEditor, type StyleItem } from "../editor/style-editor";
-import { Style } from "@/contexts/Numi";
-import { Label } from "../ui/label";
+import { Appearance, Style } from '@/contexts/Numi';
+import { SpacingEditor } from "../editor/spacing-editor";
 
 interface SectionInspectorProps {
   sectionId: string;
-  onClose: () => void;
+  onClose?: () => void;
 }
 
-export function SectionInspector({ sectionId, onClose }: SectionInspectorProps) {
+export function SectionInspector({ sectionId /*, onClose */ }: SectionInspectorProps) {
   const { data, selectedPage, updateSection } = useEditor();
   const page = data.view.pages[selectedPage];
   const section = page.view[sectionId];
@@ -26,6 +26,16 @@ export function SectionInspector({ sectionId, onClose }: SectionInspectorProps) 
       }
     });
   };
+
+  const handleAppearanceChange = (key: string, value: string | null) => {
+    updateSection(sectionId, {
+      ...section,
+      appearance: {
+        ...section.appearance,
+        [key]: value
+      }
+    });
+  }
 
   const handleStyleDelete = (key: string) => {
     const newStyle = { ...section.style };
@@ -47,11 +57,37 @@ export function SectionInspector({ sectionId, onClose }: SectionInspectorProps) 
     options: style.options
   }));
 
+  const appearanceItems = [
+    Appearance.padding('padding', 'Padding', {}),
+    Appearance.spacing('spacing', 'Spacing', {}),
+  ].map(appearance => ({
+    name: appearance.type,
+    label: appearance.label,
+    value: section.appearance?.[appearance.type],
+    defaultValue: appearance.defaultValue,
+    inspector: appearance.inspector,
+    options: appearance.options
+  }));
+
   return (
     <div className="flex flex-col h-full">
       <div className="flex flex-col gap-3 mb-6 overflow-y-auto p-4">
         <h3 className="font-semibold">Appearance</h3>
-        <Label className="text-sm">Styles</Label>
+          {appearanceItems.map((item) => (
+            (item.inspector === 'spacingPicker' ?(
+              <SpacingEditor
+                key={item.name}
+                label={item.label}
+                value={section.appearance?.[item.name]}
+                defaultValue={item.defaultValue}
+                onChangeProperty={(newValue) => handleAppearanceChange(item.name, newValue)}
+              />
+              ) : null
+            )
+        ))}
+
+        <h3 className="font-semibold">Styles</h3>
+        {/*<Label className="text-sm">Styles</Label>*/}
           <StyleEditor
             items={styleItems}
             onChange={handleStyleChange}
@@ -61,4 +97,7 @@ export function SectionInspector({ sectionId, onClose }: SectionInspectorProps) 
         </div>
     </div>
   );
-} 
+}
+
+
+

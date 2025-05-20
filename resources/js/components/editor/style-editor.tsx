@@ -27,15 +27,16 @@ export interface StyleItem {
   label: string;
   value?: any;
   defaultValue: any;
-  inspector: 
+  inspector:
     'colorPicker'
-    | 'alignmentPicker' 
-    | 'fontPicker' 
-    | 'borderPicker' 
-    | 'borderRadiusPicker' 
+    | 'alignmentPicker'
+    | 'fontPicker'
+    | 'borderPicker'
+    | 'borderRadiusPicker'
     | 'dimensionPicker'
-    | 'shadowPicker' 
-    | 'select' 
+    | 'shadowPicker'
+    | 'select'
+    //sizepicker?
     | 'checkbox';
   options?: Record<string, any>;
   config?: Record<string, any>;
@@ -60,7 +61,7 @@ const StyleItemValuePreview = ({
   fonts,
 }: StyleItemValuePreviewProps) => {
   const [isOpen, setIsOpen] = useState(false);
-  
+
   const value = item.value || item.defaultValue;
   switch (item.inspector) {
     case 'colorPicker':
@@ -156,7 +157,6 @@ const StyleItemValuePreview = ({
           </DropdownMenuContent>
         </DropdownMenu>
       );
-    
     case 'dimensionPicker':
       const dimensionValue = value as DimensionValue;
       const dimensionValueAsTitle = `${dimensionValue.width} x ${dimensionValue.height}`;
@@ -239,9 +239,11 @@ const StyleItemValuePreview = ({
       return (
         <Checkbox checked={value as boolean} onCheckedChange={(value) => onChange(item.name, value as boolean)} />
       );
+    //   sizepicker?
     default:
       return <span className="text-sm">{item.value}</span>;
   }
+  // padding: 0, padding: 12px (normal)
 };
 
 export const StyleEditor: React.FC<StyleEditorProps> = ({

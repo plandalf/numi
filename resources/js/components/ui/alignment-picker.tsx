@@ -14,6 +14,8 @@ export const alignmentIcons = {
   left: <AlignLeft className="size-4" />,
   center: <AlignCenter className="size-4" />,
   right: <AlignRight className="size-4" />,
+  start: <AlignLeft className="size-4" />,
+  end: <AlignRight className="size-4" />,
 }
 
 const AlignmentPicker: React.FC<AlignmentPickerProps> = ({ value, onChange, className, options }) => (

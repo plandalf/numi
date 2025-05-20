@@ -8,7 +8,14 @@ import {
   AlignLeft,
   ArrowLeft,
   SquareCheck,
-  FormInput, ImageIcon, ShoppingCartIcon
+  FormInput,
+  ImageIcon,
+  ShoppingCartIcon,
+  SquareMousePointer,
+  LetterTextIcon,
+  QuoteIcon,
+  Columns2Icon,
+  TextCursorInputIcon
 } from 'lucide-react';
 import { useDraggable } from '@dnd-kit/core';
 import SearchBar from './search-bar';
@@ -21,19 +28,19 @@ interface CustomElementIconProps {
 export const CustomElementIcon = ({ type }: CustomElementIconProps) => {
   switch(type) {
     case 'text':
-        return <AlignLeft className="w-6 h-6" />;
+        return <LetterTextIcon className="w-6 h-6" />;
     case 'quote':
-        return <MessageSquare className="w-6 h-6" />;
+        return <QuoteIcon className="w-6 h-6" />;
     case 'detail_list':
         return <LayoutPanelLeft className="w-6 h-6" />;
     case 'button':
-        return <SquareStack className="w-6 h-6" />;
+        return <SquareMousePointer className="w-6 h-6" />;
     case 'checkbox':
         return <SquareCheck className="w-6 h-6" />;
     case 'option_selector':
-        return <ArrowLeft className="w-6 h-6 inline-block" />;
+        return <Columns2Icon className="w-6 h-6 inline-block" />;
     case 'text_input':
-        return <FormInput className="w-6 h-6" />;
+        return <TextCursorInputIcon className="w-6 h-6" />;
     case 'image':
       return <ImageIcon className="w-6 h-6" />;
     case 'payment_method':

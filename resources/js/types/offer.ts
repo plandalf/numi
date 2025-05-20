@@ -204,7 +204,7 @@ export interface Block {
         onUnSelect?: EventAction[];
         [key: string]: any;
     };
-    appearance?: {
+    style?: {
         fontSize?: string;
         backgroundColor?: string;
         color?: string;
@@ -212,10 +212,14 @@ export interface Block {
         borderColor?: string;
         border?: string;
         hidden?: boolean;
+        [key: string]: string | boolean | { conditional: RuleGroup } | undefined;
+    };
+    appearance?: {
+        padding?: string;
+        spacing?: string;
         visibility?: {
           conditional: RuleGroup;
         }
-        [key: string]: string | boolean | { conditional: RuleGroup } | undefined;
     };
     validation?: {
         isRequired?: boolean;
@@ -283,6 +287,7 @@ export type PageSection = {
     id?: string;
     label?: string;
     style?: Record<string, string>;
+    appearance?: Record<string, string>;
 };
 
 export type FormSection = {

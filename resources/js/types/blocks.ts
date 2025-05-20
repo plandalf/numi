@@ -10,6 +10,7 @@ export interface BlockConfig {
     content: Record<string, any>;
     interaction?: Record<string, any>;
     appearance?: Record<string, any>;
+    style?: Record<string, any>;
     conditions?: Record<string, any>;
     validation?: Record<string, any>;
 }
@@ -22,10 +23,12 @@ export interface FieldState {
     type: 'string' | 'boolean' | 'number';
   }
 
+export type HookTypeSection = 'appearance' | 'style' | 'validation' | 'interaction' | 'conditions';
+export type HookType = HookTypeSection | 'boolean' | 'string' | 'enumeration' | 'jsonSchema' | 'eventCallback' | 'number' | 'visibility';
 
 export interface HookUsage {
     name: string;
-    type: 'boolean' | 'string' | 'validation' | 'interaction' | 'enumeration' | 'jsonSchema' | 'appearance' | 'eventCallback' | 'number' | 'conditions';
+    type: HookType;
     defaultValue: any;
     inspector?: string;
     config?: Record<string, any>; // Configuration settings for the hook if there are any
