@@ -102,7 +102,7 @@ class CheckoutSession extends Model
             return null;
         }
 
-        return Arr::get($this->integration->config, 'access_token.stripe_publishable_key');
+        return Arr::get($this->integration?->config, 'access_token.stripe_publishable_key');
     }
 
     public function integrationClient(): ?AbstractIntegration

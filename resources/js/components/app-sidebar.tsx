@@ -13,6 +13,7 @@ import {
   ToyBrickIcon,
   StoreIcon,
   BrushIcon,
+ShoppingCartIcon,
   PlugZapIcon, DatabaseZapIcon, BotIcon
 } from 'lucide-react';
 import AppLogo from './app-logo';
@@ -28,6 +29,11 @@ const mainNavItems: NavItem[] = [
         href: '/products',
         icon: PackageSearchIcon,
     },
+    {
+      title: 'Orders',
+      href: '/orders',
+      icon: ShoppingCartIcon,
+  },
     {
         title: 'Templates',
         href: '/templates',

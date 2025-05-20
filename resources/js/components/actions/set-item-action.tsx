@@ -1,10 +1,9 @@
 import { EditProps } from "@/pages/offers/edit";
 import { usePage } from "@inertiajs/react";
 import { Label } from "@radix-ui/react-label";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { Combobox } from "../combobox";
 import { Input } from "../ui/input";
-import { Switch } from "../ui/switch";
 
 export type SetItemActionValue = {
   item?: string;
@@ -16,10 +15,12 @@ export type SetItemActionValue = {
 interface SetItemActionProps {
   value?: SetItemActionValue;
   onChange: (value: SetItemActionValue) => void;
+  action: 'setItem' | 'setLineItemQuantity' | 'changeLineItemPrice' | 'deactivateLineItem';
 }
 
-export default function SetItemAction({ value = {}, onChange }: SetItemActionProps) {
+export default function SetItemAction({ value = {}, onChange, action }: SetItemActionProps) {
   const { offer } = usePage<EditProps>().props;
+  const prevActionRef = useRef(action);
 
   const offerItemsOptions = useMemo(() => offer.items.map(i => ({
     value: i.id.toString(),
@@ -37,11 +38,43 @@ export default function SetItemAction({ value = {}, onChange }: SetItemActionPro
     }));
   }, [prices]);
 
+  useEffect(() => {
+    if(action === 'deactivateLineItem') {
+      onChange({ required: false });
+    }
+  }, [action]);
+
+  useEffect(() => {
+    // Only reset if action has changed
+    if (prevActionRef.current !== action || !prevActionRef.current) {
+      // Determine the desired reset state based on action
+      const resetState = (() => {
+        switch (action) {
+          case 'deactivateLineItem':
+            return { required: false };
+          case 'setItem':
+            return {};
+          case 'setLineItemQuantity':
+            return {};
+          case 'changeLineItemPrice':
+            return {};
+          default:
+            return {};
+        }
+      })();
+
+      onChange(resetState);
+      prevActionRef.current = action;
+    }
+  }, [action, onChange]);
+
   return (
-    <>
-      <div className="flex flex-row gap-2 items-center">
+    <div className="flex flex-col gap-2 w-full">
+      <Label className="text-sm font-semibold">Options</Label>
+      <div className="flex flex-row gap-4 items-center w-full">
+        <Label className="text-sm w-16">Line Item</Label>
         <Combobox
-          className="max-w-[200px]"
+          className="w-[300px]"
           items={offerItemsOptions}
           selected={value?.item}
           onSelect={(selected) => onChange({ ...value, item: selected as string })}
@@ -50,39 +83,46 @@ export default function SetItemAction({ value = {}, onChange }: SetItemActionPro
           hideSearch
         />
       </div>
-      <div className="flex flex-row gap-2 items-center">
-        <Label>To</Label>
-        <Combobox
-          className="max-w-[200px]"
-          items={priceOptions}
-          selected={value?.price}
-          onSelect={(selected) => onChange({ ...value, price: selected as string })}
-          placeholder="Select a price"
-          modal
-          hideSearch
-        />
-      </div>
-      <div className="flex flex-row gap-2 items-center">
-        <Label>Quantity</Label>
-        <Input
-          className="bg-white"
-          type="number"
-          value={value?.quantity}
-          onChange={(e) => onChange({ ...value, quantity: parseInt(e.target.value) })}
-        />
-      </div>
-      <div className="flex flex-row gap-2 items-center">
-        <Label>Required?</Label>
-        <Combobox
-          className="max-w-[200px]"
-          items={[{ value: '', label: 'Unset' }, { value: 'true', label: 'Yes' }, { value: 'false', label: 'No' }]}
-          selected={typeof value?.required === 'boolean' ? value?.required ? 'true' : 'false' : ''}
-          onSelect={(selected) => onChange({ ...value, required: selected === '' ? undefined : selected === 'true' })}
-          placeholder="Select an option"
-          modal
-          hideSearch
-        />
-      </div>
-    </>
+      {(action === 'setItem' || action === 'changeLineItemPrice' || action === 'setLineItemQuantity') && (
+        <div className="flex flex-row gap-4 items-center w-full">
+          <Label className="text-sm w-16">Price</Label>
+          <Combobox
+            className="w-[300px]"
+            items={priceOptions}
+            selected={value?.price}
+            onSelect={(selected) => onChange({ ...value, price: selected as string })}
+            placeholder="Select a price"
+            modal
+            hideSearch
+          />
+        </div>
+      )}
+      {(action === 'setLineItemQuantity' || action === 'setItem') && (
+        <div className="flex flex-row gap-4 items-center w-full">
+          <Label className="text-sm w-16">Quantity</Label>
+          <Input
+            className="bg-white w-[300px]"
+            type="number"
+            value={value?.quantity}
+            onChange={(e) => onChange({ ...value, quantity: parseInt(e.target.value) })}
+          />
+        </div>
+      )}
+      {(action === 'setItem' || action === 'deactivateLineItem') && (
+        <div className="flex flex-row gap-4 items-center w-full">
+          <Label className="text-sm w-16">Required?</Label>
+          <Combobox
+            className="w-[300px]"
+            items={[{ value: '', label: 'Unset' }, { value: 'true', label: 'Yes' }, { value: 'false', label: 'No' }]}
+            selected={typeof value?.required === 'boolean' ? value?.required ? 'true' : 'false' : ''}
+            onSelect={(selected) => onChange({ ...value, required: selected === '' ? undefined : selected === 'true' })}
+            placeholder="Select an option"
+            modal
+            disabled={action === 'deactivateLineItem'}
+            hideSearch
+          />
+        </div>
+      )}
+    </div>
   );
 }

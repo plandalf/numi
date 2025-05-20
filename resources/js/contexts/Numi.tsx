@@ -6,7 +6,7 @@ import get from "lodash/get";
 import debounce from "lodash/debounce";
 import { Theme } from "@/types/theme";
 import { CheckoutState, GlobalStateContext } from '@/pages/checkout-main';
-import { CallbackType } from "@/components/editor/interaction-event-editor";
+import { Event } from "@/components/editor/interaction-event-editor";
 
 export const BlockContext = createContext<BlockContextType>({
   blockId: '',
@@ -208,7 +208,7 @@ export const Style = {
     defaultValue,
     inspector: args.inspector ?? 'shadowPicker',
   }),
-  
+
   hidden: (
     type: string = 'hidden',
     label: string = 'Hidden',
@@ -225,9 +225,7 @@ export const Style = {
     type: string = 'visibility',
     label: string = 'Visibility',
     args: StyleArgs,
-    defaultValue: {
-      conditional: []
-    }
+    defaultValue?: any
   ) => ({
     label,
     type,
@@ -298,57 +296,42 @@ class Numi {
   //   return checkout;
   // }
 
-  static useEventCallback(props: { name: string; elements?: Record<'value' | 'label', string>[] }): {
-    callbacks: any[];
-    updateHook: (hook: Partial<HookUsage>) => void;
-    executeCallbacks: (element: string, type: CallbackType) => void;
+  static useEventCallback(props: { name: string; elements?: Record<'value' | 'label', string>[]; events?: { label: string; events: Event[] }[] }): {
+    interaction?: Record<string, any>;
+    executeCallbacks: (type: Event, element?: string) => void;
   } {
     const checkout = Numi.useCheckout();
     const blockContext = useContext(BlockContext);
-    const [hook, setHook] = useState<HookUsage>({
-      name: props.name,
-      type: 'eventCallback',
-      defaultValue: null,
-      options: props.elements,
-    });
-
-    // Create a ref to hold the debounced function
-    const debouncedUpdateRef = useRef<ReturnType<typeof debounce> | null>(null);
-
-    // Initialize the debounced function on first render
-    useEffect(() => {
-      debouncedUpdateRef.current = debounce((newHook: Partial<HookUsage>) => {
-        setHook(prevHook => ({...prevHook, ...newHook}));
-      }, 300); // 300ms delay
-
-      // Cleanup function to cancel pending debounced calls
-      return () => {
-        if (debouncedUpdateRef.current) {
-          debouncedUpdateRef.current.cancel();
-        }
-      };
-    }, []);
 
     useEffect(() => {
-      blockContext.registerHook(hook);
-    }, [hook]);
-
-    const updateHook = useCallback((newHook: Partial<HookUsage>) => {
-      if (debouncedUpdateRef.current) {
-        debouncedUpdateRef.current(newHook);
-      }
+      blockContext.registerHook({
+        name: props.name,
+        type: 'eventCallback',
+        defaultValue: null,
+        options: props.elements,
+        events: props.events ?? [],
+      });
     }, []);
 
-    const executeCallbacks = useCallback((element: string, type: CallbackType) => {
+    const executeCallbacks = useCallback((type: Event, element?: string) => {
       if (blockContext.blockConfig.interaction?.[type]) {
-        const callbacks = blockContext.blockConfig.interaction[type].filter(callback => callback?.element === element);
+        const callbacks = element
+          ? blockContext.blockConfig.interaction[type].filter((callback: { element?: string }) => callback?.element === element)
+          : blockContext.blockConfig.interaction[type];
+
         for (const callback of callbacks) {
           switch (callback.action) {
             case 'setSlot':
               // checkout.setSlot(callback.slot, callback.price);
               break;
+            case 'setLineItemQuantity':
+            case 'changeLineItemPrice':
+            case 'deactivateLineItem':
             case 'setItem':
               checkout.updateLineItem(callback.value);
+              break;
+            case 'redirect':
+              window.open(callback.value, '_blank');
               break;
           }
         }
@@ -356,13 +339,12 @@ class Numi {
     }, [blockContext]);
 
     return {
-      callbacks: blockContext.blockConfig.interaction?.onClick ?? [],
-      updateHook,
+      interaction: blockContext.blockConfig.interaction,
       executeCallbacks
     };
   }
 
-  static useStateJsonSchema(props: { name: string; schema: { $schema: string; type: string; items: { type: string; properties: { key: { title: string; type: string; }; value: { title: string; type: string; }; children: { type: string; items: { type: string; properties: { key: { type: string; }; label: { type: string; }; caption: { type: string; }; color: { type: string; }; prefixImage: { type: string; format: string; description: string; meta: { editor: string; }; }; prefixIcon: { type: string; description: string; meta: { editor: string; }; }; prefixText: { type: string; }; tooltip: { type: string; }; disabled: { type: string; }; hidden: { type: string; }; }; required: string[]; }; }; }; required: string[]; }; }}): Array<any> {
+  static useStateJsonSchema(props: { name: string; defaultValue?: any; schema: { $schema: string; type: string; items: { type: string; properties: { key: { title: string; type: string; }; value: { title: string; type: string; }; children: { type: string; items: { type: string; properties: { key: { type: string; }; label: { type: string; }; caption: { type: string; }; color: { type: string; }; prefixImage: { type: string; format: string; description: string; meta: { editor: string; }; }; prefixIcon: { type: string; description: string; meta: { editor: string; }; }; prefixText: { type: string; }; tooltip: { type: string; }; disabled: { type: string; }; hidden: { type: string; }; }; required: string[]; }; }; }; required: string[]; }; } }): Array<any> {
 
     const blockContext = useContext(BlockContext);
 
@@ -371,14 +353,12 @@ class Numi {
         name: props.name,
         type: 'jsonSchema',
         schema: props.schema,
-        defaultValue: {}
+        defaultValue: props.defaultValue || {}
       });
     }, []);
 
-    // options list data must match
-    const data = get(blockContext.blockConfig, `content.${props.name}`, {});
+    const data = get(blockContext.blockConfig, `content.${props.name}`, props.defaultValue || {});
 
-    // return options
     return [data];
   }
 
@@ -400,7 +380,7 @@ class Numi {
 
     return useMemo(() => {
       const appearance: Record<string, any> = {};
-      
+
       // Register each appearance property
       appearanceProps.forEach(prop => {
         if (prop.type) {
@@ -438,7 +418,7 @@ class Numi {
     // Initialize the debounced function on first render
     useEffect(() => {
       debouncedUpdateRef.current = debounce((newHook: Partial<HookUsage>) => {
-        setHook(prevHook => ({...prevHook, ...newHook}));
+        setHook(prevHook => ({ ...prevHook, ...newHook }));
       }, 300); // 300ms delay
 
       // Cleanup function to cancel pending debounced calls
@@ -492,7 +472,7 @@ class Numi {
     // Initialize the debounced function on first render
     useEffect(() => {
       debouncedUpdateRef.current = debounce((newHook: Partial<HookUsage>) => {
-        setHook(prevHook => ({...prevHook, ...newHook}));
+        setHook(prevHook => ({ ...prevHook, ...newHook }));
       }, 300); // 300ms delay
 
       // Cleanup function to cancel pending debounced calls

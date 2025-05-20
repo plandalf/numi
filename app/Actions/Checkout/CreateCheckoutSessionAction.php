@@ -19,7 +19,7 @@ class CreateCheckoutSessionAction
         ]);
 
         foreach ($offer->offerItems as $offerItem) {
-            if (! $offerItem->default_price_id) {
+            if (! $offerItem->default_price_id || !$offerItem->is_required) {
                 continue;
             }
 
