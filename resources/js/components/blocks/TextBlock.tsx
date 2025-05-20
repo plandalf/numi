@@ -73,7 +73,7 @@ function TextBlockComponent({ context }: { context: BlockContextType }) {
     margin: appearance.margin,
   }), [style, font, border, borderRadius, shadow]);
 
-  const buttonClasses = useMemo(() => cn("max-w-none whitespace-pre-line",{
+  const buttonClasses = useMemo(() => cn("max-w-none whitespace-pre-line prose",{
     "text-start": style.alignment === 'left',
     "text-center": style.alignment === 'center',
     "text-end": style.alignment === 'right',

@@ -66,7 +66,7 @@ function DetailListBlockComponent({ context }: { context: BlockContextType }) {
       prefixIcon: 'circle'
     }],
   });
-    
+
   const fontConfig = {
     config: {
       hideVerticalAlignment: true,
@@ -120,7 +120,7 @@ function DetailListBlockComponent({ context }: { context: BlockContextType }) {
     Appearance.spacing('spacing', 'Spacing', {}),
     Appearance.visibility('visibility', 'Visibility', {}, { conditional: [] }),
   ]);
-  
+
   const containerStyles = useMemo(() => ({
     backgroundColor: style.backgroundColor || 'transparent',
     color: style.textColor || 'black',
@@ -230,7 +230,7 @@ function DetailListBlockComponent({ context }: { context: BlockContextType }) {
   return (
     <div style={containerStyles}>
       {dataToRender && dataToRender.length > 0 && (
-        <div className="flex flex-col" style={innerContainerStyle}>
+        <div className="flex flex-col prose" style={innerContainerStyle}>
           {dataToRender.map((item: any) => renderDetailItem(item))}
         </div>
       )}

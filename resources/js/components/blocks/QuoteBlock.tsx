@@ -85,7 +85,7 @@ function QuoteBlockComponent({ context }: { context: BlockContextType }) {
 
     Style.alignment('quoteIconAlignment', 'Quote Icon Alignment', {
       options: {
-        start: 'start', 
+        start: 'start',
         center: 'center',
         end: 'end',
       },
@@ -95,7 +95,7 @@ function QuoteBlockComponent({ context }: { context: BlockContextType }) {
 
     Style.alignment('quoteTextAlignment', 'Quote Text Alignment', {
       options: {
-        left: 'left', 
+        left: 'left',
         center: 'center',
         right: 'right',
       },
@@ -149,8 +149,8 @@ function QuoteBlockComponent({ context }: { context: BlockContextType }) {
       },
     ),
 
-    Style.dimensions('imageSize', 'Image Size', {}, 
-      quoteStyle === 'minimal' 
+    Style.dimensions('imageSize', 'Image Size', {},
+      quoteStyle === 'minimal'
         ? { width: '100px', height: '100px'}
         : { width: '56px', height: '56px'}
     ),
@@ -198,7 +198,7 @@ function QuoteBlockComponent({ context }: { context: BlockContextType }) {
     borderRadius : style.imageBorderRadius ?? '3px',
     boxShadow: style?.imageShadow,
   }), [style]);
-  
+
   const quoteTextStyles = useMemo(() => ({
     textAlign: style?.quoteTextAlignment,
     color: style?.quoteTextColor,
@@ -250,11 +250,11 @@ function QuoteBlockComponent({ context }: { context: BlockContextType }) {
   const authorValue = author || "Quote author";
   const affiliationValue = affiliation || "Affiliation";
 
-  if(quoteStyle === 'modern') {
+  if (quoteStyle === 'modern') {
     return (
       <div className="flex flex-col gap-2 p-4" style={containerStyles}>
           {quoteIconComponent}
-          <div className="text-lg" style={quoteTextStyles}>
+          <div className="prose" style={quoteTextStyles}>
             {quoteText}
           </div>
           <div className="flex flex-row gap-4 items-center">
@@ -278,7 +278,7 @@ function QuoteBlockComponent({ context }: { context: BlockContextType }) {
   if(quoteStyle === 'classic') {
     return (
       <div className="flex flex-col gap-2 p-4" style={containerStyles}>
-          <div className="text-lg" style={quoteTextStyles}>
+          <div className="prose" style={quoteTextStyles}>
             {quoteText}
           </div>
           <div className="flex flex-row gap-4 items-center">
@@ -309,7 +309,7 @@ function QuoteBlockComponent({ context }: { context: BlockContextType }) {
           />
         )}
           <div className="flex flex-col gap-4 items-center">
-            <div className="text-lg" style={quoteTextStyles}>
+            <div className="prose" style={quoteTextStyles}>
               {quoteText}
             </div>
             <div className="flex flex-col">
@@ -341,7 +341,7 @@ function QuoteBlockComponent({ context }: { context: BlockContextType }) {
 
         <div className="flex-1">
           {/* Quote text */}
-          <div className={cx("mb-6", {
+          <div className={cx("prose mb-6", {
             'text-lg italic': quoteStyle === 'modern' || quoteStyle === 'classic',
             'text-base': quoteStyle === 'minimal',
           })}>

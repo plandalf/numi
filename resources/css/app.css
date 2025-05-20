@@ -169,6 +169,11 @@
     }
 }
 
+@layer typography {
+    p {
+        margin: 0;
+    }
+}
 
 .numi-color-picker .react-colorful {
     width: 100%;
@@ -192,7 +197,7 @@
 }
 
 .numi-color-picker .react-colorful__hue-pointer,
-.numi-color-picker .react-colorful__alpha-pointer, 
+.numi-color-picker .react-colorful__alpha-pointer,
 .numi-color-picker .react-colorful__saturation-pointer {
     width: 12px;
     height: 12px;
