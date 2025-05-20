@@ -1,9 +1,8 @@
 import { BlockContextType } from "@/types/blocks";
-import ReactMarkdown from 'react-markdown';
 import Numi, { Appearance, BorderValue, FontValue, Style } from "@/contexts/Numi";
 import { cn } from "@/lib/utils";
 import { useMemo } from "react";
-import rehypeRaw from "rehype-raw";
+import { MarkdownText } from "../ui/markdown-text";
 
 
 // Block Components
@@ -20,10 +19,10 @@ function TextBlockComponent({ context }: { context: BlockContextType }) {
 
   const appearance = Numi.useAppearance([
     Appearance.padding('padding', 'Padding', {}),
+    Appearance.margin('margin', 'Margin', {}),
     Appearance.visibility('visibility', 'Visibility', {}, { conditional: [] }),
   ]);
 
-  
   const style = Numi.useStyle([
     Style.alignment('alignment', 'Alignment', {}, 'left'),
     Style.backgroundColor('backgroundColor', 'Background Color', {}, '#FFFFFF'),
@@ -57,8 +56,6 @@ function TextBlockComponent({ context }: { context: BlockContextType }) {
   const borderRadius = style?.borderRadius;
   const shadow = style?.shadow as string;
 
-  const padding = appearance.padding;
-
   const textStyles = useMemo(() => ({
     backgroundColor: style.backgroundColor || 'transparent',
     color: `${style.textColor || 'black'}`,
@@ -72,8 +69,9 @@ function TextBlockComponent({ context }: { context: BlockContextType }) {
     borderStyle: border?.style,
     borderRadius : borderRadius ?? '3px',
     boxShadow: shadow,
-    padding,
-  }), [style, font, border, borderRadius, shadow, padding]);
+    padding: appearance?.padding,
+    margin: appearance.margin,
+  }), [style, font, border, borderRadius, shadow]);
 
   const buttonClasses = useMemo(() => cn("max-w-none whitespace-pre-line",{
     "text-start": style.alignment === 'left',
@@ -86,11 +84,6 @@ function TextBlockComponent({ context }: { context: BlockContextType }) {
     return null;
   }
 
-  function preserveAllLineBreaks(text: string): string {
-    return text.replace(/\n/g, '<br/>');
-  }
-
-
   return (
     <div
       className={buttonClasses}
@@ -98,11 +91,7 @@ function TextBlockComponent({ context }: { context: BlockContextType }) {
       style={textStyles}
     >
       {isMarkdown ? (
-        <ReactMarkdown
-          rehypePlugins={[rehypeRaw]}
-        >
-          {preserveAllLineBreaks(text)}
-        </ReactMarkdown>
+        <MarkdownText text={text} />
       ) : (
         text
       )}

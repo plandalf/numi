@@ -42,6 +42,7 @@ function CheckoutSummaryComponent({ context }: { context: BlockContextType }) {
   
   const appearance = Numi.useAppearance([
     Appearance.padding('padding', 'Padding', {}),
+    Appearance.margin('margin', 'Margin', {}),
     Appearance.spacing('spacing', 'Spacing', {}),
     Appearance.visibility('visibility', 'Visibility', {}, { conditional: [] }),
   ]);
@@ -174,27 +175,19 @@ function CheckoutSummaryComponent({ context }: { context: BlockContextType }) {
     Style.hidden('hidden', 'Hidden', {}, false),
   ]);
 
-  const padding = appearance.padding;
-  const spacing = appearance.spacing;
-
-  const containerClassName = useMemo(() => {
-    return cn('border rounded-md bg-white shadow-sm flex flex-col', {
-      'p-4': !padding,
-    });
-  }, [padding]);
-
   const containerStyle = useMemo(() => {
     return {
       backgroundColor: style.backgroundColor || 'white',
-      padding: padding,
-      gap: !spacing ? '0px' : spacing,
+      padding: appearance?.padding,
+      margin: appearance?.margin,
+      gap: !appearance?.spacing ? '0px' : appearance?.spacing,
       borderColor: style.borderColor,
       borderWidth: style?.border?.width,
       borderStyle: style?.border?.style,
       borderRadius : style?.borderRadius ?? '3px',
       boxShadow: style?.shadow,
     };
-  }, [style, padding, spacing]);
+  }, [style]);
 
   const { executeCallbacks } = Numi.useEventCallback({
     name: 'click',
@@ -328,8 +321,12 @@ function CheckoutSummaryComponent({ context }: { context: BlockContextType }) {
 
   console.log('session', session);
 
+  if (style.hidden) {
+    return null;
+  }
+
   return (
-    <div className={containerClassName} style={containerStyle}>
+    <div className="'border rounded-md bg-white shadow-sm flex flex-col p-4'" style={containerStyle}>
       <h3 className="font-medium text-lg mb-4" style={titleStyle}>{title}</h3>
       {/* Order Items */}
       <div className="space-y-3 mb-4">

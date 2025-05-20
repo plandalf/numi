@@ -60,7 +60,7 @@ function ButtonBlockComponent({ context }: { context: BlockContextType }) {
 
   const appearance = Numi.useAppearance([
     Appearance.padding('Padding', 'Padding', {}),
-    Appearance.spacing('Spacing', 'Spacing', {}),
+    Appearance.margin('margin', 'Margin', {}),
     Appearance.visibility('visibility', 'Visibility', {}, { conditional: [] }),
   ]);
 
@@ -86,7 +86,9 @@ function ButtonBlockComponent({ context }: { context: BlockContextType }) {
     borderStyle: border?.style,
     borderRadius : borderRadius ?? '3px',
     boxShadow: shadow,
-  }), [style, font, border, borderRadius, shadow]);
+    padding: appearance?.padding,
+    margin: appearance?.margin,
+  }), [style, font, border, borderRadius, shadow, appearance]);
 
   const buttonClasses = useMemo(() => cx({
     "border border-gray-300 rounded-md p-2": true,

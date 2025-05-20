@@ -103,7 +103,7 @@ export function JSONSchemaEditor({
             themeColors={themeColors}
           />
         )}
-        getSectionTitle={(_, i) => `Section ${i + 1}`}
+        getSectionTitle={(item, i) => item?.label ?? `Section ${i + 1}`}
         addLabel={isRootArray ? "Add another section" : undefined}
       />
     );

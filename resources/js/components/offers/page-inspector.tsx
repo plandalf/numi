@@ -190,7 +190,6 @@ export const Inspector = ({
 
   const handleContentChange = (fieldName: string, value: any) => {
     if (!block) return;
-    // console.log('handleContentChange', fieldName, value, block);
     onUpdate({
       ...block,
       content: {
@@ -263,7 +262,7 @@ export const Inspector = ({
                               label={hook.label || hook.name}
                               value={block.content?.[hook.name]}
                               onChange={value => handleContentChange(hook.name, value)}
-                              preview={block.content?.[hook.name]?.url}
+                              preview={block.content?.[hook.name]}
                             />
                           ) : hook.type === 'string' && hook.inspector === 'colorPicker' ? (
                             <ColorPickerEditor

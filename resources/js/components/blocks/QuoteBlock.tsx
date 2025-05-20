@@ -1,6 +1,11 @@
-import Numi, { Appearance } from "@/contexts/Numi";
+import Numi, { Appearance, Style } from "@/contexts/Numi";
 import { BlockContextType } from "@/types/blocks";
 import cx from "classnames";
+import { Quote } from "lucide-react";
+import { useMemo } from "react";
+import ReactMarkdown from "react-markdown";
+import rehypeRaw from "rehype-raw";
+import { MarkdownText } from "../ui/markdown-text";
 
 function QuoteBlockComponent({ context }: { context: BlockContextType }) {
 
@@ -46,11 +51,12 @@ function QuoteBlockComponent({ context }: { context: BlockContextType }) {
     label: 'Quote Style',
   });
 
-  const [quote] = Numi.useStateString({
+  const [quote, setQuote, format] = Numi.useStateString({
     label: 'Quote',
     name: 'quote',
     defaultValue: '',
     inspector: 'multiline',
+    format: 'markdown',
   });
 
   const [author] = Numi.useStateString({
@@ -72,11 +78,248 @@ function QuoteBlockComponent({ context }: { context: BlockContextType }) {
     inspector: 'file',
   });
 
+  const isMarkdown = format === 'markdown';
+
+  const style = Numi.useStyle([
+    Style.backgroundColor('backgroundColor', 'Background Color', {}, '#FFFFFF'),
+
+    Style.alignment('quoteIconAlignment', 'Quote Icon Alignment', {
+      options: {
+        start: 'start', 
+        center: 'center',
+        end: 'end',
+      },
+    }, 'start'),
+    Style.backgroundColor('quoteIconColor', 'Quote Icon Color', {}, '#000000'),
+    Style.dimensions('quoteIconSize', 'Quote Icon Size', {}, { width: '42px', height: '32px'}),
+
+    Style.alignment('quoteTextAlignment', 'Quote Text Alignment', {
+      options: {
+        left: 'left', 
+        center: 'center',
+        right: 'right',
+      },
+    }, 'left'),
+    Style.textColor('quoteTextColor', 'Quote Text Color', {}, '#000000'),
+    Style.font('quoteTextFont', 'Quote Text Font',
+      {
+        config: {
+          hideVerticalAlignment: true,
+          hideHorizontalAlignment: true,
+        },
+      },
+      {
+        font: 'Inter',
+        weight: '400',
+        size: '18px',
+        lineHeight: '1.5',
+        letterSpacing: '0px',
+      },
+    ),
+    Style.textColor('authorColor', 'Author Color', {}, '#1e2939'),
+    Style.font('authorFont', 'Author Font',
+      {
+        config: {
+          hideVerticalAlignment: true,
+          hideHorizontalAlignment: true,
+        },
+      },
+      {
+        font: 'Inter',
+        weight: '500',
+        size: '16px',
+        lineHeight: '1.5',
+        letterSpacing: '0px',
+      },
+    ),
+    Style.textColor('affiliationColor', 'Affiliation Color', {}, '#4a5565'),
+    Style.font('affiliationFont', 'Affiliation Font',
+      {
+        config: {
+          hideVerticalAlignment: true,
+          hideHorizontalAlignment: true,
+        },
+      },
+      {
+        font: 'Inter',
+        weight: '400',
+        size: '14px',
+        lineHeight: '1.5',
+        letterSpacing: '0px',
+      },
+    ),
+
+    Style.dimensions('imageSize', 'Image Size', {}, 
+      quoteStyle === 'minimal' 
+        ? { width: '100px', height: '100px'}
+        : { width: '56px', height: '56px'}
+    ),
+    Style.backgroundColor('imageBackgroundColor', 'Image Background Color', {}, '#FFFFFF'),
+    Style.border('imageBorder', 'Image Border', {}, { width: '1px', style: 'solid' }),
+    Style.borderRadius('imageBorderRadius', 'Image Border Radius', {}, '5px'),
+    Style.borderColor('imageBorderColor', 'Image Border Color', {}, '#000000'),
+    Style.shadow('imageShadow', 'Image Shadow', {}, '0px 0px 0px 0px #000000'),
+
+    Style.border('border', 'Border', {}, { width: '1px', style: 'solid' }),
+    Style.borderRadius('borderRadius', 'Border Radius', {}, '5px'),
+    Style.borderColor('borderColor', 'Border Color', {}, '#000000'),
+    Style.shadow('shadow', 'Shadow', {}, '0px 0px 0px 0px #000000'),
+    Style.hidden('hidden', 'Hidden', {}, false),
+  ]);
+
   const appearance = Numi.useAppearance([
     Appearance.padding('padding', 'Padding', {}),
+    Appearance.margin('margin', 'Margin', {}),
     Appearance.spacing('spacing', 'Spacing', {}),
     Appearance.visibility('visibility', 'Visibility', {}, { conditional: [] }),
   ]);
+
+  const containerStyles = useMemo(() => ({
+    backgroundColor: style.backgroundColor || 'transparent',
+    color: style.textColor || 'black',
+    borderColor: style.borderColor,
+    borderWidth: style.border?.width,
+    borderStyle: style.border?.style,
+    borderRadius : style.borderRadius ?? '3px',
+    boxShadow: style?.shadow,
+    padding: appearance?.padding,
+    margin: appearance?.margin,
+    gap: appearance?.spacing,
+  }), [style, appearance]);
+
+
+  const imageStyles = useMemo(() => ({
+    backgroundColor: style.imageBackgroundColor,
+    width: style.imageSize?.width,
+    height: style.imageSize?.height,
+    borderColor: style.imageBorderColor,
+    borderWidth: style.imageBorder?.width,
+    borderStyle: style.imageBorder?.style,
+    borderRadius : style.imageBorderRadius ?? '3px',
+    boxShadow: style?.imageShadow,
+  }), [style]);
+  
+  const quoteTextStyles = useMemo(() => ({
+    textAlign: style?.quoteTextAlignment,
+    color: style?.quoteTextColor,
+    fontSize: style?.quoteTextFont?.size,
+    fontWeight: style?.quoteTextFont?.weight,
+    fontFamily: style?.quoteTextFont?.font,
+    lineHeight: style?.quoteTextFont?.lineHeight,
+    letterSpacing: style?.quoteTextFont?.letterSpacing,
+  }), [style]);
+
+  const authorStyles = useMemo(() => ({
+    color: style?.authorColor,
+    fontSize: style?.authorFont?.size,
+    fontWeight: style?.authorFont?.weight,
+    fontFamily: style?.authorFont?.font,
+    lineHeight: style?.authorFont?.lineHeight,
+    letterSpacing: style?.authorFont?.letterSpacing,
+  }), [style]);
+
+  const affiliationStyles = useMemo(() => ({
+    color: style?.affiliationColor,
+    fontSize: style?.affiliationFont?.size,
+    fontWeight: style?.affiliationFont?.weight,
+    fontFamily: style?.affiliationFont?.font,
+    lineHeight: style?.affiliationFont?.lineHeight,
+    letterSpacing: style?.affiliationFont?.letterSpacing,
+  }), [style]);
+
+
+  const quoteIconComponent = (
+    <svg
+      style={{
+        alignSelf: style?.quoteIconAlignment,
+      }}
+      width={style?.quoteIconSize?.width ?? '42px'}
+      height={style?.quoteIconSize?.height ?? '32px'}
+      viewBox="0 0 42 33" fill="none" xmlns="http://www.w3.org/2000/svg"
+    >
+      <path
+        d="M19.1436 24.1816C19.1436 26.4553 18.2952 28.4174 16.59 30.0426C14.8848 31.6763 12.7176 32.4932 10.0884 32.4932C7.0728 32.4932 4.6368 31.449 2.7804 29.3605C0.924 27.2721 0 24.67 0 21.5626C0 14.7247 1.8564 9.62158 5.5692 6.24474C9.282 2.8679 13.4148 0.947901 17.9844 0.493164V7.44053C15.582 7.81948 13.4232 8.86369 11.4828 10.5732C9.5508 12.2826 8.5428 14.3879 8.4672 16.8974C9.0888 16.5184 9.8952 16.3247 10.9032 16.3247C13.4568 16.3247 15.4644 17.0237 16.9344 18.43C18.4044 19.8363 19.1352 21.7479 19.1352 24.1816H19.1436ZM42 24.1816C42 26.4553 41.1516 28.4174 39.4464 30.0426C37.7412 31.6763 35.574 32.4932 32.9448 32.4932C29.9292 32.4932 27.4932 31.449 25.6368 29.3605C23.7804 27.2721 22.8564 24.67 22.8564 21.5626C22.8564 14.7332 24.7128 9.62158 28.4256 6.24474C32.1384 2.8679 36.2712 0.947901 40.8408 0.493164V7.44053C38.4384 7.81948 36.2796 8.86369 34.3392 10.5732C32.4072 12.2826 31.3992 14.3879 31.3236 16.8974C31.9452 16.5184 32.7516 16.3247 33.7596 16.3247C36.3132 16.3247 38.3208 17.0237 39.7908 18.43C41.2608 19.8363 41.9916 21.7479 41.9916 24.1816H42Z"
+        fill={style?.quoteIconColor ?? 'black'}
+      />
+    </svg>
+  );
+
+  const quoteValue = quote || "Insert your inspirational quote here";
+  const quoteText = isMarkdown ? <MarkdownText text={quoteValue} /> : quoteValue;
+
+  const authorValue = author || "Quote author";
+  const affiliationValue = affiliation || "Affiliation";
+
+  if(quoteStyle === 'modern') {
+    return (
+      <div className="flex flex-col gap-2 p-4" style={containerStyles}>
+          {quoteIconComponent}
+          <div className="text-lg" style={quoteTextStyles}>
+            {quoteText}
+          </div>
+          <div className="flex flex-row gap-4 items-center">
+            {image && (
+              <img
+                src={image}
+                className="object-cover w-14 h-14 rounded-full"
+                style={imageStyles}
+              />
+            )}
+            <div className="flex flex-col">
+              <div className="text-base font-medium" style={authorStyles}>{authorValue}</div>
+              <div className="text-sm" style={affiliationStyles}>{affiliationValue}</div>
+            </div>
+          </div>
+      </div>
+    );
+  }
+
+
+  if(quoteStyle === 'classic') {
+    return (
+      <div className="flex flex-col gap-2 p-4" style={containerStyles}>
+          <div className="text-lg" style={quoteTextStyles}>
+            {quoteText}
+          </div>
+          <div className="flex flex-row gap-4 items-center">
+            {image && (
+              <img
+                src={image}
+                className="object-cover w-14 h-14 rounded-full"
+                style={imageStyles}
+              />
+            )}
+            <div className="flex flex-col">
+              <div className="text-base font-medium" style={authorStyles}>{authorValue}</div>
+              <div className="text-sm" style={affiliationStyles}>{affiliationValue}</div>
+            </div>
+          </div>
+      </div>
+    );
+  }
+
+  if(quoteStyle === 'minimal') {
+    return (
+      <div className="flex flex-row gap-2 p-4 items-center" style={containerStyles}>
+        {image && (
+          <img
+            src={image}
+            className="object-cover w-32 h-32 rounded-full"
+            style={imageStyles}
+          />
+        )}
+          <div className="flex flex-col gap-4 items-center">
+            <div className="text-lg" style={quoteTextStyles}>
+              {quoteText}
+            </div>
+            <div className="flex flex-col">
+              <div className="text-base font-medium" style={authorStyles}>{authorValue}</div>
+              <div className="text-sm" style={affiliationStyles}>{affiliationValue}</div>
+            </div>
+          </div>
+      </div>
+    );
+  }
 
   return (
     <div className={cx("", {

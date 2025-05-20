@@ -110,6 +110,19 @@ export const Appearance = {
     options: args?.options ?? {},
   }),
 
+  margin: (
+    type: string = 'margin',
+    label: string = 'Margin',
+    args: HookArgs,
+    defaultValue: SpacingValue = '{{theme.margin}}',
+  ) => ({
+    type,
+    label,
+    defaultValue,
+    inspector: args?.inspector ?? 'spacingPicker',
+    options: args?.options ?? {},
+  }),
+
   spacing: (
     type: string = 'spacing',
     label: string = 'Spacing',
@@ -162,7 +175,7 @@ export const Style = {
   // sectionSpacing
 
   backgroundColor: (
-    type: "backgroundColor" | "inputBackgroundColor" | "buttonBackgroundColor" | "activeBackgroundColor" | "inactiveBackgroundColor" = "backgroundColor",
+    type: "backgroundColor" | "quoteIconColor" | "imageBackgroundColor" | "badgeBackgroundColor" | "errorBackgroundColor" | "warningBackgroundColor" | "inputBackgroundColor" | "buttonBackgroundColor" | "activeBackgroundColor" | "inactiveBackgroundColor" = "backgroundColor",
     label: string = 'Background Color',
     args: HookArgs,
     defaultValue: string,

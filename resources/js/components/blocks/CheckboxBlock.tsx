@@ -57,6 +57,7 @@ function CheckboxBlockComponent({ context }: { context: BlockContextType }) {
   const { isDisabled } = Numi.useInteraction();
 
   const appearance = Numi.useAppearance([
+    Appearance.margin('margin', 'Margin', {}),
     Appearance.visibility('visibility', 'Visibility', {}, { conditional: [] }),
   ]);
 
@@ -96,10 +97,12 @@ function CheckboxBlockComponent({ context }: { context: BlockContextType }) {
   const backgroundColorInactive = style?.inactiveBackgroundColor;
   const borderRadius = style?.borderRadius;
   const shadow = style?.shadow as string;
+  const margin = appearance?.margin;
 
   const isManuallyStyledCheckbox = (borderRadius != undefined || backgroundColorActive != undefined || backgroundColorInactive != undefined);
 
   const checkboxStyles = useMemo(() => ({
+    margin: margin,
     backgroundColor: checked ? (backgroundColorActive || '#0374ff') : (backgroundColorInactive || '#E5E5E5'),
     borderColor: borderColor || '#E5E5E5',
     borderWidth: border?.width ?? '0.5px',
@@ -164,6 +167,10 @@ function CheckboxBlockComponent({ context }: { context: BlockContextType }) {
     backgroundColor: checkColor || 'white',
   }), [checkColor]);
 
+  if (style.hidden) {
+    return null;
+  }
+  
   return (
     <div>
       {checkboxStyle === 'checkbox' && (

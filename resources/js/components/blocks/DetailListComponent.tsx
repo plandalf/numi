@@ -1,6 +1,7 @@
-import Numi, { Appearance } from "@/contexts/Numi";
+import Numi, { Appearance, Style } from "@/contexts/Numi";
 import { BlockContextType } from "@/types/blocks";
 import cx from "classnames";
+import { useMemo } from "react";
 
 function DetailListBlockComponent({ context }: { context: BlockContextType }) {
 
@@ -30,12 +31,6 @@ function DetailListBlockComponent({ context }: { context: BlockContextType }) {
             title: "Caption",
             type: "string"
           },
-          color: {
-            title: "Color",
-            type: "string",
-            description: "A file upload input for selecting an image.",
-            meta: { editor: "colorSelector" }
-          },
           prefixImage: {
             title: "Image",
             type: "string",
@@ -48,10 +43,6 @@ function DetailListBlockComponent({ context }: { context: BlockContextType }) {
             type: "string",
             description: "Select an icon from a predefined list.",
             meta: { editor: "iconSelector" }
-          },
-          prefixText: {
-            title: "Text",
-            type: "string"
           },
           tooltip: {
             title: "Tooltip",
@@ -76,13 +67,108 @@ function DetailListBlockComponent({ context }: { context: BlockContextType }) {
     }],
   });
     
+  const fontConfig = {
+    config: {
+      hideVerticalAlignment: true,
+      hideHorizontalAlignment: true,
+    },
+  };
+
+  const style = Numi.useStyle([
+    Style.alignment('textAlignment', 'Text Alignment', {
+      options: {
+        start: 'start',
+        center: 'center',
+        end: 'end',
+      },
+    }, 'left'),
+    Style.backgroundColor('backgroundColor', 'Background Color', {}, '#FFFFFF'),
+    Style.textColor('labelColor', 'Label Color', {}, '#000000'),
+    Style.font('labelFont', 'Label Font',
+      fontConfig,
+      {
+        font: 'Inter',
+        weight: '500',
+        size: '16px',
+        lineHeight: '1.5',
+        letterSpacing: '0px',
+      },
+    ),
+    Style.textColor('captionColor', 'Caption Color', {}, '#6a7282'),
+    Style.font('captionFont', 'Caption Font',
+      fontConfig,
+      {
+        font: 'Inter',
+        weight: '400',
+        size: '14px',
+        lineHeight: '1.5',
+        letterSpacing: '0px',
+      },
+    ),
+    Style.textColor('iconColor', 'Icon Color', {}, '#6a7282'),
+    Style.dimensions('iconSize', 'Icon Size', {}, { width: '15px', height: '15px' }),
+    Style.border('border', 'Border', {}, { width: '1px', style: 'solid' }),
+    Style.borderRadius('borderRadius', 'Border Radius', {}, '5px'),
+    Style.borderColor('borderColor', 'Border Color', {}, '#000000'),
+    Style.shadow('shadow', 'Button Shadow', {}, '0px 0px 0px 0px #000000'),
+    Style.hidden('hidden', 'Hidden', {}, false),
+  ]);
+
   const appearance = Numi.useAppearance([
     Appearance.padding('padding', 'Padding', {}),
+    Appearance.margin('margin', 'Margin', {}),
     Appearance.spacing('spacing', 'Spacing', {}),
     Appearance.visibility('visibility', 'Visibility', {}, { conditional: [] }),
   ]);
+  
+  const containerStyles = useMemo(() => ({
+    backgroundColor: style.backgroundColor || 'transparent',
+    color: style.textColor || 'black',
+    borderColor: style.borderColor,
+    borderWidth: style.border?.width,
+    borderStyle: style.border?.style,
+    borderRadius : style.borderRadius ?? '3px',
+    boxShadow: style.shadow,
+    padding: appearance?.padding,
+    margin: appearance?.margin,
+    gap: appearance?.spacing,
+  }), [style, appearance]);
 
-  // Recursively render a detail list item and its children
+  const innerContainerStyle = useMemo(() => ({
+    alignItems: style.textAlignment,
+    gap: appearance?.spacing,
+  }), [style,appearance]);
+
+  const labelStyle = useMemo(() => ({
+    color: style.labelColor,
+    fontSize: style.labelFont?.size,
+    fontWeight: style.labelFont?.weight,
+    fontFamily: style.labelFont?.font,
+    lineHeight: style.labelFont?.lineHeight,
+    letterSpacing: style.labelFont?.letterSpacing,
+  }), [style]);
+
+  const captionStyle = useMemo(() => ({
+    color: style.captionColor,
+    fontSize: style.captionFont?.size,
+    fontWeight: style.captionFont?.weight,
+    fontFamily: style.captionFont?.font,
+    lineHeight: style.captionFont?.lineHeight,
+    letterSpacing: style.captionFont?.letterSpacing,
+  }), [style]);
+
+  const tooltipIconStyle = useMemo(() => ({
+    color: style.captionColor,
+  }), [style]);
+
+  const iconStyle = useMemo(() => ({
+    color: style.iconColor,
+    width: style.iconSize?.width,
+    height: style.iconSize?.height,
+  }), [style]);
+
+  if(style.hidden) return null;
+
   const renderDetailItem = (item: any, depth = 0) => {
     if (!item || item.hidden) return null;
 
@@ -90,33 +176,19 @@ function DetailListBlockComponent({ context }: { context: BlockContextType }) {
     // This could be a filter toggle in the future
 
     return (
-      <div
-        key={item.key}
-        className={cx(
-          // "border-l-2 pl-3 py-2 my-1",
-          {
-            "border-blue-300": item.color === 'blue',
-            "border-green-300": item.color === 'green',
-            "border-red-300": item.color === 'red',
-            "border-yellow-300": item.color === 'yellow',
-            "border-gray-300": !item.color || item.color === 'gray',
-            "opacity-50": item.disabled
-          }
-        )}
-        style={{ marginLeft: `${depth * 16}px` }}
-      >
+      <div>
         <div className="flex items-center space-x-2">
           {/* Prefix elements */}
           {item.prefixImage && (
             <img
               src={item.prefixImage}
-              alt=""
               className="h-6 w-6 object-cover rounded"
+              style={iconStyle}
             />
           )}
 
-          {item.prefixIcon && (
-            <span className="text-gray-500">
+          {!item.prefixImage && item.prefixIcon && (
+            <span className="text-gray-500" style={iconStyle}>
               {/* This would be a real icon component in production */}
               {item.prefixIcon === 'star' && '★'}
               {item.prefixIcon === 'heart' && '❤️'}
@@ -126,36 +198,29 @@ function DetailListBlockComponent({ context }: { context: BlockContextType }) {
             </span>
           )}
 
-          {item.prefixText && (
-            <span className="text-gray-500 text-sm">{item.prefixText}</span>
-          )}
-
           {/* Main content */}
           <div className="flex-1">
             <div className="flex items-center">
-              <span className="font-medium">
-                {item.label || `Item ${item.key}`}
+              <span className="font-medium" style={labelStyle}>
+                {item.label}
               </span>
 
               {item.tooltip && (
-                <div className="ml-1 text-gray-500 cursor-help" title={item.tooltip}>
+                <div
+                  className="ml-2 text-gray-500 cursor-help"
+                  style={tooltipIconStyle}
+                  title={item.tooltip}
+                >
                   ⓘ
                 </div>
               )}
             </div>
 
             {item.caption && (
-              <div className="text-sm text-gray-500">{item.caption}</div>
+              <div className="text-sm text-gray-500" style={captionStyle}>{item.caption}</div>
             )}
           </div>
         </div>
-
-        {/* Recursively render children */}
-        {item.children && item.children.length > 0 && (
-          <div className="ml-4 mt-2 space-y-1">
-            {item.children.map((child: any) => renderDetailItem(child, depth + 1))}
-          </div>
-        )}
       </div>
     );
   };
@@ -163,9 +228,9 @@ function DetailListBlockComponent({ context }: { context: BlockContextType }) {
   const dataToRender = items && items.length > 0 ? items : [];
 
   return (
-    <div className="border">
+    <div style={containerStyles}>
       {dataToRender && dataToRender.length > 0 && (
-        <div className="space-y-1">
+        <div className="flex flex-col" style={innerContainerStyle}>
           {dataToRender.map((item: any) => renderDetailItem(item))}
         </div>
       )}
