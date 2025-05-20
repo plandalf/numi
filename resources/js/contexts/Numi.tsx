@@ -162,7 +162,7 @@ export const Style = {
   // sectionSpacing
 
   backgroundColor: (
-    type: "backgroundColor" | "activeBackgroundColor" | "inactiveBackgroundColor" = "backgroundColor",
+    type: "backgroundColor" | "inputBackgroundColor" | "buttonBackgroundColor" | "activeBackgroundColor" | "inactiveBackgroundColor" = "backgroundColor",
     label: string = 'Background Color',
     args: HookArgs,
     defaultValue: string,
