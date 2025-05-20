@@ -176,7 +176,7 @@
 }
 @layer components {
     .prose :where(h1, h2, h3, h4, h5, h6):not(:where([class~="not-prose"], [class~="not-prose"] *)) {
-        font-size: inherit !important;
+        /*font-size: inherit;*/
         font-weight: inherit;
         line-height: inherit;
         color: inherit;
