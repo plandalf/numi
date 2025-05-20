@@ -1,4 +1,4 @@
-import Numi, { Style, Conditions, FontValue, BorderValue, DimensionValue } from "@/contexts/Numi";
+import Numi, { Style, Conditions, FontValue, BorderValue, DimensionValue, Appearance } from "@/contexts/Numi";
 import { BlockContextType } from "@/types/blocks";
 import { Switch } from "@/components/ui/switch";
 import { useMemo } from "react";
@@ -7,17 +7,19 @@ import { Check } from "lucide-react";
 function CheckboxBlockComponent({ context }: { context: BlockContextType }) {
 
   const [id] = Numi.useStateString({
-    name: 'Field Name',
+    label: 'Field Name',
+    name: 'id',
     defaultValue: '',
   });
 
   const [checked, setChecked] = Numi.useStateBoolean({
+    label: 'Checked',
     name: 'value',
     defaultValue: false,
     inspector: 'hidden',
   });
 
-  const [style] = Numi.useStateEnumeration({
+  const [checkboxStyle] = Numi.useStateEnumeration({
     name: 'style',
     initialValue: 'checkbox',
     options: ['checkbox', 'switch'],
@@ -30,6 +32,7 @@ function CheckboxBlockComponent({ context }: { context: BlockContextType }) {
   });
 
   const [label] = Numi.useStateString({
+    label: 'Label',
     name: 'label',
     defaultValue: 'Checked?',
   });
@@ -53,7 +56,12 @@ function CheckboxBlockComponent({ context }: { context: BlockContextType }) {
 
   const { isDisabled } = Numi.useInteraction();
 
-  const appearance = Numi.useStyle([
+  const appearance = Numi.useAppearance([
+    Appearance.margin('margin', 'Margin', {}),
+    Appearance.visibility('visibility', 'Visibility', {}, { conditional: [] }),
+  ]);
+
+  const style = Numi.useStyle([
     Style.backgroundColor('activeBackgroundColor', 'Selected Color', {}, '#0374ff'),
     Style.backgroundColor('inactiveBackgroundColor', 'Unselected Color', {}, '#E5E5E5'),
     Style.textColor('checkColor', 'Check Color', {}, '#FFFFFF'),
@@ -81,18 +89,20 @@ function CheckboxBlockComponent({ context }: { context: BlockContextType }) {
     Style.hidden('hidden', 'Hidden', {}, false),
   ]);
 
-  const font = appearance?.font as FontValue;
-  const border = appearance?.border as BorderValue;
-  const borderColor = appearance?.borderColor;
-  const checkColor = appearance?.checkColor;
-  const backgroundColorActive = appearance?.activeBackgroundColor;
-  const backgroundColorInactive = appearance?.inactiveBackgroundColor;
-  const borderRadius = appearance?.borderRadius;
-  const shadow = appearance?.shadow as string;
+  const font = style?.font as FontValue;
+  const border = style?.border as BorderValue;
+  const borderColor = style?.borderColor;
+  const checkColor = style?.checkColor;
+  const backgroundColorActive = style?.activeBackgroundColor;
+  const backgroundColorInactive = style?.inactiveBackgroundColor;
+  const borderRadius = style?.borderRadius;
+  const shadow = style?.shadow as string;
+  const margin = appearance?.margin;
 
   const isManuallyStyledCheckbox = (borderRadius != undefined || backgroundColorActive != undefined || backgroundColorInactive != undefined);
 
   const checkboxStyles = useMemo(() => ({
+    margin: margin,
     backgroundColor: checked ? (backgroundColorActive || '#0374ff') : (backgroundColorInactive || '#E5E5E5'),
     borderColor: borderColor || '#E5E5E5',
     borderWidth: border?.width ?? '0.5px',
@@ -133,13 +143,13 @@ function CheckboxBlockComponent({ context }: { context: BlockContextType }) {
   ]);
 
   const checkboxLabelStyles = useMemo(() => ({
-    color: appearance.textColor || 'black',
+    color: style.textColor || 'black',
     fontFamily: font?.font,
     fontWeight: font?.weight,
     fontSize: font?.size,
     lineHeight: font?.lineHeight,
     letterSpacing: font?.letterSpacing,
-  }), [appearance, font]);
+  }), [style, font]);
 
   const checkIconStyles = useMemo(() => ({
     position: 'absolute',
@@ -157,9 +167,13 @@ function CheckboxBlockComponent({ context }: { context: BlockContextType }) {
     backgroundColor: checkColor || 'white',
   }), [checkColor]);
 
+  if (style.hidden) {
+    return null;
+  }
+  
   return (
     <div>
-      {style === 'checkbox' && (
+      {checkboxStyle === 'checkbox' && (
         isManuallyStyledCheckbox ? (    
           <div className="flex items-center gap-2">
             <div className="relative inline-block justify-center">
@@ -174,7 +188,7 @@ function CheckboxBlockComponent({ context }: { context: BlockContextType }) {
             <span style={checkboxLabelStyles}>{label}</span>
           </div>)
       )}
-      {style === 'switch' && (
+      {checkboxStyle === 'switch' && (
         <div className="flex items-center gap-2">
           <Switch
             style={switchStyles}

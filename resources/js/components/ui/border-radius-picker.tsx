@@ -19,7 +19,7 @@ export const BorderRadiusPicker: React.FC<BorderRadiusPickerProps> = ({
   label = 'Border Radius',
   className,
   min = 0,
-  max = 40,
+  max = 100,
 }) => {
 
   const [localRadius, setLocalRadius] = useState(typeof value === 'string' ? value : '');

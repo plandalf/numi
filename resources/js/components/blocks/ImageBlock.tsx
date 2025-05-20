@@ -1,21 +1,42 @@
-import Numi, { Style } from "@/contexts/Numi";
+import Numi, { Appearance, Style } from "@/contexts/Numi";
 import { cn } from "@/lib/utils";
 import { useMemo } from "react";
-
 
 function ImageBlockComponent() {
 
   const [image] = Numi.useStateString({
+    label: 'Image',
     name: 'image',
     defaultValue: '',
     inspector: 'file',
   });
 
-  const appearance = Numi.useStyle([
-    Style.alignment('alignment', 'Alignment', {}, 'left'),
+  const style = Numi.useStyle([
+    Style.alignment('alignment', 'Alignment', {
+      options: {
+        left: 'Left',
+        center: 'Center',
+        right: 'Right',
+      },
+    }, 'left'),
+    Style.dimensions('dimensions', 'Dimensions', {
+      config: {
+        minWidth: 10,
+        maxWidth: 500,
+        minHeight: 10,
+        maxHeight: 500,
+      },
+    }, { width: '100%', height: '100%' }),
     Style.border('border', 'Border', {}, { width: '1px', style: 'solid' }),
     Style.borderRadius('borderRadius', 'Border Radius', {}, '5px'),
     Style.borderColor('borderColor', 'Border Color', {}, '#000000'),
+    Style.shadow('shadow', 'Shadow', {}, '0px 0px 0px 0px #000000'),
+  ]);
+  
+  const appearance = Numi.useAppearance([
+    Appearance.padding('padding', 'Padding', {}),
+    Appearance.margin('margin', 'Margin', {}),
+    Appearance.visibility('visibility', 'Visibility', {}, { conditional: [] }),
   ]);
 
   const src = useMemo(() => {
@@ -25,30 +46,40 @@ function ImageBlockComponent() {
     return image;
   }, [image]);
 
+  const styleProps = useMemo(() => {
+    return {
+      borderRadius: style?.borderRadius,
+      borderColor: style?.borderColor,
+      borderWidth: style?.border?.width,
+      borderStyle: style?.border?.style,
+      boxShadow: style?.shadow,
+      padding: appearance?.padding,
+      margin: appearance?.margin,
+      width: style?.dimensions?.width,
+      height: style?.dimensions?.height,
+    }
+  }, [style, appearance]);
+
   const classList = useMemo(() => {
     return cn('flex', {
-      'justify-start': appearance.alignment === 'left',
-      'justify-center': appearance.alignment === 'center',
-      'justify-end': appearance.alignment === 'right',
-      'w-full': appearance.alignment === 'expand',
+      'justify-start': style?.alignment === 'left',
+      'justify-center': style?.alignment === 'center',
+      'justify-end': style?.alignment === 'right',
+      'w-full': style?.alignment === 'expand',
     })
-  }, [appearance.alignment]);
+  }, [style.alignment]);
 
-  console.log({appearance})
   if (!image) {
     return (
-      <div>Upload an image</div>
+      <div className='text-center'>
+        <div className="text-gray-500">Upload an image</div>
+      </div>
     )
   }
 
   return (
     <div className={classList}>  
-      <img src={src} alt=""  style={{
-        borderRadius: appearance.borderRadius,
-        borderColor: appearance.borderColor,
-        borderWidth: appearance.border?.width,
-        borderStyle: appearance.border?.style,
-      }} />
+      <img src={src} alt=""  style={styleProps} />
     </div>
   )
 }

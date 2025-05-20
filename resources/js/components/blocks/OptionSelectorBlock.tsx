@@ -1,4 +1,4 @@
-import Numi, { Style, BlockContext } from "@/contexts/Numi";
+import Numi, { Style, BlockContext, Appearance } from "@/contexts/Numi";
 import { BlockContextType } from "@/types/blocks";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useContext, useEffect, useMemo, useRef, useCallback } from "react";
@@ -25,11 +25,6 @@ function OptionSelectorComponent({ context }: { context: BlockContextType }) {
     label: 'Default (Selected Tab)',
   });
 
-  const appearance = Numi.useStyle([
-    Style.backgroundColor('activeBackgroundColor', 'Selected', {}, '#000000'),
-    Style.backgroundColor('inactiveBackgroundColor', 'Unselected', {}, '#FFFFFF'),
-  ]);
-
   const [items] = Numi.useStateJsonSchema({
     name: 'items',
     schema: {
@@ -51,12 +46,163 @@ function OptionSelectorComponent({ context }: { context: BlockContextType }) {
           label: {
             title: "Label",
             type: "string"
+          },
+          badge: {
+            title: "Badge",
+            type: "string"
           }
         },
         required: ["key"]
       }
-    }
+    },
+    defaultValue: [{
+      label: 'Option One',
+      key: 'option-one'
+    }, {
+      label: 'Option Two',
+      key: 'option-two'
+    }],
   });
+    
+  const appearance = Numi.useAppearance([
+    Appearance.padding('padding', 'Padding', {}),
+    Appearance.margin('margin', 'Margin', {}),
+    Appearance.spacing('spacing', 'Spacing', {}),
+    Appearance.visibility('visibility', 'Visibility', {}, { conditional: [] }),
+  ]);
+  
+  const fontConfig = {
+    config: {
+      hideVerticalAlignment: true,
+      hideHorizontalAlignment: true,
+    },
+  };
+
+  const style = Numi.useStyle([
+    Style.alignment('textAlignment', 'Text Alignment', {
+      options: {
+        start: 'start',
+        center: 'center',
+        end: 'end',
+      },
+    }, 'center'),
+    Style.backgroundColor('backgroundColor', 'Background Color', {}, '#FFFFFF'),
+    Style.backgroundColor('activeBackgroundColor', 'Selected Color', {}, '#FFFFFF'),
+    Style.textColor('activeTextColor', 'Selected Text Color', {}, '#000000'),
+    Style.font('activeTextFont', 'Selected Text Font',
+      fontConfig,
+      {
+        font: 'Inter',
+        weight: '400',
+        size: '14px',
+        lineHeight: '1.5',
+        letterSpacing: '0px',
+      },
+    ),
+    Style.border('activeBorder', 'Selected Border', {}, { width: '1px', style: 'solid' }),
+    Style.borderRadius('activeBorderRadius', 'Selected Radius', {}, '5px'),
+    Style.borderColor('activeBorderColor', 'Selected Border Color', {}, '#000000'),
+    Style.shadow('activeShadow', 'Selected Shadow', {}, '0px 0px 0px 0px #000000'),
+
+    Style.backgroundColor('inactiveBackgroundColor', 'Unselected Color', {}, '#f5f5f5'),
+    Style.textColor('inactiveTextColor', 'Unselected Text Color', {}, '#848ec2'),
+    Style.font('inactiveTextFont', 'Unselected Text Font',
+      fontConfig,
+      {
+        font: 'Inter',
+        weight: '400',
+        size: '14px',
+        lineHeight: '1.5',
+        letterSpacing: '0px',
+      },
+    ),
+    Style.border('inactiveBorder', 'Unselected Border', {}, { width: '1px', style: 'solid' }),
+    Style.borderRadius('inactiveBorderRadius', 'Unselected Radius', {}, '5px'),
+    Style.borderColor('inactiveBorderColor', 'Unselected Border Color', {}, '#000000'),
+    Style.shadow('inactiveShadow', 'Unselected Shadow', {}, '0px 0px 0px 0px #000000'),
+
+    Style.backgroundColor('badgeBackgroundColor', 'Badge Background Color', {}, '#f5f5f5'),
+    Style.textColor('badgeTextColor', 'Badge Text Color', {}, '#848ec2'),
+    Style.font('badgeTextFont', 'Badge Text Font',
+      fontConfig,
+      {
+        font: 'Inter',
+        weight: '400',
+        size: '14px',
+        lineHeight: '1.5',
+        letterSpacing: '0px',
+      },
+    ),
+    Style.border('badgeBorder', 'Badge Border', {}, { width: '1px', style: 'solid' }),
+    Style.borderRadius('badgeBorderRadius', 'Badge Radius', {}, '5px'),
+    Style.borderColor('badgeBorderColor', 'Badge Border Color', {}, '#000000'),
+    Style.shadow('badgeShadow', 'Badge Shadow', {}, '0px 0px 0px 0px #000000'),
+
+    Style.border('border', 'Border', {}, { width: '1px', style: 'solid' }),
+    Style.borderRadius('borderRadius', 'Border Radius', {}, '5px'),
+    Style.borderColor('borderColor', 'Border Color', {}, '#000000'),
+    Style.shadow('shadow', 'Shadow', {}, '0px 0px 0px 0px #000000'),
+    Style.hidden('hidden', 'Hidden', {}, false),
+  ]);
+
+  const containerStyle = useMemo(() => ({
+    backgroundColor: style.backgroundColor || 'transparent',
+    borderColor: style.borderColor,
+    borderWidth: style.border?.width,
+    borderStyle: style.border?.style,
+    borderRadius : style.borderRadius ?? '3px',
+    boxShadow: style.shadow,
+    padding: appearance?.padding,
+    margin: appearance?.margin,
+    gap: appearance?.spacing,
+  }), [style, appearance]);
+
+  const activeTabStyle = useMemo(() => ({
+    justifyContent: style.textAlignment,
+    backgroundColor: style.activeBackgroundColor || 'transparent',
+    color: style.activeTextColor,
+    fontSize: style.activeTextFont?.size,
+    fontWeight: style.activeTextFont?.weight,
+    fontFamily: style.activeTextFont?.font,
+    lineHeight: style.activeTextFont?.lineHeight,
+    letterSpacing: style.activeTextFont?.letterSpacing,
+    borderColor: style.activeBorderColor,
+    borderWidth: style.activeBorder?.width,
+    borderStyle: style.activeBorder?.style,
+    borderRadius: style.activeBorderRadius,
+    boxShadow: style.activeShadow,
+  }), [style]);
+
+  const inactiveTabStyle = useMemo(() => ({
+    justifyContent: style.textAlignment,
+    backgroundColor: style.inactiveBackgroundColor || 'transparent',
+    color: style.inactiveTextColor,
+    fontSize: style.inactiveTextFont?.size,
+    fontWeight: style.inactiveTextFont?.weight,
+    fontFamily: style.inactiveTextFont?.font,
+    lineHeight: style.inactiveTextFont?.lineHeight,
+    letterSpacing: style.inactiveTextFont?.letterSpacing,
+    borderColor: style.inactiveBorderColor,
+    borderWidth: style.inactiveBorder?.width,
+    borderStyle: style.inactiveBorder?.style,
+    borderRadius: style.inactiveBorderRadius,
+    boxShadow: style.inactiveShadow,
+  }), [style]);
+
+  const badgeStyle = useMemo(() => ({
+    backgroundColor: style.badgeBackgroundColor,
+    color: style.badgeTextColor,
+    fontSize: style.badgeTextFont?.size,
+    fontWeight: style.badgeTextFont?.weight,
+    fontFamily: style.badgeTextFont?.font,
+    lineHeight: style.badgeTextFont?.lineHeight,
+    letterSpacing: style.badgeTextFont?.letterSpacing,
+    borderColor: style.badgeBorderColor,
+    borderWidth: style.badgeBorder?.width,
+    borderStyle: style.badgeBorder?.style,
+    borderRadius: style.badgeBorderRadius,
+    boxShadow: style.badgeShadow,
+  }), [style]);
 
   const interactionElements = useMemo(() => {
     return Array.isArray(items) ? items.filter(item => item.key).map(item => ({ value: item.key, label: item.label })) : [];
@@ -132,17 +278,25 @@ function OptionSelectorComponent({ context }: { context: BlockContextType }) {
   }, []);
 
   return (
-    <div className="p-4">
-      <Tabs defaultValue={selectedTab} onValueChange={handleTabChange} className="w-full">
-        <TabsList className="mb-2 h-auto p-0 w-full">
-          {Array.isArray(items) && items.map((item) => (
-            <TabsTrigger key={item.key} value={item.key} className="w-full h-10" style={{ backgroundColor: item.key === selectedTab ? appearance.activeBackgroundColor : appearance.inactiveBackgroundColor }}>
-              {item.label}
-            </TabsTrigger>
-          ))}
-        </TabsList>
-      </Tabs>
-    </div>
+    <Tabs
+      defaultValue={selectedTab}
+      onValueChange={handleTabChange}
+      className="w-full"
+    >
+      <TabsList className="h-auto p-0 w-full" style={containerStyle}>
+        {Array.isArray(items) && items.map((item) => (
+          <TabsTrigger
+            key={item.key}
+            value={item.key}
+            className="w-full h-10 flex flex-row gap-2"
+            style={item.key === selectedTab ? activeTabStyle : inactiveTabStyle}
+          >
+            {item.label}
+            {item.badge && <div className='shadow-sm bg-gray-200 rounded-full px-3 py-1' style={badgeStyle}>{item.badge}</div>}
+          </TabsTrigger>
+        ))}
+      </TabsList>
+    </Tabs>
   );
 }
 

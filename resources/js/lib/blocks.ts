@@ -25,7 +25,6 @@ export const isBlockVisible = (
 
     try {
       const result = evaluateRuleGroup(condition, context);
-      console.log('result', result);
       // Evaluate the rule group
       return result;
     } catch (e) {

@@ -12,6 +12,7 @@ function ButtonBlockComponent({ context }: { context: BlockContextType }) {
   // console.log({ isSubmitting, submitError });
 
   const [text] = Numi.useStateString({
+    label: 'Text',
     name: 'value',
     defaultValue: 'Submit',
   });
@@ -58,10 +59,10 @@ function ButtonBlockComponent({ context }: { context: BlockContextType }) {
   ]);
 
   const appearance = Numi.useAppearance([
-    // named!
-    Appearance.padding('')
+    Appearance.padding('Padding', 'Padding', {}),
+    Appearance.margin('margin', 'Margin', {}),
+    Appearance.visibility('visibility', 'Visibility', {}, { conditional: [] }),
   ]);
-  // appearance.padding ? // needs validation in the fields!
 
   const font = style?.font as FontValue;
   const border = style?.border as BorderValue;
@@ -85,7 +86,9 @@ function ButtonBlockComponent({ context }: { context: BlockContextType }) {
     borderStyle: border?.style,
     borderRadius : borderRadius ?? '3px',
     boxShadow: shadow,
-  }), [style, font, border, borderRadius, shadow]);
+    padding: appearance?.padding,
+    margin: appearance?.margin,
+  }), [style, font, border, borderRadius, shadow, appearance]);
 
   const buttonClasses = useMemo(() => cx({
     "border border-gray-300 rounded-md p-2": true,

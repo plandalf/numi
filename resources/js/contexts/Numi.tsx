@@ -27,7 +27,7 @@ export const BlockContext = createContext<BlockContextType>({
   theme: undefined
 });
 
-export interface StyleArgs {
+export interface HookArgs {
   options?: Record<string, string>;
   config?: Record<string, any>;
   inspector?: string;
@@ -53,29 +53,102 @@ export interface BorderValue {
   style?: string;
 }
 
+export interface JSONSchemaValue {
+  $schema: string;
+  type: string;
+  items: {
+    type: string;
+    properties: {
+      key: { title: string; type: string; };
+      value: { title: string; type: string; };
+      children: {
+        type: string;
+        items: {
+          type: string;
+          properties: {
+            key: { type: string; };
+            label: { type: string; };
+            caption: { type: string; };
+            color: { type: string; };
+            prefixImage: {
+              type: string;
+              format: string;
+              description: string;
+              meta: { editor: string; };
+            };
+            prefixIcon: {
+              type: string;
+              description: string;
+              meta: { editor: string; };
+            };
+            prefixText: { type: string; };
+            tooltip: { type: string; };
+            disabled: { type: string; };
+            hidden: { type: string; };
+          };
+          required: string[];
+        };
+      };
+    };
+    required: string[];
+  };
+};
+
+export type SpacingValue = 'default' | null | string;
+
 export const Appearance = {
   padding: (
     type: string = 'padding',
     label: string = 'Padding',
-    options: object = {},
+    args: HookArgs,
+    defaultValue: SpacingValue = '{{theme.padding}}',
   ) => ({
     type,
     label,
-    defaultValue: '{{theme.padding}}',
+    defaultValue,
+    inspector: args?.inspector ?? 'spacingPicker',
+    options: args?.options ?? {},
   }),
-  // validation!
-  // Every component of the margin string must end in px or be 0. Examples: 12px, 8px 8px 0
+
+  margin: (
+    type: string = 'margin',
+    label: string = 'Margin',
+    args: HookArgs,
+    defaultValue: SpacingValue = '{{theme.margin}}',
+  ) => ({
+    type,
+    label,
+    defaultValue,
+    inspector: args?.inspector ?? 'spacingPicker',
+    options: args?.options ?? {},
+  }),
 
   spacing: (
     type: string = 'spacing',
     label: string = 'Spacing',
-    options:object = {},
+    args: HookArgs,
+    defaultValue: SpacingValue = '{{theme.spacing}}',
   ) => ({
     type,
     label,
-    defaultValue: '10px',
-    inspector: '',
-    options: {},
+    defaultValue,
+    inspector: args?.inspector ?? 'spacingPicker',
+    options: args?.options ?? {},
+  }),
+  
+
+  visibility: (
+    type: string = 'visibility',
+    label: string = 'Visibility',
+    args: HookArgs,
+    defaultValue?: any,
+  ) => ({
+    label,
+    type,
+    options: [],
+    defaultValue,
+    inspector: args?.inspector ?? 'visibilityPicker',
+    config: args?.config ?? {}
   }),
 }
 
@@ -83,7 +156,7 @@ export const Style = {
   alignment: (
     type: string = 'alignment',
     label: string = 'Alignment',
-    args: StyleArgs,
+    args: HookArgs,
     defaultValue: string = 'left',
   ) => ({
     label,
@@ -102,9 +175,9 @@ export const Style = {
   // sectionSpacing
 
   backgroundColor: (
-    type: "backgroundColor" | "activeBackgroundColor" | "inactiveBackgroundColor" = "backgroundColor",
+    type: "backgroundColor" | "quoteIconColor" | "imageBackgroundColor" | "badgeBackgroundColor" | "errorBackgroundColor" | "warningBackgroundColor" | "inputBackgroundColor" | "buttonBackgroundColor" | "activeBackgroundColor" | "inactiveBackgroundColor" = "backgroundColor",
     label: string = 'Background Color',
-    args: StyleArgs,
+    args: HookArgs,
     defaultValue: string,
   ) => ({
     label,
@@ -116,7 +189,7 @@ export const Style = {
   textColor: (
     type: string = 'textColor',
     label: string = 'Text Color',
-    args: StyleArgs,
+    args: HookArgs,
     defaultValue: string,
   ) => ({
     label,
@@ -129,7 +202,7 @@ export const Style = {
   dimensions: (
     type: string = 'dimensions',
     label: string = 'Dimensions',
-    args: StyleArgs,
+    args: HookArgs,
     defaultValue: DimensionValue,
   ) => ({
     label,
@@ -143,7 +216,7 @@ export const Style = {
   font: (
     type: string = 'font',
     label: string = 'Font',
-    args: StyleArgs,
+    args: HookArgs,
     defaultValue: FontValue,
   ) => ({
     label,
@@ -158,7 +231,7 @@ export const Style = {
   border: (
     type: string = 'border',
     label: string = 'Border',
-    args: StyleArgs,
+    args: HookArgs,
     defaultValue: BorderValue,
   ) => ({
     label,
@@ -171,7 +244,7 @@ export const Style = {
   borderRadius: (
     type: string = 'borderRadius',
     label: string = 'Border Radius',
-    args: StyleArgs,
+    args: HookArgs,
     defaultValue: string = '1px',
   ) => ({
     label,
@@ -184,7 +257,7 @@ export const Style = {
   borderColor: (
     type: string = 'borderColor',
     label: string = 'Border Color',
-    args: StyleArgs,
+    args: HookArgs,
     defaultValue: string = '#FFFFFF',
   ) => ({
     label,
@@ -197,7 +270,7 @@ export const Style = {
   shadow: (
     type: string = 'shadow',
     label: string = 'Shadow',
-    args: StyleArgs,
+    args: HookArgs,
     defaultValue: string = '0px 0px 0px 0px #000000',
   ) => ({
     label,
@@ -210,7 +283,7 @@ export const Style = {
   hidden: (
     type: string = 'hidden',
     label: string = 'Hidden',
-    args: StyleArgs,
+    args: HookArgs,
     defaultValue: boolean = false,
   ) => ({
     label,
@@ -219,29 +292,11 @@ export const Style = {
     defaultValue,
     inspector: args.inspector ?? 'checkbox',
   }),
-  visibility: (
-    type: string = 'visibility',
-    label: string = 'Visibility',
-    args: StyleArgs,
-    defaultValue: {
-      conditional: []
-    }
-  ) => ({
-    label,
-    type,
-    options: [],
-    defaultValue,
-    inspector: args.inspector ?? 'visibility',
-  }),
 }
 
 export const Conditions = {
   onClickEvent: () => ({
     type: 'onClickEvent',
-  }),
-
-  visibility: () => ({
-    type: 'visibility',
   }),
 }
 
@@ -324,8 +379,12 @@ const Numi = {
     };
   },
 
-  useStateJsonSchema(props: { name: string; schema: { $schema: string; type: string; items: { type: string; properties: { key: { title: string; type: string; }; value: { title: string; type: string; }; children: { type: string; items: { type: string; properties: { key: { type: string; }; label: { type: string; }; caption: { type: string; }; color: { type: string; }; prefixImage: { type: string; format: string; description: string; meta: { editor: string; }; }; prefixIcon: { type: string; description: string; meta: { editor: string; }; }; prefixText: { type: string; }; tooltip: { type: string; }; disabled: { type: string; }; hidden: { type: string; }; }; required: string[]; }; }; }; required: string[]; }; }}): Array<any> {
-
+  useStateJsonSchema(props: {
+    name: string;
+    schema: JSONSchemaValue,
+    defaultValue: any,
+  }): Array<any> {
+                  
     const blockContext = useContext(BlockContext);
 
     useEffect(() => {
@@ -333,12 +392,12 @@ const Numi = {
         name: props.name,
         type: 'jsonSchema',
         schema: props.schema,
-        defaultValue: {}
+        defaultValue: props.defaultValue ?? {}
       });
-    }, []);
+    }, [blockContext.blockId, props.name]);
 
     // options list data must match
-    const data = get(blockContext.blockConfig, `content.${props.name}`, {});
+    const data = get(blockContext.blockConfig, `content.${props.name}`, props.defaultValue);
 
     // return options
     return [data];
@@ -358,20 +417,13 @@ const Numi = {
   },
 
   useAppearance(appearanceProps: any[]) {
-
-    return [
-      // rounded corners!
-    ];
-  },
-
-  useStyle(styleProps: any[]): Record<string, any> {
     const blockContext = useContext(BlockContext);
 
     return useMemo(() => {
       const appearance: Record<string, any> = {};
 
       // Register each appearance property
-      styleProps.forEach(prop => {
+      appearanceProps.forEach(prop => {
         if (prop.type) {
           // Get the value from block config or use default
           appearance[prop.type] = blockContext.blockConfig.appearance?.[prop.type];
@@ -391,6 +443,35 @@ const Numi = {
 
       return appearance;
     }, [blockContext.blockConfig.appearance, blockContext.blockId]);
+  },
+
+  useStyle(styleProps: any[]): Record<string, any> {
+    const blockContext = useContext(BlockContext);
+
+    return useMemo(() => {
+      const style: Record<string, any> = {};
+
+      // Register each style property
+      styleProps.forEach(prop => {
+        if (prop.type) {
+          // Get the value from block config or use default
+          style[prop.type] = blockContext.blockConfig.style?.[prop.type];
+
+          // Register the hook
+          blockContext.registerHook({
+            name: prop.type,
+            type: 'style',
+            defaultValue: prop.defaultValue,
+            options: prop.options,
+            inspector: prop.inspector,
+            label: prop.label || prop.type.charAt(0).toUpperCase() + prop.type.slice(1),
+            config: prop.config ?? {}
+          });
+        }
+      });
+
+      return style;
+    }, [blockContext.blockConfig.style, blockContext.blockId]);
   },
 
   useInteraction(): { isDisabled: any; updateHook: (hook: Partial<HookUsage>) => void } {
@@ -536,12 +617,13 @@ const Numi = {
     return [value, setValue];
   },
 
-  useStateString(props: { name: string; defaultValue: string; inspector?: string, format?: string }): [string, (value: string) => void, string] {
+  useStateString(props: { label: string; name: string; defaultValue: string; inspector?: string, format?: string }): [string, (value: string) => void, string] {
     const blockContext = useContext(BlockContext);
 
 
     useEffect(() => {
       blockContext.registerHook({
+        label: props.label,
         name: props.name,
         type: 'string',
         defaultValue: props.defaultValue,
