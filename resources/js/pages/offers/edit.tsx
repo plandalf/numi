@@ -411,7 +411,7 @@ function EditApp() {
       {/* Page Logic Dialog */}
       <PageLogicDialog />
 
-      <AddPageDialog />
+      <PageTypeDialog />
 
       {/* <div className="text-xs absolute bottom-0 w-[500px] right-0 border-t border-border bg-white h-full overflow-scroll">
         <pre>{JSON.stringify(data.view.pages[selectedPage], null, 2)}</pre>
@@ -491,7 +491,7 @@ function Toolbar() {
     editingPageName, setEditingPageName,
     pageNameInput, setPageNameInput,
     setIsRenamingFromDropdown,
-    setShowAddPageDialog,
+    setShowPageTypeDialog,
     handlePageNameSave,
     handlePageNameClick,
     handlePageAction,
@@ -508,7 +508,7 @@ function Toolbar() {
         )}>
           <div className="flex items-center gap-2 overflow-x-auto">
             <button
-              onClick={() => setShowAddPageDialog(true)}
+              onClick={() => setShowPageTypeDialog(true)}
               className="flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium bg-transparent text-secondary-foreground hover:bg-white border-1 border-gray-300/50 cursor-pointer"
             >
               <Plus className="w-4 h-4" />
@@ -570,6 +570,9 @@ function Toolbar() {
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => handlePageAction(pageId, 'duplicate')}>
                         Duplicate
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handlePageAction(pageId, 'changeType')}>
+                        Change Type
                       </DropdownMenuItem>
                       <DropdownMenuItem
                         onClick={() => handlePageAction(pageId, 'delete')}
@@ -646,46 +649,75 @@ function PageLogicDialog() {
   )
 }
 
+function PageTypeDialog() {
+    const { 
+        showPageTypeDialog, 
+        setShowPageTypeDialog, 
+        handleAddPage,
+        handlePageTypeChange,
+        editingPageId,
+        data,
+        selectedPage 
+    } = useEditor();
 
-function AddPageDialog() {
+    const isEditing = Boolean(editingPageId);
+    const currentPage = editingPageId ? data.view.pages[editingPageId] : null;
 
-    const { showAddPageDialog, setShowAddPageDialog, handleAddPage } = useEditor();
+    const handleTypeSelection = (type: PageType) => {
+        if (isEditing && editingPageId) {
+            handlePageTypeChange(editingPageId, type);
+        } else {
+            handleAddPage(type);
+        }
+    };
 
-  return (
-    <Dialog open={showAddPageDialog} onOpenChange={setShowAddPageDialog}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Add New Page</DialogTitle>
-          <DialogDescription>
-            Choose the type of page you want to add
-          </DialogDescription>
-        </DialogHeader>
-        <div className="grid grid-cols-3 gap-4 py-4">
-          <button
-            onClick={() => handleAddPage('entry')}
-            className="flex flex-col items-center gap-2 p-4 rounded-lg border border-border hover:bg-secondary/50"
-          >
-            <ArrowRightToLine className="w-6 h-6" />
-            <span className="text-sm font-medium">Entry Page</span>
-          </button>
-          <button
-            onClick={() => handleAddPage('page')}
-            className="flex flex-col items-center gap-2 p-4 rounded-lg border border-border hover:bg-secondary/50"
-          >
-            <FileText className="w-6 h-6" />
-            <span className="text-sm font-medium">Content Page</span>
-          </button>
-          <button
-            onClick={() => handleAddPage('ending')}
-            className="flex flex-col items-center gap-2 p-4 rounded-lg border border-border hover:bg-secondary/50"
-          >
-            <CheckSquare className="w-6 h-6" />
-            <span className="text-sm font-medium">Ending Page</span>
-          </button>
-        </div>
-      </DialogContent>
-    </Dialog>
-  )
+    return (
+        <Dialog open={showPageTypeDialog} onOpenChange={setShowPageTypeDialog}>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>{isEditing ? 'Change Page Type' : 'Add New Page'}</DialogTitle>
+                    <DialogDescription>
+                        {isEditing 
+                            ? 'Select a new type for this page' 
+                            : 'Choose the type of page you want to add'
+                        }
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="grid grid-cols-3 gap-4 py-4">
+                    <button
+                        onClick={() => handleTypeSelection('entry')}
+                        className={cn(
+                            "flex flex-col items-center gap-2 p-4 rounded-lg border border-border hover:bg-secondary/50",
+                            currentPage?.type === 'entry' && "bg-secondary"
+                        )}
+                    >
+                        <ArrowRightToLine className="w-6 h-6" />
+                        <span className="text-sm font-medium">Entry Page</span>
+                    </button>
+                    <button
+                        onClick={() => handleTypeSelection('page')}
+                        className={cn(
+                            "flex flex-col items-center gap-2 p-4 rounded-lg border border-border hover:bg-secondary/50",
+                            currentPage?.type === 'page' && "bg-secondary"
+                        )}
+                    >
+                        <FileText className="w-6 h-6" />
+                        <span className="text-sm font-medium">Content Page</span>
+                    </button>
+                    <button
+                        onClick={() => handleTypeSelection('ending')}
+                        className={cn(
+                            "flex flex-col items-center gap-2 p-4 rounded-lg border border-border hover:bg-secondary/50",
+                            currentPage?.type === 'ending' && "bg-secondary"
+                        )}
+                    >
+                        <CheckSquare className="w-6 h-6" />
+                        <span className="text-sm font-medium">Ending Page</span>
+                    </button>
+                </div>
+            </DialogContent>
+        </Dialog>
+    )
 }
 
 export default Edit;

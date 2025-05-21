@@ -35,7 +35,7 @@ function DetailListBlockComponent({ context }: { context: BlockContextType }) {
           icon: {
             title: 'Icon',
             type: "object",
-            defaultValue: { icon: '',  emoji: '', url: '' } as IconValue,
+            defaultValue: { icon: null,  emoji: null, url: null } as IconValue,
             meta: { editor: "iconSelector" },
           },
           tooltip: {

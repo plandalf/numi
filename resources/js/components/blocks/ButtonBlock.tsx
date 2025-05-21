@@ -1,10 +1,11 @@
 import { BlockContextType } from "@/types/blocks";
-import Numi, { Appearance, BorderValue, FontValue, Style } from '@/contexts/Numi';
+import Numi, { Appearance, BorderValue, FontValue, IconValue, Style } from '@/contexts/Numi';
 import cx from "classnames";
 import { useCheckoutState } from "@/pages/checkout-main";
 import { cn } from "@/lib/utils";
 import { useMemo } from "react";
 import { Event, EVENT_LABEL_MAP } from "../editor/interaction-event-editor";
+import { IconRenderer } from "../ui/icon-renderer";
 
 // Does Submitting of field forms.
 function ButtonBlockComponent({ context }: { context: BlockContextType }) {
@@ -30,9 +31,28 @@ function ButtonBlockComponent({ context }: { context: BlockContextType }) {
     inspector: 'select',
     label: 'Type',
   });
+  
+  const [icon] = Numi.useStateJsonSchema({
+    name: 'icon',
+    label: 'Icon',
+    defaultValue: { icon: null,  emoji: null, url: null } as IconValue,
+    schema: {
+      $schema: "http://json-schema.org/draft-07/schema#",
+      type: "object",
+      meta: { editor: "iconSelector" },
+    },
+  });
 
   const style = Numi.useStyle([
     Style.alignment('alignment', 'Alignment', {}, 'left'),
+
+    Style.backgroundColor('iconColor', 'Icon Color', {}, '#000000'),
+    Style.dimensions('iconSize', 'Icon Size', {
+      config: {
+        hideWidth: true
+      }
+    }, {height: '16px'}),
+
     Style.backgroundColor('backgroundColor', 'Background Color', {}, '#FFFFFF'),
     Style.textColor('textColor', 'Text Color', {}, '#000000'),
     Style.font(
@@ -52,10 +72,10 @@ function ButtonBlockComponent({ context }: { context: BlockContextType }) {
         letterSpacing: '0px',
       },
     ),
-    Style.border('border', 'Button Border', {}, { width: '1px', style: 'solid' }),
-    Style.borderRadius('borderRadius', 'Button Radius', {}, '5px'),
+    Style.border('border', 'Border', {}, { width: '1px', style: 'solid' }),
+    Style.borderRadius('borderRadius', 'Radius', {}, '5px'),
     Style.borderColor('borderColor', 'Border Color', {}, '#000000'),
-    Style.shadow('shadow', 'Button Shadow', {}, '0px 0px 0px 0px #000000'),
+    Style.shadow('shadow', 'Shadow', {}, '0px 0px 0px 0px #000000'),
     Style.hidden('hidden', 'Hidden', {}, false),
   ]);
 
@@ -102,9 +122,10 @@ function ButtonBlockComponent({ context }: { context: BlockContextType }) {
   }), [style, font, border, borderRadius, shadow, appearance]);
 
   const buttonClasses = useMemo(() => cx({
+    "flex flex-row gap-x-2 items-center text-center": true,
     "border border-gray-300 rounded-md p-2": true,
     "hover:cursor-pointer hover:brightness-90 active:brightness-85": !isSubmitting,
-    "w-full": style.alignment === 'expand',
+    "w-full justify-center": style.alignment === 'expand',
     "opacity-50 cursor-not-allowed": isSubmitting,
     "border-none": style.border === 'none',
     "border-[1px]": style.border === 'xs',
@@ -121,6 +142,11 @@ function ButtonBlockComponent({ context }: { context: BlockContextType }) {
     "justify-stretch": style.alignment === 'expand',
   }), [style.alignment]);
 
+  const iconStyles = useMemo(() => ({
+    size: style?.iconSize?.height ?? '16px',
+    color: style?.iconColor ?? 'black',
+  }), [style]);
+
   if (style.hidden) {
     return null;
   }
@@ -134,6 +160,7 @@ function ButtonBlockComponent({ context }: { context: BlockContextType }) {
         style={buttonStyles}
         onClick={() => executeCallbacks(Event.onClick)}
       >
+        <IconRenderer icon={icon} style={iconStyles} defaultIcon={''}/>
         {type === 'submit' && isSubmitting ? (
           <div className="flex items-center justify-center space-x-2">
             <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">

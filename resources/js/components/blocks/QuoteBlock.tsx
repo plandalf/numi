@@ -53,7 +53,7 @@ function QuoteBlockComponent({ context }: { context: BlockContextType }) {
   const [icon] = Numi.useStateJsonSchema({
     name: 'icon',
     label: 'Icon',
-    defaultValue: { icon: '',  emoji: '', url: '' } as IconValue,
+    defaultValue: { icon: null,  emoji: null, url: null } as IconValue,
     schema: {
       $schema: "http://json-schema.org/draft-07/schema#",
       type: "object",
@@ -105,7 +105,7 @@ function QuoteBlockComponent({ context }: { context: BlockContextType }) {
       config: {
         hideWidth: true
       }
-    }, { width: '42px', height: '32px'}),
+    }, { height: '42px'}),
 
     Style.alignment('quoteTextAlignment', 'Quote Text Alignment', {
       options: {
@@ -243,7 +243,7 @@ function QuoteBlockComponent({ context }: { context: BlockContextType }) {
 
   const iconStyles = useMemo(() => ({
     alignment: style?.iconAlignment,
-    size: style?.iconSize?.height ?? '32px',
+    size: style?.iconSize?.height ?? '42px',
     color: style?.iconColor ?? 'black',
   }), [style]);
 
@@ -259,7 +259,7 @@ function QuoteBlockComponent({ context }: { context: BlockContextType }) {
         alignSelf: iconStyles?.alignment,
       }}
       width={iconStyles?.size ?? '42px'}
-      height={iconStyles?.size ?? '32px'}
+      height={iconStyles?.size ?? '42px'}
       viewBox="0 0 42 33" fill="none" xmlns="http://www.w3.org/2000/svg"
     >
       <path

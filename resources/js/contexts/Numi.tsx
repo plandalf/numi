@@ -98,9 +98,9 @@ export interface JSONSchemaValue {
 };
 
 export interface IconValue {
-  icon?: string;
-  emoji?: string;
-  url?: string;
+  icon?: string | null;
+  emoji?: string | null;
+  url?: string | null;
 }
 
 export type SpacingValue = 'default' | null | string;
@@ -640,9 +640,8 @@ const Numi = {
     return [value, setValue];
   },
 
-  useStateString(props: { label: string; name: string; defaultValue: string; inspector?: string, format?: string }): [string, (value: string) => void, string] {
+  useStateString(props: { label: string; name: string; defaultValue: string; inspector?: string, format?: string, config?: Record<string, any> }): [string, (value: string) => void, string] {
     const blockContext = useContext(BlockContext);
-
 
     useEffect(() => {
       blockContext.registerHook({
@@ -651,6 +650,7 @@ const Numi = {
         type: 'string',
         defaultValue: props.defaultValue,
         inspector: props.inspector ?? 'text',
+        config: props.config ?? {},
       });
 
       const existingState = blockContext.globalState.getFieldState(

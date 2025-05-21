@@ -34,6 +34,12 @@ interface EditorContextType {
   showPageLogic: boolean;
   setShowPageLogic: React.Dispatch<React.SetStateAction<boolean>>;
 
+  showPageTypeDialog: boolean;
+  setShowPageTypeDialog: React.Dispatch<React.SetStateAction<boolean>>;
+
+  editingPageId: string | null;
+  setEditingPageId: React.Dispatch<React.SetStateAction<string | null>>;
+
   inputRef: React.RefObject<HTMLInputElement | null>;
 
   isRenamingFromDropdown: boolean;
@@ -66,10 +72,11 @@ interface EditorContextType {
   handleNameSubmit: (e: React.FormEvent) => void;
   handlePageNameClick: (pageId: string, currentName: string) => void;
   handlePageNameSave: (pageId: string) => void;
-  handlePageAction: (pageId: string, action: 'rename' | 'duplicate' | 'delete') => void;
+  handlePageAction: (pageId: string, action: 'rename' | 'duplicate' | 'changeType' | 'delete') => void;
   handlePageUpdate: (updatedPage: Page) => void;
   getOrderedPages: (view: any) => [string, Page][];
   handleAddPage: (type: PageType) => void;
+  handlePageTypeChange: (pageId: string, type: PageType) => void;
   offer: Offer;
   updateBlock: (block: Block) => void;
   updateSection: (sectionId: string, section: any) => void;
@@ -121,6 +128,8 @@ export function EditorProvider({ offer, organizationThemes, organizationTemplate
   const [editingPageName, setEditingPageName] = useState<string | null>(null);
   const [pageNameInput, setPageNameInput] = useState("");
   const [showPageLogic, setShowPageLogic] = useState(false);
+  const [showPageTypeDialog, setShowPageTypeDialog] = useState(false);
+  const [editingPageId, setEditingPageId] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const [isRenamingFromDropdown, setIsRenamingFromDropdown] = useState(false);
   const [showAddPageDialog, setShowAddPageDialog] = useState(false);
@@ -169,7 +178,7 @@ export function EditorProvider({ offer, organizationThemes, organizationTemplate
   const handleSave = () => {
     put(route('offers.update', offer.id), {
       onError: (error: any) => {
-        const errorMessages = Object.values(error).flat();
+        const errorMessages = Object.values(error).flat() as string[];
         toast.error(<>
           <p>Failed to save offer</p>
           <ul className='list-disc list-inside'>
@@ -217,26 +226,29 @@ export function EditorProvider({ offer, organizationThemes, organizationTemplate
     setEditingPageName(null);
   };
 
-  const handlePageAction = (pageId: string, action: 'rename' | 'duplicate' | 'delete') => {
+  const handlePageAction = (pageId: string, action: 'rename' | 'duplicate' | 'changeType' | 'delete') => {
     switch (action) {
       case 'rename':
+        setEditingPageName(pageId);
+        setPageNameInput(data.view.pages[pageId].name);
         setIsRenamingFromDropdown(true);
-        handlePageNameClick(pageId, data.view.pages[pageId].name);
         break;
       case 'duplicate':
-        const sourcePage = data.view.pages[pageId];
         const newId = `page_${Math.random().toString(36).substr(2, 9)}`;
-        const newPage = {
-          ...sourcePage,
-          id: newId,
-          name: `${sourcePage.name} (Copy)`
-        };
+        const pageToDuplicate = data.view.pages[pageId];
         const updatedPages = {
           ...data.view.pages,
-          [newId]: newPage
+          [newId]: {
+            ...pageToDuplicate,
+            name: `${pageToDuplicate.name} (Copy)`,
+          }
         };
-        setData(update(data, { view: { pages: { $set: updatedPages } }}));
+        setData(update(data, { view: { pages: { $set: updatedPages } } }));
         setTimeout(() => { handleSave(); }, 0);
+        break;
+      case 'changeType':
+        setEditingPageId(pageId);
+        setShowPageTypeDialog(true);
         break;
       case 'delete':
         const pagesToUpdate = { ...data.view.pages };
@@ -282,6 +294,36 @@ export function EditorProvider({ offer, organizationThemes, organizationTemplate
     }
   };
 
+  const handlePageTypeChange = (pageId: string, type: PageType) => {
+    const currentPage = data.view.pages[pageId];
+    const isDefaultLabel = 
+      currentPage.name === 'Entry Page' || 
+      currentPage.name === 'New Page' || 
+      currentPage.name === 'Ending Page';
+
+    const updatedPage = {
+      ...currentPage,
+      type,
+      name: isDefaultLabel 
+        ? type === 'entry' 
+          ? 'Entry Page' 
+          : type === 'ending' 
+            ? 'Ending Page' 
+            : 'New Page'
+        : currentPage.name
+    };
+
+    const updatedPages = {
+      ...data.view.pages,
+      [pageId]: updatedPage
+    };
+
+    setData(update(data, { view: { pages: { $set: updatedPages } } }));
+    setShowPageTypeDialog(false);
+    setEditingPageId(null);
+    handleSave();
+  };
+
   const handlePageUpdate = (updatedPage: Page) => {
     if (!isReady) return;
     const updatedView = {
@@ -314,7 +356,6 @@ export function EditorProvider({ offer, organizationThemes, organizationTemplate
   };
 
   const handleAddPage = (type: PageType) => {
-
     const id = `page_${Math.random().toString(36).substr(2, 9)}`;
 
     const updatedPages = {
@@ -333,7 +374,7 @@ export function EditorProvider({ offer, organizationThemes, organizationTemplate
     setData(update(data, { view: { $set: updatedView }}));
 
     handleSave();
-    setShowAddPageDialog(false);
+    setShowPageTypeDialog(false);
   };
 
   const updateBlock = (block: Block) => {
@@ -413,6 +454,8 @@ export function EditorProvider({ offer, organizationThemes, organizationTemplate
     editingPageName, setEditingPageName,
     pageNameInput, setPageNameInput,
     showPageLogic, setShowPageLogic,
+    showPageTypeDialog, setShowPageTypeDialog,
+    editingPageId, setEditingPageId,
     inputRef,
     isRenamingFromDropdown, setIsRenamingFromDropdown,
     showAddPageDialog, setShowAddPageDialog,
@@ -425,6 +468,7 @@ export function EditorProvider({ offer, organizationThemes, organizationTemplate
     handlePageUpdate,
     getOrderedPages,
     handleAddPage,
+    handlePageTypeChange,
     offer,
     organizationThemes,
     organizationTemplates,

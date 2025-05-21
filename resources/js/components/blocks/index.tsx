@@ -9,13 +9,14 @@ import QuoteBlockComponent from "./QuoteBlock";
 import TextBlockComponent from "./TextBlock";
 import TextInputBlockComponent from "./TextInputBlock";
 import ImageBlockComponent from '@/components/blocks/ImageBlock';
-
+import LinkBlockComponent from "./LinkBlock";
 export const blockTypes = {
   text: TextBlockComponent,
   checkbox: CheckboxBlockComponent,
   text_input: TextInputBlockComponent,
   detail_list: DetailListBlockComponent,
   button: ButtonBlockComponent,
+  link: LinkBlockComponent,
   image: ImageBlockComponent,
   quote: QuoteBlockComponent,
   option_selector: OptionSelectorComponent,
