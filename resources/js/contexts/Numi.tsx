@@ -405,17 +405,15 @@ const Numi = {
 
   useAppearance(appearanceProps: any[]) {
     const blockContext = useContext(BlockContext);
+    const [registered, setRegistered] = useState(false);
 
-    return useMemo(() => {
-      const appearance: Record<string, any> = {};
+    // Register hooks only once
+    useEffect(() => {
+      if (registered) return;
 
       // Register each appearance property
       appearanceProps.forEach(prop => {
         if (prop.type) {
-          // Get the value from block config or use default
-          appearance[prop.type] = blockContext.blockConfig.appearance?.[prop.type];
-
-          // Register the hook
           blockContext.registerHook({
             name: prop.type,
             type: 'appearance',
@@ -428,23 +426,35 @@ const Numi = {
         }
       });
 
+      setRegistered(true);
+    }, [blockContext.blockId, appearanceProps]);
+
+    // Calculate appearance using useMemo to prevent unnecessary recalculations
+    return useMemo(() => {
+      const appearance: Record<string, any> = {};
+
+      // Get the value from block config or use default
+      appearanceProps.forEach(prop => {
+        if (prop.type) {
+          appearance[prop.type] = blockContext.blockConfig.appearance?.[prop.type];
+        }
+      });
+
       return appearance;
-    }, [blockContext.blockConfig.appearance, blockContext.blockId]);
+    }, [blockContext.blockConfig.appearance, blockContext.blockId, appearanceProps]);
   },
 
   useStyle(styleProps: any[]): Record<string, any> {
     const blockContext = useContext(BlockContext);
+    const [registered, setRegistered] = useState(false);
 
-    return useMemo(() => {
-      const style: Record<string, any> = {};
+    // Register hooks only once
+    useEffect(() => {
+      if (registered) return;
 
       // Register each style property
       styleProps.forEach(prop => {
         if (prop.type) {
-          // Get the value from block config or use default
-          style[prop.type] = blockContext.blockConfig.style?.[prop.type];
-
-          // Register the hook
           blockContext.registerHook({
             name: prop.type,
             type: 'style',
@@ -457,8 +467,22 @@ const Numi = {
         }
       });
 
+      setRegistered(true);
+    }, [blockContext.blockId, styleProps]);
+
+    // Calculate styles using useMemo to prevent unnecessary recalculations
+    return useMemo(() => {
+      const style: Record<string, any> = {};
+
+      // Get the value from block config or use default
+      styleProps.forEach(prop => {
+        if (prop.type) {
+          style[prop.type] = blockContext.blockConfig.style?.[prop.type];
+        }
+      });
+
       return style;
-    }, [blockContext.blockConfig.style, blockContext.blockId]);
+    }, [blockContext.blockConfig.style, blockContext.blockId, styleProps]);
   },
 
   useInteraction(): { isDisabled: any; updateHook: (hook: Partial<HookUsage>) => void } {

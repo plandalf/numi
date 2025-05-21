@@ -176,7 +176,7 @@ function DetailListBlockComponent({ context }: { context: BlockContextType }) {
     // This could be a filter toggle in the future
 
     return (
-      <div>
+      <div key={item.key}>
         <div className="flex items-center space-x-2">
           {/* Prefix elements */}
           {item.prefixImage && (
