@@ -7,6 +7,7 @@ interface Props {
     product: Product;
 }
 
+/** @deprecated */
 export default function Create({ product }: Props) {
     return (
         <>
@@ -26,4 +27,4 @@ export default function Create({ product }: Props) {
             </div>
         </>
     );
-} 
+}

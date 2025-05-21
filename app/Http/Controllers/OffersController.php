@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Enums\Store\OfferItemType;
 use App\Enums\Theme\FontElement;
 use App\Enums\Theme\WeightElement;
 use App\Http\Requests\Offer\OfferItemStoreRequest;
@@ -170,12 +171,13 @@ class OffersController extends Controller
     {
         $validated = $request->validated();
 
-        $isRequired = $validated['is_required'] || $offer->offerItems->count() === 0;
+        $isRequired = ($validated['is_required'] || $offer->offerItems->count() === 0) && $validated['type'] === OfferItemType::STANDARD;
         $offerItem = OfferItem::create([
             'name' => $validated['name'],
             'key' => $validated['key'],
             'is_required' => $isRequired,
             'offer_id' => $offer->id,
+            'type' => $validated['type'],
         ]);
 
         $prices = $validated['prices'];

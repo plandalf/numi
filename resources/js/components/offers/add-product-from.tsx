@@ -11,12 +11,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Trash2, Loader2, CircleCheck } from "lucide-react";
 import { useState, useEffect, useMemo } from "react";
-import { OfferItem, OfferProduct, type Price, type Product } from "@/types/offer";
+import { OfferItem, OfferItemType, OfferProduct, type Price, type Product } from "@/types/offer";
 import { toast } from "sonner";
 import { formatMoney } from "@/lib/utils";
 import { router } from '@inertiajs/react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Combobox } from "@/components/combobox";
+import PriceForm from "../prices/PriceForm";
 
 /**
  * Generates an ordinal name based on a number
@@ -60,6 +61,7 @@ interface Props {
   tab?: 'product' | 'pricing';
   offerItemsCount: number;
   selectedProduct?: Product | null;
+  type: OfferItemType;
 }
 
 interface AddOfferItemFormData {
@@ -79,13 +81,18 @@ export default function AddProductForm({
   products,
   tab: defaultTab = 'product',
   offerItemsCount,
-  selectedProduct: defaultSelectedProduct
+  selectedProduct: defaultSelectedProduct,
+  type
 }: Props) {
   const isEditing = !!initialData;
   const [activeTab, setActiveTab] = useState<string>(defaultTab);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(initialData ? products.find(p => p.id === defaultSelectedProduct?.id) || null : null);
+  const [addNewPriceDialogOpen, setAddNewPriceDialogOpen] = useState(false);
 
-  console.log("selectedProduct", selectedProduct);
+  useEffect(() => {
+    setSelectedProduct(initialData ? products.find(p => p.id === defaultSelectedProduct?.id) || null : null);
+  }, [initialData, defaultSelectedProduct, products]);
+
   // Format products for combobox
   const productOptions = products.map(product => ({
     value: product.id.toString(),
@@ -107,29 +114,26 @@ export default function AddProductForm({
     is_required: initialData?.is_required || offerItemsCount === 0,
     prices: initialData?.prices?.map(price => price.id.toString()) || [],
     default_price_id: initialData?.default_price_id || null,
+    type: type
   });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    const itemName = data.name || 'this slot';
-    const toastId = toast.loading(isEditing ? `Updating ${itemName}...` : `Creating ${itemName}...`);
-
     const options = {
-        preserveScroll: true,
-        onSuccess: () => {
-            toast.success(`Slot ${itemName} ${isEditing ? 'updated' : 'created'} successfully`, { id: toastId });
-            onOpenChange(false);
-        },
-        onError: (errors: any) => {
-            toast.error(`Failed to ${isEditing ? 'update' : 'create'} slot: ${Object.values(errors).flat().join(", ")}`, { id: toastId });
-        },
+      preserveScroll: true,
+      onSuccess: () => {
+        onOpenChange(false);
+      },
+      onError: (errors: any) => {
+        toast.error(`Failed to ${isEditing ? 'update' : 'create'} offer item: ${Object.values(errors).flat().join(", ")}`);
+      },
     };
 
     if (isEditing) {
-        put(route('offers.items.update', { offer: offerId, offerItem: initialData.id }), options);
+      put(route('offers.items.update', { offer: offerId, offerItem: initialData.id }), options);
     } else {
-        post(route('offers.items.store', { offer: offerId }), options);
+      post(route('offers.items.store', { offer: offerId }), options);
     }
   };
 
@@ -145,118 +149,139 @@ export default function AddProductForm({
     const newPrices = [...data.prices.filter((id: string) => !pricesOptions.flatMap(option => option.value).includes(id)), ...priceIds];
     setData('prices', newPrices);
 
-    if(!data.default_price_id) {
+    if (!data.default_price_id) {
       setData('default_price_id', newPrices[0]);
     }
   };
 
+  const handlePriceSuccess = (price: Price) => {
+    router.reload({ only: ['products'] });
+
+    setData('prices', [...data.prices, price.id.toString()]);
+    setAddNewPriceDialogOpen(false);
+  };
+
+  const handleAddNewPrice = () => {
+    setAddNewPriceDialogOpen(true);
+  }
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl">
-        <DialogHeader>
-          <DialogTitle>Select Product and Prices</DialogTitle>
-          <DialogDescription>
-            Select at least one product and price to sell
-          </DialogDescription>
-        </DialogHeader>
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>Select Product and Prices</DialogTitle>
+            <DialogDescription>
+              Select at least one product and price to sell
+            </DialogDescription>
+          </DialogHeader>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="product">Product</TabsTrigger>
-            <TabsTrigger value="pricing" disabled={!selectedProduct}>Pricing</TabsTrigger>
-          </TabsList>
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="product">Product</TabsTrigger>
+              <TabsTrigger value="pricing" disabled={!selectedProduct}>Pricing</TabsTrigger>
+            </TabsList>
 
-          <form onSubmit={handleSubmit} className="space-y-6 mt-4">
-            <TabsContent value="product" className="space-y-4">
-              <div className="grid gap-4">
-                <div className="grid gap-2">
-                  <Label htmlFor="product">Select Product</Label>
-                  <Combobox
-                    items={productOptions}
-                    placeholder="Select a product"
-                    onSelect={(value) => handleProductSelect(value as string)}
-                    selected={selectedProduct?.id?.toString() || ""}
-                    modal
-                  />
-                </div>
-              </div>
-            </TabsContent>
-
-            <TabsContent value="pricing" className="space-y-4">
-              <div className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-6 mt-4">
+              <TabsContent value="product" className="space-y-4">
                 <div className="grid gap-4">
                   <div className="grid gap-2">
-                    <Label>Select Price</Label>
-                    <div className="grid gap-2">
-                      <Combobox
-                        className="mt-1 w-full"
-                        items={(selectedProduct?.prices || []).map(price => ({
-                          value: price.id.toString(),
-                          label: price.name || `${price.type} - ${formatMoney(price.amount, price.currency)}`
-                        }))}
-                        placeholder="Select prices"
-                        selected={data.prices}
-                        onSelect={(value) => {
-                          const ids = typeof value === 'string' ? [value] : value;
-                          handlePriceSelect(ids);
-                        }}
-                        required
-                        multiple
-                        modal
-                      />
-                    </div>
-                  </div>
-
-                  <div className="flex flex-col gap-2 overflow-y-auto max-h-[200px]">
-                    <Label>Your selected prices show here</Label>
-                    {data.prices.map((priceId: string) => {
-                      const price = selectedProduct?.prices?.find((p) => p.id.toString() === priceId);
-                      if (!price) return null;
-
-                      return (
-                        <div key={priceId} className="flex justify-between bg-[#191D3A] rounded-md p-2 px-4 text-white text-sm">
-                          <div className="flex items-center gap-2">
-                            <CircleCheck className="w-5 h-5" />
-                            <h3>{price.name || `${price.type}`}</h3>
-                            <p className="text-xs">-</p>
-                            <p>{formatMoney(price.amount, price.currency)}</p>
-                          </div>
-                          <Trash2
-                            className="w-5 h-5 hover:text-red-500 cursor-pointer"
-                            onClick={() => setData('prices', data.prices.filter((id: string) => id !== priceId))}
-                          />
-                        </div>
-                      );
-                    })}
+                    <Label htmlFor="product">Select Product</Label>
+                    <Combobox
+                      items={productOptions}
+                      placeholder="Select a product"
+                      onSelect={(value) => handleProductSelect(value as string)}
+                      selected={selectedProduct?.id?.toString() || ""}
+                      modal
+                    />
                   </div>
                 </div>
-              </div>
-            </TabsContent>
+              </TabsContent>
 
-            <div className="flex justify-end space-x-2 pt-4 border-t">
-              <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={processing}>
-                Cancel
-              </Button>
-              {activeTab === 'pricing' && (<Button type="submit" disabled={processing || data.prices.length === 0} className="relative">
-                <span className={`${processing ? 'opacity-0' : 'opacity-100'} transition-opacity`}>
-                  Save
-                </span>
-                {processing && (
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <Loader2 className="w-4 h-4 animate-spin" />
+              <TabsContent value="pricing" className="space-y-4">
+                <div className="space-y-4">
+                  <div className="grid gap-4">
+                    <div className="grid gap-2">
+                      <Label>Select Price</Label>
+                      <div className="grid gap-2">
+                        <Combobox
+                          className="mt-1 w-full"
+                          items={(selectedProduct?.prices || []).map(price => ({
+                            value: price.id.toString(),
+                            label: price.name || `${price.type} - ${formatMoney(price.amount, price.currency)}`
+                          }))}
+                          placeholder="Select prices"
+                          selected={data.prices}
+                          onSelect={(value) => {
+                            const ids = typeof value === 'string' ? [value] : value;
+                            handlePriceSelect(ids);
+                          }}
+                          required
+                          multiple
+                          modal
+                        />
+                      </div>
+                    </div>
+
+                    {data.prices.length > 0 && (<div className="flex flex-col gap-2 overflow-y-auto max-h-[200px]">
+                      <Label>Your selected prices show here</Label>
+                      {data.prices.map((priceId: string) => {
+                        const price = selectedProduct?.prices?.find((p) => p.id.toString() === priceId);
+                        if (!price) return null;
+
+                        return (
+                          <div key={priceId} className="flex justify-between bg-[#191D3A] rounded-md p-2 px-4 text-white text-sm">
+                            <div className="flex items-center gap-2">
+                              <CircleCheck className="w-5 h-5" />
+                              <h3>{price.name || `${price.type}`}</h3>
+                              <p className="text-xs">-</p>
+                              <p>{formatMoney(price.amount, price.currency)}</p>
+                            </div>
+                            <Trash2
+                              className="w-5 h-5 hover:text-red-500 cursor-pointer"
+                              onClick={() => setData('prices', data.prices.filter((id: string) => id !== priceId))}
+                            />
+                          </div>
+                        );
+                      })}
+                    </div>)}
+
+                    <Button type="button" variant="outline" onClick={handleAddNewPrice}>Create new price</Button>
                   </div>
-                )}
-              </Button>)}
+                </div>
+              </TabsContent>
 
-              {activeTab === 'product' && (
-                <Button type="button" className="relative" onClick={() => setActiveTab('pricing')} disabled={!selectedProduct}>
-                  Next
+              <div className="flex justify-end space-x-2 pt-4 border-t">
+                <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={processing}>
+                  Cancel
                 </Button>
-              )}
-            </div>
-          </form>
-        </Tabs>
-      </DialogContent>
-    </Dialog>
+                {activeTab === 'pricing' && (<Button type="submit" disabled={processing || data.prices.length === 0} className="relative">
+                  <span className={`${processing ? 'opacity-0' : 'opacity-100'} transition-opacity`}>
+                    Save
+                  </span>
+                  {processing && (
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    </div>
+                  )}
+                </Button>)}
+
+                {activeTab === 'product' && (
+                  <Button type="button" className="relative" onClick={() => setActiveTab('pricing')} disabled={!selectedProduct}>
+                    Next
+                  </Button>
+                )}
+              </div>
+            </form>
+          </Tabs>
+        </DialogContent>
+      </Dialog>
+      {selectedProduct && addNewPriceDialogOpen && <PriceForm
+        open
+        onOpenChange={setAddNewPriceDialogOpen}
+        product={selectedProduct}
+        onSuccess={handlePriceSuccess}
+      />}
+    </>
   );
 }

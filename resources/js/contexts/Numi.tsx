@@ -351,8 +351,7 @@ const Numi = {
       name: string;
       elements?: Record<'value' | 'label', string>[],
       events?: { label: string; events: Event[] }[],
-      interaction?: Record<string, any>,
-      executeCallbacks: (type: Event, element?: string) => void,
+      interaction?: Record<string, any>
     }
   ) {
     const checkout = Numi.useCheckout();

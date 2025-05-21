@@ -238,6 +238,12 @@ export default function Index({ auth, products, filters, integrations }: Product
         <ProductForm
           open={isProductFormOpen}
           onOpenChange={setIsProductFormOpen}
+          onSuccess={(product) => {
+            router.visit(route('products.show', product.id), {
+              preserveScroll: true,
+              preserveState: true,
+            });
+          }}
         />
 
         <AddNewProductDialog

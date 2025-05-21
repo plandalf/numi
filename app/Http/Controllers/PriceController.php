@@ -18,14 +18,15 @@ class PriceController extends Controller
      * Store a newly created resource in storage.
      * Handles both standard form submissions (redirect) and JSON API requests (modal).
      */
-    public function store(PriceStoreRequest $request, Product $product, StorePrice $storePrice): RedirectResponse
+    public function store(PriceStoreRequest $request, Product $product, StorePrice $storePrice)
     {
         // The StorePrice action likely handles the actual creation logic
         $price = $storePrice($product, $request);
 
-        // Redirect back to the product show page
-        return redirect()->route('products.show', [$product])
-            ->with('success', 'Price created successfully.'); // Optional success message
+        return response()->json([
+            'price' => $price,
+            'product' => $product,
+        ]);
     }
 
     public function import(ImportRequest $request, Product $product, StorePrice $storePrice): RedirectResponse
@@ -39,14 +40,15 @@ class PriceController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(PriceUpdateRequest $request, Product $product, Price $price, UpdatePrice $updatePrice): RedirectResponse
+    public function update(PriceUpdateRequest $request, Product $product, Price $price, UpdatePrice $updatePrice)
     {
         // Authorization handled by PriceUpdateRequest
         $price = $updatePrice($product, $price, $request);
 
-        // Redirect back to the product show page
-        return redirect()->route('products.show', [$product])
-            ->with('success', 'Price updated successfully.'); // Optional success message
+        return response()->json([
+            'price' => $price,
+            'product' => $product,
+        ]);
     }
 
     /**
