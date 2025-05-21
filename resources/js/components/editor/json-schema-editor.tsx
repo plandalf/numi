@@ -6,6 +6,7 @@ import { StringEditor } from "./string-editor";
 import { BooleanEditor } from "./boolean-editor";
 import { ColorPickerEditor } from "./color-picker-editor";
 import { useEffect } from "react";
+import { IconPickerEditor } from "./icon-picker-editor";
 
 export function JSONSchemaEditor({
   schema,
@@ -152,13 +153,11 @@ export function JSONSchemaEditor({
 
   // iconSelector
   if ('meta' in schema && schema.meta?.editor === 'iconSelector') {
-    const icons = ['star', 'heart', 'circle', 'square', 'triangle'];
     return (
-      <EnumerationEditor
-        label={schema.title || path.split('.').pop() || 'Icon'}
+      <IconPickerEditor
+        label={schema.title || 'Icon'}
         value={value || ''}
         onChange={onChange}
-        options={icons}
       />
     );
   }

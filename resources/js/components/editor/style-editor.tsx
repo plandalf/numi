@@ -159,7 +159,15 @@ const StyleItemValuePreview = ({
       );
     case 'dimensionPicker':
       const dimensionValue = value as DimensionValue;
-      const dimensionValueAsTitle = `${dimensionValue.width} x ${dimensionValue.height}`;
+      let dimensionValueAsTitle = '';
+      
+      if(item.config?.hideWidth) {
+        dimensionValueAsTitle = `${dimensionValue.height}`;
+      } else if(item.config?.hideHeight) {
+        dimensionValueAsTitle = `${dimensionValue.width}`;
+      } else {
+        dimensionValueAsTitle = `${dimensionValue.width} x ${dimensionValue.height}`;
+      }
 
       return (
         <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>

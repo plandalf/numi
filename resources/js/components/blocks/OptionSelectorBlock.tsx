@@ -15,8 +15,16 @@ interface ItemType {
 
 function OptionSelectorComponent({ context }: { context: BlockContextType }) {
 
+  const defaultValue = [{
+    key: 'primary',
+    label: 'Primary',
+  }, {
+    key: 'secondary',
+    label: 'Secondary',
+  }];
+
   const blockContext = useContext(BlockContext);
-  const options = get(blockContext.blockConfig, `content.items`, {}) as ItemType[];
+  const options = get(blockContext.blockConfig, `content.items`, defaultValue) as ItemType[];
 
   const [selectedTab, setSelectedTab, updateSelectedTabHook] = Numi.useStateEnumeration({
     name: 'selectedTab',
@@ -28,13 +36,7 @@ function OptionSelectorComponent({ context }: { context: BlockContextType }) {
 
   const [items] = Numi.useStateJsonSchema({
     name: 'items',
-    defaultValue: [{
-      key: 'primary',
-      label: 'Primary',
-    }, {
-      key: 'secondary',
-      label: 'Secondary',
-    }],
+    defaultValue,
     schema: {
       $schema: "http://json-schema.org/draft-07/schema#",
       type: "array",

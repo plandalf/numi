@@ -1,7 +1,8 @@
-import Numi, { Appearance, Style } from "@/contexts/Numi";
+import Numi, { Appearance, IconValue, Style } from "@/contexts/Numi";
 import { BlockContextType } from "@/types/blocks";
 import cx from "classnames";
 import { useMemo } from "react";
+import { IconRenderer } from "../ui/icon-renderer";
 
 function DetailListBlockComponent({ context }: { context: BlockContextType }) {
 
@@ -31,18 +32,11 @@ function DetailListBlockComponent({ context }: { context: BlockContextType }) {
             title: "Caption",
             type: "string"
           },
-          prefixImage: {
-            title: "Image",
-            type: "string",
-            format: "uri",
-            description: "A file upload input for selecting an image.",
-            meta: { editor: "fileUpload" }
-          },
-          prefixIcon: {
-            title: "Icon",
-            type: "string",
-            description: "Select an icon from a predefined list.",
-            meta: { editor: "iconSelector" }
+          icon: {
+            title: 'Icon',
+            type: "object",
+            defaultValue: { icon: '',  emoji: '', url: '' } as IconValue,
+            meta: { editor: "iconSelector" },
           },
           tooltip: {
             title: "Tooltip",
@@ -106,7 +100,11 @@ function DetailListBlockComponent({ context }: { context: BlockContextType }) {
       },
     ),
     Style.textColor('iconColor', 'Icon Color', {}, '#6a7282'),
-    Style.dimensions('iconSize', 'Icon Size', {}, { width: '15px', height: '15px' }),
+    Style.dimensions('iconSize', 'Icon Size', {
+      config: {
+        hideWidth: true
+      }
+    }, { width: '15px', height: '15px' }),
     Style.border('border', 'Border', {}, { width: '1px', style: 'solid' }),
     Style.borderRadius('borderRadius', 'Border Radius', {}, '5px'),
     Style.borderColor('borderColor', 'Border Color', {}, '#000000'),
@@ -163,8 +161,7 @@ function DetailListBlockComponent({ context }: { context: BlockContextType }) {
 
   const iconStyle = useMemo(() => ({
     color: style.iconColor,
-    width: style.iconSize?.width,
-    height: style.iconSize?.height,
+    size: style.iconSize?.height ?? '15px',
   }), [style]);
 
   if(style.hidden) return null;
@@ -176,27 +173,12 @@ function DetailListBlockComponent({ context }: { context: BlockContextType }) {
     // This could be a filter toggle in the future
 
     return (
-      <div key={item.key}>
+      <div key={item.label}>
         <div className="flex items-center space-x-2">
-          {/* Prefix elements */}
-          {item.prefixImage && (
-            <img
-              src={item.prefixImage}
-              className="h-6 w-6 object-cover rounded"
-              style={iconStyle}
-            />
-          )}
 
-          {!item.prefixImage && item.prefixIcon && (
-            <span className="text-gray-500" style={iconStyle}>
-              {/* This would be a real icon component in production */}
-              {item.prefixIcon === 'star' && '★'}
-              {item.prefixIcon === 'heart' && '❤️'}
-              {item.prefixIcon === 'circle' && '●'}
-              {item.prefixIcon === 'square' && '■'}
-              {item.prefixIcon === 'triangle' && '▲'}
-            </span>
-          )}
+          <IconRenderer icon={item.icon} style={iconStyle} defaultIcon={
+            <span className="text-gray-500" style={iconStyle}>●</span>
+          }/>
 
           {/* Main content */}
           <div className="flex-1">

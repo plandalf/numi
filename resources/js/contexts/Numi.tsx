@@ -56,7 +56,7 @@ export interface BorderValue {
 export interface JSONSchemaValue {
   $schema: string;
   type: string;
-  items: {
+  items?: {
     type: string;
     properties: {
       key: { title: string; type: string; };
@@ -92,7 +92,16 @@ export interface JSONSchemaValue {
     };
     required: string[];
   };
+  meta?: { editor: string; };
+  properties?: Record<string, any>;
+  required?: string[];
 };
+
+export interface IconValue {
+  icon?: string;
+  emoji?: string;
+  url?: string;
+}
 
 export type SpacingValue = 'default' | null | string;
 
@@ -175,7 +184,7 @@ export const Style = {
   // sectionSpacing
 
   backgroundColor: (
-    type: "backgroundColor" | "quoteIconColor" | "imageBackgroundColor" | "badgeBackgroundColor" | "errorBackgroundColor" | "warningBackgroundColor" | "inputBackgroundColor" | "buttonBackgroundColor" | "activeBackgroundColor" | "inactiveBackgroundColor" = "backgroundColor",
+    type: "backgroundColor" | "iconColor" | "imageBackgroundColor" | "badgeBackgroundColor" | "errorBackgroundColor" | "warningBackgroundColor" | "inputBackgroundColor" | "buttonBackgroundColor" | "activeBackgroundColor" | "inactiveBackgroundColor" = "backgroundColor",
     label: string = 'Background Color',
     args: HookArgs,
     defaultValue: string,
@@ -370,6 +379,7 @@ const Numi = {
 
   useStateJsonSchema(props: {
     name: string;
+    label: string;
     schema: JSONSchemaValue,
     defaultValue: any,
   }): Array<any> {
@@ -379,6 +389,7 @@ const Numi = {
     useEffect(() => {
       blockContext.registerHook({
         name: props.name,
+        label: props.label,
         type: 'jsonSchema',
         schema: props.schema,
         defaultValue: props.defaultValue || {}
@@ -568,7 +579,8 @@ const Numi = {
       blockContext.registerHook(hook);
     }, [hook]);
 
-    const value = get(blockContext.blockConfig, `content.${props.name}`) ?? props.initialValue;
+    
+    const value = blockContext.getFieldValue(props.name) ?? props.initialValue;
 
     useEffect(() => {
       setValue(value);
