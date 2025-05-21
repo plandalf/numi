@@ -6,7 +6,7 @@ import { useEditor } from "@/contexts/offer/editor-context";
 import { Block, PageView } from "@/types/offer";
 import { blockTypes, getBlockMeta } from '@/components/blocks';
 import { cn } from "@/lib/utils";
-import { ChevronRight, CircleChevronRight, DiamondPlus, SquarePlus, Trash2 } from "lucide-react";
+import { ChevronRight, CircleChevronRight, DiamondPlus, SquarePlus } from "lucide-react";
 import { Button } from "../ui/button";
 import { Dialog, DialogTrigger } from "../ui/dialog";
 import { Tabs } from "../ui/tabs";
@@ -29,7 +29,6 @@ export const PageLayers: React.FC<PageLayersProps> = ({ onAddNewElementClick }) 
     setSelectedBlockId,
     selectedSectionId,
     setSelectedSectionId,
-    deleteBlock,
   } = useEditor();
 
   const [dialogOpen, setDialogOpen] = useState(false);
