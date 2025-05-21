@@ -11,7 +11,7 @@ use Illuminate\Http\Request;
 
 class StorePrice
 {
-    public function __invoke(Product $product, Request $request)
+    public function __invoke(Product $product, Request $request): Price
     {
         // Validation ensures product belongs to the current organization
         $validated = $request->validated();
@@ -20,28 +20,13 @@ class StorePrice
         $gatewayPrices = $request->input('gateway_prices', []);
         $integrationClient = $product->integrationClient();
         if($product->integration_id && $integrationClient && !empty($gatewayPrices)) {
-            $integrationClient->importPrice($product, $gatewayPrices);
+            return $integrationClient->importPrice($product, $gatewayPrices);
         } else {
             $validated['organization_id'] = $organization->id;
 
             $price = $product->prices()->create($validated);
+
+            return $price;
         }
-
-        /**
-         * Not used for now, but could be used in the future
-         * once we deiced to create prices in the integration
-         */
-        // if ($integrationClient instanceof HasPrices) {
-        //     /**
-        //      * @todo implement DTO (data transfer object) or other design patterns
-        //      * to avoid exposing integration specific model to our domain
-        //      * */
-        //     $integrationPrice = $integrationClient->createPrice($price, $product);
-
-        //     $price->gateway_price_id = $integrationPrice->id;
-        //     $price->gateway_provider = $product->integration->type;
-
-        //     $price->save();
-        // }
     }
 }

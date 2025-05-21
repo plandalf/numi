@@ -78,7 +78,9 @@ class ProductsController extends Controller
             $product = $this->createProductAction->execute($validated);
         }
 
-        return redirect()->route('products.show', $product);
+        return response()->json([
+            'product' => $product,
+        ]);
     }
 
     /**
@@ -126,12 +128,13 @@ class ProductsController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(ProductUpdateRequest $request, Product $product, UpdateProduct $updateProduct): RedirectResponse
+    public function update(ProductUpdateRequest $request, Product $product, UpdateProduct $updateProduct)
     {
         $product = $updateProduct($product, $request);
 
-        return redirect()->route('products.show', $product)
-            ->with('success', 'Product updated successfully.');
+        return response()->json([
+            'product' => $product,
+        ]);
     }
 
     /**

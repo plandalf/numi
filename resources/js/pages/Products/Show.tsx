@@ -11,7 +11,6 @@ import { useState } from "react";
 import { Plus, Edit, Trash2 } from "lucide-react";
 import { formatMoney } from "@/lib/utils";
 import PriceForm from "@/components/prices/PriceForm";
-import ProductForm from "@/components/Products/ProductForm";
 import { toast } from "sonner";
 import { Integration } from "@/types/integration";
 import AddExistingStripePriceDialog from "@/components/Products/AddExistingStripePriceDialog";

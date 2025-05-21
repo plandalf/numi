@@ -16,6 +16,7 @@ interface Props {
 type Scope = 'list' | 'custom';
 type PricingModel = 'one_time' | 'recurring' | 'tiered' | 'volume' | 'graduated';
 
+/** @deprecated */
 export default function PriceForm({ productId, price, mode }: Props) {
     const { data, setData, post, put, processing, errors } = useForm({
         scope: (price?.scope || 'list') as Scope,
@@ -212,4 +213,4 @@ export default function PriceForm({ productId, price, mode }: Props) {
             </div>
         </form>
     );
-} 
+}
