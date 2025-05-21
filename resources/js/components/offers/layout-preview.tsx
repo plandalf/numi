@@ -199,14 +199,13 @@ const TailwindLayoutRenderer = ({
   page,
   components = {}
 }: TailwindLayoutRendererProps) => {
-
   // Use the config directly if it's an object, otherwise parse it
   const config = typeof layoutConfig === 'string'
     ? JSON.parse(layoutConfig)
     : layoutConfig;
 
-  // Set up component registry
-  const componentRegistry = {
+  // Memoize the component registry to prevent recreation on every render
+  const componentRegistry = useMemo(() => ({
     // Default components
     box: (props: ComponentProps) => {
       return (
@@ -231,7 +230,7 @@ const TailwindLayoutRenderer = ({
     },
     // Custom components from props
     ...components
-  };
+  }), [components]);
 
   // Render the template
   return renderElement(config.template, page, { componentRegistry, contentMap: {} });
@@ -251,6 +250,35 @@ const renderElement = (
     contentMap: Record<string, React.ReactNode>;
   }
 ): React.ReactNode => {
+  // Move all hooks to the top, before any conditionals
+  const { selectedSectionId } = useEditor();
+
+  // Memoize styles regardless of condition
+  const sectionContainerStyle = useMemo(() => {
+    if (!element?.id || !page?.view || !(element.id in page.view)) return {};
+
+    const section = page.view[element.id];
+    const backgroundColor = (section as PageSection)?.style?.backgroundColor;
+    const padding = (section as PageSection)?.appearance?.padding;
+
+    return {
+      backgroundColor,
+      padding,
+    };
+  }, [element?.id, page?.view]);
+
+  const sectionStyle = useMemo(() => {
+    if (!element?.id || !page?.view || !(element.id in page.view)) return {};
+
+    const section = page.view[element.id];
+    const spacing = (section as PageSection)?.appearance?.spacing;
+
+    return {
+      rowGap: spacing
+    };
+  }, [element?.id, page?.view]);
+
+  // Now we can safely return null after all hooks are called
   if (!element) return null;
 
   const {
@@ -261,25 +289,8 @@ const renderElement = (
   } = element;
   const { componentRegistry, contentMap } = context;
 
-
-  const { selectedSectionId } = useEditor();
-
   if (id && page?.view && id in page?.view) {
-
     const section = page.view[id];
-
-    const backgroundColor = (section as PageSection)?.style?.backgroundColor;
-    const padding = (section as PageSection)?.appearance?.padding;
-    const spacing = (section as PageSection)?.appearance?.spacing;
-
-    const sectionContainerStyle = useMemo(() => ({
-      backgroundColor,
-      padding,
-    }), [backgroundColor, padding, spacing]);
-
-    const sectionStyle = useMemo(() => ({
-      rowGap: spacing
-    }), [spacing]);
 
     return createElement(
       type,
