@@ -11,48 +11,95 @@ interface SpacingPickerProps {
   onChangeProperty: (value: string | null) => void;
 }
 
+type SpacingFormat = 'single' | 'double' | 'triple' | 'quad';
+
 export const SpacingPicker = ({
   id,
   value,
   defaultValue,
   onChangeProperty
 }: SpacingPickerProps) => {
-  // Initialize customInputValue with currentValue if it's a custom value, otherwise empty.
-  // This helps pre-fill the input if a custom value was already set.
   const initialCustomValue = (value && value !== 'default' && value !== null) ? value : '';
 
   const [customInputValue, setCustomInputValue] = useState<string>(initialCustomValue);
   const [validationError, setValidationError] = useState<string | null>(null);
   const [isCustomEditing, setIsCustomEditing] = useState<boolean>(
-    Boolean(value && value !== 'default' && value !== null && /^\d+px$/.test(value))
+    Boolean(value && value !== 'default' && value !== null && /^(\d+px)(\s+\d+px)*$/.test(value))
   );
 
-  // Parse pixel value to number
-  const parsePixelValue = (value: string): number => {
-    const match = value.match(/^(\d+)px$/);
-    return match ? parseInt(match[1], 10) : 0;
+  // Parse pixel values from a string
+  const parsePixelValues = (value: string): number[] => {
+    return value.split(/\s+/).map(val => {
+      const match = val.match(/^(\d+)px$/);
+      return match ? parseInt(match[1], 10) : 0;
+    });
   };
 
-  // Format number to pixel value
-  const formatPixelValue = (value: number): string => {
-    return `${value}px`;
+  // Format numbers to pixel values
+  const formatPixelValues = (values: number[]): string => {
+    return values.map(val => `${val}px`).join(' ');
+  };
+
+  // Determine the format based on number of values
+  const determineFormat = (values: number[]): SpacingFormat => {
+    switch (values.length) {
+      case 2:
+        return 'double';
+      case 3:
+        return 'triple';
+      case 4:
+        return 'quad';
+      default:
+        return 'single';
+    }
+  };
+
+  // Validate spacing values based on format
+  const validateSpacingValues = (input: string): { isValid: boolean; error: string | null } => {
+    if (!input) return { isValid: true, error: null };
+
+    const values = input.trim().split(/\s+/);
+    const validPixelFormat = /^\d+px$/;
+
+    // Check if each value matches the pixel format
+    const areAllValuesValid = values.every(val => validPixelFormat.test(val));
+    if (!areAllValuesValid) {
+      return { 
+        isValid: false, 
+        error: 'Each value must be in format: {number}px' 
+      };
+    }
+
+    // Check number of values
+    if (![1, 2, 3, 4].includes(values.length)) {
+      return { 
+        isValid: false, 
+        error: 'Must have 1, 2, 3, or 4 values' 
+      };
+    }
+
+    // Check if all numbers are positive
+    const numbers = values.map(val => parseInt(val));
+    if (numbers.some(num => num <= 0)) {
+      return { 
+        isValid: false, 
+        error: 'All values must be positive' 
+      };
+    }
+
+    return { isValid: true, error: null };
   };
 
   const handleFnClick = () => {
     if (isCustomEditing) {
-      // Deactivating custom editing: revert to normal, clear error
       setIsCustomEditing(false);
       onChangeProperty('default');
       setValidationError(null);
-      setCustomInputValue(''); // Reset input field
+      setCustomInputValue('');
     } else {
-      // Activating custom editing
       setIsCustomEditing(true);
-      // If current value is 'default' or 'none', input starts empty or with placeholder
-      // Otherwise, if it's a specific px value, prefill the input.
       const valueToEdit = (value && value !== 'default' && value !== null) ? value : '';
       setCustomInputValue(valueToEdit);
-      // Do not call onChangeProperty here, let typing or blur handle it.
     }
   };
 
@@ -62,7 +109,7 @@ export const SpacingPicker = ({
     if (tabValue === 'none') {
       onChangeProperty(null);
       setCustomInputValue('');
-    } else { // 'normal' tab
+    } else {
       onChangeProperty('default');
       setCustomInputValue('');
     }
@@ -71,77 +118,77 @@ export const SpacingPicker = ({
   const handleCustomInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value;
     setCustomInputValue(newValue);
-    onChangeProperty(newValue); // Live update
-    // Clear error as user types, validation happens on blur
-    if (validationError) {
+
+    // Only validate and update if there's actual content
+    if (newValue.trim()) {
+      const { isValid, error } = validateSpacingValues(newValue);
+      setValidationError(error);
+      if (isValid) {
+        onChangeProperty(newValue);
+      }
+    } else {
       setValidationError(null);
     }
   };
 
   const handleCustomInputBlur = () => {
-    if (!customInputValue && isCustomEditing) { // If input is empty on blur while editing, treat as no custom value
-        setValidationError(null); // No error for empty, it's not an *invalid format*
-        return;
+    if (!customInputValue && isCustomEditing) {
+      setValidationError(null);
+      return;
     }
 
-    // Format the value with px on blur
-    const numericValue = customInputValue.replace(/[^0-9]/g, '');
-    const formattedValue = numericValue ? `${numericValue}px` : '';
+    // Split the input and format each value
+    const values = customInputValue.trim().split(/\s+/);
+    const formattedValues = values
+      .map(val => val.replace(/[^0-9]/g, ''))
+      .filter(Boolean)
+      .map(val => `${val}px`);
+
+    const formattedInput = formattedValues.join(' ');
     
-    if (numericValue && parseInt(numericValue, 10) <= 0) {
-      setValidationError('Must be a positive pixel value.');
-    } else {
+    const { isValid, error } = validateSpacingValues(formattedInput);
+    
+    if (isValid) {
       setValidationError(null);
-      setCustomInputValue(formattedValue);
-      onChangeProperty(formattedValue);
+      setCustomInputValue(formattedInput);
+      onChangeProperty(formattedInput);
+    } else {
+      setValidationError(error);
     }
   };
 
   const handleDragChange = (newValue: number) => {
-    const formattedValue = formatPixelValue(newValue);
+    const formattedValue = `${newValue}px`;
     setCustomInputValue(formattedValue);
     onChangeProperty(formattedValue);
     setValidationError(null);
   };
 
   const activeTab = value === null ? 'none' : 'normal';
-
-  // If custom editing is active, don't show tabs as active.
-  // Tabs only reflect 'default' or 'none'.
   const currentTabState = isCustomEditing ? undefined : activeTab;
-  const currentPixelValue = parsePixelValue(customInputValue);
 
   return (
     <>
       <div className="flex items-center gap-2">
         <Button
           onClick={handleFnClick}
-          variant={isCustomEditing ? "secondary" : "ghost"} // Visually indicate active state
+          variant={isCustomEditing ? "secondary" : "ghost"}
           size="xs"
           aria-pressed={isCustomEditing}
         >
           Fn
         </Button>
         {isCustomEditing ? (
-          <DragAdjuster
-            value={currentPixelValue}
-            onChange={handleDragChange}
-            min={1}
-            max={100}
-            step={1}
-            className="w-full"
-          >
-            <Input
-              type="text"
-              id={id}
-              value={customInputValue}
-              onChange={handleCustomInputChange}
-              onBlur={handleCustomInputBlur}
-              placeholder="e.g., 10px"
-              title="Drag to adjust"
-              className={`flex-grow cursor-ew-resize ${validationError ? 'border-red-500' : ''}`}
-            />
-          </DragAdjuster>
+          <Input
+            type="text"
+            id={id}
+            value={customInputValue}
+            onChange={handleCustomInputChange}
+            onBlur={handleCustomInputBlur}
+            placeholder="e.g., 10px or 10px 20px"
+            title="Enter spacing values"
+            className={`flex-grow ${validationError ? 'border-red-500' : ''}`}
+          />
         ) : (
           <Tabs value={currentTabState} onValueChange={handleTabChange} className="w-full">
             <TabsList className="grid w-full grid-cols-2">
@@ -158,7 +205,7 @@ export const SpacingPicker = ({
         <p className="text-xs text-muted-foreground">Default: {defaultValue || 'Theme default'}</p>
       )}
       {isCustomEditing && !validationError && (
-        <p className="text-xs text-muted-foreground">Drag to adjust. Default: {defaultValue || 'Theme default'}</p>
+        <p className="text-xs text-muted-foreground">Default: {defaultValue || 'Theme default'}</p>
       )}
     </>
   );

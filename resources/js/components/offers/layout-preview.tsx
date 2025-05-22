@@ -197,7 +197,8 @@ const RecursiveRenderElement: React.FC<RecursiveRenderElementProps> = React.memo
     const section = page.view[element.id];
     const backgroundColor = (section as PageSection)?.style?.backgroundColor;
     const padding = (section as PageSection)?.appearance?.padding;
-    return { backgroundColor, padding };
+    const margin = (section as PageSection)?.appearance?.margin;
+    return { backgroundColor, padding, margin };
   }, [element?.id, page?.view]);
 
   const sectionStyle = useMemo(() => {
