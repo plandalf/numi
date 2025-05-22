@@ -100,6 +100,7 @@ export interface Product {
     gateway_provider?: string | null;
     gateway_product_id?: string | null;
     organization_id?: number;
+    image?: string | null;
 }
 
 export interface OfferVariant {
