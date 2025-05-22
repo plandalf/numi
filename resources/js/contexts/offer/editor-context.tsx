@@ -152,7 +152,6 @@ export function EditorProvider({ offer, organizationThemes, organizationTemplate
       const defaultView = generateDefaultView();
 
       setData({
-        ...data,
         name: offer.name,
         view: defaultView,
         theme: offer.theme,
@@ -161,7 +160,7 @@ export function EditorProvider({ offer, organizationThemes, organizationTemplate
 
       setSelectedPage(defaultView.first_page);
     }
-  }, [offer.view, offer.name, offer.theme, offer.screenshot, setData, data]);
+  }, [offer.view]);
 
   useEffect(() => {
     if (showNameDialog) {

@@ -89,13 +89,21 @@ export function generateDefaultPage({
                 id: 'action',
                 label: 'Action Section',
                 style: {
-                    backgroundColor: '#FFFFFF'
+                    backgroundColor: '#FBF9FA'
                 },
                 blocks: []
             },
-            promo: {
-                id: 'promo',
-                label: 'Promo Section',
+            promo_header: {
+                id: 'promo_header',
+                label: 'Promo Header Section',
+                style: {
+                    backgroundColor: '#EFF6FF'
+                },
+                blocks: []
+            },
+            promo_content: {
+                id: 'promo_content',
+                label: 'Promo Content Section',
                 style: {
                     backgroundColor: '#EFF6FF'
                 },

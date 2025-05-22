@@ -194,7 +194,19 @@ export const Style = {
   }),
 
   backgroundColor: (
-    type: "backgroundColor" | "iconColor" | "imageBackgroundColor" | "badgeBackgroundColor" | "errorBackgroundColor" | "warningBackgroundColor" | "inputBackgroundColor" | "buttonBackgroundColor" | "activeBackgroundColor" | "inactiveBackgroundColor" = "backgroundColor",
+    type: 
+      "backgroundColor" 
+      | "iconColor" 
+      | "imageBackgroundColor" 
+      | "badgeBackgroundColor" 
+      | "errorBackgroundColor" 
+      | "warningBackgroundColor" 
+      | "inputBackgroundColor" 
+      | "buttonBackgroundColor" 
+      | "activeBackgroundColor" 
+      | "inactiveBackgroundColor" 
+      | "checkboxActiveBackgroundColor" 
+      | "checkboxInactiveBackgroundColor" = "backgroundColor",
     label: string = 'Background Color',
     args: HookArgs,
     defaultValue: string,
@@ -589,8 +601,7 @@ const Numi = {
       blockContext.registerHook(hook);
     }, [hook]);
 
-    
-    const value = blockContext.getFieldValue(props.name) ?? props.initialValue;
+    const value = get(blockContext.blockConfig, `content.${props.name}`) ?? blockContext.getFieldValue(props.name) ?? props.initialValue;
 
     useEffect(() => {
       setValue(value);
@@ -605,6 +616,7 @@ const Numi = {
         debouncedUpdateRef.current(newHook);
       }
     }, []);
+
 
     return [value, setValue, updateHook];
   },

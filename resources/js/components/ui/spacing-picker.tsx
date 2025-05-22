@@ -6,9 +6,9 @@ import { DragAdjuster } from "./drag-adjuster";
 
 interface SpacingPickerProps {
   id?: string;
-  value: string | null;
+  value: string;
   defaultValue?: string | null;
-  onChangeProperty: (value: string | null) => void;
+  onChangeProperty: (value: string) => void;
 }
 
 type SpacingFormat = 'single' | 'double' | 'triple' | 'quad';
@@ -19,26 +19,13 @@ export const SpacingPicker = ({
   defaultValue,
   onChangeProperty
 }: SpacingPickerProps) => {
-  const initialCustomValue = (value && value !== 'default' && value !== null) ? value : '';
+  const initialCustomValue = (value && !['default', 'none'].includes(value)) ? value : '';
 
   const [customInputValue, setCustomInputValue] = useState<string>(initialCustomValue);
   const [validationError, setValidationError] = useState<string | null>(null);
   const [isCustomEditing, setIsCustomEditing] = useState<boolean>(
-    Boolean(value && value !== 'default' && value !== null && /^(\d+px)(\s+\d+px)*$/.test(value))
+    Boolean(value && !['default', 'none'].includes(value) && /^(\d+px)(\s+\d+px)*$/.test(value))
   );
-
-  // Parse pixel values from a string
-  const parsePixelValues = (value: string): number[] => {
-    return value.split(/\s+/).map(val => {
-      const match = val.match(/^(\d+)px$/);
-      return match ? parseInt(match[1], 10) : 0;
-    });
-  };
-
-  // Format numbers to pixel values
-  const formatPixelValues = (values: number[]): string => {
-    return values.map(val => `${val}px`).join(' ');
-  };
 
   // Determine the format based on number of values
   const determineFormat = (values: number[]): SpacingFormat => {
@@ -78,12 +65,12 @@ export const SpacingPicker = ({
       };
     }
 
-    // Check if all numbers are positive
+    // Check if all numbers are non-negative
     const numbers = values.map(val => parseInt(val));
-    if (numbers.some(num => num <= 0)) {
+    if (numbers.some(num => num < 0)) {
       return { 
         isValid: false, 
-        error: 'All values must be positive' 
+        error: 'All values must be non-negative' 
       };
     }
 
@@ -98,7 +85,7 @@ export const SpacingPicker = ({
       setCustomInputValue('');
     } else {
       setIsCustomEditing(true);
-      const valueToEdit = (value && value !== 'default' && value !== null) ? value : '';
+      const valueToEdit = (value && !['default', 'none'].includes(value)) ? value : '';
       setCustomInputValue(valueToEdit);
     }
   };
@@ -107,8 +94,8 @@ export const SpacingPicker = ({
     setIsCustomEditing(false);
     setValidationError(null);
     if (tabValue === 'none') {
-      onChangeProperty(null);
-      setCustomInputValue('');
+      onChangeProperty('0px');
+      setCustomInputValue('0px');
     } else {
       onChangeProperty('default');
       setCustomInputValue('');
@@ -164,7 +151,7 @@ export const SpacingPicker = ({
     setValidationError(null);
   };
 
-  const activeTab = value === null ? 'none' : 'normal';
+  const activeTab = value === '0px' ? 'none' : 'normal';
   const currentTabState = isCustomEditing ? undefined : activeTab;
 
   return (

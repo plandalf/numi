@@ -3,10 +3,10 @@ import { TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
 import { DialogDescription, DialogTitle } from "../ui/dialog";
 import { DialogContent, DialogHeader } from "../ui/dialog";
 import { useEditor } from "@/contexts/offer/editor-context";
-import { Block, PageView } from "@/types/offer";
+import { Block, PageSection, PageView } from "@/types/offer";
 import { blockTypes, getBlockMeta } from '@/components/blocks';
 import { cn } from "@/lib/utils";
-import { ChevronRight, CircleChevronRight, DiamondPlus, SquarePlus } from "lucide-react";
+import { ChevronRight, CircleChevronRight, DiamondPlus, EyeOff, SquarePlus } from "lucide-react";
 import { Button } from "../ui/button";
 import { Dialog, DialogTrigger } from "../ui/dialog";
 import { Tabs } from "../ui/tabs";
@@ -41,7 +41,7 @@ export const PageLayers: React.FC<PageLayersProps> = ({ onAddNewElementClick }) 
   
   // Get sections and blocks for the selected page
   const page = data.view.pages[selectedPage];
-  const sections: { id: string; name: string; blocks: Block[] }[] = [];
+  const sections: { id: string; name: string; blocks: Block[]; hidden?: boolean }[] = [];
   
   if (page && page.view) {
     Object.entries(page.view as PageView).forEach(([sectionId, section]) => {
@@ -49,7 +49,8 @@ export const PageLayers: React.FC<PageLayersProps> = ({ onAddNewElementClick }) 
         sections.push({
           id: sectionId,
           name: section?.label ?? sectionId.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
-          blocks: section.blocks
+          blocks: section.blocks,
+          hidden: section?.style?.hidden as boolean | undefined ?? false
         });
       }
     });
@@ -57,9 +58,24 @@ export const PageLayers: React.FC<PageLayersProps> = ({ onAddNewElementClick }) 
 
   // Sort sections in chronological order
   const sortedSections = sections.sort((a, b) => {
-    const order = ['title', 'content', 'action', 'promo'];
-    const aIndex = order.findIndex(section => a.id.toLowerCase().includes(section));
-    const bIndex = order.findIndex(section => b.id.toLowerCase().includes(section));
+    const order = ['title', 'content', 'action', 'promo_header', 'promo_content'];
+    
+    // Get index from order array, return -1 if not found
+    const getOrderIndex = (id: string): number => {
+      return order.findIndex(section => id.toLowerCase() === section);
+    };
+
+    const aIndex = getOrderIndex(a.id);
+    const bIndex = getOrderIndex(b.id);
+
+    // If both sections are not in the order array, maintain their relative position
+    if (aIndex === -1 && bIndex === -1) return 0;
+    
+    // If one section is not in order array, put it at the end
+    if (aIndex === -1) return 1;
+    if (bIndex === -1) return -1;
+    
+    // Sort by index in order array
     return aIndex - bIndex;
   });
 
@@ -135,51 +151,54 @@ export const PageLayers: React.FC<PageLayersProps> = ({ onAddNewElementClick }) 
             <div className="text-muted-foreground text-center py-8">No sections on this page.</div>
           ) : (
             sortedSections.map((section, index) => (
-              <React.Fragment key={section.id}>
-                {index > 0 && <Separator className="my-2" />}
-                <div className="flex flex-col gap-2 mb-2">
-                  <div
-                    className={cn(
-                      "px-4 py-2 transition-all group cursor-pointer flex flex-row items-center gap-x-2 w-fit",
-                      selectedSectionId === section.id && 'ring-2 ring-primary bg-primary/10'
-                    )}
-                    onClick={() => setSelectedSectionId(section.id)}
-                  >
-                    <span className="font-bold text-base text-black/90">
-                      {section.name}
-                    </span>
-                    <ChevronRight className="w-4 h-4 text-black/90 group-hover:ml-1 transition-all" />
-                  </div>
-                  {section.blocks.length > 0 && (
-                    <div className="flex flex-col gap-2">
-                      {section.blocks.map((block, idx) => {
-                        const meta = getBlockMeta(block.type as keyof typeof blockTypes);
-                      return (
-                        <button
-                          key={block.id}
-                          className={cn(
-                            'flex items-center justify-between w-full px-4 py-2 rounded-lg bg-[#EBEFFF] hover:bg-[#EBEFFF]/75 transition-colors group cursor-pointer',
-                            selectedBlockId === block.id && 'ring-2 ring-primary bg-primary/10'
-                          )}
-                          onClick={() => setSelectedBlockId(block.id)}
-                          type="button"
-                        >
-                          <div className="flex items-center justify-between w-full">
-                            <span className="font-medium text-sm text-left text-black/60 group-hover:text-black transition-colors">
-                              {meta?.title ?? block.type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())} {section.blocks.length > 1 ? idx + 1 : ''}
-                            </span>
-                            <div className="flex items-center gap-2">
-                              <CircleChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-black transition-all group-hover:mr-1" />
-                            </div>
-                          </div>
-                        </button>
-                      );
-                    })}
+                <React.Fragment key={section.id}>
+                  {index > 0 && <Separator className="my-2" />}
+                  <div className="flex flex-col gap-2 mb-2">
+                    <div
+                      className={cn(
+                        "px-4 py-2 transition-all group cursor-pointer flex flex-row items-center gap-x-2 w-fit",
+                        selectedSectionId === section.id && 'ring-2 ring-primary bg-primary/10',
+                        section.hidden && 'opacity-50'
+                      )}
+                      onClick={() => setSelectedSectionId(section.id)}
+                    >
+                      <span className="font-bold text-base text-black/90 flex items-center gap-x-2">
+                        {section.hidden && <EyeOff className="w-4 h-4 text-muted-foreground" />}
+                        {section.name}
+                      </span>
+                      <ChevronRight className="w-4 h-4 text-black/90 group-hover:ml-1 transition-all" />
                     </div>
-                  )}
-                </div>
-              </React.Fragment>
-            ))
+                    {section.blocks.length > 0 && (
+                      <div className="flex flex-col gap-2">
+                        {section.blocks.map((block, idx) => {
+                          const meta = getBlockMeta(block.type as keyof typeof blockTypes);
+                          return (
+                            <button
+                              key={block.id}
+                              className={cn(
+                                'flex items-center justify-between w-full px-4 py-2 rounded-lg bg-[#EBEFFF] hover:bg-[#EBEFFF]/75 transition-colors group cursor-pointer',
+                                selectedBlockId === block.id && 'ring-2 ring-primary bg-primary/10'
+                              )}
+                              onClick={() => setSelectedBlockId(block.id)}
+                              type="button"
+                            >
+                              <div className="flex items-center justify-between w-full">
+                                <span className="font-medium text-sm text-left text-black/60 group-hover:text-black transition-colors">
+                                  {meta?.title ?? block.type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())} {section.blocks.length > 1 ? idx + 1 : ''}
+                                </span>
+                                <div className="flex items-center gap-2">
+                                  <CircleChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-black transition-all group-hover:mr-1" />
+                                </div>
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                </React.Fragment>
+              )
+            )
           )}
         </div>
         <Button

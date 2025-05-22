@@ -132,11 +132,35 @@ const layoutConfig: TailwindLayoutConfig = {
         ]
       },
       {
-        "id": "promo",
         "type": "box",
+        "id": "promo-box",
         "props": {
-          "className": "hidden md:block bg-blue-50 h-full overflow-y-auto"
-        }
+          "className": "h-full overflow-hidden"
+        },
+        "children": [
+          {
+            "type": "flex",
+            "props": {
+              "className": "hidden md:flex bg-blue-50 h-full overflow-y-auto flex-col"
+            },
+            "children": [
+              {
+                "id": "promo_header",
+                "type": "box",
+                "props": {
+                  "className": "min-h-1 h-auto p-6"
+                }
+              },
+              {
+                "id": "promo_content",
+                "type": "box",
+                "props": {
+                  "className": "flex flex-col flex-grow space-y-2 p-6"
+                }
+              }
+            ]
+          }
+        ]
       }
     ]
   }
@@ -198,7 +222,21 @@ const RecursiveRenderElement: React.FC<RecursiveRenderElementProps> = React.memo
     const backgroundColor = (section as PageSection)?.style?.backgroundColor;
     const padding = (section as PageSection)?.appearance?.padding;
     const margin = (section as PageSection)?.appearance?.margin;
-    return { backgroundColor, padding, margin };
+    const backgroundImage = (section as PageSection)?.style?.backgroundImage;
+    const hidden = (section as PageSection)?.style?.hidden;
+
+    return {
+      backgroundColor,
+      padding,
+      margin: margin === 'none' ? '0px' : margin,
+      ...(backgroundImage ? {
+        backgroundImage: `url(${backgroundImage})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat',
+      } : {}),
+      ...(hidden ? {display: 'none'} : {}),
+    };
   }, [element?.id, page?.view]);
 
   const sectionStyle = useMemo(() => {
@@ -442,7 +480,8 @@ const SectionComponent = ({ section, sectionName: id, style, onBlockSelect }: Se
       >
         <div
          className={cx({
-            "flex flex-col border border-transparentX border-red-200 min-h-full w-full" : true,
+            "flex flex-col min-h-full w-full" : true,
+            'border-2 border-transparent': true,
             'border-red-500': isActiveSectionDragTarget,
             'border-blue-500': isOverDroppable,
           })}

@@ -326,7 +326,7 @@ function CheckoutSummaryComponent({ context }: { context: BlockContextType }) {
   }
 
   return (
-    <div className="'border rounded-md bg-white shadow-sm flex flex-col p-4'" style={containerStyle}>
+    <div className="border flex flex-col p-4'" style={containerStyle}>
       <h3 className="font-medium text-lg mb-4" style={titleStyle}>{title}</h3>
       {/* Order Items */}
       <div className="space-y-3 mb-4">
