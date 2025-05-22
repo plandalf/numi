@@ -26,7 +26,7 @@ interface PageProps {
 interface Props {
     className?: string;
     value?: number | null;
-    onChange?: (media: Media | null) => void;
+    onChange?: (media: string | null) => void;
     onError?: (error: string) => void;
     maxSize?: number; // in bytes
     preview?: string | null;
