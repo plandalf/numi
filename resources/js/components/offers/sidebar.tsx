@@ -125,6 +125,7 @@ export function Sidebar() {
   };
 
   const onTabClick = (tab: SidebarTab) => {
+    console.log('onTabClick', tab);
     setActiveTab(tab);
     setSelectedBlockId(null);
     setSelectedSectionId(null);
