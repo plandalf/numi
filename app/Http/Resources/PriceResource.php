@@ -6,6 +6,7 @@ namespace App\Http\Resources;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Money\Money;
 
 class PriceResource extends JsonResource
 {
@@ -25,7 +26,8 @@ class PriceResource extends JsonResource
             'parent_list_price_id' => $this->parent_list_price_id,
             'scope' => $this->scope,
             'type' => $this->type,
-            'amount' => $this->calculateAmount()->getAmount(),
+            'pricing_model' => $this->type,
+            'amount' => $this->getAmount(),
             'currency' => $this->currency,
             'properties' => $this->properties,
             'name' => $this->name,
@@ -42,5 +44,17 @@ class PriceResource extends JsonResource
             'updated_at' => $this->updated_at?->toISOString(),
             'product' => new ProductResource($this->whenLoaded('product')),
         ];
+    }
+
+    /**
+     * Get the amount value safely
+     */
+    private function getAmount(): mixed
+    {
+        if (method_exists($this->resource, 'calculateAmount')) {
+            return $this->resource->calculateAmount()->getAmount();
+        }
+
+        return $this->amount instanceof Money ? $this->amount->getAmount() : (int)($this->amount ?? 0);
     }
 }
