@@ -49,6 +49,7 @@ export function SectionInspector({ sectionId /*, onClose */ }: SectionInspectorP
   const styleItems: StyleItem[] = [
     Style.image('backgroundImage', 'Background Image', {}, ''),
     Style.backgroundColor('backgroundColor', 'Background Color', {}, '#FFFFFF'),
+    Style.borderRadius('borderRadius', 'Border Radius', {}, '12px'),
     Style.hidden('hidden', 'Hidden', {}, false),
   ].map(style => ({
     name: style.type,

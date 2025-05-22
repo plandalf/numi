@@ -224,10 +224,12 @@ const RecursiveRenderElement: React.FC<RecursiveRenderElementProps> = React.memo
     const margin = (section as PageSection)?.appearance?.margin;
     const backgroundImage = (section as PageSection)?.style?.backgroundImage;
     const hidden = (section as PageSection)?.style?.hidden;
+    const borderRadius = (section as PageSection)?.style?.borderRadius;
 
     return {
       backgroundColor,
       padding,
+      borderRadius: borderRadius,
       margin: margin === 'none' ? '0px' : margin,
       ...(backgroundImage ? {
         backgroundImage: `url(${backgroundImage})`,
@@ -252,12 +254,6 @@ const RecursiveRenderElement: React.FC<RecursiveRenderElementProps> = React.memo
 
   if (id && page?.view && id in page.view) {
     const sectionData = page.view[id];
-
-    // console.log(
-    //   `RecursiveRenderElement for section ID: ${id}`,
-    //   `Current selectedSectionId prop: ${selectedSectionId}`,
-    //   `Is this section selected for styling?: ${selectedSectionId === id}`
-    // );
 
     return createElement(
       type,
@@ -396,7 +392,6 @@ const BlockRendererComponent = ({ block, children, onBlockSelect }: {
   };
 
   const handleClick = () => {
-    console.log('BlockRenderer clicked:', block);
     if (block) {
       setSelectedBlockId(block.id)
       onBlockSelect?.(block.id);
