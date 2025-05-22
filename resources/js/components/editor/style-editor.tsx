@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Button } from '../ui/button';
-import { PlusIcon, Ruler, Type } from 'lucide-react';
+import { Image, PlusIcon, Ruler, Type } from 'lucide-react';
 import { Label } from '../ui/label';
 import { Separator } from '../ui/separator';
 import {
@@ -21,6 +21,7 @@ import { BorderPicker } from '../ui/border-picker';
 import { BorderRadiusPicker } from '../ui/border-radius-picker';
 import ShadowPicker from '../ui/shadow-picker';
 import { DimensionPicker } from '../ui/dimension-picker';
+import { ImageUpload } from '../ui/image-upload';
 
 export interface StyleItem {
   name: string;
@@ -35,6 +36,7 @@ export interface StyleItem {
     | 'borderRadiusPicker'
     | 'dimensionPicker'
     | 'shadowPicker'
+    | 'imagePicker'
     | 'select'
     //sizepicker?
     | 'checkbox';
@@ -224,6 +226,28 @@ const StyleItemValuePreview = ({
               onChange={(value) => onChange(item.name, value as BorderValue)}
               onClose={() => setIsOpen(false)}
               themeColors={themeColors}
+            />
+          </DropdownMenuContent>
+        </DropdownMenu>
+      );
+    case 'imagePicker':
+      return (
+        <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
+          <DropdownMenuTrigger asChild>
+            <span className="flex-1 flex flex-row gap-2 items-center cursor-pointer">
+              <Image className="size-4" />
+              <span
+                className="text-xs truncate max-w-[85px]"
+              >
+                {value !== '' ? value : 'Select image'}
+              </span>
+            </span>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" side="right" className="justify-center">
+            <ImageUpload
+              className="w-full w-[250px] cursor-pointer"
+              onChange={(value) => onChange(item.name, value)} preview={value}
+              label="Upload an image"
             />
           </DropdownMenuContent>
         </DropdownMenu>

@@ -180,8 +180,18 @@ export const Style = {
     inspector: args.inspector ?? 'alignmentPicker',
   }),
 
-  // sectionPadding,
-  // sectionSpacing
+  image: (
+    type: "image" | "backgroundImage" =  "image",
+    label: string = 'Image',
+    args: HookArgs,
+    defaultValue: string | null = null,
+  ) => ({
+    label,
+    type,
+    options: args.options,
+    defaultValue,
+    inspector: args.inspector ?? 'imagePicker',
+  }),
 
   backgroundColor: (
     type: "backgroundColor" | "iconColor" | "imageBackgroundColor" | "badgeBackgroundColor" | "errorBackgroundColor" | "warningBackgroundColor" | "inputBackgroundColor" | "buttonBackgroundColor" | "activeBackgroundColor" | "inactiveBackgroundColor" = "backgroundColor",

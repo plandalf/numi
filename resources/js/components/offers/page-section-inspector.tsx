@@ -47,6 +47,7 @@ export function SectionInspector({ sectionId /*, onClose */ }: SectionInspectorP
   };
 
   const styleItems: StyleItem[] = [
+    Style.image('backgroundImage', 'Background Image', {}, ''),
     Style.backgroundColor('backgroundColor', 'Background Color', {}, '#FFFFFF'),
   ].map(style => ({
     name: style.type,
