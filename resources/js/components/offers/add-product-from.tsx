@@ -281,6 +281,7 @@ export default function AddProductForm({
         onOpenChange={setAddNewPriceDialogOpen}
         product={selectedProduct}
         onSuccess={handlePriceSuccess}
+        useJsonResponse
       />}
     </>
   );

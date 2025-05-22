@@ -90,6 +90,15 @@ interface Props {
   listPrices?: Price[]; // For custom scope parent selection
   onSuccess?: (price: Price) => void;
   hideDialog?: boolean;
+  useJsonResponse?: boolean; // Add new prop to control response type
+}
+
+// Add a type for Inertia page response
+interface InertiaPageResponse {
+  props: {
+    price?: Price;
+    [key: string]: any;
+  };
 }
 
 export default function PriceForm({
@@ -99,7 +108,8 @@ export default function PriceForm({
   initialData,
   listPrices,
   onSuccess,
-  hideDialog = false
+  hideDialog = false,
+  useJsonResponse = false // Default to Inertia redirect
 }: Props) {
   const isEditing = !!initialData;
   const { props: pageProps } = usePage<PageProps>();
@@ -189,72 +199,114 @@ export default function PriceForm({
     const priceName = data.name || (isEditing ? 'this price' : 'new price');
     const toastId = toast.loading(isEditing ? `Updating ${priceName}...` : `Creating ${priceName}...`);
 
-    // Prepare the data
-    const preparedData: PriceFormData = { ...data };
+    // Prepare the data for submission
+    const formData = { ...data };
 
+    // Handle complex pricing models
     if (['tiered', 'volume', 'graduated'].includes(data.type)) {
-        preparedData.properties = { tiers };
+      formData.properties = { tiers };
     } else if (data.type === 'package') {
-        preparedData.properties = { package: packageConfig };
+      formData.properties = { package: packageConfig };
     } else {
-        preparedData.properties = null;
+      formData.properties = null;
     }
 
+    // Clear recurring fields if not needed
     if (data.type !== 'recurring') {
-        preparedData.renew_interval = null;
-        preparedData.recurring_interval_count = null;
-        preparedData.billing_anchor = null;
+      formData.renew_interval = null;
+      formData.recurring_interval_count = null;
+      formData.billing_anchor = null;
     }
-    preparedData.amount = Math.round(data.amount);
-    // Ensure lookup_key is null if empty string
-    preparedData.lookup_key = preparedData.lookup_key?.trim() || null;
 
-    try {
-        const url = isEditing
-            ? route('products.prices.update', { product: product.id, price: initialData!.id })
-            : route('products.prices.store', { product: product.id });
+    // Format data
+    formData.amount = Math.round(data.amount);
+    formData.lookup_key = formData.lookup_key?.trim() || null;
 
-        const response = await fetch(url, {
-            method: isEditing ? 'PUT' : 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
-            },
-            body: JSON.stringify(preparedData)
-        });
+    // Set data back to the form (for both Inertia and JSON API methods)
+    setData(formData);
 
-        const result = await response.json();
-
-        if (!response.ok) {
-            throw result as ApiValidationError;
-        }
-
-        toast.success(`Price ${priceName} ${isEditing ? 'updated' : 'created'} successfully`, { id: toastId });
-
-        if (onSuccess && result.price) {
-            onSuccess(result.price);
-        } else {
+    // If using Inertia redirect, use Inertia's form submission
+    if (!useJsonResponse) {
+      // Use Inertia's form submission which handles redirects automatically
+      if (isEditing && initialData) {
+        put(route('products.prices.update', { product: product.id, price: initialData.id }), {
+          onSuccess: () => {
+            toast.success(`Price ${priceName} updated successfully`, { id: toastId });
             onOpenChange(false);
-        }
-
-        if (!isEditing) {
+          },
+          onError: () => {
+            toast.error(`Failed to update price`, { id: toastId });
+          }
+        });
+      } else {
+        post(route('products.prices.store', { product: product.id }), {
+          onSuccess: () => {
+            toast.success(`Price ${priceName} created successfully`, { id: toastId });
+            onOpenChange(false);
             reset();
-        }
-    } catch (error) {
-        const apiError = error as ApiValidationError;
-        const errorMessage = apiError.message || `Failed to ${isEditing ? 'update' : 'create'} price`;
-        toast.error(errorMessage, { id: toastId });
+          },
+          onError: () => {
+            toast.error(`Failed to create price`, { id: toastId });
+          }
+        });
+      }
+      return;
+    }
 
-        // If the error response contains validation errors
-        if (apiError.errors) {
-            setData(prev => ({
-                ...prev,
-                ...Object.fromEntries(
-                    Object.entries(apiError.errors).map(([key, messages]) => [key, messages[0]])
-                )
-            }));
-        }
+    // For JSON responses, use fetch API
+    try {
+      const url = isEditing
+        ? route('products.prices.update', { product: product.id, price: initialData!.id })
+        : route('products.prices.store', { product: product.id });
+
+      const response = await fetch(url, {
+        method: isEditing ? 'PUT' : 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+        },
+        body: JSON.stringify(formData)
+      });
+
+      // Check if response is a redirect
+      if (response.redirected) {
+        toast.success(`Price ${priceName} ${isEditing ? 'updated' : 'created'} successfully`, { id: toastId });
+        window.location.href = response.url;
+        return;
+      }
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw result as ApiValidationError;
+      }
+
+      toast.success(`Price ${priceName} ${isEditing ? 'updated' : 'created'} successfully`, { id: toastId });
+
+      if (onSuccess && result.price) {
+        onSuccess(result.price);
+      } else {
+        onOpenChange(false);
+      }
+
+      if (!isEditing) {
+        reset();
+      }
+    } catch (error) {
+      const apiError = error as ApiValidationError;
+      const errorMessage = apiError.message || `Failed to ${isEditing ? 'update' : 'create'} price`;
+      toast.error(errorMessage, { id: toastId });
+
+      // If the error response contains validation errors
+      if (apiError.errors) {
+        setData(prev => ({
+          ...prev,
+          ...Object.fromEntries(
+            Object.entries(apiError.errors).map(([key, messages]) => [key, messages[0]])
+          )
+        }));
+      }
     }
   };
 

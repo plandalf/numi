@@ -52,6 +52,7 @@ import AddExistingStripeProductDialog from '@/components/Products/AddExistingStr
 import { Separator } from '@/components/ui/separator';
 import { Price } from '@/types/offer';
 import PriceTable from '@/components/prices/PriceTable';
+import { ProductTable } from '@/components/ProductTable';
 
 interface ProductsIndexProps extends PageProps {
   products: PaginatedResponse<Product>;
@@ -203,52 +204,7 @@ export default function Index({ auth, products, filters, integrations, prices }:
               <TabsTrigger value="prices">Prices</TabsTrigger>
             </TabsList>
             <TabsContent value="products">
-              <div className="rounded-md border overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="min-w-[150px]">Product name</TableHead>
-                      <TableHead className="min-w-[100px]">Status</TableHead>
-                      <TableHead className="min-w-[120px]">Created</TableHead>
-                      <TableHead className="min-w-[100px]">Source</TableHead>
-                      <TableHead className="min-w-[100px]">Prices</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {products.data.map((product: Product) => (
-                      <TableRow key={product.id}>
-                        <TableCell className="font-medium">
-                          <Link
-                            href={route('products.show', product.id)}
-                            className="hover:underline line-clamp-1"
-                          >
-                            {product.name}
-                          </Link>
-                        </TableCell>
-                        <TableCell>
-                          <Badge className={cx('text-white whitespace-nowrap', {
-                            'bg-[#7EB500]': product.status === ProductStatus.ACTIVE,
-                            'bg-[#808ABF]': product.status === ProductStatus.DRAFT,
-                            'bg-red-400': product.status === ProductStatus.ARCHIVED,
-                            'bg-red-600': product.status === ProductStatus.DELETED,
-                          })}>
-                            {product.status}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="whitespace-nowrap">
-                          {formatDate(product.created_at)}
-                        </TableCell>
-                        <TableCell className="whitespace-nowrap">
-                          {product.integration?.name || 'Plandalf'}
-                        </TableCell>
-                        <TableCell className="whitespace-nowrap">
-                          {product.prices?.length || 0} {pluralize('price', product.prices?.length || 0)}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
+              <ProductTable products={products} />
               <div className="mt-4 flex items-center justify-center sm:justify-start">
                 <Pagination
                   page={products.current_page}
@@ -288,12 +244,6 @@ export default function Index({ auth, products, filters, integrations, prices }:
         <ProductForm
           open={isProductFormOpen}
           onOpenChange={setIsProductFormOpen}
-          onSuccess={(product) => {
-            router.visit(route('products.show', product.id), {
-              preserveScroll: true,
-              preserveState: true,
-            });
-          }}
         />
 
         <AddNewProductDialog

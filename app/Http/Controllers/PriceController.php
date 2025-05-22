@@ -23,10 +23,15 @@ class PriceController extends Controller
         // The StorePrice action likely handles the actual creation logic
         $price = $storePrice($product, $request);
 
-        return response()->json([
-            'price' => $price,
-            'product' => $product,
-        ]);
+        if ($request->wantsJson()) {
+            return response()->json([
+                'price' => $price,
+                'product' => $product,
+            ]);
+        }
+
+        return redirect()->route('products.show', [$product])
+            ->with('success', 'Price created successfully.');
     }
 
     public function import(ImportRequest $request, Product $product, StorePrice $storePrice): RedirectResponse
@@ -45,10 +50,15 @@ class PriceController extends Controller
         // Authorization handled by PriceUpdateRequest
         $price = $updatePrice($product, $price, $request);
 
-        return response()->json([
-            'price' => $price,
-            'product' => $product,
-        ]);
+        if ($request->wantsJson()) {
+            return response()->json([
+                'price' => $price,
+                'product' => $product,
+            ]);
+        }
+
+        return redirect()->route('products.show', [$product])
+            ->with('success', 'Price updated successfully.');
     }
 
     /**

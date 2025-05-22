@@ -64,6 +64,7 @@ export default function AddNewProductWithPriceDialog({
             onOpenChange={() => {}}
             hideDialog={true}
             onSuccess={handleProductSuccess}
+            useJsonResponse
           />
         ) : (
           newProduct && (
@@ -73,6 +74,7 @@ export default function AddNewProductWithPriceDialog({
               product={newProduct}
               onSuccess={handlePriceSuccess}
               hideDialog={true}
+              useJsonResponse
             />
           )
         )}
