@@ -28,6 +28,7 @@ interface Props {
   initialData?: Product;
   hideDialog?: boolean;
   onSuccess?: (product: Product) => void;
+  useJsonResponse?: boolean; // Add new prop to control response type
 }
 
 interface ApiValidationError {
@@ -54,7 +55,8 @@ export default function ProductForm({
   onOpenChange,
   initialData,
   hideDialog = false,
-  onSuccess
+  onSuccess,
+  useJsonResponse = false // Default to Inertia redirect
 }: Props) {
   const isEditing = !!initialData;
   const [isLookupKeyManuallyEdited, setIsLookupKeyManuallyEdited] = useState(false);
@@ -114,6 +116,36 @@ export default function ProductForm({
     const productName = data.name || (isEditing ? 'this product' : 'new product');
     const toastId = toast.loading(isEditing ? `Updating ${productName}...` : `Creating ${productName}...`);
 
+    // If using Inertia redirect, use Inertia's form submission
+    if (!useJsonResponse) {
+      // Use Inertia's form submission which handles redirects automatically
+      if (isEditing && initialData) {
+        put(route("products.update", initialData.id), {
+          onSuccess: () => {
+            toast.success(`Product ${productName} updated successfully`, { id: toastId });
+            onOpenChange(false);
+          },
+          onError: (errors) => {
+            toast.error(`Failed to update product`, { id: toastId });
+          }
+        });
+      } else {
+        post(route("products.store"), {
+          onSuccess: () => {
+            toast.success(`Product ${productName} created successfully`, { id: toastId });
+            onOpenChange(false);
+            reset();
+            setIsLookupKeyManuallyEdited(false);
+          },
+          onError: (errors) => {
+            toast.error(`Failed to create product`, { id: toastId });
+          }
+        });
+      }
+      return;
+    }
+
+    // For JSON responses, use fetch API
     try {
       const response = await fetch(
         isEditing ? route("products.update", initialData.id) : route("products.store"),
@@ -127,6 +159,14 @@ export default function ProductForm({
           body: JSON.stringify(data)
         }
       );
+
+      // Check if response is a redirect
+      if (response.redirected) {
+        // Show success toast and redirect to the new URL
+        toast.success(`Product ${productName} ${isEditing ? 'updated' : 'created'} successfully`, { id: toastId });
+        window.location.href = response.url;
+        return;
+      }
 
       const result = await response.json();
 
@@ -188,7 +228,7 @@ export default function ProductForm({
           onChange={handleLookupKeyChange}
           onBlur={handleLookupKeyBlur}
           placeholder="e.g., standard_subscription"
-          disabled={processing}
+          disabled={processing || isEditing}
         />
         {errors.lookup_key && <p className="text-sm text-red-500">{errors.lookup_key}</p>}
         <p className="text-xs text-muted-foreground">

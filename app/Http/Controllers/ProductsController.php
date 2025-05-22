@@ -148,9 +148,13 @@ class ProductsController extends Controller
             $product = $this->createProductAction->execute($validated);
         }
 
-        return response()->json([
-            'product' => $product,
-        ]);
+        if ($request->wantsJson()) {
+            return response()->json([
+                'product' => $product,
+            ]);
+        }
+
+        return redirect()->route('products.show', $product);
     }
 
     /**
@@ -202,9 +206,13 @@ class ProductsController extends Controller
     {
         $product = $updateProduct($product, $request);
 
-        return response()->json([
-            'product' => $product,
-        ]);
+        if ($request->wantsJson()) {
+            return response()->json([
+                'product' => $product,
+            ]);
+        }
+
+        return redirect()->route('products.show', $product);
     }
 
     /**

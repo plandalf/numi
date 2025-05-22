@@ -329,7 +329,7 @@ export const PageProducts = () => {
         type={selectedOfferItemType}
       />
 
-s      <Dialog open={isRenameDialogOpen} onOpenChange={setIsRenameDialogOpen}>
+      <Dialog open={isRenameDialogOpen} onOpenChange={setIsRenameDialogOpen}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Rename product</DialogTitle>
