@@ -6,6 +6,7 @@ import { Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { useDebounce } from '@/hooks/use-debounce';
 import { useEffect, useState } from 'react';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 
 type User = { id: number; name: string; email: string; /* ... other user fields */ };
 
@@ -48,40 +49,61 @@ import { Pagination } from "@/components/pagination/Pagination";
 import { Card } from '@/components/ui/card';
 import AddNewProductDialog from '@/components/Products/AddNewProductDialog';
 import AddExistingStripeProductDialog from '@/components/Products/AddExistingStripeProductDialog';
+import { Separator } from '@/components/ui/separator';
+import { Price } from '@/types/offer';
+import PriceTable from '@/components/prices/PriceTable';
 
 interface ProductsIndexProps extends PageProps {
   products: PaginatedResponse<Product>;
   filters: {
     search: string;
+    tab?: string;
   };
   integrations: Integration[];
+  prices: PaginatedResponse<Price>;
 }
 
-export default function Index({ auth, products, filters, integrations }: ProductsIndexProps) {
+export default function Index({ auth, products, filters, integrations, prices }: ProductsIndexProps) {
   const [isProductFormOpen, setIsProductFormOpen] = useState(false);
   const [isAddNewProductDialogOpen, setIsAddNewProductDialogOpen] = useState(false);
   const [isAddExistingStripeProductDialogOpen, setIsAddExistingStripeProductDialogOpen] = useState(false);
   const [integrationId, setIntegrationId] = useState<string>('');
   const [search, setSearch] = useState(filters.search || '');
+  const [activeTab, setActiveTab] = useState(filters.tab || 'products');
   const debouncedSearch = useDebounce(search, 300);
 
   const hasIntegrations = integrations.length > 0;
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const integrationIdParam = urlParams.get('integration_id');
+    const tabParam = urlParams.get('tab');
+
     if (integrationIdParam) {
       setIntegrationId(integrationIdParam);
       setIsAddExistingStripeProductDialogOpen(true);
+    }
+
+    if (tabParam) {
+      setActiveTab(tabParam);
     }
   }, []);
 
   useEffect(() => {
     router.get(
       route('products.index'),
-      { search: debouncedSearch },
+      { search: debouncedSearch, tab: activeTab },
       { preserveState: true, preserveScroll: true }
     );
   }, [debouncedSearch]);
+
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
+    router.get(
+      route('products.index'),
+      { search: debouncedSearch, tab: value },
+      { preserveState: true, preserveScroll: true }
+    );
+  };
 
   const ConnectToStripeButton = () => {
     const handleClick = () => {
@@ -103,13 +125,13 @@ export default function Index({ auth, products, filters, integrations }: Product
       <Head title="Products" />
 
       <div className="container max-w-[100vw] mx-auto py-6 sm:py-10 px-4 sm:px-6 lg:px-8">
-        <header className="mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
             <h1 className="text-xl sm:text-2xl font-semibold text-gray-900 dark:text-white">
               Your products
             </h1>
             <p className="text-sm text-gray-500 dark:text-gray-400">
-              All your live and draft products
+              Manage your products and prices
             </p>
           </div>
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
@@ -130,6 +152,8 @@ export default function Index({ auth, products, filters, integrations }: Product
             </Button>
           </div>
         </header>
+
+        <Separator className="my-4" />
 
         {products.data.length === 0 ? (
           <div className="flex flex-col items-center gap-8 sm:gap-12 py-6 sm:py-8 justify-center bg-[#F7F9FF] rounded-md p-4">
@@ -173,65 +197,91 @@ export default function Index({ auth, products, filters, integrations }: Product
             </div>
           </div>
         ) : (
-          <>
-            <div className="rounded-md border overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="min-w-[150px]">Product name</TableHead>
-                    <TableHead className="min-w-[100px]">Status</TableHead>
-                    <TableHead className="min-w-[120px]">Created</TableHead>
-                    <TableHead className="min-w-[100px]">Source</TableHead>
-                    <TableHead className="min-w-[100px]">Prices</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {products.data.map((product: Product) => (
-                    <TableRow key={product.id}>
-                      <TableCell className="font-medium">
-                        <Link
-                          href={route('products.show', product.id)}
-                          className="hover:underline line-clamp-1"
-                        >
-                          {product.name}
-                        </Link>
-                      </TableCell>
-                      <TableCell>
-                        <Badge className={cx('text-white whitespace-nowrap', {
-                          'bg-[#7EB500]': product.status === ProductStatus.ACTIVE,
-                          'bg-[#808ABF]': product.status === ProductStatus.DRAFT,
-                          'bg-red-400': product.status === ProductStatus.ARCHIVED,
-                          'bg-red-600': product.status === ProductStatus.DELETED,
-                        })}>
-                          {product.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="whitespace-nowrap">
-                        {formatDate(product.created_at)}
-                      </TableCell>
-                      <TableCell className="whitespace-nowrap">
-                        {product.integration?.name || 'Plandalf'}
-                      </TableCell>
-                      <TableCell className="whitespace-nowrap">
-                        {product.prices?.length || 0} {pluralize('price', product.prices?.length || 0)}
-                      </TableCell>
+          <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
+            <TabsList className="mb-4">
+              <TabsTrigger value="products">Products</TabsTrigger>
+              <TabsTrigger value="prices">Prices</TabsTrigger>
+            </TabsList>
+            <TabsContent value="products">
+              <div className="rounded-md border overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="min-w-[150px]">Product name</TableHead>
+                      <TableHead className="min-w-[100px]">Status</TableHead>
+                      <TableHead className="min-w-[120px]">Created</TableHead>
+                      <TableHead className="min-w-[100px]">Source</TableHead>
+                      <TableHead className="min-w-[100px]">Prices</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-
-            <div className="mt-4 flex items-center justify-center sm:justify-start">
-              <Pagination
-                page={products.current_page}
-                pageSize={products.per_page}
-                totalCount={products.total}
-                onPageChange={(page) => {
-                  window.location.href = route('products.index', { page });
-                }}
-              />
-            </div>
-          </>
+                  </TableHeader>
+                  <TableBody>
+                    {products.data.map((product: Product) => (
+                      <TableRow key={product.id}>
+                        <TableCell className="font-medium">
+                          <Link
+                            href={route('products.show', product.id)}
+                            className="hover:underline line-clamp-1"
+                          >
+                            {product.name}
+                          </Link>
+                        </TableCell>
+                        <TableCell>
+                          <Badge className={cx('text-white whitespace-nowrap', {
+                            'bg-[#7EB500]': product.status === ProductStatus.ACTIVE,
+                            'bg-[#808ABF]': product.status === ProductStatus.DRAFT,
+                            'bg-red-400': product.status === ProductStatus.ARCHIVED,
+                            'bg-red-600': product.status === ProductStatus.DELETED,
+                          })}>
+                            {product.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="whitespace-nowrap">
+                          {formatDate(product.created_at)}
+                        </TableCell>
+                        <TableCell className="whitespace-nowrap">
+                          {product.integration?.name || 'Plandalf'}
+                        </TableCell>
+                        <TableCell className="whitespace-nowrap">
+                          {product.prices?.length || 0} {pluralize('price', product.prices?.length || 0)}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+              <div className="mt-4 flex items-center justify-center sm:justify-start">
+                <Pagination
+                  page={products.current_page}
+                  pageSize={products.per_page}
+                  totalCount={products.total}
+                  onPageChange={(page) => {
+                    router.get(
+                      route('products.index'),
+                      { page, search: debouncedSearch, tab: activeTab },
+                      { preserveState: true, preserveScroll: true }
+                    );
+                  }}
+                />
+              </div>
+            </TabsContent>
+            <TabsContent value="prices">
+              <PriceTable prices={prices.data} />
+              <div className="mt-4 flex items-center justify-center sm:justify-start">
+                <Pagination
+                  page={prices.current_page}
+                  pageSize={prices.per_page}
+                  totalCount={prices.total}
+                  onPageChange={(page) => {
+                    router.get(
+                      route('products.index'),
+                      { page, search: debouncedSearch, tab: activeTab },
+                      { preserveState: true, preserveScroll: true }
+                    );
+                  }}
+                />
+              </div>
+            </TabsContent>
+          </Tabs>
         )}
 
         {/* Product Create/Edit Dialog */}
