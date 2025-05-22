@@ -56,7 +56,7 @@ export interface BorderValue {
 export interface JSONSchemaValue {
   $schema: string;
   type: string;
-  items: {
+  items?: {
     type: string;
     properties: {
       key: { title: string; type: string; };
@@ -92,7 +92,16 @@ export interface JSONSchemaValue {
     };
     required: string[];
   };
+  meta?: { editor: string; };
+  properties?: Record<string, any>;
+  required?: string[];
 };
+
+export interface IconValue {
+  icon?: string | null;
+  emoji?: string | null;
+  url?: string | null;
+}
 
 export type SpacingValue = 'default' | null | string;
 
@@ -171,11 +180,33 @@ export const Style = {
     inspector: args.inspector ?? 'alignmentPicker',
   }),
 
-  // sectionPadding,
-  // sectionSpacing
+  image: (
+    type: "image" | "backgroundImage" =  "image",
+    label: string = 'Image',
+    args: HookArgs,
+    defaultValue: string | null = null,
+  ) => ({
+    label,
+    type,
+    options: args.options,
+    defaultValue,
+    inspector: args.inspector ?? 'imagePicker',
+  }),
 
   backgroundColor: (
-    type: "backgroundColor" | "quoteIconColor" | "imageBackgroundColor" | "badgeBackgroundColor" | "errorBackgroundColor" | "warningBackgroundColor" | "inputBackgroundColor" | "buttonBackgroundColor" | "activeBackgroundColor" | "inactiveBackgroundColor" = "backgroundColor",
+    type: 
+      "backgroundColor" 
+      | "iconColor" 
+      | "imageBackgroundColor" 
+      | "badgeBackgroundColor" 
+      | "errorBackgroundColor" 
+      | "warningBackgroundColor" 
+      | "inputBackgroundColor" 
+      | "buttonBackgroundColor" 
+      | "activeBackgroundColor" 
+      | "inactiveBackgroundColor" 
+      | "checkboxActiveBackgroundColor" 
+      | "checkboxInactiveBackgroundColor" = "backgroundColor",
     label: string = 'Background Color',
     args: HookArgs,
     defaultValue: string,
@@ -370,6 +401,7 @@ const Numi = {
 
   useStateJsonSchema(props: {
     name: string;
+    label: string;
     schema: JSONSchemaValue,
     defaultValue: any,
   }): Array<any> {
@@ -379,6 +411,7 @@ const Numi = {
     useEffect(() => {
       blockContext.registerHook({
         name: props.name,
+        label: props.label,
         type: 'jsonSchema',
         schema: props.schema,
         defaultValue: props.defaultValue || {}
@@ -568,7 +601,7 @@ const Numi = {
       blockContext.registerHook(hook);
     }, [hook]);
 
-    const value = get(blockContext.blockConfig, `content.${props.name}`) ?? props.initialValue;
+    const value = get(blockContext.blockConfig, `content.${props.name}`) ?? blockContext.getFieldValue(props.name) ?? props.initialValue;
 
     useEffect(() => {
       setValue(value);
@@ -583,6 +616,7 @@ const Numi = {
         debouncedUpdateRef.current(newHook);
       }
     }, []);
+
 
     return [value, setValue, updateHook];
   },
@@ -628,9 +662,8 @@ const Numi = {
     return [value, setValue];
   },
 
-  useStateString(props: { label: string; name: string; defaultValue: string; inspector?: string, format?: string }): [string, (value: string) => void, string] {
+  useStateString(props: { label: string; name: string; defaultValue: string; inspector?: string, format?: string, config?: Record<string, any> }): [string, (value: string) => void, string] {
     const blockContext = useContext(BlockContext);
-
 
     useEffect(() => {
       blockContext.registerHook({
@@ -639,6 +672,7 @@ const Numi = {
         type: 'string',
         defaultValue: props.defaultValue,
         inspector: props.inspector ?? 'text',
+        config: props.config ?? {},
       });
 
       const existingState = blockContext.globalState.getFieldState(

@@ -1,11 +1,11 @@
-import { type Page, type ViewSection, type Block } from '@/types/offer';
+import { type Page, type Block } from '@/types/offer';
 import { isBlockVisible } from '@/lib/blocks';
 import { cn } from '@/lib/utils';
-import React, { CSSProperties, useMemo, useRef } from 'react';
+import React, { CSSProperties, useMemo, useCallback, useEffect } from 'react';
 import { CSS } from '@dnd-kit/utilities';
 import { useContext } from 'react';
-import { type PageView as OfferPageView, type PageSection, type FormSection } from '@/types/offer';
-import { BlockConfig, FieldState, HookUsage, GlobalState, BlockContextType } from '@/types/blocks';
+import { type PageSection, type FormSection } from '@/types/offer';
+import { BlockConfig, GlobalState, BlockContextType } from '@/types/blocks';
 import { BlockContext } from '@/contexts/Numi';
 import { blockTypes } from '@/components/blocks';
 import { GlobalStateContext } from '@/pages/checkout-main';
@@ -17,24 +17,14 @@ import { hasVisibilityCondition as hasVisibilityConditionFn } from "@/lib/blocks
 import { Badge } from '../ui/badge';
 
 // Local interfaces that match the actual structure
-interface LocalPageView extends OfferPageView {
+interface LocalPageView {
     [key: string]: PageSection | FormSection | undefined;
-}
-
-function getBlockComponent(type: string): React.ComponentType<any> | null {
-    // Return a simple component that shows the block type
-    return ({ block }: { block: Block }) => (
-        <div className="p-2 rounded">
-            <div className="text-xs text-gray-500">{type}</div>
-            {block.content?.value && (
-                <div className="mt-1">{block.content.value}</div>
-            )}
-        </div>
-    );
 }
 
 interface LocalPage extends Omit<Page, 'view'> {
     view: LocalPageView;
+    onSelectBlock?: (blockId: string) => void;
+    onAddBlock?: (section: keyof LocalPageView, blockType: BlockType, index?: number) => void;
 }
 
 // BlockType interface
@@ -62,31 +52,15 @@ interface SectionProps {
     section: PageSection | FormSection | undefined;
     sectionName: keyof LocalPageView;
     className?: string;
-    selectedBlockId?: string | null;
-    onSelectBlock?: (blockId: string) => void;
-    onAddBlock?: (section: keyof LocalPageView, blockType: BlockType, index?: number) => void;
     style?: CSSProperties;
-}
-
-interface BlockRendererProps {
-    block: Block;
-    isSelected?: boolean;
-    onSelect?: () => void;
-    sectionName: keyof LocalPageView;
-    index: number;
-}
-
-interface BlockDropZoneProps {
-    sectionName: keyof LocalPageView;
-    index: number;
 }
 
 interface TailwindLayoutConfig {
   name?: string;
   template: {
     type: string;
-    props?: Record<string, any>;
-    children?: Array<any>;
+    props?: Record<string, unknown>;
+    children?: Array<TailwindLayoutConfig['template'] | string>;
     id?: string;
   };
 }
@@ -95,10 +69,12 @@ interface TailwindLayoutRendererProps {
   layoutConfig: TailwindLayoutConfig | string;
   contentMap?: Record<string, React.ReactNode>;
   page: LocalPage;
-  components?: Record<string, React.ComponentType<any>>;
+  components?: ComponentRegistry;
+  onBlockSelect?: (blockId: string) => void;
+  onSectionSelect?: (sectionId: string) => void;
 }
 
-const layoutConfig = {
+const layoutConfig: TailwindLayoutConfig = {
   "name": "SplitCheckout@v1.1",
   "template": {
     "type": "grid",
@@ -156,11 +132,35 @@ const layoutConfig = {
         ]
       },
       {
-        "id": "promo",
         "type": "box",
+        "id": "promo-box",
         "props": {
-          "className": "hidden md:block bg-blue-50 h-full overflow-y-auto"
-        }
+          "className": "h-full overflow-hidden"
+        },
+        "children": [
+          {
+            "type": "flex",
+            "props": {
+              "className": "hidden md:flex bg-blue-50 h-full overflow-y-auto flex-col"
+            },
+            "children": [
+              {
+                "id": "promo_header",
+                "type": "box",
+                "props": {
+                  "className": "min-h-1 h-auto p-6"
+                }
+              },
+              {
+                "id": "promo_content",
+                "type": "box",
+                "props": {
+                  "className": "flex flex-col flex-grow space-y-2 p-6"
+                }
+              }
+            ]
+          }
+        ]
       }
     ]
   }
@@ -169,11 +169,11 @@ const layoutConfig = {
 type ComponentProps = React.HTMLAttributes<HTMLElement> & {
   className?: string;
   id: string;
-  [key: string]: any;
+  [key: string]: unknown;
 };
 
 type ComponentRegistry = {
-  [key: string]: React.ComponentType<any>;
+  [key: string]: React.ComponentType<ComponentProps>;
 };
 
 // Create the appropriate element based on type
@@ -186,150 +186,164 @@ const createElement = (
   // If we have a custom component registered for this type, use it
   if (componentRegistry[type]) {
     const Component = componentRegistry[type];
-
-    return <Component key={props.id} {...props}>{children}</Component>;
+    // Ensure key is part of props if available, otherwise React might warn for components from registry
+    return <Component {...props}>{children}</Component>;
   }
 
   // Use a div
   return <div {...props}>{children}</div>;
 };
 
-const TailwindLayoutRenderer = ({
-  layoutConfig,
-  page,
-  components = {}
-}: TailwindLayoutRendererProps) => {
-  // Use the config directly if it's an object, otherwise parse it
-  const config = typeof layoutConfig === 'string'
-    ? JSON.parse(layoutConfig)
-    : layoutConfig;
-
-  // Memoize the component registry to prevent recreation on every render
-  const componentRegistry = useMemo(() => ({
-    // Default components
-    box: (props: ComponentProps) => {
-      return (
-        <div key={props.id} className={cn("relative", props.className)} style={props.style}>
-          {props.children}
-        </div>
-      );
-    },
-    flex: (props: ComponentProps) => {
-      return (
-        <div key={props.id} className={cn('flex', props.className)} style={props.style}>
-          {props.children}
-        </div>
-      )
-    },
-    grid: (props: ComponentProps) => {
-      return (
-        <div key={props.id} className={cn('grid', props.className)} style={props.style}>
-          {props.children}
-        </div>
-      )
-    },
-    // Custom components from props
-    ...components
-  }), [components]);
-
-  // Render the template
-  return renderElement(config.template, page, { componentRegistry, contentMap: {} });
-};
-
-// Helper function to render an element based on its type and props
-const renderElement = (
+interface RecursiveRenderElementProps {
   element: {
     type: string;
     props?: ComponentProps;
-    children?: Array<any>;
+    children?: Array<RecursiveRenderElementProps['element']>;
     id?: string;
-  } | null,
-  page: LocalPage,
-  context: {
-    componentRegistry: ComponentRegistry;
-    contentMap: Record<string, React.ReactNode>;
-  }
-): React.ReactNode => {
-  // Move all hooks to the top, before any conditionals
-  const { selectedSectionId } = useEditor();
+  } | null;
+  page: LocalPage;
+  componentRegistry: ComponentRegistry;
+  selectedSectionId: string | null | undefined;
+  onBlockSelect?: (blockId: string) => void;
+  onSectionSelect?: (sectionId: string) => void;
+}
 
-  // Memoize styles regardless of condition
+const RecursiveRenderElement: React.FC<RecursiveRenderElementProps> = React.memo(({
+  element,
+  page,
+  componentRegistry,
+  selectedSectionId,
+  onBlockSelect,
+  onSectionSelect,
+}) => {
   const sectionContainerStyle = useMemo(() => {
     if (!element?.id || !page?.view || !(element.id in page.view)) return {};
-
     const section = page.view[element.id];
     const backgroundColor = (section as PageSection)?.style?.backgroundColor;
     const padding = (section as PageSection)?.appearance?.padding;
+    const margin = (section as PageSection)?.appearance?.margin;
+    const backgroundImage = (section as PageSection)?.style?.backgroundImage;
+    const hidden = (section as PageSection)?.style?.hidden;
+    const borderRadius = (section as PageSection)?.style?.borderRadius;
 
     return {
       backgroundColor,
       padding,
+      borderRadius: borderRadius,
+      margin: margin === 'none' ? '0px' : margin,
+      ...(backgroundImage ? {
+        backgroundImage: `url(${backgroundImage})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat',
+      } : {}),
+      ...(hidden ? {display: 'none'} : {}),
     };
   }, [element?.id, page?.view]);
 
   const sectionStyle = useMemo(() => {
     if (!element?.id || !page?.view || !(element.id in page.view)) return {};
-
     const section = page.view[element.id];
     const spacing = (section as PageSection)?.appearance?.spacing;
-
-    return {
-      rowGap: spacing
-    };
+    return { rowGap: spacing };
   }, [element?.id, page?.view]);
 
-  // Now we can safely return null after all hooks are called
   if (!element) return null;
 
-  const {
-    type,
-    props = {},
-    children = [],
-    id
-  } = element;
-  const { componentRegistry, contentMap } = context;
+  const { type, props = {} as ComponentProps, children = [], id } = element;
 
-  if (id && page?.view && id in page?.view) {
-    const section = page.view[id];
+  if (id && page?.view && id in page.view) {
+    const sectionData = page.view[id];
 
     return createElement(
       type,
       {
         ...props,
         id,
-        style: sectionContainerStyle,
+        style: { ...props.style, ...sectionContainerStyle },
         className: cn(
           "relative",
           props.className,
           selectedSectionId === id && 'shadow-[inset_0_0_0_1.5px_#3B82F6]'
-        )
+        ),
+        onClick: (e: React.MouseEvent) => {
+          if (id && onSectionSelect) {
+            e.stopPropagation();
+            console.log(`Section ${id} clicked in preview. Calling onSectionSelect.`);
+            onSectionSelect(id);
+          }
+        },
       },
       <Section
         key={id}
-        section={section}
+        section={sectionData}
         sectionName={id as keyof LocalPageView}
         style={sectionStyle}
+        onBlockSelect={onBlockSelect}
       />,
       componentRegistry
     );
   }
 
   const childElements = Array.isArray(children)
-    ? children.map((child, index) => renderElement(
-        child,
-        page,
-        context
+    ? children
+        .filter(Boolean)
+        .map((child, index) => (
+        <RecursiveRenderElement
+          key={child!.id || `${child!.type}-${index}`}
+          element={child}
+          page={page}
+          componentRegistry={componentRegistry}
+          selectedSectionId={selectedSectionId}
+          onBlockSelect={onBlockSelect}
+          onSectionSelect={onSectionSelect}
+        />
       ))
     : null;
 
   return createElement(type, { ...props, id: id || type }, childElements, componentRegistry);
+});
+RecursiveRenderElement.displayName = 'RecursiveRenderElement';
+
+const TailwindLayoutRenderer = ({
+  layoutConfig,
+  page,
+  components = {},
+  onBlockSelect,
+}: Omit<TailwindLayoutRendererProps, 'onSectionSelect'>) => {
+  const config = typeof layoutConfig === 'string'
+    ? JSON.parse(layoutConfig)
+    : layoutConfig;
+
+  const componentRegistry = useMemo(() => ({
+    box: (props: ComponentProps) => <div key={props.id} className={cn("relative", props.className)} style={props.style}>{props.children}</div>,
+    flex: (props: ComponentProps) => <div key={props.id} className={cn('flex', props.className)} style={props.style}>{props.children}</div>,
+    grid: (props: ComponentProps) => <div key={props.id} className={cn('grid', props.className)} style={props.style}>{props.children}</div>,
+    ...components
+  }), [components]);
+
+  const { selectedSectionId, setSelectedSectionId } = useEditor();
+
+  // console.log(`TailwindLayoutRenderer rendering. Context selectedSectionId: ${selectedSectionId}`);
+
+  return (
+    <RecursiveRenderElement
+      element={config.template}
+      page={page}
+      componentRegistry={componentRegistry}
+      selectedSectionId={selectedSectionId}
+      onBlockSelect={onBlockSelect}
+      onSectionSelect={setSelectedSectionId}
+    />
+  );
 };
 
 // Update BlockRenderer to use our extended type
-function BlockRenderer({ block, children }: {
+const BlockRendererComponent = ({ block, children, onBlockSelect }: {
   block: BlockConfig,
-  children: (props: BlockContextType) => React.ReactNode
-}) {
+  children: (props: BlockContextType) => React.ReactNode,
+  onBlockSelect?: (blockId: string) => void
+}) => {
   const globalStateContext = useContext(GlobalStateContext);
 
   const { selectedBlockId, setSelectedBlockId, data } = useEditor();
@@ -378,16 +392,16 @@ function BlockRenderer({ block, children }: {
   };
 
   const handleClick = () => {
-    console.log('BlockRenderer clicked:', block);
     if (block) {
       setSelectedBlockId(block.id)
+      onBlockSelect?.(block.id);
     }
   }
 
   const isVisible = useMemo(() => {
+    if (!globalStateContext) return true; // Or handle error appropriately
     const visibility = block.appearance?.visibility;
-
-   return isBlockVisible({ fields: globalStateContext.fields }, visibility);
+    return isBlockVisible({ fields: globalStateContext.fields }, visibility);
   }, [block, globalStateContext]);
 
   const hasVisibilityCondition = useMemo(() => hasVisibilityConditionFn(block.appearance?.visibility), [block.appearance?.visibility]);
@@ -417,40 +431,65 @@ function BlockRenderer({ block, children }: {
         )}
         {children(blockContext)}
         {hasVisibilityCondition && <Badge variant="outline" className={cn("absolute top-0 right-0", {
-          "bg-green-500": isVisible,
-          "bg-red-500": !isVisible,
+          "bg-green-500 text-white": isVisible,
+          "bg-red-500 text-white": !isVisible,
         })}>Conditional: {isVisible ? 'visible' : 'hidden'}</Badge>}
       </BlockContext.Provider>
     </div>
   );
 }
+const MemoizedBlockRenderer: React.FC<React.ComponentProps<typeof BlockRendererComponent>> = React.memo(BlockRendererComponent);
 
 // Section Component
-const Section = ({ section, sectionName: id, style }: SectionProps) => {
+interface SectionPropsExtended extends SectionProps {
+  onBlockSelect?: (blockId: string) => void;
+}
 
+const SectionComponent = ({ section, sectionName: id, style, onBlockSelect }: SectionPropsExtended) => {
   const { setNodeRef, isOver, active } = useDroppable({
     id: `section:${id}`,
-  })
+  });
+
+  const blocksToRender = useMemo(() => {
+    if (section && 'blocks' in section && Array.isArray(section.blocks)) {
+      return section.blocks as Block[];
+    }
+    return [];
+  }, [section]);
+
+  const sortableItems = useMemo(() => {
+    return blocksToRender.map(block => `block:${block.id}`);
+  }, [blocksToRender]);
+
+  // Check if the currently dragged item's ID matches this section's droppable ID.
+  const isActiveSectionDragTarget = active ? active.id === `section:${id}` : false;
+  // isOver is already a boolean indicating if a draggable is over this droppable.
+  const isOverDroppable = isOver;
 
   return (
     <>
       <SortableContext
         id={`section:${id}`}
-        items={(section?.blocks || [])?.map(block => `block:${block.id}`)}
+        items={sortableItems}
         strategy={rectSortingStrategy}
       >
         <div
          className={cx({
-            "flex flex-col border border-transparent min-h-4 w-full" : true,
-            'border-red-500': active,
-            'border-blue-500': isOver,
+            "flex flex-col min-h-full w-full" : true,
+            'border-2 border-transparent': true,
+            'border-red-500': isActiveSectionDragTarget,
+            'border-blue-500': isOverDroppable,
           })}
           ref={setNodeRef}
           style={style}
         >
-          {section?.blocks?.map((block: Block, index: number) => {
+          {blocksToRender.map((block: Block) => {
             return (
-              <BlockRenderer block={block as BlockConfig} key={`${block.id}-${index}`}>
+              <MemoizedBlockRenderer
+                block={block as BlockConfig}
+                key={block.id}
+                onBlockSelect={onBlockSelect}
+              >
                 {(blockContext) => {
                     const Component = blockTypes[block.type as keyof typeof blockTypes];
                     return Component ? (
@@ -461,7 +500,7 @@ const Section = ({ section, sectionName: id, style }: SectionProps) => {
                       </div>
                     );
                 }}
-            </BlockRenderer>
+              </MemoizedBlockRenderer>
             )
           })}
         </div>
@@ -469,32 +508,40 @@ const Section = ({ section, sectionName: id, style }: SectionProps) => {
     </>
   );
 };
+const Section = React.memo(SectionComponent);
 
+export default function LayoutPreview({ page, selectedBlockId, onSelectBlock }: LayoutPreviewProps) {
+  const { setSelectedBlockId: setContextSelectedBlockId } = useEditor(); // Get setSelectedBlockId from context
 
+  // Sync selectedBlockId prop with context
+  useEffect(() => {
+    // Check if selectedBlockId is explicitly passed (not undefined)
+    // null is a valid value for deselecting, so we don't check against null here.
+    if (selectedBlockId !== undefined) {
+      setContextSelectedBlockId(selectedBlockId);
+    }
+  }, [selectedBlockId, setContextSelectedBlockId]);
 
-export default function LayoutPreview({ page, selectedBlockId, onSelectBlock, onAddBlock }: LayoutPreviewProps) {
-  const handleBlockSelect = (blockId: string) => {
-    // console.log('Layout preview passing block selection:', blockId);
+  const handleBlockSelect = useCallback((blockId: string) => {
     onSelectBlock?.(blockId);
-  };
+  }, [onSelectBlock]);
+
+  const componentsForRenderer = useMemo(() => ({
+    // No custom components needing selectedBlockId or handleBlockSelect in this example.
+    // The `Section` component used in the previous `TailwindLayoutRenderer`'s `components` prop
+    // was effectively being shadowed by the `Section` component defined in this file and passed
+    // to `createElement` when `id` was in `page.view`.
+    // If `TailwindLayoutConfig` needed to render a named component like <Section ... /> directly,
+    // it would be registered here.
+  }), []);
 
   return (
     <div className="h-full w-full aspect-video bg-gray-50 overflow-hidden">
       <TailwindLayoutRenderer
         layoutConfig={layoutConfig}
         page={page}
-        components={{
-          Section: ({ section, sectionName, className }: SectionProps) => (
-            <Section
-              section={section}
-              sectionName={sectionName}
-              className={className}
-              selectedBlockId={selectedBlockId}
-              onSelectBlock={handleBlockSelect}
-
-            />
-          )
-        }}
+        components={componentsForRenderer}
+        onBlockSelect={handleBlockSelect}
       />
     </div>
   );

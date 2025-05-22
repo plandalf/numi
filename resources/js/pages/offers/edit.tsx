@@ -1,5 +1,5 @@
 import AppOfferLayout from '@/layouts/app/app-offer-layout';
-import { Block, Offer, Price, Product, ViewSection, type OfferView, type Page, type PageType } from '@/types/offer';
+import { Block, Offer, Product, ViewSection, type PageType } from '@/types/offer';
 import { Head } from '@inertiajs/react';
 import {
     Dialog,
@@ -15,7 +15,7 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from '@/components/ui/input';
-import { useContext, useState } from 'react';
+import { useState, useRef } from 'react';
 import { cn } from '@/lib/utils';
 import { MoreVertical, ArrowRightToLine, FileText, CheckSquare, Plus } from 'lucide-react';
 import PagePreview from '@/components/offers/page-preview';
@@ -37,6 +37,7 @@ import { Template } from '@/types/template';
 import { PageProps } from '@inertiajs/core';
 
 import { allElementTypes, CustomElementIcon } from '@/components/offers/page-elements';
+import { blockTypes } from '@/components/blocks';
 import { Font } from '@/types';
 import WebFont from 'webfontloader';
 export interface EditProps extends PageProps {
@@ -56,6 +57,11 @@ const PAGE_TYPE_ICONS: Record<PageType, React.ReactNode> = {
     ending: <CheckSquare className="w-4 h-4" />,
     payment: <CreditCard className="w-4 h-4" />
 };
+
+interface ActiveDndItem {
+  type: string;
+  id: string;
+}
 
 function Edit({ offer, organizationThemes, organizationTemplates, globalThemes, showNameDialog, fonts }: EditProps) {
 
@@ -80,22 +86,30 @@ function Edit({ offer, organizationThemes, organizationTemplates, globalThemes, 
   );
 }
 
-function parseDndId(id: string): { type: string; id: string } {
-  const [type, ...rest] = id?.split(":") || [];
-  return { type, id: rest.join(":") };
+function parseDndId(id: string | undefined): { type: string | null; id: string | null } {
+  if (typeof id !== 'string') return { type: null, id: null };
+  const parts = id.split(":");
+  const type = parts[0] || null;
+  const rest = parts.slice(1).join(":") || null;
+  return { type, id: rest };
 }
 
 
-function findSectionIndexById(sections, sectionId: string) {
-  return sections[sectionId]
+function findSectionByBlockId(sections: Record<string, ViewSection>, blockId: string): string | null {
+  for (const sectionId in sections) {
+    if (sections[sectionId].blocks?.find(b => b.id === blockId)) {
+      return sectionId;
+    }
+  }
+  return null;
 }
 
-function findBlockIndexById(blocks: Block[], blockId: string) {
-  return blocks.findIndex((block: Block) => block.id === blockId);
+function findBlockIndexById(blocks: Block[] | undefined, blockId: string): number {
+  return blocks?.findIndex((block: Block) => block.id === blockId) ?? -1;
 }
 
-function getOverBlockIndex(section: ViewSection, overBlockId: string) {
-  return section.blocks.findIndex((block: Block) => block.id === overBlockId);
+function getOverBlockIndex(section: ViewSection | undefined, overBlockId: string): number {
+  return section?.blocks?.findIndex((block: Block) => block.id === overBlockId) ?? -1;
 }
 
 function EditApp() {
@@ -132,244 +146,392 @@ function EditApp() {
     taxes: 10,
     shipping: 5
   }
-  const [prototype, setPrototype] = useState<null | { sectionId: string; index: number }>();
-  const [activeItem, setActiveItem] = useState<any>(null);
+  const [prototype, setPrototype] = useState<null | { sectionId: string; index: number; block: Block }>();
+  const [activeItem, setActiveItem] = useState<ActiveDndItem | null>(null);
+  const dragOverRafRef = useRef<number | null>(null); // Ref for requestAnimationFrame
 
-  function setSections(newSections: ViewSection[]) {
-    setData(update(data, { view: { pages: { [selectedPage]: { view: { $set: newSections } } } } }));
+  function setSections(newSectionsForPage: Record<string, ViewSection> | ((currentSections: Record<string, ViewSection>) => Record<string, ViewSection>)) {
+    setData(currentEditorData => {
+      const currentSectionsOfPage = currentEditorData.view.pages[selectedPage]?.view;
+      if (!currentSectionsOfPage && typeof newSectionsForPage === 'function') {
+        // This case should ideally not happen if selectedPage is always valid and has a view.
+        // If it does, we can't compute newSections if it's a function needing currentSections.
+        // console.warn('setSections called with a function but current page view is undefined');
+        return currentEditorData; 
+      }
+
+      const sectionsToSet = typeof newSectionsForPage === 'function' 
+        ? newSectionsForPage(currentSectionsOfPage || {}) // Provide empty if current is undefined, though guarded above.
+        : newSectionsForPage;
+
+      return update(currentEditorData, {
+        view: {
+          pages: {
+            [selectedPage]: {
+              view: { $set: sectionsToSet }
+            }
+          }
+        }
+      });
+    });
   }
 
   function handleDragStart(event: DragStartEvent) {
-    // console.log('drag start', event);
-
-    const [type, id] = event.active.id.split(':');
-
-    setActiveItem({ type, id });
-
-    if (type === 'template') {
-      setPrototype(null);
+    const { type, id } = parseDndId(String(event.active.id));
+    if (type && id) {
+      setActiveItem({ type, id });
+      if (type === 'template') {
+        setPrototype(null); // Clear prototype when a new template drag starts
+      }
+    } else {
+      setActiveItem(null);
     }
   }
 
   function handleDragOver(event: DragOverEvent) {
+    if (!activeItem) return;
 
-    const activeId = event.active.id;
-    const overId = event.over?.id;
+    const { id: activeId, type: activeType } = activeItem;
+    const overIdRaw = event.over?.id;
 
-    const { type: activeType, id: activeRawId } = parseDndId(activeId);
-    const { type: overType, id: overRawId } = parseDndId(overId);
+    if (!activeId || !activeType) return;
 
-    // active = the currently dragging item
-    // over   = the item that the currently dragging item is over
-
-    const sections = data.view.pages[selectedPage].view;
-
-    // --- TEMPLATE DRAG LOGIC ---
     if (activeType === 'template') {
-      // Only add prototype if over a block or section
-      if (overType === 'block' || overType === 'section') {
-        const sectionId = overType === 'block'
-          ? String(event.over.data.current?.sortable.containerId.split(':')[1])
-          : String(overRawId);
+      if (dragOverRafRef.current) {
+        cancelAnimationFrame(dragOverRafRef.current);
+      }
+      dragOverRafRef.current = requestAnimationFrame(() => {
+        // Use setData's callback to get the freshest currentEditorData
+        setData(currentEditorData => {
+          const currentSectionsFromData = currentEditorData.view.pages[selectedPage]?.view;
+          if (!currentSectionsFromData) return currentEditorData; // Should have a view
 
-        // console.log('sectionIdx', sectionId);
+          const { type: overTypeOriginal, id: overElementIdOriginal } = parseDndId(overIdRaw ? String(overIdRaw) : undefined); 
+          
+          if (prototype && overElementIdOriginal === prototype.block.id) {
+            return currentEditorData; // No change if hovering over self
+          }
 
-        if (!sectionId) {
-          // if the section is not found, remove the prototype if it exists
+          let modifiedSections = { ...currentSectionsFromData }; 
+          let prototypeActuallyChangedOrMoved = false;
+          let newPrototypeState: { sectionId: string; index: number; block: Block } | null = null;
+
           if (prototype) {
-            // Remove previous prototype if any
-            let newSections = sections;
-            const oldSectionIdx = findSectionIndexById(newSections, prototype.sectionId);
-            if (oldSectionIdx !== -1) {
-              newSections = update(newSections, {
-                [oldSectionIdx]: {
+            const oldProtoSection = modifiedSections[prototype.sectionId];
+            if (oldProtoSection?.blocks && 
+                prototype.index < oldProtoSection.blocks.length && 
+                oldProtoSection.blocks[prototype.index]?.id === prototype.block.id) {
+              modifiedSections = update(modifiedSections, {
+                [prototype.sectionId]: {
                   blocks: { $splice: [[prototype.index, 1]] }
                 }
               });
-              setSections(newSections);
             }
-            setPrototype(null);
           }
-          return;
-        }
 
-        let insertIdx = null;
-        if (overType === 'block') {
-          insertIdx = getOverBlockIndex(sections[sectionId], overRawId);
-          // console.log('insertIdx', insertIdx);
-          if (insertIdx === -1) insertIdx = sections[sectionId].blocks?.length;
-        } else {
-          insertIdx = sections[sectionId].blocks.length;
-        }
-        // console.log('insertIdx', insertIdx);
+          if (overTypeOriginal === 'block' || overTypeOriginal === 'section') {
+            const targetSectionId = overTypeOriginal === 'block'
+              ? String(event.over?.data.current?.sortable.containerId?.split(':')[1])
+              : overElementIdOriginal;
 
-        // If prototype is already at the correct position, do nothing
-        if (prototype && prototype.sectionId === sectionId
-          && prototype.index === insertIdx
-        ) {
-          return;
-        }
+            if (targetSectionId && modifiedSections[targetSectionId]) {
+              let insertIdx: number;
+              const targetSectionForIndexCalc = modifiedSections[targetSectionId];
+              if (overTypeOriginal === 'block' && overElementIdOriginal) {
+                insertIdx = getOverBlockIndex(targetSectionForIndexCalc, overElementIdOriginal);
+                if (insertIdx === -1) {
+                  insertIdx = targetSectionForIndexCalc.blocks?.length ?? 0;
+                }
+              } else { 
+                insertIdx = targetSectionForIndexCalc.blocks?.length ?? 0;
+              }
+              const protoBlock: Block = {
+                id: `prototype-${uuidv4()}`,
+                object: 'block',
+                type: activeId, 
+                content: { value: '*new block*', format: 'markdown' },
+                appearance: {},
+              };
+              modifiedSections = update(modifiedSections, {
+                  [targetSectionId]: {
+                      blocks: { $splice: [[insertIdx, 0, protoBlock]] }
+                  }
+              });
+              newPrototypeState = { sectionId: targetSectionId, index: insertIdx, block: protoBlock };
+            }
+          }
+          
+          if (prototype?.block.id !== newPrototypeState?.block.id || 
+              prototype?.index !== newPrototypeState?.index || 
+              prototype?.sectionId !== newPrototypeState?.sectionId ||
+              (!prototype && newPrototypeState) || 
+              (prototype && !newPrototypeState)
+             ) {
+              setPrototype(newPrototypeState); // This is a React state setter, it's fine.
+              prototypeActuallyChangedOrMoved = true;
+          }
 
-        // Remove previous prototype if any
-        let newSections = sections;
-        if (prototype) {
-          const oldSectionIdx = prototype.sectionId;
-          // console.log('oldSectionIdx', oldSectionIdx);
-          if (oldSectionIdx) {
-            newSections = update(newSections, {
-              [oldSectionIdx]: {
-                blocks: { $splice: [[prototype.index, 1]] }
+          if (prototypeActuallyChangedOrMoved) {
+            // Return the updated editor data for setData
+            return update(currentEditorData, {
+              view: {
+                pages: {
+                  [selectedPage]: {
+                    view: { $set: modifiedSections }
+                  }
+                }
               }
             });
           }
-        }
-        // Insert prototype
-        const protoBlock: BlockData = {
-          id: uuidv4(),
-          object: 'block',
-          type: activeRawId,
-          content: {
-            value: '*new block*',
-            format: 'markdown',
-          }
-        };
-
-
-        newSections = update(newSections, {
-          [sectionId]: {
-            blocks: { $splice: [[insertIdx, 0, protoBlock]] }
-          }
+          return currentEditorData; // No change to data if prototype didn't change
         });
-        setPrototype({ sectionId, index: insertIdx });
-        setSections(newSections);
-      } else {
-        // Not over a valid drop target, remove prototype if it exists
-        if (prototype) {
-          let newSections = sections;
-          newSections = update(newSections, {
-            [prototype.sectionId]: {
-              blocks: { $splice: [[prototype.index, 1]] }
-            }
-          });
-          setSections(newSections);
-          // if (oldSectionIdx !== -1) {
-          // }
-          setPrototype(null);
-        }
-      }
-      return;
-    }
-
-    // --- BLOCK DRAG LOGIC ---
-    if (activeType === 'block') {
-      const sections = data.view.pages[selectedPage].view;
-
-      // Find current section/block
-      const fromSectionId = String(event.active.data.current?.sortable?.containerId?.split(':')[1]);
-
-      if (!fromSectionId) return;
-
-      const blockIdx = findBlockIndexById(sections[fromSectionId]?.blocks || [], String(activeRawId));
-
-
-      if (!fromSectionId || blockIdx === -1) return;
-      let newSections = sections;
-
-      // Remove block from old location
-      newSections = update(newSections, {
-        [fromSectionId]: {
-          blocks: { $splice: [[blockIdx, 1]] }
-        }
       });
-
-      // Insert into new location
-      if (overType === 'block') {
-        const toSectionId = event.over.data.current?.sortable?.containerId?.split(':')[1];
-
-        if (!toSectionId) return;
-
-        const overBlockIdx = getOverBlockIndex(newSections[toSectionId], overRawId);
-        if (toSectionId === -1 || overBlockIdx === -1) return;
-        // Insert before or after depending on pointer position (y axis)
-        // For simplicity, always insert before for now (can enhance with pointer position)
-        const block = sections[fromSectionId]?.blocks?.[blockIdx];
-        if (!block) return;
-        newSections = update(newSections, {
-          [toSectionId]: {
-            blocks: { $splice: [[overBlockIdx, 0, block]] }
-          }
-        });
-      } else if (overType === 'section') {
-        const toSectionId = overRawId;
-
-        if (!toSectionId) return;
-
-        const block = sections[fromSectionId]?.blocks?.[blockIdx];
-        if (!block) return;
-
-        // console.log('abc', newSections, toSectionId, newSections[toSectionId])
-
-        newSections = update(newSections, {
-          [toSectionId]: {
-            blocks: { $push: [block] }
-          }
-        });
-      }
-      setSections(newSections);
       return;
     }
   }
 
-  function handleDragEnd(event: DragEndEvent) {
+  function handleDragEnd(event: DragEndEvent) { 
+    if (dragOverRafRef.current) { 
+        cancelAnimationFrame(dragOverRafRef.current);
+        dragOverRafRef.current = null;
+    }
+    if (!activeItem) {
+        setPrototype(null); 
+        return;
+    }
 
-    if (!event.active) return;
-
-
-    const activeId = String(event.active.id);
-    const { type: activeType, id: activeRawId } = parseDndId(activeId);
-
-    const sections = data.view.pages[selectedPage].view;
-    const sectionId = event.over?.data.current?.sortable.containerId.split(':')[1];
-    const section = sections[sectionId];
-    let newSections = sections;
-
-    // --- TEMPLATE DROP ---
-    if (activeType === 'template') {
-      if (prototype) {
-        // Replace prototype with real block
-        if (sectionId) {
-          const newBlock: BlockData = {
-            id: uuidv4(),
-            type: activeRawId,
-            object: 'block',
-            content: {}
-          };
-
-          newSections = update(newSections, {
-            [sectionId]: {
-              blocks: { $splice: [[prototype.index, 1, newBlock]] }
-            }
-          });
-
-          // Set the selectedBlockId to the newly created block
-          setSelectedBlockId(newBlock.id);
-        }
+    if (activeItem.type !== 'template' && !event.over) {
+      if (activeItem.type === 'template' && prototype) {
+        // If template drag ended nowhere, remove prototype (using callback form of setSections)
+        setSections(currentSections => { 
+          if (!prototype || !currentSections[prototype.sectionId]) return currentSections;
+          const oldProtoSection = currentSections[prototype.sectionId];
+          if (oldProtoSection?.blocks && prototype.index < oldProtoSection.blocks.length && oldProtoSection.blocks[prototype.index]?.id === prototype.block.id) {
+            return update(currentSections, {
+                [prototype.sectionId]: {
+                  blocks: { $splice: [[prototype.index, 1]] }
+                }
+            });
+          }
+          return currentSections;
+        });
       }
       setPrototype(null);
-      setSections(newSections);
       setActiveItem(null);
       return;
     }
 
-    // --- BLOCK DROP ---
-    if (activeType === 'block') {
-      // Set the selectedBlockId to the dragged block
-      setSelectedBlockId(activeRawId);
+    const { id: activeBlockId, type: activeTypeCalculated } = activeItem; 
+
+    // --- TEMPLATE DROP (NEW BLOCK) ---
+    if (activeTypeCalculated === 'template') {
+      if (prototype && prototype.sectionId) { 
+        const newBlockToAdd: Block = {
+          id: uuidv4(),
+          object: 'block',
+          type: prototype.block.type, 
+          content: {}, 
+          appearance: prototype.block.appearance, 
+        };
+        
+        // Use setData callback form to ensure we're working with the latest state
+        setData(currentEditorData => {
+          const sectionsForCurrentPage = currentEditorData.view.pages[selectedPage]?.view;
+          if (!sectionsForCurrentPage || !prototype || !sectionsForCurrentPage[prototype.sectionId!]) {
+            // console.warn("Section not found in handleDragEnd for template drop, prototype might be stale or section removed.");
+            return currentEditorData; 
+          }
+
+          let targetIndex = prototype.index;
+          const currentBlocksInTargetSection = sectionsForCurrentPage[prototype.sectionId!]?.blocks || [];
+
+          // Clamp targetIndex to be within valid bounds for splice
+          if (targetIndex > currentBlocksInTargetSection.length) {
+            targetIndex = currentBlocksInTargetSection.length;
+          }
+
+          let operation;
+          // Check if the prototype is actually at the targetIndex in the current data state
+          if (targetIndex < currentBlocksInTargetSection.length && currentBlocksInTargetSection[targetIndex]?.id === prototype.block.id) {
+            operation = { $splice: [[targetIndex, 1, newBlockToAdd]] }; // Replace prototype
+          } else {
+            operation = { $splice: [[targetIndex, 0, newBlockToAdd]] }; // Insert new block
+          }
+
+          return update(currentEditorData, {
+            view: {
+              pages: {
+                [selectedPage]: {
+                  view: { // This 'view' is Record<string, ViewSection>
+                    [prototype.sectionId!]: {
+                      blocks: operation // operation is {$splice: ...}
+                    }
+                  }
+                }
+              }
+            }
+          } as any); // Using 'as any' temporarily to bypass complex type issue for immutability-helper
+        });
+        setSelectedBlockId(newBlockToAdd.id);
+      } else if (prototype) {
+        // Prototype exists but sectionId is invalid. Attempt to clean up visual prototype from current data.
+        setSections(currentSections => { 
+          if (!prototype || !currentSections[prototype.sectionId]) return currentSections;
+          // ... (similar cleanup as above for !event.over) ...
+          const oldProtoSection = currentSections[prototype.sectionId];
+          if (oldProtoSection?.blocks && prototype.index < oldProtoSection.blocks.length && oldProtoSection.blocks[prototype.index]?.id === prototype.block.id) {
+            return update(currentSections, {
+                [prototype.sectionId]: {
+                  blocks: { $splice: [[prototype.index, 1]] }
+                }
+            });
+          }
+          return currentSections;
+        });
+      }
+      setPrototype(null); 
+      setActiveItem(null);
+      return;
+    }
+
+    // --- EXISTING BLOCK DROP --- (Requires event.over to be valid)
+    // This part also needs to be use the setData callback form if it modifies data
+    if (!event.over) { 
+        setActiveItem(null);
+        return;
+    }
+
+    if (activeTypeCalculated === 'block' && activeBlockId && event.over) { // Ensure event.over is present for this logic
+      const overIdRawLocal = String(event.over.id); // Make sure to use event.over.id for parsing
+      const { type: overTypeLocal, id: overElementIdLocal } = parseDndId(overIdRawLocal);
+
+
+      // Ensure overElementId is valid before proceeding
+      if (!overElementIdLocal) {
+        // console.warn("DragEnd: Over element ID is null after parsing, cannot drop existing block.");
+        setActiveItem(null);
+        return;
+      }
+      
+      setData(currentEditorData => {
+        const sectionsForCurrentPage = currentEditorData.view.pages[selectedPage]?.view;
+        if (!sectionsForCurrentPage) {
+          // console.warn("DragEnd: Sections not found for current page when dropping existing block.");
+          return currentEditorData;
+        }
+
+        const fromSectionId = findSectionByBlockId(sectionsForCurrentPage, activeBlockId);
+        if (!fromSectionId || !sectionsForCurrentPage[fromSectionId]) {
+          // console.warn(`DragEnd: Source section ${fromSectionId} not found for block ${activeBlockId}.`);
+          return currentEditorData;
+        }
+
+        const fromBlockIndex = findBlockIndexById(sectionsForCurrentPage[fromSectionId].blocks, activeBlockId);
+        if (fromBlockIndex === -1) {
+          // console.warn(`DragEnd: Block ${activeBlockId} not found in source section ${fromSectionId}.`);
+          return currentEditorData;
+        }
+
+        const blockToMove = sectionsForCurrentPage[fromSectionId].blocks[fromBlockIndex];
+        if (!blockToMove) {
+            // console.warn(`DragEnd: Block to move is undefined at index ${fromBlockIndex} in section ${fromSectionId}.`);
+            return currentEditorData;
+        }
+
+        let targetSectionId: string | null = null;
+        let targetBlockIndex: number = -1;
+
+        if (overTypeLocal === 'block') {
+          // The containerId is the ID of the section droppable area.
+          const containerId = event.over!.data.current?.sortable?.containerId;
+          if (typeof containerId === 'string') {
+            targetSectionId = parseDndId(String(containerId)).id; 
+          }
+          
+          if (targetSectionId && sectionsForCurrentPage[targetSectionId]) {
+             const overBlockIdx = getOverBlockIndex(sectionsForCurrentPage[targetSectionId], overElementIdLocal); // overElementIdLocal is the block being hovered
+             if (activeBlockId === overElementIdLocal) { // Dropping on itself
+               // If targetSectionId is different from fromSectionId, this implies moving to another list on itself (unlikely)
+               // For now, assume if activeBlockId === overElementIdLocal, it's a no-op within the same list.
+               // The splice logic handles this naturally if fromSectionId === targetSectionId.
+               targetBlockIndex = overBlockIdx; // or fromBlockIndex, effectively the same if same section.
+             } else {
+               targetBlockIndex = overBlockIdx;
+             }
+             // If overBlockIdx is -1 (e.g., something went wrong with getOverBlockIndex or ID parsing)
+             // this will be caught by targetBlockIndex !== -1 check later.
+          }
+        } else if (overTypeLocal === 'section') { 
+          targetSectionId = overElementIdLocal; // Here, overElementIdLocal is the section ID
+          if (targetSectionId && sectionsForCurrentPage[targetSectionId]) {
+            targetBlockIndex = sectionsForCurrentPage[targetSectionId].blocks?.length ?? 0; // Append
+          }
+        }
+
+        if (!targetSectionId || targetBlockIndex === -1) {
+          // console.warn("DragEnd: Could not determine target section or index for block drop.");
+          return currentEditorData; 
+        }
+        
+        if (!sectionsForCurrentPage[targetSectionId]) {
+            // console.warn(`DragEnd: Target section ${targetSectionId} does not exist in current page view.`);
+            return currentEditorData;
+        }
+
+        let newEditorData = currentEditorData;
+
+        // 1. Remove from old position
+        newEditorData = update(newEditorData, {
+          view: {
+            pages: {
+              [selectedPage]: {
+                view: {
+                  [fromSectionId]: { blocks: { $splice: [[fromBlockIndex, 1]] } }
+                }
+              }
+            }
+          }
+        });
+
+        let adjustedTargetBlockIndex = targetBlockIndex;
+        if (fromSectionId === targetSectionId && fromBlockIndex < targetBlockIndex) {
+            adjustedTargetBlockIndex--;
+        }
+        
+        // After removing, the blocks in the target section (if same as fromSection) might have shifted.
+        // Re-evaluate target section blocks from the intermediate newEditorData.
+        const targetSectionBlocksAfterRemoval = newEditorData.view.pages[selectedPage].view[targetSectionId]?.blocks || [];
+        if (adjustedTargetBlockIndex > targetSectionBlocksAfterRemoval.length) {
+            adjustedTargetBlockIndex = targetSectionBlocksAfterRemoval.length;
+        }
+        if (adjustedTargetBlockIndex < 0) { // Should not happen with valid logic but as a safeguard.
+            adjustedTargetBlockIndex = 0;
+        }
+
+
+        // 2. Add to new position
+        newEditorData = update(newEditorData, {
+          view: {
+            pages: {
+              [selectedPage]: {
+                view: {
+                  [targetSectionId]: { blocks: { $splice: [[adjustedTargetBlockIndex, 0, blockToMove]] } }
+                }
+              }
+            }
+          }
+        });
+        
+        setSelectedBlockId(activeBlockId); 
+        return newEditorData;
+      });
+
       setActiveItem(null);
       return;
     }
 
     setActiveItem(null);
+    setPrototype(null); 
   }
 
   const sensors = useSensors(
@@ -411,7 +573,7 @@ function EditApp() {
       {/* Page Logic Dialog */}
       <PageLogicDialog />
 
-      <AddPageDialog />
+      <PageTypeDialog />
 
       {/* <div className="text-xs absolute bottom-0 w-[500px] right-0 border-t border-border bg-white h-full overflow-scroll">
         <pre>{JSON.stringify(data.view.pages[selectedPage], null, 2)}</pre>
@@ -420,10 +582,12 @@ function EditApp() {
   );
 }
 
-function DragOverlayPreview({ item }: { item: any }) {
+function DragOverlayPreview({ item }: { item: ActiveDndItem | null }) {
+
+  if (!item) return null;
 
   if (item.type === 'template') {
-    const type = allElementTypes.find(t => t.type === item.id);
+    const elementTypeMeta = allElementTypes.find(t => t.type === item.id);
     return (
       <div
 
@@ -433,10 +597,10 @@ function DragOverlayPreview({ item }: { item: any }) {
       >
         <div className="flex items-center justify-center bg-slate-800 rounded-md w-full h-14 mb-2">
         <span className="text-white">
-          <CustomElementIcon type={item.id} />
+          <CustomElementIcon type={item.id as keyof typeof blockTypes} />
         </span>
         </div>
-        <span className="text-sm text-black">{type?.title || item.id}</span>
+        <span className="text-sm text-black">{elementTypeMeta?.title || item.id}</span>
       </div>
     )
   }
@@ -491,7 +655,7 @@ function Toolbar() {
     editingPageName, setEditingPageName,
     pageNameInput, setPageNameInput,
     setIsRenamingFromDropdown,
-    setShowAddPageDialog,
+    setShowPageTypeDialog,
     handlePageNameSave,
     handlePageNameClick,
     handlePageAction,
@@ -508,7 +672,7 @@ function Toolbar() {
         )}>
           <div className="flex items-center gap-2 overflow-x-auto">
             <button
-              onClick={() => setShowAddPageDialog(true)}
+              onClick={() => setShowPageTypeDialog(true)}
               className="flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium bg-transparent text-secondary-foreground hover:bg-white border-1 border-gray-300/50 cursor-pointer"
             >
               <Plus className="w-4 h-4" />
@@ -570,6 +734,9 @@ function Toolbar() {
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => handlePageAction(pageId, 'duplicate')}>
                         Duplicate
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handlePageAction(pageId, 'changeType')}>
+                        Change Type
                       </DropdownMenuItem>
                       <DropdownMenuItem
                         onClick={() => handlePageAction(pageId, 'delete')}
@@ -646,46 +813,74 @@ function PageLogicDialog() {
   )
 }
 
+function PageTypeDialog() {
+    const { 
+        showPageTypeDialog, 
+        setShowPageTypeDialog, 
+        handleAddPage,
+        handlePageTypeChange,
+        editingPageId,
+        data
+    } = useEditor();
 
-function AddPageDialog() {
+    const isEditing = Boolean(editingPageId);
+    const currentPage = editingPageId ? data.view.pages[editingPageId] : null;
 
-    const { showAddPageDialog, setShowAddPageDialog, handleAddPage } = useEditor();
+    const handleTypeSelection = (type: PageType) => {
+        if (isEditing && editingPageId) {
+            handlePageTypeChange(editingPageId, type);
+        } else {
+            handleAddPage(type);
+        }
+    };
 
-  return (
-    <Dialog open={showAddPageDialog} onOpenChange={setShowAddPageDialog}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Add New Page</DialogTitle>
-          <DialogDescription>
-            Choose the type of page you want to add
-          </DialogDescription>
-        </DialogHeader>
-        <div className="grid grid-cols-3 gap-4 py-4">
-          <button
-            onClick={() => handleAddPage('entry')}
-            className="flex flex-col items-center gap-2 p-4 rounded-lg border border-border hover:bg-secondary/50"
-          >
-            <ArrowRightToLine className="w-6 h-6" />
-            <span className="text-sm font-medium">Entry Page</span>
-          </button>
-          <button
-            onClick={() => handleAddPage('page')}
-            className="flex flex-col items-center gap-2 p-4 rounded-lg border border-border hover:bg-secondary/50"
-          >
-            <FileText className="w-6 h-6" />
-            <span className="text-sm font-medium">Content Page</span>
-          </button>
-          <button
-            onClick={() => handleAddPage('ending')}
-            className="flex flex-col items-center gap-2 p-4 rounded-lg border border-border hover:bg-secondary/50"
-          >
-            <CheckSquare className="w-6 h-6" />
-            <span className="text-sm font-medium">Ending Page</span>
-          </button>
-        </div>
-      </DialogContent>
-    </Dialog>
-  )
+    return (
+        <Dialog open={showPageTypeDialog} onOpenChange={setShowPageTypeDialog}>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>{isEditing ? 'Change Page Type' : 'Add New Page'}</DialogTitle>
+                    <DialogDescription>
+                        {isEditing 
+                            ? 'Select a new type for this page' 
+                            : 'Choose the type of page you want to add'
+                        }
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="grid grid-cols-3 gap-4 py-4">
+                    <button
+                        onClick={() => handleTypeSelection('entry')}
+                        className={cn(
+                            "flex flex-col items-center gap-2 p-4 rounded-lg border border-border hover:bg-secondary/50",
+                            currentPage?.type === 'entry' && "bg-secondary"
+                        )}
+                    >
+                        <ArrowRightToLine className="w-6 h-6" />
+                        <span className="text-sm font-medium">Entry Page</span>
+                    </button>
+                    <button
+                        onClick={() => handleTypeSelection('page')}
+                        className={cn(
+                            "flex flex-col items-center gap-2 p-4 rounded-lg border border-border hover:bg-secondary/50",
+                            currentPage?.type === 'page' && "bg-secondary"
+                        )}
+                    >
+                        <FileText className="w-6 h-6" />
+                        <span className="text-sm font-medium">Content Page</span>
+                    </button>
+                    <button
+                        onClick={() => handleTypeSelection('ending')}
+                        className={cn(
+                            "flex flex-col items-center gap-2 p-4 rounded-lg border border-border hover:bg-secondary/50",
+                            currentPage?.type === 'ending' && "bg-secondary"
+                        )}
+                    >
+                        <CheckSquare className="w-6 h-6" />
+                        <span className="text-sm font-medium">Ending Page</span>
+                    </button>
+                </div>
+            </DialogContent>
+        </Dialog>
+    )
 }
 
 export default Edit;

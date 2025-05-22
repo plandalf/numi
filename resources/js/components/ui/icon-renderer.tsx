@@ -1,0 +1,61 @@
+import { IconValue } from "@/contexts/Numi";
+import { memo } from "react";
+import * as LucideIcons from "lucide-react";
+
+export interface IconRendererProp {
+  defaultIcon?: any;
+  icon: IconValue;
+  style: {
+    alignment?: string;
+    size?: string;
+    color?: string;
+  }
+}
+
+export const IconRenderer = memo(({ defaultIcon, icon, style }: IconRendererProp) => {
+
+  if(icon?.icon) {
+    const Component = LucideIcons[icon.icon as keyof typeof LucideIcons];
+
+    return (
+      <Component
+        style={{
+          alignSelf: style?.alignment,
+          width: style?.size ?? '42px',
+          height: style?.size ?? '42px',
+          color: style?.color ?? 'black',
+        }}
+      />
+    )
+  }
+
+  if(icon?.emoji) {
+    return (
+      <span
+        style={{
+          alignSelf: style?.alignment,
+          fontSize: style?.size ?? '22px',
+          color: style?.color ?? 'black',
+          width: style?.size ?? '22px',
+          height: style?.size ?? '22px',
+          lineHeight: '1',
+        }}>
+          {icon.emoji}
+      </span>
+    )
+  }
+  if(icon?.url) {
+    return (
+      <img
+        src={icon.url}
+        style={{
+          alignSelf: style?.alignment,
+          width: style?.size ?? '22px',
+          height: style?.size ?? '22px',
+        }}
+      />
+    )
+  }
+
+  return (defaultIcon ?? null);
+});

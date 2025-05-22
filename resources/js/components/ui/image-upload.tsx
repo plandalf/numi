@@ -5,6 +5,7 @@ import { Loader2, Upload, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Page } from '@inertiajs/core';
 import axios from 'axios';
+import { Label } from './label';
 
 interface Media {
     id: number;
@@ -24,9 +25,10 @@ interface PageProps {
 }
 
 interface Props {
+    label?: string;
     className?: string;
-    value?: number | null;
-    onChange?: (media: Media | null) => void;
+    value?: string | null;
+    onChange?: (url: string | null) => void;
     onError?: (error: string) => void;
     maxSize?: number; // in bytes
     preview?: string | null;
@@ -34,6 +36,7 @@ interface Props {
 }
 
 export function ImageUpload({
+    label,
     className,
     value,
     onChange,
@@ -75,7 +78,6 @@ export function ImageUpload({
                 size: file.size,
                 mime_type: file.type,
             });
-            console.log({ data });
 
             const uploadResponse = await axios.put(data.uploadUrl, file, {
                 headers: {
@@ -139,7 +141,7 @@ export function ImageUpload({
             />
 
             {previewUrl ? (
-                <div className="relative w-full overflow-hidden rounded-lg border">
+                <div className="relative w-full overflow-hidden rounded-lg border flex justify-center">
                     <img
                         src={previewUrl}
                         alt="Preview"
@@ -171,7 +173,10 @@ export function ImageUpload({
                     {isUploading ? (
                         <Loader2 className="h-6 w-6 animate-spin" />
                     ) : (
-                        <Upload className="h-6 w-6 transition-transform group-hover:scale-110" />
+                        <>
+                            <Upload className="h-6 w-6 transition-transform group-hover:scale-110" />
+                            {label && <Label className="text-sm">{label}</Label>}
+                        </>
                     )}
                 </Button>
             )}

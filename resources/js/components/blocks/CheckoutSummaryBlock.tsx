@@ -39,14 +39,14 @@ function CheckoutSummaryComponent({ context }: { context: BlockContextType }) {
     defaultValue: true,
     inspector: 'checkbox',
   });
-  
+
   const appearance = Numi.useAppearance([
     Appearance.padding('padding', 'Padding', {}),
     Appearance.margin('margin', 'Margin', {}),
     Appearance.spacing('spacing', 'Spacing', {}),
     Appearance.visibility('visibility', 'Visibility', {}, { conditional: [] }),
   ]);
-  
+
   const fontConfig = {
     config: {
       hideVerticalAlignment: true,
@@ -177,7 +177,7 @@ function CheckoutSummaryComponent({ context }: { context: BlockContextType }) {
 
   const containerStyle = useMemo(() => {
     return {
-      backgroundColor: style.backgroundColor || 'white',
+      backgroundColor: style.backgroundColor || '',
       padding: appearance?.padding,
       margin: appearance?.margin,
       gap: !appearance?.spacing ? '0px' : appearance?.spacing,
@@ -236,7 +236,7 @@ function CheckoutSummaryComponent({ context }: { context: BlockContextType }) {
       letterSpacing: style?.itemPriceFont?.letterSpacing,
     };
   }, [style.itemPriceColor, style?.itemPriceFont]);
-  
+
   const itemQuantityStyle = useMemo(() => {
     return {
       color: style.itemQuantityColor,
@@ -247,7 +247,7 @@ function CheckoutSummaryComponent({ context }: { context: BlockContextType }) {
       letterSpacing: style?.itemQuantityFont?.letterSpacing,
     };
   }, [style.itemQuantityColor, style?.itemQuantityFont]);
-  
+
   const inputStyle = useMemo(() => {
     return {
       backgroundColor: style?.inputBackgroundColor,
@@ -259,7 +259,7 @@ function CheckoutSummaryComponent({ context }: { context: BlockContextType }) {
       letterSpacing: style?.inputFont?.letterSpacing,
     };
   }, [style.inputTextColor, style?.inputFont, style?.inputBackgroundColor]);
-  
+
   const buttonStyle = useMemo(() => {
     return {
       color: style.buttonTextColor,
@@ -299,7 +299,7 @@ function CheckoutSummaryComponent({ context }: { context: BlockContextType }) {
       color: style.totalTextColor,
       fontFamily: style?.totalTextFont?.font,
       fontWeight: style?.totalTextFont?.weight,
-      fontSize: style?.totalTextFont?.size, 
+      fontSize: style?.totalTextFont?.size,
       lineHeight: style?.totalTextFont?.lineHeight,
       letterSpacing: style?.totalTextFont?.letterSpacing,
     };
@@ -326,7 +326,7 @@ function CheckoutSummaryComponent({ context }: { context: BlockContextType }) {
   }
 
   return (
-    <div className="'border rounded-md bg-white shadow-sm flex flex-col p-4'" style={containerStyle}>
+    <div className="border flex flex-col p-4'" style={containerStyle}>
       <h3 className="font-medium text-lg mb-4" style={titleStyle}>{title}</h3>
       {/* Order Items */}
       <div className="space-y-3 mb-4">

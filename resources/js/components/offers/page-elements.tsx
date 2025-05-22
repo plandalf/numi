@@ -15,7 +15,9 @@ import {
   LetterTextIcon,
   QuoteIcon,
   Columns2Icon,
-  TextCursorInputIcon
+  TextCursorInputIcon,
+  LinkIcon,
+  PlusIcon
 } from 'lucide-react';
 import { useDraggable } from '@dnd-kit/core';
 import SearchBar from './search-bar';
@@ -35,6 +37,8 @@ export const CustomElementIcon = ({ type }: CustomElementIconProps) => {
         return <LayoutPanelLeft className="w-6 h-6" />;
     case 'button':
         return <SquareMousePointer className="w-6 h-6" />;
+    case 'link':
+        return <LinkIcon className="w-6 h-6" />;
     case 'checkbox':
         return <SquareCheck className="w-6 h-6" />;
     case 'option_selector':
@@ -47,6 +51,8 @@ export const CustomElementIcon = ({ type }: CustomElementIconProps) => {
       return <CreditCard className="w-6 h-6"/>;
     case 'checkout_summary':
         return <ShoppingCartIcon className="w-6 h-6" />;
+    case 'add_on':
+        return <PlusIcon className="w-6 h-6" />;
     default:
         return null;
   }
@@ -99,6 +105,7 @@ const baseElements = [
 
 const interactiveElements = [
   { type: 'button', title: 'Button' },
+  { type: 'link', title: 'Link' },
   { type: 'checkbox', title: 'Checkbox' },
   { type: 'option_selector', title: 'Option Slide' },
   { type: 'text_input', title: 'Entry Field' },
@@ -107,6 +114,7 @@ const interactiveElements = [
 const paymentElements = [
   { type: 'checkout_summary', title: 'Order Summary' },
   { type: 'payment_method', title: 'Payment Method' },
+  { type: 'add_on', title: 'Add On' },
 ];
 
 export const allElementTypes = [

@@ -295,6 +295,7 @@ export const Inspector = ({
                                 value={block.content?.[hook.name] ?? hook.defaultValue}
                                 onChange={value => handleContentChange(hook.name, value)}
                                 multiline={hook.inspector === 'multiline'}
+                                validations={hook.config?.validations}
                               />
                             ) : hook.type === 'boolean' ? (
                               <BooleanEditor

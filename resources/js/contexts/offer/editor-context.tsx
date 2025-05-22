@@ -1,19 +1,19 @@
-import { Block, Offer, type Page, type PageType } from '@/types/offer';
-import { useForm } from '@inertiajs/react';
+import { Block, Offer, type Page, type PageType, ViewSection, Branch } from '@/types/offer';
+import { useForm, InertiaFormProps } from '@inertiajs/react';
 import { Theme } from '@/types/theme';
-import React, { createContext, useContext, useState, useRef, useEffect } from 'react';
+import React, { createContext, useContext, useState, useRef, useEffect, useCallback } from 'react';
 import update from "immutability-helper";
 import { toast } from 'sonner';
 import { generateDefaultPage } from '@/components/offers/page-flow-editor';
 import { Template } from '@/types/template';
 
 interface EditorContextType {
-  data: any;
-  setData: (data: any) => void;
-  put: (url: string, options?: any) => void;
+  data: EditFormData;
+  setData: InertiaFormProps<EditFormData>['setData'];
+  put: InertiaFormProps<EditFormData>['put'];
   processing: boolean;
-  errors: any;
-  setDefaults: (data: any) => void;
+  errors: InertiaFormProps<EditFormData>['errors'];
+  setDefaults: InertiaFormProps<EditFormData>['setDefaults'];
 
   organizationThemes: Theme[];
   organizationTemplates: Template[];
@@ -33,6 +33,12 @@ interface EditorContextType {
 
   showPageLogic: boolean;
   setShowPageLogic: React.Dispatch<React.SetStateAction<boolean>>;
+
+  showPageTypeDialog: boolean;
+  setShowPageTypeDialog: React.Dispatch<React.SetStateAction<boolean>>;
+
+  editingPageId: string | null;
+  setEditingPageId: React.Dispatch<React.SetStateAction<string | null>>;
 
   inputRef: React.RefObject<HTMLInputElement | null>;
 
@@ -66,13 +72,14 @@ interface EditorContextType {
   handleNameSubmit: (e: React.FormEvent) => void;
   handlePageNameClick: (pageId: string, currentName: string) => void;
   handlePageNameSave: (pageId: string) => void;
-  handlePageAction: (pageId: string, action: 'rename' | 'duplicate' | 'delete') => void;
+  handlePageAction: (pageId: string, action: 'rename' | 'duplicate' | 'changeType' | 'delete') => void;
   handlePageUpdate: (updatedPage: Page) => void;
-  getOrderedPages: (view: any) => [string, Page][];
+  getOrderedPages: (view: EditFormData['view']) => [string, Page][];
   handleAddPage: (type: PageType) => void;
+  handlePageTypeChange: (pageId: string, type: PageType) => void;
   offer: Offer;
   updateBlock: (block: Block) => void;
-  updateSection: (sectionId: string, section: any) => void;
+  updateSection: (sectionId: string, sectionDataToMerge: Partial<ViewSection>) => void;
   deleteBlock: (blockId: string) => void;
 }
 
@@ -103,7 +110,7 @@ type EditFormData = {
     pages: Record<string, Page>;
   };
   theme: Theme | null;
-  [key: string]: any; // Allow additional properties for form data
+  screenshot: Offer['screenshot'];
 }
 
 export interface EditProps {
@@ -121,6 +128,8 @@ export function EditorProvider({ offer, organizationThemes, organizationTemplate
   const [editingPageName, setEditingPageName] = useState<string | null>(null);
   const [pageNameInput, setPageNameInput] = useState("");
   const [showPageLogic, setShowPageLogic] = useState(false);
+  const [showPageTypeDialog, setShowPageTypeDialog] = useState(false);
+  const [editingPageId, setEditingPageId] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const [isRenamingFromDropdown, setIsRenamingFromDropdown] = useState(false);
   const [showAddPageDialog, setShowAddPageDialog] = useState(false);
@@ -168,7 +177,7 @@ export function EditorProvider({ offer, organizationThemes, organizationTemplate
 
   const handleSave = () => {
     put(route('offers.update', offer.id), {
-      onError: (error: any) => {
+      onError: (error: Record<string, string>) => {
         const errorMessages = Object.values(error).flat();
         toast.error(<>
           <p>Failed to save offer</p>
@@ -217,28 +226,32 @@ export function EditorProvider({ offer, organizationThemes, organizationTemplate
     setEditingPageName(null);
   };
 
-  const handlePageAction = (pageId: string, action: 'rename' | 'duplicate' | 'delete') => {
+  const handlePageAction = (pageId: string, action: 'rename' | 'duplicate' | 'changeType' | 'delete') => {
     switch (action) {
       case 'rename':
+        setEditingPageName(pageId);
+        setPageNameInput(data.view.pages[pageId].name);
         setIsRenamingFromDropdown(true);
-        handlePageNameClick(pageId, data.view.pages[pageId].name);
         break;
-      case 'duplicate':
-        const sourcePage = data.view.pages[pageId];
+      case 'duplicate': {
         const newId = `page_${Math.random().toString(36).substr(2, 9)}`;
-        const newPage = {
-          ...sourcePage,
-          id: newId,
-          name: `${sourcePage.name} (Copy)`
-        };
+        const pageToDuplicate = data.view.pages[pageId];
         const updatedPages = {
           ...data.view.pages,
-          [newId]: newPage
+          [newId]: {
+            ...pageToDuplicate,
+            name: `${pageToDuplicate.name} (Copy)`,
+          }
         };
-        setData(update(data, { view: { pages: { $set: updatedPages } }}));
+        setData(update(data, { view: { pages: { $set: updatedPages } } }));
         setTimeout(() => { handleSave(); }, 0);
         break;
-      case 'delete':
+      }
+      case 'changeType':
+        setEditingPageId(pageId);
+        setShowPageTypeDialog(true);
+        break;
+      case 'delete': 
         const pagesToUpdate = { ...data.view.pages };
         delete pagesToUpdate[pageId];
         Object.keys(pagesToUpdate).forEach(pageKey => {
@@ -257,7 +270,7 @@ export function EditorProvider({ offer, organizationThemes, organizationTemplate
               ...page,
               next_page: {
                 ...page.next_page,
-                branches: page.next_page.branches.map((branch: any) =>
+                branches: page.next_page.branches?.map((branch: any) =>
                   branch.next_page === pageId
                     ? { ...branch, next_page: null }
                     : branch
@@ -282,6 +295,36 @@ export function EditorProvider({ offer, organizationThemes, organizationTemplate
     }
   };
 
+  const handlePageTypeChange = (pageId: string, type: PageType) => {
+    const currentPage = data.view.pages[pageId];
+    const isDefaultLabel = 
+      currentPage.name === 'Entry Page' || 
+      currentPage.name === 'New Page' || 
+      currentPage.name === 'Ending Page';
+
+    const updatedPage = {
+      ...currentPage,
+      type,
+      name: isDefaultLabel 
+        ? type === 'entry' 
+          ? 'Entry Page' 
+          : type === 'ending' 
+            ? 'Ending Page' 
+            : 'New Page'
+        : currentPage.name
+    };
+
+    const updatedPages = {
+      ...data.view.pages,
+      [pageId]: updatedPage
+    };
+
+    setData(update(data, { view: { pages: { $set: updatedPages } } }));
+    setShowPageTypeDialog(false);
+    setEditingPageId(null);
+    handleSave();
+  };
+
   const handlePageUpdate = (updatedPage: Page) => {
     if (!isReady) return;
     const updatedView = {
@@ -294,7 +337,7 @@ export function EditorProvider({ offer, organizationThemes, organizationTemplate
     setData(update(data, { view: { $set: updatedView }}));
   };
 
-  const getOrderedPages = (view: any): [string, Page][] => {
+  const getOrderedPages = (view: EditFormData['view']): [string, Page][] => {
     const orderedPages: [string, Page][] = [];
     const visitedPages = new Set<string>();
     let currentPageId: string | null = view.first_page;
@@ -314,7 +357,6 @@ export function EditorProvider({ offer, organizationThemes, organizationTemplate
   };
 
   const handleAddPage = (type: PageType) => {
-
     const id = `page_${Math.random().toString(36).substr(2, 9)}`;
 
     const updatedPages = {
@@ -333,7 +375,7 @@ export function EditorProvider({ offer, organizationThemes, organizationTemplate
     setData(update(data, { view: { $set: updatedView }}));
 
     handleSave();
-    setShowAddPageDialog(false);
+    setShowPageTypeDialog(false);
   };
 
   const updateBlock = (block: Block) => {
@@ -356,30 +398,41 @@ export function EditorProvider({ offer, organizationThemes, organizationTemplate
     setData(update(data, { view: { pages: { [selectedPage]: { view: { $set: thePage.view } } } } }));
   }
 
-  const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null);
-  const [selectedSectionId, setSelectedSectionId] = useState<string | null>(null);
+  const [selectedBlockId, setSelectedBlockIdState] = useState<string | null>(null);
+  const [selectedSectionId, setSelectedSectionIdState] = useState<string | null>(null);
 
-  const onSelectBlock = (blockId: string | null) => {
-    setSelectedBlockId(blockId);
-    setSelectedSectionId(null);
-  }
+  const onSelectBlock = useCallback((blockId: string | null) => {
+    setSelectedBlockIdState(blockId);
+  }, []);
 
-  const onSelectSection = (sectionId: string | null) => {
-    setSelectedSectionId(sectionId);
-    setSelectedBlockId(null);
-  }
+  const onSelectSection = useCallback((sectionId: string | null) => {
+    setSelectedSectionIdState(sectionId);
+    setSelectedBlockIdState(null);
+  }, []);
 
-  const updateSection = (sectionId: string, section: any) => {
-    setData(prev => {
-      const newData = { ...prev };
-      const page = newData.view.pages[selectedPage];
-      if (page && page.view) {
-        page.view[sectionId] = {
-          ...page.view[sectionId],
-          ...section
-        };
+  const updateSection = (sectionId: string, sectionDataToMerge: Partial<ViewSection>) => {
+    setData(prevData => {
+      if (
+        prevData.view &&
+        prevData.view.pages &&
+        prevData.view.pages[selectedPage] &&
+        prevData.view.pages[selectedPage].view &&
+        prevData.view.pages[selectedPage].view[sectionId]
+      ) {
+        return update(prevData, {
+          view: {
+            pages: {
+              [selectedPage]: {
+                view: {
+                  [sectionId]: { $merge: sectionDataToMerge }
+                }
+              }
+            }
+          }
+        });
       }
-      return newData;
+      console.warn(`[EditorContext] updateSection: Path to section "${sectionId}" on page "${selectedPage}" not found. No update performed.`);
+      return prevData;
     });
   };
 
@@ -398,7 +451,7 @@ export function EditorProvider({ offer, organizationThemes, organizationTemplate
     const thePage = update(page, { view: { [sectionId]: { blocks: { $set: updatedBlocks } } } });
 
     setData(update(data, { view: { pages: { [selectedPage]: { view: { $set: thePage.view } } } } }));
-    setSelectedBlockId(null);
+    setSelectedBlockIdState(null);
   };
 
   const value: EditorContextType = {
@@ -413,6 +466,8 @@ export function EditorProvider({ offer, organizationThemes, organizationTemplate
     editingPageName, setEditingPageName,
     pageNameInput, setPageNameInput,
     showPageLogic, setShowPageLogic,
+    showPageTypeDialog, setShowPageTypeDialog,
+    editingPageId, setEditingPageId,
     inputRef,
     isRenamingFromDropdown, setIsRenamingFromDropdown,
     showAddPageDialog, setShowAddPageDialog,
@@ -425,6 +480,7 @@ export function EditorProvider({ offer, organizationThemes, organizationTemplate
     handlePageUpdate,
     getOrderedPages,
     handleAddPage,
+    handlePageTypeChange,
     offer,
     organizationThemes,
     organizationTemplates,

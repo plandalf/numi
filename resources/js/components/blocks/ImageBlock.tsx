@@ -70,6 +70,7 @@ function ImageBlockComponent() {
   }, [style.alignment]);
 
   if (!image) {
+    console.log('no image');
     return (
       <div className='text-center'>
         <div className="text-gray-500">Upload an image</div>
