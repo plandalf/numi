@@ -133,32 +133,24 @@ const layoutConfig: TailwindLayoutConfig = {
       },
       {
         "type": "box",
-        "id": "promo-box",
+        "id": "promo_box",
         "props": {
-          "className": "h-full overflow-hidden"
+          "className": "hidden md:flex h-full overflow-y-auto flex-col"
         },
         "children": [
           {
-            "type": "flex",
+            "id": "promo_header",
+            "type": "box",
             "props": {
-              "className": "hidden md:flex bg-blue-50 h-full overflow-y-auto flex-col"
-            },
-            "children": [
-              {
-                "id": "promo_header",
-                "type": "box",
-                "props": {
-                  "className": "min-h-1 h-auto p-6"
-                }
-              },
-              {
-                "id": "promo_content",
-                "type": "box",
-                "props": {
-                  "className": "flex flex-col flex-grow space-y-2 p-6"
-                }
-              }
-            ]
+              "className": "min-h-1 h-auto p-6"
+            }
+          },
+          {
+            "id": "promo_content",
+            "type": "box",
+            "props": {
+              "className": "h-full flex flex-col flex-grow space-y-2 p-6"
+            }
           }
         ]
       }
@@ -252,38 +244,16 @@ const RecursiveRenderElement: React.FC<RecursiveRenderElementProps> = React.memo
 
   const { type, props = {} as ComponentProps, children = [], id } = element;
 
-  if (id && page?.view && id in page.view) {
-    const sectionData = page.view[id];
-
-    return createElement(
-      type,
-      {
-        ...props,
-        id,
-        style: { ...props.style, ...sectionContainerStyle },
-        className: cn(
-          "relative",
-          props.className,
-          selectedSectionId === id && 'shadow-[inset_0_0_0_1.5px_#3B82F6]'
-        ),
-        onClick: (e: React.MouseEvent) => {
-          if (id && onSectionSelect) {
-            e.stopPropagation();
-            console.log(`Section ${id} clicked in preview. Calling onSectionSelect.`);
-            onSectionSelect(id);
-          }
-        },
-      },
-      <Section
-        key={id}
-        section={sectionData}
-        sectionName={id as keyof LocalPageView}
-        style={sectionStyle}
-        onBlockSelect={onBlockSelect}
-      />,
-      componentRegistry
-    );
-  }
+  const sectionProps = {
+    ...props,
+    id,
+    style: { ...props.style, ...sectionContainerStyle },
+    className: cn(
+      "relative",
+      props.className,
+      selectedSectionId === id && 'shadow-[inset_0_0_0_1.5px_#3B82F6]'
+    )
+  };
 
   const childElements = Array.isArray(children)
     ? children
@@ -301,7 +271,25 @@ const RecursiveRenderElement: React.FC<RecursiveRenderElementProps> = React.memo
       ))
     : null;
 
-  return createElement(type, { ...props, id: id || type }, childElements, componentRegistry);
+  if (id && page?.view && id in page.view) {
+    const sectionData = page.view[id];
+
+    return createElement(
+      type,
+      sectionProps as ComponentProps,
+      <Section
+        key={id}
+        section={sectionData}
+        sectionName={id as keyof LocalPageView}
+        style={sectionStyle}
+        onBlockSelect={onBlockSelect}
+        children={childElements}
+      />,
+      componentRegistry
+    );
+  }
+
+  return createElement(type, sectionProps as ComponentProps, childElements, componentRegistry);
 });
 RecursiveRenderElement.displayName = 'RecursiveRenderElement';
 
@@ -443,9 +431,10 @@ const MemoizedBlockRenderer: React.FC<React.ComponentProps<typeof BlockRendererC
 // Section Component
 interface SectionPropsExtended extends SectionProps {
   onBlockSelect?: (blockId: string) => void;
+  children?: React.ReactNode;
 }
 
-const SectionComponent = ({ section, sectionName: id, style, onBlockSelect }: SectionPropsExtended) => {
+const SectionComponent = ({ section, sectionName: id, style, onBlockSelect, children }: SectionPropsExtended) => {
   const { setNodeRef, isOver, active } = useDroppable({
     id: `section:${id}`,
   });
@@ -466,46 +455,53 @@ const SectionComponent = ({ section, sectionName: id, style, onBlockSelect }: Se
   // isOver is already a boolean indicating if a draggable is over this droppable.
   const isOverDroppable = isOver;
 
+  // If the section is a container, it is not draggable.
+  const isDraggable = !(section as PageSection)?.asContainer;
+
+  const component = (
+    <div
+     className={cx({
+        "flex flex-col min-h-full w-full h-full" : true,
+        'border-2 border-transparent': true,
+        'border-red-500': isActiveSectionDragTarget,
+        'border-blue-500': isOverDroppable,
+      })}
+      ref={isDraggable ? setNodeRef : undefined}
+      style={style}
+    >
+      {blocksToRender.length > 0 ? blocksToRender.map((block: Block) => {
+        return (
+          <MemoizedBlockRenderer
+            block={block as BlockConfig}
+            key={block.id}
+            onBlockSelect={onBlockSelect}
+          >
+            {(blockContext) => {
+                const Component = blockTypes[block.type as keyof typeof blockTypes];
+                return Component ? (
+                  <Component context={blockContext} />
+                ) : (
+                  <div className="text-xs text-purple-500 font-bold">
+                    <pre>UNFINISHED: {JSON.stringify(block, null, 2)}</pre>
+                  </div>
+                );
+            }}
+          </MemoizedBlockRenderer>
+        )
+      }) : children}
+    </div>
+  );
+
   return (
-    <>
+    isDraggable ? (
       <SortableContext
         id={`section:${id}`}
         items={sortableItems}
         strategy={rectSortingStrategy}
       >
-        <div
-         className={cx({
-            "flex flex-col min-h-full w-full" : true,
-            'border-2 border-transparent': true,
-            'border-red-500': isActiveSectionDragTarget,
-            'border-blue-500': isOverDroppable,
-          })}
-          ref={setNodeRef}
-          style={style}
-        >
-          {blocksToRender.map((block: Block) => {
-            return (
-              <MemoizedBlockRenderer
-                block={block as BlockConfig}
-                key={block.id}
-                onBlockSelect={onBlockSelect}
-              >
-                {(blockContext) => {
-                    const Component = blockTypes[block.type as keyof typeof blockTypes];
-                    return Component ? (
-                      <Component context={blockContext} />
-                    ) : (
-                      <div className="text-xs text-purple-500 font-bold">
-                        <pre>UNFINISHED: {JSON.stringify(block, null, 2)}</pre>
-                      </div>
-                    );
-                }}
-              </MemoizedBlockRenderer>
-            )
-          })}
-        </div>
-        </SortableContext>
-    </>
+        {component}
+      </SortableContext>
+    ) : component
   );
 };
 const Section = React.memo(SectionComponent);

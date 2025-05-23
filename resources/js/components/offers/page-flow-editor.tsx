@@ -93,20 +93,23 @@ export function generateDefaultPage({
                 },
                 blocks: []
             },
-            promo_header: {
-                id: 'promo_header',
-                label: 'Promo Header Section',
+            promo_box: {
+                id: 'promo_box',
+                label: 'Promo Box Section',
+                asContainer: true,
                 style: {
                     backgroundColor: '#EFF6FF'
                 },
                 blocks: []
             },
+            promo_header: {
+                id: 'promo_header',
+                label: 'Promo Header Section',
+                blocks: []
+            },
             promo_content: {
                 id: 'promo_content',
                 label: 'Promo Content Section',
-                style: {
-                    backgroundColor: '#EFF6FF'
-                },
                 blocks: []
             },
         },

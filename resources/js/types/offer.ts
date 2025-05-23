@@ -283,6 +283,7 @@ export type PageNextPage = {
 export type PageType = 'page' | 'entry' | 'payment' | 'ending';
 
 export type PageSection = {
+    asContainer?: boolean;
     blocks: Block[];
     id?: string;
     label?: string;
