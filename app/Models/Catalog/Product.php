@@ -35,6 +35,7 @@ class Product extends Model
         'integration_id',
         'description',
         'status',
+        'image',
     ];
 
     protected $casts = [

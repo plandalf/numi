@@ -22,20 +22,28 @@ class ProductResource extends JsonResource
             'id' => $this->id,
             'name' => $this->name,
             'lookup_key' => $this->lookup_key,
+            'image' => $this->image,
             'gateway_product_id' => $this->gateway_product_id,
-            // 'description' => $this->description,
-            // 'media_id' => $this->media_id,
-            // 'is_active' => $this->is_active,
+            'gateway_provider' => $this->gateway_provider,
+            'status' => $this->status,
+            'description' => $this->description,
+            'organization_id' => $this->organization_id,
+            'integration_id' => $this->integration_id,
             'created_at' => $this->created_at?->toISOString(),
             'updated_at' => $this->updated_at?->toISOString(),
+            'deleted_at' => $this->deleted_at?->toISOString(),
 
             // Conditionally load prices if the relationship is loaded
             'prices' => PriceResource::collection($this->whenLoaded('prices')),
 
-            'integration_id' => $this->integration_id,
-
-            // Optionally load media if needed (assuming MediaResource exists or is simple)
-            // 'media' => new MediaResource($this->whenLoaded('media')),
+            // Include integration data if loaded
+            'integration' => $this->whenLoaded('integration', function() {
+                return [
+                    'id' => $this->integration->id,
+                    'name' => $this->integration->name,
+                    'type' => $this->integration->type,
+                ];
+            }),
         ];
     }
 }

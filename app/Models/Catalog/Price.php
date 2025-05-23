@@ -69,6 +69,7 @@ class Price extends Model
         'amount',
         'currency',
         'properties',
+        'metadata',
 
         'name',
         'lookup_key',
@@ -91,6 +92,7 @@ class Price extends Model
 
     protected $casts = [
         'properties' => 'json',
+        'metadata' => 'json',
         'is_active' => 'boolean',
         'archived_at' => 'datetime',
         'type' => ChargeType::class,

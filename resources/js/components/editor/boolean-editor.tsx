@@ -1,4 +1,4 @@
-import { Checkbox } from '../ui/checkbox';
+import { Switch } from '../ui/switch';
 import { Label } from '../ui/label';
 import React from 'react';
 
@@ -9,8 +9,8 @@ interface BooleanEditorProps {
 }
 
 export const BooleanEditor: React.FC<BooleanEditorProps> = ({ label, value, onChange }) => (
-  <div className="flex items-center gap-3">
-    <Checkbox checked={value} onCheckedChange={onChange} className="bg-white" />
+  <div className="flex items-center justify-between gap-3 border rounded-md p-4 bg-white">
     <Label className="mb-0 text-sm capitalize">{label}</Label>
+    <Switch checked={value} onCheckedChange={onChange} />
   </div>
 );

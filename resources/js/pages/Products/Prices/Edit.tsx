@@ -8,6 +8,7 @@ interface Props {
     price: Price;
 }
 
+/**  @deprecated */
 export default function Edit({ product, price }: Props) {
     return (
         <>
@@ -27,4 +28,4 @@ export default function Edit({ product, price }: Props) {
             </div>
         </>
     );
-} 
+}

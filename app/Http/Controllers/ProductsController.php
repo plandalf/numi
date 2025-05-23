@@ -10,6 +10,7 @@ use App\Http\Requests\Product\ProductUpdateRequest;
 use App\Http\Resources\PriceResource;
 use App\Http\Resources\ProductResource;
 use App\Models\Catalog\Product;
+use App\Models\Catalog\Price;
 use App\Models\Integration;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
@@ -29,6 +30,7 @@ class ProductsController extends Controller
     {
         $organizationId = Auth::user()->currentOrganization->id;
         $search = request('search', '');
+        $tab = request('tab', 'products');
 
         $products = Product::query()
             ->where('organization_id', $organizationId)
@@ -43,14 +45,82 @@ class ProductsController extends Controller
             ->paginate(10)
             ->withQueryString();
 
+        $prices = Price::query()
+            ->where('organization_id', $organizationId)
+            ->when($search, function ($query) use ($search) {
+                $query->where(function ($q) use ($search) {
+                    $q->where('name', 'like', "%{$search}%");
+                });
+            })
+            ->with('product')
+            ->latest()
+            ->paginate(10)
+            ->withQueryString();
+
         $integrations = Integration::query()
             ->where('organization_id', $organizationId)
             ->get();
 
+        // Create pagination links manually
+        $formatPaginationLinks = function ($paginator) {
+            $links = [];
+
+            // Previous link
+            $links[] = [
+                'url' => $paginator->previousPageUrl(),
+                'label' => '&laquo; Previous',
+                'active' => false,
+            ];
+
+            // Page links
+            foreach (range(1, $paginator->lastPage()) as $page) {
+                if ($page === 1 || $page === $paginator->lastPage() ||
+                    abs($paginator->currentPage() - $page) <= 1) {
+                    $links[] = [
+                        'url' => $paginator->url($page),
+                        'label' => (string) $page,
+                        'active' => $paginator->currentPage() === $page,
+                    ];
+                } elseif (abs($paginator->currentPage() - $page) === 2) {
+                    // Add ellipsis
+                    $links[] = [
+                        'url' => null,
+                        'label' => '...',
+                        'active' => false,
+                    ];
+                }
+            }
+
+            // Next link
+            $links[] = [
+                'url' => $paginator->nextPageUrl(),
+                'label' => 'Next &raquo;',
+                'active' => false,
+            ];
+
+            return $links;
+        };
+
         return Inertia::render('Products/Index', [
-            'products' => $products,
+            'products' => [
+                'data' => ProductResource::collection($products->items()),
+                'links' => $formatPaginationLinks($products),
+                'current_page' => $products->currentPage(),
+                'last_page' => $products->lastPage(),
+                'per_page' => $products->perPage(),
+                'total' => $products->total(),
+            ],
+            'prices' => [
+                'data' => PriceResource::collection($prices->items()),
+                'links' => $formatPaginationLinks($prices),
+                'current_page' => $prices->currentPage(),
+                'last_page' => $prices->lastPage(),
+                'per_page' => $prices->perPage(),
+                'total' => $prices->total(),
+            ],
             'filters' => [
                 'search' => $search,
+                'tab' => $tab,
             ],
             'integrations' => $integrations,
         ]);
@@ -76,6 +146,12 @@ class ProductsController extends Controller
 
         if (! $product) {
             $product = $this->createProductAction->execute($validated);
+        }
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'product' => $product,
+            ]);
         }
 
         return redirect()->route('products.show', $product);
@@ -126,12 +202,17 @@ class ProductsController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(ProductUpdateRequest $request, Product $product, UpdateProduct $updateProduct): RedirectResponse
+    public function update(ProductUpdateRequest $request, Product $product, UpdateProduct $updateProduct)
     {
         $product = $updateProduct($product, $request);
 
-        return redirect()->route('products.show', $product)
-            ->with('success', 'Product updated successfully.');
+        if ($request->wantsJson()) {
+            return response()->json([
+                'product' => $product,
+            ]);
+        }
+
+        return redirect()->route('products.show', $product);
     }
 
     /**
