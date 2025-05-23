@@ -34,6 +34,8 @@ export function findUniqueFontsFromView(view: PageView): string[] {
 } 
 
 export function findUniqueFontsFromTheme(theme: Theme): string[] {
+  if (!theme) return [];
+  
   const fonts = new Set<string>(); // Always include Inter as default
 
   // Add main and mono fonts if they exist

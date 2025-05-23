@@ -31,8 +31,9 @@ const NavigationBar = ({ barStyle, children, className, ...props }: NavigationBa
           Back
         </button>
       )}
-      <h1 className="text-xl font-bold">Checkout</h1>
+      <div>
       {children}
+      </div>
     </div>
   );
 };
