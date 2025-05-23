@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Enums\Store\OfferItemType;
 use App\Enums\Theme\FontElement;
 use App\Enums\Theme\WeightElement;
 use App\Http\Requests\Offer\OfferItemStoreRequest;
@@ -43,7 +44,7 @@ class OffersController extends Controller
     public function index(): Response
     {
         return Inertia::render('offers/index', [
-            'offers' => OfferResource::collection(Offer::with('variants')->paginate()),
+            'offers' => OfferResource::collection(Offer::with([])->paginate()),
         ]);
     }
 
@@ -144,7 +145,7 @@ class OffersController extends Controller
         $offer->offerItems()->delete();
         $offer->delete();
 
-        return redirect()->route('offers.index')->with('success', 'Offer and all associated data deleted successfully');
+        return redirect()->route('dashboard')->with('success', 'Offer and all associated data deleted successfully');
     }
 
     public function pricing(Offer $offer): Response
@@ -170,12 +171,13 @@ class OffersController extends Controller
     {
         $validated = $request->validated();
 
-        $isRequired = $validated['is_required'] || $offer->offerItems->count() === 0;
+        $isRequired = ($validated['is_required'] || $offer->offerItems->count() === 0) && $validated['type'] === OfferItemType::STANDARD;
         $offerItem = OfferItem::create([
             'name' => $validated['name'],
             'key' => $validated['key'],
             'is_required' => $isRequired,
             'offer_id' => $offer->id,
+            'type' => $validated['type'],
         ]);
 
         $prices = $validated['prices'];

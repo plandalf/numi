@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Offer;
 
-use App\Models\Catalog\Price;
+use App\Enums\Store\OfferItemType;
 use App\Models\Store\Offer;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Auth;
@@ -52,6 +52,7 @@ class OfferItemStoreRequest extends FormRequest
                 return $query->where('organization_id', $organizationId)
                     ->where('is_active', true);
             })],
+            'type' => ['required', Rule::enum(OfferItemType::class)],
         ];
     }
 

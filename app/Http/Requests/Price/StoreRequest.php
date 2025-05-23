@@ -84,6 +84,7 @@ class StoreRequest extends FormRequest
             'gateway_prices' => ['array'],
             'gateway_prices.*' => ['string', 'max:255'],
             'is_active' => ['boolean'],
+            'metadata' => ['nullable', 'array'],
         ];
     }
 

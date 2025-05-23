@@ -56,6 +56,7 @@ class CheckoutLineItem extends Model
             'subtotal' => $this->price->calculateAmount()->getAmount(),
             // 'taxes' => $this->price->calculateTaxes()->getAmount(),
             'total' => $this->price->calculateAmount()->getAmount(),
+            'image' => $this->price->product->image,
             // 'discount' => $this->price->calculateDiscount()->getAmount(),
         ];
     }

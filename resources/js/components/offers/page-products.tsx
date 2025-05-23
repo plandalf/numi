@@ -1,19 +1,59 @@
 import { Button } from '@/components/ui/button';
-import { Separator } from '../ui/separator';
-import { CircleAlert, CircleCheck, CirclePlus, Plus, PlusIcon } from 'lucide-react';
-import { usePage } from '@inertiajs/react';
+import { CircleAlert, CirclePlus, PlusIcon, Pencil } from 'lucide-react';
+import { useForm, usePage } from '@inertiajs/react';
 import { EditProps } from '@/pages/offers/edit';
-import { OfferItem, OfferProduct, Price, Product } from '@/types/offer';
+import { OfferItem, OfferItemType, Price, Product } from '@/types/offer';
 import { Kebab } from '../ui/kebab';
 import { AddNewProductDialog } from './dialogs/AddNewProductDialog';
-import ProductForm from '../Products/ProductForm';
 import { useState } from 'react';
-import SlotForm from './SlotForm';
-import AddProductForm from './add-product-from';
+import AddProductForm, { generateName } from './add-product-from';
 import { toast } from 'sonner';
 import { router } from '@inertiajs/react';
 import { Switch } from '../ui/switch';
 import { Badge } from '../ui/badge';
+import { Separator } from '../ui/separator';
+import AddNewProductWithPriceDialog from './dialogs/AddNewProductWithPriceDialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+
+
+const NewProductAndPricesOfferItem = ({ open, setOpen, offerItemsCount, type, offerId }: { offerId: number, offerItemsCount: number, type: OfferItemType, open: boolean, setOpen: (open: boolean) => void }) => {
+  const defaultName = generateName(offerItemsCount + 1);
+  const defaultKey = defaultName.toLowerCase().replace(/\s+/g, '_');
+
+  const handlePricesSuccess = (price: Price) => {
+    router.reload({ only: ['products'] });
+
+    const body = {
+      name: defaultName,
+      key: defaultKey,
+      is_required: offerItemsCount === 0,
+      prices: [price.id],
+      default_price_id: price.id,
+      type: type
+    }
+
+    router.post(route('offers.items.store', { offer: offerId }), body, {
+      preserveScroll: true,
+      onSuccess: () => {
+        setOpen(false);
+      },
+      onError: (errors: any) => {
+        toast.error(`Failed to create price: ${Object.values(errors).flat().join(", ")}`);
+      },
+    });
+
+  }
+
+  return (
+    <AddNewProductWithPriceDialog
+      open={open}
+      onOpenChange={setOpen}
+      onPricesSuccess={handlePricesSuccess}
+    />
+  )
+}
 
 export const PageProducts = () => {
   const { products, offer } = usePage<EditProps>().props;
@@ -27,12 +67,43 @@ export const PageProducts = () => {
   });
   const [selectedOfferItem, setSelectedOfferItem] = useState<OfferItem>();
   const [selectedProduct, setSelectedProduct] = useState<Product | null | undefined>(null);
+  const [selectedOfferItemType, setSelectedOfferItemType] = useState<OfferItemType>(OfferItemType.STANDARD);
+  const [isRenameDialogOpen, setIsRenameDialogOpen] = useState(false);
+  const [renameValue, setRenameValue] = useState<string>('');
+  const [renameLoading, setRenameLoading] = useState(false);
+  const [renameItemId, setRenameItemId] = useState<number | null>(null);
 
   const handleExistingProductOnClose = () => {
     setAddExistingProductDialogProps({ open: false, tab: 'product' });
     setSelectedOfferItem(undefined);
     setSelectedProduct(null);
+    setSelectedOfferItemType(OfferItemType.STANDARD);
   }
+
+  const handleRenameClick = (item: OfferItem) => {
+    setRenameValue(item.name);
+    setRenameItemId(item.id);
+    setIsRenameDialogOpen(true);
+  };
+
+  const handleRenameSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!renameItemId) return;
+    setRenameLoading(true);
+    router.put(route('offers.items.update', { offer: offer.id, offerItem: renameItemId }), {
+      name: renameValue,
+    }, {
+      preserveScroll: true,
+      onSuccess: () => {
+        toast.success('Product name updated');
+        setIsRenameDialogOpen(false);
+      },
+      onError: (e) => {
+        toast.error('Failed to update product name');
+      },
+      onFinish: () => setRenameLoading(false),
+    });
+  };
 
   const OfferItems = ({ offerItems }: { offerItems: OfferItem[] }) => {
     const handleEdit = (offerItem: OfferItem) => {
@@ -78,7 +149,19 @@ export const PageProducts = () => {
         {offerItems.map((item, key) => (
           <div key={item.id}>
             <div className="flex justify-between">
-              <div className="text-sm">{key + 1}. {item.name}</div>
+              <div className="flex items-center gap-1 text-sm">
+                {key + 1}. {item.name}
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => handleRenameClick(item)}
+                  className="ml-1"
+                  tooltip="Rename"
+                >
+                  <Pencil className="w-4 h-4 text-muted-foreground" />
+                </Button>
+              </div>
               <Kebab items={[{
                 label: 'Edit',
                 onClick: () => handleEdit(item)
@@ -152,37 +235,71 @@ export const PageProducts = () => {
     )
   }
 
-  return (
-    <div className="flex flex-col h-full px-4 py-3.5">
-      <div>
-        {offerItems.length > 0 && (
-          <>
-            <OfferItems offerItems={offerItems} />
-            <Separator className="my-3.5" />
-          </>
+  const handleAddPrice = (type: OfferItemType) => {
+    setSelectedOfferItemType(type);
+    setIsAddNewProductDialogOpen(true);
+  }
 
-        )}
-        <Button
-          variant="default"
-          className="w-full mt-6 bg-gray-900 text-white hover:bg-gray-800 flex justify-between"
-          onClick={() => setIsAddNewProductDialogOpen(true)}
-        >
-          <span>Add another line item</span>
-          <CirclePlus className="w-4 h-4" />
-        </Button>
-        {offerItems.length === 0 && (
+  const MainProducts = () => {
+    return (
+      <div className='flex flex-col gap-3.5'>
+        <div className="text-sm font-bold">Main Products</div>
+        {offerItems.filter((item) => item.type === OfferItemType.STANDARD).length > 0 ? (
+          <div className="flex flex-col gap-3.5">
+            <OfferItems offerItems={offerItems.filter((item) => item.type === OfferItemType.STANDARD)} />
+          </div>
+
+        ) : (
           <div className="flex gap-3 border border-destructive text-destructive rounded-md p-4 mt-3.5">
             <CircleAlert className="w-5 h-5 mt-0.5" />
             <div className="flex gap-1 flex-col">
               <div className="font-medium">
-                No products found.
+                No line items found.
               </div>
               <div className="">
-                Add at least one product to sell
+                You ned to add at least 1 line item
               </div>
             </div>
           </div>
         )}
+        <Button
+          variant="default"
+          className="w-full bg-gray-900 text-white hover:bg-gray-800 flex justify-between"
+          onClick={() => handleAddPrice(OfferItemType.STANDARD)}
+        >
+          <span>Add another</span>
+          <CirclePlus className="w-4 h-4" />
+        </Button>      </div>
+    )
+  }
+
+  const AddOns = () => {
+    return (
+      <div className="flex flex-col gap-3.5">
+        <div className="text-sm font-bold">Add-Ons</div>
+        {offerItems.filter((item) => item.type === OfferItemType.OPTIONAL).length > 0 && (
+          <div className="flex flex-col gap-3.5">
+            <OfferItems offerItems={offerItems.filter((item) => item.type === OfferItemType.OPTIONAL)} />
+          </div>
+        )}
+        <Button
+          variant="outline"
+          className="w-full flex justify-between"
+          onClick={() => handleAddPrice(OfferItemType.OPTIONAL)}
+        >
+          <span>Add an add-on (optional)</span>
+          <CirclePlus className="w-4 h-4" />
+        </Button>
+      </div>
+    )
+  }
+
+  return (
+    <div className="flex flex-col h-full px-4 py-3.5">
+      <div>
+        <MainProducts />
+        <Separator className="my-3.5 w-full" />
+        <AddOns />
       </div>
 
       <AddNewProductDialog
@@ -201,9 +318,44 @@ export const PageProducts = () => {
           tab={addExistingProductDialogProps.tab as 'product' | 'pricing'}
           offerItemsCount={offerItems.length}
           selectedProduct={selectedProduct}
+          type={selectedOfferItemType}
         />
       )}
-      <ProductForm open={isProductFormOpen} onOpenChange={setIsProductFormOpen} />
+      <NewProductAndPricesOfferItem
+        open={isProductFormOpen}
+        setOpen={setIsProductFormOpen}
+        offerId={offer.id}
+        offerItemsCount={offerItems.length}
+        type={selectedOfferItemType}
+      />
+
+      <Dialog open={isRenameDialogOpen} onOpenChange={setIsRenameDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Rename product</DialogTitle>
+            <DialogDescription>Give this product a new name.</DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleRenameSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="rename-product-name">Name</Label>
+              <Input
+                id="rename-product-name"
+                value={renameValue}
+                onChange={e => setRenameValue(e.target.value)}
+                placeholder="Enter product name"
+                autoFocus
+                autoComplete="off"
+                disabled={renameLoading}
+              />
+            </div>
+            <div className="flex justify-end">
+              <Button type="submit" disabled={renameLoading}>
+                {renameLoading ? 'Saving...' : 'Save'}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

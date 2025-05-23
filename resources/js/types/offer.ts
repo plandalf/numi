@@ -34,6 +34,11 @@ export interface Offer {
 
 }
 
+export enum OfferItemType {
+    STANDARD = 'standard',
+    OPTIONAL = 'optional',
+}
+
 export interface OfferItem {
     id: number;
     name: string;
@@ -46,6 +51,7 @@ export interface OfferItem {
     updated_at: string;
     product: Product | null;
     prices: Price[];
+    type: OfferItemType;
 }
 
 export interface Price {
@@ -71,6 +77,7 @@ export interface Price {
     created_at?: string;
     updated_at?: string;
     product?: Product | null;
+    metadata?: Record<"copy"|"tag_name", string>[] | null;
 }
 
 export interface OfferProduct extends Product {
@@ -94,6 +101,7 @@ export interface Product {
     gateway_provider?: string | null;
     gateway_product_id?: string | null;
     organization_id?: number;
+    image?: string | null;
 }
 
 export interface OfferVariant {
