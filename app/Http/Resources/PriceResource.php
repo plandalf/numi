@@ -31,6 +31,7 @@ class PriceResource extends JsonResource
             'currency' => $this->currency,
             'properties' => $this->properties,
             'name' => $this->name,
+            'metadata' => $this->metadata,
             'lookup_key' => $this->lookup_key,
             'renew_interval' => $this->renew_interval,
             'billing_anchor' => $this->billing_anchor,

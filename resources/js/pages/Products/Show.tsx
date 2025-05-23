@@ -139,13 +139,13 @@ export default function Show() {
         </div>
 
         {/* Price Form Dialog */}
-        <PriceForm
-          open={isPriceFormOpen}
+        {isPriceFormOpen && <PriceForm
+          open
           onOpenChange={setIsPriceFormOpen}
           product={product as any}
           initialData={editingPrice}
           listPrices={listPrices || []}
-        />
+        /> }
         <AddExistingStripePriceDialog
           open={isAddExistingStripePriceDialogOpen}
           onOpenChange={setIsAddExistingStripePriceDialogOpen}

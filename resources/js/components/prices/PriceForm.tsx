@@ -56,6 +56,11 @@ interface PackageConfig {
   unit_amount: number;
 }
 
+interface MetadataEntry {
+  tag_name: string;
+  copy: string;
+}
+
 interface PriceFormData {
   [key: string]: any; // Add index signature
   name: string | null;
@@ -73,6 +78,7 @@ interface PriceFormData {
   is_active: boolean;
   gateway_provider: string | null;
   gateway_price_id: string | null;
+  metadata: MetadataEntry[];
 }
 
 interface ApiValidationError {
@@ -138,7 +144,10 @@ export default function PriceForm({
     is_active: initialData?.is_active === undefined ? true : initialData.is_active,
     gateway_provider: initialData?.gateway_provider || null,
     gateway_price_id: initialData?.gateway_price_id || null,
+    metadata: initialData?.metadata || [],
   });
+
+  const [showMetadata, setShowMetadata] = useState(getInitialFormData().metadata.length > 0);
 
   const { data, setData, post, put, processing, errors, reset } = useForm<PriceFormData>(getInitialFormData());
 
@@ -149,11 +158,12 @@ export default function PriceForm({
       setTiers([{ from: 0, to: null, unit_amount: 0 }]);
       setPackageConfig({ size: 1, unit_amount: 0 });
       setIsLookupKeyManuallyEdited(false);
+      setShowMetadata(false);
     } else {
-      setData(getInitialFormData()); // Use the helper function
+      setData(getInitialFormData());
       setTiers(initialData?.properties?.tiers || [{ from: 0, to: null, unit_amount: 0 }]);
       setPackageConfig(initialData?.properties?.package || { size: 1, unit_amount: 0 });
-      setIsLookupKeyManuallyEdited(!!initialData?.lookup_key); // Set based on initial data
+      setIsLookupKeyManuallyEdited(!!initialData?.lookup_key);
     }
   }, [open, initialData, reset, defaultCurrency, setData]);
 
@@ -194,6 +204,22 @@ export default function PriceForm({
     }
   }, [data.scope, setData]);
 
+  const addMetadataEntry = () => {
+    const newEntries = [...data.metadata, { tag_name: '', copy: '' }];
+    setData('metadata', newEntries);
+  };
+
+  const removeMetadataEntry = (index: number) => {
+    const newEntries = data.metadata.filter((_, i) => i !== index);
+    setData('metadata', newEntries);
+  };
+
+  const updateMetadataEntry = (index: number, field: keyof MetadataEntry, value: string) => {
+    const newEntries = [...data.metadata];
+    newEntries[index] = { ...newEntries[index], [field]: value };
+    setData('metadata', newEntries);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const priceName = data.name || (isEditing ? 'this price' : 'new price');
@@ -207,6 +233,8 @@ export default function PriceForm({
       formData.properties = { tiers };
     } else if (data.type === 'package') {
       formData.properties = { package: packageConfig };
+    } else if (showMetadata || data.metadata.length > 0) {
+      formData.properties = { metadata: data.metadata };
     } else {
       formData.properties = null;
     }
@@ -376,6 +404,72 @@ export default function PriceForm({
               A unique identifier for this product. Will update automatically based on name. {!isLookupKeyManuallyEdited && data.name && "Auto-generated from name."}
             </p>
           </div>
+
+          <div className="text-sm text-teal-600 cursor-pointer" onClick={() => {
+            const newShowMetadata = !showMetadata;
+            setShowMetadata(newShowMetadata);
+            if (newShowMetadata && data.metadata.length === 0) {
+              addMetadataEntry();
+            }
+          }}>
+            {showMetadata ? 'Hide Metadata' : 'Add Metadata tag'}
+          </div>
+
+          {showMetadata && (
+            <Card className="bg-gray-50">
+              <CardContent className="px-4 space-y-4">
+                {data.metadata.map((entry, index) => (
+                  <div key={index} className="flex flex-row gap-4 items-end">
+                    <div className="flex flex-col gap-2 w-full">
+                      <Label htmlFor={`tag_name_${index}`}>Tag name</Label>
+                      <Input
+                        id={`tag_name_${index}`}
+                        type="text"
+                        value={entry.tag_name}
+                        onChange={(e) => updateMetadataEntry(index, 'tag_name', e.target.value)}
+                        disabled={processing}
+                      />
+                    </div>
+
+                    <div className="flex flex-col gap-2 w-full">
+                      <Label htmlFor={`copy_${index}`}>Copy</Label>
+                      <Input
+                        id={`copy_${index}`}
+                        type="text"
+                        value={entry.copy}
+                        onChange={(e) => updateMetadataEntry(index, 'copy', e.target.value)}
+                        disabled={processing}
+                      />
+                    </div>
+
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => removeMetadataEntry(index)}
+                      disabled={processing}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={addMetadataEntry}
+                  disabled={processing}
+                  className="w-full"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Another Metadata
+                </Button>
+
+                {errors.properties && <p className="text-sm text-red-500">{errors.properties}</p>}
+              </CardContent>
+            </Card>
+          )}
+
           <div className="flex flex-col gap-2">
             <Label htmlFor="type">Pricing Model</Label>
             <Select
@@ -395,6 +489,7 @@ export default function PriceForm({
             </Select>
             {errors.type && <p className="text-sm text-red-500">{errors.type}</p>}
           </div>
+
 
           {/* Amount Input */}
           <div className="flex flex-row gap-4">
@@ -430,7 +525,7 @@ export default function PriceForm({
 
           {/* Recurring Fields */}
           {data.type === 'recurring' && (
-            <Card className="bg-muted/40">
+            <Card className="bg-gray-50">
               <CardContent className="px-4 space-y-4">
                 <div className="text-sm font-medium">Recurring Settings</div>
                 <div className="flex flex-row gap-4 items-end">
@@ -503,7 +598,7 @@ export default function PriceForm({
 
           {/* Tiered Pricing Fields */}
           {(data.type === "tiered" /* || data.type === "volume" || data.type === "graduated" */) && (
-            <Card className="bg-muted/40">
+            <Card className="bg-gray-50">
               <CardContent className="px-4 space-y-4">
                 <div className="text-sm font-medium">Tiered Pricing Configuration</div>
                 <div className="flex flex-col gap-4">
@@ -583,7 +678,7 @@ export default function PriceForm({
 
           {/* Package Pricing Fields */}
           {data.type === "package" && (
-            <Card className="bg-muted/40">
+            <Card className="bg-gray-50">
               <CardContent className="px-4 space-y-4">
                 <div className="text-sm font-medium">Package Pricing Configuration</div>
                 <div className="flex flex-row gap-4">

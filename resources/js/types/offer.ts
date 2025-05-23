@@ -77,6 +77,7 @@ export interface Price {
     created_at?: string;
     updated_at?: string;
     product?: Product | null;
+    metadata?: Record<"copy"|"tag_name", string>[] | null;
 }
 
 export interface OfferProduct extends Product {
