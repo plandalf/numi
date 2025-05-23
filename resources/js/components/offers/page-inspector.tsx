@@ -30,7 +30,7 @@ export const AppearanceSection = ({ globalState, block, onUpdate }: { globalStat
       appearance: { ...block.appearance, [key]: value }
     });
   }
-  
+
   return (
     <div className="flex flex-col gap-3 mb-6">
       <h3 className="font-semibold">Appearance</h3>
@@ -63,7 +63,7 @@ export const AppearanceSection = ({ globalState, block, onUpdate }: { globalStat
 }
 
 const StyleSection = ({ globalState, block, onUpdate }: { globalState: GlobalState | null, block: Block, onUpdate: (block: Block) => void }) => {
-  
+
   const { fonts } = usePage<EditProps>().props;
   const { data } = useEditor();
   const themeColors = getThemeColors(data.theme);
@@ -273,7 +273,7 @@ export const Inspector = ({
                       <h3 className="font-semibold">{label}</h3>
                       <div className="flex flex-col gap-2 p-2.5 border rounded-md border-gray-200 bg-gray-100/50 h-full">
                         {sectionHooks.map((hook: HookUsage) => (
-                          <div key={hook.name} className="mb-4">
+                          <div key={hook.name}>
                             {hook.type === 'string' && hook.inspector === 'file' ? (
                               <FileEditor
                                 label={hook.label || hook.name}
