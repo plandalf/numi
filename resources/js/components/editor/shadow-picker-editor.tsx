@@ -1,75 +1,44 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Label } from '../ui/label';
-import { parseShadow } from '../ui/shadow-picker';
-import { Grip } from 'lucide-react';
-import { SunDim } from 'lucide-react';
+import ShadowPicker, { parseShadow } from '../ui/shadow-picker';
 import { cn } from '@/lib/utils';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from '../ui/dropdown-menu';
 
 interface ShadowPickerEditorProps {
   label: string;
   value: string;
   onChange: (val: string) => void;
+  themeColors?: Record<string, string>;
 }
 
-export const ShadowPickerEditor: React.FC<ShadowPickerEditorProps> = ({ label, value, onChange }) => {
-  const safeValue = value || '0px 0px 0px 0px #000000';
-
-  // Parse the shadow value
-  const shadow = parseShadow(safeValue);
-
-  const handleChange = (field: 'x' | 'y' | 'blur' | 'spread' | 'color', newValue: string | number) => {
-    const updatedShadow = { ...shadow, [field]: newValue };
-    onChange(`${updatedShadow.x}px ${updatedShadow.y}px ${updatedShadow.blur}px ${updatedShadow.spread}px ${updatedShadow.color}`);
-  };
-
+export const ShadowPickerEditor: React.FC<ShadowPickerEditorProps> = ({ label, value, onChange, themeColors }) => {
+  const [isOpen, setIsOpen] = useState(false);
   return (
     <div className="flex flex-col gap-1.5">
       <Label className="mb-1 block text-sm capitalize">{label}</Label>
       <div className={cn('flex gap-1 justify-between')}>
-        <div className="flex items-center bg-white border border-gray-300/50 rounded-lg p-2.5">
-          <span className="text-sm">X</span>
-          <input
-            type="number"
-            value={shadow.x}
-            onChange={e => handleChange('x', parseInt(e.target.value) || 0)}
-            className="w-6 text-xs bg-transparent border-none text-center outline-none"
-          />
-        </div>
-        <div className="flex items-center bg-white border border-gray-300/50 rounded-lg p-2.5">
-          <span className="text-sm">Y</span>
-          <input
-            type="number"
-            value={shadow.y}
-            onChange={e => handleChange('y', parseInt(e.target.value) || 0)}
-            className="w-6 text-xs bg-transparent border-none text-center outline-none"
-          />
-        </div>
-        <div className="flex items-center bg-white border border-gray-300/50 rounded-lg p-2.5">
-          <SunDim className="size-5" />
-          <input
-            type="number"
-            value={shadow.blur}
-            onChange={e => handleChange('blur', parseInt(e.target.value) || 0)}
-            className="w-6 text-xs bg-transparent border-none text-center outline-none"
-          />
-        </div>
-        <div className="flex items-center bg-white border border-gray-300/50 rounded-lg p-2.5">
-          <Grip className="size-4" />
-          <input
-            type="number"
-            value={shadow.spread}
-            onChange={e => handleChange('spread', parseInt(e.target.value) || 0)}
-            className="w-6 text-xs bg-transparent border-none text-center outline-none"
-          />
-        </div>
-        <div className="flex items-center bg-white border border-gray-300/50 rounded-lg p-2.5">
-          <input
-            type="color"
-            value={shadow.color}
-            onChange={e => handleChange('color', e.target.value)}
-            className="w-6 h-6 p-0 border-none cursor-pointer"
-          />
-        </div>
+        <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
+          <DropdownMenuTrigger asChild>
+            <span className="border border-gray-200 rounded-md p-2 flex-1 flex flex-row gap-2 items-center cursor-pointer">
+              <svg width="20" height="20" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1 1C0.447715 1 0 1.44772 0 2V13C0 13.5523 0.447715 14 1 14H14C14.5523 14 15 13.5523 15 13V2C15 1.44772 14.5523 1 14 1H1ZM7.5 10.625C9.22589 10.625 10.625 9.22589 10.625 7.5C10.625 5.77411 9.22589 4.375 7.5 4.375C5.77411 4.375 4.375 5.77411 4.375 7.5C4.375 9.22589 5.77411 10.625 7.5 10.625Z" fill="currentColor" fill-rule="evenodd" clip-rule="evenodd"></path></svg>
+              <span
+                className="text-sm truncate"
+                title={value}
+              >
+                {value}
+              </span>
+            </span>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" side="right" className="justify-center">
+            <ShadowPicker
+              className="w-full max-w-[300px]"
+              value={value}
+              onChange={(value) => onChange(value)}
+              onClose={() => setIsOpen(false)}
+              themeColors={themeColors}
+            />
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </div>
   );

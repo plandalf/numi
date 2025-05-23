@@ -41,6 +41,9 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property string $shadow_sm
  * @property string $shadow_md
  * @property string $shadow_lg
+ * @property string $padding
+ * @property string $spacing
+ * @property string $margin
  * @property \Carbon\Carbon $created_at
  * @property \Carbon\Carbon $updated_at
  * @property \Carbon\Carbon|null $deleted_at
@@ -84,6 +87,9 @@ class Theme extends Model
         'shadow_sm',
         'shadow_md',
         'shadow_lg',
+        'padding',
+        'spacing',
+        'margin',
     ];
 
     /**
