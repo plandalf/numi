@@ -451,7 +451,10 @@ const SectionComponent = ({ section, sectionName: id, style, onBlockSelect, chil
   }, [blocksToRender]);
 
   // Check if the currently dragged item's ID matches this section's droppable ID.
-  const isActiveSectionDragTarget = active ? active.id === `section:${id}` : false;
+  // const isActiveSectionDragTarget = active ? active.id === `section:${id}` : false;
+  if (isOver) {
+    console.log('active', isOver);
+  }
   // isOver is already a boolean indicating if a draggable is over this droppable.
   const isOverDroppable = isOver;
 
@@ -462,9 +465,9 @@ const SectionComponent = ({ section, sectionName: id, style, onBlockSelect, chil
     <div
      className={cx({
         "flex flex-col min-h-full w-full h-full" : true,
-        'border-2 border-transparent': true,
-        'border-red-500': isActiveSectionDragTarget,
-        'border-blue-500': isOverDroppable,
+        'outline outline-dotted outline-gray-200 !min-h-4': blocksToRender.length === 0,
+        'outline outline-dashed outline-blue-100 !min-h-4': active,
+        'outline outline-dashed outline-blue-400': isOverDroppable,
       })}
       ref={isDraggable ? setNodeRef : undefined}
       style={style}
