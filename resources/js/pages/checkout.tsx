@@ -1,13 +1,15 @@
 import { Head } from '@inertiajs/react';
 import {
   GlobalStateProvider, layoutConfig,
-  NavigationProvider, Section,
+  NavigationProvider, PageNotFound, Section,
   useCheckoutState,
   useNavigation,
   useValidateFields
 } from '@/pages/checkout-main';
-import type { OfferConfiguration, Page } from '@/types/offer';
+import type { OfferConfiguration, Page, PageSection } from '@/types/offer';
 import { CheckoutPageProps, NavigationBarProps, TailwindLayoutRendererProps } from '@/types/checkout';
+import { findUniqueFonts } from '@/utils/font-finder';
+import WebFont from 'webfontloader';
 
 
 const NavigationBar = ({ barStyle, children, className, ...props }: NavigationBarProps) => {
@@ -81,20 +83,6 @@ const renderElement = (
   const { type, props = {}, children = [], id } = element;
   const { componentRegistry, contentMap } = context;
 
-  // If this element has an ID, check if it matches a section in the page view
-  if (id && page.view[id]) {
-    const section = page.view[id];
-    if (section && section.blocks) {
-      // Render the section with its blocks
-      return createElement(
-        type,
-        { ...props, id },
-        <Section blocks={section.blocks} className={props.className} />,
-        componentRegistry
-      );
-    }
-  }
-
   // Render child elements recursively
   const childElements = Array.isArray(children)
     ? children.map((child, index) => renderElement(
@@ -104,8 +92,49 @@ const renderElement = (
     ))
     : null;
 
+  // If this element has an ID, check if it matches a section in the page view
+  if (id && page.view[id]) {
+    const section = page.view[id];
+    if (section && section.blocks) {
+
+      const backgroundColor = (section as PageSection)?.style?.backgroundColor;
+      const padding = (section as PageSection)?.appearance?.padding;
+      const margin = (section as PageSection)?.appearance?.margin;
+      const backgroundImage = (section as PageSection)?.style?.backgroundImage;
+      const hidden = (section as PageSection)?.style?.hidden;
+      const borderRadius = (section as PageSection)?.style?.borderRadius;
+
+      if (!element) return null;
+
+      // Render the section with its blocks
+      return createElement(
+        type,
+        {
+          ...props,
+          style: { 
+            ...props.style,
+            backgroundColor,
+            padding,
+            borderRadius: borderRadius,
+            margin: margin === 'none' ? '0px' : margin,
+            ...(backgroundImage ? {
+              backgroundImage: `url(${backgroundImage})`,
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+              backgroundRepeat: 'no-repeat',
+            } : {}),
+            ...(hidden ? {display: 'none'} : {}),
+            rowGap: (section as PageSection)?.appearance?.spacing
+          },
+          id,
+        },
+        <Section blocks={section.blocks} className={props.className} children={childElements}/>,
+        componentRegistry
+      );
+    }
+  }
   // Return the appropriate React element based on type
-  return createElement(type, { ...props, key: id || `${type}` }, childElements, componentRegistry);
+  return createElement(type, { ...props, key: id || `${type}`, }, childElements, componentRegistry);
 };
 
 type ComponentProps = React.HTMLAttributes<HTMLElement> & {
@@ -123,14 +152,17 @@ const createElement = (
   children: React.ReactNode,
   componentRegistry: ComponentRegistry
 ) => {
+
+  const {key, id, ...componentProps} = props;
+
   // If we have a custom component registered for this type, use it
   if (componentRegistry[type]) {
     const Component = componentRegistry[type];
-    return <Component {...props}>{children}</Component>;
+    return <Component key={key ?? props.id} {...props}>{children}</Component>;
   }
 
   // Use a div
-  return <div {...props}>{children}</div>;
+  return <div key={key ?? props.id} {...componentProps}>{children}</div>;
 };
 
 
@@ -239,6 +271,13 @@ export default function CheckoutPage({ offer, error, checkoutSession }: Checkout
     return <PageNotFound/>;
   }
 
+  // Find and load all unique fonts
+  const uniqueFonts = findUniqueFonts(offer.view);
+
+  if(uniqueFonts.length > 0) {
+    WebFont.load({ google: { families: uniqueFonts }});
+  }
+
   return (
     <>
       <Head title={`Checkout: ${offer.name}`} />
@@ -255,7 +294,6 @@ export default function CheckoutPage({ offer, error, checkoutSession }: Checkout
             ) : (
                 <CheckoutController offer={offer} />
             )}
-
           </div>
         </NavigationProvider>
       </GlobalStateProvider>

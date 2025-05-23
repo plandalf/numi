@@ -1,5 +1,5 @@
 import { Head } from '@inertiajs/react';
-import { useState, createContext, useContext, useMemo } from 'react';
+import { useState, createContext, useContext, useMemo, CSSProperties } from 'react';
 import { type Block, type Page as OfferPage, type OfferConfiguration, } from '@/types/offer';
 import { cn } from '@/lib/utils';
 
@@ -369,30 +369,27 @@ export const useCheckoutState = () => {
 };
 
 // Render a section of blocks - shows the block structure without actual rendering
-export const Section = ({ blocks, className }: { blocks: Block[], className?: string }) => {
-  if (!blocks || blocks.length === 0) return null;
-
-  console.log('blocks', blocks)
+export const Section = ({
+  blocks,
+  children
+}: {
+  blocks: Block[],
+  children?: React.ReactNode
+}) => {
+  if(blocks.length === 0 && children != undefined) return children;
   return (
-    <div className={cn("space-y-2 ", className)}>
-      {/*<div className="text-sm font-medium bg-gray-100">Section with {blocks.length} block(s)</div>*/}
-      {blocks.map(block => (
-        <BlockRenderer key={block.id} block={block}>
-          {(blockContext) => {
-            const Component = blockTypes[block.type as keyof typeof blockTypes];
-            return Component ? <Component context={blockContext} /> : (
-              <div className="text-xs text-purple-500 font-bold"><pre>UNFINISHED: {block.type}</pre></div>
-            );
-          }}
-        </BlockRenderer>
-      ))}
-    </div>
+    blocks.map(block => (
+      <BlockRenderer key={block.id} block={block}>
+        {(blockContext) => {
+          const Component = blockTypes[block.type as keyof typeof blockTypes];
+          return Component ? <Component context={blockContext} /> : (
+            <div className="text-xs text-purple-500 font-bold"><pre>UNFINISHED: {block.type}</pre></div>
+          );
+        }}
+      </BlockRenderer>
+    ))
   );
 };
-
-
-
-
 
 export const layoutConfig = {
   "name": "SplitCheckout@v1.1",
@@ -405,26 +402,26 @@ export const layoutConfig = {
       {
         "type": "box",
         "props": {
-          "className": "overflow-hidden"
+          "className": "h-full overflow-hidden"
         },
         "children": [
           {
             "type": "flex",
             "props": {
-              "className": "flex flex-col justify-between h-full"
+              "className": "flex flex-col h-full"
             },
             "children": [
               {
                 "type": "flex",
                 "props": {
-                  "className": "flex flex-col flex-grow space-y-6 px-10 py-8 overflow-y-auto"
+                  "className": "flex flex-col flex-grow overflow-y-auto"
                 },
                 "children": [
                   {
                     "id": "title",
                     "type": "NavigationBar",
                     "props": {
-                      "className": "px-6 space-y-1",
+                      "className": "space-y-1 p-6",
                       "barStyle": "default"
                     }
                   },
@@ -432,7 +429,7 @@ export const layoutConfig = {
                     "id": "content",
                     "type": "flex",
                     "props": {
-                      "className": "flex flex-col flex-grow space-y-2"
+                      "className": "flex flex-col flex-grow space-y-2 p-6"
                     }
                   }
                 ]
@@ -441,27 +438,35 @@ export const layoutConfig = {
                 "id": "action",
                 "type": "box",
                 "props": {
-                  "className": "p-6 bg-white shadow-top"
+                  "className": "p-6 bg-white border-t"
                 },
-                "children": [
-                  {
-                    "type": "flex",
-                    "props": {
-                      "className": "flex flex-col space-y-2"
-                    }
-                  }
-                ]
               }
             ]
           }
         ]
       },
       {
-        "id": "promo",
         "type": "box",
+        "id": "promo_box",
         "props": {
-          "className": "hidden md:block bg-blue-50 h-full overflow-y-auto"
-        }
+          "className": "hidden md:flex h-full overflow-y-auto flex-col"
+        },
+        "children": [
+          {
+            "id": "promo_header",
+            "type": "box",
+            "props": {
+              "className": "min-h-1 h-auto p-6"
+            }
+          },
+          {
+            "id": "promo_content",
+            "type": "box",
+            "props": {
+              "className": "h-full flex flex-col flex-grow space-y-2 p-6"
+            }
+          }
+        ]
       }
     ]
   }

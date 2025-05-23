@@ -567,6 +567,7 @@ const Numi = {
     inspector: string;
     label: string;
     icons?: Record<string, React.ReactNode>;
+    asState?: boolean;
   }): [any, (newValue: any) => void, (hook: Partial<HookUsage>) => void] {
     const blockContext = useContext(BlockContext);
     const [hook, setHook] = useState<HookUsage>({
@@ -601,7 +602,10 @@ const Numi = {
       blockContext.registerHook(hook);
     }, [hook]);
 
-    const value = get(blockContext.blockConfig, `content.${props.name}`) ?? blockContext.getFieldValue(props.name) ?? props.initialValue;
+    // If use as state, prioritize getting the field value from the global state
+    const value = props.asState 
+      ? blockContext.getFieldValue(props.name) ?? get(blockContext.blockConfig, `content.${props.name}`)
+      : get(blockContext.blockConfig, `content.${props.name}`) ?? props.initialValue;
 
     useEffect(() => {
       setValue(value);
