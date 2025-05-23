@@ -8,8 +8,9 @@ import {
 } from '@/pages/checkout-main';
 import type { OfferConfiguration, Page, PageSection } from '@/types/offer';
 import { CheckoutPageProps, NavigationBarProps, TailwindLayoutRendererProps } from '@/types/checkout';
-import { findUniqueFonts } from '@/utils/font-finder';
+import { findUniqueFontsFromTheme, findUniqueFontsFromView } from '@/utils/font-finder';
 import WebFont from 'webfontloader';
+import { ThemeTypographyLoader } from '@/components/offers/theme-typography';
 
 
 const NavigationBar = ({ barStyle, children, className, ...props }: NavigationBarProps) => {
@@ -272,7 +273,10 @@ export default function CheckoutPage({ offer, error, checkoutSession }: Checkout
   }
 
   // Find and load all unique fonts
-  const uniqueFonts = findUniqueFonts(offer.view);
+  const viewFonts = findUniqueFontsFromView(offer.view);
+  const themeFonts = findUniqueFontsFromTheme(offer.theme);
+
+  const uniqueFonts = ['Inter', ...viewFonts, ...themeFonts];
 
   if(uniqueFonts.length > 0) {
     WebFont.load({ google: { families: uniqueFonts }});
@@ -280,8 +284,8 @@ export default function CheckoutPage({ offer, error, checkoutSession }: Checkout
 
   return (
     <>
+      <ThemeTypographyLoader theme={offer?.theme} />
       <Head title={`Checkout: ${offer.name}`} />
-
       <GlobalStateProvider offer={offer} session={checkoutSession}>
         <NavigationProvider>
           <div className="min-h-screen bg-gray-50">

@@ -34,6 +34,8 @@ class CheckoutController extends Controller
             abort(403, 'Invalid or expired checkout link.');
         }
 
+        $checkout->load(['lineItems.offerItem', 'offer.theme', 'lineItems.price.integration']);
+
         $offer = $checkout->offer;
 
 //        $json = json_decode(file_get_contents(base_path('resources/view-example.json')), true);
@@ -44,8 +46,6 @@ class CheckoutController extends Controller
          */
         $json['first_page'] = $checkout->metadata['current_page_id'] ?? $json['first_page'];
         $offer->view = $json;
-
-        $checkout->load(['lineItems.offerItem', 'lineItems.price.integration']);
 
         return Inertia::render('checkout', [
             'offer' => $offer,
