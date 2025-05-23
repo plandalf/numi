@@ -31,6 +31,7 @@ export const showToast = (message: React.ReactNode, type: 'success' | 'error' | 
  * Handle Inertia flash messages
  */
 export const handleFlashMessages = (flash: Record<string, any>) => {
+    console.log(flash);
     // Laravel success message
     if (flash.success) {
         showToast(flash.success, 'success');

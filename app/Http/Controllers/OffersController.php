@@ -43,7 +43,7 @@ class OffersController extends Controller
     public function index(): Response
     {
         return Inertia::render('offers/index', [
-            'offers' => OfferResource::collection(Offer::with('variants')->paginate()),
+            'offers' => OfferResource::collection(Offer::with([])->paginate()),
         ]);
     }
 
@@ -144,7 +144,7 @@ class OffersController extends Controller
         $offer->offerItems()->delete();
         $offer->delete();
 
-        return redirect()->route('offers.index')->with('success', 'Offer and all associated data deleted successfully');
+        return redirect()->route('dashboard')->with('success', 'Offer and all associated data deleted successfully');
     }
 
     public function pricing(Offer $offer): Response

@@ -18,6 +18,7 @@ import { ScrollArea } from '../ui/scroll-area';
 import { PageLayers } from './page-layers';
 import { PageElements } from './page-elements';
 import PageProducts from './page-products';
+import OfferSettings from './offer-settings';
 
 import { DeleteBlockDialog } from './dialogs/delete-block-dialog';
 
@@ -108,12 +109,7 @@ export function Sidebar() {
         );
       case 'settings':
         return (
-          <div className="p-4">
-            <h3 className="text-md font-medium">Page Settings</h3>
-            <p className="text-xs text-muted-foreground mt-2">
-              Coming soon - Configure the settings for the current page.
-            </p>
-          </div>
+          <OfferSettings />
         );
       case 'themes':
         return (
