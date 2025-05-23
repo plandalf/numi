@@ -402,6 +402,7 @@ export function EditorProvider({ offer, organizationThemes, organizationTemplate
   const [selectedSectionId, setSelectedSectionIdState] = useState<string | null>(null);
 
   const onSelectBlock = useCallback((blockId: string | null) => {
+    setSelectedSectionIdState(null);
     setSelectedBlockIdState(blockId);
   }, []);
 

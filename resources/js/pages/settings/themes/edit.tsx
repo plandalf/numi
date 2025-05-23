@@ -57,6 +57,9 @@ const typographyFields: Field[] = [
 
 const componentFields: Field[] = [
     { key: 'border_radius', type: FieldType.Size },
+    { key: 'padding', type: FieldType.Size, label: 'Padding' },
+    { key: 'spacing', type: FieldType.Size, label: 'Spacing' },
+    { key: 'margin', type: FieldType.Size, label: 'Margin' },
     { key: 'shadow_sm', type: FieldType.Shadow, label: 'Shadow (Small)' },
     { key: 'shadow_md', type: FieldType.Shadow, label: 'Shadow (Medium)' },
     { key: 'shadow_lg', type: FieldType.Shadow, label: 'Shadow (Large)' },

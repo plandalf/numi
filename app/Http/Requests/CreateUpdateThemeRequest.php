@@ -38,6 +38,7 @@ class CreateUpdateThemeRequest extends FormRequest
     ];
 
     protected $sizeFields = ['border_radius'];
+    protected $spacingFields = ['border_radius', 'padding', 'spacing', 'margin'];
 
     protected $shadowFields = ['shadow_sm', 'shadow_md', 'shadow_lg'];
 
@@ -82,6 +83,11 @@ class CreateUpdateThemeRequest extends FormRequest
         // Add size fields rules
         foreach ($this->sizeFields as $field) {
             $rules[$field] = ['nullable', 'string', 'max:4'];
+        }
+
+        // Add spacing fields rules
+        foreach ($this->spacingFields as $field) {
+            $rules[$field] = ['nullable', 'string', 'max:32'];
         }
 
         // Add shadow field rules
@@ -142,6 +148,12 @@ class CreateUpdateThemeRequest extends FormRequest
         foreach ($this->sizeFields as $field) {
             $fieldName = $this->getReadableFieldName($field);
             $messages["{$field}.max"] = "The {$fieldName} cannot be longer than 4 characters.";
+        }
+
+        // Add spacing field messages
+        foreach ($this->spacingFields as $field) {
+            $fieldName = $this->getReadableFieldName($field);
+            $messages["{$field}.max"] = "The {$fieldName} cannot be longer than 32 characters.";
         }
 
         // Add shadow field messages

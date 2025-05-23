@@ -58,7 +58,7 @@ export const PageLayers: React.FC<PageLayersProps> = ({ onAddNewElementClick }) 
 
   // Sort sections in chronological order
   const sortedSections = sections.sort((a, b) => {
-    const order = ['title', 'content', 'action', 'promo_header', 'promo_content'];
+    const order = ['title', 'content', 'action', 'promo_box', 'promo_header', 'promo_content'];
     
     // Get index from order array, return -1 if not found
     const getOrderIndex = (id: string): number => {

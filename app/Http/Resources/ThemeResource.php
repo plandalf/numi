@@ -48,6 +48,9 @@ class ThemeResource extends JsonResource
             'shadow_sm' => $this->shadow_sm ?? '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
             'shadow_md' => $this->shadow_md ?? '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
             'shadow_lg' => $this->shadow_lg ?? '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
+            'padding' => $this->padding ?? '5px 10px 5px 10px',
+            'spacing' => $this->spacing ?? '5px 10px 5px 10px',
+            'margin' => $this->margin ?? '5px 10px 5px 10px',
             'created_at' => $this->created_at?->toISOString(),
             'updated_at' => $this->updated_at?->toISOString(),
         ];

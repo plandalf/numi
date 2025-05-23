@@ -1,8 +1,8 @@
 import Numi, { Appearance, IconValue, Style } from "@/contexts/Numi";
 import { BlockContextType } from "@/types/blocks";
-import cx from "classnames";
 import { useMemo } from "react";
 import { IconRenderer } from "../ui/icon-renderer";
+import { MarkdownText } from "../ui/markdown-text";
 
 function DetailListBlockComponent({ context }: { context: BlockContextType }) {
 
@@ -199,7 +199,10 @@ function DetailListBlockComponent({ context }: { context: BlockContextType }) {
             </div>
 
             {item.caption && (
-              <div className="text-sm text-gray-500 prose" style={captionStyle}>{item.caption}</div>
+              <MarkdownText
+                className="text-sm text-gray-500"
+                text={item.caption}
+                style={captionStyle}/>
             )}
           </div>
         </div>

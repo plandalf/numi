@@ -57,6 +57,9 @@ class ThemeFactory extends Factory
             'shadow_sm' => '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
             'shadow_md' => '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
             'shadow_lg' => '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
+            'padding' => '5px 10px 5px 10px',
+            'spacing' => '5px 10px 5px 10px',
+            'margin' => '5px 10px 5px 10px',
         ];
     }
 

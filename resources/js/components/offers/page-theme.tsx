@@ -16,6 +16,9 @@ import { router, usePage } from '@inertiajs/react';
 import { EditProps } from '@/pages/offers/edit';
 import { useEditor } from '@/contexts/offer/editor-context';
 import { FontEditor } from '../editor/font-editor';
+import { SpacingEditor } from '../editor/spacing-editor';
+import { BorderRadiusPicker } from '../ui/border-radius-picker';
+import { Label } from '../ui/label';
 
 export const colorFields = [
   { key: 'primary_color', label: 'Primary' },
@@ -56,6 +59,9 @@ export const typographyFields = [
 
 export const componentFields = [
   { key: 'border_radius', label: 'Border Radius', type: 'border' },
+  { key: 'padding', label: 'Padding', type: 'spacing' },
+  { key: 'spacing', label: 'Spacing', type: 'spacing' },
+  { key: 'margin', label: 'Margin', type: 'spacing' },
   { key: 'shadow_sm', label: 'Shadow (Small)', type: 'shadow' },
   { key: 'shadow_md', label: 'Shadow (Medium)', type: 'shadow' },
   { key: 'shadow_lg', label: 'Shadow (Large)', type: 'shadow' },
@@ -76,6 +82,8 @@ export const PageTheme: React.FC = () => {
   const [themeSettingTab, setThemeSettingTab] = useState<'new' | 'saved'>('new');
   const [selectedThemeId, setSelectedThemeId] = useState<string>('');
   const [selectThemeError, setSelectThemeError] = useState<string | null>(null);
+
+  const themeColors = getThemeColors(theme);
 
   const onThemeChange = (theme: Theme) => setData({ ...data, theme });
 
@@ -280,12 +288,25 @@ export const PageTheme: React.FC = () => {
                   {componentFields.map(f => {
                     if (f.type === 'border') {
                       return (
-                        <EnumerationEditor
+                        <div className="flex flex-col gap-3">
+                          <Label className="text-sm">Border Radius</Label>
+                          <BorderRadiusPicker
+                            className="p-2 border border-gray-200 rounded-md cursor-pointer"
+                            key={f.key}
+                            label={f.label}
+                            value={theme?.[f.key as keyof Theme] as string ?? ''}
+                            onChange={v => handleThemeChange(f.key as keyof Theme, v)}
+                          />
+                        </div>
+                      );
+                    }
+                    if (f.type === 'margin' || f.type === 'padding' || f.type === 'spacing') {
+                      return (
+                        <SpacingEditor
                           key={f.key}
                           label={f.label}
                           value={theme?.[f.key as keyof Theme] as string ?? ''}
-                          onChange={v => handleThemeChange(f.key as keyof Theme, v)}
-                          options={[ '0px', '4px', '8px', '12px', '16px', '24px', '32px' ]}
+                          onChangeProperty={v => handleThemeChange(f.key as keyof Theme, v)}
                         />
                       );
                     }
@@ -298,6 +319,7 @@ export const PageTheme: React.FC = () => {
                           label={label}
                           value={theme?.[key as keyof Theme] as string}
                           onChange={v => handleThemeChange(key as keyof Theme, v)}
+                          themeColors={themeColors}
                         />
                       );
                     }

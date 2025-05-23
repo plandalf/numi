@@ -7,6 +7,8 @@ import { MarkdownText } from "../ui/markdown-text";
 
 // Block Components
 function TextBlockComponent({ context }: { context: BlockContextType }) {
+
+  console.log(context);
   const [text, setText, format] = Numi.useStateString({
     label: 'Text',
     name: 'value',
@@ -73,7 +75,7 @@ function TextBlockComponent({ context }: { context: BlockContextType }) {
     margin: appearance.margin,
   }), [style, font, border, borderRadius, shadow]);
 
-  const buttonClasses = useMemo(() => cn("max-w-none whitespace-pre-line prose",{
+  const buttonClasses = useMemo(() => cn("max-w-none whitespace-pre-line",{
     "text-start": style.alignment === 'left',
     "text-center": style.alignment === 'center',
     "text-end": style.alignment === 'right',

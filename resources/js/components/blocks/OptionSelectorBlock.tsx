@@ -32,6 +32,7 @@ function OptionSelectorComponent({ context }: { context: BlockContextType }) {
     options: Array.isArray(options) ? options?.filter((item) => item.key).map((item) => item.key) : [],
     inspector: 'select',
     label: 'Default (Selected Tab)',
+    asState: true,
   });
 
   const [items] = Numi.useStateJsonSchema({
@@ -162,7 +163,7 @@ function OptionSelectorComponent({ context }: { context: BlockContextType }) {
 
   const activeTabStyle = useMemo(() => ({
     justifyContent: style.textAlignment,
-    backgroundColor: style.activeBackgroundColor || 'transparent',
+    backgroundColor: style.activeBackgroundColor || '#fbf9fa',
     color: style.activeTextColor,
     fontSize: style.activeTextFont?.size,
     fontWeight: style.activeTextFont?.weight,
@@ -178,7 +179,7 @@ function OptionSelectorComponent({ context }: { context: BlockContextType }) {
 
   const inactiveTabStyle = useMemo(() => ({
     justifyContent: style.textAlignment,
-    backgroundColor: style.inactiveBackgroundColor || 'transparent',
+    backgroundColor: style.inactiveBackgroundColor || 'white',
     color: style.inactiveTextColor,
     fontSize: style.inactiveTextFont?.size,
     fontWeight: style.inactiveTextFont?.weight,

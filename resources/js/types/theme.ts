@@ -30,6 +30,9 @@ export interface ThemeTypography {
 
 export interface ThemeComponentStyling {
   border_radius: string;
+  padding: string;
+  spacing: string;
+  margin: string;
   shadow_sm: string;
   shadow_md: string;
   shadow_lg: string;

@@ -26,8 +26,7 @@ function PlanDescriptorComponent({ context }: { context: BlockContextType }) {
   return (
     <div
       className={cn(
-        "prose max-w-none",
-        isMarkdown && "prose-gray"
+        "max-w-none",
       )}
       id={context.blockId}
       style={{

@@ -149,6 +149,18 @@ class ThemeTest extends TestCase
 
         $this->assertIsString($theme->shadow_lg);
         $this->assertLessThanOrEqual(64, strlen($theme->shadow_lg));
+
+        // Padding should be a string with max 32 chars
+        $this->assertIsString($theme->padding);
+        $this->assertLessThanOrEqual(32, strlen($theme->padding));
+
+        // Spacing should be a string with max 32 chars
+        $this->assertIsString($theme->spacing);
+        $this->assertLessThanOrEqual(32, strlen($theme->spacing));
+
+        // Margin should be a string with max 32 chars
+        $this->assertIsString($theme->margin);
+        $this->assertLessThanOrEqual(32, strlen($theme->margin));
     }
 
     /** @test */
