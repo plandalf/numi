@@ -155,25 +155,36 @@ Route::middleware(['auth', 'verified'])->group(function () {
     })->name('organizations.setup');
 
     // Organization routes
-    Route::prefix('organizations')->name('organizations.')->group(function () {
-        Route::post('/', [OrganizationController::class, 'store'])->name('store');
-        Route::post('switch/{organization}', [OrganizationController::class, 'switch'])->name('switch');
-        Route::put('/{organization}', [OrganizationController::class, 'update'])->name('update');
+    Route::prefix('organizations')
+        ->name('organizations.')
+        ->group(function () {
+            Route::post('/', [OrganizationController::class, 'store'])->name('store');
+            Route::post('switch/{organization}', [OrganizationController::class, 'switch'])->name('switch');
+            Route::put('/{organization}', [OrganizationController::class, 'update'])->name('update');
 
-        // Organization settings routes
-        Route::middleware(['organization', 'subscription'])->group(function () {
-            Route::prefix('settings')->name('settings.')->group(function () {
-                Route::get('/', [OrganizationController::class, 'settings'])->name('general');
-                Route::get('/team', [OrganizationController::class, 'team'])->name('team');
-                Route::delete('/team/{user}', [OrganizationController::class, 'removeTeamMember'])->name('team.remove');
+            // Organization settings routes
+            Route::middleware(['organization', 'subscription'])
+                ->group(function () {
+                    Route::prefix('settings')->name('settings.')->group(function () {
+                        Route::get('/', [OrganizationController::class, 'settings'])->name('general');
+                        Route::get('/team', [OrganizationController::class, 'team'])->name('team');
+                        Route::delete('/team/{user}', [OrganizationController::class, 'removeTeamMember'])->name('team.remove');
 
-                Route::prefix('billing')->name('billing.')->group(function () {
-                    Route::get('/', [BillingCheckoutController::class, 'billing'])->name('index');
-                    Route::get('/portal', [BillingCheckoutController::class, 'portal'])->name('portal');
+                        Route::prefix('billing')->name('billing.')->group(function () {
+                            Route::get('/', [BillingCheckoutController::class, 'billing'])->name('index');
+                            Route::get('/portal', [BillingCheckoutController::class, 'portal'])->name('portal');
+                        });
+                    });
                 });
-            });
+
+
+            Route::get('/themes', [ThemeController::class, 'index'])->name('themes.index');
+            Route::post('/themes', [ThemeController::class, 'store'])->name('themes.store');
+            Route::put('/themes/{theme}', [ThemeController::class, 'update'])->name('themes.update');
+            Route::get('/themes/{theme}', [ThemeController::class, 'edit'])->name('themes.edit');
+            Route::delete('/themes/{theme}', [ThemeController::class, 'destroy'])->name('themes.destroy');
+
         });
-    });
 
     // Routes that require an organization
     Route::middleware(['organization', 'subscription'])->group(function () {
@@ -196,13 +207,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::get('pricing', [OffersController::class, 'pricing'])->name('pricing');
 
             Route::get('settings/theme', [OffersController::class, 'settingsTheme'])->name('settings.theme');
+
             Route::put('theme', [OffersController::class, 'updateTheme'])->name('update.theme');
 
             // Add offerItem routes
             Route::post('/items', [OffersController::class, 'storeOfferItem'])->name('items.store');
             Route::put('/items/{offerItem}', [OffersController::class, 'updateOfferItem'])->name('items.update');
             Route::delete('/items/{offerItem}', [OffersController::class, 'destroyOfferItem'])->name('items.destroy');
-            // Route::delete('/items/{offerItem}', [OffersController::class, 'destroyItem'])->name('items.destroy'); // Add if needed
 
             Route::get('integrate', [OffersController::class, 'integrate'])->name('integrate');
             Route::get('sharing', [OffersController::class, 'sharing'])->name('sharing');
@@ -218,12 +229,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('/templates', [TemplateController::class, 'store'])->name('templates.store');
         Route::put('/templates/{template}', [TemplateController::class, 'update'])->name('templates.update');
         Route::post('/templates/{template}/use', [TemplateController::class, 'useTemplate'])->name('templates.use');
-
-        Route::get('/themes', [ThemeController::class, 'index'])->name('themes.index');
-        Route::post('/themes', [ThemeController::class, 'store'])->name('themes.store');
-        Route::put('/themes/{theme}', [ThemeController::class, 'update'])->name('themes.update');
-        Route::get('/themes/{theme}', [ThemeController::class, 'edit'])->name('themes.edit');
-        Route::delete('/themes/{theme}', [ThemeController::class, 'destroy'])->name('themes.destroy');
 
         // Media Upload Route
         Route::post('media', [MediaController::class, 'store'])->name('media.store');

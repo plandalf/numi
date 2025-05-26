@@ -158,10 +158,10 @@ function EditApp() {
         // This case should ideally not happen if selectedPage is always valid and has a view.
         // If it does, we can't compute newSections if it's a function needing currentSections.
         // console.warn('setSections called with a function but current page view is undefined');
-        return currentEditorData; 
+        return currentEditorData;
       }
 
-      const sectionsToSet = typeof newSectionsForPage === 'function' 
+      const sectionsToSet = typeof newSectionsForPage === 'function'
         ? newSectionsForPage(currentSectionsOfPage || {}) // Provide empty if current is undefined, though guarded above.
         : newSectionsForPage;
 
@@ -207,20 +207,20 @@ function EditApp() {
           const currentSectionsFromData = currentEditorData.view.pages[selectedPage]?.view;
           if (!currentSectionsFromData) return currentEditorData; // Should have a view
 
-          const { type: overTypeOriginal, id: overElementIdOriginal } = parseDndId(overIdRaw ? String(overIdRaw) : undefined); 
-          
+          const { type: overTypeOriginal, id: overElementIdOriginal } = parseDndId(overIdRaw ? String(overIdRaw) : undefined);
+
           if (prototype && overElementIdOriginal === prototype.block.id) {
             return currentEditorData; // No change if hovering over self
           }
 
-          let modifiedSections = { ...currentSectionsFromData }; 
+          let modifiedSections = { ...currentSectionsFromData };
           let prototypeActuallyChangedOrMoved = false;
           let newPrototypeState: { sectionId: string; index: number; block: Block } | null = null;
 
           if (prototype) {
             const oldProtoSection = modifiedSections[prototype.sectionId];
-            if (oldProtoSection?.blocks && 
-                prototype.index < oldProtoSection.blocks.length && 
+            if (oldProtoSection?.blocks &&
+                prototype.index < oldProtoSection.blocks.length &&
                 oldProtoSection.blocks[prototype.index]?.id === prototype.block.id) {
               modifiedSections = update(modifiedSections, {
                 [prototype.sectionId]: {
@@ -243,13 +243,13 @@ function EditApp() {
                 if (insertIdx === -1) {
                   insertIdx = targetSectionForIndexCalc.blocks?.length ?? 0;
                 }
-              } else { 
+              } else {
                 insertIdx = targetSectionForIndexCalc.blocks?.length ?? 0;
               }
               const protoBlock: Block = {
                 id: `prototype-${uuidv4()}`,
                 object: 'block',
-                type: activeId, 
+                type: activeId,
                 content: { value: '*new block*', format: 'markdown' },
                 appearance: {},
               };
@@ -261,11 +261,11 @@ function EditApp() {
               newPrototypeState = { sectionId: targetSectionId, index: insertIdx, block: protoBlock };
             }
           }
-          
-          if (prototype?.block.id !== newPrototypeState?.block.id || 
-              prototype?.index !== newPrototypeState?.index || 
+
+          if (prototype?.block.id !== newPrototypeState?.block.id ||
+              prototype?.index !== newPrototypeState?.index ||
               prototype?.sectionId !== newPrototypeState?.sectionId ||
-              (!prototype && newPrototypeState) || 
+              (!prototype && newPrototypeState) ||
               (prototype && !newPrototypeState)
              ) {
               setPrototype(newPrototypeState); // This is a React state setter, it's fine.
@@ -291,20 +291,20 @@ function EditApp() {
     }
   }
 
-  function handleDragEnd(event: DragEndEvent) { 
-    if (dragOverRafRef.current) { 
+  function handleDragEnd(event: DragEndEvent) {
+    if (dragOverRafRef.current) {
         cancelAnimationFrame(dragOverRafRef.current);
         dragOverRafRef.current = null;
     }
     if (!activeItem) {
-        setPrototype(null); 
+        setPrototype(null);
         return;
     }
 
     if (activeItem.type !== 'template' && !event.over) {
       if (activeItem.type === 'template' && prototype) {
         // If template drag ended nowhere, remove prototype (using callback form of setSections)
-        setSections(currentSections => { 
+        setSections(currentSections => {
           if (!prototype || !currentSections[prototype.sectionId]) return currentSections;
           const oldProtoSection = currentSections[prototype.sectionId];
           if (oldProtoSection?.blocks && prototype.index < oldProtoSection.blocks.length && oldProtoSection.blocks[prototype.index]?.id === prototype.block.id) {
@@ -322,25 +322,25 @@ function EditApp() {
       return;
     }
 
-    const { id: activeBlockId, type: activeTypeCalculated } = activeItem; 
+    const { id: activeBlockId, type: activeTypeCalculated } = activeItem;
 
     // --- TEMPLATE DROP (NEW BLOCK) ---
     if (activeTypeCalculated === 'template') {
-      if (prototype && prototype.sectionId) { 
+      if (prototype && prototype.sectionId) {
         const newBlockToAdd: Block = {
           id: uuidv4(),
           object: 'block',
-          type: prototype.block.type, 
-          content: {}, 
-          appearance: prototype.block.appearance, 
+          type: prototype.block.type,
+          content: {},
+          appearance: prototype.block.appearance,
         };
-        
+
         // Use setData callback form to ensure we're working with the latest state
         setData(currentEditorData => {
           const sectionsForCurrentPage = currentEditorData.view.pages[selectedPage]?.view;
           if (!sectionsForCurrentPage || !prototype || !sectionsForCurrentPage[prototype.sectionId!]) {
             // console.warn("Section not found in handleDragEnd for template drop, prototype might be stale or section removed.");
-            return currentEditorData; 
+            return currentEditorData;
           }
 
           let targetIndex = prototype.index;
@@ -376,7 +376,7 @@ function EditApp() {
         setSelectedBlockId(newBlockToAdd.id);
       } else if (prototype) {
         // Prototype exists but sectionId is invalid. Attempt to clean up visual prototype from current data.
-        setSections(currentSections => { 
+        setSections(currentSections => {
           if (!prototype || !currentSections[prototype.sectionId]) return currentSections;
           // ... (similar cleanup as above for !event.over) ...
           const oldProtoSection = currentSections[prototype.sectionId];
@@ -390,14 +390,14 @@ function EditApp() {
           return currentSections;
         });
       }
-      setPrototype(null); 
+      setPrototype(null);
       setActiveItem(null);
       return;
     }
 
     // --- EXISTING BLOCK DROP --- (Requires event.over to be valid)
     // This part also needs to be use the setData callback form if it modifies data
-    if (!event.over) { 
+    if (!event.over) {
         setActiveItem(null);
         return;
     }
@@ -413,7 +413,7 @@ function EditApp() {
         setActiveItem(null);
         return;
       }
-      
+
       setData(currentEditorData => {
         const sectionsForCurrentPage = currentEditorData.view.pages[selectedPage]?.view;
         if (!sectionsForCurrentPage) {
@@ -446,9 +446,9 @@ function EditApp() {
           // The containerId is the ID of the section droppable area.
           const containerId = event.over!.data.current?.sortable?.containerId;
           if (typeof containerId === 'string') {
-            targetSectionId = parseDndId(String(containerId)).id; 
+            targetSectionId = parseDndId(String(containerId)).id;
           }
-          
+
           if (targetSectionId && sectionsForCurrentPage[targetSectionId]) {
              const overBlockIdx = getOverBlockIndex(sectionsForCurrentPage[targetSectionId], overElementIdLocal); // overElementIdLocal is the block being hovered
              if (activeBlockId === overElementIdLocal) { // Dropping on itself
@@ -462,7 +462,7 @@ function EditApp() {
              // If overBlockIdx is -1 (e.g., something went wrong with getOverBlockIndex or ID parsing)
              // this will be caught by targetBlockIndex !== -1 check later.
           }
-        } else if (overTypeLocal === 'section') { 
+        } else if (overTypeLocal === 'section') {
           targetSectionId = overElementIdLocal; // Here, overElementIdLocal is the section ID
           if (targetSectionId && sectionsForCurrentPage[targetSectionId]) {
             targetBlockIndex = sectionsForCurrentPage[targetSectionId].blocks?.length ?? 0; // Append
@@ -471,9 +471,9 @@ function EditApp() {
 
         if (!targetSectionId || targetBlockIndex === -1) {
           // console.warn("DragEnd: Could not determine target section or index for block drop.");
-          return currentEditorData; 
+          return currentEditorData;
         }
-        
+
         if (!sectionsForCurrentPage[targetSectionId]) {
             // console.warn(`DragEnd: Target section ${targetSectionId} does not exist in current page view.`);
             return currentEditorData;
@@ -498,7 +498,7 @@ function EditApp() {
         if (fromSectionId === targetSectionId && fromBlockIndex < targetBlockIndex) {
             adjustedTargetBlockIndex--;
         }
-        
+
         // After removing, the blocks in the target section (if same as fromSection) might have shifted.
         // Re-evaluate target section blocks from the intermediate newEditorData.
         const targetSectionBlocksAfterRemoval = newEditorData.view.pages[selectedPage].view[targetSectionId]?.blocks || [];
@@ -522,8 +522,8 @@ function EditApp() {
             }
           }
         });
-        
-        setSelectedBlockId(activeBlockId); 
+
+        setSelectedBlockId(activeBlockId);
         return newEditorData;
       });
 
@@ -532,7 +532,7 @@ function EditApp() {
     }
 
     setActiveItem(null);
-    setPrototype(null); 
+    setPrototype(null);
   }
 
   const sensors = useSensors(
@@ -663,6 +663,8 @@ function Toolbar() {
     handlePageAction,
     getOrderedPages,
     viewMode,
+    setShowPageLogic,
+    showPageLogic,
   } = useEditor();
 
   return (
@@ -753,11 +755,11 @@ function Toolbar() {
             ))}
           </div>
 
-          {/* <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">Layout:</span>
-              <span className="text-sm font-medium">{data.view.pages[selectedPage].layout.sm}</span>
-            </div>
+          <div className="flex items-center gap-4">
+            {/*<div className="flex items-center gap-2">*/}
+            {/*  <span className="text-sm text-muted-foreground">Layout:</span>*/}
+            {/*  <span className="text-sm font-medium">{data.view.pages[selectedPage].layout.sm}</span>*/}
+            {/*</div>*/}
 
             {data.view.pages[selectedPage].next_page?.default_next_page && (
               <div className="flex items-center gap-2">
@@ -765,15 +767,16 @@ function Toolbar() {
                 <span className="text-sm font-medium">{data.view.pages[data.view.pages[selectedPage].next_page.default_next_page].name}</span>
               </div>
             )}
+          {/*  if none, we need to configure one!*/}
+          {/*  if its ending, we need to configure that! */}
 
+          </div>
             <button
               onClick={() => setShowPageLogic(true)}
               className="flex items-center gap-2 px-3 py-1.5 text-sm hover:bg-secondary/90 bg-secondary rounded-md"
             >
-              <Share2 className="w-4 h-4" />
               Page Logic
             </button>
-          </div> */}
         </div>
       </div>
     </div>
@@ -800,7 +803,7 @@ function PageLogicDialog() {
             <PageFlowEditor
               view={data.view}
               onUpdateFlow={(changes) => {
-                // console.log('Flow editor changes:', changes);
+                console.log('Flow editor changes:', changes);
                 setData(update(data, { view: { $set: changes }}));
 
                 // Submit the update to backend
@@ -816,9 +819,9 @@ function PageLogicDialog() {
 }
 
 function PageTypeDialog() {
-    const { 
-        showPageTypeDialog, 
-        setShowPageTypeDialog, 
+    const {
+        showPageTypeDialog,
+        setShowPageTypeDialog,
         handleAddPage,
         handlePageTypeChange,
         editingPageId,
@@ -842,8 +845,8 @@ function PageTypeDialog() {
                 <DialogHeader>
                     <DialogTitle>{isEditing ? 'Change Page Type' : 'Add New Page'}</DialogTitle>
                     <DialogDescription>
-                        {isEditing 
-                            ? 'Select a new type for this page' 
+                        {isEditing
+                            ? 'Select a new type for this page'
                             : 'Choose the type of page you want to add'
                         }
                     </DialogDescription>

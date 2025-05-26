@@ -19,6 +19,7 @@ export const ThemeTypographyLoader: React.FC<ThemeTypographyProps> = ({ theme })
       'font-size': size,
       'font-family': font,
       'font-weight': weight,
+      'line-height': '1rem',
     };
   };
 

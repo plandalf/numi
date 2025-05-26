@@ -145,7 +145,6 @@ export const Appearance = {
     options: args?.options ?? {},
   }),
 
-
   visibility: (
     type: string = 'visibility',
     label: string = 'Visibility',
@@ -158,6 +157,24 @@ export const Appearance = {
     defaultValue,
     inspector: args?.inspector ?? 'visibilityPicker',
     config: args?.config ?? {}
+  }),
+
+  alignment: (
+    type: string = 'alignment',
+    label: string = 'Alignment',
+    args: HookArgs,
+    defaultValue: string = 'left',
+  ) => ({
+    label,
+    type,
+    options: args.options ?? {
+      left: 'Left',
+      center: 'Center',
+      right: 'Right',
+      expand: 'Expand',
+    } as Record<string, string>,
+    defaultValue,
+    inspector: args.inspector ?? 'alignmentPicker',
   }),
 }
 
@@ -509,7 +526,8 @@ const Numi = {
       // Get the value from block config or use default
       styleProps.forEach(prop => {
         if (prop.type) {
-          style[prop.type] = blockContext.blockConfig.style?.[prop.type];
+          style[prop.type] = blockContext.blockConfig.style?.[prop.type] 
+          || prop.defaultValue;
         }
       });
 
