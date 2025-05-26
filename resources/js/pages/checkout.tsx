@@ -260,7 +260,7 @@ const CheckoutController = ({ offer }: { offer: OfferConfiguration }) => {
 };
 
 
-export default function CheckoutPage({ offer, error, checkoutSession }: CheckoutPageProps) {
+export default function CheckoutPage({ offer, fonts, error, checkoutSession }: CheckoutPageProps) {
 
   if (error) {
     return <LoadingError error={error}/>;
@@ -276,7 +276,10 @@ export default function CheckoutPage({ offer, error, checkoutSession }: Checkout
   const viewFonts = findUniqueFontsFromView(offer.view);
   const themeFonts = findUniqueFontsFromTheme(offer.theme);
 
-  const uniqueFonts = ['Inter', ...viewFonts, ...themeFonts];
+  const uniqueFonts = fonts
+    .filter(f => ['Inter', ...viewFonts, ...themeFonts].includes(f.name))
+    .map(font => `${font.name}:${font.weights.join(',')}`);
+
 
   if(uniqueFonts.length > 0) {
     WebFont.load({ google: { families: uniqueFonts }});

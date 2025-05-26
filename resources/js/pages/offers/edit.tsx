@@ -71,7 +71,7 @@ function Edit({ offer, organizationThemes, organizationTemplates, globalThemes, 
   WebFont.load({
     google: {
       families: fonts?.reduce<string[]>((items, font) => {
-        return [...items, font.name];
+        return [...items, `${font.name}:${font.weights.join(',')}`];
       }, []),
     },
   });

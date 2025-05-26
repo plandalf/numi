@@ -10,7 +10,7 @@ export function findUniqueFontsFromView(view: PageView): string[] {
     
     // Look through all style properties that end with 'Font'
     Object.entries(style).forEach(([key, value]) => {
-      if (key.endsWith('Font') && value?.font) {
+      if ((key.endsWith('Font') || key.endsWith('font')) && value?.font) {
         fonts.add(value.font);
       }
     });

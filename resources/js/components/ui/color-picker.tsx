@@ -46,7 +46,7 @@ export const ColorPicker: React.FC<ColorPickerProps> = (props) => {
           onChange={e => onChange(combineHexAlpha(e.target.value, alpha))}
           className="w-8 h-8 rounded-xl cursor-pointer border-none"
         />
-        <span className="text-xs w-14 text-left">{rgb.toUpperCase()}</span>
+        <span className="flex-1 uppercase text-xs w-14 text-left">{rgb.toUpperCase()}</span>
       </div>
       <Separator orientation="vertical" className="bg-gray-300/50 !h-8" />
       <div className="flex-1 min-w-[100px]">

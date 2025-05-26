@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Actions\Checkout\CreateCheckoutSessionAction;
+use App\Enums\Theme\FontElement;
 use App\Http\Resources\Checkout\CheckoutSessionResource;
+use App\Http\Resources\FontResource;
 use App\Http\Resources\OfferResource;
 use App\Models\Checkout\CheckoutSession;
 use App\Models\Store\Offer;
@@ -49,6 +51,7 @@ class CheckoutController extends Controller
         $checkout->load(['lineItems.offerItem', 'offer.theme', 'lineItems.price.integration', 'lineItems.price.product']);
 
         return Inertia::render('checkout', [
+            'fonts' => FontResource::collection(FontElement::cases()),
             'offer' => new OfferResource($offer),
             'checkoutSession' => new CheckoutSessionResource($checkout),
         ]);
