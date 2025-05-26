@@ -135,7 +135,7 @@ function DetailListBlockComponent({ context }: { context: BlockContextType }) {
     borderColor: style.borderColor,
     borderWidth: style.border?.width,
     borderStyle: style.border?.style,
-    borderRadius : style.borderRadius ?? '3px',
+    borderRadius : style.borderRadius,
     boxShadow: style.shadow,
     padding: appearance?.padding,
     margin: appearance?.margin,
