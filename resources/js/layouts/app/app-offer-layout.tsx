@@ -50,7 +50,7 @@ export const PREVIEW_SIZES = {
 function OfferHeader({ offer, isNameDialogOpen, setIsNameDialogOpen }: AppHeaderProps) {
     const [status, setStatus] = useState(offer.status);
     const isMobile = useIsMobile();
-    const { data, setData, viewMode, setViewMode, setPreviewSize, handleSave } = useEditor();
+    const { data, setData, viewMode, setViewMode, setPreviewSize, handleSave, put } = useEditor();
 
     const [name, setName] = useState(data.name);
 
@@ -71,15 +71,20 @@ function OfferHeader({ offer, isNameDialogOpen, setIsNameDialogOpen }: AppHeader
             name,
         });
 
-        router.put(route('offers.update', offer.id), {
-            name,
-        }, {
+        put(route('offers.update', offer.id), {
             preserveScroll: true,
             preserveState: true,
             onSuccess: () => setIsNameDialogOpen(false),
-            onError: (e) => {
-                console.log(e);
-                toast.error('Failed to update offer name');
+            onError: (error: Record<string, string>) => {
+            const errorMessages = Object.values(error).flat();
+            toast.error(<>
+                <p>Failed to save offer</p>
+                <ul className='list-disc list-inside'>
+                {errorMessages.map((e: string) => (
+                    <li key={e}>{e}</li>
+                ))}
+                </ul>
+            </>);
             },
         });
     };

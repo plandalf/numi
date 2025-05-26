@@ -26,6 +26,7 @@ export type ComboboxProps = {
     value: string;
     label: string;
   }[];
+  placeholderIcon?: React.ReactNode;
   placeholder?: string;
   className?: string;
   selected?: string | string[];
@@ -39,6 +40,7 @@ export type ComboboxProps = {
 export function Combobox({
   items,
   placeholder = "Select",
+  placeholderIcon,
   className,
   onSelect,
   selected: defaultSelected = "",
@@ -130,7 +132,17 @@ export function Combobox({
                     return `${labels.join(", ")} +${value.length - 2}`;
                   })()
                 : getSelectedLabels().join(", ")
-              : placeholder}
+              : 
+              (<span className={cn(
+                  "flex flex-row gap-2 items-center",
+                  placeholderIcon && "justify-center",
+                  !placeholderIcon && "justify-start"
+                )}>
+                  {placeholderIcon}
+                  {placeholder}
+                </span>
+              )
+            }
             {required &&
               (!value || (Array.isArray(value) && value.length === 0)) && (
                 <span className="text-red-500 ml-1">*</span>

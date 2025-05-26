@@ -2,24 +2,88 @@ import React from 'react';
 import ReactMarkdown from 'react-markdown';
 import rehypeRaw from 'rehype-raw';
 import { cn } from '@/lib/utils';
+import { Theme } from '@/types/theme';
+import styled from 'styled-components';
 
 interface MarkdownTextProps {
   text: string;
+  style?: React.CSSProperties;
   className?: string;
+  theme?: Theme;
 }
 
-const preserveAllLineBreaks = (text: string) => {
-  return text.replace(/\n/g, '  \n');
+const getTypographyStyle = ({
+  element,
+  theme,
+  style,
+} : {
+  element?: string,
+  theme?: Theme,
+  style?: React.CSSProperties,
+}) => {
+  const typography = theme?.[`${element}_typography` as keyof Theme] as string[];
+  const [typographySize, typographyFont, typographyWeight] = typography || [];
+
+  const formatStyle = {
+    fontSize: style?.fontSize ?? typographySize,
+    fontFamily: style?.fontFamily ?? typographyFont,
+    fontWeight: style?.fontWeight ?? typographyWeight,
+    lineHeight: style?.lineHeight ?? '1.1',
+    letterSpacing: style?.letterSpacing,
+    textDecoration: style?.textDecoration,
+  }
+
+  return {
+    ...(formatStyle?.fontSize) && {'font-size':  formatStyle?.fontSize },
+    ...(formatStyle?.fontFamily) && { 'font-family': formatStyle?.fontFamily },
+    ...(formatStyle?.fontWeight) && { 'font-weight': formatStyle?.fontWeight },
+    ...(formatStyle?.textDecoration) && { 'text-decoration': formatStyle?.textDecoration },
+    ...(formatStyle?.lineHeight) && { 'line-height': formatStyle?.lineHeight },
+    ...(formatStyle?.letterSpacing) && { 'letter-spacing': formatStyle?.letterSpacing },
+  };
 };
 
-export const MarkdownText = ({ text, className, ...props }: MarkdownTextProps) => {
+const Container = styled.div<{
+  theme: Theme;
+  style?: React.CSSProperties;
+}>`
+  line-height: 0;
+  ${({ theme, style }) => `
+    h1 { ${Object.entries(getTypographyStyle({ theme, element: 'h1', style })).map(([k, v]) => `${k}: ${v}`).join(';')} }
+    h2 { ${Object.entries(getTypographyStyle({ theme, element: 'h2', style })).map(([k, v]) => `${k}: ${v}`).join(';')} }
+    h3 { ${Object.entries(getTypographyStyle({ theme, element: 'h3', style })).map(([k, v]) => `${k}: ${v}`).join(';')} }
+    h4 { ${Object.entries(getTypographyStyle({ theme, element: 'h4', style })).map(([k, v]) => `${k}: ${v}`).join(';')} }
+    h5 { ${Object.entries(getTypographyStyle({ theme, element: 'h5', style })).map(([k, v]) => `${k}: ${v}`).join(';')} }
+    h6 { ${Object.entries(getTypographyStyle({ theme, element: 'h6', style })).map(([k, v]) => `${k}: ${v}`).join(';')} }
+    p { ${Object.entries(getTypographyStyle({ theme, element: 'body', style })).map(([k, v]) => `${k}: ${v}`).join(';')} }
+    span { ${Object.entries(getTypographyStyle({ theme, element: 'body', style })).map(([k, v]) => `${k}: ${v}`).join(';')} }
+    a { ${Object.entries(getTypographyStyle({ theme, element: 'body', style: { ...style, textDecoration: 'underline' } })).map(([k, v]) => `${k}: ${v}`).join(';')} }
+    label { ${Object.entries(getTypographyStyle({ theme, element: 'label', style })).map(([k, v]) => `${k}: ${v}`).join(';')} }
+  `}
+`;
+
+const preserveAllLineBreaks = (text: string) => {
+  return text.split('\n').map(line => {
+    // If line is empty, return a non-breaking space
+    return line.trim() === '' ? '&nbsp;' : line;
+  }).join('\n');
+};
+
+export const MarkdownText = ({ text, theme, style, className, ...props }: MarkdownTextProps) => {
 
   return (
-    <div className={cn("numi-markdown", className)} {...props}>
-      <ReactMarkdown rehypePlugins={[rehypeRaw]}>
+    <Container
+      theme={theme}
+      style={style}
+      className={cn("numi-markdown whitespace-pre-line", className)}
+      {...props}
+    >
+      <ReactMarkdown
+        rehypePlugins={[rehypeRaw]}
+      >
         {preserveAllLineBreaks(text)}
       </ReactMarkdown>
-    </div>
+    </Container>
   );
 }
 

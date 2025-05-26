@@ -10,6 +10,7 @@ import axios from '@/lib/axios';
 import { CheckoutSession } from '@/types/checkout';
 import { BlockRenderer } from '@/components/checkout/block-renderer';
 import { SetItemActionValue } from '@/components/actions/set-item-action';
+import { Theme } from '@/types/theme';
 // Form and validation context
 type FormData = Record<string, any>;
 type ValidationErrors = Record<string, string[]>;
@@ -47,6 +48,9 @@ export interface GlobalState {
   // Line Items
   updateLineItem: (offerItemId: string, price: string) => Promise<void>;
 
+
+  offer: OfferConfiguration;
+  theme: Theme;
   isEditor: boolean;
 }
 
@@ -346,6 +350,7 @@ export function GlobalStateProvider({ offer, session: defaultSession, editor = f
     // submitPage,
     // submit
     offer,
+    theme: offer?.theme ?? {} as Theme,
     session,
     setSession,
 
@@ -438,7 +443,7 @@ export const layoutConfig = {
                 "id": "action",
                 "type": "box",
                 "props": {
-                  "className": "p-6 bg-white border-t"
+                  "className": "p-6 bg-white"
                 },
               }
             ]

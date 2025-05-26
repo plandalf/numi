@@ -183,6 +183,7 @@ export function JSONSchemaEditor({
         label={schema.title || path.split('.').pop() || 'Text'}
         value={value || ''}
         onChange={onChange}
+        multiline={schema.meta?.editor === 'markdown'}
       />
     );
   }

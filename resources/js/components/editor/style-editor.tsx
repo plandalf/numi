@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { act, useState } from 'react';
 import { Button } from '../ui/button';
 import { Image, PlusIcon, Ruler, Type } from 'lucide-react';
 import { Label } from '../ui/label';
@@ -22,6 +22,7 @@ import { BorderRadiusPicker } from '../ui/border-radius-picker';
 import ShadowPicker from '../ui/shadow-picker';
 import { DimensionPicker } from '../ui/dimension-picker';
 import { ImageUpload } from '../ui/image-upload';
+import { Combobox } from '../combobox';
 
 export interface StyleItem {
   name: string;
@@ -289,11 +290,15 @@ export const StyleEditor: React.FC<StyleEditorProps> = ({
   const itemsWithValue = items.filter((item) => item.value != undefined);
   const itemsWithoutValue = items.filter((item) => item.value == undefined);
 
+  const handleChange = (value: string) => {
+    onChange(value, items.find((item) => item.name === value)?.defaultValue);
+  };
+
   return (
     <div className="flex flex-col gap-2 p-2 border rounded-md border-gray-200 bg-gray-100/50 h-full">
       {itemsWithValue?.map((item) => (
-        <div key={item.name} className="h-9 flex flex-row gap-2 items-center bg-white rounded-md border border-gray-200">
-          <Label title={item.label} className="ml-2 text-sm w-28 truncate">{item.label}</Label>
+        <div key={item.name} className="p-1 flex flex-row gap-2 items-center bg-white rounded-md border border-gray-200">
+          <Label title={item.label} className="ml-2 text-sm w-28">{item.label}</Label>
           <Separator orientation="vertical" className="!h-5" />
           <div className="flex-1 flex flex-row gap-2 items-center justify-between">
             <StyleItemValuePreview item={item} onChange={onChange} themeColors={themeColors} fonts={fonts} />
@@ -308,25 +313,21 @@ export const StyleEditor: React.FC<StyleEditorProps> = ({
           </div>
         </div>
       ))}
+
       {itemsWithoutValue.length > 0 && (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="sm">
-            <PlusIcon className="w-4 h-4 mr-2" />
-            {itemsWithValue.length > 0 ? 'Add another style' : 'Add a style'}
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="center" className="min-w-[200px]">
-          {itemsWithoutValue.map((item) => (
-            <DropdownMenuItem
-              key={item.name}
-              onClick={() => onChange(item.name, item.defaultValue)}
-            >
-              {item.label}
-            </DropdownMenuItem>
-          ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <Combobox
+          items={itemsWithoutValue.map((item) => ({
+            value: item.name,
+            label: item.label
+          }))}
+          className="flex-1 min-w-[200px]"
+          onSelect={(selected) => handleChange(selected as string)}
+          placeholderIcon={<PlusIcon className="w-4 h-4" />}
+          placeholder={itemsWithValue.length > 0 ? 'Add another style' : 'Add a style'}
+          hideSearch={itemsWithoutValue.length === 0}
+          disabled={itemsWithoutValue.length === 0}
+          modal
+        />
       )}
     </div>
   );
