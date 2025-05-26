@@ -46,18 +46,13 @@ class CheckoutLineItem extends Model
         return $this->belongsTo(OfferItem::class, 'offer_item_id');
     }
 
-    public function getLineItemAttribute()
+    public function getTotalAttribute()
     {
-        return [
-            'id' => $this->id,
-            'offer_item' => $this->offerItem->name,
-            'name' => $this->offerItem->name,
-            'quantity' => $this->quantity,
-            'subtotal' => $this->price->calculateAmount()->getAmount(),
-            // 'taxes' => $this->price->calculateTaxes()->getAmount(),
-            'total' => $this->price->calculateAmount()->getAmount(),
-            'image' => $this->price->product->image,
-            // 'discount' => $this->price->calculateDiscount()->getAmount(),
-        ];
+        return $this->price->calculateAmount()->getAmount();
+    }
+
+    public function getSubtotalAttribute()
+    {
+        return $this->price->calculateAmount()->getAmount();
     }
 }

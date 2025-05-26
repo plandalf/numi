@@ -79,7 +79,7 @@ class CheckoutSessionController extends Controller
                     'deleted_at' => null,
                 ]);
 
-                $checkoutSession->load(['lineItems.offerItem', 'lineItems.price.integration']);
+                $checkoutSession->load(['lineItems.offerItem', 'offer.theme', 'lineItems.price.integration', 'lineItems.price.product']);
                 return new CheckoutSessionResource($checkoutSession);
             default:
                 abort(400);

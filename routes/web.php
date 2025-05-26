@@ -7,6 +7,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\IntegrationsController;
 use App\Http\Controllers\MediaController;
 use App\Http\Controllers\NoAccessController;
+use App\Http\Controllers\OfferItemsController;
 use App\Http\Controllers\OffersController;
 use App\Http\Controllers\OrganizationController;
 use App\Http\Controllers\PriceController;
@@ -211,9 +212,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::put('theme', [OffersController::class, 'updateTheme'])->name('update.theme');
 
             // Add offerItem routes
-            Route::post('/items', [OffersController::class, 'storeOfferItem'])->name('items.store');
-            Route::put('/items/{offerItem}', [OffersController::class, 'updateOfferItem'])->name('items.update');
-            Route::delete('/items/{offerItem}', [OffersController::class, 'destroyOfferItem'])->name('items.destroy');
+            Route::resource('items', OfferItemsController::class)->names('items');
 
             Route::get('integrate', [OffersController::class, 'integrate'])->name('integrate');
             Route::get('sharing', [OffersController::class, 'sharing'])->name('sharing');

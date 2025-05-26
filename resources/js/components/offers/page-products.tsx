@@ -90,7 +90,7 @@ export const PageProducts = () => {
     e.preventDefault();
     if (!renameItemId) return;
     setRenameLoading(true);
-    router.put(route('offers.items.update', { offer: offer.id, offerItem: renameItemId }), {
+    router.put(route('offers.items.update', { offer: offer.id, item: renameItemId }), {
       name: renameValue,
     }, {
       preserveScroll: true,
@@ -117,7 +117,7 @@ export const PageProducts = () => {
     const handleDelete = (offerItem: OfferItem) => {
       const toastId = toast.loading(`Deleting product...`);
 
-      router.delete(route("offers.items.destroy", { offer: offer.id, offerItem: offerItem.id }), {
+      router.delete(route("offers.items.destroy", { offer: offer.id, item: offerItem.id }), {
         preserveScroll: true,
         onSuccess: () => {
           toast.success(`Product deleted successfully`, { id: toastId });
@@ -131,7 +131,7 @@ export const PageProducts = () => {
     const handleToggleRequired = (item: OfferItem, checked: boolean) => {
       const toastId = toast.loading(`Updating product...`);
 
-      router.put(route("offers.items.update", { offer: offer.id, offerItem: item.id }), {
+      router.put(route("offers.items.update", { offer: offer.id, item: item.id }), {
         is_required: checked
       }, {
         preserveScroll: true,
@@ -199,7 +199,7 @@ export const PageProducts = () => {
     const handleMakeDefault = (price: Price) => {
       const toastId = toast.loading(`Updating product...`);
 
-      router.put(route("offers.items.update", { offer: offer.id, offerItem: offerItem.id }), {
+      router.put(route("offers.items.update", { offer: offer.id, item: offerItem.id }), {
         default_price_id: price.id
       }, {
         preserveScroll: true,

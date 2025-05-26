@@ -29,6 +29,7 @@ class CheckoutSession extends Model
         'metadata',
         'organization_id',
         'uuid',
+        'deleted_at',
         // 'customer_id',
     ];
 
@@ -76,19 +77,14 @@ class CheckoutSession extends Model
         return $this;
     }
 
-    public function getLineItemsBreakdownAttribute()
-    {
-        return $this->lineItems->pluck('line_item')->toArray();
-    }
-
     public function getTotalAttribute()
     {
-        return $this->lineItems->sum('line_item.total');
+        return $this->lineItems->sum('total');
     }
 
     public function getSubtotalAttribute()
     {
-        return $this->lineItems->sum('line_item.subtotal');
+        return $this->lineItems->sum('subtotal');
     }
 
     public function getCurrencyAttribute()

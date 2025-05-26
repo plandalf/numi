@@ -7,5 +7,5 @@ Route::group([
     'prefix' => 'store/',
     'as' => 'store.',
 ], function () {
-    Route::resource('offers.items', OfferItemsController::class);
+    // Route::resource('offers.items', OfferItemsController::class);
 });
