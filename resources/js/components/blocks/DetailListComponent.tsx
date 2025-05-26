@@ -79,7 +79,7 @@ function DetailListBlockComponent({ context }: { context: BlockContextType }) {
         end: 'end',
       },
     }, 'start'),
-    Style.backgroundColor('backgroundColor', 'Background Color', {}, '#FFFFFF'),
+    Style.backgroundColor('backgroundColor', 'Background Color', {}, ''),
     Style.textColor('labelColor', 'Label Color', {}, '#000000'),
     Style.font('labelFont', 'Label Font',
       fontConfig,
@@ -115,10 +115,10 @@ function DetailListBlockComponent({ context }: { context: BlockContextType }) {
         hideWidth: true
       }
     }, { width: '15px', height: '15px' }),
-    Style.border('border', 'Border', {}, { width: '1px', style: 'solid' }),
-    Style.borderRadius('borderRadius', 'Border Radius', {}, '5px'),
-    Style.borderColor('borderColor', 'Border Color', {}, '#000000'),
-    Style.shadow('shadow', 'Button Shadow', {}, '0px 0px 0px 0px #000000'),
+    Style.border('border', 'Border', {}, { width: '0px', style: 'solid' }),
+    Style.borderRadius('borderRadius', 'Border Radius', {}, '0px'),
+    Style.borderColor('borderColor', 'Border Color', {}, ''),
+    Style.shadow('shadow', 'Button Shadow', {}, ''),
     Style.hidden('hidden', 'Hidden', {}, false),
   ]);
 
