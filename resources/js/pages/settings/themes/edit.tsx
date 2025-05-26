@@ -5,7 +5,7 @@ import { type BreadcrumbItem } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ArrowLeft, Save } from 'lucide-react';
+import { ArrowLeft, Save, RotateCcw } from 'lucide-react';
 import { showToast } from '@/lib/notifications';
 import { Theme, FieldType } from '@/types/theme';
 import { Input } from '@/components/ui/input';
@@ -21,48 +21,53 @@ interface Props {
 
 interface Field {
     key: keyof Theme;
+    description?: string;
+    group?: string;
+    default?: string | string[] | undefined;
     type: FieldType;
     label?: string;
 }
 
 const colorFields: Field[] = [
-    { key: 'primary_color', type: FieldType.Color, label: 'Primary' },
-    { key: 'secondary_color', type: FieldType.Color, label: 'Secondary' },
-    { key: 'canvas_color', type: FieldType.Color, label: 'Canvas' },
-    { key: 'primary_surface_color', type: FieldType.Color, label: 'Primary Surface' },
-    { key: 'secondary_surface_color', type: FieldType.Color, label: 'Secondary Surface' },
-    { key: 'primary_border_color', type: FieldType.Color, label: 'Primary Border' },
-    { key: 'secondary_border_color', type: FieldType.Color, label: 'Secondary Border' },
-    { key: 'light_text_color', type: FieldType.Color, label: 'Light Text' },
-    { key: 'dark_text_color', type: FieldType.Color, label: 'Dark Text' },
-    { key: 'danger_color', type: FieldType.Color, label: 'Danger' },
-    { key: 'info_color', type: FieldType.Color, label: 'Info' },
-    { key: 'warning_color', type: FieldType.Color, label: 'Warning' },
-    { key: 'success_color', type: FieldType.Color, label: 'Success' },
-    { key: 'highlight_color', type: FieldType.Color, label: 'Highlight' },
+    { key: 'primary_color', group: 'Core', default: '#355dfb', description: 'Default accent color used by the majority of components.', type: FieldType.Color, label: 'Primary' },
+    { key: 'secondary_color', group: 'Core', default: '#52525d', description: 'Optional secondary color, available as a swatch in the component Style editor. Components won\'t use this color by default.', type: FieldType.Color, label: 'Secondary' },
+    { key: 'canvas_color', group: 'Core', default: '#ffffff', description: 'Default background color for the entire app.', type: FieldType.Color, label: 'Canvas' },
+    { key: 'primary_surface_color', group: 'Core', default: '#ffffff', description: 'Default background color for Containers and Tables.', type: FieldType.Color, label: 'Primary Surface' },
+    { key: 'secondary_surface_color', group: 'Core', default: '#ffffff', description: 'Default background color for Inputs.', type: FieldType.Color, label: 'Secondary Surface' },
+    { key: 'primary_border_color', group: 'Core', default: '#dadada', description: 'Default border color for Containers and Tables.', type: FieldType.Color, label: 'Primary Border' },
+    { key: 'secondary_border_color', group: 'Core', default: '#dadada', description: 'Default border color for Inputs.', type: FieldType.Color, label: 'Secondary Border' },
+    
+    { key: 'light_text_color', group: 'Text', default: '#000000', description: 'Text color to provide contrast against light backgrounds.', type: FieldType.Color, label: 'Light Text' },
+    { key: 'dark_text_color', group: 'Text', default: '#ffffff', description: 'Text color to provide contrast against dark backgrounds.', type: FieldType.Color, label: 'Dark Text' },
+    
+    { key: 'danger_color', group: 'Status', default: '#e71f05', description: 'Default color for validation, errors, and negative trends.', type: FieldType.Color, label: 'Danger' },
+    { key: 'info_color', group: 'Status', default: '#36a6f4', description: 'Default color for neutral information like an edited cell in a Table.', type: FieldType.Color, label: 'Info' },
+    { key: 'warning_color', group: 'Status', default: '#fab900', description: 'Default color used to indicate a warning.', type: FieldType.Color, label: 'Warning' },
+    { key: 'success_color', group: 'Status', default: '#12a63e', description: 'Default color used to indicate success and positive trends.', type: FieldType.Color, label: 'Success' },
+    { key: 'highlight_color', group: 'Status', default: '#d8f1fe', description: 'Default color for highlighting matches in a searchable list.', type: FieldType.Color, label: 'Highlight' },
 ];
 
 const typographyFields: Field[] = [
-    { key: 'main_font', type: FieldType.Font },
-    { key: 'mono_font', type: FieldType.Font },
-    { key: 'h1_typography', type: FieldType.Typography, label: 'Heading 1' },
-    { key: 'h2_typography', type: FieldType.Typography, label: 'Heading 2' },
-    { key: 'h3_typography', type: FieldType.Typography, label: 'Heading 3' },
-    { key: 'h4_typography', type: FieldType.Typography, label: 'Heading 4' },
-    { key: 'h5_typography', type: FieldType.Typography, label: 'Heading 5' },
-    { key: 'h6_typography', type: FieldType.Typography, label: 'Heading 6' },
-    { key: 'label_typography', type: FieldType.Typography, label: 'Label' },
-    { key: 'body_typography', type: FieldType.Typography, label: 'Body' },
+    { key: 'main_font', group: 'Fonts', type: FieldType.Font },
+    { key: 'mono_font', group: 'Fonts', type: FieldType.Font },
+    { key: 'h1_typography', group: 'Type Style', type: FieldType.Typography, label: 'Heading 1' },
+    { key: 'h2_typography', group: 'Type Style', type: FieldType.Typography, label: 'Heading 2' },
+    { key: 'h3_typography', group: 'Type Style', type: FieldType.Typography, label: 'Heading 3' },
+    { key: 'h4_typography', group: 'Type Style', type: FieldType.Typography, label: 'Heading 4' },
+    { key: 'h5_typography', group: 'Type Style', type: FieldType.Typography, label: 'Heading 5' },
+    { key: 'h6_typography', group: 'Type Style', type: FieldType.Typography, label: 'Heading 6' },
+    { key: 'label_typography', group: 'Type Style', type: FieldType.Typography, label: 'Label' },
+    { key: 'body_typography', group: 'Type Style', type: FieldType.Typography, label: 'Body' },
 ];
 
 const componentFields: Field[] = [
-    { key: 'border_radius', type: FieldType.Size },
-    { key: 'padding', type: FieldType.Size, label: 'Padding' },
-    { key: 'spacing', type: FieldType.Size, label: 'Spacing' },
-    { key: 'margin', type: FieldType.Size, label: 'Margin' },
-    { key: 'shadow_sm', type: FieldType.Shadow, label: 'Shadow (Small)' },
-    { key: 'shadow_md', type: FieldType.Shadow, label: 'Shadow (Medium)' },
-    { key: 'shadow_lg', type: FieldType.Shadow, label: 'Shadow (Large)' },
+    { key: 'border_radius', group: 'Box', type: FieldType.Size },
+    { key: 'padding', group: 'Spacing', type: FieldType.Size, label: 'Padding' },
+    { key: 'spacing', group: 'Spacing', type: FieldType.Size, label: 'Spacing' },
+    { key: 'margin', group: 'Spacing', type: FieldType.Size, label: 'Margin' },
+    { key: 'shadow_sm', group: 'Shadow', type: FieldType.Shadow, label: 'Shadow (Small)' },
+    { key: 'shadow_md', group: 'Shadow', type: FieldType.Shadow, label: 'Shadow (Medium)' },
+    { key: 'shadow_lg', group: 'Shadow', type: FieldType.Shadow, label: 'Shadow (Large)' },
 ];
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -76,22 +81,39 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
+const getDefaultThemeData = (fieldsArrays: Field[][]): Partial<Theme> => {
+    const defaults: Partial<Theme> = {};
+    fieldsArrays.forEach(fields => {
+        fields.forEach(field => {
+            if (field.default !== undefined) {
+                // @ts-expect-error - We know key is a valid Theme key
+                defaults[field.key] = field.default;
+            }
+        });
+    });
+    return defaults;
+};
+
 const getReadableFieldName = (field: string): string => {
     return field.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
 };
 
 export default function Edit({ theme, fonts, weights }: Props) {
     const [activeTab, setActiveTab] = useState('color');
-    const [themeData, setThemeData] = useState<Theme>(theme);
+    const initialThemeData = {
+        ...getDefaultThemeData([colorFields, typographyFields, componentFields]),
+        ...theme,
+    };
+    const [themeData, setThemeData] = useState<Theme>(initialThemeData);
     const [themeName, setThemeName] = useState(theme.name);
 
     const handleSave = () => {
-        router.put(route('themes.update', theme.id), {
+        router.put(route('organizations.themes.update', theme.id), {
             ...themeData,
             name: themeName ?? null,
         }, {
             onSuccess: () => {
-                showToast('Theme updated successfully', 'success');
+                // showToast('Theme updated successfully', 'success');
             },
             onError: (errors) => {
                 showToast('Failed to update theme. ' + Object.values(errors).flat().join(', '), 'error');
@@ -99,11 +121,25 @@ export default function Edit({ theme, fonts, weights }: Props) {
         });
     };
 
+    const handleReset = () => {
+        const defaultTheme = getDefaultThemeData([colorFields, typographyFields, componentFields]);
+        // We need to ensure all keys from the original theme prop are present,
+        // even if they didn't have a default, but set them to undefined or their default.
+        // The simplest way to ensure the full theme structure is to merge defaults into a clear structure based on initialThemeData.
+        const resetData = { ...initialThemeData }; // Start with the full structure
+        for (const key in resetData) {
+            // @ts-expect-error - key is a valid Theme key
+            resetData[key] = defaultTheme[key] !== undefined ? defaultTheme[key] : initialThemeData[key];
+        }
+        setThemeData(resetData);
+        showToast('Theme has been reset to default values.', 'info');
+    };
+
     const handleBack = () => {
         history.back();
     };
 
-    const handleFieldChange = (key: keyof Theme, value: any) => {
+    const handleFieldChange = (key: keyof Theme, value: string | string[] | undefined) => {
         setThemeData(prev => ({
             ...prev,
             [key]: value
@@ -117,66 +153,77 @@ export default function Edit({ theme, fonts, weights }: Props) {
         switch (field.type) {
             case FieldType.Color:
                 return (
-                    <div key={field.key} className="space-y-2">
-                        <Label htmlFor={field.key}>{label}</Label>
-                        <div className="flex gap-2">
-                            <Input 
+                    <div key={field.key} className="grid grid-cols-4 items-center">
+                        <div className="col-span-3">
+                          <Label htmlFor={field.key}>{label}</Label>
+                          <div className="text-gray-600 text-sm">{field.description}</div>
+                        </div>
+                        <div className="flex gap-2 h-8 ">
+                            <div className="border rounded-lg flex items-center pl-1">
+                              <Input
                                 id={field.key}
-                                type="color" 
-                                value={value as string || '#000000'} 
+                                type="color"
+                                value={value as string || '#000000'}
                                 onChange={(e) => handleFieldChange(field.key, e.target.value)}
-                                className="w-12 h-10 p-1"
-                            />
-                            <Input 
-                                type="text" 
-                                value={value as string || '#000000'} 
+                                className="w-6 h-6 aspect-square p-0 border-none "
+                              />
+                              <Input
+                                type="text"
+                                value={value as string || '#000000'}
                                 onChange={(e) => handleFieldChange(field.key, e.target.value)}
-                                className="flex-1"
-                            />
+                                className="flex-1 text-sm p-2 border-none"
+                              />
+                            </div>
                         </div>
                     </div>
                 );
 
             case FieldType.Font:
                 return (
-                    <div key={field.key} className="space-y-2">
-                        <Label htmlFor={field.key}>{label}</Label>
-                        <Select 
-                            value={value as string || ''} 
-                            onValueChange={(newValue) => handleFieldChange(field.key, newValue)}
-                        >
-                            <SelectTrigger>
-                                <SelectValue placeholder={`Select ${label}`} />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {fonts.map(font => (
-                                    <SelectItem key={font} value={font}>{font}</SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
+                    <div key={field.key} className="grid grid-cols-4 items-center">
+                        <div className="col-span-1">
+                            <Label htmlFor={field.key}>{label}</Label>
+                        </div>
+                        <div className="col-span-3">     
+                            <Select
+                                value={value as string || ''}
+                                onValueChange={(newValue) => handleFieldChange(field.key, newValue)}
+                            >
+                                <SelectTrigger>
+                                    <SelectValue placeholder={`Select ${label}`} />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {fonts.map(font => (
+                                        <SelectItem key={font} value={font}>{font}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
                     </div>
                 );
 
-            case FieldType.Typography:
+            case FieldType.Typography: {
                 console.log(value);
                 const [size = '', font = '', weight = ''] = (value as string[]) || [];
                 return (
-                    <div key={field.key} className="space-y-4">
-                        <Label>{label}</Label>
-                        <div className="grid grid-cols-3 gap-4">
+                    <div key={field.key} className="grid grid-cols-4 items-center">
+                        <div className="col-span-1 flex items-center">
+                            <Label htmlFor={field.key}>{label}</Label>
+                        </div>
+                        <div className="col-span-3 grid grid-cols-3 gap-2">
                             <div>
                                 <Label htmlFor={`${field.key}-size`}>Size</Label>
-                                <Input 
+                                <Input
                                     id={`${field.key}-size`}
                                     value={size}
                                     onChange={(e) => handleFieldChange(field.key, [e.target.value, font, weight])}
                                     placeholder="e.g., 16px"
                                 />
                             </div>
-                            <div>
+                            <div className="">
                                 <Label htmlFor={`${field.key}-font`}>Font</Label>
-                                <Select 
-                                    value={font} 
+                                <Select
+                                    value={font}
                                     onValueChange={(newValue) => handleFieldChange(field.key, [size, newValue, weight])}
                                 >
                                     <SelectTrigger>
@@ -191,8 +238,8 @@ export default function Edit({ theme, fonts, weights }: Props) {
                             </div>
                             <div>
                                 <Label htmlFor={`${field.key}-weight`}>Weight</Label>
-                                <Select 
-                                    value={weight} 
+                                <Select
+                                    value={weight}
                                     onValueChange={(newValue) => handleFieldChange(field.key, [size, font, newValue])}
                                 >
                                     <SelectTrigger>
@@ -208,21 +255,42 @@ export default function Edit({ theme, fonts, weights }: Props) {
                         </div>
                     </div>
                 );
+            }
 
             case FieldType.Size:
             case FieldType.Shadow:
                 return (
                     <div key={field.key} className="space-y-2">
                         <Label htmlFor={field.key}>{label}</Label>
-                        <Input 
+                        <Input
                             id={field.key}
-                            value={value as string || ''} 
+                            value={value as string || ''}
                             onChange={(e) => handleFieldChange(field.key, e.target.value)}
                             placeholder={field.type === FieldType.Size ? "e.g., 4px" : "e.g., 0 1px 2px rgba(0,0,0,0.1)"}
                         />
                     </div>
                 );
         }
+    };
+
+    const renderFieldsWithInternalGroups = (fields: Field[]) => {
+        const groups = fields.reduce((acc, field) => {
+            const groupKey = field.group || 'Unknown';
+            if (!acc[groupKey]) {
+                acc[groupKey] = [];
+            }
+            acc[groupKey].push(field);
+            return acc;
+        }, {} as Record<string, Field[]>);
+
+        return Object.entries(groups).map(([groupName, groupFields], index) => (
+            <div key={groupName} className={index > 0 ? "space-y-4 mt-6" : "space-y-4"}>
+                <h3 className="text-lg font-medium">{groupName}</h3>
+                <div className={"space-y-4"}>
+                    {groupFields.map(field => renderField(field))}
+                </div>
+            </div>
+        ));
     };
 
     return (
@@ -235,46 +303,44 @@ export default function Edit({ theme, fonts, weights }: Props) {
                             <ArrowLeft className="h-4 w-4" />
                         </Button>
                         <div>
-                            <Input 
+                            <Input
                                 value={themeName}
                                 onChange={(e) => setThemeName(e.target.value)}
-                                className="text-2xl font-bold h-10 border-none bg-transparent p-0 focus-visible:ring-0"
                                 placeholder="Untitled theme"
                             />
-                            <p className="text-muted-foreground">Customize the theme settings</p>
                         </div>
                     </div>
-                    <Button onClick={handleSave}>
-                        <Save className="mr-2 h-4 w-4" />
-                        Save Changes
-                    </Button>
+                    <div className="flex items-center gap-2">
+                        <Button onClick={handleReset} variant="outline">
+                            <RotateCcw className="mr-2 h-4 w-4" />
+                            Reset
+                        </Button>
+                        <Button onClick={handleSave}>
+                            <Save className="mr-2 h-4 w-4" />
+                            Save Changes
+                        </Button>
+                    </div>
                 </div>
 
                 <Card className="border-0 shadow-none">
                     <CardContent className="p-0">
                         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
                             <TabsList className="grid w-full grid-cols-3 mb-4">
-                                <TabsTrigger value="color">Colors</TabsTrigger>
+                                <TabsTrigger value="color">Color</TabsTrigger>
                                 <TabsTrigger value="typography">Typography</TabsTrigger>
                                 <TabsTrigger value="components">Components</TabsTrigger>
                             </TabsList>
 
                             <TabsContent value="color" className="mt-0">
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    {colorFields.map(field => renderField(field))}
-                                </div>
+                                {renderFieldsWithInternalGroups(colorFields)}
                             </TabsContent>
 
                             <TabsContent value="typography" className="mt-0">
-                                <div className="space-y-6">
-                                    {typographyFields.map(field => renderField(field))}
-                                </div>
+                                {renderFieldsWithInternalGroups(typographyFields)}
                             </TabsContent>
 
                             <TabsContent value="components" className="mt-0">
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    {componentFields.map(field => renderField(field))}
-                                </div>
+                                {renderFieldsWithInternalGroups(componentFields)}
                             </TabsContent>
                         </Tabs>
                     </CardContent>

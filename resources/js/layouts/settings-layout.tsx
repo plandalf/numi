@@ -1,7 +1,7 @@
 import { cn } from '@/lib/utils';
 import { type BreadcrumbItem } from '@/types';
 import { Link } from '@inertiajs/react';
-import { Building2, CreditCard, Users } from 'lucide-react';
+import { Building2, CreditCard, PaintbrushIcon, Users } from 'lucide-react';
 import {
     Sidebar,
     SidebarContent,
@@ -31,6 +31,11 @@ export default function SettingsLayout({ children }: SettingsLayoutProps) {
             href: route('organizations.settings.team'),
             icon: Users,
         },
+      {
+        title: 'Theme',
+        href: route('organizations.themes.index'),
+        icon: PaintbrushIcon,
+      },
         ...(modules.billing ? [
             {
                 title: 'Billing',
@@ -42,7 +47,7 @@ export default function SettingsLayout({ children }: SettingsLayoutProps) {
 
     return (
         <SidebarProvider defaultOpen>
-            <div className="flex min-h-screen">
+            <div className="flex min-h-screen w-full">
                 <Sidebar variant="inset" collapsible="none">
                     <SidebarHeader>
                         <SidebarMenu>
@@ -56,7 +61,7 @@ export default function SettingsLayout({ children }: SettingsLayoutProps) {
                         </SidebarMenu>
                     </SidebarHeader>
                     <SidebarContent>
-                        <SidebarMenu className="p-2">
+                        <SidebarMenu className="p-2 w-full">
                             {settingsNavItems.map((item) => {
                                 const Icon = item.icon;
                                 const isActive = route().current(item.href);
@@ -80,15 +85,15 @@ export default function SettingsLayout({ children }: SettingsLayoutProps) {
                 </Sidebar>
 
                 {/* Main Content */}
-                <div className="flex-1">
+                <div className="flex-1 w-full">
                     <header className="flex h-16 items-center border-b px-8">
                         <h1 className="text-lg font-semibold">Organization Settings</h1>
                     </header>
-                    <main className="p-8">
+                    <main className="p-8 w-full">
                         {children}
                     </main>
                 </div>
             </div>
         </SidebarProvider>
     );
-} 
+}

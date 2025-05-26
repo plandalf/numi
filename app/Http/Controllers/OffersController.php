@@ -116,6 +116,7 @@ class OffersController extends Controller
             $forUpdate['view'] = $request->validated('view');
         }
 
+        // only save reference!
         if ($request->validated('theme')) {
             if ($offer->theme_id) {
                 // Update existing theme

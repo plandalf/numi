@@ -43,18 +43,19 @@ function ButtonBlockComponent({ context }: { context: BlockContextType }) {
     },
   });
 
-  const style = Numi.useStyle([
-    Style.alignment('alignment', 'Alignment', {}, 'left'),
+  const theme = Numi.useTheme();
+  console.log({ theme })
 
-    Style.backgroundColor('iconColor', 'Icon Color', {}, '#000000'),
+
+  const style = Numi.useStyle([
+    Style.alignment('alignment', 'Alignment', {}, 'expand'),
     Style.dimensions('iconSize', 'Icon Size', {
       config: {
         hideWidth: true
       }
     }, {height: '16px'}),
-
-    Style.backgroundColor('backgroundColor', 'Background Color', {}, '#FFFFFF'),
-    Style.textColor('textColor', 'Text Color', {}, '#000000'),
+    Style.backgroundColor('backgroundColor', 'Background Color', {}, theme?.primary_color),
+    Style.textColor('textColor', 'Text Color', {}, theme?.dark_text_color),
     Style.font(
       'font',
       'Button Font',
@@ -65,15 +66,15 @@ function ButtonBlockComponent({ context }: { context: BlockContextType }) {
         },
       },
       {
-        font: 'Inter',
-        weight: '400',
-        size: '16px',
+        font: theme?.label_typography?.font,
+        weight: theme?.label_typography?.weight,
+        size: theme?.label_typography?.size,
         lineHeight: '1.5',
         letterSpacing: '0px',
       },
     ),
-    Style.border('border', 'Border', {}, { width: '1px', style: 'solid' }),
-    Style.borderRadius('borderRadius', 'Radius', {}, '5px'),
+    Style.border('border', 'Border', {}, { width: '0px', style: 'solid' }),
+    Style.borderRadius('borderRadius', 'Radius', {}, theme?.border_radius),
     Style.borderColor('borderColor', 'Border Color', {}, '#000000'),
     Style.shadow('shadow', 'Shadow', {}, '0px 0px 0px 0px #000000'),
     Style.hidden('hidden', 'Hidden', {}, false),
@@ -83,6 +84,7 @@ function ButtonBlockComponent({ context }: { context: BlockContextType }) {
     Appearance.padding('Padding', 'Padding', {}),
     Appearance.margin('margin', 'Margin', {}),
     Appearance.visibility('visibility', 'Visibility', {}, { conditional: [] }),
+    Appearance.alignment('alignment', 'Alignment', {}, 'left'),
   ]);
 
   const font = style?.font as FontValue;
@@ -104,22 +106,25 @@ function ButtonBlockComponent({ context }: { context: BlockContextType }) {
     }],
   });
 
+
   const buttonStyles = useMemo(() => ({
-    backgroundColor: style.backgroundColor || 'white',
-    color: style.textColor || 'black',
-    fontFamily: font?.font,
-    fontWeight: font?.weight,
-    fontSize: font?.size,
+    backgroundColor: style.backgroundColor || theme?.primary_color,
+    color: style.textColor || theme?.dark_text_color,
+    fontFamily: font?.font || theme?.body_typography?.font,
+    fontWeight: font?.weight || theme?.body_typography?.weight,
+    fontSize: font?.size || theme?.body_typography?.size,
     lineHeight: font?.lineHeight,
     letterSpacing: font?.letterSpacing,
     borderColor: style.borderColor,
     borderWidth: border?.width,
     borderStyle: border?.style,
-    borderRadius : borderRadius ?? '3px',
+    borderRadius : borderRadius,
     boxShadow: shadow,
-    padding: appearance?.padding,
+    padding: appearance?.padding ?? theme.padding,
     margin: appearance?.margin,
   }), [style, font, border, borderRadius, shadow, appearance]);
+
+  console.log({ buttonStyles })
 
   const buttonClasses = useMemo(() => cx({
     "flex flex-row gap-x-2 items-center text-center": true,

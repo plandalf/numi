@@ -8,64 +8,40 @@ interface ThemePreviewCardProps {
 }
 
 export const ThemePreviewCard: React.FC<ThemePreviewCardProps> = ({ theme, className, onClick }) => {
-  // Fallbacks for missing theme fields
-  const primary = theme.primary_color || '#000';
-  const surface = theme.primary_surface_color || '#fff';
-  const border = theme.primary_border_color || '#e5e7eb';
-  const text = theme.dark_text_color || '#222';
-  const radius = theme.border_radius || '12px';
-  const shadow = theme.shadow_md || '0 4px 6px -1px rgba(0,0,0,0.1)';
-  const font = (Array.isArray(theme.body_typography) ? theme.body_typography[1] : theme.body_typography) || 'Inter';
-  const fontSize = (Array.isArray(theme.body_typography) ? theme.body_typography[0] : '16px') || '16px';
-  const fontWeight = (Array.isArray(theme.body_typography) ? theme.body_typography[2] : '400') || '400';
+  const primary = theme.primary_color || '#18181b'; // Default dark gray for primary
+  const secondary = theme.secondary_color || '#52525d'; // Default medium gray for secondary
+  const canvas = theme.canvas_color || '#ffffff'; // Default white for canvas
+  const surface = theme.primary_surface_color || '#f4f4f5'; // Default light gray for surface
+  const defaultBorderRadius = '8px'; // Default border radius
 
   return (
     <div
-      className={`cursor-pointer overflow-hidden shadow border mb-2 ${className || ''}`}
+      className={`cursor-pointer overflow-hidden rounded-lg border shadow-sm hover:shadow-md transition-shadow duration-200 bg-white ${className || ''}`}
       style={{
-        background: primary,
-        borderColor: border,
-        borderRadius: radius,
-        boxShadow: shadow,
+        borderRadius: theme.border_radius || defaultBorderRadius,
       }}
       onClick={onClick}
     >
-      <div
-        className="px-4 py-2 font-semibold"
-        style={{
-          color: theme.light_text_color || '#fff',
-          fontFamily: font,
-          fontSize: '1rem',
-        }}
-      >
-        {theme.name || 'Untitled theme'}
-      </div>
-      <div
-        className="p-4"
-        style={{
-          background: surface,
-          borderRadius: `0 0 ${radius} ${radius}`,
-        }}
-      >
-        <div
-          className="px-4 py-2"
-          style={{
-            background: '#fff',
-            color: text,
-            fontFamily: font,
-            fontSize,
-            fontWeight,
-            borderRadius: '8px',
-            boxShadow: theme.shadow_sm || '0 1px 2px 0 rgba(0,0,0,0.05)',
-            border: `1px solid ${border}`,
-            display: 'inline-block',
-          }}
-        >
-          Text
+      <div className="p-4">
+        <h3 className="text-lg font-semibold mb-3" style={{ color: theme.light_text_color || '#18181b' }}>
+          {theme.name || 'Untitled Theme'}
+        </h3>
+        <div className="flex space-x-2">
+          {[primary, secondary, canvas, surface].map((color, index) => (
+            <div
+              key={index}
+              className="h-8 w-8 rounded-md border"
+              style={{ 
+                backgroundColor: color,
+                borderRadius: '6px', // Slightly smaller radius for swatches
+              }}
+              title={['Primary', 'Secondary', 'Canvas', 'Surface'][index] + ': ' + color}
+            />
+          ))}
         </div>
       </div>
     </div>
   );
 };
 
-export default ThemePreviewCard; 
+export default ThemePreviewCard;

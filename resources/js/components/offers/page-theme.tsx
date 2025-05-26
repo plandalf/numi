@@ -85,7 +85,10 @@ export const PageTheme: React.FC = () => {
 
   const themeColors = getThemeColors(theme);
 
-  const onThemeChange = (theme: Theme) => setData({ ...data, theme });
+  const onThemeChange = (theme: Theme) => {
+    console.log('onThemeChange', theme);
+    setData({ ...data, theme });
+  };
 
   // Update parent on local theme change
   const handleThemeChange = (key: keyof Theme, value: any) => {
@@ -114,6 +117,8 @@ export const PageTheme: React.FC = () => {
         [field.key]: selectedTheme[field.key as keyof Theme] ?? ''
       }), {})
     };
+
+// todo: associate the theme to the offer!
 
     setTheme(newTheme);
     onThemeChange(newTheme);
