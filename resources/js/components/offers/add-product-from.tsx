@@ -131,7 +131,7 @@ export default function AddProductForm({
     };
 
     if (isEditing) {
-      put(route('offers.items.update', { offer: offerId, offerItem: initialData.id }), options);
+      put(route('offers.items.update', { offer: offerId, item: initialData.id }), options);
     } else {
       post(route('offers.items.store', { offer: offerId }), options);
     }

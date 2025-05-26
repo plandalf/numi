@@ -40,6 +40,8 @@ import { allElementTypes, CustomElementIcon } from '@/components/offers/page-ele
 import { blockTypes } from '@/components/blocks';
 import { Font } from '@/types';
 import WebFont from 'webfontloader';
+import { PageIframePreview } from '@/components/offers/page-iframe-preview';
+
 export interface EditProps extends PageProps {
     offer: Offer;
     fonts: Font[];
@@ -49,6 +51,7 @@ export interface EditProps extends PageProps {
     globalThemes: Theme[];
     showNameDialog?: boolean;
     products: Product[];
+    publishableKey?: string;
 }
 
 const PAGE_TYPE_ICONS: Record<PageType, React.ReactNode> = {
@@ -63,7 +66,7 @@ interface ActiveDndItem {
   id: string;
 }
 
-function Edit({ offer, organizationThemes, organizationTemplates, globalThemes, showNameDialog, fonts }: EditProps) {
+function Edit({ offer, organizationThemes, organizationTemplates, globalThemes, showNameDialog, fonts, publishableKey }: EditProps) {
 
   WebFont.load({
     google: {
@@ -81,7 +84,7 @@ function Edit({ offer, organizationThemes, organizationTemplates, globalThemes, 
       globalThemes={globalThemes}
       showNameDialog={showNameDialog}
     >
-      <EditApp />
+      <EditApp publishableKey={publishableKey} />
     </EditorProvider>
   );
 }
@@ -112,7 +115,7 @@ function getOverBlockIndex(section: ViewSection | undefined, overBlockId: string
   return section?.blocks?.findIndex((block: Block) => block.id === overBlockId) ?? -1;
 }
 
-function EditApp() {
+function EditApp({ publishableKey }: { publishableKey: string | undefined }) {
   const {
     data,
     setData,
@@ -144,8 +147,10 @@ function EditApp() {
     integration_client: IntegrationClient.STRIPE,
     status: 'open',
     taxes: 10,
-    shipping: 5
+    shipping: 5,
+    publishable_key: publishableKey,
   }
+
   const [prototype, setPrototype] = useState<null | { sectionId: string; index: number; block: Block }>();
   const [activeItem, setActiveItem] = useState<ActiveDndItem | null>(null);
   const dragOverRafRef = useRef<number | null>(null); // Ref for requestAnimationFrame
@@ -624,6 +629,7 @@ function MainContent() {
   } = useEditor();
 
   const isShareMode = viewMode === 'share';
+  const isPreviewMode = viewMode === 'preview';
 
   return (
     <div className="flex-1 flex flex-col min-w-0 relative">
@@ -632,6 +638,8 @@ function MainContent() {
       <div className="h-full bg-[#F7F9FF]">
           {isShareMode ? (
             <PageShare />
+          ) : isPreviewMode ? (
+            <PageIframePreview />
           ) : (
             <PagePreview
               page={data.view.pages[selectedPage]}

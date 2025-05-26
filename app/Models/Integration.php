@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Arr;
 
 /**
  * @property string $lookup_key
@@ -71,5 +72,11 @@ class Integration extends Model
     public function integrationClient(): AbstractIntegration
     {
         return get_integration_client_class($this);
+    }
+
+    public function getPublishableKeyAttribute()
+    {
+
+        return Arr::get($this->config, 'access_token.stripe_publishable_key');
     }
 }
