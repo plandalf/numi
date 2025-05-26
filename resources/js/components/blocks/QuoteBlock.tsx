@@ -127,7 +127,7 @@ function QuoteBlockComponent({ context }: { context: BlockContextType }) {
       {
         font: 'Inter',
         weight: '400',
-        size: '18px',
+        size: '16px',
         lineHeight: '1.5',
         letterSpacing: '0px',
       },
