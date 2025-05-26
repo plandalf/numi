@@ -82,6 +82,7 @@
         "react-querybuilder": "^8.6.0",
         "rehype-raw": "^7.0.0",
         "sonner": "^2.0.1",
+        "styled-components": "^6.1.18",
         "tailwind-merge": "^3.0.1",
         "tailwindcss": "^4.0.0",
         "tailwindcss-animate": "^1.0.7",

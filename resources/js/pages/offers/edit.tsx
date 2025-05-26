@@ -40,7 +40,6 @@ import { allElementTypes, CustomElementIcon } from '@/components/offers/page-ele
 import { blockTypes } from '@/components/blocks';
 import { Font } from '@/types';
 import WebFont from 'webfontloader';
-import { ThemeTypographyLoader } from '@/components/offers/theme-typography';
 export interface EditProps extends PageProps {
     offer: Offer;
     fonts: Font[];
@@ -547,7 +546,6 @@ function EditApp() {
 
   return (
     <AppOfferLayout offer={offer}>
-      <ThemeTypographyLoader theme={data?.theme} />
       <Head title={`Edit ${offer.name || 'Untitled Offer'}`} />
 
       <GlobalStateProvider offer={data} session={session} editor>

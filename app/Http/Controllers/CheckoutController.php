@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Actions\Checkout\CreateCheckoutSessionAction;
 use App\Http\Resources\Checkout\CheckoutSessionResource;
+use App\Http\Resources\OfferResource;
 use App\Models\Checkout\CheckoutSession;
 use App\Models\Store\Offer;
 use Illuminate\Http\Request;
@@ -48,7 +49,7 @@ class CheckoutController extends Controller
         $checkout->load(['lineItems.offerItem', 'offer.theme', 'lineItems.price.integration', 'lineItems.price.product']);
 
         return Inertia::render('checkout', [
-            'offer' => $offer,
+            'offer' => new OfferResource($offer),
             'checkoutSession' => new CheckoutSessionResource($checkout),
         ]);
     }

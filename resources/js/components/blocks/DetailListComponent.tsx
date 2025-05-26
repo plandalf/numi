@@ -6,6 +6,8 @@ import { MarkdownText } from "../ui/markdown-text";
 
 function DetailListBlockComponent({ context }: { context: BlockContextType }) {
 
+  const theme = Numi.useTheme();
+
   const [items] = Numi.useStateJsonSchema({
     name: 'items',
     schema: {
@@ -30,7 +32,8 @@ function DetailListBlockComponent({ context }: { context: BlockContextType }) {
           },
           caption: {
             title: "Caption",
-            type: "string"
+            type: "string",
+            meta: { editor: "markdown" },
           },
           icon: {
             title: 'Icon',
@@ -75,7 +78,7 @@ function DetailListBlockComponent({ context }: { context: BlockContextType }) {
         center: 'center',
         end: 'end',
       },
-    }, 'left'),
+    }, 'start'),
     Style.backgroundColor('backgroundColor', 'Background Color', {}, '#FFFFFF'),
     Style.textColor('labelColor', 'Label Color', {}, '#000000'),
     Style.font('labelFont', 'Label Font',
@@ -99,6 +102,13 @@ function DetailListBlockComponent({ context }: { context: BlockContextType }) {
         letterSpacing: '0px',
       },
     ),
+    Style.alignment('iconAlignment', 'Icon Alignment', {
+      options: {
+        start: 'start',
+        center: 'center',
+        end: 'end',
+      },
+    }, 'start'),
     Style.textColor('iconColor', 'Icon Color', {}, '#6a7282'),
     Style.dimensions('iconSize', 'Icon Size', {
       config: {
@@ -160,6 +170,7 @@ function DetailListBlockComponent({ context }: { context: BlockContextType }) {
   }), [style]);
 
   const iconStyle = useMemo(() => ({
+    alignSelf: style.iconAlignment ?? 'start',
     color: style.iconColor,
     size: style.iconSize?.height ?? '15px',
   }), [style]);
@@ -202,7 +213,9 @@ function DetailListBlockComponent({ context }: { context: BlockContextType }) {
               <MarkdownText
                 className="text-sm text-gray-500"
                 text={item.caption}
-                style={captionStyle}/>
+                style={captionStyle}
+                theme={theme}
+              />
             )}
           </div>
         </div>

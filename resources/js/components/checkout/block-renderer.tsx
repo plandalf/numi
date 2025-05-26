@@ -14,6 +14,7 @@ export function BlockRenderer({ block, children }: {
   }
 
   const blockContext: BlockContextType = {
+    theme: globalStateContext.theme,
     blockId: block.id,
     blockConfig: block,
     globalState: globalStateContext,

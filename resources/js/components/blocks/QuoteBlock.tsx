@@ -8,6 +8,8 @@ import { IconRenderer } from "../ui/icon-renderer";
 
 function QuoteBlockComponent({ context }: { context: BlockContextType }) {
 
+  const theme = Numi.useTheme();
+
   const [quoteStyle] = Numi.useStateEnumeration({
     name: 'style',
     initialValue: 'modern',
@@ -247,8 +249,15 @@ function QuoteBlockComponent({ context }: { context: BlockContextType }) {
     color: style?.iconColor ?? 'black',
   }), [style]);
 
+
   const quoteValue = quote || "Insert your inspirational quote here";
-  const quoteText = isMarkdown ? <MarkdownText text={quoteValue} /> : quoteValue;
+  const quoteText = isMarkdown 
+    ? <MarkdownText
+        text={quoteValue}
+        theme={theme}
+        style={quoteTextStyles}
+      />
+    : quoteValue;
 
   const authorValue = author || "Quote author";
   const affiliationValue = affiliation || "Affiliation";
@@ -273,7 +282,7 @@ function QuoteBlockComponent({ context }: { context: BlockContextType }) {
     return (
       <div className="flex flex-col gap-2" style={containerStyles}>
           <IconRenderer icon={icon} style={iconStyles} defaultIcon={defaultIcon}/>
-          <MarkdownText text={quoteValue} style={quoteTextStyles} />
+          {quoteText}
           <div className="flex flex-row gap-4 items-center">
             {image && (
               <img
@@ -295,7 +304,7 @@ function QuoteBlockComponent({ context }: { context: BlockContextType }) {
   if(quoteStyle === 'classic') {
     return (
       <div className="flex flex-col gap-2 p-4" style={containerStyles}>
-          <MarkdownText text={quoteValue} style={quoteTextStyles} />
+          {quoteText}
           <div className="flex flex-row gap-4 items-center">
             {image && (
               <img
@@ -324,7 +333,7 @@ function QuoteBlockComponent({ context }: { context: BlockContextType }) {
           />
         )}
           <div className="flex flex-col gap-4 items-center">
-            <MarkdownText text={quoteValue} style={quoteTextStyles} />
+            {quoteText}
             <div className="flex flex-col">
               <div className="text-base font-medium" style={authorStyles}>{authorValue}</div>
               <div className="text-sm" style={affiliationStyles}>{affiliationValue}</div>

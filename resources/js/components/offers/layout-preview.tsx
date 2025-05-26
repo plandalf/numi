@@ -124,7 +124,7 @@ const layoutConfig: TailwindLayoutConfig = {
                 "id": "action",
                 "type": "box",
                 "props": {
-                  "className": "p-6 bg-white border-t"
+                  "className": "p-6 bg-white"
                 }
               }
             ]

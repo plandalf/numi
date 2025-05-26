@@ -8,7 +8,6 @@ import { MarkdownText } from "../ui/markdown-text";
 // Block Components
 function TextBlockComponent({ context }: { context: BlockContextType }) {
 
-  console.log(context);
   const [text, setText, format] = Numi.useStateString({
     label: 'Text',
     name: 'value',
@@ -16,6 +15,8 @@ function TextBlockComponent({ context }: { context: BlockContextType }) {
     inspector: 'multiline',
     format: 'markdown',
   });
+
+  const theme = Numi.useTheme();
 
   const isMarkdown = format === 'markdown';
 
@@ -75,31 +76,32 @@ function TextBlockComponent({ context }: { context: BlockContextType }) {
     boxShadow: shadow,
     padding: appearance?.padding,
     margin: appearance.margin,
+    whiteSpace: 'pre-line',
   }), [style, font, border, borderRadius, shadow]);
 
-  const buttonClasses = useMemo(() => cn("max-w-none whitespace-pre-line",{
+  const textClasses = useMemo(() => cn("max-w-none whitespace-pre-line",{
     "text-start": style.alignment === 'left',
     "text-center": style.alignment === 'center',
     "text-end": style.alignment === 'right',
     "text-justify": style.alignment === 'expand',
   }), [style.alignment, isMarkdown]);
 
+  const textProps = {
+    className: textClasses,
+    id: context.blockId,
+    style: textStyles,
+  }
+
   if (style.hidden) {
     return null;
   }
 
   return (
-    <div
-      className={buttonClasses}
-      id={context.blockId}
-      style={textStyles}
-    >
-      {isMarkdown ? (
-        <MarkdownText text={text} />
-      ) : (
-        text
-      )}
-    </div>
+    isMarkdown ? (
+      <MarkdownText theme={theme} text={text} {...textProps} />
+    ) : (
+      <div {...textProps} >{text}</div>
+    )
   );
 }
 
