@@ -27,12 +27,12 @@ function ImageBlockComponent() {
         maxHeight: 500,
       },
     }, { width: '100%', height: '100%' }),
-    Style.border('border', 'Border', {}, { width: '1px', style: 'solid' }),
-    Style.borderRadius('borderRadius', 'Border Radius', {}, '5px'),
+    Style.border('border', 'Border', {}, { width: '-px', style: 'solid' }),
+    Style.borderRadius('borderRadius', 'Border Radius', {}, '0px'),
     Style.borderColor('borderColor', 'Border Color', {}, '#000000'),
     Style.shadow('shadow', 'Shadow', {}, '0px 0px 0px 0px #000000'),
   ]);
-  
+
   const appearance = Numi.useAppearance([
     Appearance.padding('padding', 'Padding', {}),
     Appearance.margin('margin', 'Margin', {}),
@@ -79,7 +79,7 @@ function ImageBlockComponent() {
   }
 
   return (
-    <div className={classList}>  
+    <div className={classList}>
       <img src={src} alt=""  style={styleProps} />
     </div>
   )
