@@ -271,7 +271,7 @@ function QuoteBlockComponent({ context }: { context: BlockContextType }) {
 
   if (quoteStyle === 'modern') {
     return (
-      <div className="flex flex-col gap-2 p-4" style={containerStyles}>
+      <div className="flex flex-col gap-2" style={containerStyles}>
           <IconRenderer icon={icon} style={iconStyles} defaultIcon={defaultIcon}/>
           <MarkdownText text={quoteValue} style={quoteTextStyles} />
           <div className="flex flex-row gap-4 items-center">
