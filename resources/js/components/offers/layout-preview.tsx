@@ -410,13 +410,13 @@ const BlockRendererComponent = ({ block, children, onBlockSelect }: {
       })}
       onClick={handleClick}>
       <BlockContext.Provider value={blockContext}>
-        {!hideBlockId && (
+        {/* {!hideBlockId && (
           <div className={cx({
             "hidden group-hover:block absolute text-xs bg-gray-100 border font-semibold right-0 top-0": true,
             "!block": selectedBlockId === block.id,
             "opacity-50": !isVisible,
           })}>{block.id}</div>
-        )}
+        )} */}
         {children(blockContext)}
         {hasVisibilityCondition && <Badge variant="outline" className={cn("absolute top-0 right-0", {
           "bg-green-500 text-white": isVisible,

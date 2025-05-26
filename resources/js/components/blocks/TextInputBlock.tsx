@@ -70,7 +70,7 @@ function TextInputBlockComponent({ context }: { context: BlockContextType }) {
     ),
     Style.border('border', 'Border', {}, { width: '1px', style: 'solid' }),
     Style.borderRadius('borderRadius', 'Border Radius', {}, '5px'),
-    Style.borderColor('borderColor', 'Border Color', {}, '#000000'),
+    Style.borderColor('borderColor', 'Border Color', {}, '#bbbbbb'),
     Style.shadow('shadow', 'Shadow', {}, '0px 0px 0px 0px #000000'),
     Style.hidden('hidden', 'Hidden', {}, false),
   ]);

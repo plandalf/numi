@@ -91,7 +91,7 @@ function QuoteBlockComponent({ context }: { context: BlockContextType }) {
   const isMarkdown = format === 'markdown';
 
   const style = Numi.useStyle([
-    Style.backgroundColor('backgroundColor', 'Background Color', {}, '#FFFFFF'),
+    Style.backgroundColor('backgroundColor', 'Background Color', {}, ''),
 
     Style.alignment('iconAlignment', 'Icon Alignment', {
       options: {
@@ -174,10 +174,10 @@ function QuoteBlockComponent({ context }: { context: BlockContextType }) {
     Style.borderColor('imageBorderColor', 'Image Border Color', {}, '#000000'),
     Style.shadow('imageShadow', 'Image Shadow', {}, '0px 0px 0px 0px #000000'),
 
-    Style.border('border', 'Border', {}, { width: '1px', style: 'solid' }),
-    Style.borderRadius('borderRadius', 'Border Radius', {}, '5px'),
-    Style.borderColor('borderColor', 'Border Color', {}, '#000000'),
-    Style.shadow('shadow', 'Shadow', {}, '0px 0px 0px 0px #000000'),
+    Style.border('border', 'Border', {}, { width: '0px', style: 'solid' }),
+    Style.borderRadius('borderRadius', 'Border Radius', {}, '0px'),
+    Style.borderColor('borderColor', 'Border Color', {}, ''),
+    Style.shadow('shadow', 'Shadow', {}, '0px 0px 0px 0px '),
     Style.hidden('hidden', 'Hidden', {}, false),
   ]);
 
