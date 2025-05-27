@@ -36,15 +36,16 @@ function TextBlockComponent({ context }: { context: BlockContextType }) {
           hideHorizontalAlignment: true,
         },
       },
-      {
-        font: 'Inter',
-        weight: '400',
-        size: '16px',
-        lineHeight: '1.2rem',
-        letterSpacing: '0px',
-      },
+      {},
+      // {
+      //   font: 'Inter',
+      //   weight: '400',
+      //   size: '16px',
+      //   lineHeight: '1.2rem',
+      //   letterSpacing: '0px',
+      // },
     ),
-    Style.border('border', 'Border', {}, { width: 'opx', style: 'solid' }),
+    Style.border('border', 'Border', {}, { width: '0px', style: 'solid' }),
     Style.borderRadius('borderRadius', 'Border Radius', {}, '0px'),
     Style.borderColor('borderColor', 'Border Color', {}, '#000000'),
     Style.shadow('shadow', 'Shadow', {}, '0px 0px 0px 0px #000000'),
@@ -62,9 +63,9 @@ function TextBlockComponent({ context }: { context: BlockContextType }) {
     fontFamily: font?.font,
     fontWeight: font?.weight,
     fontSize: font?.size,
-    
+
     lineHeight: font?.lineHeight,
-    
+
     letterSpacing: font?.letterSpacing,
     borderColor: style.borderColor,
     borderWidth: border?.width,

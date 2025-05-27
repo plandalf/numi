@@ -72,7 +72,6 @@ const preserveAllLineBreaks = (text: string) => {
 };
 
 export const MarkdownText = ({ text, theme, style, className, ...props }: MarkdownTextProps) => {
-
   return (
     <Container
       theme={theme}
