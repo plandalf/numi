@@ -29,8 +29,8 @@ export default function Templates({ globalTemplates, organizationTemplates, cate
     return (
         <AppLayout>
             <Head title="Templates" />
-            
-            <div className="container mx-auto py-10 px-4 sm:px-6 lg:px-8">
+
+            <div className="container mx-auto py-8 px-4 sm:px-6 lg:px-8">
                 {/* Header */}
                 <div className="flex items-center justify-between mb-8">
                     <div className="flex flex-col">
@@ -84,4 +84,4 @@ export default function Templates({ globalTemplates, organizationTemplates, cate
             </div>
         </AppLayout>
     );
-} 
+}

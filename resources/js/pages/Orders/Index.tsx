@@ -94,7 +94,7 @@ export default function Index({ auth, orders, filters }: OrdersIndexProps) {
     <AppLayout>
       <Head title="Orders" />
 
-      <div className="container max-w-[100vw] mx-auto py-6 sm:py-10 px-4 sm:px-6 lg:px-8">
+      <div className="container max-w-[100vw] mx-auto py-6 sm:py-8 px-4 sm:px-6 lg:px-8">
         <header className="mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
             <h1 className="text-xl sm:text-2xl font-semibold text-gray-900 dark:text-white">

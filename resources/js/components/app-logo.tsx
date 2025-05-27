@@ -3,7 +3,6 @@ import AppLogoIcon from './app-logo-icon';
 import { useSubscriptions } from '@/hooks/use-subscriptions';
 
 export default function AppLogo() {
-    const organization = useCurrentOrganization();
 
     return (
         <div className="flex items-center gap-2">
@@ -12,16 +11,10 @@ export default function AppLogo() {
                     <AppLogoIcon className="" />
                 </div>
                 <div className="ml-1 grid flex-1 text-left text-sm">
-                    <span className="mb-0.5 truncate leading-none font-semibold">Numi</span>
+                    <span className="truncate leading-none font-semibold text-xl uppercase font-sora">Numi</span>
                 </div>
             </div>
-            {
-                organization?.on_trial && (
-                    <div className="bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded-full text-xs font-medium">
-                        {organization?.trial_days_left} days trial left
-                    </div>
-                )
-            }
+
         </div>
     );
 }

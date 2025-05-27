@@ -43,37 +43,30 @@ export function OrganizationSwitcher() {
 
     return (
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
-        <SidebarGroup className="px-2 py-0 mb-2">
-          <SidebarGroupLabel>Organization</SidebarGroupLabel>
-          <SidebarMenu>
-            <SidebarMenuItem >
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <SidebarMenuButton size="md" className="border border-slate-200">
-                    {/*<Building2 className="mr-2 size-4" />*/}
-                    <span className="flex-1 text-left">{auth.user.current_organization?.name ?? 'Select Organization'}</span>
-                    <ChevronDown className="ml-auto size-4" />
-                  </SidebarMenuButton>
-                </DropdownMenuTrigger>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <div className="flex items-center gap-1 border border-gray-800">
+              <span className="flex-1 text-left">{auth.user.current_organization?.name ?? 'Select Organization'}</span>
+              <ChevronDown className="ml-auto size-4" />
+            </div>
+          </DropdownMenuTrigger>
 
-                <DropdownMenuContent className="w-56">
-                  {auth.user.organizations.map((org) => (
-                    <DropdownMenuItem key={org.id} onClick={() => onSwitch?.(org.id)}>
-                      {org.name}
-                    </DropdownMenuItem>
-                  ))}
-                  <DropdownMenuSeparator />
-                    <DialogTrigger asChild>
-                      <DropdownMenuItem>
-                        <Plus className="mr-2 size-4" />
-                        Create Organization
-                      </DropdownMenuItem>
-                    </DialogTrigger>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </SidebarMenuItem>
-          </SidebarMenu>
-        </SidebarGroup>
+          <DropdownMenuContent className="w-56">
+            {auth.user.organizations.map((org) => (
+              <DropdownMenuItem key={org.id} onClick={() => onSwitch?.(org.id)}>
+                {org.name}
+              </DropdownMenuItem>
+            ))}
+            <DropdownMenuSeparator />
+            <DialogTrigger asChild>
+              <DropdownMenuItem>
+                <Plus className="mr-2 size-4" />
+                Create Organization
+              </DropdownMenuItem>
+            </DialogTrigger>
+          </DropdownMenuContent>
+        </DropdownMenu>
+
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Create new organization</DialogTitle>

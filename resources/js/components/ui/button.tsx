@@ -12,7 +12,7 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default:
-          "bg-primary text-primary-foreground shadow-xs hover:bg-primary/90",
+          "bg-default text-default-foreground shadow-xs hover:bg-default/90 font-semibold",
         destructive:
           "bg-destructive text-white shadow-xs hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40",
         outline:
@@ -38,7 +38,7 @@ const buttonVariants = cva(
   }
 )
 
-interface ButtonProps 
+interface ButtonProps
   extends React.ComponentProps<"button">,
   VariantProps<typeof buttonVariants> {
     tooltip?: React.ReactNode;
@@ -66,7 +66,7 @@ function Button({
   }
 
   if(tooltip) {
-    return ( 
+    return (
       <TooltipProvider delayDuration={100000}>
         <Tooltip>
             <TooltipTrigger asChild>

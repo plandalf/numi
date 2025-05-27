@@ -106,7 +106,7 @@ function OfferHeader({ offer, isNameDialogOpen, setIsNameDialogOpen }: AppHeader
     }
 
     return (
-        <div className="border-sidebar-border/80 border-b bg-primary flex justify-between h-14 items-center p-3 gap-x-4">
+        <div className="border-sidebar-border/80 border-b bg-gray-900 flex justify-between h-14 items-center p-3 gap-x-4">
             {/* Left side */}
             <div className="flex gap-x-4 items-center min-w-0">
                 <Link href="/dashboard" prefetch>
@@ -202,7 +202,7 @@ function OfferHeader({ offer, isNameDialogOpen, setIsNameDialogOpen }: AppHeader
                     onClick={() => setViewMode('preview')}
                     className={cn(
                         "transition-colors",
-                        isPreviewMode ? "bg-primary text-primary-foreground" : ""
+                        isPreviewMode ? "bg-gray-900 text-gray-900" : ""
                     )}
                 >
                     {isMobile && <Eye className="size-4" />}
@@ -304,7 +304,7 @@ export default function AppOfferLayout({ children, offer }: Props) {
     const [isNameDialogOpen, setIsNameDialogOpen] = useState(false);
 
     return (
-        <AppShell>
+        <div>
             <OfferHeader
                 offer={offer}
                 isNameDialogOpen={isNameDialogOpen}
@@ -313,6 +313,6 @@ export default function AppOfferLayout({ children, offer }: Props) {
             <AppContent>
                 {children}
             </AppContent>
-        </AppShell>
+        </div>
     );
 }

@@ -68,7 +68,7 @@ export default function Show({ auth, order }: OrdersShowProps) {
     <AppLayout>
       <Head title={`Order ${order.uuid}`} />
 
-      <div className="container max-w-[100vw] mx-auto py-6 sm:py-10 px-4 sm:px-6 lg:px-8">
+      <div className="container max-w-[100vw] mx-auto py-6 sm:py-8 px-4 sm:px-6 lg:px-8">
         <header className="mb-8">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
