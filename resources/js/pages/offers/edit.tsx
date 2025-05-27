@@ -772,7 +772,7 @@ function Toolbar() {
             {data.view.pages[selectedPage].next_page?.default_next_page && (
               <div className="flex items-center gap-2">
                 <span className="text-sm text-muted-foreground">Next:</span>
-                <span className="text-sm font-medium">{data.view.pages[data.view.pages[selectedPage].next_page.default_next_page].name}</span>
+                <span className="text-sm font-medium">{data.view.pages[data.view.pages[selectedPage].next_page.default_next_page]?.name}</span>
               </div>
             )}
           {/*  if none, we need to configure one!*/}

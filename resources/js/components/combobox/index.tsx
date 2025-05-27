@@ -44,7 +44,7 @@ export function Combobox({
   className,
   onSelect,
   selected: defaultSelected = "",
-  hideSearch = true,
+  hideSearch = false,
   required = false,
   multiple = false,
   disabled = false,
@@ -132,7 +132,7 @@ export function Combobox({
                     return `${labels.join(", ")} +${value.length - 2}`;
                   })()
                 : getSelectedLabels().join(", ")
-              : 
+              :
               (<span className={cn(
                   "flex flex-row gap-2 items-center",
                   placeholderIcon && "justify-center",

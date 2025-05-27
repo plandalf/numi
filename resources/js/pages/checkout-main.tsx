@@ -730,7 +730,9 @@ export const useValidateFields = () => {
     console.log('validateAllFields', { fieldStates, fields })
     // Validate each field
     Object.keys(fields).forEach((field) => {
-      const value = fields[field].value
+      const fieldState = fields[field];
+      if (!fieldState) return;
+      const value = fieldState.value
       validateField(field, value)
     })
 

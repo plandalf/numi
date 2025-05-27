@@ -163,7 +163,6 @@ const ProductStep = ({ integrationId, onClickNext, onClickCancel, productFormDat
                 selected={productFormData.productId}
                 onSelect={handleProductChange}
                 required
-                modal
               />
             </div>
             <div className="grid gap-2">
@@ -287,7 +286,6 @@ export const PriceStep = ({ integrationId, onClickSave, onClickBack, selectedPri
                 onSelect={handleProductChange}
                 required
                 multiple
-                modal
               />
             </div>
 
