@@ -70,12 +70,12 @@ class ThemeTest extends TestCase
         $theme->fill([
             'primary_color' => '#FF0000',
             'secondary_color' => '#00FF00',
-            'light_text_color' => '#FFFFFF',
-            'dark_text_color' => '#000000',
+            'label_text_color' => '#FFFFFF',
+            'body_text_color' => '#000000',
             'main_font' => 'Arial',
             'mono_font' => 'Courier New',
             'border_radius' => '4px',
-            'shadow_sm' => '0 1px 2px rgba(0,0,0,0.1)',
+            'shadow' => '0 1px 2px rgba(0,0,0,0.1)',
             'h1_typography' => ['16px', 'Arial', '700'],
             'h2_typography' => ['14px', 'Arial', '600'],
             'body_typography' => ['14px', 'Arial', '400'],
@@ -85,12 +85,12 @@ class ThemeTest extends TestCase
 
         $this->assertEquals('#FF0000', $theme->primary_color);
         $this->assertEquals('#00FF00', $theme->secondary_color);
-        $this->assertEquals('#FFFFFF', $theme->light_text_color);
-        $this->assertEquals('#000000', $theme->dark_text_color);
+        $this->assertEquals('#FFFFFF', $theme->label_text_color);
+        $this->assertEquals('#000000', $theme->body_text_color);
         $this->assertEquals('Arial', $theme->main_font);
         $this->assertEquals('Courier New', $theme->mono_font);
         $this->assertEquals('4px', $theme->border_radius);
-        $this->assertEquals('0 1px 2px rgba(0,0,0,0.1)', $theme->shadow_sm);
+        $this->assertEquals('0 1px 2px rgba(0,0,0,0.1)', $theme->shadow);
         $this->assertEquals(['16px', 'Arial', '700'], $theme->h1_typography);
         $this->assertEquals(['14px', 'Arial', '600'], $theme->h2_typography);
         $this->assertEquals(['14px', 'Arial', '400'], $theme->body_typography);
@@ -104,8 +104,8 @@ class ThemeTest extends TestCase
         // Colors should be 6 characters (hex without alpha)
         $this->assertMatchesRegularExpression('/^#[0-9A-Fa-f]{6}$/', $theme->primary_color);
         $this->assertMatchesRegularExpression('/^#[0-9A-Fa-f]{6}$/', $theme->secondary_color);
-        $this->assertMatchesRegularExpression('/^#[0-9A-Fa-f]{6}$/', $theme->light_text_color);
-        $this->assertMatchesRegularExpression('/^#[0-9A-Fa-f]{6}$/', $theme->dark_text_color);
+        $this->assertMatchesRegularExpression('/^#[0-9A-Fa-f]{6}$/', $theme->label_text_color);
+        $this->assertMatchesRegularExpression('/^#[0-9A-Fa-f]{6}$/', $theme->body_text_color);
     }
 
     /** @test */
@@ -141,14 +141,8 @@ class ThemeTest extends TestCase
         $this->assertLessThanOrEqual(4, strlen($theme->border_radius));
 
         // Shadows should be strings with max 64 chars
-        $this->assertIsString($theme->shadow_sm);
-        $this->assertLessThanOrEqual(64, strlen($theme->shadow_sm));
-
-        $this->assertIsString($theme->shadow_md);
-        $this->assertLessThanOrEqual(64, strlen($theme->shadow_md));
-
-        $this->assertIsString($theme->shadow_lg);
-        $this->assertLessThanOrEqual(64, strlen($theme->shadow_lg));
+        $this->assertIsString($theme->shadow);
+        $this->assertLessThanOrEqual(64, strlen($theme->shadow));
 
         // Padding should be a string with max 32 chars
         $this->assertIsString($theme->padding);

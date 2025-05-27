@@ -20,37 +20,46 @@ class ThemeResource extends JsonResource
         return [
             'id' => $this->id,
             'name' => $this->name,
+
             'primary_color' => $this->primary_color ?? '#000000',
+            'primary_contrast_color' => $this->primary_contrast_color ?? '#000000',
+
             'secondary_color' => $this->secondary_color ?? '#000000',
+            'secondary_contrast_color' => $this->secondary_contrast_color ?? '#000000',
+
             'canvas_color' => $this->canvas_color ?? '#000000',
             'primary_surface_color' => $this->primary_surface_color ?? '#000000',
             'secondary_surface_color' => $this->secondary_surface_color ?? '#000000',
+            
+            'label_text_color' => $this->label_text_color ?? '#000000',
+            'body_text_color' => $this->body_text_color ?? '#000000',
+
             'primary_border_color' => $this->primary_border_color ?? '#000000',
             'secondary_border_color' => $this->secondary_border_color ?? '#000000',
-            'light_text_color' => $this->light_text_color ?? '#000000',
-            'dark_text_color' => $this->dark_text_color ?? '#000000',
-            'danger_color' => $this->danger_color ?? '#000000',
-            'info_color' => $this->info_color ?? '#000000',
+
             'warning_color' => $this->warning_color ?? '#000000',
             'success_color' => $this->success_color ?? '#000000',
             'highlight_color' => $this->highlight_color ?? '#000000',
+
             'main_font' => $this->main_font ?? FontElement::INTER->value,
             'mono_font' => $this->mono_font ?? FontElement::INTER->value,
+
             'h1_typography' => $this->h1_typography ?? ['32px', FontElement::INTER->value, '600'],
             'h2_typography' => $this->h2_typography ?? ['24px', FontElement::INTER->value, '600'],
             'h3_typography' => $this->h3_typography ?? ['19px', FontElement::INTER->value, '600'],
             'h4_typography' => $this->h4_typography ?? ['16px', FontElement::INTER->value, '600'],
             'h5_typography' => $this->h5_typography ?? ['13px', FontElement::INTER->value, '600'],
-            'h6_typography' => $this->h6_typography ?? ['10px', FontElement::INTER->value, '600'],
+
             'label_typography' => $this->label_typography ?? ['14px', FontElement::INTER->value, '500'],
             'body_typography' => $this->body_typography ?? ['16px', FontElement::INTER->value, '400'],
+
             'border_radius' => $this->border_radius ?? '12px',
-            'shadow_sm' => $this->shadow_sm ?? '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
-            'shadow_md' => $this->shadow_md ?? '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-            'shadow_lg' => $this->shadow_lg ?? '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
+            'shadow' => $this->shadow ?? '0 0px 0px 0 rgba(0, 0, 0, 0.05)',
+
             'padding' => $this->padding ?? '5px 10px 5px 10px',
             'spacing' => $this->spacing ?? '5px 10px 5px 10px',
             'margin' => $this->margin ?? '5px 10px 5px 10px',
+
             'created_at' => $this->created_at?->toISOString(),
             'updated_at' => $this->updated_at?->toISOString(),
         ];

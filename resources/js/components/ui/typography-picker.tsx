@@ -1,18 +1,37 @@
-import { Input } from '../ui/input';
-import { Label } from '../ui/label';
 import React from 'react';
-import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from '../ui/select';
+import { cn } from '@/lib/utils';
+import { Separator } from './separator';
 import { Font } from '@/types';
-import { WEIGHT_LABELS } from '../ui/font-picker';
-interface TypographyEditorProps {
-  label: string;
+import { Label } from './label';
+import { X } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './select';
+import { Input } from './input';
+import { WEIGHT_LABELS } from './font-picker';
+
+export interface TypographyPickerConfig {
+  hideLabel?: boolean;
+}
+
+interface TypographyPickerProps {
   value: string[];
   onChange: (value: string[]) => void;
+  onClose?: () => void;
+  config?: TypographyPickerConfig;
+  className?: string;
   fonts: Font[];
 }
 
-export const TypographyEditor: React.FC<TypographyEditorProps> = ({ label, value, onChange, fonts }) => {
-  const [size = '', font = '', weight = ''] = value || [];
+export const TypographyPicker: React.FC<TypographyPickerProps> = ({
+  value,
+  onChange,
+  onClose,
+  config,
+  className,
+  fonts,
+}) => {
+  const { hideLabel } = config || {};
+
+  const [size = '', font = '', weight = '', color = ''] = value || [];
   
   const selectedFont = fonts.find(f => f.name === font);
   const availableWeights = selectedFont?.weights || [];
@@ -27,17 +46,27 @@ export const TypographyEditor: React.FC<TypographyEditorProps> = ({ label, value
   };
 
   return (
-    <div className="flex flex-col gap-2">
-      <Label className="text-sm capitalize">{label}</Label>
+    <div className={cn("py-4 px-2.5 flex flex-col items-center gap-2 w-full", className)}>
+      {!hideLabel && (
+        <>
+          <div className="flex items-center justify-between gap-2 w-full">
+            <Label className="text-start">Font</Label>
+            {onClose && (
+              <X className="size-4 cursor-pointer" onClick={onClose} />
+            )} 
+          </div>
+          <Separator className="my-2"/>
+        </>
+      )}
       <div className="flex gap-2">
         <Input
           value={size}
           onChange={e => onChange([e.target.value, font, weight])}
           placeholder="Size (e.g. 16px)"
-          className="w-1/3 text-xs truncate"
+          className="min-w-[50px] text-xs truncate"
         />
         <Select value={font} onValueChange={handleFontChange}>
-          <SelectTrigger className="w-1/3 text-xs truncate" style={{ fontFamily: font }}>
+          <SelectTrigger className="min-w-[100px] text-xs truncate" style={{ fontFamily: font }}>
             <SelectValue placeholder="Font" />
           </SelectTrigger>
           <SelectContent>
@@ -53,7 +82,7 @@ export const TypographyEditor: React.FC<TypographyEditorProps> = ({ label, value
           onValueChange={w => onChange([size, font, w])}
           disabled={!selectedFont}
         >
-          <SelectTrigger className="w-1/3 text-xs truncate">
+          <SelectTrigger className="min-w-[100px] text-xs truncate">
             <SelectValue placeholder="Weight" />
           </SelectTrigger>
           <SelectContent>
@@ -67,4 +96,4 @@ export const TypographyEditor: React.FC<TypographyEditorProps> = ({ label, value
       </div>
     </div>
   );
-}
+}; 

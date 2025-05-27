@@ -14,36 +14,44 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property int|null $organization_id
  * @property string $name
  * @property string $primary_color
+ * @property string $primary_contrast_color
+ * 
  * @property string $secondary_color
+ * @property string $secondary_contrast_color
+ * 
  * @property string $canvas_color
  * @property string $primary_surface_color
  * @property string $secondary_surface_color
+ * 
+ * @property string $label_text_color
+ * @property string $body_text_color
+ * 
  * @property string $primary_border_color
  * @property string $secondary_border_color
- * @property string $light_text_color
- * @property string $dark_text_color
- * @property string $danger_color
- * @property string $info_color
+ * 
  * @property string $warning_color
  * @property string $success_color
  * @property string $highlight_color
+ * 
  * @property string $main_font
  * @property string $mono_font
+ * 
  * @property array $h1_typography
  * @property array $h2_typography
  * @property array $h3_typography
  * @property array $h4_typography
  * @property array $h5_typography
- * @property array $h6_typography
+ * 
  * @property array $label_typography
  * @property array $body_typography
+ * 
  * @property string $border_radius
- * @property string $shadow_sm
- * @property string $shadow_md
- * @property string $shadow_lg
+ * @property string $shadow
+ * 
  * @property string $padding
  * @property string $spacing
  * @property string $margin
+ * 
  * @property \Carbon\Carbon $created_at
  * @property \Carbon\Carbon $updated_at
  * @property \Carbon\Carbon|null $deleted_at
@@ -59,34 +67,42 @@ class Theme extends Model
     protected $fillable = [
         'organization_id',
         'name',
+
         'primary_color',
+        'primary_contrast_color',
+
         'secondary_color',
+        'secondary_contrast_color',
+
         'canvas_color',
         'primary_surface_color',
         'secondary_surface_color',
+
+        'label_text_color',
+        'body_text_color',
+
         'primary_border_color',
         'secondary_border_color',
-        'light_text_color',
-        'dark_text_color',
-        'danger_color',
-        'info_color',
+        
         'warning_color',
         'success_color',
         'highlight_color',
+
         'main_font',
         'mono_font',
+
         'h1_typography',
         'h2_typography',
         'h3_typography',
         'h4_typography',
         'h5_typography',
-        'h6_typography',
+
         'label_typography',
         'body_typography',
+
         'border_radius',
-        'shadow_sm',
-        'shadow_md',
-        'shadow_lg',
+        'shadow',
+
         'padding',
         'spacing',
         'margin',
@@ -104,7 +120,6 @@ class Theme extends Model
         'h3_typography' => 'array',
         'h4_typography' => 'array',
         'h5_typography' => 'array',
-        'h6_typography' => 'array',
         'label_typography' => 'array',
         'body_typography' => 'array',
     ];

@@ -44,6 +44,7 @@ import { PageIframePreview } from '@/components/offers/page-iframe-preview';
 
 export interface EditProps extends PageProps {
     offer: Offer;
+    theme: Theme;
     fonts: Font[];
     weights: string[];
     organizationThemes: Theme[];
@@ -66,7 +67,7 @@ interface ActiveDndItem {
   id: string;
 }
 
-function Edit({ offer, organizationThemes, organizationTemplates, globalThemes, showNameDialog, fonts, publishableKey }: EditProps) {
+function Edit({ offer, theme, organizationThemes, organizationTemplates, globalThemes, showNameDialog, fonts, publishableKey }: EditProps) {
 
   WebFont.load({
     google: {
@@ -79,6 +80,7 @@ function Edit({ offer, organizationThemes, organizationTemplates, globalThemes, 
   return (
     <EditorProvider
       offer={offer}
+      theme={theme}
       organizationThemes={organizationThemes}
       organizationTemplates={organizationTemplates}
       globalThemes={globalThemes}

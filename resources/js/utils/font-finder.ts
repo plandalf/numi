@@ -53,7 +53,6 @@ export function findUniqueFontsFromTheme(theme: Theme): string[] {
     'h3_typography',
     'h4_typography',
     'h5_typography',
-    'h6_typography',
     'label_typography',
     'body_typography'
   ] as const;

@@ -91,6 +91,7 @@ class OffersController extends Controller
 
         return Inertia::render('offers/edit', [
             'offer' => new OfferResource($offer),
+            'theme' => new ThemeResource($offer?->theme ?? new Theme),
             'showNameDialog' => session('showNameDialog', false),
             'organizationThemes' => ThemeResource::collection($organizationThemes),
             'organizationTemplates' => TemplateResource::collection($organizationTemplates),
@@ -114,24 +115,8 @@ class OffersController extends Controller
             $forUpdate['view'] = $request->validated('view');
         }
 
-        // only save reference!
-        if ($request->validated('theme')) {
-            if ($offer->theme_id) {
-                // Update existing theme
-                $offer->theme->update([
-                    'name' => 'Theme for ' . $offer->name,
-                    'organization_id' => $offer->organization_id,
-                    ...$request->validated('theme'),
-                ]);
-            } else {
-                // Create new theme and associate it with the offer
-                $theme = Theme::create([
-                    'name' => 'Theme for ' . $offer->name,
-                    'organization_id' => $offer->organization_id,
-                    ...$request->validated('theme'),
-                ]);
-                $forUpdate['theme_id'] = $theme->id;
-            }
+        if ($request->validated('theme_id')) {
+            $forUpdate['theme_id'] = $request->validated('theme_id');
         }
 
         $offer->update($forUpdate);

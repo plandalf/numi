@@ -19,6 +19,9 @@ interface EditorContextType {
   organizationTemplates: Template[];
   globalThemes: Theme[];
 
+  theme: Theme | null;
+  setTheme: React.Dispatch<React.SetStateAction<Theme>>;
+
   isNameDialogOpen: boolean;
   setIsNameDialogOpen: React.Dispatch<React.SetStateAction<boolean>>;
 
@@ -93,7 +96,7 @@ export function useEditor() {
 
 
 function generateDefaultView() {
-  const defaultPage = generateDefaultPage({ type: 'entry', position: { x: 100, y: 100 } });
+  const defaultPage = generateDefaultPage({ type: 'entry', position: { x: 100, y: 100 }, pageNumber: 1 });
 
   return {
     pages: {
@@ -109,12 +112,13 @@ type EditFormData = {
     first_page: string;
     pages: Record<string, Page>;
   };
-  theme: Theme | null;
+  theme_id: string | null;
   screenshot: Offer['screenshot'];
 }
 
 export interface EditProps {
   offer: Offer;
+  theme: Theme;
   organizationThemes: Theme[];
   organizationTemplates: Template[];
   globalThemes: Theme[];
@@ -122,7 +126,7 @@ export interface EditProps {
   children: React.ReactNode;
 }
 
-export function EditorProvider({ offer, organizationThemes, organizationTemplates, globalThemes, showNameDialog, children }: EditProps) {
+export function EditorProvider({ offer, organizationThemes, organizationTemplates, globalThemes, showNameDialog, children, ...props }: EditProps) {
   const [isNameDialogOpen, setIsNameDialogOpen] = useState(false);
   const [selectedPage, setSelectedPage] = useState<string>(offer.view?.first_page);
   const [editingPageName, setEditingPageName] = useState<string | null>(null);
@@ -139,11 +143,12 @@ export function EditorProvider({ offer, organizationThemes, organizationTemplate
     width: number;
     height: number;
   }>({ width: 1024, height: 768 });
+  const [theme, setTheme] = useState<Theme>(props.theme);
 
   const { data, setData, put, processing, errors, setDefaults } = useForm<EditFormData>({
     name: offer.name,
     view: offer.view,
-    theme: offer.theme,
+    theme_id: offer.theme?.id,
     screenshot: offer.screenshot,
   });
 
@@ -154,7 +159,7 @@ export function EditorProvider({ offer, organizationThemes, organizationTemplate
       setData({
         name: offer.name,
         view: defaultView,
-        theme: offer.theme,
+        theme_id: offer.theme_id,
         screenshot: offer.screenshot,
       });
 
@@ -362,7 +367,7 @@ export function EditorProvider({ offer, organizationThemes, organizationTemplate
     const updatedPages = {
       ...data.view.pages,
       [id]: {
-        ...generateDefaultPage({ id, type, position: { x: 0, y: 0 } }),
+        ...generateDefaultPage({ id, type, position: { x: 0, y: 0 }, pageNumber: Object.keys(data.view.pages).length + 1 }),
         name: type === 'entry' ? 'Entry Page' : type === 'ending' ? 'Ending Page' : 'New Page',
       }
     };
@@ -462,6 +467,10 @@ export function EditorProvider({ offer, organizationThemes, organizationTemplate
     processing,
     errors,
     setDefaults,
+
+    theme,
+    setTheme,
+
     isNameDialogOpen, setIsNameDialogOpen,
     selectedPage, setSelectedPage,
     editingPageName, setEditingPageName,

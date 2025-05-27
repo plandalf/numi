@@ -1,6 +1,6 @@
 import React, { act, useState } from 'react';
 import { Button } from '../ui/button';
-import { Image, PlusIcon, Ruler, Type } from 'lucide-react';
+import { Image, Info, PlusIcon, Ruler, Type } from 'lucide-react';
 import { Label } from '../ui/label';
 import { Separator } from '../ui/separator';
 import {
@@ -23,6 +23,11 @@ import ShadowPicker from '../ui/shadow-picker';
 import { DimensionPicker } from '../ui/dimension-picker';
 import { ImageUpload } from '../ui/image-upload';
 import { Combobox } from '../combobox';
+import { TypographyPicker } from '../ui/typography-picker';
+import { TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
+import { Tooltip } from '../ui/tooltip';
+import { cn } from '@/lib/utils';
+import { SpacingPicker } from '../ui/spacing-picker';
 
 export interface StyleItem {
   name: string;
@@ -33,22 +38,26 @@ export interface StyleItem {
     'colorPicker'
     | 'alignmentPicker'
     | 'fontPicker'
+    | 'fontFamilyPicker'
+    | 'typographyPicker'
     | 'borderPicker'
     | 'borderRadiusPicker'
     | 'dimensionPicker'
     | 'shadowPicker'
+    | 'spacingPicker'
     | 'imagePicker'
     | 'select'
     //sizepicker?
     | 'checkbox';
   options?: Record<string, any>;
   config?: Record<string, any>;
+  tooltip?: string;
 }
 
 interface StyleEditorProps {
   items: StyleItem[];
   onChange: (key: string, value: any) => void;
-  onDelete: (key: string) => void;
+  onDelete?: (key: string) => void;
   themeColors?: Record<string, string>;
   fonts?: Font[];
 }
@@ -253,13 +262,81 @@ const StyleItemValuePreview = ({
           </DropdownMenuContent>
         </DropdownMenu>
       );
+    case 'fontFamilyPicker':
+      return (
+        <Select value={value as string} onValueChange={(value) => onChange(item.name, value)}>
+          <SelectTrigger className="flex-1 h-fit p-0 shadow-none border-none w-fit cursor-pointer"  style={{ fontFamily: value }}>
+            <SelectValue placeholder={item.defaultValue}/>
+          </SelectTrigger>
+          <SelectContent>
+            {fonts?.map((font) => (
+              <SelectItem key={font.name} value={font.name} style={{ fontFamily: font.name }}>
+                {font.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      );
+    case 'typographyPicker':
+      const [size, font, weight] = value as string[];
+      const typographyValueAsTitle = `${size}, ${font}, ${WEIGHT_LABELS[weight as keyof typeof WEIGHT_LABELS]}`;
+
+      return (
+        <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
+          <DropdownMenuTrigger asChild>
+            <span className="flex flex-row gap-2 items-center cursor-pointer">
+              <Type className="size-5 border border-gray-200 rounded p-0.5" />
+              <span
+                className="flex-1 text-xs line-clamp-2"
+                title={typographyValueAsTitle}
+              >
+                {typographyValueAsTitle}
+              </span>
+            </span>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" side="right" className="justify-center">
+            <TypographyPicker
+              className="w-full w-[350px] cursor-pointer"
+              value={value as string[]}
+              onChange={(value) => onChange(item.name, value)}
+              fonts={fonts ?? []}
+              onClose={() => setIsOpen(false)}
+              config={item.config}
+            />
+          </DropdownMenuContent>
+        </DropdownMenu>
+      );
+    case 'spacingPicker':
+      return (
+        <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
+          <DropdownMenuTrigger asChild>
+            <span className="flex-1 flex flex-row gap-2 items-center cursor-pointer">
+              <svg width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M7.5 0.75L9.75 3H5.25L7.5 0.75ZM7.5 14.25L9.75 12H5.25L7.5 14.25ZM3 5.25L0.75 7.5L3 9.75V5.25ZM14.25 7.5L12 5.25V9.75L14.25 7.5Z" fill="currentColor" fill-rule="evenodd" clip-rule="evenodd"></path></svg>
+              <span
+                className="flex-1 text-xs line-clamp-2"
+                title={value}
+              >
+                {value}
+              </span>
+            </span>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" side="right" className="justify-center">
+            <SpacingPicker
+              className="w-full max-w-[300px] p-2"
+              value={value as string}
+              defaultValue={item.defaultValue}
+              onChangeProperty={(value) => onChange(item.name, value)}
+            />
+          </DropdownMenuContent>
+        </DropdownMenu>
+      );
     case 'select':
       return (
         <Select value={value as string} onValueChange={(value) => onChange(item.name, value)}>
           <SelectTrigger className="flex-1 h-fit p-0 shadow-none border-none w-fit cursor-pointer">
             <SelectValue placeholder={item.defaultValue} />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="w-fit">
               {Object.entries(item?.options || {}).map(([key, value]) => (
                 <SelectItem key={key} value={key}>
                   {value}
@@ -297,19 +374,37 @@ export const StyleEditor: React.FC<StyleEditorProps> = ({
   return (
     <div className="flex flex-col gap-2 p-2 border rounded-md border-gray-200 bg-gray-100/50 h-full">
       {itemsWithValue?.map((item) => (
-        <div key={item.name} className="px-1 py-1.5 flex flex-row gap-2 items-center bg-white rounded-md border border-gray-200">
-          <Label title={item.label} className="ml-2 text-sm w-28">{item.label}</Label>
+        <div key={item.name} className="px-2 py-1.5 flex flex-row gap-2 items-center bg-white rounded-md border border-gray-200">
+          {item.tooltip && (
+            <TooltipProvider delayDuration={1500}>
+              <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Info className="size-4 cursor-help text-gray-500 hover:text-gray-700 hover:scale-110 transition-all duration-300 ease-in-out" />
+                  </TooltipTrigger>
+                  <TooltipContent
+                    side="right"
+                    align="center"
+                    className="max-w-[200px]"
+                  >
+                      {item.tooltip}
+                  </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
+          <Label className={cn(item.tooltip && '!w-26', "text-sm w-32")}>{item.label}</Label>
           <Separator orientation="vertical" className="!h-5" />
           <div className="flex-1 flex flex-row gap-2 items-center justify-between">
             <StyleItemValuePreview item={item} onChange={onChange} themeColors={themeColors} fonts={fonts} />
-            <Kebab
-            items={[
-                {
-                  label: 'Delete',
-                  onClick: () => onDelete?.(item.name)
-                }
-              ]}
-            />
+            {onDelete && 
+              <Kebab
+                items={[
+                    {
+                      label: 'Delete',
+                      onClick: () => onDelete?.(item.name)
+                    }
+                  ]}
+              />
+            }
           </div>
         </div>
       ))}

@@ -7,18 +7,19 @@ use Illuminate\Support\Facades\Auth;
 
 class CreateUpdateThemeRequest extends FormRequest
 {
+
     protected $colorFields = [
         'primary_color',
+        'primary_contrast_color',
         'secondary_color',
+        'secondary_contrast_color',
         'canvas_color',
         'primary_surface_color',
         'secondary_surface_color',
+        'label_text_color',
+        'body_text_color',
         'primary_border_color',
         'secondary_border_color',
-        'light_text_color',
-        'dark_text_color',
-        'danger_color',
-        'info_color',
         'warning_color',
         'success_color',
         'highlight_color',
@@ -32,15 +33,15 @@ class CreateUpdateThemeRequest extends FormRequest
         'h3_typography',
         'h4_typography',
         'h5_typography',
-        'h6_typography',
         'label_typography',
         'body_typography',
     ];
 
     protected $sizeFields = ['border_radius'];
-    protected $spacingFields = ['border_radius', 'padding', 'spacing', 'margin'];
 
-    protected $shadowFields = ['shadow_sm', 'shadow_md', 'shadow_lg'];
+    protected $spacingFields = ['padding', 'spacing', 'margin'];
+
+    protected $shadowFields = ['shadow'];
 
     /**
      * Determine if the user is authorized to make this request.
