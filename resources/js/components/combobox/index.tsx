@@ -25,6 +25,8 @@ export type ComboboxProps = {
   items: {
     value: string;
     label: string;
+    badge?: React.ReactNode;
+    disabled?: boolean;
   }[];
   placeholderIcon?: React.ReactNode;
   placeholder?: string;
@@ -52,6 +54,7 @@ export function Combobox({
   popoverClassName = '',
   ...props
 }: ComboboxProps) {
+  console.log('items', items);
   const [open, setOpen] = React.useState(false);
   const [value, setValue] = React.useState<string | string[]>(
     multiple
@@ -60,6 +63,12 @@ export function Combobox({
         : []
       : defaultSelected,
   );
+
+  const handleMouseLeave = () => {
+    if (multiple) {
+      setOpen(false);
+    }
+  };
 
   React.useEffect(() => {
     setValue(
@@ -123,7 +132,7 @@ export function Combobox({
             className,
           )}
         >
-          <span className="truncate flex-1 text-left">
+          <span className="truncate flex flex-row flex-1 text-left">
             {getSelectedLabels().length > 0
               ? multiple && Array.isArray(value) && value.length > 2
                 ? (() => {
@@ -157,6 +166,7 @@ export function Combobox({
         className={cn("p-0", popoverClassName)}
         style={{ width: "var(--radix-popover-trigger-width)" }}
         align="start"
+        onMouseLeave={handleMouseLeave}
       >
         <Command>
           {!hideSearch && (
@@ -207,15 +217,24 @@ export function Combobox({
               {items.map((item) => (
                 <CommandItem
                   key={item.value}
-                  value={item.value}
+                  value={`${item.label} ${item.value}`}
                   onSelect={(currentValue) => {
-                    handleSelect(currentValue);
+                    if (item.disabled) return;
+                    handleSelect(item.value);
                     if (!multiple) {
                       setOpen(false);
                     }
                   }}
+                  className={cn(
+                    item.disabled && "opacity-50 cursor-not-allowed"
+                  )}
                 >
-                  {item.label}
+                  <div className="flex items-center gap-2">
+                    {item.label}
+                    {item.badge && (
+                      <span className="ml-auto">{item.badge}</span>
+                    )}
+                  </div>
                   <Check
                     className={cn(
                       "ml-auto",

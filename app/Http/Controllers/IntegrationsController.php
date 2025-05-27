@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Enums\IntegrationType;
+use App\Models\Catalog\Product;
 use App\Models\Integration;
 use App\Modules\Integrations\Contracts\HasPrices;
 use App\Modules\Integrations\Contracts\HasProducts;
@@ -33,9 +34,13 @@ class IntegrationsController extends Controller
         ]);
     }
 
-    public function products(Integration $integration)
+    public function products(Integration $integration, Request $request)
     {
         $integrationClient = $integration->integrationClient();
+        $importedProducts = Product::query()
+            ->where('organization_id', $request->user()->currentOrganization->id)
+            ->where('integration_id', $integration->id)
+            ->get();
 
         if ($integrationClient instanceof HasProducts) {
             $allProducts = collect();
@@ -44,6 +49,7 @@ class IntegrationsController extends Controller
             do {
                 $params = [
                     'limit' => 100,
+                    'active' => true,
                 ];
 
                 if ($startingAfter) {
@@ -56,6 +62,12 @@ class IntegrationsController extends Controller
                 $startingAfter = $products->has_more ? end($products->data)->id : null;
             } while ($startingAfter);
 
+            $allProducts = $allProducts->map(function ($product) use ($importedProducts) {
+                $importedProduct = $importedProducts->first(fn($importedProduct) => $importedProduct->gateway_product_id === $product->id);
+                $product->imported = $importedProduct !== null;
+
+                return $product;
+            });
             return response()->json($allProducts->toArray());
         }
 
@@ -77,6 +89,7 @@ class IntegrationsController extends Controller
                         'data.tiers',
                     ],
                     'limit' => 100,
+                    'active' => true,
                 ];
 
                 if ($startingAfter) {

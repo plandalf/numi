@@ -16,7 +16,7 @@ class OfferItemsController extends Controller {
     {
         $validated = $request->validated();
 
-        $isRequired = ($validated['is_required'] || $offer->offerItems->count() === 0) && $validated['type'] === OfferItemType::STANDARD;
+        $isRequired = ($validated['is_required'] || $offer->offerItems->count() === 0) && $validated['type'] === OfferItemType::STANDARD->value;
         $offerItem = OfferItem::create([
             'name' => $validated['name'],
             'key' => $validated['key'],
