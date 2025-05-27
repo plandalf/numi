@@ -26,7 +26,7 @@ export default function Integrate({ integrations }: IntegrationsPageProps) {
   return (
     <AppLayout>
       <Head title="Integrations" />
-      <div className="container mx-auto py-10 px-4 sm:px-6 lg:px-8">
+      <div className="container mx-auto py-8 px-4 sm:px-6 lg:px-8">
         <header className="mb-8 flex justify-between items-center">
           <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">
             Integrations

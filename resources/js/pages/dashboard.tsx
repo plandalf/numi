@@ -9,6 +9,7 @@ import { TemplateSelectorModal } from '@/components/templates/template-selector-
 import { useState } from 'react';
 import { Template } from '@/types/template';
 import { Offer } from '@/types/offer';
+import { Separator } from '@/components/ui/separator';
 
 interface Props {
     offers: Offer[];
@@ -46,55 +47,71 @@ export default function Dashboard({ offers, globalTemplates, organizationTemplat
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Dashboard" />
-            <div className="flex h-full flex-1 flex-col gap-4 rounded-xl p-4">
-                <div className="flex justify-end">
-                    <Button
-                        onClick={handleCreateOffer}
-                    >
-                        <Plus className="mr-2 h-4 w-4" />
-                        Create New Offer
-                    </Button>
-                </div>
-                <div className="grid auto-rows-min gap-4 md:grid-cols-3">
-                    {offers.length > 0 ? (
-                        offers.map((offer) => (
-                            <Card
-                                key={offer.id}
-                                className="cursor-pointer transition-all hover:shadow-md"
-                                onClick={() => router.get(route('offers.edit', offer.id))}
-                            >
-                                <CardHeader>
-                                    <CardTitle>{offer.name || 'Untitled Offer'}</CardTitle>
-                                    <CardDescription>
-                                        Created {new Date(offer.created_at).toLocaleDateString()}
-                                    </CardDescription>
-                                </CardHeader>
-                                <CardContent>
-                                  {offer.screenshot && (
-                                    <img src={offer.screenshot.url} alt="" />
-                                  )}
-                                  {!offer.screenshot && (
-                                    <PlaceholderPattern className="h-32 w-full stroke-neutral-900/20 dark:stroke-neutral-100/20" />
-                                  )}
-                                </CardContent>
-                            </Card>
-                        ))
-                    ) : (
-                        <div className="col-span-3 flex flex-col items-center justify-center gap-4 rounded-xl border border-dashed p-8 text-center">
-                            <p className="text-muted-foreground">No offers yet. Create your first offer to get started!</p>
-                        </div>
-                    )}
-                </div>
-            </div>
+          <div className="flex h-full flex-1 flex-col rounded-xl p-8">
 
-            {/* Template Selector Modal */}
-            <TemplateSelectorModal
-                open={isSelectorOpen}
-                onOpenChange={setIsSelectorOpen}
-                templates={templates}
-                categories={categories}
-                onCreateNew={createNewOffer}
-            />
+            <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+              <div>
+                <h1 className="text-xl sm:text-2xl font-semibold text-gray-900 dark:text-white">
+                  Offers
+                </h1>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  Manage your checkout experiences here
+                </p>
+              </div>
+              <div className="flex justify-end">
+                <Button
+                  onClick={handleCreateOffer}
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  Create New Offer
+                </Button>
+              </div>
+            </header>
+
+            <br/>
+
+              <div className="grid auto-rows-min gap-4 md:grid-cols-3">
+                {offers.length > 0 ? (
+                  offers.map((offer) => (
+                    <Card
+                      key={offer.id}
+                      className="cursor-pointer"
+                      onClick={() => router.get(route('offers.edit', offer.id))}
+                    >
+                      <CardHeader>
+                        <CardTitle>{offer.name || 'Untitled Offer'}</CardTitle>
+                        <CardDescription>
+                          Created {new Date(offer.created_at).toLocaleDateString()}
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        {offer.screenshot && (
+                          <img src={offer.screenshot.url} alt="" />
+                        )}
+                        {!offer.screenshot && (
+                          <PlaceholderPattern
+                            className="h-32 w-full stroke-neutral-900/20 dark:stroke-neutral-100/20" />
+                        )}
+                      </CardContent>
+                    </Card>
+                  ))
+                ) : (
+                  <div
+                    className="col-span-3 flex flex-col items-center justify-center gap-4 rounded-xl border border-dashed p-8 text-center">
+                    <p className="text-muted-foreground">No offers yet. Create your first offer to get started!</p>
+                  </div>
+                )}
+              </div>
+          </div>
+
+          {/* Template Selector Modal */}
+          <TemplateSelectorModal
+            open={isSelectorOpen}
+            onOpenChange={setIsSelectorOpen}
+            templates={templates}
+            categories={categories}
+            onCreateNew={createNewOffer}
+          />
         </AppLayout>
-    );
+);
 }
