@@ -849,7 +849,7 @@ function PageTypeDialog() {
 
     return (
         <Dialog open={showPageTypeDialog} onOpenChange={setShowPageTypeDialog}>
-            <DialogContent>
+            <DialogContent className="w-full sm:max-w-2xl">
                 <DialogHeader>
                     <DialogTitle>{isEditing ? 'Change Page Type' : 'Add New Page'}</DialogTitle>
                     <DialogDescription>
@@ -859,7 +859,7 @@ function PageTypeDialog() {
                         }
                     </DialogDescription>
                 </DialogHeader>
-                <div className="grid grid-cols-3 gap-4 py-4">
+                <div className="grid grid-cols-4 gap-4 py-4">
                     <button
                         onClick={() => handleTypeSelection('entry')}
                         className={cn(
@@ -879,6 +879,16 @@ function PageTypeDialog() {
                     >
                         <FileText className="w-6 h-6" />
                         <span className="text-sm font-medium">Content Page</span>
+                    </button>
+                    <button
+                        onClick={() => handleTypeSelection('payment')}
+                        className={cn(
+                            "flex flex-col items-center gap-2 p-4 rounded-lg border border-border hover:bg-secondary/50",
+                            currentPage?.type === 'payment' && "bg-secondary"
+                        )}
+                    >
+                        <CreditCard className="w-6 h-6" />
+                        <span className="text-sm font-medium">Payment Page</span>
                     </button>
                     <button
                         onClick={() => handleTypeSelection('ending')}

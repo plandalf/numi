@@ -35,6 +35,7 @@ export type ComboboxProps = {
   required?: boolean;
   multiple?: boolean;
   disabled?: boolean;
+  popoverClassName?: string;
 } & PopoverProps;
 
 export function Combobox({
@@ -48,6 +49,7 @@ export function Combobox({
   required = false,
   multiple = false,
   disabled = false,
+  popoverClassName = '',
   ...props
 }: ComboboxProps) {
   const [open, setOpen] = React.useState(false);
@@ -152,7 +154,7 @@ export function Combobox({
         </Button>
       </PopoverTrigger>
       <PopoverContent
-        className="p-0"
+        className={cn("p-0", popoverClassName)}
         style={{ width: "var(--radix-popover-trigger-width)" }}
         align="start"
       >

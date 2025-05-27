@@ -38,7 +38,7 @@ interface EditorContextType {
   setShowPageLogic: React.Dispatch<React.SetStateAction<boolean>>;
 
   showPageTypeDialog: boolean;
-  setShowPageTypeDialog: React.Dispatch<React.SetStateAction<boolean>>;
+  setShowPageTypeDialog: (show: boolean) => void;
 
   editingPageId: string | null;
   setEditingPageId: React.Dispatch<React.SetStateAction<string | null>>;
@@ -256,7 +256,7 @@ export function EditorProvider({ offer, organizationThemes, organizationTemplate
         setEditingPageId(pageId);
         setShowPageTypeDialog(true);
         break;
-      case 'delete': 
+      case 'delete':
         const pagesToUpdate = { ...data.view.pages };
         delete pagesToUpdate[pageId];
         Object.keys(pagesToUpdate).forEach(pageKey => {
@@ -302,19 +302,19 @@ export function EditorProvider({ offer, organizationThemes, organizationTemplate
 
   const handlePageTypeChange = (pageId: string, type: PageType) => {
     const currentPage = data.view.pages[pageId];
-    const isDefaultLabel = 
-      currentPage.name === 'Entry Page' || 
-      currentPage.name === 'New Page' || 
+    const isDefaultLabel =
+      currentPage.name === 'Entry Page' ||
+      currentPage.name === 'New Page' ||
       currentPage.name === 'Ending Page';
 
     const updatedPage = {
       ...currentPage,
       type,
-      name: isDefaultLabel 
-        ? type === 'entry' 
-          ? 'Entry Page' 
-          : type === 'ending' 
-            ? 'Ending Page' 
+      name: isDefaultLabel
+        ? type === 'entry'
+          ? 'Entry Page'
+          : type === 'ending'
+            ? 'Ending Page'
             : 'New Page'
         : currentPage.name
     };
@@ -371,7 +371,7 @@ export function EditorProvider({ offer, organizationThemes, organizationTemplate
         name: type === 'entry' ? 'Entry Page' : type === 'ending' ? 'Ending Page' : 'New Page',
       }
     };
-    
+
     const updatedView = {
       ...data.view,
       pages: updatedPages,
@@ -460,6 +460,11 @@ export function EditorProvider({ offer, organizationThemes, organizationTemplate
     setSelectedBlockIdState(null);
   };
 
+  const handleShowPageTypeDialog = (show: boolean) => {
+    setEditingPageId(null);
+    setShowPageTypeDialog(show);
+  }
+
   const value: EditorContextType = {
     data,
     setData,
@@ -476,7 +481,8 @@ export function EditorProvider({ offer, organizationThemes, organizationTemplate
     editingPageName, setEditingPageName,
     pageNameInput, setPageNameInput,
     showPageLogic, setShowPageLogic,
-    showPageTypeDialog, setShowPageTypeDialog,
+    showPageTypeDialog,
+    setShowPageTypeDialog: handleShowPageTypeDialog,
     editingPageId, setEditingPageId,
     inputRef,
     isRenamingFromDropdown, setIsRenamingFromDropdown,

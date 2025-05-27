@@ -31,7 +31,7 @@ function ButtonBlockComponent({ context }: { context: BlockContextType }) {
     inspector: 'select',
     label: 'Type',
   });
-  
+
   const [icon] = Numi.useStateJsonSchema({
     name: 'icon',
     label: 'Icon',
@@ -138,7 +138,7 @@ function ButtonBlockComponent({ context }: { context: BlockContextType }) {
     "border-[16px]": style.border === 'xl',
   }), [style.alignment, style.fontWeight, style.border, isSubmitting]);
 
-  const containerClasses = useMemo(() => cn("space-y-2 flex", {
+  const containerClasses = useMemo(() => cn("space-y-2 flex flex-col", {
     "justify-start": style.alignment === 'left',
     "justify-center": style.alignment === 'center',
     "justify-end": style.alignment === 'right',
@@ -156,6 +156,11 @@ function ButtonBlockComponent({ context }: { context: BlockContextType }) {
 
   return (
     <div className={containerClasses}>
+      {type === 'submit' && submitError && (
+        <div className="text-sm text-red-600">
+          {submitError}
+        </div>
+      )}
       <button
         type={type}
         disabled={type === 'submit' && isSubmitting}
@@ -176,11 +181,6 @@ function ButtonBlockComponent({ context }: { context: BlockContextType }) {
           text
         )}
       </button>
-      {type === 'submit' && submitError && (
-        <div className="text-sm text-red-600">
-          {submitError}
-        </div>
-      )}
     </div>
   );
 }

@@ -634,7 +634,7 @@ export default function PageFlowEditor({ view, onUpdateFlow }: PageFlowEditorPro
                 }
             });
         }
-        
+
         allPageIds.forEach(id => {
             // A page is an orphan if it has no incoming connections AND it's not the designated first page (unless the first page itself is unlinked somehow, which is a different issue)
             // More accurately, if it's not the first_page and has no incoming connections.
@@ -923,9 +923,9 @@ export default function PageFlowEditor({ view, onUpdateFlow }: PageFlowEditorPro
                         };
                         setPendingPosition(position);
                         // NOW set pendingConnection state, which will be used by handleCreatePage after modal interaction
-                        setPendingConnection({ 
-                            source: currentConnectingNode.source, 
-                            sourceHandleId: currentConnectingNode.sourceHandleId 
+                        setPendingConnection({
+                            source: currentConnectingNode.source,
+                            sourceHandleId: currentConnectingNode.sourceHandleId
                         });
                         setShowPageTypeDialog(true);
                         console.log('onConnectEnd TRACE: setShowPageTypeDialog(true) called, pendingConnection state set with ref data');
@@ -1258,7 +1258,7 @@ export default function PageFlowEditor({ view, onUpdateFlow }: PageFlowEditorPro
             }
             console.warn(`Deleted the first page. New first page is: ${updatedFirstPage}`);
         }
-        
+
         onUpdateFlow({
             pages: updatedPages,
             first_page: updatedFirstPage
@@ -1340,7 +1340,7 @@ export default function PageFlowEditor({ view, onUpdateFlow }: PageFlowEditorPro
                         />
                     )}
 
-                    
+
                 </ReactFlow>
 
                 <PageTypeDialog
@@ -1349,7 +1349,7 @@ export default function PageFlowEditor({ view, onUpdateFlow }: PageFlowEditorPro
                     setShowPageTypeDialog(open);
                     if (!open) {
                       console.log('PageTypeDialog TRACE: Closing - Clearing pendingConnection state', {
-                        currentPendingConnStateSource: pendingConnection?.source, 
+                        currentPendingConnStateSource: pendingConnection?.source,
                         currentPendingConnStateHandleId: pendingConnection?.sourceHandleId
                       });
                       setPendingPosition(null);
