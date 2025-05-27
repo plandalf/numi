@@ -115,13 +115,13 @@ class Theme extends Model
      */
     protected $casts = [
         'organization_id' => 'integer',
-        'h1_typography' => 'array',
-        'h2_typography' => 'array',
-        'h3_typography' => 'array',
-        'h4_typography' => 'array',
-        'h5_typography' => 'array',
-        'label_typography' => 'array',
-        'body_typography' => 'array',
+        'h1_typography' => 'json',
+        'h2_typography' => 'json',
+        'h3_typography' => 'json',
+        'h4_typography' => 'json',
+        'h5_typography' => 'json',
+        'label_typography' => 'json',
+        'body_typography' => 'json',
     ];
 
     public function organization(): BelongsTo

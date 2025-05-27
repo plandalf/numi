@@ -14,6 +14,7 @@ class DatabaseSeeder extends Seeder
         $this->call([
             UserSeeder::class,
             OrganizationSeeder::class,
+            ThemeSeeder::class,
             // ProductSeeder::class,
             // OfferSeeder::class,
             // CheckoutSessionSeeder::class,
@@ -21,7 +22,7 @@ class DatabaseSeeder extends Seeder
         ]);
 
         $this->call([
-            TemplateSeeder::class,
+            // TemplateSeeder::class,
         ]);
     }
 }

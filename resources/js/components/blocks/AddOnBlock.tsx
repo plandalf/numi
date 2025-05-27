@@ -103,24 +103,16 @@ function AddOnBlockComponent({ context }: { context: BlockContextType }) {
         right: 'right',
       }
     }, 'left'),
-    Style.textColor('titleColor', 'Title Color', {}, '#000000'),
-    Style.font('titleFont', 'Title Font',
+    Style.font('titleFont', 'Title Font & Color',
       {
         config: {
           hideVerticalAlignment: true,
           hideHorizontalAlignment: true,
         },
       },
-      {
-        font: 'Inter',
-        weight: '600',
-        size: '18px',
-        lineHeight: '1.5',
-        letterSpacing: '0px',
-      },
+      {},
     ),
-    Style.textColor('descriptionColor', 'Description Color', {}, '#E5E5E5'),
-    Style.font('descriptionFont', 'Description Font',
+    Style.font('descriptionFont', 'Description Font & Color',
       {
         config: {
           hideVerticalAlignment: true,
@@ -128,11 +120,7 @@ function AddOnBlockComponent({ context }: { context: BlockContextType }) {
         },
       },
       {
-        font: 'Inter',
-        weight: '600',
-        size: '18px',
-        lineHeight: '1.5',
-        letterSpacing: '0px',
+        color: '#E5E5E5'
       },
     ),
 
@@ -140,8 +128,7 @@ function AddOnBlockComponent({ context }: { context: BlockContextType }) {
     Style.backgroundColor('checkboxActiveBackgroundColor', 'Checkbox Selected Color', {}, '#0374ff'),
     Style.backgroundColor('checkboxInactiveBackgroundColor', 'Checkbox Unselected Color', {}, '#E5E5E5'),
     Style.textColor('checkboxCheckColor', 'Checkbox Check Color', {}, '#FFFFFF'),
-    Style.textColor('checkboxLabelColor', 'Checkbox Label Color', {}, '#000000'),
-    Style.font('checkboxLabelFont', 'Checkbox Label Font',
+    Style.font('checkboxLabelFont', 'Checkbox Label Font & Color',
       {
         config: {
           hideVerticalAlignment: true,
@@ -149,11 +136,7 @@ function AddOnBlockComponent({ context }: { context: BlockContextType }) {
         },
       },
       {
-        font: 'Inter',
-        weight: '400',
-        size: '16px',
-        lineHeight: '1.5',
-        letterSpacing: '0px',
+        color: '#000000',
       },
     ),
     Style.border('checkboxBorder', 'Checkbox Border', {}, { width: '1px', style: 'solid' }),
@@ -200,7 +183,7 @@ function AddOnBlockComponent({ context }: { context: BlockContextType }) {
   }), [style]);
 
   const descriptionStyles = useMemo(() => ({
-    color: style.descriptionColor || 'black',
+    color: style.descriptionFont?.color,
     fontFamily: style.descriptionFont?.font,
     fontWeight: style.descriptionFont?.weight,
     fontSize: style.descriptionFont?.size,
@@ -238,7 +221,7 @@ function AddOnBlockComponent({ context }: { context: BlockContextType }) {
   ]);
 
   const checkboxLabelStyles = useMemo(() => ({
-    color: style.checkboxLabelColor || 'black',
+    color: style.checkboxLabelFont?.color,
     fontFamily: style.checkboxLabelFont?.font,
     fontWeight: style.checkboxLabelFont?.weight,
     fontSize: style.checkboxLabelFont?.size,

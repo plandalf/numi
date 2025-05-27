@@ -4,6 +4,7 @@ import rehypeRaw from 'rehype-raw';
 import { cn } from '@/lib/utils';
 import { Theme } from '@/types/theme';
 import styled from 'styled-components';
+import { FontValue } from '@/contexts/Numi';
 
 interface MarkdownTextProps {
   text: string;
@@ -21,19 +22,21 @@ const getTypographyStyle = ({
   theme?: Theme,
   style?: React.CSSProperties,
 }) => {
-  const typography = theme?.[`${element}_typography` as keyof Theme] as string[];
-  const [typographySize, typographyFont, typographyWeight] = typography || [];
+  const typography = theme?.[`${element}_typography` as keyof Theme] as FontValue;
+  const { size, font, weight, color, letterSpacing, lineHeight } = typography || {};
 
   const formatStyle = {
-    fontSize: style?.fontSize ?? typographySize,
-    fontFamily: style?.fontFamily ?? typographyFont,
-    fontWeight: style?.fontWeight ?? typographyWeight,
-    lineHeight: style?.lineHeight ?? '1.1',
-    letterSpacing: style?.letterSpacing,
+    color: style?.color ?? color,
+    fontSize: style?.fontSize ?? size,
+    fontFamily: style?.fontFamily ?? font,
+    fontWeight: style?.fontWeight ?? weight,
+    lineHeight: style?.lineHeight ?? lineHeight,
+    letterSpacing: style?.letterSpacing ?? letterSpacing,
     textDecoration: style?.textDecoration,
   }
 
   return {
+    ...(formatStyle?.color) && {'color':  formatStyle?.color },
     ...(formatStyle?.fontSize) && {'font-size':  formatStyle?.fontSize },
     ...(formatStyle?.fontFamily) && { 'font-family': formatStyle?.fontFamily },
     ...(formatStyle?.fontWeight) && { 'font-weight': formatStyle?.fontWeight },
@@ -54,7 +57,6 @@ const Container = styled.div<{
     h3 { ${Object.entries(getTypographyStyle({ theme, element: 'h3', style })).map(([k, v]) => `${k}: ${v}`).join(';')} }
     h4 { ${Object.entries(getTypographyStyle({ theme, element: 'h4', style })).map(([k, v]) => `${k}: ${v}`).join(';')} }
     h5 { ${Object.entries(getTypographyStyle({ theme, element: 'h5', style })).map(([k, v]) => `${k}: ${v}`).join(';')} }
-    h6 { ${Object.entries(getTypographyStyle({ theme, element: 'h6', style })).map(([k, v]) => `${k}: ${v}`).join(';')} }
     p { ${Object.entries(getTypographyStyle({ theme, element: 'body', style })).map(([k, v]) => `${k}: ${v}`).join(';')} }
     span { ${Object.entries(getTypographyStyle({ theme, element: 'body', style })).map(([k, v]) => `${k}: ${v}`).join(';')} }
     a { ${Object.entries(getTypographyStyle({ theme, element: 'body', style: { ...style, textDecoration: 'underline' } })).map(([k, v]) => `${k}: ${v}`).join(';')} }

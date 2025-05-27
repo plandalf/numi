@@ -55,10 +55,7 @@ function ButtonBlockComponent({ context }: { context: BlockContextType }) {
       }
     }, {height: '16px'}),
     Style.backgroundColor('backgroundColor', 'Background Color', {}, theme?.primary_color),
-    Style.textColor('textColor', 'Text Color', {}, theme?.dark_text_color),
-    Style.font(
-      'font',
-      'Button Font',
+    Style.font('font', 'Button Font & Color',
       {
         config: {
           hideVerticalAlignment: true,
@@ -66,11 +63,12 @@ function ButtonBlockComponent({ context }: { context: BlockContextType }) {
         },
       },
       {
+        color: theme?.label_typography?.color,
         font: theme?.label_typography?.font,
         weight: theme?.label_typography?.weight,
         size: theme?.label_typography?.size,
-        lineHeight: '1.5',
-        letterSpacing: '0px',
+        lineHeight: theme?.label_typography?.lineHeight ?? '1.5',
+        letterSpacing: theme?.label_typography?.letterSpacing ?? '0px',
       },
     ),
     Style.border('border', 'Border', {}, { width: '0px', style: 'solid' }),
@@ -108,8 +106,8 @@ function ButtonBlockComponent({ context }: { context: BlockContextType }) {
 
 
   const buttonStyles = useMemo(() => ({
-    backgroundColor: style.backgroundColor || theme?.primary_color,
-    color: style.textColor || theme?.dark_text_color,
+    backgroundColor: style.backgroundColor,
+    color: font?.color,
     fontFamily: font?.font || theme?.body_typography?.font,
     fontWeight: font?.weight || theme?.body_typography?.weight,
     fontSize: font?.size || theme?.body_typography?.size,

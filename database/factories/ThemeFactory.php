@@ -3,6 +3,7 @@
 namespace Database\Factories;
 
 use App\Enums\Theme\FontElement;
+use App\Http\Resources\ThemeResource;
 use App\Models\Organization;
 use App\Models\Theme;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -52,22 +53,44 @@ class ThemeFactory extends Factory
 
             'main_font' => $mainFont,
             'mono_font' => $monoFont,
+            
+            'h1_typography' => [
+                ...ThemeResource::getDefaultValues('h1_typography'),
+                'font' => $mainFont,
+            ],
+            'h2_typography' => [
+                ...ThemeResource::getDefaultValues('h2_typography'),
+                'font' => $mainFont,
+            ],
+            'h3_typography' => [
+                ...ThemeResource::getDefaultValues('h3_typography'),
+                'font' => $mainFont,
+            ],
+            'h4_typography' => [
+                ...ThemeResource::getDefaultValues('h4_typography'),
+                'font' => $mainFont,
+            ],
+            'h5_typography' => [
+                ...ThemeResource::getDefaultValues('h5_typography'),
+                'font' => $mainFont,
+            ],
 
-            'h1_typography' => ['16px', $mainFont, '700'],
-            'h2_typography' => ['14px', $mainFont, '600'],
-            'h3_typography' => ['12px', $mainFont, '600'],
-            'h4_typography' => ['10px', $mainFont, '500'],
-            'h5_typography' => ['8px', $mainFont, '500'],
+            'label_typography' => [
+                ...ThemeResource::getDefaultValues('label_typography'),
+                'font' => $mainFont,
+            ],
 
-            'label_typography' => ['12px', $mainFont, '500'],
-            'body_typography' => ['14px', $mainFont, '400'],
+            'body_typography' => [
+                ...ThemeResource::getDefaultValues('body_typography'),
+                'font' => $mainFont,
+            ],
 
-            'border_radius' => '4px',
-            'shadow' => '0 0px 0px 0 rgba(0, 0, 0, 0.05)',
+            'border_radius' => ThemeResource::getDefaultValues('border_radius'),
+            'shadow' => ThemeResource::getDefaultValues('shadow'),
 
-            'padding' => '5px 10px 5px 10px',
-            'spacing' => '5px 10px 5px 10px',
-            'margin' => '5px 10px 5px 10px',
+            'padding' => ThemeResource::getDefaultValues('padding'),
+            'spacing' => ThemeResource::getDefaultValues('spacing'),
+            'margin' => ThemeResource::getDefaultValues('margin'),
         ];
     }
 

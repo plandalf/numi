@@ -75,10 +75,13 @@ class CreateUpdateThemeRequest extends FormRequest
 
         // Add typography array rules with key-specific validation
         foreach ($this->typographyArrays as $field) {
-            $rules[$field] = ['nullable', 'array', 'size:3'];
-            $rules["{$field}.0"] = ['required', 'string', 'regex:/^\d+(\.\d+)?(px|rem|em)$/']; // size
-            $rules["{$field}.1"] = ['required', 'string', 'max:64']; // font
-            $rules["{$field}.2"] = ['required', 'string', 'max:3']; // weight
+            $rules[$field] = ['nullable', 'array'];
+            $rules["{$field}.font"] = ['nullable', 'string', 'max:64'];
+            $rules["{$field}.color"] = ['nullable', 'string', 'regex:/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{8})$/'];
+            $rules["{$field}.letterSpacing"] = ['nullable', 'string'];
+            $rules["{$field}.lineHeight"] = ['nullable', 'string'];
+            $rules["{$field}.size"] = ['nullable', 'string'];
+            $rules["{$field}.weight"] = ['nullable', 'string', 'max:3'];
         }
 
         // Add size fields rules
@@ -128,21 +131,20 @@ class CreateUpdateThemeRequest extends FormRequest
         foreach ($this->typographyArrays as $field) {
             $fieldName = $this->getReadableFieldName($field);
 
-            $messages["{$field}.array"] = "The {$fieldName} must be an array.";
-            $messages["{$field}.size"] = "The {$fieldName} must contain exactly 3 elements: [size, font, weight].";
+            $messages["{$field}.array"] = "The {$fieldName} must be an object.";
 
-            // Key-specific messages
-            $messages["{$field}.0.required"] = "The size is required in {$fieldName}.";
-            $messages["{$field}.0.string"] = "The size in {$fieldName} must be a string.";
-            $messages["{$field}.0.regex"] = "The size in {$fieldName} must be a valid CSS size (e.g., 16px, 1.5rem, 1.2em).";
+            $messages["{$field}.font.string"] = "The font in {$fieldName} must be a string.";
+            $messages["{$field}.font.max"] = "The font in {$fieldName} cannot be longer than 64 characters.";
 
-            $messages["{$field}.1.required"] = "The font is required in {$fieldName}.";
-            $messages["{$field}.1.string"] = "The font in {$fieldName} must be a string.";
-            $messages["{$field}.1.max"] = "The font in {$fieldName} cannot be longer than 64 characters.";
+            $messages["{$field}.color.string"] = "The color in {$fieldName} must be a string.";
+            $messages["{$field}.color.regex"] = "The color in {$fieldName} must be a valid hex color (e.g., #FF0000 or #FF0000FF).";
 
-            $messages["{$field}.2.required"] = "The weight is required in {$fieldName}.";
-            $messages["{$field}.2.string"] = "The weight in {$fieldName} must be a string.";
-            $messages["{$field}.2.max"] = "The weight in {$fieldName} cannot be longer than 3 characters.";
+            $messages["{$field}.letterSpacing.string"] = "The letter spacing in {$fieldName} must be a string.";
+            $messages["{$field}.lineHeight.string"] = "The line height in {$fieldName} must be a string.";
+            $messages["{$field}.size.string"] = "The size in {$fieldName} must be a string.";
+
+            $messages["{$field}.weight.string"] = "The weight in {$fieldName} must be a string.";
+            $messages["{$field}.weight.max"] = "The weight in {$fieldName} cannot be longer than 3 characters.";
         }
 
         // Add size field messages

@@ -92,8 +92,7 @@ function OptionSelectorComponent({ context }: { context: BlockContextType }) {
     }, 'center'),
     Style.backgroundColor('backgroundColor', 'Background Color', {}, ''),
     Style.backgroundColor('activeBackgroundColor', 'Selected Color', {}, '#FFFFFF'),
-    Style.textColor('activeTextColor', 'Selected Text Color', {}, '#000000'),
-    Style.font('activeTextFont', 'Selected Text Font',
+    Style.font('activeTextFont', 'Selected Text Font & Color',
       fontConfig,
       {
         font: 'Inter',
@@ -109,10 +108,10 @@ function OptionSelectorComponent({ context }: { context: BlockContextType }) {
     Style.shadow('activeShadow', 'Selected Shadow', {}, '0px 0px 0px 0px #000000'),
 
     Style.backgroundColor('inactiveBackgroundColor', 'Unselected Color', {}, '#f5f5f5'),
-    Style.textColor('inactiveTextColor', 'Unselected Text Color', {}, '#848ec2'),
-    Style.font('inactiveTextFont', 'Unselected Text Font',
+    Style.font('inactiveTextFont', 'Unselected Text Font & Color',
       fontConfig,
       {
+        color: '#848ec2',
         font: 'Inter',
         weight: '400',
         size: '14px',
@@ -126,10 +125,10 @@ function OptionSelectorComponent({ context }: { context: BlockContextType }) {
     Style.shadow('inactiveShadow', 'Unselected Shadow', {}, '0px 0px 0px 0px #000000'),
 
     Style.backgroundColor('badgeBackgroundColor', 'Badge Background Color', {}, '#f5f5f5'),
-    Style.textColor('badgeTextColor', 'Badge Text Color', {}, '#848ec2'),
     Style.font('badgeTextFont', 'Badge Text Font',
       fontConfig,
       {
+        color: '#848ec2',
         font: 'Inter',
         weight: '400',
         size: '14px',
@@ -164,7 +163,7 @@ function OptionSelectorComponent({ context }: { context: BlockContextType }) {
   const activeTabStyle = useMemo(() => ({
     justifyContent: style.textAlignment,
     backgroundColor: style.activeBackgroundColor || '#fbf9fa',
-    color: style.activeTextColor,
+    color: style.activeTextFont?.color,
     fontSize: style.activeTextFont?.size,
     fontWeight: style.activeTextFont?.weight,
     fontFamily: style.activeTextFont?.font,
@@ -180,7 +179,7 @@ function OptionSelectorComponent({ context }: { context: BlockContextType }) {
   const inactiveTabStyle = useMemo(() => ({
     justifyContent: style.textAlignment,
     backgroundColor: style.inactiveBackgroundColor || 'white',
-    color: style.inactiveTextColor,
+    color: style.inactiveTextFont?.color,
     fontSize: style.inactiveTextFont?.size,
     fontWeight: style.inactiveTextFont?.weight,
     fontFamily: style.inactiveTextFont?.font,
@@ -195,7 +194,7 @@ function OptionSelectorComponent({ context }: { context: BlockContextType }) {
 
   const badgeStyle = useMemo(() => ({
     backgroundColor: style.badgeBackgroundColor,
-    color: style.badgeTextColor,
+    color: style.badgeTextFont?.color,
     fontSize: style.badgeTextFont?.size,
     fontWeight: style.badgeTextFont?.weight,
     fontFamily: style.badgeTextFont?.font,

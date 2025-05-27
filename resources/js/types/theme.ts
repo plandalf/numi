@@ -1,3 +1,5 @@
+import { FontValue } from "@/contexts/Numi";
+
 export interface ThemeColor {
   primary_color: string;
   primary_contrast_color: string;
@@ -24,14 +26,14 @@ export interface ThemeTypography {
   main_font: string;
   mono_font: string;
 
-  h1_typography: string[];
-  h2_typography: string[];
-  h3_typography: string[];
-  h4_typography: string[];
-  h5_typography: string[];
+  h1_typography: FontValue;
+  h2_typography: FontValue;
+  h3_typography: FontValue;
+  h4_typography: FontValue;
+  h5_typography: FontValue;
 
-  label_typography: string[];
-  body_typography: string[];
+  label_typography: FontValue;
+  body_typography: FontValue;
 }
 
 export interface ThemeComponentStyling {

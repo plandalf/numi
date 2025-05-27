@@ -80,8 +80,7 @@ function DetailListBlockComponent({ context }: { context: BlockContextType }) {
       },
     }, 'start'),
     Style.backgroundColor('backgroundColor', 'Background Color', {}, ''),
-    Style.textColor('labelColor', 'Label Color', {}, '#000000'),
-    Style.font('labelFont', 'Label Font',
+    Style.font('labelFont', 'Label Font & Color',
       fontConfig,
       {
         font: 'Inter',
@@ -91,10 +90,10 @@ function DetailListBlockComponent({ context }: { context: BlockContextType }) {
         letterSpacing: '0px',
       },
     ),
-    Style.textColor('captionColor', 'Caption Color', {}, '#6a7282'),
-    Style.font('captionFont', 'Caption Font',
+    Style.font('captionFont', 'Caption Font & Color',
       fontConfig,
       {
+        color: '#6a7282',
         font: 'Inter',
         weight: '400',
         size: '14px',
@@ -148,7 +147,7 @@ function DetailListBlockComponent({ context }: { context: BlockContextType }) {
   }), [style,appearance]);
 
   const labelStyle = useMemo(() => ({
-    color: style.labelColor,
+    color: style.labelFont?.color,
     fontSize: style.labelFont?.size,
     fontWeight: style.labelFont?.weight,
     fontFamily: style.labelFont?.font,
@@ -157,7 +156,7 @@ function DetailListBlockComponent({ context }: { context: BlockContextType }) {
   }), [style]);
 
   const captionStyle = useMemo(() => ({
-    color: style.captionColor,
+    color: style.captionFont?.color,
     fontSize: style.captionFont?.size,
     fontWeight: style.captionFont?.weight,
     fontFamily: style.captionFont?.font,
@@ -166,7 +165,7 @@ function DetailListBlockComponent({ context }: { context: BlockContextType }) {
   }), [style]);
 
   const tooltipIconStyle = useMemo(() => ({
-    color: style.captionColor,
+    color: style.captionFont?.color,
   }), [style]);
 
   const iconStyle = useMemo(() => ({

@@ -67,8 +67,7 @@ class OffersController extends Controller
     public function edit(Offer $offer, Request $request): Response
     {
         $organizationThemes = $this->themeService->getOrganizationThemes(
-            $request->user()->current_organization_id,
-            true
+            $request->user()->current_organization_id
         );
 
         $globalThemes = $this->themeService->getGlobalThemes();

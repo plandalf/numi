@@ -29,10 +29,7 @@ function TextBlockComponent({ context }: { context: BlockContextType }) {
   const style = Numi.useStyle([
     Style.alignment('alignment', 'Alignment', {}, 'left'),
     Style.backgroundColor('backgroundColor', 'Background Color', {}, ''),
-    Style.textColor('textColor', 'Text Color', {}, '#000000'),
-    Style.font(
-      'font',
-      'Text Font',
+    Style.font('font', 'Text Font & Color',
       {
         config: {
           hideVerticalAlignment: true,
@@ -60,8 +57,8 @@ function TextBlockComponent({ context }: { context: BlockContextType }) {
   const shadow = style?.shadow as string;
 
   const textStyles = useMemo(() => ({
-    backgroundColor: style.backgroundColor || 'transparent',
-    color: `${style.textColor || 'black'}`,
+    backgroundColor: style.backgroundColor,
+    color: font?.color,
     fontFamily: font?.font,
     fontWeight: font?.weight,
     fontSize: font?.size,

@@ -76,9 +76,30 @@ class ThemeTest extends TestCase
             'mono_font' => 'Courier New',
             'border_radius' => '4px',
             'shadow' => '0 1px 2px rgba(0,0,0,0.1)',
-            'h1_typography' => ['16px', 'Arial', '700'],
-            'h2_typography' => ['14px', 'Arial', '600'],
-            'body_typography' => ['14px', 'Arial', '400'],
+            'h1_typography' => [
+                'size' => '32px',
+                'font' => 'Montserrat',
+                'weight' => '600',
+                'color' => '#972626FF',
+                'letterSpacing' => '0px',
+                'lineHeight' => '1.1'
+            ],
+            'h2_typography' => [
+                'size' => '28px',
+                'font' => 'Montserrat',
+                'weight' => '600',
+                'color' => '#972626FF',
+                'letterSpacing' => '0px',
+                'lineHeight' => '1.1'
+            ],
+            'body_typography' => [
+                'size' => '16px',
+                'font' => 'Montserrat',
+                'weight' => '400',
+                'color' => '#972626FF',
+                'letterSpacing' => '0px',
+                'lineHeight' => '1.1'
+            ],
         ]);
 
         $theme->save();
@@ -91,9 +112,30 @@ class ThemeTest extends TestCase
         $this->assertEquals('Courier New', $theme->mono_font);
         $this->assertEquals('4px', $theme->border_radius);
         $this->assertEquals('0 1px 2px rgba(0,0,0,0.1)', $theme->shadow);
-        $this->assertEquals(['16px', 'Arial', '700'], $theme->h1_typography);
-        $this->assertEquals(['14px', 'Arial', '600'], $theme->h2_typography);
-        $this->assertEquals(['14px', 'Arial', '400'], $theme->body_typography);
+        $this->assertEquals([
+            'size' => '32px',
+            'font' => 'Montserrat',
+            'weight' => '600',
+            'color' => '#972626FF',
+            'letterSpacing' => '0px',
+            'lineHeight' => '1.1'
+        ], $theme->h1_typography);
+        $this->assertEquals([
+            'size' => '28px',
+            'font' => 'Montserrat',
+            'weight' => '600',
+            'color' => '#972626FF',
+            'letterSpacing' => '0px',
+            'lineHeight' => '1.1'
+        ], $theme->h2_typography);
+        $this->assertEquals([
+            'size' => '16px',
+            'font' => 'Montserrat',
+            'weight' => '400',
+            'color' => '#972626FF',
+            'letterSpacing' => '0px',
+            'lineHeight' => '1.1'
+        ], $theme->body_typography);
     }
 
     /** @test */
@@ -117,18 +159,31 @@ class ThemeTest extends TestCase
         $this->assertIsString($theme->main_font);
         $this->assertIsString($theme->mono_font);
 
-        // Typography arrays should have 3 elements
+        // Typography should be arrays containing specific keys
         $this->assertIsArray($theme->h1_typography);
-        $this->assertCount(3, $theme->h1_typography);
-        $this->assertIsString($theme->h1_typography[0]); // size
-        $this->assertIsString($theme->h1_typography[1]); // font
-        $this->assertIsString($theme->h1_typography[2]); // weight
+        $this->assertArrayHasKey('size', $theme->h1_typography);
+        $this->assertArrayHasKey('font', $theme->h1_typography);
+        $this->assertArrayHasKey('weight', $theme->h1_typography);
+        $this->assertArrayHasKey('color', $theme->h1_typography);
+        $this->assertArrayHasKey('letterSpacing', $theme->h1_typography);
+        $this->assertArrayHasKey('lineHeight', $theme->h1_typography);
 
+        // Validate types of typography properties
+        $this->assertIsString($theme->h1_typography['size']);
+        $this->assertIsString($theme->h1_typography['font']);
+        $this->assertIsString($theme->h1_typography['weight']);
+        $this->assertIsString($theme->h1_typography['color']);
+        $this->assertIsString($theme->h1_typography['letterSpacing']);
+        $this->assertIsString($theme->h1_typography['lineHeight']);
+
+        // Test body typography as well
         $this->assertIsArray($theme->body_typography);
-        $this->assertCount(3, $theme->body_typography);
-        $this->assertIsString($theme->body_typography[0]); // size
-        $this->assertIsString($theme->body_typography[1]); // font
-        $this->assertIsString($theme->body_typography[2]); // weight
+        $this->assertArrayHasKey('size', $theme->body_typography);
+        $this->assertArrayHasKey('font', $theme->body_typography);
+        $this->assertArrayHasKey('weight', $theme->body_typography);
+        $this->assertArrayHasKey('color', $theme->body_typography);
+        $this->assertArrayHasKey('letterSpacing', $theme->body_typography);
+        $this->assertArrayHasKey('lineHeight', $theme->body_typography);
     }
 
     /** @test */

@@ -41,6 +41,7 @@ export interface FontValue {
   letterSpacing?: string;
   alignmentHorizontal?: string;
   alignmentVertical?: string;
+  color?: string;
 }
 
 export interface DimensionValue {
@@ -265,7 +266,7 @@ export const Style = {
     type: string = 'font',
     label: string = 'Font',
     args: HookArgs,
-    defaultValue: FontValue,
+    defaultValue?: FontValue,
   ) => ({
     label,
     type,

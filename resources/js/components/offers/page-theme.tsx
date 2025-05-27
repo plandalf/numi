@@ -163,13 +163,21 @@ export const typographyFields = [
         label: 'Main Font',
         inspector: 'fontFamilyPicker',
         tooltip: 'Font for all your content',
+        config: {
+          hideVerticalAlignment: true,
+          hideHorizontalAlignment: true,
+        }
       },
       { name: 'mono_font',
         label: 'Mono Font',
         inspector: 'fontFamilyPicker',
         tooltip: 'Mono spaced font for code blocks etc',
+        config: {
+          hideVerticalAlignment: true,
+          hideHorizontalAlignment: true,
+        }
       },
-    ] as StyleItem[]
+    ]
   },
   {
     label: 'Parent typography',
@@ -177,13 +185,13 @@ export const typographyFields = [
       {
         name: 'label_typography',
         label: 'Label',
-        inspector: 'typographyPicker',
+        inspector: 'fontPicker',
         tooltip: 'Section header',
       },
       {
         name: 'body_typography',
         label: 'Body',
-        inspector: 'typographyPicker',
+        inspector: 'fontPicker',
         tooltip: 'Body/subtitle text',
       },
     ] as StyleItem[]
@@ -194,34 +202,54 @@ export const typographyFields = [
       {
         name: 'h1_typography',
         label: 'Heading 1',
-        inspector: 'typographyPicker',
+        inspector: 'fontPicker',
         tooltip: 'Available in markdown',
+        config: {
+          hideVerticalAlignment: true,
+          hideHorizontalAlignment: true,
+        }
       },
       {
         name: 'h2_typography',
         label: 'Heading 2',
-        inspector: 'typographyPicker',
+        inspector: 'fontPicker',
         tooltip: 'Available in markdown',
+        config: {
+          hideVerticalAlignment: true,
+          hideHorizontalAlignment: true,
+        }
       },
       {
         name: 'h3_typography',
         label: 'Heading 3',
-        inspector: 'typographyPicker',
+        inspector: 'fontPicker',
         tooltip: 'Available in markdown',
+        config: {
+          hideVerticalAlignment: true,
+          hideHorizontalAlignment: true,
+        }
       },
       {
         name: 'h4_typography',
         label: 'Heading 4',
-        inspector: 'typographyPicker',
+        inspector: 'fontPicker',
         tooltip: 'Available in markdown',
+        config: {
+          hideVerticalAlignment: true,
+          hideHorizontalAlignment: true,
+        }
       },
       {
         name: 'h5_typography',
         label: 'Heading 5',
-        inspector: 'typographyPicker',
+        inspector: 'fontPicker',
         tooltip: 'Available in markdown',
+        config: {
+          hideVerticalAlignment: true,
+          hideHorizontalAlignment: true,
+        }
       },
-    ] as StyleItem[]
+    ]
   },
 ];
 
@@ -280,12 +308,9 @@ export const PageTheme: React.FC = () => {
   const [showThemeSelector, setShowThemeSelector] = useState(data?.theme_id === undefined);
   const [originalTheme, setOriginalTheme] = useState<Theme | null>(theme);
 
-  const [openSection, setOpenSection] = useState<string>('colors');
   const [search, setSearch] = useState('');
   const [saving, setSaving] = useState(false);
   const [showSaveDialog, setShowSaveDialog] = useState(false);
-
-  const themeColors = getThemeColors(theme);
 
   // Update parent on local theme change
   const handleThemeChange = (key: keyof Theme, value: any) => {
@@ -294,6 +319,12 @@ export const PageTheme: React.FC = () => {
   };
 
   const onThemeSelect = (selectedTheme: Theme) => {
+
+    if(selectedTheme.id == data?.theme_id) {
+      setShowThemeSelector(false);
+      return;
+    }
+
     setTheme(selectedTheme);
     setOriginalTheme(selectedTheme);
     setShowThemeSelector(false);
@@ -333,9 +364,6 @@ export const PageTheme: React.FC = () => {
     'Typography': typographyFields,
     'Components': componentFields,
   }
-
-  console.log(fields);
-
 
   if(!showThemeSelector && theme?.id) {
     return (
@@ -421,7 +449,7 @@ export const PageTheme: React.FC = () => {
           key={t.id}
           theme={t}
           onClick={() => onThemeSelect(t)}
-          selected={t.id === data?.theme_id}
+          selected={t.id == data?.theme_id}
         />
       ))}
     </div>

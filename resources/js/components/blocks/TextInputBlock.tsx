@@ -45,8 +45,7 @@ function TextInputBlockComponent({ context }: { context: BlockContextType }) {
 
   const style = Numi.useStyle([
     Style.alignment('alignment', 'Alignment', {}, 'left'),
-    Style.textColor('labelColor', 'Label Color', {}, '#000000'),
-    Style.font( 'labelFont', 'Label Font',
+    Style.font( 'labelFont', 'Label Font & Color',
       fontConfig,
       {
         font: 'Inter',
@@ -56,9 +55,8 @@ function TextInputBlockComponent({ context }: { context: BlockContextType }) {
         letterSpacing: '0px',
       },
     ),
-    Style.textColor('inputTextColor', 'Input Text Color', {}, '#000000'),
     Style.backgroundColor('inputBackgroundColor', 'Input Background Color', {}, '#FFFFFF'),
-    Style.font('inputFont', 'Input Font',
+    Style.font('inputFont', 'Input Font & Color',
       fontConfig,
       {
         font: 'Inter',
@@ -90,7 +88,7 @@ function TextInputBlockComponent({ context }: { context: BlockContextType }) {
   }), [appearance, style]);
   
   const labelStyles = useMemo(() => ({
-    color: style.labelColor,
+    color: style.labelFont?.color,
     fontFamily: style.labelFont?.font,
     fontWeight: style.labelFont?.weight,
     fontSize: style.labelFont?.size,
@@ -100,7 +98,7 @@ function TextInputBlockComponent({ context }: { context: BlockContextType }) {
   const inputStyles = useMemo(() => ({
     width: style.alignment == 'expand' ? '100%' : 'auto',
     backgroundColor: style.inputBackgroundColor ?? 'white',
-    color: style.inputTextColor ?? 'black',
+    color: style.inputFont?.color ?? 'black',
     fontFamily: style.inputFont?.font,
     fontWeight: style.inputFont?.weight,
     fontSize: style.inputFont?.size,

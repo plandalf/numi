@@ -7,6 +7,7 @@ import { AdvancedColorPicker } from './color-picker-advanced';
 export interface ColorPickerProps {
   value: string; // #RRGGBB or #RRGGBBAA
   onChange: (hexWithAlpha: string) => void;
+  onBlur?: () => void;
   className?: string;
   type?: 'simple' | 'advanced';
   themeColors?: Record<string, string>;
@@ -44,6 +45,7 @@ export const ColorPicker: React.FC<ColorPickerProps> = (props) => {
           type="color"
           value={rgb}
           onChange={e => onChange(combineHexAlpha(e.target.value, alpha))}
+          onBlur={props.onBlur}
           className="w-8 h-8 rounded-xl cursor-pointer border-none"
         />
         <span className="flex-1 uppercase text-xs w-14 text-left">{rgb.toUpperCase()}</span>

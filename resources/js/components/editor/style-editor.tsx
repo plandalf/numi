@@ -23,7 +23,6 @@ import ShadowPicker from '../ui/shadow-picker';
 import { DimensionPicker } from '../ui/dimension-picker';
 import { ImageUpload } from '../ui/image-upload';
 import { Combobox } from '../combobox';
-import { TypographyPicker } from '../ui/typography-picker';
 import { TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
 import { Tooltip } from '../ui/tooltip';
 import { cn } from '@/lib/utils';
@@ -39,7 +38,6 @@ export interface StyleItem {
     | 'alignmentPicker'
     | 'fontPicker'
     | 'fontFamilyPicker'
-    | 'typographyPicker'
     | 'borderPicker'
     | 'borderRadiusPicker'
     | 'dimensionPicker'
@@ -114,13 +112,12 @@ const StyleItemValuePreview = ({
       );
     case 'fontPicker':
       const fontValue = value as FontValue;
-      const fontValueAsTitle = `${fontValue.font}, ${WEIGHT_LABELS[fontValue.weight as keyof typeof WEIGHT_LABELS]}`;
-
+      const fontValueAsTitle = `${fontValue.font ?? 'Font'} ${WEIGHT_LABELS[fontValue.weight as keyof typeof WEIGHT_LABELS] ?? ''}`
       return (
         <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
           <DropdownMenuTrigger asChild>
             <span className="flex flex-row gap-2 items-center cursor-pointer">
-              <Type className="size-5 border border-gray-200 rounded p-0.5" />
+              <Type className="size-5 border border-gray-200 rounded p-0.5" style={{ color: fontValue?.color, borderColor: fontValue?.color }}  />
               <span
                 className="flex-1 text-xs line-clamp-2"
                 title={fontValueAsTitle}
@@ -131,7 +128,7 @@ const StyleItemValuePreview = ({
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start" side="right" className="justify-center">
             <FontPicker
-              className="w-full max-w-[300px]"
+              className="w-full max-w-[310px]"
               value={value as FontValue}
               onChange={(value) => onChange(item.name, value as FontValue)}
               fonts={fonts ?? []}
@@ -276,35 +273,6 @@ const StyleItemValuePreview = ({
             ))}
           </SelectContent>
         </Select>
-      );
-    case 'typographyPicker':
-      const [size, font, weight] = value as string[];
-      const typographyValueAsTitle = `${size}, ${font}, ${WEIGHT_LABELS[weight as keyof typeof WEIGHT_LABELS]}`;
-
-      return (
-        <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
-          <DropdownMenuTrigger asChild>
-            <span className="flex flex-row gap-2 items-center cursor-pointer">
-              <Type className="size-5 border border-gray-200 rounded p-0.5" />
-              <span
-                className="flex-1 text-xs line-clamp-2"
-                title={typographyValueAsTitle}
-              >
-                {typographyValueAsTitle}
-              </span>
-            </span>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="start" side="right" className="justify-center">
-            <TypographyPicker
-              className="w-full w-[350px] cursor-pointer"
-              value={value as string[]}
-              onChange={(value) => onChange(item.name, value)}
-              fonts={fonts ?? []}
-              onClose={() => setIsOpen(false)}
-              config={item.config}
-            />
-          </DropdownMenuContent>
-        </DropdownMenu>
       );
     case 'spacingPicker':
       return (

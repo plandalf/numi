@@ -56,8 +56,7 @@ function CheckoutSummaryComponent({ context }: { context: BlockContextType }) {
 
   const style = Numi.useStyle([
     Style.backgroundColor('backgroundColor', 'Background Color', {}, ''),
-    Style.textColor('titleColor', 'Title Color', {}, '#000000'),
-    Style.font('titleFont', 'Title Font',
+    Style.font('titleFont', 'Title Font & Color',
       fontConfig,
       {
         font: 'Inter',
@@ -67,8 +66,7 @@ function CheckoutSummaryComponent({ context }: { context: BlockContextType }) {
         letterSpacing: '0px',
       },
     ),
-    Style.textColor('labelColor', 'Label Color', {}, '#000000'),
-    Style.font( 'labelFont', 'Label Font',
+    Style.font( 'labelFont', 'Label Font & Color',
       fontConfig,
       {
         font: 'Inter',
@@ -78,8 +76,7 @@ function CheckoutSummaryComponent({ context }: { context: BlockContextType }) {
         letterSpacing: '0px',
       },
     ),
-    Style.textColor('itemColor', 'Item Color', {}, '#000000'),
-    Style.font( 'itemFont', 'Item Font',
+    Style.font( 'itemFont', 'Item Font & Color',
       fontConfig,
       {
         font: 'Inter',
@@ -89,8 +86,7 @@ function CheckoutSummaryComponent({ context }: { context: BlockContextType }) {
         letterSpacing: '0px',
       },
     ),
-    Style.textColor('itemPriceColor', 'Item Price Color', {}, '#000000'),
-    Style.font( 'itemPriceFont', 'Item Price Font',
+    Style.font( 'itemPriceFont', 'Item Price Font & Color',
       fontConfig,
       {
         font: 'Inter',
@@ -100,10 +96,10 @@ function CheckoutSummaryComponent({ context }: { context: BlockContextType }) {
         letterSpacing: '0px',
       },
     ),
-    Style.textColor('itemQuantityColor', 'Item Quantity Color', {}, '#6a7282'),
-    Style.font( 'itemQuantityFont', 'Item Quantity Font',
+    Style.font( 'itemQuantityFont', 'Item Quantity Font & Color',
       fontConfig,
       {
+        color: '#6a7282',
         font: 'Inter',
         weight: '400',
         size: '14px',
@@ -111,9 +107,8 @@ function CheckoutSummaryComponent({ context }: { context: BlockContextType }) {
         letterSpacing: '0px',
       },
     ),
-    Style.textColor('inputTextColor', 'Input Text Color', {}, '#000000'),
     Style.backgroundColor('inputBackgroundColor', 'Input Background Color', {}, '#FFFFFF'),
-    Style.font('inputFont', 'Input Font',
+    Style.font('inputFont', 'Input Font & Color',
       fontConfig,
       {
         font: 'Inter',
@@ -123,11 +118,11 @@ function CheckoutSummaryComponent({ context }: { context: BlockContextType }) {
         letterSpacing: '0px',
       },
     ),
-    Style.textColor('buttonTextColor', 'Button Text Color', {}, '#1e2939'),
     Style.backgroundColor('buttonBackgroundColor', 'Button Background Color', {}, '#f6f3f4'),
-    Style.font( 'buttonTextFont', 'Button Text Font',
+    Style.font( 'buttonTextFont', 'Button Text Font & Color',
       fontConfig,
       {
+        color: '#1e2939',
         font: 'Inter',
         weight: '400',
         size: '16px',
@@ -135,8 +130,7 @@ function CheckoutSummaryComponent({ context }: { context: BlockContextType }) {
         letterSpacing: '0px',
       },
     ),
-    Style.textColor('summaryTextColor', 'Summary Text Color', {}, '#000000'),
-    Style.font('summaryTextFont','Summary Text Font',
+    Style.font('summaryTextFont','Summary Text Font & Color',
       fontConfig,
       {
         font: 'Inter',
@@ -146,10 +140,10 @@ function CheckoutSummaryComponent({ context }: { context: BlockContextType }) {
         letterSpacing: '0px',
       },
     ),
-    Style.textColor('discountTextColor', 'Discount Text Color', {}, '#00a63e'),
-    Style.font('discountTextFont','Discount Text Font',
+    Style.font('discountTextFont','Discount Text Font & Color',
       fontConfig,
       {
+        color: '#00a63e',
         font: 'Inter',
         weight: '400',
         size: '14px',
@@ -157,8 +151,7 @@ function CheckoutSummaryComponent({ context }: { context: BlockContextType }) {
         letterSpacing: '0px',
       },
     ),
-    Style.textColor('totalTextColor', 'Total Text Color', {}, '#000000'),
-    Style.font('totalTextFont', 'Total Text Font',
+    Style.font('totalTextFont', 'Total Text Font & Color',
       fontConfig,
       {
         font: 'Inter',
@@ -195,74 +188,74 @@ function CheckoutSummaryComponent({ context }: { context: BlockContextType }) {
 
   const titleStyle = useMemo(() => {
     return {
-      color: style.titleColor,
+      color: style.titleFont?.color,
       fontFamily: style?.titleFont?.font,
       fontWeight: style?.titleFont?.weight,
       fontSize: style?.titleFont?.size,
       lineHeight: style?.titleFont?.lineHeight,
       letterSpacing: style?.titleFont?.letterSpacing,
     };
-  }, [style.titleColor, style?.titleFont]);
+  }, [style?.titleFont]);
 
   const labelStyle = useMemo(() => {
     return {
-      color: style.labelColor,
+      color: style.labelFont?.color,
       fontFamily: style?.labelFont?.font,
       fontWeight: style?.labelFont?.weight,
       fontSize: style?.labelFont?.size,
       lineHeight: style?.labelFont?.lineHeight,
       letterSpacing: style?.labelFont?.letterSpacing,
     };
-  }, [style.labelColor, style?.labelFont]);
+  }, [style?.labelFont]);
 
   const itemStyle = useMemo(() => {
     return {
-      color: style.itemColor,
+      color: style.itemFont?.color,
       fontFamily: style?.itemFont?.font,
       fontWeight: style?.itemFont?.weight,
       fontSize: style?.itemFont?.size,
       lineHeight: style?.itemFont?.lineHeight,
       letterSpacing: style?.itemFont?.letterSpacing,
     };
-  }, [style.itemColor, style?.itemFont]);
+  }, [style?.itemFont]);
 
   const itemPriceStyle = useMemo(() => {
     return {
-      color: style.itemPriceColor,
+      color: style.itemPriceFont?.color,
       fontFamily: style?.itemPriceFont?.font,
       fontWeight: style?.itemPriceFont?.weight,
       fontSize: style?.itemPriceFont?.size,
       lineHeight: style?.itemPriceFont?.lineHeight,
       letterSpacing: style?.itemPriceFont?.letterSpacing,
     };
-  }, [style.itemPriceColor, style?.itemPriceFont]);
+  }, [style?.itemPriceFont]);
 
   const itemQuantityStyle = useMemo(() => {
     return {
-      color: style.itemQuantityColor,
+      color: style.itemQuantityFont?.color,
       fontFamily: style?.itemQuantityFont?.font,
       fontWeight: style?.itemQuantityFont?.weight,
       fontSize: style?.itemQuantityFont?.size,
       lineHeight: style?.itemQuantityFont?.lineHeight,
       letterSpacing: style?.itemQuantityFont?.letterSpacing,
     };
-  }, [style.itemQuantityColor, style?.itemQuantityFont]);
+  }, [style?.itemQuantityFont]);
 
   const inputStyle = useMemo(() => {
     return {
       backgroundColor: style?.inputBackgroundColor,
-      color: style.inputTextColor,
+      color: style?.inputFont?.color,
       fontFamily: style?.inputFont?.font,
       fontWeight: style?.inputFont?.weight,
       fontSize: style?.inputFont?.size,
       lineHeight: style?.inputFont?.lineHeight,
       letterSpacing: style?.inputFont?.letterSpacing,
     };
-  }, [style.inputTextColor, style?.inputFont, style?.inputBackgroundColor]);
+  }, [style?.inputFont, style?.inputBackgroundColor]);
 
   const buttonStyle = useMemo(() => {
     return {
-      color: style.buttonTextColor,
+      color: style.buttonTextFont?.color,
       backgroundColor: style.buttonBackgroundColor,
       fontFamily: style?.buttonTextFont?.font,
       fontWeight: style?.buttonTextFont?.weight,
@@ -270,40 +263,40 @@ function CheckoutSummaryComponent({ context }: { context: BlockContextType }) {
       lineHeight: style?.buttonTextFont?.lineHeight,
       letterSpacing: style?.buttonTextFont?.letterSpacing,
     };
-  }, [style.buttonTextColor, style?.buttonTextFont, style?.buttonBackgroundColor]);
+  }, [style?.buttonTextFont, style?.buttonBackgroundColor]);
 
   const summaryTextStyle = useMemo(() => {
     return {
-      color: style.summaryTextColor,
+      color: style.summaryTextFont?.color,
       fontFamily: style?.summaryTextFont?.font,
       fontWeight: style?.summaryTextFont?.weight,
       fontSize: style?.summaryTextFont?.size,
       lineHeight: style?.summaryTextFont?.lineHeight,
       letterSpacing: style?.summaryTextFont?.letterSpacing,
     };
-  }, [style.summaryTextColor, style?.summaryTextFont]);
+  }, [style?.summaryTextFont]);
 
   const discountTextStyle = useMemo(() => {
     return {
-      color: style.discountTextColor,
+      color: style?.discountTextFont?.color,
       fontFamily: style?.discountTextFont?.font,
       fontWeight: style?.discountTextFont?.weight,
       fontSize: style?.discountTextFont?.size,
       lineHeight: style?.discountTextFont?.lineHeight,
       letterSpacing: style?.discountTextFont?.letterSpacing,
     };
-  }, [style.discountTextColor, style?.discountTextFont]);
+  }, [style?.discountTextFont]);
 
   const totalTextStyle = useMemo(() => {
     return {
-      color: style.totalTextColor,
+      color: style?.totalTextFont?.color,
       fontFamily: style?.totalTextFont?.font,
       fontWeight: style?.totalTextFont?.weight,
       fontSize: style?.totalTextFont?.size,
       lineHeight: style?.totalTextFont?.lineHeight,
       letterSpacing: style?.totalTextFont?.letterSpacing,
     };
-  }, [style.totalTextColor, style?.totalTextFont]);
+  }, [style?.totalTextFont]);
 
   // Debug: Log to see what's happening with the value
   console.log('showDiscountForm value:', showDiscountForm);
