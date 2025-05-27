@@ -29,6 +29,7 @@ export const PageLayers: React.FC<PageLayersProps> = ({ onAddNewElementClick }) 
     setSelectedBlockId,
     selectedSectionId,
     setSelectedSectionId,
+    theme,
   } = useEditor();
 
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -98,7 +99,7 @@ export const PageLayers: React.FC<PageLayersProps> = ({ onAddNewElementClick }) 
 
     router.put(route('templates.update', selectedTemplateId), {
       view: data.view,
-      theme: data.theme,
+      theme: theme,
       ...(data?.screenshot?.url && {
         preview_images: [data.screenshot.url]
       }),
@@ -127,7 +128,7 @@ export const PageLayers: React.FC<PageLayersProps> = ({ onAddNewElementClick }) 
     router.post(route('templates.store'), {
       name: templateName,
       view: data.view,
-      theme: data.theme,
+      theme: theme,
       ...(data?.screenshot?.url && {
         preview_images: [data.screenshot.url]
       }),

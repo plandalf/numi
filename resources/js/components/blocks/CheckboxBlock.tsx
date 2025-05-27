@@ -78,23 +78,14 @@ function CheckboxBlockComponent({ context }: { context: BlockContextType }) {
     Style.backgroundColor('activeBackgroundColor', 'Selected Color', {}, '#0374ff'),
     Style.backgroundColor('inactiveBackgroundColor', 'Unselected Color', {}, '#E5E5E5'),
     Style.textColor('checkColor', 'Check Color', {}, '#FFFFFF'),
-    Style.textColor('textColor', 'Label Color', {}, '#000000'),
-    Style.font(
-      'font',
-      'Label Font',
+    Style.font('font', 'Label Font & Color',
       {
         config: {
           hideVerticalAlignment: true,
           hideHorizontalAlignment: true,
         },
       },
-      {
-        font: 'Inter',
-        weight: '400',
-        size: '16px',
-        lineHeight: '1.5',
-        letterSpacing: '0px',
-      },
+      {},
     ),
     Style.border('border', 'Border', {}, { width: '1px', style: 'solid' }),
     Style.borderRadius('borderRadius', 'Border Radius', {}, '5px'),
@@ -156,7 +147,7 @@ function CheckboxBlockComponent({ context }: { context: BlockContextType }) {
   ]);
 
   const checkboxLabelStyles = useMemo(() => ({
-    color: style.textColor || 'black',
+    color: font?.color,
     fontFamily: font?.font,
     fontWeight: font?.weight,
     fontSize: font?.size,

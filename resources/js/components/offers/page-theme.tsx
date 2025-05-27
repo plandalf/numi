@@ -1,128 +1,343 @@
 import React, { useState } from 'react';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Theme } from '@/types/theme';
-import { ColorPickerEditor } from '../editor/color-picker-editor';
-import { EnumerationEditor } from '../editor/enumeration-editor';
-import { ShadowPickerEditor } from '../editor/shadow-picker-editor';
-import { StringEditor } from '../editor/string-editor';
-import { TypographyEditor } from '../editor/typography-editor';
-import { Accordion, AccordionContent, AccordionTrigger } from '@radix-ui/react-accordion';
-import { cn } from '@/lib/utils';
-import { AccordionItem } from '../ui/accordion';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog';
+
 import ThemePreviewCard from './theme-preview-card';
 import SearchBar from './search-bar';
 import { router, usePage } from '@inertiajs/react';
 import { EditProps } from '@/pages/offers/edit';
 import { useEditor } from '@/contexts/offer/editor-context';
-import { FontEditor } from '../editor/font-editor';
-import { SpacingEditor } from '../editor/spacing-editor';
-import { BorderRadiusPicker } from '../ui/border-radius-picker';
-import { Label } from '../ui/label';
+import { ChevronLeft, Loader2 } from 'lucide-react';
+import { StyleEditor } from '../editor/style-editor';
+import { StyleItem } from '../editor/style-editor';
+import { Separator } from '../ui/separator';
+
 
 export const colorFields = [
-  { key: 'primary_color', label: 'Primary' },
-  { key: 'secondary_color', label: 'Secondary' },
-  { key: 'canvas_color', label: 'Canvas' },
-  { key: 'primary_surface_color', label: 'Primary Surface' },
-  { key: 'secondary_surface_color', label: 'Secondary Surface' },
-  { key: 'primary_border_color', label: 'Primary Border' },
-  { key: 'secondary_border_color', label: 'Secondary Border' },
-  { key: 'light_text_color', label: 'Light Text' },
-  { key: 'dark_text_color', label: 'Dark Text' },
-  { key: 'danger_color', label: 'Danger' },
-  { key: 'info_color', label: 'Info' },
-  { key: 'warning_color', label: 'Warning' },
-  { key: 'success_color', label: 'Success' },
-  { key: 'highlight_color', label: 'Highlight' },
+  {
+    label: 'Core theme colors',
+    items: [
+      {
+        name: 'primary_color',
+        label: 'Primary',
+        inspector: 'colorPicker',
+        tooltip: 'Main brand/action color',
+      },
+      {
+        name: 'primary_contrast_color',
+        label: 'Primary Contrast',
+        inspector: 'colorPicker',
+        tooltip: 'Text/icon color on primary',
+      },
+      {
+        name: 'secondary_color',
+        label: 'Secondary',
+        inspector: 'colorPicker',
+        tooltip: 'Supporting color',
+      },
+      {
+        name: 'secondary_contrast_color',
+        label: 'Secondary Contrast',  
+        inspector: 'colorPicker',
+        tooltip: 'Text/icon color on secondary',
+      },
+    ] as StyleItem[]
+  },
+  {
+    label: 'Backgrounds and surfaces',
+    items: [
+      {
+        name: 'canvas_color',
+        label: 'Canvas',
+        inspector: 'colorPicker',
+        tooltip: 'Section background',
+      },
+      {
+        name: 'primary_surface_color',
+        label: 'Primary Surface',
+        inspector: 'colorPicker',
+        tooltip: 'Containers, cards, tables',
+      },
+      {
+        name: 'secondary_surface_color',
+        label: 'Secondary Surface',
+        inspector: 'colorPicker',
+        tooltip: 'Input fields',
+      },
+    ] as StyleItem[]
+  },
+
+  {
+    label: 'Text',
+    items: [
+      {
+        name: 'label_text_color',
+        label: 'Label Text',
+        inspector: 'colorPicker',
+        tooltip: 'Section header',
+      },
+      {
+        name: 'body_text_color',
+        label: 'Body Text',
+        inspector: 'colorPicker',
+        tooltip: 'Body/subtitle text',
+      },
+    ] as StyleItem[]
+  },
+
+  {
+    label: 'Borders and dividers',
+    items: [
+      {
+        name: 'primary_border_color',
+        label: 'Primary Border',
+        inspector: 'colorPicker',
+        tooltip: 'Prominent borders & dividers',
+      },
+      {
+        name: 'secondary_border_color',
+        label: 'Secondary Border',
+        inspector: 'colorPicker',
+        tooltip: 'Subtle borders & dividers',
+      },
+    ] as StyleItem[]
+  },
+
+  {
+    label: 'Status',
+    items: [
+      {
+        name: 'warning_color',
+        label: 'Warning',
+        inspector: 'colorPicker',
+        tooltip: 'Warning/alert color',
+      },
+      {
+        name: 'success_color',
+        label: 'Success',
+        inspector: 'colorPicker',
+        tooltip: 'Success/confirmation color',
+      },
+      {
+        name: 'highlight_color',
+        label: 'Highlight',
+        inspector: 'colorPicker',
+        tooltip: 'Badges, discounts, etc.',
+      },
+    ] as StyleItem[]
+  },
 ];
 
-export const getThemeColors = (theme: Theme) => {
-  return colorFields.reduce((acc, f) => ({
-    ...acc,
-    [f.label]: theme?.[f.key as keyof Theme] as string ?? ''
-  }), {});
+export const getThemeColors = (theme?: Theme | null) => {
+  return colorFields.reduce((acc, f) => {
+    return {
+      ...acc,
+      ...f.items.reduce((acc, i) => {
+        return {
+          ...acc,
+          [i.name]: theme?.[i.name as keyof Theme] as string ?? ''
+        };
+      }, {})
+    };
+
+  }, {});
 };
 
+export const fontFields = [
+];
+
 export const typographyFields = [
-  { key: 'main_font', label: 'Main Font', type: 'font' },
-  { key: 'mono_font', label: 'Mono Font', type: 'font' },
-  { key: 'h1_typography', label: 'Heading 1', type: 'typography' },
-  { key: 'h2_typography', label: 'Heading 2', type: 'typography' },
-  { key: 'h3_typography', label: 'Heading 3', type: 'typography' },
-  { key: 'h4_typography', label: 'Heading 4', type: 'typography' },
-  { key: 'h5_typography', label: 'Heading 5', type: 'typography' },
-  { key: 'h6_typography', label: 'Heading 6', type: 'typography' },
-  { key: 'label_typography', label: 'Label', type: 'typography' },
-  { key: 'body_typography', label: 'Body', type: 'typography' },
+  {
+    label: 'Font',
+    items: [
+      {
+        name: 'main_font',
+        label: 'Main Font',
+        inspector: 'fontFamilyPicker',
+        tooltip: 'Font for all your content',
+        config: {
+          hideVerticalAlignment: true,
+          hideHorizontalAlignment: true,
+        }
+      },
+      { name: 'mono_font',
+        label: 'Mono Font',
+        inspector: 'fontFamilyPicker',
+        tooltip: 'Mono spaced font for code blocks etc',
+        config: {
+          hideVerticalAlignment: true,
+          hideHorizontalAlignment: true,
+        }
+      },
+    ]
+  },
+  {
+    label: 'Parent typography',
+    items: [
+      {
+        name: 'label_typography',
+        label: 'Label',
+        inspector: 'fontPicker',
+        tooltip: 'Section header',
+      },
+      {
+        name: 'body_typography',
+        label: 'Body',
+        inspector: 'fontPicker',
+        tooltip: 'Body/subtitle text',
+      },
+    ] as StyleItem[]
+  },
+  {
+    label: 'Markdown typography',
+    items: [
+      {
+        name: 'h1_typography',
+        label: 'Heading 1',
+        inspector: 'fontPicker',
+        tooltip: 'Available in markdown',
+        config: {
+          hideVerticalAlignment: true,
+          hideHorizontalAlignment: true,
+        }
+      },
+      {
+        name: 'h2_typography',
+        label: 'Heading 2',
+        inspector: 'fontPicker',
+        tooltip: 'Available in markdown',
+        config: {
+          hideVerticalAlignment: true,
+          hideHorizontalAlignment: true,
+        }
+      },
+      {
+        name: 'h3_typography',
+        label: 'Heading 3',
+        inspector: 'fontPicker',
+        tooltip: 'Available in markdown',
+        config: {
+          hideVerticalAlignment: true,
+          hideHorizontalAlignment: true,
+        }
+      },
+      {
+        name: 'h4_typography',
+        label: 'Heading 4',
+        inspector: 'fontPicker',
+        tooltip: 'Available in markdown',
+        config: {
+          hideVerticalAlignment: true,
+          hideHorizontalAlignment: true,
+        }
+      },
+      {
+        name: 'h5_typography',
+        label: 'Heading 5',
+        inspector: 'fontPicker',
+        tooltip: 'Available in markdown',
+        config: {
+          hideVerticalAlignment: true,
+          hideHorizontalAlignment: true,
+        }
+      },
+    ]
+  },
 ];
 
 export const componentFields = [
-  { key: 'border_radius', label: 'Border Radius', type: 'border' },
-  { key: 'padding', label: 'Padding', type: 'spacing' },
-  { key: 'spacing', label: 'Spacing', type: 'spacing' },
-  { key: 'margin', label: 'Margin', type: 'spacing' },
-  { key: 'shadow_sm', label: 'Shadow (Small)', type: 'shadow' },
-  { key: 'shadow_md', label: 'Shadow (Medium)', type: 'shadow' },
-  { key: 'shadow_lg', label: 'Shadow (Large)', type: 'shadow' },
+  {
+    label: 'Borders',
+    items: [
+      {
+        name: 'border_radius',
+        label: 'Border Radius',
+        inspector: 'borderRadiusPicker',
+        tooltip: 'Component radius for rounded corners',
+      },
+    ]
+  },
+  {
+    label: 'Shadows',
+    items: [
+      {
+        name: 'shadow',
+        label: 'Shadow',
+        inspector: 'shadowPicker',
+        tooltip: 'Drop shadows for containers, cards, etc.',
+      },
+    ]
+  },
+  {
+    label: 'Others',
+    items: [
+      {
+        name: 'padding',
+        label: 'Padding',
+        inspector: 'spacingPicker',
+        tooltip: 'Padding for components',
+      },
+      {
+        name: 'spacing',
+        label: 'Spacing',
+        inspector: 'spacingPicker',
+        tooltip: 'Spacing between components',
+      },
+      {
+        name: 'margin',
+        label: 'Margin',
+        inspector: 'spacingPicker',
+        tooltip: 'Margin for components',
+      },
+    ]
+  },
 ];
 
 export const PageTheme: React.FC = () => {
 
-  const { organizationThemes, globalThemes, data, setData } = useEditor();
+  const { organizationThemes, globalThemes, data, setData, theme, setTheme, offer } = useEditor();
   const { fonts } = usePage<EditProps>().props;
-  const [tab, setTab] = useState<'all' | 'custom'>('all');
-  const [theme, setTheme] = useState<Theme>(data.theme);
-  const [openSection, setOpenSection] = useState<string>('colors');
-  const [name, setName] = useState('');
+  const [showThemeSelector, setShowThemeSelector] = useState(data?.theme_id === undefined);
+  const [originalTheme, setOriginalTheme] = useState<Theme | null>(theme);
+
   const [search, setSearch] = useState('');
   const [saving, setSaving] = useState(false);
-  const [nameError, setNameError] = useState<string | null>(null);
-
-  const [themeSettingTab, setThemeSettingTab] = useState<'new' | 'saved'>('new');
-  const [selectedThemeId, setSelectedThemeId] = useState<string>('');
-  const [selectThemeError, setSelectThemeError] = useState<string | null>(null);
-
-  const themeColors = getThemeColors(theme);
-
-  const onThemeChange = (theme: Theme) => {
-    console.log('onThemeChange', theme);
-    setData({ ...data, theme });
-  };
+  const [showSaveDialog, setShowSaveDialog] = useState(false);
 
   // Update parent on local theme change
   const handleThemeChange = (key: keyof Theme, value: any) => {
     const updated = { ...theme, [key]: value };
-    setTheme(updated);
-    onThemeChange(updated);
+    setTheme(updated as Theme);
   };
 
   const onThemeSelect = (selectedTheme: Theme) => {
-    // Create a new theme object with all fields
-    const newTheme = {
-      ...theme,
-      // Colors
-      ...colorFields.reduce((acc, field) => ({
-        ...acc,
-        [field.key]: selectedTheme[field.key as keyof Theme] ?? ''
-      }), {}),
-      // Typography
-      ...typographyFields.reduce((acc, field) => ({
-        ...acc,
-        [field.key]: selectedTheme[field.key as keyof Theme] ?? ''
-      }), {}),
-      // Components
-      ...componentFields.reduce((acc, field) => ({
-        ...acc,
-        [field.key]: selectedTheme[field.key as keyof Theme] ?? ''
-      }), {})
-    };
 
-// todo: associate the theme to the offer!
+    if(selectedTheme.id == data?.theme_id) {
+      setShowThemeSelector(false);
+      return;
+    }
 
-    setTheme(newTheme);
-    onThemeChange(newTheme);
-    setTab('custom');
+    setTheme(selectedTheme);
+    setOriginalTheme(selectedTheme);
+    setShowThemeSelector(false);
+
+    router.put(route('offers.update', offer.id), {
+      theme_id: selectedTheme.id,
+    }, {
+      preserveScroll: true,
+      preserveState: true,
+      onSuccess: () => {
+        setData({ ...data, theme_id: selectedTheme.id });
+      },
+    });
   };
 
   // Filter themes by search
@@ -130,282 +345,113 @@ export const PageTheme: React.FC = () => {
     (t.name || '').toLowerCase().includes(search.toLowerCase())
   );
 
+  const isThemeChanged = JSON.stringify(theme) !== JSON.stringify(originalTheme);
+
   const handleSaveTheme = () => {
-    if (!selectedThemeId) {
-      setSelectThemeError('Please select a theme to update to.');
-      return;
-    }
-
-    setSelectThemeError(null);
+    setShowSaveDialog(false);
     setSaving(true);
-
-    const { name, ...payload } = theme;
-    router.put(route('themes.update', selectedThemeId), payload, {
+    router.put(route('organizations.themes.update', theme?.id), theme as Record<string, any>, {
       onSuccess: () => {
         setSaving(false);
+        setOriginalTheme(theme);
       },
       onError: () => setSaving(false),
     });
   };
 
-  const handleCreateTheme = () => {
-    if (!name.trim()) {
-      setNameError('Theme name is required.');
-      return;
-    }
-
-    setNameError(null);
-    setSaving(true);
-
-    const payload = { ...theme, name };
-
-    router.post(route('themes.store'), payload, {
-      onSuccess: () => {
-        setSaving(false);
-        setName('');
-      },
-      onError: () => setSaving(false),
-    });
+  const fields = {
+    'Colors': colorFields,
+    'Typography': typographyFields,
+    'Components': componentFields,
   }
 
+  if(!showThemeSelector && theme?.id) {
+    return (
+      <div className="flex flex-col h-full p-4 w-full">
+        <div className="flex flex-col gap-4">
+          <div className="flex items-center gap-4 justify-between w-full">
+            <div className="flex items-center gap-4 ">
+              <ChevronLeft className="size-6 cursor-pointer" onClick={() => setShowThemeSelector(true)} />
+              <span className="text-2xl font-bold">{theme?.name}</span>
+            </div>
+
+            {isThemeChanged && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="text-sm"
+                onClick={() => setShowSaveDialog(true)}
+                disabled={!isThemeChanged}
+              >
+                Save
+              </Button>
+            )}
+          </div>
+
+          {Object.entries(fields).map(([key, value]) => (
+            <>
+              <Separator />
+              <span className="text-lg font-bold">{key}</span>
+              {value.map(f => (
+                <div
+                  key={f.label}
+                  className="flex flex-col gap-2"
+                >
+                  <span className="text-base">{f.label}</span>
+                  <StyleEditor
+                    items={
+                      f.items.map(i => ({
+                        ...i,
+                        value: theme?.[i.name as keyof Theme] as string ?? '',
+                      })) as StyleItem[]
+                    }
+                    onChange={(key, value) => handleThemeChange(key as keyof Theme, value)}
+                    fonts={fonts}
+                  />
+                </div>
+              ))}
+            </>
+          ))}
+
+          <Dialog open={showSaveDialog} onOpenChange={setShowSaveDialog}>
+            <DialogContent className="!w-[400px]">
+              <DialogHeader>
+                <DialogTitle>Save Theme Changes</DialogTitle>
+                <DialogDescription className="text-sm">
+                  You've made changes to the theme. Clicking save will update this theme and other offers using this theme.
+                </DialogDescription>
+              </DialogHeader>
+              <DialogFooter className="flex items-center justify-end gap-2">
+                <Button onClick={handleSaveTheme} className="w-full" disabled={saving}>
+                  {saving ? 'Saving...' : 'Continue'}
+                  {saving && <Loader2 className="ml-2 size-4 animate-spin" />}
+                </Button>
+                <Button variant="outline" className="w-full" onClick={() => setShowSaveDialog(false)}>
+                  Cancel
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="flex flex-col h-full p-4">
-      <Tabs value={tab} onValueChange={v => setTab(v as 'all' | 'custom')} className="w-full">
-        <TabsList className="grid grid-cols-2 mb-4">
-          <TabsTrigger value="all">All Themes</TabsTrigger>
-          <TabsTrigger value="custom">Custom Theme</TabsTrigger>
-        </TabsList>
-        <TabsContent value="all">
-          <SearchBar
-            placeholder="Search themes"
-            value={search}
-            onChange={setSearch}
-          />
-          {filteredThemes.map(t => (
-            <ThemePreviewCard
-              key={t.id}
-              theme={t}
-              onClick={() => onThemeSelect(t)}
-            />
-          ))}
-        </TabsContent>
-        <TabsContent value="custom">
-          <div className="flex flex-col gap-6">
-            <Accordion
-              type="single"
-              collapsible
-              className="rounded-xl space-y-2"
-              value={openSection}
-              onValueChange={setOpenSection}
-            >
-              {/* Colors */}
-              <AccordionItem
-                value="colors"
-                className="rounded-lg border-none shadow-none"
-              >
-                <AccordionTrigger
-                  className={cn(
-                    'flex items-center justify-between w-full p-4 py-3',
-                    'rounded-lg transition-colors group cursor-pointer',
-                    'no-underline hover:no-underline bg-gray-200 text-muted-foreground',
-                    openSection === 'colors' && 'bg-teal-600 text-white'
-                  )}
-                >
-                  <span className="font-medium text-sm text-left">Colors</span>
-                </AccordionTrigger>
-                <AccordionContent className="bg-white rounded-b-lg px-2 pt-2 space-y-3">
-                  {colorFields.map(f => (
-                    <ColorPickerEditor
-                      key={f.key}
-                      label={f.label}
-                      value={theme?.[f.key as keyof Theme] as string ?? ''}
-                      onChange={v => handleThemeChange(f.key as keyof Theme, v)}
-                      type='advanced'
-                    />
-                  ))}
-                </AccordionContent>
-              </AccordionItem>
-
-
-              {/* Typography */}
-              <AccordionItem
-                value="typography"
-                className="rounded-lg border-none shadow-none"
-              >
-                <AccordionTrigger
-                  className={cn(
-                    'flex items-center justify-between w-full px-4 py-3 mb-2',
-                    'rounded-lg transition-colors group cursor-pointer',
-                    'no-underline hover:no-underline bg-gray-200 text-muted-foreground',
-                    openSection === 'typography' && 'bg-teal-600 text-white'
-                  )}
-                >
-                  <span className="font-medium text-sm text-left">Typography</span>
-                </AccordionTrigger>
-                <AccordionContent className="bg-white rounded-b-lg space-y-3">
-                  {typographyFields.map(f => {
-                    if (f.type === 'font') {
-                      return (
-                        <FontEditor
-                          key={f.key}
-                          label={f.label}
-                          value={theme?.[f.key as keyof Theme] as string ?? ''}
-                          onChange={v => handleThemeChange(f.key as keyof Theme, v)}
-                          fonts={fonts}
-                        />
-                      );
-                    }
-                    if (f.type === 'typography') {
-                      return (
-                        <TypographyEditor
-                          key={f.key}
-                          label={f.label}
-                          value={theme?.[f.key as keyof Theme] as string[] ?? ['', '', '']}
-                          onChange={v => handleThemeChange(f.key as keyof Theme, v)}
-                          fonts={fonts}
-                        />
-                      );
-                    }
-                    return null;
-                  })}
-                </AccordionContent>
-              </AccordionItem>
-
-
-
-              {/* Components */}
-              <AccordionItem
-                value="components"
-                className="rounded-lg border-none shadow-none"
-              >
-                <AccordionTrigger
-                  className={cn(
-                    'flex items-center justify-between w-full px-4 py-3 mb-2',
-                    'rounded-lg transition-colors group cursor-pointer',
-                    'no-underline hover:no-underline bg-gray-200 text-muted-foreground',
-                    openSection === 'components' && 'bg-teal-600 text-white'
-                  )}
-                >
-                  <span className="font-medium text-sm text-left">Components</span>
-                </AccordionTrigger>
-                <AccordionContent className="bg-white rounded-b-lg space-y-3">
-                  {componentFields.map(f => {
-                    if (f.type === 'border') {
-                      return (
-                        <div className="flex flex-col gap-3">
-                          <Label className="text-sm">Border Radius</Label>
-                          <BorderRadiusPicker
-                            className="p-2 border border-gray-200 rounded-md cursor-pointer"
-                            key={f.key}
-                            label={f.label}
-                            value={theme?.[f.key as keyof Theme] as string ?? ''}
-                            onChange={v => handleThemeChange(f.key as keyof Theme, v)}
-                          />
-                        </div>
-                      );
-                    }
-                    if (f.type === 'margin' || f.type === 'padding' || f.type === 'spacing') {
-                      return (
-                        <SpacingEditor
-                          key={f.key}
-                          label={f.label}
-                          value={theme?.[f.key as keyof Theme] as string ?? ''}
-                          onChangeProperty={v => handleThemeChange(f.key as keyof Theme, v)}
-                        />
-                      );
-                    }
-                    if (f.type === 'shadow') {
-                      let label = f.label;
-                      let key = f.key;
-                      return (
-                        <ShadowPickerEditor
-                          key={key}
-                          label={label}
-                          value={theme?.[key as keyof Theme] as string}
-                          onChange={v => handleThemeChange(key as keyof Theme, v)}
-                          themeColors={themeColors}
-                        />
-                      );
-                    }
-                    return null;
-                  })}
-                </AccordionContent>
-              </AccordionItem>
-
-
-              {/* Theme Settings */}
-              <AccordionItem
-                value="theme-settings"
-                className="rounded-lg border-none shadow-none"
-              >
-                <AccordionTrigger
-                  className={cn(
-                    'flex items-center justify-between w-full px-4 py-3 mb-2',
-                    'rounded-lg transition-colors group cursor-pointer',
-                    'no-underline hover:no-underline bg-gray-200 text-muted-foreground',
-                    openSection === 'theme-settings' && 'bg-teal-600 text-white'
-                  )}
-                >
-                  <span className="font-medium text-sm text-left">Theme Settings</span>
-                </AccordionTrigger>
-                <AccordionContent className="bg-white rounded-b-lg flex flex-col gap-2">
-                  <Tabs value={themeSettingTab} onValueChange={v => setThemeSettingTab(v as 'new' | 'saved')} className="w-full">
-                    <TabsList className="grid grid-cols-2">
-                      <TabsTrigger value="new" disabled={saving}>Create new theme</TabsTrigger>
-                      <TabsTrigger value="saved" disabled={saving}>Update to existing</TabsTrigger>
-                    </TabsList>
-                    <TabsContent value="new" className="space-y-3">
-                      <StringEditor
-                        value={name}
-                        onChange={v => setName(v)}
-                        placeholder="e.g. My Theme"
-                      />
-                      {nameError && <div className="text-xs text-red-500">{nameError}</div>}
-                      <Button
-                        className="w-full mb-2"
-                        onClick={handleCreateTheme}
-                        disabled={saving}
-                      >
-                        {saving
-                          ? 'Creating...'
-                          : 'Create Theme'
-                        }
-                      </Button>
-                      <div className="text-sm text-muted-foreground">
-                        Save this theme to use it on other experiences.
-                      </div>
-                    </TabsContent>
-                    <TabsContent value="saved" className="space-y-3">
-                      <EnumerationEditor
-                        placeholder="Select a theme"
-                        value={selectedThemeId}
-                        onChange={setSelectedThemeId}
-                        options={organizationThemes.map(t => t.id)}
-                        labels={organizationThemes.reduce((acc, t) => ({
-                          ...acc,
-                          [t.id]: t.name ?? 'Untitled theme'
-                        }), {})}
-                      />
-                      {selectThemeError && <div className="text-xs text-red-500">{selectThemeError}</div>}
-                      <Button
-                        className="w-full mb-2"
-                        onClick={handleSaveTheme}
-                        disabled={saving}
-                      >
-                        {saving
-                          ? 'Updating...'
-                          : 'Update Theme'
-                        }
-                      </Button>
-                    </TabsContent>
-                  </Tabs>
-                </AccordionContent>
-              </AccordionItem>
-            </Accordion>
-          </div>
-        </TabsContent>
-      </Tabs>
+    <div className="flex flex-col gap-2 space-y-2 p-4">
+      <SearchBar
+        placeholder="Search themes"
+        value={search}
+        onChange={setSearch}
+      />
+      {filteredThemes.map(t => (
+        <ThemePreviewCard
+          key={t.id}
+          theme={t}
+          onClick={() => onThemeSelect(t)}
+          selected={t.id == data?.theme_id}
+        />
+      ))}
     </div>
   );
 };

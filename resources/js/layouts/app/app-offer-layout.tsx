@@ -50,7 +50,7 @@ export const PREVIEW_SIZES = {
 function OfferHeader({ offer, isNameDialogOpen, setIsNameDialogOpen }: AppHeaderProps) {
     const [status, setStatus] = useState(offer.status);
     const isMobile = useIsMobile();
-    const { data, setData, viewMode, setViewMode, setPreviewSize, handleSave, put } = useEditor();
+    const { data, viewMode, setViewMode, setPreviewSize, handleSave } = useEditor();
 
     const [name, setName] = useState(data.name);
 
@@ -66,12 +66,12 @@ function OfferHeader({ offer, isNameDialogOpen, setIsNameDialogOpen }: AppHeader
     const handleNameSubmit = (e: React.FormEvent) => {
         e.preventDefault();
 
-        setData({
-            ...data,
+        router.put(route('offers.update', offer.id), {
             name,
-        });
-
-        put(route('offers.update', offer.id), {
+            view: data.view,
+            theme: data.theme,
+            screenshot: data.screenshot,
+        }, {
             preserveScroll: true,
             preserveState: true,
             onSuccess: () => setIsNameDialogOpen(false),

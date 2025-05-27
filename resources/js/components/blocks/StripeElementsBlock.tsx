@@ -46,8 +46,7 @@ function StripeElementsComponent({ context }: { context: BlockContextType }) {
       },
     }, 'left'),
     Style.backgroundColor('backgroundColor', 'Background Color', {}, ''),
-    Style.textColor('titleTextColor', 'Title Text Color', {}, '#000000'),
-    Style.font('titleTextFont', 'Title Text Font',
+    Style.font('titleTextFont', 'Title Text Font && Color',
       fontConfig,
       {
         font: 'Inter',
@@ -57,8 +56,7 @@ function StripeElementsComponent({ context }: { context: BlockContextType }) {
         letterSpacing: '0px',
       },
     ),
-    Style.textColor('descriptionTextColor', 'Description Text Color', {}, '#000000'),
-    Style.font('descriptionTextFont', 'Description Text Font',
+    Style.font('descriptionTextFont', 'Description Text Font & Color',
       fontConfig,
       {
         font: 'Inter',
@@ -71,10 +69,10 @@ function StripeElementsComponent({ context }: { context: BlockContextType }) {
 
     // Error panel
     Style.backgroundColor('errorBackgroundColor', 'Error Background Color', {}, '#ffc9c9'),
-    Style.textColor('errorTextColor', 'Error Text Color', {}, '#c10007'),
-    Style.font('errorTextFont', 'Error Text Font',
+    Style.font('errorTextFont', 'Error Text Font & Color',
       fontConfig,
       {
+        color: '#c10007',
         font: 'Inter',
         weight: '400',
         size: '14px',
@@ -87,10 +85,10 @@ function StripeElementsComponent({ context }: { context: BlockContextType }) {
 
     // Warning panel
     Style.backgroundColor('warningBackgroundColor', 'Warning Background Color', {}, '#fefce8'),
-    Style.textColor('warningTextColor', 'Warning Text Color', {}, '#a65f00'),
-    Style.font('warningTextFont', 'Warning Text Font',
+    Style.font('warningTextFont', 'Warning Text Font & Color',
       fontConfig,
       {
+        color: '#a65f00',
         font: 'Inter',
         weight: '400',
         size: '16px',
@@ -130,7 +128,7 @@ function StripeElementsComponent({ context }: { context: BlockContextType }) {
   }), [style, appearance]);
 
   const titleStyle = useMemo(() => ({
-    color: style.titleTextColor,
+    color: style.titleTextFont?.color,
     fontFamily: style.titleTextFont?.font,
     fontSize: style.titleTextFont?.size,
     fontWeight: style.titleTextFont?.weight,
@@ -139,7 +137,7 @@ function StripeElementsComponent({ context }: { context: BlockContextType }) {
   }), [style]);
 
   const descriptionStyle = useMemo(() => ({
-    color: style.descriptionTextColor,
+    color: style.descriptionTextFont?.color,
     fontFamily: style.descriptionTextFont?.font,
     fontSize: style.descriptionTextFont?.size,
     fontWeight: style.descriptionTextFont?.weight,
@@ -149,7 +147,7 @@ function StripeElementsComponent({ context }: { context: BlockContextType }) {
 
   const errorPanelStyle = useMemo(() => ({
     backgroundColor: style.errorBackgroundColor,
-    color: style.errorTextColor,
+    color: style.errorTextFont?.color,
     fontFamily: style.errorTextFont?.font,
     fontSize: style.errorTextFont?.size,
     fontWeight: style.errorTextFont?.weight,
@@ -163,7 +161,7 @@ function StripeElementsComponent({ context }: { context: BlockContextType }) {
 
   const warningPanelStyle = useMemo(() => ({
     backgroundColor: style.warningBackgroundColor,
-    color: style.warningTextColor,
+    color: style.warningTextFont?.color,
     fontFamily: style.warningTextFont?.font,
     fontSize: style.warningTextFont?.size,
     fontWeight: style.warningTextFont?.weight,

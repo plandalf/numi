@@ -116,8 +116,16 @@ function QuoteBlockComponent({ context }: { context: BlockContextType }) {
         right: 'right',
       },
     }, 'left'),
-    Style.textColor('quoteTextColor', 'Quote Text Color', {}, '#000000'),
-    Style.font('quoteTextFont', 'Quote Text Font',
+    Style.font('quoteTextFont', 'Quote Text Font & Color',
+      {
+        config: {
+          hideVerticalAlignment: true,
+          hideHorizontalAlignment: true,
+        },
+      },
+      {},
+    ),
+    Style.font('authorFont', 'Author Font & Color',
       {
         config: {
           hideVerticalAlignment: true,
@@ -125,15 +133,10 @@ function QuoteBlockComponent({ context }: { context: BlockContextType }) {
         },
       },
       {
-        font: 'Inter',
-        weight: '400',
-        size: '16px',
-        lineHeight: '1.5',
-        letterSpacing: '0px',
+        color: '#1e2939'
       },
     ),
-    Style.textColor('authorColor', 'Author Color', {}, '#1e2939'),
-    Style.font('authorFont', 'Author Font',
+    Style.font('affiliationFont', 'Affiliation Font & Color',
       {
         config: {
           hideVerticalAlignment: true,
@@ -141,27 +144,7 @@ function QuoteBlockComponent({ context }: { context: BlockContextType }) {
         },
       },
       {
-        font: 'Inter',
-        weight: '500',
-        size: '16px',
-        lineHeight: '1.5',
-        letterSpacing: '0px',
-      },
-    ),
-    Style.textColor('affiliationColor', 'Affiliation Color', {}, '#4a5565'),
-    Style.font('affiliationFont', 'Affiliation Font',
-      {
-        config: {
-          hideVerticalAlignment: true,
-          hideHorizontalAlignment: true,
-        },
-      },
-      {
-        font: 'Inter',
-        weight: '400',
-        size: '14px',
-        lineHeight: '1.5',
-        letterSpacing: '0px',
+        color: '#4a5565'
       },
     ),
 
@@ -217,7 +200,7 @@ function QuoteBlockComponent({ context }: { context: BlockContextType }) {
 
   const quoteTextStyles = useMemo(() => ({
     textAlign: style?.quoteTextAlignment,
-    color: style?.quoteTextColor,
+    color: style?.quoteTextFont?.color,
     fontSize: style?.quoteTextFont?.size,
     fontWeight: style?.quoteTextFont?.weight,
     fontFamily: style?.quoteTextFont?.font,
@@ -226,7 +209,7 @@ function QuoteBlockComponent({ context }: { context: BlockContextType }) {
   }), [style]);
 
   const authorStyles = useMemo(() => ({
-    color: style?.authorColor,
+    color: style?.authorFont?.color,
     fontSize: style?.authorFont?.size,
     fontWeight: style?.authorFont?.weight,
     fontFamily: style?.authorFont?.font,
@@ -235,7 +218,7 @@ function QuoteBlockComponent({ context }: { context: BlockContextType }) {
   }), [style]);
 
   const affiliationStyles = useMemo(() => ({
-    color: style?.affiliationColor,
+    color: style?.affiliationFont?.color,
     fontSize: style?.affiliationFont?.size,
     fontWeight: style?.affiliationFont?.weight,
     fontFamily: style?.affiliationFont?.font,

@@ -48,10 +48,7 @@ function LinkBlockComponent() {
       }
     }, {height: '16px'}),
     
-    Style.textColor('linkColor', 'Link Color', {}, '#000000'),
-    Style.font(
-      'linkFont',
-      'Link Font',
+    Style.font('linkFont', 'Link Font & Color',
       {
         config: {
           hideVerticalAlignment: true,
@@ -86,8 +83,8 @@ function LinkBlockComponent() {
   const shadow = style?.shadow as string;
 
   const linkStyles = useMemo(() => ({
-    backgroundColor: style.backgroundColor || 'transparent',
-    color: style.linkColor || 'black',
+    backgroundColor: style.backgroundColor,
+    color: style.linkFont?.color,
     fontFamily: linkFont?.font,
     fontWeight: linkFont?.weight,
     fontSize: linkFont?.size,

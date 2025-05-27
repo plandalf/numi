@@ -3,21 +3,21 @@ import { Button } from "./button";
 import { Input } from "./input";
 import { Tabs, TabsList, TabsTrigger } from "./tabs";
 import { DragAdjuster } from "./drag-adjuster";
+import { cn } from "@/lib/utils";
 
 interface SpacingPickerProps {
   id?: string;
   value: string;
   defaultValue?: string | null;
   onChangeProperty: (value: string) => void;
+  className?: string;
 }
-
-type SpacingFormat = 'single' | 'double' | 'triple' | 'quad';
 
 export const SpacingPicker = ({
   id,
   value,
-  defaultValue,
-  onChangeProperty
+  onChangeProperty,
+  className
 }: SpacingPickerProps) => {
   const initialCustomValue = (value && !['default', 'none'].includes(value)) ? value : '';
 
@@ -26,20 +26,6 @@ export const SpacingPicker = ({
   const [isCustomEditing, setIsCustomEditing] = useState<boolean>(
     Boolean(value && !['default', 'none'].includes(value) && /^(\d+px)(\s+\d+px)*$/.test(value))
   );
-
-  // Determine the format based on number of values
-  const determineFormat = (values: number[]): SpacingFormat => {
-    switch (values.length) {
-      case 2:
-        return 'double';
-      case 3:
-        return 'triple';
-      case 4:
-        return 'quad';
-      default:
-        return 'single';
-    }
-  };
 
   // Validate spacing values based on format
   const validateSpacingValues = (input: string): { isValid: boolean; error: string | null } => {
@@ -144,19 +130,12 @@ export const SpacingPicker = ({
     }
   };
 
-  const handleDragChange = (newValue: number) => {
-    const formattedValue = `${newValue}px`;
-    setCustomInputValue(formattedValue);
-    onChangeProperty(formattedValue);
-    setValidationError(null);
-  };
-
   const activeTab = value === '0px' ? 'none' : 'normal';
   const currentTabState = isCustomEditing ? undefined : activeTab;
 
   return (
     <>
-      <div className="flex items-center gap-2">
+      <div className={cn("flex items-center gap-2", className)}>
         <Button
           onClick={handleFnClick}
           variant={isCustomEditing ? "secondary" : "ghost"}
@@ -185,15 +164,6 @@ export const SpacingPicker = ({
           </Tabs>
         )}
       </div>
-      {validationError && isCustomEditing && (
-        <p className="text-xs text-red-600 mt-1">{validationError}</p>
-      )}
-      {!isCustomEditing && value === 'default' && (
-        <p className="text-xs text-muted-foreground">Default: {defaultValue || 'Theme default'}</p>
-      )}
-      {isCustomEditing && !validationError && (
-        <p className="text-xs text-muted-foreground">Default: {defaultValue || 'Theme default'}</p>
-      )}
     </>
   );
 };

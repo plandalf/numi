@@ -7,6 +7,7 @@ import { AlignCenterIcon, AlignLeftIcon, AlignRightIcon, ArrowDownToLine, ArrowU
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './select';
 import { Input } from './input';
 import { FontValue } from '@/contexts/Numi';
+import { ColorPicker } from './color-picker';
 
 export const WEIGHT_LABELS: Record<string, string> = {
   '100': 'Thin',
@@ -39,6 +40,7 @@ export interface FontPickerConfig {
   hideLetterSpacing?: boolean;
   hideVerticalAlignment?: boolean;
   hideHorizontalAlignment?: boolean;
+  hideColor?: boolean;
 }
 
 interface FontPickerProps {
@@ -58,7 +60,13 @@ export const FontPicker: React.FC<FontPickerProps> = ({
   className,
   fonts,
 }) => {
-  const { hideLabel, hideLineHeight, hideLetterSpacing, hideVerticalAlignment, hideHorizontalAlignment } = config || {};
+  const {
+    hideLabel, hideLineHeight,
+    hideLetterSpacing,
+    hideVerticalAlignment,
+    hideHorizontalAlignment,
+    hideColor,
+  } = config || {};
 
   const selectedFont = fonts?.find(f => f.name === value.font);
   const availableWeights = selectedFont?.weights || [];
@@ -66,6 +74,7 @@ export const FontPicker: React.FC<FontPickerProps> = ({
   const [localSize, setLocalSize] = useState(typeof value.size === 'string' ? value.size : '');
   const [localLetterSpacing, setLocalLetterSpacing] = useState(typeof value.letterSpacing === 'string' ? value.letterSpacing : '');
   const [localLineHeight, setLocalLineHeight] = useState(typeof value.lineHeight === 'string' ? value.lineHeight : '');
+  const [localColor, setLocalColor] = useState(typeof value.color === 'string' ? value.color : '#000000');
 
   useEffect(() => {
     setLocalSize(typeof value.size === 'string' ? value.size : '');
@@ -78,6 +87,10 @@ export const FontPicker: React.FC<FontPickerProps> = ({
   useEffect(() => {
     setLocalLineHeight(typeof value.lineHeight === 'string' ? value.lineHeight : '');
   }, [value.lineHeight]);
+
+  useEffect(() => {
+    setLocalColor(typeof value.color === 'string' ? value.color : '');
+  }, [value.color]);
 
   const handleFontChange = (newFont: string) => {
     const newSelectedFont = fonts?.find(f => f.name === newFont);
@@ -224,6 +237,14 @@ export const FontPicker: React.FC<FontPickerProps> = ({
               })}
             </div>
           )}
+        </div>
+      )}
+      {(!hideColor) && (
+        <div className="flex flex-row gap-2 w-full">
+          <ColorPicker
+            value={localColor}
+            onChange={(color) => onChange({ ...value, color })}
+          />
         </div>
       )}
     </div>

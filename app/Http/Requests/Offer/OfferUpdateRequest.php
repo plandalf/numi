@@ -24,27 +24,11 @@ class OfferUpdateRequest extends FormRequest
      */
     public function rules(): array
     {
-        $baseRules = [
-            'name' => ['string', 'max:255'],
+        return [
+            'name' => ['nullable', 'string', 'max:255'],
             'view' => ['nullable', 'array'],
+            'theme_id' => ['nullable', 'exists:themes,id'],
         ];
-
-        // Only include theme validation if theme data is present
-        if ($this->has('theme')) {
-            // Get theme validation rules from CreateUpdateThemeRequest
-            $themeRequest = new CreateUpdateThemeRequest();
-            $themeRules = $themeRequest->rules();
-
-            // Add theme rules with 'theme.' prefix
-            $themeRules = array_combine(
-                array_map(fn($key) => "theme.{$key}", array_keys($themeRules)),
-                array_values($themeRules)
-            );
-
-            return array_merge($baseRules, $themeRules);
-        }
-
-        return $baseRules;
     }
 
     /**
@@ -54,28 +38,11 @@ class OfferUpdateRequest extends FormRequest
      */
     public function messages(): array
     {
-        $baseMessages = [
-            'name.required' => 'The offer name is required.',
+        return [
             'name.max' => 'The offer name cannot exceed 255 characters.',
+            'theme_id.exists' => 'The selected theme does not exist.',
             'image_url.url' => 'The image URL must be a valid URL.',
             'product_image_id.exists' => 'The selected product image does not exist.',
         ];
-
-        // Only include theme messages if theme data is present
-        if ($this->has('theme')) {
-            // Get theme validation messages from CreateUpdateThemeRequest
-            $themeRequest = new CreateUpdateThemeRequest();
-            $themeMessages = $themeRequest->messages();
-
-            // Add theme messages with 'theme.' prefix
-            $themeMessages = array_combine(
-                array_map(fn($key) => "theme.{$key}", array_keys($themeMessages)),
-                array_values($themeMessages)
-            );
-
-            return array_merge($baseMessages, $themeMessages);
-        }
-
-        return $baseMessages;
     }
 } 

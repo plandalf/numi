@@ -48,21 +48,11 @@ class TemplateService
     public function createOfferFromTemplate(Template $template, int $organizationId): Offer
     {
         return DB::transaction(function () use ($template, $organizationId) {
-            // Create new theme by replicating template's theme
-            $theme = null;
-            if ($template->theme) {
-                $theme = $template->theme->replicate();
-                $theme->name = 'From Template: '.$template->name;
-                $theme->organization_id = $organizationId;
-                $theme->save();
-            }
-
-            // Create new offer
             $offer = new Offer;
             $offer->organization_id = $organizationId;
             $offer->name = $template->name;
             $offer->view = $template->view;
-            $offer->theme_id = $theme?->id;
+            $offer->theme_id = $template->theme->id;
             $offer->save();
 
             return $offer;

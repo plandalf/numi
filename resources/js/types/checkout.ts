@@ -1,5 +1,6 @@
 import type { OfferConfiguration, Page } from '@/types/offer';
 import React from 'react';
+import { Font } from '.';
 
 export enum IntegrationClient {
   STRIPE = 'stripe',
@@ -51,6 +52,7 @@ export interface CheckoutSession {
 
 export interface CheckoutPageProps {
   offer: OfferConfiguration;
+  fonts: Font[];
   error?: string | null;
   embedDomain?: string;
   environment?: string;

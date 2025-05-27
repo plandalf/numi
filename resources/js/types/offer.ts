@@ -29,6 +29,7 @@ export interface Offer {
         id: number;
         url: string;
     } | null;
+    theme_id: string | null;
     created_at: string;
     updated_at: string;
 

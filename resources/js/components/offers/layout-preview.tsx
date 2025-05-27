@@ -334,7 +334,7 @@ const BlockRendererComponent = ({ block, children, onBlockSelect }: {
 }) => {
   const globalStateContext = useContext(GlobalStateContext);
 
-  const { selectedBlockId, setSelectedBlockId, data } = useEditor();
+  const { selectedBlockId, setSelectedBlockId, theme } = useEditor();
   const {
     attributes,
     listeners,
@@ -359,7 +359,7 @@ const BlockRendererComponent = ({ block, children, onBlockSelect }: {
   }
 
   const blockContext: BlockContextType = {
-    theme: data?.theme,
+    theme,
     blockId: block.id,
     blockConfig: block,
     globalState: globalStateContext as unknown as GlobalState,
