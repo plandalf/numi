@@ -82,6 +82,11 @@ export const MarkdownText = ({ text, theme, style, className, ...props }: Markdo
     >
       <ReactMarkdown
         rehypePlugins={[rehypeRaw]}
+        components={{
+          h6: ({ children }) => (
+            <p>{children}</p>
+          ),
+        }}
       >
         {preserveAllLineBreaks(text)}
       </ReactMarkdown>
