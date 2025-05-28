@@ -18,6 +18,7 @@ import { StyleEditor, StyleItem } from '../editor/style-editor';
 import { usePage } from '@inertiajs/react';
 import { EditProps } from '@/pages/offers/edit';
 import { SpacingEditor } from '../editor/spacing-editor';
+import { AlignmentPickerEditor } from '../editor/alignment-picker-editor';
 
 export const AppearanceSection = ({ globalState, block, onUpdate }: { globalState: GlobalState | null, block: Block, onUpdate: (block: Block) => void }) => {
   if (!globalState) return null;
@@ -48,13 +49,11 @@ export const AppearanceSection = ({ globalState, block, onUpdate }: { globalStat
                   key={hook.name}
                   label={hook.label}
                   value={block.appearance?.[hook.name]}
+                  defaultValue={hook.defaultValue}
                   onChangeProperty={value => onAppearanceChange(hook.name, value)}
+                  config={hook.config}
                 />
-              ) : (
-                <div>
-                  {hook.name}
-                </div>
-              )}
+              ) : (null)}
             </>
           );
         })}
@@ -215,6 +214,8 @@ export const Inspector = ({
     });
   };
 
+  console.log('block.content', block.content);
+
   if (!block) {
     return <div>
       could not find block
@@ -279,7 +280,7 @@ export const Inspector = ({
                                 label={hook.label || hook.name}
                                 value={block.content?.[hook.name]}
                                 onChange={value => handleContentChange(hook.name, value)}
-                                preview={block.content?.[hook.name]?.url}
+                                preview={block.content?.[hook.name]}
                               />
                             ) : hook.type === 'string' && hook.inspector === 'colorPicker' ? (
                               <ColorPickerEditor

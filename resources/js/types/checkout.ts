@@ -2,6 +2,7 @@ import type { OfferConfiguration, Page } from '@/types/offer';
 import React from 'react';
 import { Font } from '.';
 import { Discount } from './product';
+import { Theme } from './theme';
 
 export enum IntegrationClient {
   STRIPE = 'stripe',
@@ -72,6 +73,7 @@ export interface TailwindLayoutConfig {
 }
 
 export interface TailwindLayoutRendererProps {
+  theme: Theme;
   layoutConfig: TailwindLayoutConfig | string;
   contentMap?: Record<string, React.ReactNode>;
   page: Page;

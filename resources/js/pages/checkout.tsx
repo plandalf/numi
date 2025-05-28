@@ -10,6 +10,7 @@ import type { OfferConfiguration, Page, PageSection } from '@/types/offer';
 import { CheckoutPageProps, NavigationBarProps, TailwindLayoutRendererProps } from '@/types/checkout';
 import { findUniqueFontsFromTheme, findUniqueFontsFromView } from '@/utils/font-finder';
 import WebFont from 'webfontloader';
+import { Theme } from '@/types/theme';
 
 
 const NavigationBar = ({ barStyle, children, className, ...props }: NavigationBarProps) => {
@@ -38,6 +39,7 @@ const NavigationBar = ({ barStyle, children, className, ...props }: NavigationBa
 };
 
 const TailwindLayoutRenderer = ({
+  theme,
   layoutConfig,
   page,
   components = {}
@@ -60,7 +62,7 @@ const TailwindLayoutRenderer = ({
   };
 
   // Render the template
-  return renderElement(config.template, page, { componentRegistry, contentMap: {} });
+  return renderElement(config.template, page, { componentRegistry, contentMap: {}, theme });
 };
 
 
@@ -76,7 +78,8 @@ const renderElement = (
   context: {
     componentRegistry: ComponentRegistry;
     contentMap: Record<string, React.ReactNode>;
-  }
+  },
+  theme: Theme
 ): React.ReactNode => {
   // Return null for undefined or null elements
   if (!element) return null;
@@ -89,7 +92,8 @@ const renderElement = (
     ? children.map((child, index) => renderElement(
       child,
       page,
-      context
+      context,
+      theme
     ))
     : null;
 
@@ -169,7 +173,7 @@ const createElement = (
 
 
 
-const CheckoutController = ({ offer }: { offer: OfferConfiguration }) => {
+const CheckoutController = ({ offer, theme }: { offer: OfferConfiguration, theme: Theme }) => {
   const {
     isSubmitting,
     submitError,
@@ -250,6 +254,7 @@ const CheckoutController = ({ offer }: { offer: OfferConfiguration }) => {
 
       <form onSubmit={handleSubmit} noValidate className="relative">
         <TailwindLayoutRenderer
+          theme={theme}
           layoutConfig={layoutConfig}
           page={currentPage}
           components={{ NavigationBar }}

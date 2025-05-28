@@ -6,7 +6,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { useContext } from 'react';
 import { type PageSection, type FormSection } from '@/types/offer';
 import { BlockConfig, GlobalState, BlockContextType } from '@/types/blocks';
-import { BlockContext } from '@/contexts/Numi';
+import Numi, { BlockContext } from '@/contexts/Numi';
 import { blockTypes } from '@/components/blocks';
 import { GlobalStateContext } from '@/pages/checkout-main';
 import { useDroppable } from '@dnd-kit/core';
@@ -15,6 +15,8 @@ import { rectSortingStrategy, SortableContext, useSortable } from '@dnd-kit/sort
 import { useEditor } from '@/contexts/offer/editor-context';
 import { hasVisibilityCondition as hasVisibilityConditionFn } from "@/lib/blocks";
 import { Badge } from '../ui/badge';
+import { Theme } from '@/types/theme';
+import { resolveThemeValue } from '@/lib/theme';
 
 // Local interfaces that match the actual structure
 interface LocalPageView {
@@ -43,6 +45,7 @@ export const DRAG_TYPES = {
 
 interface LayoutPreviewProps {
     page: LocalPage;
+    theme: Theme;
     selectedBlockId?: string | null;
     onSelectBlock?: (blockId: string) => void;
     onAddBlock?: (section: keyof LocalPageView, blockType: BlockType, index?: number) => void;
@@ -69,6 +72,7 @@ interface TailwindLayoutRendererProps {
   layoutConfig: TailwindLayoutConfig | string;
   contentMap?: Record<string, React.ReactNode>;
   page: LocalPage;
+  theme: Theme;
   components?: ComponentRegistry;
   onBlockSelect?: (blockId: string) => void;
   onSectionSelect?: (sectionId: string) => void;
@@ -194,6 +198,7 @@ interface RecursiveRenderElementProps {
     id?: string;
   } | null;
   page: LocalPage;
+  theme: Theme;
   componentRegistry: ComponentRegistry;
   selectedSectionId: string | null | undefined;
   onBlockSelect?: (blockId: string) => void;
@@ -203,6 +208,7 @@ interface RecursiveRenderElementProps {
 const RecursiveRenderElement: React.FC<RecursiveRenderElementProps> = React.memo(({
   element,
   page,
+  theme,
   componentRegistry,
   selectedSectionId,
   onBlockSelect,
@@ -210,13 +216,14 @@ const RecursiveRenderElement: React.FC<RecursiveRenderElementProps> = React.memo
 }) => {
   const sectionContainerStyle = useMemo(() => {
     if (!element?.id || !page?.view || !(element.id in page.view)) return {};
-    const section = page.view[element.id];
-    const backgroundColor = (section as PageSection)?.style?.backgroundColor;
-    const padding = (section as PageSection)?.appearance?.padding;
-    const margin = (section as PageSection)?.appearance?.margin;
-    const backgroundImage = (section as PageSection)?.style?.backgroundImage;
-    const hidden = (section as PageSection)?.style?.hidden;
-    const borderRadius = (section as PageSection)?.style?.borderRadius;
+    const section = page.view[element.id] as PageSection;
+
+    const backgroundColor = section.style?.backgroundColor;
+    const padding = section.appearance?.padding;
+    const margin = section.appearance?.margin;
+    const backgroundImage = section.style?.backgroundImage;
+    const hidden = section.style?.hidden;
+    const borderRadius = section.style?.borderRadius;
 
     return {
       backgroundColor,
@@ -235,8 +242,8 @@ const RecursiveRenderElement: React.FC<RecursiveRenderElementProps> = React.memo
 
   const sectionStyle = useMemo(() => {
     if (!element?.id || !page?.view || !(element.id in page.view)) return {};
-    const section = page.view[element.id];
-    const spacing = (section as PageSection)?.appearance?.spacing;
+    const section = page.view[element.id] as PageSection;
+    const spacing = resolveThemeValue(section.appearance?.spacing, theme, 'spacing');
     return { rowGap: spacing };
   }, [element?.id, page?.view]);
 
@@ -267,6 +274,7 @@ const RecursiveRenderElement: React.FC<RecursiveRenderElementProps> = React.memo
           selectedSectionId={selectedSectionId}
           onBlockSelect={onBlockSelect}
           onSectionSelect={onSectionSelect}
+          theme={theme}
         />
       ))
     : null;
@@ -298,6 +306,7 @@ const TailwindLayoutRenderer = ({
   page,
   components = {},
   onBlockSelect,
+  theme,
 }: Omit<TailwindLayoutRendererProps, 'onSectionSelect'>) => {
   const config = typeof layoutConfig === 'string'
     ? JSON.parse(layoutConfig)
@@ -318,6 +327,7 @@ const TailwindLayoutRenderer = ({
     <RecursiveRenderElement
       element={config.template}
       page={page}
+      theme={theme}
       componentRegistry={componentRegistry}
       selectedSectionId={selectedSectionId}
       onBlockSelect={onBlockSelect}
@@ -509,7 +519,7 @@ const SectionComponent = ({ section, sectionName: id, style, onBlockSelect, chil
 };
 const Section = React.memo(SectionComponent);
 
-export default function LayoutPreview({ page, selectedBlockId, onSelectBlock }: LayoutPreviewProps) {
+export default function LayoutPreview({ page, selectedBlockId, onSelectBlock, theme }: LayoutPreviewProps) {
   const { setSelectedBlockId: setContextSelectedBlockId } = useEditor(); // Get setSelectedBlockId from context
 
   // Sync selectedBlockId prop with context
@@ -539,6 +549,7 @@ export default function LayoutPreview({ page, selectedBlockId, onSelectBlock }: 
       <TailwindLayoutRenderer
         layoutConfig={layoutConfig}
         page={page}
+        theme={theme}
         components={componentsForRenderer}
         onBlockSelect={handleBlockSelect}
       />

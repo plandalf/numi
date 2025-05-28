@@ -5,8 +5,11 @@ import { useMemo } from "react";
 import { Check } from "lucide-react";
 import { Event, EVENT_LABEL_MAP } from "../editor/interaction-event-editor";
 import ReactMarkdown from "react-markdown";
+import { resolveThemeValue } from "@/lib/theme";
 
 function AddOnBlockComponent({ context }: { context: BlockContextType }) {
+
+  const theme = Numi.useTheme();
 
   const [id] = Numi.useStateString({
     label: 'Field Name',
@@ -88,7 +91,7 @@ function AddOnBlockComponent({ context }: { context: BlockContextType }) {
 
   const appearance = Numi.useAppearance([
     Appearance.margin('margin', 'Margin', {}),
-    Appearance.padding('outerPadding', 'Padding', {}),
+    Appearance.padding('outerPadding', 'Outer Padding', { config: { hideTabs: true }}),
     Appearance.padding('innerPadding', 'Inner Padding', {}),
     Appearance.spacing('spacing', 'Spacing', {}),
     Appearance.visibility('visibility', 'Visibility', {}, { conditional: [] }),
@@ -154,13 +157,13 @@ function AddOnBlockComponent({ context }: { context: BlockContextType }) {
 
   const containerStyles = useMemo(() => ({
     backgroundColor: style.backgroundColor,
-    padding: appearance?.outerPadding,
+    padding: appearance.innerPadding,
   }), [appearance]);
 
   const innerContainerStyles = useMemo(() => ({
-    padding: appearance?.innerPadding,
-    margin: appearance?.margin,
-    gap: appearance?.spacing,
+    padding: resolveThemeValue(appearance.innerPadding, theme, 'padding'),
+    margin: resolveThemeValue(appearance.margin, theme, 'margin'),
+    gap: resolveThemeValue(appearance.spacing, theme, 'spacing'),
     borderColor: style.borderColor || '#E5E5E5',
     borderWidth: style.border?.width ?? '0px',
     borderStyle: style.border?.style,

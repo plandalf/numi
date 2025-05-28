@@ -7,6 +7,7 @@ import debounce from "lodash/debounce";
 import { Theme } from "@/types/theme";
 import { CheckoutState, GlobalStateContext } from '@/pages/checkout-main';
 import { CallbackType, Event } from "@/components/editor/interaction-event-editor";
+import { resolveThemeValue } from "@/lib/theme";
 
 export const BlockContext = createContext<BlockContextType>({
   blockId: '',
@@ -118,6 +119,7 @@ export const Appearance = {
     defaultValue,
     inspector: args?.inspector ?? 'spacingPicker',
     options: args?.options ?? {},
+    config: args?.config ?? {},
   }),
 
   margin: (
@@ -227,7 +229,7 @@ export const Style = {
       | "checkboxInactiveBackgroundColor" = "backgroundColor",
     label: string = 'Background Color',
     args: HookArgs,
-    defaultValue: string,
+    defaultValue: string | null = null,
   ) => ({
     label,
     type,
@@ -239,7 +241,7 @@ export const Style = {
     type: string = 'textColor',
     label: string = 'Text Color',
     args: HookArgs,
-    defaultValue: string,
+    defaultValue: string | null = null,
   ) => ({
     label,
     type,
@@ -479,6 +481,7 @@ const Numi = {
       setRegistered(true);
     }, [blockContext.blockId, appearanceProps]);
 
+
     // Calculate appearance using useMemo to prevent unnecessary recalculations
     return useMemo(() => {
       const appearance: Record<string, any> = {};
@@ -486,7 +489,9 @@ const Numi = {
       // Get the value from block config or use default
       appearanceProps.forEach(prop => {
         if (prop.type) {
-          appearance[prop.type] = blockContext.blockConfig.appearance?.[prop.type];
+
+          const value = blockContext.blockConfig.appearance?.[prop.type] || prop.defaultValue
+          appearance[prop.type] = value;
         }
       });
 
@@ -524,6 +529,8 @@ const Numi = {
     return useMemo(() => {
       const style: Record<string, any> = {};
 
+
+      
       // Get the value from block config or use default
       styleProps.forEach(prop => {
         if (prop.type) {
@@ -643,7 +650,7 @@ const Numi = {
     return [value, setValue, updateHook];
   },
 
-  useStateBoolean(props: { name: string; defaultValue: boolean; label?: string; inspector?: string }): [boolean, (value: boolean) => void] {
+  useStateBoolean(props: { name: string; defaultValue: boolean; label?: string; inspector?: string, asState?: boolean }): [boolean, (value: boolean) => void] {
     const blockContext = useContext(BlockContext);
 
     useEffect(() => {
@@ -671,11 +678,12 @@ const Numi = {
       }
     }, [blockContext.blockId, props.name]);
 
-    // For editor-editable values (checkbox inspector), prioritize block config
-    // Otherwise, use field state for runtime values
-    const value = props.inspector === 'checkbox'
-      ? blockContext.blockConfig.content[props.name] ?? blockContext.getFieldValue(props.name) ?? props.defaultValue
-      : blockContext.getFieldValue(props.name) ?? blockContext.blockConfig.content[props.name] ?? props.defaultValue;
+    // If use as state, prioritize getting the field value from the global state
+    const value = props.asState 
+      ? blockContext.getFieldValue(props.name) ?? get(blockContext.blockConfig, `content.${props.name}`)
+      : get(blockContext.blockConfig, `content.${props.name}`) ?? props.defaultValue;
+
+
 
     const setValue = (newValue: boolean) => {
       blockContext.setFieldValue(props.name, newValue);

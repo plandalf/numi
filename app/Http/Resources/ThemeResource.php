@@ -20,9 +20,6 @@ class ThemeResource extends JsonResource
         'canvas_color' => '#000000',
         'primary_surface_color' => '#000000',
         'secondary_surface_color' => '#000000',
-        
-        'label_text_color' => '#000000',
-        'body_text_color' => '#000000',
 
         'primary_border_color' => '#000000',
         'secondary_border_color' => '#000000',
@@ -97,8 +94,8 @@ class ThemeResource extends JsonResource
         'shadow' => '0 0px 0px 0 rgba(0, 0, 0, 0.05)',
 
         'padding' => '5px 10px 5px 10px',
-        'spacing' => '5px 10px 5px 10px',
         'margin' => '5px 10px 5px 10px',
+        'spacing' => '5px',
     ];
 
     public static function getDefaultValues(string $key)
@@ -130,9 +127,6 @@ class ThemeResource extends JsonResource
             'canvas_color' => $this->canvas_color ?? self::getDefaultValues('canvas_color'),
             'primary_surface_color' => $this->primary_surface_color ?? self::getDefaultValues('primary_surface_color'),
             'secondary_surface_color' => $this->secondary_surface_color ?? self::getDefaultValues('secondary_surface_color'),
-            
-            'label_text_color' => $this->label_text_color ?? self::getDefaultValues('label_text_color'),
-            'body_text_color' => $this->body_text_color ?? self::getDefaultValues('body_text_color'),
 
             'primary_border_color' => $this->primary_border_color ?? self::getDefaultValues('primary_border_color'),
             'secondary_border_color' => $this->secondary_border_color ?? self::getDefaultValues('secondary_border_color'),

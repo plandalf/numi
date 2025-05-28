@@ -1,18 +1,20 @@
 import { Label } from "../ui/label";
-import { SpacingPicker } from "../ui/spacing-picker";
+import { SpacingPicker, SpacingPickerConfig } from "../ui/spacing-picker";
 
 export interface SpacingEditorProps {
   label?: string;
   value: string | null;
   defaultValue?: string | null;
   onChangeProperty: (value: string | null) => void;
+  config?: SpacingPickerConfig;
 }
 
 export function SpacingEditor({ 
   label,
   value,
   defaultValue,
-  onChangeProperty 
+  onChangeProperty,
+  config
 }: SpacingEditorProps) {
   return (
     <div className="flex flex-col gap-1.5">
@@ -20,8 +22,9 @@ export function SpacingEditor({
       <SpacingPicker
         id={`${label}-input`}
         value={value}
-        defaultValue={defaultValue}
+        defaultValue={defaultValue ?? ''}
         onChangeProperty={onChangeProperty}
+        config={config}
       />
     </div>
   );

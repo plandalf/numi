@@ -3,12 +3,16 @@ import cx from "classnames";
 import { cn } from "@/lib/utils";
 import { useMemo } from "react";
 import { IconRenderer } from "../ui/icon-renderer";
+import { resolveThemeValue } from '@/lib/theme';
+import { MarkdownText } from '../ui/markdown-text';
 
 function LinkBlockComponent() {
+  const theme = Numi.useTheme();
   const [text] = Numi.useStateString({
     label: 'Text',
     name: 'value',
     defaultValue: 'Submit',
+    meta: { editor: "markdown" },
   });
 
   const [url] = Numi.useStateString({
@@ -55,15 +59,9 @@ function LinkBlockComponent() {
           hideHorizontalAlignment: true,
         },
       },
-      {
-        font: 'Inter',
-        weight: '400',
-        size: '16px',
-        lineHeight: '1.5',
-        letterSpacing: '0px',
-      },
+      {},
     ),
-    Style.border('border', 'Border', {}, { width: '1px', style: 'solid' }),
+    Style.border('border', 'Border', {}, { width: '0px', style: 'solid' }),
     Style.borderRadius('borderRadius', 'Radius', {}, '5px'),
     Style.borderColor('borderColor', 'Border Color', {}, '#000000'),
     Style.shadow('shadow', 'Shadow', {}, '0px 0px 0px 0px #000000'),
@@ -76,13 +74,15 @@ function LinkBlockComponent() {
     Appearance.margin('margin', 'Margin', {}),
     Appearance.visibility('visibility', 'Visibility', {}, { conditional: [] }),
   ]);
-
-  const linkFont = style?.linkFont as FontValue;
+  const linkFont = resolveThemeValue(style.linkFont, theme, 'body_typography') as FontValue;
   const border = style?.border as BorderValue;
   const borderRadius = style?.borderRadius;
   const shadow = style?.shadow as string;
 
-  const linkStyles = useMemo(() => ({
+  console.log('linkFont', linkFont);
+  console.log('style.linkFont', style.linkFont);
+
+  const markdownStyles = useMemo(() => ({
     backgroundColor: style.backgroundColor,
     color: style.linkFont?.color,
     fontFamily: linkFont?.font,
@@ -95,9 +95,13 @@ function LinkBlockComponent() {
     borderStyle: border?.style,
     borderRadius : borderRadius ?? '3px',
     boxShadow: shadow,
-    padding: appearance?.padding,
-    gap: appearance?.spacing,
+    textDecoration: 'underline',
+    padding: resolveThemeValue(appearance.padding, theme, 'padding'),
   }), [style, linkFont, border, borderRadius, shadow, appearance]);
+
+  const linkStyles = useMemo(() => ({
+    gap: resolveThemeValue(appearance.spacing, theme, 'spacing'),
+  }), [appearance]);
 
   const linkClasses = useMemo(() => cx({
     'text-sm flex flex-row gap-x-4 items-center': true,
@@ -118,7 +122,7 @@ function LinkBlockComponent() {
   }), [style.alignment]);
 
   const containerStyles = useMemo(() => ({
-    margin: appearance?.margin,
+    margin: resolveThemeValue(appearance.margin, theme, 'margin'),
     textAlign: style.textAlignment,
   }), [appearance, style.textAlignment]);
 
@@ -139,7 +143,7 @@ function LinkBlockComponent() {
         style={linkStyles}
       >
         <IconRenderer icon={icon} style={iconStyles} defaultIcon={''}/>
-        <span style={{ textDecoration: 'underline' }}>{text}</span>
+        <MarkdownText text={text} theme={theme} style={markdownStyles} />
       </a>
     </div>
   );

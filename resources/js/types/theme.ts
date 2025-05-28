@@ -11,9 +11,6 @@ export interface ThemeColor {
   primary_surface_color: string;
   secondary_surface_color: string;
 
-  label_text_color: string;
-  body_text_color: string;
-
   primary_border_color: string;
   secondary_border_color: string;
 

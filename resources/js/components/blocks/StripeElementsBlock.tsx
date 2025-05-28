@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useMemo } from "react";
 import { Elements, PaymentElement, useStripe, useElements, AddressElement } from '@stripe/react-stripe-js';
 import { loadStripe, Stripe } from '@stripe/stripe-js';
 import { useCheckoutState } from "@/pages/checkout-main";
+import { resolveThemeValue } from "@/lib/theme";
 
 // Define the type for the checkout state
 interface CheckoutState {
@@ -14,6 +15,7 @@ interface CheckoutState {
 function StripeElementsComponent({ context }: { context: BlockContextType }) {
   const { session } = Numi.useCheckout({});
 
+  const theme = Numi.useTheme();
   const [stripePromise, setStripePromise] = useState<Stripe | null>(null);
 
   const [title] = Numi.useStateString({
@@ -122,9 +124,9 @@ function StripeElementsComponent({ context }: { context: BlockContextType }) {
     borderStyle: style.border?.style,
     borderRadius : style.borderRadius ?? '3px',
     boxShadow: style.shadow,
-    padding: appearance?.padding,
-    margin: appearance?.margin,
-    gap: appearance?.spacing,
+    padding: resolveThemeValue(appearance.padding, theme, 'padding'),
+    margin: resolveThemeValue(appearance.margin, theme, 'margin'),
+    gap: resolveThemeValue(appearance.spacing, theme, 'spacing'),
   }), [style, appearance]);
 
   const titleStyle = useMemo(() => ({

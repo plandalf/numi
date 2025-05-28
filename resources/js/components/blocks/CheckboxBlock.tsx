@@ -4,8 +4,11 @@ import { Switch } from "@/components/ui/switch";
 import { useMemo } from "react";
 import { Check } from "lucide-react";
 import { Event, EVENT_LABEL_MAP } from "../editor/interaction-event-editor";
+import { resolveThemeValue } from "@/lib/theme";
 
 function CheckboxBlockComponent({ context }: { context: BlockContextType }) {
+
+  const theme = Numi.useTheme();
 
   const [id] = Numi.useStateString({
     label: 'Field Name',
@@ -71,6 +74,8 @@ function CheckboxBlockComponent({ context }: { context: BlockContextType }) {
 
   const appearance = Numi.useAppearance([
     Appearance.margin('margin', 'Margin', {}),
+    Appearance.padding('padding', 'Padding', {}),
+    Appearance.spacing('spacing', 'Spacing', {}),
     Appearance.visibility('visibility', 'Visibility', {}, { conditional: [] }),
   ]);
 
@@ -101,12 +106,16 @@ function CheckboxBlockComponent({ context }: { context: BlockContextType }) {
   const backgroundColorInactive = style?.inactiveBackgroundColor;
   const borderRadius = style?.borderRadius;
   const shadow = style?.shadow as string;
-  const margin = appearance?.margin;
 
   const isManuallyStyledCheckbox = (borderRadius != undefined || backgroundColorActive != undefined || backgroundColorInactive != undefined);
 
+  const containerStyles = useMemo(() => ({
+    padding: resolveThemeValue(appearance.padding, theme, 'padding'),
+    margin: resolveThemeValue(appearance.margin, theme, 'margin'),
+    rowGap: resolveThemeValue(appearance.spacing, theme, 'spacing'),
+  }), [appearance]);
+
   const checkboxStyles = useMemo(() => ({
-    margin: margin,
     backgroundColor: checked ? (backgroundColorActive || '#0374ff') : (backgroundColorInactive || '#E5E5E5'),
     borderColor: borderColor || '#E5E5E5',
     borderWidth: border?.width ?? '0.5px',
@@ -161,7 +170,7 @@ function CheckboxBlockComponent({ context }: { context: BlockContextType }) {
     userSelect: 'none',
     width: '10px',
     height: '10px',
-    top: '50%',
+    top: '55%',
     left: '50%',
     transform: 'translate(-50%, -50%)',
     color: checkColor || 'white',
@@ -179,21 +188,29 @@ function CheckboxBlockComponent({ context }: { context: BlockContextType }) {
     <div>
       {checkboxStyle === 'checkbox' && (
         isManuallyStyledCheckbox ? (    
-          <div className="flex items-center gap-2">
-            <div className="relative inline-block justify-center">
-              <input style={checkboxStyles} id={id} type="checkbox" name={context.blockId} checked={checked} onChange={handleChange} />
+          <div className="flex items-center gap-2" style={containerStyles}>
+            <div className="relative flex justify-center">
+              <input
+                style={checkboxStyles}
+                id={id}
+                type="checkbox"
+                name={context.blockId}
+                checked={checked}
+                onChange={handleChange}
+                defaultValue={isDefaultChecked}
+              />
               {(isManuallyStyledCheckbox && checked) && <Check strokeWidth="5" className="pb-0.5" style={checkIconStyles} />}
             </div>
-            <span style={checkboxLabelStyles}>{label}</span>
+            {label && <span style={checkboxLabelStyles}>{label}</span>}
           </div>
         ) : (
-          <div className="flex items-center gap-2">
+          <div className="flex items-center" style={containerStyles}>
             <input style={checkboxStyles} id={id} type="checkbox" name={context.blockId} checked={checked} onChange={handleChange} />
-            <span style={checkboxLabelStyles}>{label}</span>
+            {label && <span style={checkboxLabelStyles}>{label}</span>}
           </div>)
       )}
       {checkboxStyle === 'switch' && (
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2" style={containerStyles}>
           <Switch
             style={switchStyles}
             thumbProps={{
@@ -202,7 +219,7 @@ function CheckboxBlockComponent({ context }: { context: BlockContextType }) {
             checked={checked}
             onCheckedChange={handleChange}
           />
-          <span style={checkboxLabelStyles}>{label}</span>
+          {label && <span style={checkboxLabelStyles}>{label}</span>}
         </div>
       )}
     </div>

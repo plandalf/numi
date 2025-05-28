@@ -70,8 +70,6 @@ class ThemeTest extends TestCase
         $theme->fill([
             'primary_color' => '#FF0000',
             'secondary_color' => '#00FF00',
-            'label_text_color' => '#FFFFFF',
-            'body_text_color' => '#000000',
             'main_font' => 'Arial',
             'mono_font' => 'Courier New',
             'border_radius' => '4px',
@@ -106,8 +104,6 @@ class ThemeTest extends TestCase
 
         $this->assertEquals('#FF0000', $theme->primary_color);
         $this->assertEquals('#00FF00', $theme->secondary_color);
-        $this->assertEquals('#FFFFFF', $theme->label_text_color);
-        $this->assertEquals('#000000', $theme->body_text_color);
         $this->assertEquals('Arial', $theme->main_font);
         $this->assertEquals('Courier New', $theme->mono_font);
         $this->assertEquals('4px', $theme->border_radius);
@@ -146,8 +142,6 @@ class ThemeTest extends TestCase
         // Colors should be 6 characters (hex without alpha)
         $this->assertMatchesRegularExpression('/^#[0-9A-Fa-f]{6}$/', $theme->primary_color);
         $this->assertMatchesRegularExpression('/^#[0-9A-Fa-f]{6}$/', $theme->secondary_color);
-        $this->assertMatchesRegularExpression('/^#[0-9A-Fa-f]{6}$/', $theme->label_text_color);
-        $this->assertMatchesRegularExpression('/^#[0-9A-Fa-f]{6}$/', $theme->body_text_color);
     }
 
     /** @test */

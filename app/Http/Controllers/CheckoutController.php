@@ -7,8 +7,10 @@ use App\Enums\Theme\FontElement;
 use App\Http\Resources\Checkout\CheckoutSessionResource;
 use App\Http\Resources\FontResource;
 use App\Http\Resources\OfferResource;
+use App\Http\Resources\ThemeResource;
 use App\Models\Checkout\CheckoutSession;
 use App\Models\Store\Offer;
+use App\Models\Theme;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Str;
@@ -53,6 +55,7 @@ class CheckoutController extends Controller
         return Inertia::render('checkout', [
             'fonts' => FontResource::collection(FontElement::cases()),
             'offer' => new OfferResource($offer),
+            'theme' => new ThemeResource($offer?->theme ?? new Theme()),
             'checkoutSession' => new CheckoutSessionResource($checkout),
         ]);
     }

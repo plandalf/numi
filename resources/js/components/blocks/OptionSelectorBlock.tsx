@@ -7,6 +7,7 @@ import { useEditor } from "@/contexts/offer/editor-context";
 import { Event, EVENT_LABEL_MAP } from "../editor/interaction-event-editor";
 import { useDebounce } from "@/hooks/use-debounce";
 import { useCheckoutState } from "@/pages/checkout-main";
+import { resolveThemeValue } from "@/lib/theme";
 // Define interfaces for the item structure
 interface ItemType {
   key: string;
@@ -14,6 +15,8 @@ interface ItemType {
 }
 
 function OptionSelectorComponent({ context }: { context: BlockContextType }) {
+
+  const theme = Numi.useTheme();
 
   const defaultValue = [{
     key: 'primary',
@@ -155,9 +158,9 @@ function OptionSelectorComponent({ context }: { context: BlockContextType }) {
     borderStyle: style.border?.style,
     borderRadius : style.borderRadius ?? '3px',
     boxShadow: style.shadow,
-    padding: appearance?.padding,
-    margin: appearance?.margin,
-    gap: appearance?.spacing,
+    padding: resolveThemeValue(appearance.padding, theme, 'padding'),
+    margin: resolveThemeValue(appearance.margin, theme, 'margin'),
+    gap: resolveThemeValue(appearance.spacing, theme, 'spacing'),
   }), [style, appearance]);
 
   const activeTabStyle = useMemo(() => ({

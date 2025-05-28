@@ -11,6 +11,7 @@ import { Theme, FieldType } from '@/types/theme';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { FontValue } from '@/contexts/Numi';
 
 interface Props {
     theme: Theme;
@@ -28,20 +29,20 @@ interface Field {
     label?: string;
 }
 
+
 const colorFields: Field[] = [
     { key: 'primary_color', group: 'Core', default: '#355dfb', description: 'Default accent color used by the majority of components.', type: FieldType.Color, label: 'Primary' },
+    { key: 'primary_contrast_color', group: 'Core', default: '#52525d', description: 'Optional secondary color, available as a swatch in the component Style editor. Components won\'t use this color by default.', type: FieldType.Color, label: 'Secondary' },
     { key: 'secondary_color', group: 'Core', default: '#52525d', description: 'Optional secondary color, available as a swatch in the component Style editor. Components won\'t use this color by default.', type: FieldType.Color, label: 'Secondary' },
+    { key: 'secondary_contrast_color', group: 'Core', default: '#52525d', description: 'Optional secondary color, available as a swatch in the component Style editor. Components won\'t use this color by default.', type: FieldType.Color, label: 'Secondary' },
+
     { key: 'canvas_color', group: 'Core', default: '#ffffff', description: 'Default background color for the entire app.', type: FieldType.Color, label: 'Canvas' },
     { key: 'primary_surface_color', group: 'Core', default: '#ffffff', description: 'Default background color for Containers and Tables.', type: FieldType.Color, label: 'Primary Surface' },
     { key: 'secondary_surface_color', group: 'Core', default: '#ffffff', description: 'Default background color for Inputs.', type: FieldType.Color, label: 'Secondary Surface' },
+
     { key: 'primary_border_color', group: 'Core', default: '#dadada', description: 'Default border color for Containers and Tables.', type: FieldType.Color, label: 'Primary Border' },
     { key: 'secondary_border_color', group: 'Core', default: '#dadada', description: 'Default border color for Inputs.', type: FieldType.Color, label: 'Secondary Border' },
-    
-    { key: 'light_text_color', group: 'Text', default: '#000000', description: 'Text color to provide contrast against light backgrounds.', type: FieldType.Color, label: 'Light Text' },
-    { key: 'dark_text_color', group: 'Text', default: '#ffffff', description: 'Text color to provide contrast against dark backgrounds.', type: FieldType.Color, label: 'Dark Text' },
-    
-    { key: 'danger_color', group: 'Status', default: '#e71f05', description: 'Default color for validation, errors, and negative trends.', type: FieldType.Color, label: 'Danger' },
-    { key: 'info_color', group: 'Status', default: '#36a6f4', description: 'Default color for neutral information like an edited cell in a Table.', type: FieldType.Color, label: 'Info' },
+
     { key: 'warning_color', group: 'Status', default: '#fab900', description: 'Default color used to indicate a warning.', type: FieldType.Color, label: 'Warning' },
     { key: 'success_color', group: 'Status', default: '#12a63e', description: 'Default color used to indicate success and positive trends.', type: FieldType.Color, label: 'Success' },
     { key: 'highlight_color', group: 'Status', default: '#d8f1fe', description: 'Default color for highlighting matches in a searchable list.', type: FieldType.Color, label: 'Highlight' },
@@ -55,7 +56,6 @@ const typographyFields: Field[] = [
     { key: 'h3_typography', group: 'Type Style', type: FieldType.Typography, label: 'Heading 3' },
     { key: 'h4_typography', group: 'Type Style', type: FieldType.Typography, label: 'Heading 4' },
     { key: 'h5_typography', group: 'Type Style', type: FieldType.Typography, label: 'Heading 5' },
-    { key: 'h6_typography', group: 'Type Style', type: FieldType.Typography, label: 'Heading 6' },
     { key: 'label_typography', group: 'Type Style', type: FieldType.Typography, label: 'Label' },
     { key: 'body_typography', group: 'Type Style', type: FieldType.Typography, label: 'Body' },
 ];
@@ -65,9 +65,7 @@ const componentFields: Field[] = [
     { key: 'padding', group: 'Spacing', type: FieldType.Size, label: 'Padding' },
     { key: 'spacing', group: 'Spacing', type: FieldType.Size, label: 'Spacing' },
     { key: 'margin', group: 'Spacing', type: FieldType.Size, label: 'Margin' },
-    { key: 'shadow_sm', group: 'Shadow', type: FieldType.Shadow, label: 'Shadow (Small)' },
-    { key: 'shadow_md', group: 'Shadow', type: FieldType.Shadow, label: 'Shadow (Medium)' },
-    { key: 'shadow_lg', group: 'Shadow', type: FieldType.Shadow, label: 'Shadow (Large)' },
+    { key: 'shadow', group: 'Shadow', type: FieldType.Shadow, label: 'Shadow' },
 ];
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -203,8 +201,8 @@ export default function Edit({ theme, fonts, weights }: Props) {
                 );
 
             case FieldType.Typography: {
-                console.log(value);
-                const [size = '', font = '', weight = ''] = (value as string[]) || [];
+                const { size = '', font = '', weight = '' } = (value as FontValue) || {};
+                console.log(size, font, weight);
                 return (
                     <div key={field.key} className="grid grid-cols-4 items-center">
                         <div className="col-span-1 flex items-center">

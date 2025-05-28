@@ -1,8 +1,11 @@
 import { BlockContextType } from "@/types/blocks";
 import Numi, { Appearance, Style } from "@/contexts/Numi";
 import { useMemo } from "react";
+import { resolveThemeValue } from "@/lib/theme";
 
 function TextInputBlockComponent({ context }: { context: BlockContextType }) {
+
+  const theme = Numi.useTheme();
 
   const [id] = Numi.useStateString({
     label: 'Field Name',
@@ -81,9 +84,9 @@ function TextInputBlockComponent({ context }: { context: BlockContextType }) {
   // validation
 
   const containerStyle = useMemo(() => ({
-    padding: appearance.padding,
-    rowGap: appearance.spacing,
-    margin: appearance.margin,
+    padding: resolveThemeValue(appearance.padding, theme, 'padding'),
+    rowGap: resolveThemeValue(appearance.spacing, theme, 'spacing'),
+    margin: resolveThemeValue(appearance.margin, theme, 'margin'),
     alignItems: style.alignment != 'expand' ? style.alignment : 'flex-start'
   }), [appearance, style]);
   

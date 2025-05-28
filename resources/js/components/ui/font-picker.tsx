@@ -69,7 +69,7 @@ export const FontPicker: React.FC<FontPickerProps> = ({
   } = config || {};
 
   const selectedFont = fonts?.find(f => f.name === value.font);
-  const availableWeights = selectedFont?.weights || [];
+  const availableWeights = selectedFont?.weights || Object.keys(WEIGHT_LABELS);
 
   const [localSize, setLocalSize] = useState(typeof value.size === 'string' ? value.size : '');
   const [localLetterSpacing, setLocalLetterSpacing] = useState(typeof value.letterSpacing === 'string' ? value.letterSpacing : '');

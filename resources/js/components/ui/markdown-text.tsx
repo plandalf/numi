@@ -87,7 +87,7 @@ export const MarkdownText = ({ text, theme, style, className, ...props }: Markdo
           ),
         }}
       >
-        {preserveAllLineBreaks(text)}
+        {preserveAllLineBreaks(text ?? '')}
       </ReactMarkdown>
     </Container>
   );

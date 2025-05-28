@@ -6,12 +6,13 @@ import { cn } from "@/lib/utils";
 import { useMemo } from "react";
 import { Event, EVENT_LABEL_MAP } from "../editor/interaction-event-editor";
 import { IconRenderer } from "../ui/icon-renderer";
+import { resolveThemeValue } from "@/lib/theme";
 
 // Does Submitting of field forms.
 function ButtonBlockComponent({ context }: { context: BlockContextType }) {
   const { isSubmitting, submitError } = useCheckoutState();
 
-  // console.log({ isSubmitting, submitError });
+  const theme = Numi.useTheme();
 
   const [text] = Numi.useStateString({
     label: 'Text',
@@ -43,10 +44,6 @@ function ButtonBlockComponent({ context }: { context: BlockContextType }) {
     },
   });
 
-  const theme = Numi.useTheme();
-  console.log({ theme })
-
-
   const style = Numi.useStyle([
     Style.alignment('alignment', 'Alignment', {}, 'expand'),
     Style.dimensions('iconSize', 'Icon Size', {
@@ -54,6 +51,7 @@ function ButtonBlockComponent({ context }: { context: BlockContextType }) {
         hideWidth: true
       }
     }, {height: '16px'}),
+    Style.backgroundColor('iconColor', 'Icon Color', {}, theme?.primary_contrast_color),
     Style.backgroundColor('backgroundColor', 'Background Color', {}, theme?.primary_color),
     Style.font('font', 'Button Font & Color',
       {
@@ -63,32 +61,38 @@ function ButtonBlockComponent({ context }: { context: BlockContextType }) {
         },
       },
       {
-        color: theme?.label_typography?.color,
-        font: theme?.label_typography?.font,
-        weight: theme?.label_typography?.weight,
-        size: theme?.label_typography?.size,
-        lineHeight: theme?.label_typography?.lineHeight ?? '1.5',
-        letterSpacing: theme?.label_typography?.letterSpacing ?? '0px',
+        color: theme?.primary_contrast_color,
+        font: theme?.body_typography?.font,
+        weight: theme?.body_typography?.weight,
+        size: theme?.body_typography?.size,
+        lineHeight: theme?.body_typography?.lineHeight ?? '1.5',
+        letterSpacing: theme?.body_typography?.letterSpacing ?? '0px',
       },
     ),
     Style.border('border', 'Border', {}, { width: '0px', style: 'solid' }),
     Style.borderRadius('borderRadius', 'Radius', {}, theme?.border_radius),
     Style.borderColor('borderColor', 'Border Color', {}, '#000000'),
-    Style.shadow('shadow', 'Shadow', {}, '0px 0px 0px 0px #000000'),
+    Style.shadow('shadow', 'Shadow', {}, theme?.shadow),
     Style.hidden('hidden', 'Hidden', {}, false),
   ]);
 
   const appearance = Numi.useAppearance([
-    Appearance.padding('Padding', 'Padding', {}),
+    Appearance.padding('padding', 'Padding', {}),
     Appearance.margin('margin', 'Margin', {}),
+    Appearance.spacing('spacing', 'Spacing', {}),
     Appearance.visibility('visibility', 'Visibility', {}, { conditional: [] }),
     Appearance.alignment('alignment', 'Alignment', {}, 'left'),
   ]);
 
-  const font = style?.font as FontValue;
+  const textColor = resolveThemeValue(style?.font?.color, theme, 'primary_contrast_color');
+  const font = {
+    ...resolveThemeValue(style?.font, theme, 'body_typography') as FontValue,
+    color: textColor,
+  } as FontValue;
+
   const border = style?.border as BorderValue;
-  const borderRadius = style?.borderRadius;
-  const shadow = style?.shadow as string;
+  const borderRadius = resolveThemeValue(style?.borderRadius, theme, 'border_radius');
+  const shadow = resolveThemeValue(style?.shadow, theme, 'shadow') as string;
 
   const { executeCallbacks } = Numi.useEventCallback({
     name: 'click',
@@ -104,9 +108,8 @@ function ButtonBlockComponent({ context }: { context: BlockContextType }) {
     }],
   });
 
-
   const buttonStyles = useMemo(() => ({
-    backgroundColor: style.backgroundColor,
+    backgroundColor: resolveThemeValue(style.backgroundColor, theme, 'primary_color'),
     color: font?.color,
     fontFamily: font?.font || theme?.body_typography?.font,
     fontWeight: font?.weight || theme?.body_typography?.weight,
@@ -118,11 +121,10 @@ function ButtonBlockComponent({ context }: { context: BlockContextType }) {
     borderStyle: border?.style,
     borderRadius : borderRadius,
     boxShadow: shadow,
-    padding: appearance?.padding ?? theme.padding,
-    margin: appearance?.margin,
+    padding: resolveThemeValue(appearance.padding, theme, 'padding'),
+    margin: resolveThemeValue(appearance.margin, theme, 'margin'),
+    gap: resolveThemeValue(appearance.spacing, theme, 'spacing'),
   }), [style, font, border, borderRadius, shadow, appearance]);
-
-  console.log({ buttonStyles })
 
   const buttonClasses = useMemo(() => cx({
     "flex flex-row gap-x-2 items-center text-center": true,
@@ -146,8 +148,8 @@ function ButtonBlockComponent({ context }: { context: BlockContextType }) {
   }), [style.alignment]);
 
   const iconStyles = useMemo(() => ({
-    size: style?.iconSize?.height ?? '16px',
-    color: style?.iconColor ?? 'black',
+    size: style?.iconSize?.height,
+    color: textColor,
   }), [style]);
 
   if (style.hidden) {

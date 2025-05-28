@@ -1,4 +1,5 @@
 import Numi, { Appearance, Style } from "@/contexts/Numi";
+import { resolveThemeValue } from "@/lib/theme";
 import { cn, formatMoney } from "@/lib/utils";
 import { BlockContextType } from "@/types/blocks";
 import { useState, useEffect, useMemo } from "react";
@@ -7,7 +8,7 @@ import { Discount } from "@/types/product";
 import { XIcon } from "lucide-react";
 
 function CheckoutSummaryComponent({ context }: { context: BlockContextType }) {
-
+  const theme = Numi.useTheme();
   const { session, addDiscount, removeDiscount } = Numi.useCheckout({
 
   });
@@ -174,9 +175,12 @@ function CheckoutSummaryComponent({ context }: { context: BlockContextType }) {
   const containerStyle = useMemo(() => {
     return {
       backgroundColor: style.backgroundColor || '',
-      padding: appearance?.padding,
-      margin: appearance?.margin,
-      gap: !appearance?.spacing ? '0px' : appearance?.spacing,
+      padding: resolveThemeValue(appearance.padding, theme, 'padding'),
+      margin: resolveThemeValue(appearance.margin, theme, 'margin'),
+      gap: resolveThemeValue(appearance.spacing, theme, 'spacing'),
+      // padding: appearance?.padding,
+      // margin: appearance?.margin,
+      // gap: !appearance?.spacing ? '0px' : appearance?.spacing,
       borderColor: style.borderColor,
       borderWidth: style?.border?.width,
       borderStyle: style?.border?.style,

@@ -16,8 +16,6 @@ class CreateUpdateThemeRequest extends FormRequest
         'canvas_color',
         'primary_surface_color',
         'secondary_surface_color',
-        'label_text_color',
-        'body_text_color',
         'primary_border_color',
         'secondary_border_color',
         'warning_color',
