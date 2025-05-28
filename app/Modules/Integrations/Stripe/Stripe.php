@@ -288,6 +288,12 @@ class Stripe extends AbstractIntegration implements CanCreateSubscription, CanSe
             throw new \InvalidArgumentException('Customer is required to create a payment intent');
         }
 
+        // Verify customer has a default payment method
+        $stripeCustomer = $this->stripeClient->customers->retrieve($customer->reference_id);
+        if (!$stripeCustomer->invoice_settings->default_payment_method) {
+            throw new \InvalidArgumentException('Customer has no default payment method set up');
+        }
+
         // Calculate the total amount
         $amount = 0;
         $currency = null;
@@ -302,7 +308,7 @@ class Stripe extends AbstractIntegration implements CanCreateSubscription, CanSe
                 throw new \InvalidArgumentException('All items must have the same currency');
             }
 
-            $amount += $price['amount'] * $quantity;
+            $amount += $price['amount']->getAmount() * $quantity;
         }
 
         // Apply discounts if any
@@ -342,19 +348,23 @@ class Stripe extends AbstractIntegration implements CanCreateSubscription, CanSe
             $amount = max(0, $amount - $discountAmount);
         }
 
-        // Create the payment intent
+        // Create the payment intent with the customer's default payment method
         $paymentIntent = $this->stripeClient->paymentIntents->create([
-            'amount' => (int) ($amount * 100), // Convert to cents
+            'amount' => (int) $amount,
             'currency' => strtolower($currency),
             'customer' => $customer->reference_id,
-            'automatic_payment_methods' => [
-                'enabled' => true,
-                'allow_redirects' => 'never',
-            ],
+            'payment_method' => $stripeCustomer->invoice_settings->default_payment_method,
+            'confirm' => true,
+            'off_session' => true,
             'metadata' => [
                 'order_id' => $order->id,
             ],
         ]);
+
+        // Verify the payment intent status
+        if ($paymentIntent->status === 'requires_payment_method') {
+            throw new \InvalidArgumentException('Payment method is required but not provided');
+        }
 
         return $paymentIntent;
     }
