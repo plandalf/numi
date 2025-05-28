@@ -73,3 +73,14 @@ export function isValidUrl(url: string): boolean {
     );
     return urlPattern.test(url);
 }
+
+export function getSupportedCurrencies(): { code: string; name: string }[] {
+    return [
+        { code: 'USD', name: 'US Dollar' },
+        { code: 'GBP', name: 'British Pound' },
+        { code: 'JPY', name: 'Japanese Yen' },
+        { code: 'CAD', name: 'Canadian Dollar' },
+        { code: 'AUD', name: 'Australian Dollar' },
+        { code: 'NZD', name: 'New Zealand Dollar' },
+    ];
+}

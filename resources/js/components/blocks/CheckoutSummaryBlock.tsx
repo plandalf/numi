@@ -4,7 +4,7 @@ import { BlockContextType } from "@/types/blocks";
 import { useState, useEffect, useMemo } from "react";
 import { Button } from "../ui/button";
 import { Discount } from "@/types/product";
-import { XIcon } from "lucide-react";
+import { Loader2, XIcon } from "lucide-react";
 
 function CheckoutSummaryComponent({ context }: { context: BlockContextType }) {
 
@@ -19,6 +19,7 @@ function CheckoutSummaryComponent({ context }: { context: BlockContextType }) {
   });
 
   const [showImages] = Numi.useStateBoolean({
+    label: 'Show Images',
     name: 'showImages',
     defaultValue: true,
     inspector: 'checkbox',
@@ -31,11 +32,19 @@ function CheckoutSummaryComponent({ context }: { context: BlockContextType }) {
   });
 
   const [discountCode, setDiscountCode] = Numi.useStateString({
-    label: 'Discount Code',
+    label: 'Allow discount codes',
     name: 'discountCode',
     defaultValue: '',
     inspector: 'hidden',
   });
+
+  const [stackedDiscounts, setStackedDiscounts] = Numi.useStateBoolean({
+    label: 'Allow stacking discounts',
+    name: 'stackedDiscounts',
+    defaultValue: false,
+    inspector: 'checkbox',
+  });
+
 
   const [showDiscountForm, setShowDiscountForm] = Numi.useStateBoolean({
     name: 'showDiscountForm',
@@ -69,7 +78,7 @@ function CheckoutSummaryComponent({ context }: { context: BlockContextType }) {
         letterSpacing: '0px',
       },
     ),
-    Style.font( 'labelFont', 'Label Font & Color',
+    Style.font('labelFont', 'Label Font & Color',
       fontConfig,
       {
         font: 'Inter',
@@ -79,7 +88,7 @@ function CheckoutSummaryComponent({ context }: { context: BlockContextType }) {
         letterSpacing: '0px',
       },
     ),
-    Style.font( 'itemFont', 'Item Font & Color',
+    Style.font('itemFont', 'Item Font & Color',
       fontConfig,
       {
         font: 'Inter',
@@ -89,7 +98,7 @@ function CheckoutSummaryComponent({ context }: { context: BlockContextType }) {
         letterSpacing: '0px',
       },
     ),
-    Style.font( 'itemPriceFont', 'Item Price Font & Color',
+    Style.font('itemPriceFont', 'Item Price Font & Color',
       fontConfig,
       {
         font: 'Inter',
@@ -99,7 +108,7 @@ function CheckoutSummaryComponent({ context }: { context: BlockContextType }) {
         letterSpacing: '0px',
       },
     ),
-    Style.font( 'itemQuantityFont', 'Item Quantity Font & Color',
+    Style.font('itemQuantityFont', 'Item Quantity Font & Color',
       fontConfig,
       {
         color: '#6a7282',
@@ -122,7 +131,7 @@ function CheckoutSummaryComponent({ context }: { context: BlockContextType }) {
       },
     ),
     Style.backgroundColor('buttonBackgroundColor', 'Button Background Color', {}, '#f6f3f4'),
-    Style.font( 'buttonTextFont', 'Button Text Font & Color',
+    Style.font('buttonTextFont', 'Button Text Font & Color',
       fontConfig,
       {
         color: '#1e2939',
@@ -133,7 +142,7 @@ function CheckoutSummaryComponent({ context }: { context: BlockContextType }) {
         letterSpacing: '0px',
       },
     ),
-    Style.font('summaryTextFont','Summary Text Font & Color',
+    Style.font('summaryTextFont', 'Summary Text Font & Color',
       fontConfig,
       {
         font: 'Inter',
@@ -143,7 +152,7 @@ function CheckoutSummaryComponent({ context }: { context: BlockContextType }) {
         letterSpacing: '0px',
       },
     ),
-    Style.font('discountTextFont','Discount Text Font & Color',
+    Style.font('discountTextFont', 'Discount Text Font & Color',
       fontConfig,
       {
         color: '#00a63e',
@@ -180,7 +189,7 @@ function CheckoutSummaryComponent({ context }: { context: BlockContextType }) {
       borderColor: style.borderColor,
       borderWidth: style?.border?.width,
       borderStyle: style?.border?.style,
-      borderRadius : style?.borderRadius ?? '3px',
+      borderRadius: style?.borderRadius ?? '3px',
       boxShadow: style?.shadow,
     };
   }, [style]);
@@ -301,24 +310,41 @@ function CheckoutSummaryComponent({ context }: { context: BlockContextType }) {
     };
   }, [style?.totalTextFont]);
 
-  // Debug: Log to see what's happening with the value
-  console.log('showDiscountForm value:', showDiscountForm);
-  console.log('blockConfig content:', context.blockConfig.content);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isDiscountSubmitting, setIsDiscountSubmitting] = useState(false);
 
   const handleApplyDiscount = () => {
     // await this here,
     if (discountCode.trim()) {
-      addDiscount(discountCode).then((success: boolean) => {
-        if(success) {
+      setIsDiscountSubmitting(true);
+      addDiscount(discountCode).then((status: { success: boolean, message: string }) => {
+        if (status.success) {
           setDiscountCode('');
+          setErrors({ ...errors, discount: '' });
+        } else {
+          setErrors({ discount: status.message });
         }
+      }).finally(() => {
+        setIsDiscountSubmitting(false);
       });
     }
   };
 
   const handleRemoveDiscount = (discount: string) => {
-    removeDiscount(discount);
+    removeDiscount(discount).then((status: { success: boolean, message: string }) => {
+      if (status.success) {
+        setErrors({ ...errors, discount: '' });
+      } else {
+        setErrors({ discount: status.message });
+      }
+    });
   };
+
+  const canAddDiscount = useMemo(() => {
+    if (stackedDiscounts) return true;
+
+    return !session.discounts || session.discounts.length === 0;
+  }, [stackedDiscounts, session.discounts]);
 
   if (style.hidden) {
     return null;
@@ -355,7 +381,7 @@ function CheckoutSummaryComponent({ context }: { context: BlockContextType }) {
       {showDiscountForm && (
         <div className="mb-4 pb-4 border-b">
           <label htmlFor="discount-code" className="block mb-1" style={labelStyle}>Discount code</label>
-          <div className="flex gap-2">
+          {canAddDiscount && <div className="flex gap-2">
             <input
               type="text"
               id="discount-code"
@@ -368,26 +394,28 @@ function CheckoutSummaryComponent({ context }: { context: BlockContextType }) {
             <Button
               type="button"
               onClick={handleApplyDiscount}
-              className="bg-gray-100 hover:bg-gray-200 text-gray-800 text-sm py-2 px-4 rounded"
+              className="min-w-24 bg-gray-100 hover:bg-gray-200 text-gray-800 text-sm py-2 px-4 rounded"
               style={buttonStyle}
+              disabled={isDiscountSubmitting}
             >
-              Apply
+              {isDiscountSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Apply'}
             </Button>
-          </div>
+          </div>}
+          {errors.discount && <p className="text-sm text-red-500">{errors.discount}</p>}
           <div className="flex gap-2 mt-2">
-          {session.discounts?.map((discount: Discount) => (
-            <div key={discount.id} className="flex justify-between items-center bg-gray-100 p-2 gap-2">
-              <span>{discount.name}</span>
-              <button
-                type="button"
-                onClick={() => handleRemoveDiscount(discount.id)}
-                className="cursor-pointer bg-gray-100 hover:bg-gray-200 text-gray-800 text-sm rounded"
-                style={buttonStyle}
-              >
-                <XIcon className="w-4 h-4 hover:text-red-500" />
-              </button>
-            </div>
-          ))}
+            {session.discounts?.map((discount: Discount) => (
+              <div key={discount.id} className="flex justify-between items-center bg-gray-100 p-2 gap-2">
+                <span>{discount.name}</span>
+                <button
+                  type="button"
+                  onClick={() => handleRemoveDiscount(discount.id)}
+                  className="cursor-pointer bg-gray-100 hover:bg-gray-200 text-gray-800 text-sm rounded"
+                  style={buttonStyle}
+                >
+                  <XIcon className="w-4 h-4 hover:text-red-500" />
+                </button>
+              </div>
+            ))}
           </div>
         </div>
       )}
@@ -400,18 +428,18 @@ function CheckoutSummaryComponent({ context }: { context: BlockContextType }) {
         </div>
 
         {session.shipping > 0 && (
-        <div className="flex justify-between">
-          <span style={summaryTextStyle}>Shipping</span>
-          <span style={summaryTextStyle}>{formatMoney(session.shipping, session.currency)}</span>
-        </div>
+          <div className="flex justify-between">
+            <span style={summaryTextStyle}>Shipping</span>
+            <span style={summaryTextStyle}>{formatMoney(session.shipping, session.currency)}</span>
+          </div>
         )}
 
 
         {session.taxes > 0 && (
-        <div className="flex justify-between">
-          <span style={summaryTextStyle}>Taxes</span>
-          <span style={summaryTextStyle}>{formatMoney(session.taxes, session.currency)}</span>
-        </div>
+          <div className="flex justify-between">
+            <span style={summaryTextStyle}>Taxes</span>
+            <span style={summaryTextStyle}>{formatMoney(session.taxes, session.currency)}</span>
+          </div>
         )}
 
         {session.discounts && session.discounts.length > 0 && (

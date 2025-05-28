@@ -23,7 +23,7 @@ import { Textarea } from "@/components/ui/textarea"; // If needed for properties
 import { Plus, Trash2, Loader2 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
-import { formatMoney, slugify } from "@/lib/utils"; // Import slugify
+import { formatMoney, slugify, getSupportedCurrencies } from "@/lib/utils"; // Import slugify and getSupportedCurrencies
 import { type Price, type Product } from '@/types/offer'; // Assuming types are centralized
 
 // Placeholder Types if not globally defined
@@ -82,10 +82,10 @@ interface PriceFormData {
 }
 
 interface ApiValidationError {
-    message: string;
-    errors: {
-        [key: string]: string[];
-    };
+  message: string;
+  errors: {
+    [key: string]: string[];
+  };
 }
 
 interface Props {
@@ -380,6 +380,7 @@ export default function PriceForm({
             <Label htmlFor="name">Name</Label>
             <Input
               id="name"
+              autoComplete="off"
               value={data.name || ''}
               onChange={(e) => setData("name", e.target.value)}
               placeholder="e.g., Monthly Standard"
@@ -392,6 +393,7 @@ export default function PriceForm({
             <Label htmlFor="lookup_key">Lookup Key</Label>
             <Input
               id="lookup_key"
+              autoComplete="off"
               value={data.lookup_key || ''}
               onChange={handleLookupKeyChange}
               onBlur={handleLookupKeyBlur}
@@ -425,6 +427,7 @@ export default function PriceForm({
                       <Input
                         id={`tag_name_${index}`}
                         type="text"
+                        autoComplete="off"
                         value={entry.tag_name}
                         onChange={(e) => updateMetadataEntry(index, 'tag_name', e.target.value)}
                         disabled={processing}
@@ -436,6 +439,7 @@ export default function PriceForm({
                       <Input
                         id={`copy_${index}`}
                         type="text"
+                        autoComplete="off"
                         value={entry.copy}
                         onChange={(e) => updateMetadataEntry(index, 'copy', e.target.value)}
                         disabled={processing}
@@ -493,10 +497,11 @@ export default function PriceForm({
 
           {/* Amount Input */}
           <div className="flex flex-row gap-4">
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-2 w-full">
               <Label htmlFor="amount">Amount (in cents)</Label>
               <Input
                 id="amount"
+                autoComplete="off"
                 type="number"
                 min="0"
                 step="1" // Ensure integer input
@@ -509,16 +514,26 @@ export default function PriceForm({
                 Base price in cents. Not used for complex models.
               </p>
             </div>
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-2 w-full">
               <Label htmlFor="currency">Currency</Label>
-              <Input
-                id="currency"
+              <Select
                 value={data.currency}
-                onChange={e => setData('currency', e.target.value.toLowerCase())}
-                maxLength={3}
-                placeholder="e.g., usd"
+                onValueChange={(value) => setData('currency', value.toLowerCase())}
                 disabled={processing || isEditing}
-              />
+              >
+                <SelectTrigger id="currency">
+                  <SelectValue placeholder="Select currency" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    {getSupportedCurrencies().map((currency) => (
+                      <SelectItem key={currency.code} value={currency.code.toLowerCase()}>
+                        {currency.code} - {currency.name}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
               {errors.currency && <p className="text-sm text-red-500">{errors.currency}</p>}
             </div>
           </div>
@@ -552,6 +567,7 @@ export default function PriceForm({
                     <Label htmlFor="recurring_interval_count">Interval Count</Label>
                     <Input
                       id="recurring_interval_count"
+                      autoComplete="off"
                       type="number"
                       min="1"
                       step="1"
@@ -568,6 +584,7 @@ export default function PriceForm({
                   {/* Replace with Select if predefined anchors are known */}
                   <Input
                     id="billing_anchor"
+                    autoComplete="off"
                     value={data.billing_anchor || ''}
                     onChange={e => setData('billing_anchor', e.target.value || null)}
                     disabled={processing}
@@ -579,6 +596,7 @@ export default function PriceForm({
                   <Label htmlFor="cancel_after_cycles">Cancel After Cycles (Optional)</Label>
                   <Input
                     id="cancel_after_cycles"
+                    autoComplete="off"
                     type="number"
                     min="1"
                     step="1"
@@ -610,6 +628,7 @@ export default function PriceForm({
                       <div className="grid gap-1 flex-1">
                         <Label className="text-xs">From (Units)</Label>
                         <Input
+                          autoComplete="off"
                           type="number"
                           min="0"
                           step="1"
@@ -623,6 +642,7 @@ export default function PriceForm({
                       <div className="grid gap-1 flex-1">
                         <Label className="text-xs">To (Units)</Label>
                         <Input
+                          autoComplete="off"
                           type="number"
                           min={tier.from + 1} // Ensure `to` is greater than `from`
                           step="1"
@@ -637,6 +657,7 @@ export default function PriceForm({
                       <div className="grid gap-1 flex-1">
                         <Label className="text-xs">Unit Amount (¢)</Label>
                         <Input
+                          autoComplete="off"
                           type="number"
                           min="0"
                           step="1"
@@ -686,6 +707,7 @@ export default function PriceForm({
                     <Label htmlFor="package_size">Package Size (Units)</Label>
                     <Input
                       id="package_size"
+                      autoComplete="off"
                       type="number"
                       min="1"
                       step="1"
@@ -699,6 +721,7 @@ export default function PriceForm({
                     <Label htmlFor="package_price">Package Price (¢)</Label>
                     <Input
                       id="package_price"
+                      autoComplete="off"
                       type="number"
                       min="0"
                       step="1"
