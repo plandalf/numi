@@ -103,7 +103,23 @@ class Order extends Model
      */
     public function getTotalAmountAttribute(): float
     {
-        return $this->items->sum('total_amount');
+        $subtotal = $this->items->sum('total_amount');
+
+        $discounts = $this->checkoutSession->discounts;
+        if (empty($discounts)) {
+            return $subtotal;
+        }
+
+        $discountAmount = 0;
+        foreach ($discounts as $discount) {
+            if (isset($discount['percent_off'])) {
+                $discountAmount += ($subtotal * ($discount['percent_off'] / 100));
+            } elseif (isset($discount['amount_off'])) {
+                $discountAmount += $discount['amount_off'];
+            }
+        }
+
+        return max(0, $subtotal - $discountAmount);
     }
 
     public function customer(): BelongsTo

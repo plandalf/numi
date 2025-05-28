@@ -9,6 +9,7 @@ use App\Models\Customer;
 use App\Models\Integration;
 use App\Models\Order\Order;
 use App\Modules\Integrations\AbstractIntegration;
+use App\Modules\Integrations\Contracts\AcceptsDiscount;
 use App\Modules\Integrations\Contracts\CanCreateSubscription;
 use App\Modules\Integrations\Contracts\CanSetupIntent;
 use App\Modules\Integrations\Contracts\HasPrices;
@@ -17,7 +18,7 @@ use App\Modules\Integrations\Stripe\Actions\ImportStripePriceAction;
 use App\Modules\Integrations\Stripe\Actions\ImportStripeProductAction;
 use Stripe\StripeClient;
 
-class Stripe extends AbstractIntegration implements CanCreateSubscription, CanSetupIntent, HasPrices, HasProducts
+class Stripe extends AbstractIntegration implements CanCreateSubscription, CanSetupIntent, HasPrices, HasProducts, AcceptsDiscount
 {
     protected StripeClient $stripeClient;
 
@@ -95,6 +96,7 @@ class Stripe extends AbstractIntegration implements CanCreateSubscription, CanSe
     {
         $order = $data['order'] ?? null;
         $items = $data['items'] ?? [];
+        $discounts = $data['discounts'] ?? [];
 
         if (! $order || empty($items)) {
             throw new \InvalidArgumentException('Order and items are required to create a subscription');
@@ -118,8 +120,8 @@ class Stripe extends AbstractIntegration implements CanCreateSubscription, CanSe
 
         logger()->info('createSubscription', ['subscriptionItems' => $subscriptionItems]);
 
-        // Create the subscription
-        $subscription = $this->stripeClient->subscriptions->create([
+        // Prepare subscription data
+        $subscriptionData = [
             'customer' => $customer->reference_id,
             'items' => $subscriptionItems,
             'payment_settings' => [
@@ -127,13 +129,46 @@ class Stripe extends AbstractIntegration implements CanCreateSubscription, CanSe
                 'save_default_payment_method' => 'on_subscription',
             ],
             'expand' => ['latest_invoice.payment_intent'],
-        ]);
+        ];
 
-        // Update the order with subscription information
-        // $order->update([
-        //     'subscription_id' => $subscription->id,
-        //     'subscription_status' => $subscription->status,
-        // ]);
+        // Add discounts if any
+        if (!empty($discounts)) {
+            $promotionCodes = [];
+            foreach ($discounts as $discount) {
+                try {
+                    // Try to get the promotion code for this coupon
+                    $promotionCode = $this->stripeClient->promotionCodes->all([
+                        'code' => $discount['id'],
+                        'active' => true,
+                        'limit' => 1
+                    ])->data[0] ?? null;
+
+                    if ($promotionCode) {
+                        $promotionCodes[] = $promotionCode->id;
+                    } else {
+                        // If no promotion code found, try to use as a direct coupon
+                        $coupon = $this->stripeClient->coupons->retrieve($discount['id']);
+                        if ($coupon) {
+                            $subscriptionData['coupon'] = $coupon->id;
+                            break; // Only one direct coupon can be applied
+                        }
+                    }
+                } catch (\Exception $e) {
+                    logger()->warning('Failed to apply discount', [
+                        'discount_id' => $discount['id'],
+                        'error' => $e->getMessage()
+                    ]);
+                }
+            }
+
+            // Add promotion codes if any were found
+            if (!empty($promotionCodes)) {
+                $subscriptionData['promotion_code'] = $promotionCodes[0]; // Use first promotion code
+            }
+        }
+
+        // Create the subscription
+        $subscription = $this->stripeClient->subscriptions->create($subscriptionData);
 
         return $subscription;
     }
@@ -240,6 +275,7 @@ class Stripe extends AbstractIntegration implements CanCreateSubscription, CanSe
     {
         $order = $data['order'] ?? null;
         $items = $data['items'] ?? [];
+        $discounts = $data['discounts'] ?? [];
 
         if (! $order || empty($items)) {
             throw new \InvalidArgumentException('Order and items are required to create a payment intent');
@@ -250,6 +286,12 @@ class Stripe extends AbstractIntegration implements CanCreateSubscription, CanSe
 
         if (! $customer) {
             throw new \InvalidArgumentException('Customer is required to create a payment intent');
+        }
+
+        // Verify customer has a default payment method
+        $stripeCustomer = $this->stripeClient->customers->retrieve($customer->reference_id);
+        if (!$stripeCustomer->invoice_settings->default_payment_method) {
+            throw new \InvalidArgumentException('Customer has no default payment method set up');
         }
 
         // Calculate the total amount
@@ -266,29 +308,69 @@ class Stripe extends AbstractIntegration implements CanCreateSubscription, CanSe
                 throw new \InvalidArgumentException('All items must have the same currency');
             }
 
-            $amount += $price['amount'] * $quantity;
+            $amount += $price['amount']->getAmount() * $quantity;
         }
 
-        // Create the payment intent
+        // Apply discounts if any
+        if (!empty($discounts)) {
+            $discountAmount = 0;
+            foreach ($discounts as $discount) {
+                try {
+                    // Try to get the promotion code for this discount
+                    $promotionCode = $this->stripeClient->promotionCodes->all([
+                        'code' => $discount['id'],
+                        'active' => true,
+                        'limit' => 1
+                    ])->data[0] ?? null;
+
+                    if ($promotionCode) {
+                        // Apply promotion code discount
+                        if ($promotionCode->coupon->percent_off) {
+                            $discountAmount += $amount * ($promotionCode->coupon->percent_off / 100);
+                        } else {
+                            $discountAmount += $promotionCode->coupon->amount_off;
+                        }
+                    } else {
+                        // Fallback to direct coupon calculation
+                        if (isset($discount['percent_off'])) {
+                            $discountAmount += $amount * ($discount['percent_off'] / 100);
+                        } elseif (isset($discount['amount_off'])) {
+                            $discountAmount += $discount['amount_off'];
+                        }
+                    }
+                } catch (\Exception $e) {
+                    logger()->warning('Failed to apply discount', [
+                        'discount_id' => $discount['id'],
+                        'error' => $e->getMessage()
+                    ]);
+                }
+            }
+            $amount = max(0, $amount - $discountAmount);
+        }
+
+        // Create the payment intent with the customer's default payment method
         $paymentIntent = $this->stripeClient->paymentIntents->create([
-            'amount' => (int) ($amount * 100), // Convert to cents
+            'amount' => (int) $amount,
             'currency' => strtolower($currency),
             'customer' => $customer->reference_id,
-            'automatic_payment_methods' => [
-                'enabled' => true,
-                'allow_redirects' => 'never',
-            ],
+            'payment_method' => $stripeCustomer->invoice_settings->default_payment_method,
+            'confirm' => true,
+            'off_session' => true,
             'metadata' => [
                 'order_id' => $order->id,
             ],
         ]);
 
-        // Update the order with payment intent information
-        // $order->update([
-        //     'payment_intent_id' => $paymentIntent->id,
-        //     'payment_status' => $paymentIntent->status,
-        // ]);
+        // Verify the payment intent status
+        if ($paymentIntent->status === 'requires_payment_method') {
+            throw new \InvalidArgumentException('Payment method is required but not provided');
+        }
 
         return $paymentIntent;
+    }
+
+    public function getDiscount(string $code)
+    {
+        return $this->stripeClient->coupons->retrieve($code);
     }
 }

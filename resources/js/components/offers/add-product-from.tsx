@@ -192,7 +192,6 @@ export default function AddProductForm({
                       placeholder="Select a product"
                       onSelect={(value) => handleProductSelect(value as string)}
                       selected={selectedProduct?.id?.toString() || ""}
-                      modal
                     />
                   </div>
                 </div>
@@ -218,7 +217,6 @@ export default function AddProductForm({
                           }}
                           required
                           multiple
-                          modal
                         />
                       </div>
                     </div>

@@ -1,13 +1,10 @@
-import { Link } from '@inertiajs/react';
-import { Boxes, CircleCheck, CircleChevronRight, Plus, Trash, Trash2 } from 'lucide-react';
+import { CircleCheck, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
-  DialogTitle,
-  DialogTrigger,
+  DialogTitle
 } from '@/components/ui/dialog';
 import { useState, useEffect, useMemo } from 'react';
 import { router } from '@inertiajs/react';
@@ -25,6 +22,7 @@ import {
 } from '@/components/ui/select';
 import { formatMoney } from '@/lib/utils';
 import { toast } from 'sonner';
+import { Badge } from '../ui/badge';
 
 interface AddExistingStripeProductDialogProps {
   onOpenChange?: (open: boolean) => void;
@@ -38,6 +36,7 @@ type StripeProduct = {
   name: string;
   description: string;
   active: boolean;
+  imported?: boolean;
 }
 
 type StripePrice = {
@@ -114,7 +113,9 @@ const ProductStep = ({ integrationId, onClickNext, onClickCancel, productFormDat
   const comboboxItems = products.map(product => ({
     value: product.id,
     label: product.name,
-    description: product.description
+    description: product.description,
+    badge: product.imported ? <Badge variant="outline">Imported</Badge> : null,
+    disabled: product.imported,
   }));
 
   return (
@@ -162,18 +163,6 @@ const ProductStep = ({ integrationId, onClickNext, onClickCancel, productFormDat
                 placeholder="Select a product"
                 selected={productFormData.productId}
                 onSelect={handleProductChange}
-                required
-                modal
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="name">Select Product</Label>
-              <Input
-                id="name"
-                autoComplete="off"
-                value={productFormData.name}
-                onChange={(e) => setProductFormData({ ...productFormData, name: e.target.value })}
-                placeholder="e.g., Standard Subscription"
                 required
               />
             </div>
@@ -282,12 +271,11 @@ export const PriceStep = ({ integrationId, onClickSave, onClickBack, selectedPri
               <Combobox
                 className="mt-1 w-full"
                 items={comboboxItems}
-                placeholder="Select a product"
+                placeholder="Select prices"
                 selected={selectedPrices}
                 onSelect={handleProductChange}
                 required
                 multiple
-                modal
               />
             </div>
 

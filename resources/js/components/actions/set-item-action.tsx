@@ -79,7 +79,6 @@ export default function SetItemAction({ value = {}, onChange, action }: SetItemA
           selected={value?.item}
           onSelect={(selected) => onChange({ ...value, item: selected as string })}
           placeholder="Select an item"
-          modal
           hideSearch
         />
       </div>
@@ -92,7 +91,6 @@ export default function SetItemAction({ value = {}, onChange, action }: SetItemA
             selected={value?.price}
             onSelect={(selected) => onChange({ ...value, price: selected as string })}
             placeholder="Select a price"
-            modal
             hideSearch
           />
         </div>
@@ -117,7 +115,6 @@ export default function SetItemAction({ value = {}, onChange, action }: SetItemA
             selected={typeof value?.required === 'boolean' ? value?.required ? 'true' : 'false' : ''}
             onSelect={(selected) => onChange({ ...value, required: selected === '' ? undefined : selected === 'true' })}
             placeholder="Select an option"
-            modal
             disabled={action === 'deactivateLineItem'}
             hideSearch
           />

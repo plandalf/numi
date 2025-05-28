@@ -9,10 +9,13 @@ use App\Http\Resources\Checkout\CheckoutSessionResource;
 use App\Models\Catalog\Price;
 use App\Models\Checkout\CheckoutSession;
 use App\Models\Store\OfferItem;
+use App\Modules\Integrations\Contracts\AcceptsDiscount;
 use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
 use Illuminate\Validation\ValidationException;
+use Stripe\Exception\InvalidRequestException;
 
 class CheckoutSessionController extends Controller
 {
@@ -28,6 +31,9 @@ class CheckoutSessionController extends Controller
         // $submit = new SubmitPageService() -> $submit($checkoutId, $action);
         // props
         //
+
+        $checkoutSession->load(['lineItems.offerItem', 'offer.theme', 'lineItems.price.integration', 'lineItems.price.product']);
+
         switch ($action) {
             case 'setFields':
                 $checkoutSession->update([
@@ -37,50 +43,11 @@ class CheckoutSessionController extends Controller
             case 'commit':
                 return $this->commit($checkoutSession, $request);
             case 'setItem':
-                /** @todo Create Request validation class for this */
-                $required = $request->input('required');
-                $priceId = $request->input('price_id');
-                $quantity = $request->input('quantity');
-
-                $args = [];
-
-                if(!$request->has('offer_item_id')) {
-                    return response()->json([
-                        'message' => 'Offer item ID is required',
-                    ], 400);
-                }
-
-                if($request->has('price_id')) {
-                    $price = Price::where('lookup_key', $priceId)->firstOrFail();
-                    $args['price_id'] = $price->id;
-                } else {
-                    $offerItem = OfferItem::where('id', $request->input('offer_item_id'))->firstOrFail();
-                    $args['price_id'] = $offerItem->default_price_id;
-                }
-
-                if($request->has('quantity')) {
-                    $args['quantity'] = $quantity;
-                }
-
-                if($request->has('required')) {
-                    if(!$required) {
-                        $checkoutSession->lineItems()->where('offer_item_id', $request->input('offer_item_id'))->delete();
-                        $checkoutSession->load(['lineItems.offerItem', 'lineItems.price.integration']);
-
-                        return new CheckoutSessionResource($checkoutSession);
-                    }
-                }
-
-                $checkoutSession->lineItems()->updateOrCreate([
-                    'offer_item_id' => $request->input('offer_item_id'),
-                ], [
-                    ...$args,
-                    'organization_id' => $checkoutSession->organization_id,
-                    'deleted_at' => null,
-                ]);
-
-                $checkoutSession->load(['lineItems.offerItem', 'offer.theme', 'lineItems.price.integration', 'lineItems.price.product']);
-                return new CheckoutSessionResource($checkoutSession);
+                return $this->setItem($checkoutSession, $request);
+            case 'addDiscount':
+                return $this->addDiscount($checkoutSession, $request);
+            case 'removeDiscount':
+                return $this->removeDiscount($checkoutSession, $request);
             default:
                 abort(400);
         }
@@ -101,7 +68,6 @@ class CheckoutSessionController extends Controller
                 ]);
             }
 
-            $checkoutSession->load(['lineItems.price.integration']);
             $this->commitCheckoutAction->execute($checkoutSession, $token);
 
             return response()->json([
@@ -112,5 +78,109 @@ class CheckoutSessionController extends Controller
                 'message' => $e->getMessage(),
             ], 400);
         }
+    }
+
+    private function setItem(CheckoutSession $checkoutSession, Request $request)
+    {
+        $required = $request->input('required');
+        $priceId = $request->input('price_id');
+        $quantity = $request->input('quantity');
+
+        $args = [];
+
+        if (!$request->has('offer_item_id')) {
+            return response()->json([
+                'message' => 'Offer item ID is required',
+            ], 400);
+        }
+
+        if ($request->has('price_id')) {
+            $price = Price::where('lookup_key', $priceId)->firstOrFail();
+            $args['price_id'] = $price->id;
+        } else {
+            $offerItem = OfferItem::where('id', $request->input('offer_item_id'))->firstOrFail();
+            $args['price_id'] = $offerItem->default_price_id;
+        }
+
+        if ($request->has('quantity')) {
+            $args['quantity'] = $quantity;
+        }
+
+        if ($request->has('required')) {
+            if (!$required) {
+                $checkoutSession->lineItems()->where('offer_item_id', $request->input('offer_item_id'))->delete();
+
+                return new CheckoutSessionResource($checkoutSession);
+            }
+        }
+
+        $checkoutSession->lineItems()->updateOrCreate([
+            'offer_item_id' => $request->input('offer_item_id'),
+        ], [
+            ...$args,
+            'organization_id' => $checkoutSession->organization_id,
+            'deleted_at' => null,
+        ]);
+
+        return new CheckoutSessionResource($checkoutSession);
+    }
+
+    private function addDiscount(CheckoutSession $checkoutSession, Request $request)
+    {
+        $coupon = $request->input('discount');
+
+        try {
+
+            $integrationClient = $checkoutSession->integrationClient();
+
+            if (! $integrationClient) {
+                return response()->json([
+                    'message' => 'Integration client not found',
+                ], 400);
+            }
+
+            if (! $integrationClient instanceof AcceptsDiscount) {
+                return response()->json([
+                    'message' => 'Integration does not support discounts',
+                ], 400);
+            }
+
+            $discount = $integrationClient->getDiscount($coupon);
+
+            if(!$discount->valid) {
+                return response()->json([
+                    'message' => 'Invalid coupon',
+                ], 400);
+            }
+
+            $existingDiscounts = $checkoutSession->discounts;
+
+            if (in_array($discount['id'], Arr::pluck($existingDiscounts ?? [], 'id'))) {
+                return response()->json([
+                    'message' => 'Discount already added',
+                ], 400);
+            }
+
+            $checkoutSession->update([
+                'discounts' => array_merge($existingDiscounts ?? [], [$discount]),
+            ]);
+
+            return new CheckoutSessionResource($checkoutSession);
+        } catch (InvalidRequestException $e) {
+            return response()->json([
+                'message' => "No such coupon: '{$coupon}'"
+            ], 400);
+        }
+    }
+
+    public function removeDiscount(CheckoutSession $checkoutSession, Request $request)
+    {
+        $discount = $request->input('discount');
+
+        $checkoutSession->update([
+            'discounts' => Arr::where($checkoutSession->discounts, fn($d) => $d['id'] !== $discount),
+        ]);
+
+        return new CheckoutSessionResource($checkoutSession);
     }
 }

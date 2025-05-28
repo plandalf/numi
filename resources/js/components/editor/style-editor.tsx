@@ -169,7 +169,7 @@ const StyleItemValuePreview = ({
     case 'dimensionPicker':
       const dimensionValue = value as DimensionValue;
       let dimensionValueAsTitle = '';
-      
+
       if(item.config?.hideWidth) {
         dimensionValueAsTitle = `${dimensionValue.height}`;
       } else if(item.config?.hideHeight) {
@@ -389,7 +389,6 @@ export const StyleEditor: React.FC<StyleEditorProps> = ({
           placeholder={itemsWithValue.length > 0 ? 'Add another style' : 'Add a style'}
           hideSearch={itemsWithoutValue.length === 0}
           disabled={itemsWithoutValue.length === 0}
-          modal
         />
       )}
     </div>

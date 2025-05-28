@@ -34,6 +34,7 @@ class OrderResource extends JsonResource
                 return [
                     'id' => $this->checkoutSession->id,
                     'status' => $this->checkoutSession->status,
+                    'discounts' => $this->checkoutSession->discounts,
                 ];
             }),
         ];

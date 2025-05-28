@@ -265,7 +265,7 @@ export const AddVisibilityCondition: React.FC<{
         onSelect={(value) => props.handleOnChange(value as string)}
         placeholder="Select field"
         className="max-w-[150px]"
-        modal
+        popoverClassName="!w-full"
       />
     );
   };

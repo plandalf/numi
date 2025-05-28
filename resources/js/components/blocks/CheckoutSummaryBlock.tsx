@@ -2,10 +2,13 @@ import Numi, { Appearance, Style } from "@/contexts/Numi";
 import { cn, formatMoney } from "@/lib/utils";
 import { BlockContextType } from "@/types/blocks";
 import { useState, useEffect, useMemo } from "react";
+import { Button } from "../ui/button";
+import { Discount } from "@/types/product";
+import { XIcon } from "lucide-react";
 
 function CheckoutSummaryComponent({ context }: { context: BlockContextType }) {
 
-  const { session } = Numi.useCheckout({
+  const { session, addDiscount, removeDiscount } = Numi.useCheckout({
 
   });
 
@@ -305,14 +308,17 @@ function CheckoutSummaryComponent({ context }: { context: BlockContextType }) {
   const handleApplyDiscount = () => {
     // await this here,
     if (discountCode.trim()) {
-      console.log('Applying discount:', discountCode);
-      // Use the session context to apply the discount
-      // This is a placeholder - you'll need to implement the actual discount application logic
-      console.log('Discount code applied:', discountCode);
+      addDiscount(discountCode).then((success: boolean) => {
+        if(success) {
+          setDiscountCode('');
+        }
+      });
     }
   };
 
-  console.log('session', session);
+  const handleRemoveDiscount = (discount: string) => {
+    removeDiscount(discount);
+  };
 
   if (style.hidden) {
     return null;
@@ -359,14 +365,29 @@ function CheckoutSummaryComponent({ context }: { context: BlockContextType }) {
               placeholder="Enter discount code"
               style={inputStyle}
             />
-            <button
+            <Button
               type="button"
               onClick={handleApplyDiscount}
               className="bg-gray-100 hover:bg-gray-200 text-gray-800 text-sm py-2 px-4 rounded"
               style={buttonStyle}
             >
               Apply
-            </button>
+            </Button>
+          </div>
+          <div className="flex gap-2 mt-2">
+          {session.discounts?.map((discount: Discount) => (
+            <div key={discount.id} className="flex justify-between items-center bg-gray-100 p-2 gap-2">
+              <span>{discount.name}</span>
+              <button
+                type="button"
+                onClick={() => handleRemoveDiscount(discount.id)}
+                className="cursor-pointer bg-gray-100 hover:bg-gray-200 text-gray-800 text-sm rounded"
+                style={buttonStyle}
+              >
+                <XIcon className="w-4 h-4 hover:text-red-500" />
+              </button>
+            </div>
+          ))}
           </div>
         </div>
       )}
@@ -393,10 +414,18 @@ function CheckoutSummaryComponent({ context }: { context: BlockContextType }) {
         </div>
         )}
 
-        {session.discount > 0 && (
+        {session.discounts && session.discounts.length > 0 && (
           <div className="flex justify-between text-green-600">
             <span style={discountTextStyle}>Discount</span>
-            <span style={discountTextStyle}>-{formatMoney(session.discount, session.currency)}</span>
+            <span style={discountTextStyle}>-{formatMoney(session.discounts.reduce((acc, discount) => {
+              if (discount.amount_off !== null) {
+                return acc + discount.amount_off;
+              } else if (discount.percent_off !== null) {
+                // Calculate percentage discount based on subtotal
+                return acc + (session.subtotal * (discount.percent_off / 100));
+              }
+              return acc;
+            }, 0), session.currency)}</span>
           </div>
         )}
       </div>

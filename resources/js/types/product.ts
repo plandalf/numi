@@ -49,3 +49,17 @@ export interface Price {
     updated_at: string;
     deleted_at: string | null;
 }
+
+export interface Discount {
+  id: string;
+  name: string;
+  amount_off: number|null;
+  percent_off: number|null;
+  duration: 'once' | 'repeating' | 'forever';
+  duration_in_months: number|null;
+  max_redemptions: number|null;
+  redeem_by: string|null;
+  metadata: Record<string, any>;
+  created_at: string;
+  updated_at: string;
+}

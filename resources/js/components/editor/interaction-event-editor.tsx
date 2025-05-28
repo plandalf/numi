@@ -173,7 +173,6 @@ export const AddActionDialog: React.FC<ActionEditorProps> = ({ label, value, onC
                     placeholder="Event..."
                     hideSearch
                     disabled={events?.length === 1}
-                    modal
                   />
                   <Combobox
                     items={elementOptions ?? []}
@@ -183,7 +182,6 @@ export const AddActionDialog: React.FC<ActionEditorProps> = ({ label, value, onC
                     placeholder="Element..."
                     hideSearch
                     disabled={elementOptions?.length === 1}
-                    modal
                   />
                   </div>
                   <Button
@@ -206,7 +204,6 @@ export const AddActionDialog: React.FC<ActionEditorProps> = ({ label, value, onC
                     onSelect={(selected) => handleFieldChange(idx, 'action', selected as string)}
                     placeholder="Action..."
                     hideSearch
-                    modal
                   />
                 </div>
                 <Separator className="w-full" />
