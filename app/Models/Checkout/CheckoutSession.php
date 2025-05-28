@@ -30,6 +30,7 @@ class CheckoutSession extends Model
         'organization_id',
         'uuid',
         'deleted_at',
+        'discounts',
         // 'customer_id',
     ];
 
@@ -38,6 +39,7 @@ class CheckoutSession extends Model
         'expires_at' => 'datetime',
         'finalized_at' => 'datetime',
         'metadata' => 'array',
+        'discounts' => 'array',
     ];
 
     protected $attributes = [
@@ -79,7 +81,22 @@ class CheckoutSession extends Model
 
     public function getTotalAttribute()
     {
-        return $this->lineItems->sum('total');
+        $subtotal = $this->lineItems->sum('total');
+
+        if (empty($this->discounts)) {
+            return $subtotal;
+        }
+
+        $discountAmount = 0;
+        foreach ($this->discounts as $discount) {
+            if (isset($discount['percent_off'])) {
+                $discountAmount += ($subtotal * ($discount['percent_off'] / 100));
+            } elseif (isset($discount['amount_off'])) {
+                $discountAmount += $discount['amount_off'];
+            }
+        }
+
+        return max(0, $subtotal - $discountAmount);
     }
 
     public function getSubtotalAttribute()

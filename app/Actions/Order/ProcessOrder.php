@@ -72,14 +72,18 @@ class ProcessOrder
 
             $integrationClient = $orderItems->first()->price->integrationClient();
 
+            // Get discounts from checkout session
+            $discounts = $checkoutSession->discounts ?? [];
+
             // Process each group of items based on their type
-            $groupedItems->each(function (Collection $items, $type) use ($integrationClient, $order, $checkoutSession) {
+            $groupedItems->each(function (Collection $items, $type) use ($integrationClient, $order, $checkoutSession, $discounts) {
                 // Handle subscription items (graduated, volume, package)
                 if (in_array($type, [ChargeType::GRADUATED->value, ChargeType::VOLUME->value, ChargeType::PACKAGE->value])
                     && $integrationClient instanceof CanCreateSubscription) {
                     $subscription = $integrationClient->createSubscription([
                         'order' => $order,
                         'items' => $items->toArray(),
+                        'discounts' => $discounts,
                     ]);
 
                     // Validate the subscription payment
@@ -106,6 +110,7 @@ class ProcessOrder
                     $paymentIntent = $integrationClient->createPaymentIntent([
                         'order' => $order,
                         'items' => $items->toArray(),
+                        'discounts' => $discounts,
                     ]);
 
                     // Validate the one-time payment

@@ -21,6 +21,7 @@ class CheckoutSessionResource extends JsonResource
                 return $this->integration->type;
             }),
             'current_page' => data_get($this->metadata, 'current_page_id'),
+            'discounts' => $this->discounts,
             // 'taxes' => $this->taxes,
             // 'discount' => $this->discount,
         ];

@@ -47,7 +47,8 @@ export interface GlobalState {
 
   // Line Items
   updateLineItem: (offerItemId: string, price: string) => Promise<void>;
-
+  addDiscount: (discount: string) => Promise<boolean>;
+  removeDiscount: (discount: string) => Promise<boolean>;
 
   offer: OfferConfiguration;
   theme: Theme;
@@ -281,6 +282,54 @@ export function GlobalStateProvider({ offer, session: defaultSession, editor = f
     return response.data;
   };
 
+  const addDiscount = async (discount: string) => {
+    try {
+      const response = await axios.post(`/checkouts/${session.id}/mutations`, {
+        action: 'addDiscount',
+        discount: discount
+      });
+
+      if (response.status === 200) {
+        setSession(response.data);
+        return true;
+      }
+
+      setSubmitError(response.data?.message || 'Failed to add discount');
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        setSubmitError(error.response?.data?.message || 'Failed to add discount');
+      } else {
+        setSubmitError('An unexpected error occurred');
+      }
+    }
+
+    return false;
+  }
+
+  const removeDiscount = async (discount: string) => {
+    try {
+      const response = await axios.post(`/checkouts/${session.id}/mutations`, {
+        action: 'removeDiscount',
+        discount: discount
+      });
+
+      if (response.status === 200) {
+        setSession(response.data);
+        return true;
+      }
+
+      setSubmitError(response.data?.message || 'Failed to remove discount');
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        setSubmitError(error.response?.data?.message || 'Failed to remove discount');
+      } else {
+        setSubmitError('An unexpected error occurred');
+      }
+    }
+
+    return false;
+  }
+
   const backendValidateFields = async (fields: Record<string, any>) => {
     // Call API to validate fields
     try {
@@ -345,6 +394,8 @@ export function GlobalStateProvider({ offer, session: defaultSession, editor = f
     // validatePage,
     validateField,
     updateLineItem,
+    addDiscount,
+    removeDiscount,
 
     // Submission
     // submitPage,

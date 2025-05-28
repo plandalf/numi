@@ -12,6 +12,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Discount } from '@/types/product';
 
 type User = { id: number; name: string; email: string; };
 
@@ -55,6 +56,7 @@ interface Order {
   checkout_session: {
     id: number;
     status: string;
+    discounts: Discount[];
   } | null;
 }
 
@@ -117,6 +119,25 @@ export default function Show({ auth, order }: OrdersShowProps) {
                           </TableCell>
                           <TableCell className="text-right font-medium">
                             {formatMoney(item.total_amount, item.price.currency)}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                      {order.checkout_session?.discounts && order.checkout_session.discounts?.map((discount) => (
+                        <TableRow key={discount.id}>
+                          <TableCell colSpan={2} className="text-right font-medium text-green-600">
+                            {discount.name}
+                            {discount.duration === 'repeating' && discount.duration_in_months && (
+                              <span className="text-gray-500 ml-1">
+                                ({discount.duration_in_months} months)
+                              </span>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-right font-medium text-green-600">
+                            {discount.amount_off ? (
+                              `-${formatMoney(discount.amount_off, order.currency)}`
+                            ) : discount.percent_off ? (
+                              `-${discount.percent_off}%`
+                            ) : null}
                           </TableCell>
                         </TableRow>
                       ))}

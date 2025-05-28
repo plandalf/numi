@@ -1,6 +1,7 @@
 import type { OfferConfiguration, Page } from '@/types/offer';
 import React from 'react';
 import { Font } from '.';
+import { Discount } from './product';
 
 export enum IntegrationClient {
   STRIPE = 'stripe',
@@ -48,6 +49,7 @@ export interface CheckoutSession {
   metadata: Record<string, any>;
   discount_code?: string;
   publishable_key?: string;
+  discounts?: Discount[];
 }
 
 export interface CheckoutPageProps {
