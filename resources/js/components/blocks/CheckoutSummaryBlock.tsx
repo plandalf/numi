@@ -24,12 +24,15 @@ function CheckoutSummaryComponent({ context }: { context: BlockContextType }) {
     name: 'showImages',
     defaultValue: true,
     inspector: 'checkbox',
+    group: 'lineItems',
   });
 
   const [showItemPrices] = Numi.useStateBoolean({
+    label: 'Show Item Prices',
     name: 'showItemPrices',
     defaultValue: true,
     inspector: 'checkbox',
+    group: 'lineItems',
   });
 
   const [discountCode, setDiscountCode] = Numi.useStateString({
@@ -37,6 +40,7 @@ function CheckoutSummaryComponent({ context }: { context: BlockContextType }) {
     name: 'discountCode',
     defaultValue: '',
     inspector: 'hidden',
+    group: 'discountCodes',
   });
 
   const [stackedDiscounts, setStackedDiscounts] = Numi.useStateBoolean({
@@ -44,13 +48,22 @@ function CheckoutSummaryComponent({ context }: { context: BlockContextType }) {
     name: 'stackedDiscounts',
     defaultValue: false,
     inspector: 'checkbox',
+    group: 'discountCodes',
   });
 
-
   const [showDiscountForm, setShowDiscountForm] = Numi.useStateBoolean({
+    label: 'Show discount form',
     name: 'showDiscountForm',
     defaultValue: true,
     inspector: 'checkbox',
+    group: 'discountCodes',
+  });
+
+  const [discountCtaLabel, setDiscountCtaLabel] = Numi.useStateString({
+    label: 'Label',
+    name: 'discountCtaLabel',
+    defaultValue: 'Apply',
+    group: 'discountCodes',
   });
 
   const appearance = Numi.useAppearance([
@@ -368,11 +381,11 @@ function CheckoutSummaryComponent({ context }: { context: BlockContextType }) {
               <div className="flex justify-between">
                 <div className="font-medium" style={itemStyle}>{item.product?.name || item.name}</div>
                 {showItemPrices && item.total !== undefined && (
-                  <div className="text-gray-700" style={itemPriceStyle}>{formatMoney(item.total * item.quantity, item.currency)}</div>
+                  <div className="text-gray-700" style={itemPriceStyle}>{formatMoney(item.total, item.currency)}</div>
                 )}
               </div>
               <div className="text-sm text-gray-500" style={itemQuantityStyle}>
-                Qty: {item.quantity} {showItemPrices && item.total !== undefined && `× ${formatMoney(item.total, item.currency)}`}
+                Qty: {item.quantity} {showItemPrices && item.total !== undefined && `× ${formatMoney(item.subtotal, item.currency)}`}
               </div>
             </div>
           </div>
@@ -392,6 +405,7 @@ function CheckoutSummaryComponent({ context }: { context: BlockContextType }) {
               onChange={(e) => setDiscountCode(e.target.value)}
               placeholder="Enter discount code"
               style={inputStyle}
+              autoComplete="off"
             />
             <Button
               type="button"
@@ -400,7 +414,7 @@ function CheckoutSummaryComponent({ context }: { context: BlockContextType }) {
               style={buttonStyle}
               disabled={isDiscountSubmitting || isEditor}
             >
-              {isDiscountSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Apply'}
+              {isDiscountSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : discountCtaLabel}
             </Button>
           </div>}
           {errors.discount && <p className="text-sm text-red-500">{errors.discount}</p>}

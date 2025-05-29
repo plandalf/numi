@@ -212,18 +212,18 @@ export const Style = {
   }),
 
   backgroundColor: (
-    type: 
-      "backgroundColor" 
-      | "iconColor" 
-      | "imageBackgroundColor" 
-      | "badgeBackgroundColor" 
-      | "errorBackgroundColor" 
-      | "warningBackgroundColor" 
-      | "inputBackgroundColor" 
-      | "buttonBackgroundColor" 
-      | "activeBackgroundColor" 
-      | "inactiveBackgroundColor" 
-      | "checkboxActiveBackgroundColor" 
+    type:
+      "backgroundColor"
+      | "iconColor"
+      | "imageBackgroundColor"
+      | "badgeBackgroundColor"
+      | "errorBackgroundColor"
+      | "warningBackgroundColor"
+      | "inputBackgroundColor"
+      | "buttonBackgroundColor"
+      | "activeBackgroundColor"
+      | "inactiveBackgroundColor"
+      | "checkboxActiveBackgroundColor"
       | "checkboxInactiveBackgroundColor" = "backgroundColor",
     label: string = 'Background Color',
     args: HookArgs,
@@ -421,6 +421,7 @@ const Numi = {
     label: string;
     schema: JSONSchemaValue,
     defaultValue: any,
+    group?: string,
   }): Array<any> {
 
     const blockContext = useContext(BlockContext);
@@ -431,7 +432,8 @@ const Numi = {
         label: props.label,
         type: 'jsonSchema',
         schema: props.schema,
-        defaultValue: props.defaultValue || {}
+        defaultValue: props.defaultValue || {},
+        group: props.group,
       });
     }, [blockContext.blockId, props.name]);
 
@@ -527,7 +529,7 @@ const Numi = {
       // Get the value from block config or use default
       styleProps.forEach(prop => {
         if (prop.type) {
-          style[prop.type] = blockContext.blockConfig.style?.[prop.type] 
+          style[prop.type] = blockContext.blockConfig.style?.[prop.type]
           || prop.defaultValue;
         }
       });
@@ -586,6 +588,7 @@ const Numi = {
     label: string;
     icons?: Record<string, React.ReactNode>;
     asState?: boolean;
+    group?: string;
   }): [any, (newValue: any) => void, (hook: Partial<HookUsage>) => void] {
     const blockContext = useContext(BlockContext);
     const [hook, setHook] = useState<HookUsage>({
@@ -597,6 +600,7 @@ const Numi = {
       icons: props.icons,
       inspector: props.inspector,
       label: props.label,
+      group: props.group,
     });
 
     // Create a ref to hold the debounced function
@@ -621,7 +625,7 @@ const Numi = {
     }, [hook]);
 
     // If use as state, prioritize getting the field value from the global state
-    const value = props.asState 
+    const value = props.asState
       ? blockContext.getFieldValue(props.name) ?? get(blockContext.blockConfig, `content.${props.name}`)
       : get(blockContext.blockConfig, `content.${props.name}`) ?? props.initialValue;
 
@@ -643,7 +647,7 @@ const Numi = {
     return [value, setValue, updateHook];
   },
 
-  useStateBoolean(props: { name: string; defaultValue: boolean; label?: string; inspector?: string }): [boolean, (value: boolean) => void] {
+  useStateBoolean(props: { name: string; defaultValue: boolean; label?: string; inspector?: string, group?: string }): [boolean, (value: boolean) => void] {
     const blockContext = useContext(BlockContext);
 
     useEffect(() => {
@@ -653,6 +657,7 @@ const Numi = {
         defaultValue: props.defaultValue,
         inspector: props.inspector ?? 'checkbox',
         label: props.label,
+        group: props.group,
       });
 
       const existingState = blockContext.globalState.getFieldState(
@@ -684,7 +689,7 @@ const Numi = {
     return [value, setValue];
   },
 
-  useStateString(props: { label: string; name: string; defaultValue: string; inspector?: string, format?: string, config?: Record<string, any> }): [string, (value: string) => void, string] {
+  useStateString(props: { label: string; name: string; defaultValue: string; inspector?: string, format?: string, config?: Record<string, any>, group?: string }): [string, (value: string) => void, string] {
     const blockContext = useContext(BlockContext);
 
     useEffect(() => {
@@ -695,6 +700,7 @@ const Numi = {
         defaultValue: props.defaultValue,
         inspector: props.inspector ?? 'text',
         config: props.config ?? {},
+        group: props.group,
       });
 
       const existingState = blockContext.globalState.getFieldState(
