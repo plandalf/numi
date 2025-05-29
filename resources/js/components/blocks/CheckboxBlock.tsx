@@ -51,7 +51,6 @@ function CheckboxBlockComponent({ context }: { context: BlockContextType }) {
     },
   });
 
-  const { isDisabled } = Numi.useInteraction();
   const { executeCallbacks } = Numi.useEventCallback({
     name: 'checkbox',
     elements: [
@@ -174,11 +173,11 @@ function CheckboxBlockComponent({ context }: { context: BlockContextType }) {
   if (style.hidden) {
     return null;
   }
-  
+
   return (
     <div>
       {checkboxStyle === 'checkbox' && (
-        isManuallyStyledCheckbox ? (    
+        isManuallyStyledCheckbox ? (
           <div className="flex items-center gap-2">
             <div className="relative inline-block justify-center">
               <input style={checkboxStyles} id={id} type="checkbox" name={context.blockId} checked={checked} onChange={handleChange} />

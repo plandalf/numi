@@ -7,7 +7,7 @@ export function PageIframePreview() {
 
   return (
     <div className="w-full h-full flex items-center justify-center">
-      <div className="w-[90%] h-[95%] flex flex-col bg-background" style={{
+      <div className="w-[90%] h-[95%] flex flex-col bg-background max-h-[95%]" style={{
       width: previewSize.width,
       height: previewSize.height,
     }}>

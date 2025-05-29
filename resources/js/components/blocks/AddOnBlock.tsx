@@ -66,7 +66,6 @@ function AddOnBlockComponent({ context }: { context: BlockContextType }) {
     },
   });
 
-  const { isDisabled } = Numi.useInteraction();
   const { executeCallbacks } = Numi.useEventCallback({
     name: 'checkbox',
     elements: [
@@ -144,7 +143,7 @@ function AddOnBlockComponent({ context }: { context: BlockContextType }) {
     Style.borderColor('checkboxBorderColor', 'Checkbox Border Color', {}, '#E5E5E5'),
     Style.shadow('checkboxShadow', 'Checkbox Shadow', {}, '0px 0px 0px 0px #000000'),
 
-  
+
     Style.border('border', 'Border', {}, { width: '0px', style: 'solid' }),
     Style.borderRadius('borderRadius', 'Border Radius', {}, '1px'),
     Style.borderColor('borderColor', 'Border Color', {}, '#E5E5E5'),
@@ -250,7 +249,7 @@ function AddOnBlockComponent({ context }: { context: BlockContextType }) {
   }
 
   console.log('description, checkboxStyle', description, checkboxStyle)
-  
+
   return (
     <div className="flex flex-col gap-3" style={containerStyles}>
       <div className="flex flex-col gap-3 p-4" style={innerContainerStyles}>
@@ -266,7 +265,7 @@ function AddOnBlockComponent({ context }: { context: BlockContextType }) {
             </span>
           </div>
         )}
-        {checkboxStyle === 'checkbox' && (   
+        {checkboxStyle === 'checkbox' && (
           <div className="flex items-center gap-2">
             <div className="relative inline-block justify-center">
               <input style={checkboxStyles} id={id} type="checkbox" name={context.blockId} checked={checked} onChange={handleChange} />

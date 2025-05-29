@@ -53,15 +53,9 @@ class OfferItemsController extends Controller {
             $item->name = $name;
         }
 
-        if ($isRequired !== null) {
-            $item->is_required = $isRequired;
-        }
-
         if ($defaultPriceId) {
             $item->default_price_id = $defaultPriceId;
         }
-
-        $item->save();
 
         if ($prices) {
             $item->offerPrices()->delete();
@@ -78,8 +72,20 @@ class OfferItemsController extends Controller {
             }
         }
 
+        if ($isRequired !== null) {
+            $item->is_required = $isRequired;
+
+            if (!$item->default_price_id) {
+                $item->default_price_id = $item->offerPrices()->first()->price_id;
+            }
+        }
+
+        if ($item->isDirty()) {
+            $item->save();
+        }
+
         // Redirect back to the pricing page
-        return redirect()->back()->with('success', 'Offer item updated successfully.');
+        return redirect()->back();
     }
 
     public function destroy(Offer $offer, OfferItem $item): RedirectResponse
@@ -87,6 +93,6 @@ class OfferItemsController extends Controller {
         $item->delete();
         $item->offerPrices()->delete();
 
-        return redirect()->back()->with('success', 'Offer item deleted successfully.');
+        return redirect()->back();
     }
 }

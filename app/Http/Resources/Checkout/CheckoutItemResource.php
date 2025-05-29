@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources\Checkout;
 
+use App\Http\Resources\ProductResource;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -15,12 +16,13 @@ class CheckoutItemResource extends JsonResource
             'name' => $this->offerItem->name,
             'quantity' => $this->quantity,
             'subtotal' => $this->subtotal,
+            'currency' => $this->currency,
             // 'taxes' => $this->price->calculateTaxes()->getAmount(),
             'total' => $this->total,
-            'image' => $this->when(
+            'product' => $this->when(
                 $this->resource->relationLoaded('price') && $this->price->relationLoaded('product'),
                 function () {
-                    return $this->price->product->image;
+                    return new ProductResource($this->price->product);
                 },
             ),
             // 'discount' => $this->price->calculateDiscount()->getAmount(),

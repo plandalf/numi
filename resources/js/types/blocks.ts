@@ -40,6 +40,7 @@ export interface HookUsage {
     max?: number; // For number type
     items?: any[];
     events?: { label: string; events: Event[] }[];
+    group?: string;
   }
 
 export interface GlobalState {

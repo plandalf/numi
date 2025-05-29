@@ -61,7 +61,7 @@ export default function AddNewProductWithPriceDialog({
         {step === 'product' ? (
           <ProductForm
             open={true}
-            onOpenChange={() => {}}
+            onOpenChange={handleOpenChange}
             hideDialog={true}
             onSuccess={handleProductSuccess}
             useJsonResponse
@@ -70,11 +70,12 @@ export default function AddNewProductWithPriceDialog({
           newProduct && (
             <PriceForm
               open={true}
-              onOpenChange={() => {}}
+              onOpenChange={handleOpenChange}
               product={newProduct}
               onSuccess={handlePriceSuccess}
               hideDialog={true}
               useJsonResponse
+              hideSuccessToast
             />
           )
         )}

@@ -5,7 +5,7 @@ import { EditProps } from '@/pages/offers/edit';
 import { OfferItem, OfferItemType, Price, Product } from '@/types/offer';
 import { Kebab } from '../ui/kebab';
 import { AddNewProductDialog } from './dialogs/AddNewProductDialog';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import AddProductForm, { generateName } from './add-product-from';
 import { toast } from 'sonner';
 import { router } from '@inertiajs/react';
@@ -23,8 +23,6 @@ const NewProductAndPricesOfferItem = ({ open, setOpen, offerItemsCount, type, of
   const defaultKey = defaultName.toLowerCase().replace(/\s+/g, '_');
 
   const handlePricesSuccess = (price: Price) => {
-    router.reload({ only: ['products'] });
-
     const body = {
       name: defaultName,
       key: defaultKey,
@@ -43,7 +41,6 @@ const NewProductAndPricesOfferItem = ({ open, setOpen, offerItemsCount, type, of
         toast.error(`Failed to create price: ${Object.values(errors).flat().join(", ")}`);
       },
     });
-
   }
 
   return (
@@ -115,15 +112,15 @@ export const PageProducts = () => {
     }
 
     const handleDelete = (offerItem: OfferItem) => {
-      const toastId = toast.loading(`Deleting product...`);
+      const toastId = toast.loading(`Deleting offer item...`);
 
       router.delete(route("offers.items.destroy", { offer: offer.id, item: offerItem.id }), {
         preserveScroll: true,
         onSuccess: () => {
-          toast.success(`Product deleted successfully`, { id: toastId });
+          toast.success(`Offer item deleted successfully`, { id: toastId });
         },
         onError: (errors) => {
-          toast.error(`Failed to delete product: ${Object.values(errors).flat().join(", ")}`, { id: toastId });
+          toast.error(`Failed to delete offer item: ${Object.values(errors).flat().join(", ")}`, { id: toastId });
         },
       });
     }
@@ -136,7 +133,7 @@ export const PageProducts = () => {
       }, {
         preserveScroll: true,
         onSuccess: () => {
-          toast.success(`Product updated successfully`, { id: toastId });
+          toast.success(`Item updated successfully`, { id: toastId });
         },
         onError: (errors) => {
           toast.error(`Failed to update product: ${Object.values(errors).flat().join(", ")}`, { id: toastId });
@@ -204,7 +201,7 @@ export const PageProducts = () => {
       }, {
         preserveScroll: true,
         onSuccess: () => {
-          toast.success(`Product updated successfully`, { id: toastId });
+          toast.success(`Item updated successfully`, { id: toastId });
         },
       });
     }
@@ -294,9 +291,54 @@ export const PageProducts = () => {
     )
   }
 
+  const validations = useMemo(() => {
+    const allPrices = offerItems.flatMap(item => item.prices ?? []);
+    const currencies = new Set(allPrices.map(price => price.currency));
+    const gatewayProviders = new Set(allPrices.map(price => price.gateway_provider));
+
+    return {
+      hasMultipleCurrencies: currencies.size > 1,
+      hasMultipleGatewayProviders: gatewayProviders.size > 1,
+      currencies: Array.from(currencies),
+      gatewayProviders: Array.from(gatewayProviders),
+    };
+  }, [offerItems]);
+
+  const Warning = () => {
+    if (validations.hasMultipleCurrencies || validations.hasMultipleGatewayProviders) {
+      return (
+        <div className="flex flex-col gap-3 border border-destructive text-destructive rounded-md p-4 mt-3.5">
+          <div className="flex items-center gap-2">
+            <CircleAlert className="w-5 h-5 mt-0.5" />
+            <div className="font-medium">
+              Errors
+            </div>
+          </div>
+          <div className="flex gap-1 flex-col">
+            <ul className="flex flex-col gap-1 list-disc pl-4">
+              {validations.hasMultipleCurrencies && (
+                <li>
+                  All products must use the same currency. Found currencies: {validations.currencies.join(', ')}
+                </li>
+              )}
+              {validations.hasMultipleGatewayProviders && (
+                <li>
+                  All products must use the same gateway provider. Found gateway providers: {validations.gatewayProviders.join(', ')}
+                </li>
+              )}
+            </ul>
+          </div>
+        </div>
+      );
+    }
+
+    return null;
+  }
+
   return (
     <div className="flex flex-col h-full px-4 py-3.5">
       <div>
+        <Warning />
         <MainProducts />
         <Separator className="my-3.5 w-full" />
         <AddOns />
