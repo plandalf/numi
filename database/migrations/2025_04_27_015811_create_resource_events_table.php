@@ -12,15 +12,22 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // First, drop the existing foreign key constraint
-        DB::statement('ALTER TABLE orders DROP FOREIGN KEY orders_checkout_session_id_foreign');
+        Schema::table('orders', function (Blueprint $table) {
+            $table->dropForeign(['checkout_session_id']);
+        });
 
         // Then modify the column to be nullable
-        DB::statement('ALTER TABLE orders MODIFY checkout_session_id BIGINT UNSIGNED NULL');
+        Schema::table('orders', function (Blueprint $table) {
+            $table->unsignedBigInteger('checkout_session_id')->nullable()->change();
+        });
 
         // Finally, add the new foreign key constraint with SET NULL
-        DB::statement('ALTER TABLE orders ADD CONSTRAINT orders_checkout_session_id_foreign
-                      FOREIGN KEY (checkout_session_id) REFERENCES checkout_sessions(id) ON DELETE SET NULL');
+        Schema::table('orders', function (Blueprint $table) {
+            $table->foreign('checkout_session_id')
+                ->references('id')
+                ->on('checkout_sessions')
+                ->onDelete('set null');
+        });
 
         Schema::create('resource_events', function (Blueprint $table) {
             $table->id();
@@ -37,15 +44,16 @@ return new class extends Migration
      */
     public function down(): void
     {
-        // First, drop the foreign key constraint
-        DB::statement('ALTER TABLE orders DROP FOREIGN KEY orders_checkout_session_id_foreign');
-
-        // Then modify the column back to NOT NULL
-        DB::statement('ALTER TABLE orders MODIFY checkout_session_id BIGINT UNSIGNED NOT NULL');
-
-        // Finally, recreate the original foreign key constraint with CASCADE
-        DB::statement('ALTER TABLE orders ADD CONSTRAINT orders_checkout_session_id_foreign
-                      FOREIGN KEY (checkout_session_id) REFERENCES checkout_sessions(id) ON DELETE CASCADE');
+        if (Schema::hasTable('orders')) {
+            Schema::table('orders', function (Blueprint $table) {
+                $table->dropForeign(['checkout_session_id']);
+                $table->unsignedBigInteger('checkout_session_id')->nullable(false)->change();
+                $table->foreign('checkout_session_id')
+                    ->references('id')
+                    ->on('checkout_sessions')
+                    ->onDelete('cascade');
+            });
+        }
 
         Schema::dropIfExists('resource_events');
     }

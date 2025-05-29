@@ -18,7 +18,7 @@ import { StyleEditor, StyleItem } from '../editor/style-editor';
 import { usePage } from '@inertiajs/react';
 import { EditProps } from '@/pages/offers/edit';
 import { SpacingEditor } from '../editor/spacing-editor';
-import { AlignmentPickerEditor } from '../editor/alignment-picker-editor';
+import { startCase } from 'lodash';
 
 export const AppearanceSection = ({ globalState, block, onUpdate }: { globalState: GlobalState | null, block: Block, onUpdate: (block: Block) => void }) => {
   if (!globalState) return null;
@@ -35,28 +35,30 @@ export const AppearanceSection = ({ globalState, block, onUpdate }: { globalStat
   return (
     <div className="flex flex-col gap-3 mb-6">
       <h3 className="font-semibold">Appearance</h3>
-        {appearanceHooks.map((hook) => {
-          return (
-            <>
-              {hook.inspector === 'visibilityPicker' ? (
-                <ConditionVisibilityEditor
-                  key={hook.name}
-                  value={block.appearance?.visibility?.conditional || []}
-                  onChange={value => onAppearanceChange('visibility', { conditional: value })}
-                />
-              ) : hook.inspector === 'spacingPicker' ? (
-                <SpacingEditor
-                  key={hook.name}
-                  label={hook.label}
-                  value={block.appearance?.[hook.name]}
-                  defaultValue={hook.defaultValue}
-                  onChangeProperty={value => onAppearanceChange(hook.name, value)}
-                  config={hook.config}
-                />
-              ) : (null)}
-            </>
-          );
-        })}
+      {appearanceHooks.map((hook) => {
+        return (
+          <>
+            {hook.inspector === 'visibilityPicker' ? (
+              <ConditionVisibilityEditor
+                key={hook.name}
+                value={block.appearance?.visibility?.conditional || []}
+                onChange={value => onAppearanceChange('visibility', { conditional: value })}
+              />
+            ) : hook.inspector === 'spacingPicker' ? (
+              <SpacingEditor
+                key={hook.name}
+                label={hook.label}
+                value={block.appearance?.[hook.name]}
+                onChangeProperty={value => onAppearanceChange(hook.name, value)}
+              />
+            ) : (
+              <div>
+                {hook.name}
+              </div>
+            )}
+          </>
+        );
+      })}
     </div>
   );
 }
@@ -233,9 +235,17 @@ export const Inspector = ({
     return acc;
   }, {} as Record<string, HookUsage[]>);
 
+  const groupedHooksByGroup = hooks.reduce((acc, hook) => {
+    const group = hook.group || 'ungrouped';
+    if (!acc[group]) {
+      acc[group] = [];
+    }
+    acc[group].push(hook);
+    return acc;
+  }, {} as Record<string, HookUsage[]>);
+
   // Define the order of sections
   const sectionOrder = [
-    { type: 'other', label: 'Properties' },
     { type: 'appearance', label: 'Appearance' },
     { type: 'style', label: 'Style' },
     { type: 'validation', label: 'Validation' },
@@ -248,13 +258,81 @@ export const Inspector = ({
     <div className="p-4">
       {block && globalState?.hookUsage?.[block.id] && (
         <div>
-          <div className="space-y-6">
-            {sectionOrder.map(({ type, label }) => {
-              // For 'other' type, combine all non-special types
-              const sectionHooks = type === 'other'
-                ? hooks.filter(hook => !['appearance', 'style', 'validation', 'interaction', 'conditions', 'eventCallback'].includes(hook.type as HookTypeSection))
-                : groupedHooks[type] || [];
+          <h3 className="font-semibold">Content</h3>
 
+          <div className="space-y-4">
+            {Object.entries(groupedHooksByGroup).map(([group, hooks]) => {
+              // Skip hooks that are handled by special sections
+              const filteredHooks = hooks.filter(hook =>
+                !['appearance', 'style', 'validation', 'interaction', 'conditions', 'eventCallback'].includes(hook.type)
+              );
+
+              if (filteredHooks.length === 0) return null;
+
+              return (
+                <div key={group} className="space-y-2">
+                  <div className="text-sm font-semibold">{group === 'ungrouped' ? '' : startCase(group)}</div>
+                  <div className="flex flex-col gap-2 h-full rounded-md p-2 border bg-[#F7F9FF]">
+                    {filteredHooks.map((hook: HookUsage) => (
+                      <div key={hook.name}>
+                        {hook.type === 'string' && hook.inspector === 'file' ? (
+                          <FileEditor
+                            label={hook.label || hook.name}
+                            value={block.content?.[hook.name]}
+                            onChange={value => handleContentChange(hook.name, value)}
+                            preview={block.content?.[hook.name]?.url}
+                          />
+                        ) : hook.type === 'string' && hook.inspector === 'colorPicker' ? (
+                          <ColorPickerEditor
+                            label={hook.label || hook.name}
+                            value={block.content?.[hook.name] ?? hook.defaultValue}
+                            onChange={value => handleContentChange(hook.name, value)}
+                            type='advanced'
+                            themeColors={themeColors}
+                          />
+                        ) : hook.type === 'string' ? (
+                          <StringEditor
+                            label={hook.label || hook.name}
+                            value={block.content?.[hook.name] ?? hook.defaultValue}
+                            onChange={value => handleContentChange(hook.name, value)}
+                            multiline={hook.inspector === 'multiline'}
+                            validations={hook.config?.validations}
+                          />
+                        ) : hook.type === 'boolean' ? (
+                          <BooleanEditor
+                            label={hook.label || hook.name}
+                            value={block.content?.[hook.name] ?? hook.defaultValue}
+                            onChange={value => handleContentChange(hook.name, value)}
+                          />
+                        ) : hook.type === 'enumeration' ? (
+                          <EnumerationEditor
+                            label={hook.label || hook.name}
+                            value={block.content?.[hook.name] ?? hook.defaultValue}
+                            onChange={value => handleContentChange(hook.name, value)}
+                            options={Array.isArray(hook.options) ?
+                              hook.options.map(opt => typeof opt === 'string' ? opt : opt.value)
+                              : []
+                            }
+                            inspector={hook.inspector}
+                            labels={hook.labels}
+                          />
+                        ) : hook.type === 'jsonSchema' && hook.schema ? (
+                          <JSONSchemaEditor
+                            schema={hook.schema}
+                            value={block.content?.[hook.name] ?? hook.defaultValue}
+                            onChange={newValue => handleContentChange(hook.name, newValue)}
+                            themeColors={themeColors}
+                          />
+                        ) : null}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+
+            {sectionOrder.map(({ type, label }) => {
+              const sectionHooks = groupedHooks[type] || [];
               if (sectionHooks.length === 0) return null;
 
               return (
@@ -269,64 +347,7 @@ export const Inspector = ({
                     <InteractionSection globalState={globalState} block={block} onUpdate={onUpdate} />
                   ) : type === 'conditions' ? (
                     <ConditionsSection globalState={globalState} block={block} onUpdate={onUpdate} />
-                  ) : (
-                    <>
-                      <h3 className="font-semibold">{label}</h3>
-                      <div className="flex flex-col gap-2 p-2.5 border rounded-md border-gray-200 bg-gray-100/50 h-full">
-                        {sectionHooks.map((hook: HookUsage) => (
-                          <div key={hook.name}>
-                            {hook.type === 'string' && hook.inspector === 'file' ? (
-                              <FileEditor
-                                label={hook.label || hook.name}
-                                value={block.content?.[hook.name]}
-                                onChange={value => handleContentChange(hook.name, value)}
-                                preview={block.content?.[hook.name]}
-                              />
-                            ) : hook.type === 'string' && hook.inspector === 'colorPicker' ? (
-                              <ColorPickerEditor
-                                label={hook.label || hook.name}
-                                value={block.content?.[hook.name] ?? hook.defaultValue}
-                                onChange={value => handleContentChange(hook.name, value)}
-                                type='advanced'
-                                themeColors={themeColors}
-                              />
-                            ) : hook.type === 'string' ? (
-                              <StringEditor
-                                label={hook.label || hook.name}
-                                value={block.content?.[hook.name] ?? hook.defaultValue}
-                                onChange={value => handleContentChange(hook.name, value)}
-                                multiline={hook.inspector === 'multiline'}
-                                validations={hook.config?.validations}
-                              />
-                            ) : hook.type === 'boolean' ? (
-                              <BooleanEditor
-                                label={hook.label || hook.name}
-                                value={block.content?.[hook.name] ?? hook.defaultValue}
-                                onChange={value => handleContentChange(hook.name, value)}
-                              />
-                            ) : hook.type === 'enumeration' ? (
-                              <EnumerationEditor
-                                label={hook.label || hook.name}
-                                value={block.content?.[hook.name] ?? hook.defaultValue}
-                                onChange={value => handleContentChange(hook.name, value)}
-                                options={hook.options || []}
-                                icons={hook.icons}
-                                inspector={hook.inspector}
-                                labels={hook.labels}
-                              />
-                            ) : hook.type === 'jsonSchema' && hook.schema ? (
-                              <JSONSchemaEditor
-                                schema={hook.schema}
-                                value={block.content?.[hook.name] ?? hook.defaultValue}
-                                onChange={newValue => handleContentChange(hook.name, newValue)}
-                                themeColors={themeColors}
-                              />
-                            ) : null}
-                          </div>
-                        ))}
-                      </div>
-                    </>
-                  )}
+                  ) : null}
                 </div>
               );
             })}

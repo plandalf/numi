@@ -70,7 +70,6 @@ function AddOnBlockComponent({ context }: { context: BlockContextType }) {
     },
   });
 
-  const { isDisabled } = Numi.useInteraction();
   const { executeCallbacks } = Numi.useEventCallback({
     name: 'checkbox',
     elements: [
@@ -128,7 +127,7 @@ function AddOnBlockComponent({ context }: { context: BlockContextType }) {
     Style.borderRadius('checkboxBorderRadius', 'Checkbox Border Radius', {}, '5px'),
     Style.borderColor('checkboxBorderColor', 'Checkbox Border Color', {}, theme?.primary_border_color),
 
-  
+
     Style.border('border', 'Border', {}, { width: '0px', style: 'solid' }),
     Style.borderRadius('borderRadius', 'Border Radius', {}),
     Style.borderColor('borderColor', 'Border Color', {}, ''),

@@ -155,7 +155,11 @@ export default function AddProductForm({
   };
 
   const handlePriceSuccess = (price: Price) => {
-    router.reload({ only: ['products'] });
+    router.visit(window.location.href, {
+      preserveScroll: true,
+      preserveState: true,
+      only: ['products']
+    });
 
     setData('prices', [...data.prices, price.id.toString()]);
     setAddNewPriceDialogOpen(false);
@@ -280,6 +284,7 @@ export default function AddProductForm({
         product={selectedProduct}
         onSuccess={handlePriceSuccess}
         useJsonResponse
+        hideSuccessToast
       />}
     </>
   );

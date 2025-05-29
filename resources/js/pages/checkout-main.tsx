@@ -283,6 +283,11 @@ export function GlobalStateProvider({ offer, session: defaultSession, editor = f
   };
 
   const addDiscount = async (discount: string) => {
+    const status = {
+      success: true,
+      message: 'Discount added successfully',
+    }
+
     try {
       const response = await axios.post(`/checkouts/${session.id}/mutations`, {
         action: 'addDiscount',
@@ -291,22 +296,28 @@ export function GlobalStateProvider({ offer, session: defaultSession, editor = f
 
       if (response.status === 200) {
         setSession(response.data);
-        return true;
+        return status;
       }
 
-      setSubmitError(response.data?.message || 'Failed to add discount');
+      status.message = response.data?.message || 'Failed to add discount';
     } catch (error) {
       if (axios.isAxiosError(error)) {
-        setSubmitError(error.response?.data?.message || 'Failed to add discount');
+        status.message = error.response?.data?.message || 'Failed to add discount';
       } else {
-        setSubmitError('An unexpected error occurred');
+        status.message = 'An unexpected error occurred';
       }
     }
 
-    return false;
+    status.success = false;
+    return status;
   }
 
   const removeDiscount = async (discount: string) => {
+    const status = {
+      success: true,
+      message: 'Discount removed successfully',
+    }
+
     try {
       const response = await axios.post(`/checkouts/${session.id}/mutations`, {
         action: 'removeDiscount',
@@ -315,19 +326,19 @@ export function GlobalStateProvider({ offer, session: defaultSession, editor = f
 
       if (response.status === 200) {
         setSession(response.data);
-        return true;
+        return status;
       }
 
-      setSubmitError(response.data?.message || 'Failed to remove discount');
+      status.message = response.data?.message || 'Failed to remove discount';
     } catch (error) {
       if (axios.isAxiosError(error)) {
-        setSubmitError(error.response?.data?.message || 'Failed to remove discount');
+        status.message = error.response?.data?.message || 'Failed to remove discount';
       } else {
-        setSubmitError('An unexpected error occurred');
+        status.message = 'An unexpected error occurred';
       }
     }
 
-    return false;
+    return status;
   }
 
   const backendValidateFields = async (fields: Record<string, any>) => {

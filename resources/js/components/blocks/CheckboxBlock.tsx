@@ -59,7 +59,6 @@ function CheckboxBlockComponent({ context }: { context: BlockContextType }) {
     },
   });
 
-  const { isDisabled } = Numi.useInteraction();
   const { executeCallbacks } = Numi.useEventCallback({
     name: 'checkbox',
     elements: [
