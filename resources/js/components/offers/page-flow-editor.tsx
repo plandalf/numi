@@ -76,20 +76,21 @@ export function generateDefaultPage({
       position,
       view: {
         title: {
-          style: {
-              backgroundColor: '#FBF9FA'
+          appearance: {
+            padding: '24px'
           },
           blocks: []
         },
         content: {
-          style: {
-              backgroundColor: '#FBF9FA'
+          appearance: {
+            padding: '24px',
+            spacing: '4px'
           },
           blocks: []
         },
         action: {
-          style: {
-              backgroundColor: '#FBF9FA'
+          appearance: {
+            padding: '24px',
           },
           blocks: []
         },
@@ -101,10 +102,15 @@ export function generateDefaultPage({
           blocks: []
         },
         promo_header: {
+          appearance: {
+            padding: '24px',
+          },
           blocks: []
         },
         promo_content: {
-          style: {},
+          appearance: {
+            padding: '24px',
+          },
           blocks: []
         },
       },

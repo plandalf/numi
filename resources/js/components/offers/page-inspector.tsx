@@ -216,6 +216,8 @@ export const Inspector = ({
     });
   };
 
+  console.log('block.content', block.content);
+
   if (!block) {
     return <div>
       could not find block

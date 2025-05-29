@@ -31,7 +31,7 @@ export const ThemePreviewCard: React.FC<ThemePreviewCardProps> = ({ theme, class
       onClick={onClick}
     >
       <div className="p-4">
-        <h3 className="flex flex-row text-lg font-semibold mb-3 justify-between" style={{ color: primaryContrast }}>
+        <h3 className="flex flex-row text-lg font-semibold mb-3 justify-between" style={{ color: primaryContrast === '#ffffff' ? '#000000' : primaryContrast }}>
           {theme.name || 'Untitled Theme'}
           {selected && 
             <span className="flex flex-row items-center gap-1 text-xs  text-green-500 rounded-md px-2 py-1 bg-green-500/10">

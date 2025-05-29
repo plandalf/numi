@@ -1,10 +1,11 @@
-import Numi, { Appearance, Style, IconValue } from "@/contexts/Numi";
+import Numi, { Appearance, Style, IconValue, FontValue } from "@/contexts/Numi";
 import { BlockContextType } from "@/types/blocks";
 import cx from "classnames";
 import { useMemo } from "react";
 import { MarkdownText } from "../ui/markdown-text";
 import * as LucideIcons from "lucide-react";
 import { IconRenderer } from "../ui/icon-renderer";
+import { resolveThemeValue } from "@/lib/theme";
 
 function QuoteBlockComponent({ context }: { context: BlockContextType }) {
 
@@ -63,7 +64,7 @@ function QuoteBlockComponent({ context }: { context: BlockContextType }) {
     },
   });
 
-  const [quote, setQuote, format] = Numi.useStateString({
+  const [quote] = Numi.useStateString({
     label: 'Quote',
     name: 'quote',
     defaultValue: '',
@@ -75,12 +76,16 @@ function QuoteBlockComponent({ context }: { context: BlockContextType }) {
     label: 'Author',
     name: 'author',
     defaultValue: '',
+    inspector: 'multiline',
+    format: 'markdown',
   });
 
   const [affiliation] = Numi.useStateString({
     label: 'Affiliation',
     name: 'affiliation',
     defaultValue: '',
+    inspector: 'multiline',
+    format: 'markdown',
   });
 
   const [image] = Numi.useStateString({
@@ -89,8 +94,13 @@ function QuoteBlockComponent({ context }: { context: BlockContextType }) {
     defaultValue: '',
     inspector: 'file',
   });
-
-  const isMarkdown = format === 'markdown';
+  
+  const fontConfig = {
+    config: {
+      hideVerticalAlignment: true,
+      hideHorizontalAlignment: true,
+    },
+  };
 
   const style = Numi.useStyle([
     Style.backgroundColor('backgroundColor', 'Background Color', {}, ''),
@@ -116,48 +126,20 @@ function QuoteBlockComponent({ context }: { context: BlockContextType }) {
         right: 'right',
       },
     }, 'left'),
-    Style.font('quoteTextFont', 'Quote Text Font & Color',
-      {
-        config: {
-          hideVerticalAlignment: true,
-          hideHorizontalAlignment: true,
-        },
-      },
-      {},
-    ),
-    Style.font('authorFont', 'Author Font & Color',
-      {
-        config: {
-          hideVerticalAlignment: true,
-          hideHorizontalAlignment: true,
-        },
-      },
-      {
-        color: '#1e2939'
-      },
-    ),
-    Style.font('affiliationFont', 'Affiliation Font & Color',
-      {
-        config: {
-          hideVerticalAlignment: true,
-          hideHorizontalAlignment: true,
-        },
-      },
-      {
-        color: '#4a5565'
-      },
-    ),
+    Style.font('quoteTextFont', 'Quote Text Font & Color', fontConfig, {}),
+    Style.font('authorFont', 'Author Font & Color', fontConfig, {}),
+    Style.font('affiliationFont', 'Affiliation Font & Color', fontConfig, {}),
 
     Style.dimensions('imageSize', 'Image Size', {},
       quoteStyle === 'minimal'
         ? { width: '100px', height: '100px'}
         : { width: '56px', height: '56px'}
     ),
-    Style.backgroundColor('imageBackgroundColor', 'Image Background Color', {}, '#FFFFFF'),
-    Style.border('imageBorder', 'Image Border', {}, { width: '1px', style: 'solid' }),
-    Style.borderRadius('imageBorderRadius', 'Image Border Radius', {}, '5px'),
-    Style.borderColor('imageBorderColor', 'Image Border Color', {}, '#000000'),
-    Style.shadow('imageShadow', 'Image Shadow', {}, '0px 0px 0px 0px #000000'),
+    Style.backgroundColor('imageBackgroundColor', 'Image Background Color', {}),
+    Style.border('imageBorder', 'Image Border', {}, { width: '0px', style: 'solid' }),
+    Style.borderRadius('imageBorderRadius', 'Image Border Radius', {}, theme?.border_radius),
+    Style.borderColor('imageBorderColor', 'Image Border Color', {}, theme?.primary_color),
+    Style.shadow('imageShadow', 'Image Shadow', {}, theme?.shadow),
 
     Style.border('border', 'Border', {}, { width: '0px', style: 'solid' }),
     Style.borderRadius('borderRadius', 'Border Radius', {}, '0px'),
@@ -167,11 +149,17 @@ function QuoteBlockComponent({ context }: { context: BlockContextType }) {
   ]);
 
   const appearance = Numi.useAppearance([
-    Appearance.padding('padding', 'Padding', {}),
+    // Appearance.padding('padding', 'Padding', {}),
     Appearance.margin('margin', 'Margin', {}),
     Appearance.spacing('spacing', 'Spacing', {}),
+    Appearance.spacing('imageSpacing', 'Image Spacing', {}),
+    Appearance.spacing('authorSpacing', 'Author Spacing', {}),
     Appearance.visibility('visibility', 'Visibility', {}, { conditional: [] }),
   ]);
+
+  const quoteTextFont = resolveThemeValue(style.quoteTextFont, theme, 'body_typography') as FontValue;
+  const authorFont = resolveThemeValue(style.authorFont, theme, 'label_typography') as FontValue;
+  const affiliationFont = resolveThemeValue(style.affiliationFont, theme, 'body_typography') as FontValue;
 
   const containerStyles = useMemo(() => ({
     backgroundColor: style.backgroundColor || 'transparent',
@@ -181,11 +169,13 @@ function QuoteBlockComponent({ context }: { context: BlockContextType }) {
     borderStyle: style.border?.style,
     borderRadius : style.borderRadius ?? '3px',
     boxShadow: style?.shadow,
-    padding: appearance?.padding,
-    margin: appearance?.margin,
-    gap: appearance?.spacing,
+    // padding: resolveThemeValue(appearance.padding, theme, 'padding'),
+    margin: resolveThemeValue(appearance.margin, theme, 'margin'),
+    gap: resolveThemeValue(appearance.spacing, theme, 'spacing'),
   }), [style, appearance]);
 
+  const imageSpacing = resolveThemeValue(appearance.imageSpacing, theme, 'spacing') as string;
+  const authorSpacing = resolveThemeValue(appearance.authorSpacing, theme, 'spacing') as string;
 
   const imageStyles = useMemo(() => ({
     backgroundColor: style.imageBackgroundColor,
@@ -200,31 +190,31 @@ function QuoteBlockComponent({ context }: { context: BlockContextType }) {
 
   const quoteTextStyles = useMemo(() => ({
     textAlign: style?.quoteTextAlignment,
-    color: style?.quoteTextFont?.color,
-    fontSize: style?.quoteTextFont?.size,
-    fontWeight: style?.quoteTextFont?.weight,
-    fontFamily: style?.quoteTextFont?.font,
-    lineHeight: style?.quoteTextFont?.lineHeight,
-    letterSpacing: style?.quoteTextFont?.letterSpacing,
-  }), [style]);
+    color: quoteTextFont?.color,
+    fontSize: quoteTextFont?.size,
+    fontWeight: quoteTextFont?.weight,
+    fontFamily: quoteTextFont?.font,
+    lineHeight: quoteTextFont?.lineHeight,
+    letterSpacing: quoteTextFont?.letterSpacing,
+  }), [style, quoteTextFont]);
 
   const authorStyles = useMemo(() => ({
-    color: style?.authorFont?.color,
-    fontSize: style?.authorFont?.size,
-    fontWeight: style?.authorFont?.weight,
-    fontFamily: style?.authorFont?.font,
-    lineHeight: style?.authorFont?.lineHeight,
-    letterSpacing: style?.authorFont?.letterSpacing,
-  }), [style]);
+    color: authorFont?.color,
+    fontSize: authorFont?.size,
+    fontWeight: authorFont?.weight,
+    fontFamily: authorFont?.font,
+    lineHeight: authorFont?.lineHeight,
+    letterSpacing: authorFont?.letterSpacing,
+  }), [style, authorFont]);
 
   const affiliationStyles = useMemo(() => ({
-    color: style?.affiliationFont?.color,
-    fontSize: style?.affiliationFont?.size,
-    fontWeight: style?.affiliationFont?.weight,
-    fontFamily: style?.affiliationFont?.font,
-    lineHeight: style?.affiliationFont?.lineHeight,
-    letterSpacing: style?.affiliationFont?.letterSpacing,
-  }), [style]);
+    color: affiliationFont?.color,
+    fontSize: affiliationFont?.size,
+    fontWeight: affiliationFont?.weight,
+    fontFamily: affiliationFont?.font,
+    lineHeight: affiliationFont?.lineHeight,
+    letterSpacing: affiliationFont?.letterSpacing,
+  }), [style, affiliationFont]);
 
   const iconStyles = useMemo(() => ({
     alignment: style?.iconAlignment,
@@ -232,19 +222,34 @@ function QuoteBlockComponent({ context }: { context: BlockContextType }) {
     color: style?.iconColor ?? 'black',
   }), [style]);
 
-
   const quoteValue = quote || "Insert your inspirational quote here";
-  const quoteText = isMarkdown 
-    ? <MarkdownText
-        text={quoteValue}
-        theme={theme}
-        style={quoteTextStyles}
-      />
-    : quoteValue;
 
-  const authorValue = author || "Quote author";
-  const affiliationValue = affiliation || "Affiliation";
+  const quoteText = (
+    <MarkdownText
+      text={quoteValue}
+      theme={theme}
+      style={quoteTextStyles}
+    />
+  );
 
+  const authorText = (
+    <MarkdownText
+      className="text-base font-medium"
+      text={author || "Quote author"}
+      theme={theme}
+      style={authorStyles}
+    />
+  );
+
+  const affiliationText = (
+    <MarkdownText
+      className="text-sm"
+      text={affiliation || "Affiliation"}
+      theme={theme}
+      style={affiliationStyles}
+    />
+  );
+   
   const defaultIcon = (
     <svg
       style={{
@@ -266,7 +271,7 @@ function QuoteBlockComponent({ context }: { context: BlockContextType }) {
       <div className="flex flex-col gap-2" style={containerStyles}>
           <IconRenderer icon={icon} style={iconStyles} defaultIcon={defaultIcon}/>
           {quoteText}
-          <div className="flex flex-row gap-4 items-center">
+          <div className="flex flex-row gap-4 items-center" style={{ gap: imageSpacing}}>
             {image && (
               <img
                 src={image}
@@ -274,9 +279,9 @@ function QuoteBlockComponent({ context }: { context: BlockContextType }) {
                 style={imageStyles}
               />
             )}
-            <div className="flex flex-col">
-              <div className="text-base font-medium" style={authorStyles}>{authorValue}</div>
-              <div className="text-sm" style={affiliationStyles}>{affiliationValue}</div>
+            <div className="flex flex-col" style={{ gap: authorSpacing }}>
+              {authorText}
+              {affiliationText}
             </div>
           </div>
       </div>
@@ -288,7 +293,7 @@ function QuoteBlockComponent({ context }: { context: BlockContextType }) {
     return (
       <div className="flex flex-col gap-2 p-4" style={containerStyles}>
           {quoteText}
-          <div className="flex flex-row gap-4 items-center">
+          <div className="flex flex-row gap-4 items-center" style={{ gap: imageSpacing }}>
             {image && (
               <img
                 src={image}
@@ -296,9 +301,9 @@ function QuoteBlockComponent({ context }: { context: BlockContextType }) {
                 style={imageStyles}
               />
             )}
-            <div className="flex flex-col">
-              <div className="text-base font-medium" style={authorStyles}>{authorValue}</div>
-              <div className="text-sm" style={affiliationStyles}>{affiliationValue}</div>
+            <div className="flex flex-col" style={{ gap: authorSpacing }}>
+              {authorText}
+              {affiliationText}
             </div>
           </div>
       </div>
@@ -307,7 +312,7 @@ function QuoteBlockComponent({ context }: { context: BlockContextType }) {
 
   if(quoteStyle === 'minimal') {
     return (
-      <div className="flex flex-row gap-2 p-4 items-center" style={containerStyles}>
+      <div className="flex flex-row gap-2 p-4 items-center" style={{...containerStyles, gap: imageSpacing}}>
         {image && (
           <img
             src={image}
@@ -317,9 +322,9 @@ function QuoteBlockComponent({ context }: { context: BlockContextType }) {
         )}
           <div className="flex flex-col gap-4 items-center">
             {quoteText}
-            <div className="flex flex-col">
-              <div className="text-base font-medium" style={authorStyles}>{authorValue}</div>
-              <div className="text-sm" style={affiliationStyles}>{affiliationValue}</div>
+            <div className="flex flex-col" style={{ gap: authorSpacing }}>
+              {authorText}
+              {affiliationText}
             </div>
           </div>
       </div>

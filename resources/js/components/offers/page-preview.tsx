@@ -71,7 +71,7 @@ export default function PagePreview({ page, onUpdatePage }: PreviewProps) {
   const [pendingChanges, setPendingChanges] = useState<Block | null>(null);
   const [livePreviewPage, setLivePreviewPage] = useState<Page>(page);
 
-  const { selectedBlockId, setSelectedBlockId, previewSize } = useEditor();
+  const { selectedBlockId, setSelectedBlockId, previewSize, theme } = useEditor();
 
   // Update live preview when page changes from outside
   useEffect(() => {
@@ -113,6 +113,7 @@ return (
         {/* The layout preview - using live preview page */}
         <LayoutPreview
           page={livePreviewPage}
+          theme={theme}
           selectedBlockId={selectedBlockId}
           onSelectBlock={setSelectedBlockId}
         />

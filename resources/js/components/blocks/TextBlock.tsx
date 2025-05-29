@@ -3,6 +3,7 @@ import Numi, { Appearance, BorderValue, FontValue, Style } from "@/contexts/Numi
 import { cn } from "@/lib/utils";
 import { useMemo } from "react";
 import { MarkdownText } from "../ui/markdown-text";
+import { resolveThemeValue } from "@/lib/theme";
 
 
 // Block Components
@@ -21,7 +22,7 @@ function TextBlockComponent({ context }: { context: BlockContextType }) {
   const isMarkdown = format === 'markdown';
 
   const appearance = Numi.useAppearance([
-    Appearance.padding('padding', 'Padding', {}),
+    // Appearance.padding('padding', 'Padding', {}),
     Appearance.margin('margin', 'Margin', {}),
     Appearance.visibility('visibility', 'Visibility', {}, { conditional: [] }),
   ]);
@@ -37,20 +38,14 @@ function TextBlockComponent({ context }: { context: BlockContextType }) {
         },
       },
       {},
-      // {
-      //   font: 'Inter',
-      //   weight: '400',
-      //   size: '16px',
-      //   lineHeight: '1.2rem',
-      //   letterSpacing: '0px',
-      // },
     ),
     Style.border('border', 'Border', {}, { width: '0px', style: 'solid' }),
-    Style.borderRadius('borderRadius', 'Border Radius', {}, '0px'),
-    Style.borderColor('borderColor', 'Border Color', {}, '#000000'),
-    Style.shadow('shadow', 'Shadow', {}, '0px 0px 0px 0px #000000'),
+    Style.borderRadius('borderRadius', 'Border Radius', {}, theme?.border_radius),
+    Style.borderColor('borderColor', 'Border Color', {}, ''),
+    Style.shadow('shadow', 'Shadow', {}, ''),
     Style.hidden('hidden', 'Hidden', {}, false),
   ]);
+  
 
   const font = style?.font as FontValue;
   const border = style?.border as BorderValue;
@@ -72,8 +67,8 @@ function TextBlockComponent({ context }: { context: BlockContextType }) {
     borderStyle: border?.style,
     borderRadius : borderRadius ?? '3px',
     boxShadow: shadow,
-    padding: appearance?.padding,
-    margin: appearance.margin,
+    // padding: resolveThemeValue(appearance.padding, theme, 'padding'),
+    margin: resolveThemeValue(appearance.margin, theme, 'margin'),
     whiteSpace: 'pre-line',
   }), [style, font, border, borderRadius, shadow]);
 

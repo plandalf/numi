@@ -1,9 +1,12 @@
 import Numi, { Appearance, Style } from "@/contexts/Numi";
+import { resolveThemeValue } from "@/lib/theme";
 import { cn } from "@/lib/utils";
 import { useMemo } from "react";
 
 function ImageBlockComponent() {
 
+  const theme = Numi.useTheme();
+  
   const [image] = Numi.useStateString({
     label: 'Image',
     name: 'image',
@@ -28,13 +31,13 @@ function ImageBlockComponent() {
       },
     }, { width: '100%', height: '100%' }),
     Style.border('border', 'Border', {}, { width: '-px', style: 'solid' }),
-    Style.borderRadius('borderRadius', 'Border Radius', {}, '0px'),
+    Style.borderRadius('borderRadius', 'Border Radius', {}, theme?.border_radius),
     Style.borderColor('borderColor', 'Border Color', {}, '#000000'),
-    Style.shadow('shadow', 'Shadow', {}, '0px 0px 0px 0px #000000'),
+    Style.shadow('shadow', 'Shadow', {}, theme?.shadow),
   ]);
 
   const appearance = Numi.useAppearance([
-    Appearance.padding('padding', 'Padding', {}),
+    // Appearance.padding('padding', 'Padding', {}),
     Appearance.margin('margin', 'Margin', {}),
     Appearance.visibility('visibility', 'Visibility', {}, { conditional: [] }),
   ]);
@@ -53,8 +56,8 @@ function ImageBlockComponent() {
       borderWidth: style?.border?.width,
       borderStyle: style?.border?.style,
       boxShadow: style?.shadow,
-      padding: appearance?.padding,
-      margin: appearance?.margin,
+      // padding: resolveThemeValue(appearance.padding, theme, 'padding'),
+      margin: resolveThemeValue(appearance.margin, theme, 'margin'),
       width: style?.dimensions?.width,
       height: style?.dimensions?.height,
     }
@@ -80,7 +83,7 @@ function ImageBlockComponent() {
 
   return (
     <div className={classList}>
-      <img src={src} alt=""  style={styleProps} />
+      <img src={src} alt="" className="flex" style={styleProps} />
     </div>
   )
 }

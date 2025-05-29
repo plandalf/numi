@@ -19,7 +19,7 @@ interface EditorContextType {
   organizationTemplates: Template[];
   globalThemes: Theme[];
 
-  theme: Theme | null;
+  theme: Theme;
   setTheme: React.Dispatch<React.SetStateAction<Theme>>;
 
   isNameDialogOpen: boolean;

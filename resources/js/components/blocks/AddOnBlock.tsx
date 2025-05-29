@@ -5,8 +5,12 @@ import { useMemo } from "react";
 import { Check } from "lucide-react";
 import { Event, EVENT_LABEL_MAP } from "../editor/interaction-event-editor";
 import ReactMarkdown from "react-markdown";
+import { resolveThemeValue } from "@/lib/theme";
+import { MarkdownText } from "../ui/markdown-text";
 
 function AddOnBlockComponent({ context }: { context: BlockContextType }) {
+
+  const theme = Numi.useTheme();
 
   const [id] = Numi.useStateString({
     label: 'Field Name',
@@ -86,15 +90,22 @@ function AddOnBlockComponent({ context }: { context: BlockContextType }) {
   }
 
   const appearance = Numi.useAppearance([
+    // Appearance.padding('padding', 'Padding', {}),
     Appearance.margin('margin', 'Margin', {}),
-    Appearance.padding('outerPadding', 'Padding', {}),
-    Appearance.padding('innerPadding', 'Inner Padding', {}),
     Appearance.spacing('spacing', 'Spacing', {}),
     Appearance.visibility('visibility', 'Visibility', {}, { conditional: [] }),
   ]);
 
+  const fontConfig = {
+    config: {
+      hideVerticalAlignment: true,
+      hideHorizontalAlignment: true,
+    },
+  };
+
+
   const style = Numi.useStyle([
-    Style.backgroundColor('backgroundColor', 'Background Color', {}, '#FFFFFF'),
+    Style.backgroundColor('backgroundColor', 'Background Color', {}),
     Style.alignment('alignment', 'Alignment', {
       options: {
         left: 'left',
@@ -102,69 +113,36 @@ function AddOnBlockComponent({ context }: { context: BlockContextType }) {
         right: 'right',
       }
     }, 'left'),
-    Style.font('titleFont', 'Title Font & Color',
-      {
-        config: {
-          hideVerticalAlignment: true,
-          hideHorizontalAlignment: true,
-        },
-      },
-      {},
-    ),
-    Style.font('descriptionFont', 'Description Font & Color',
-      {
-        config: {
-          hideVerticalAlignment: true,
-          hideHorizontalAlignment: true,
-        },
-      },
-      {
-        color: '#E5E5E5'
-      },
-    ),
-
-
-    Style.backgroundColor('checkboxActiveBackgroundColor', 'Checkbox Selected Color', {}, '#0374ff'),
+    Style.font('titleFont', 'Title Font & Color',fontConfig, theme?.label_typography as FontValue),
+    Style.font('descriptionFont', 'Description Font & Color',fontConfig, theme?.body_typography as FontValue),
+    Style.backgroundColor('checkboxActiveBackgroundColor', 'Checkbox Selected Color', {}),
     Style.backgroundColor('checkboxInactiveBackgroundColor', 'Checkbox Unselected Color', {}, '#E5E5E5'),
-    Style.textColor('checkboxCheckColor', 'Checkbox Check Color', {}, '#FFFFFF'),
-    Style.font('checkboxLabelFont', 'Checkbox Label Font & Color',
-      {
-        config: {
-          hideVerticalAlignment: true,
-          hideHorizontalAlignment: true,
-        },
-      },
+    Style.textColor('checkboxCheckColor', 'Checkbox Check Color', {}),
+    Style.font('checkboxLabelFont', 'Checkbox Label Font & Color', fontConfig,
       {
         color: '#000000',
       },
     ),
     Style.border('checkboxBorder', 'Checkbox Border', {}, { width: '1px', style: 'solid' }),
     Style.borderRadius('checkboxBorderRadius', 'Checkbox Border Radius', {}, '5px'),
-    Style.borderColor('checkboxBorderColor', 'Checkbox Border Color', {}, '#E5E5E5'),
-    Style.shadow('checkboxShadow', 'Checkbox Shadow', {}, '0px 0px 0px 0px #000000'),
+    Style.borderColor('checkboxBorderColor', 'Checkbox Border Color', {}, theme?.primary_border_color),
 
 
     Style.border('border', 'Border', {}, { width: '0px', style: 'solid' }),
-    Style.borderRadius('borderRadius', 'Border Radius', {}, '1px'),
-    Style.borderColor('borderColor', 'Border Color', {}, '#E5E5E5'),
-    Style.shadow('shadow', 'Shadow', {}, '0px 0px 0px 0px #000000'),
+    Style.borderRadius('borderRadius', 'Border Radius', {}),
+    Style.borderColor('borderColor', 'Border Color', {}, ''),
     Style.hidden('hidden', 'Hidden', {}, false),
   ]);
 
-  const containerStyles = useMemo(() => ({
-    backgroundColor: style.backgroundColor,
-    padding: appearance?.outerPadding,
-  }), [appearance]);
-
   const innerContainerStyles = useMemo(() => ({
-    padding: appearance?.innerPadding,
-    margin: appearance?.margin,
-    gap: appearance?.spacing,
-    borderColor: style.borderColor || '#E5E5E5',
-    borderWidth: style.border?.width ?? '0px',
+    backgroundColor: style.backgroundColor,
+    // padding: resolveThemeValue(appearance.padding, theme, 'padding'),
+    margin: resolveThemeValue(appearance.margin, theme, 'margin'),
+    gap: resolveThemeValue(appearance.spacing, theme, 'spacing'),
+    borderColor: style.borderColor,
+    borderWidth: style.border?.width,
     borderStyle: style.border?.style,
     borderRadius : style.borderRadius,
-    boxShadow: style.shadow,
   }), [appearance]);
 
   const headerStyles = useMemo(() => ({
@@ -172,47 +150,56 @@ function AddOnBlockComponent({ context }: { context: BlockContextType }) {
     textAlign: style.alignment,
   }), [appearance, style]);
 
+  const titleFont = resolveThemeValue(style.titleFont, theme, 'label_typography') as FontValue;
+  const descriptionFont = resolveThemeValue(style.descriptionFont, theme, 'body_typography') as FontValue;
+
   const titleStyles = useMemo(() => ({
-    color: style.titleColor || 'black',
-    fontFamily: style.titleFont?.font,
-    fontWeight: style.titleFont?.weight,
-    fontSize: style.titleFont?.size,
-    lineHeight: style.titleFont?.lineHeight,
-    letterSpacing: style.titleFont?.letterSpacing,
-  }), [style]);
+    color: titleFont?.color,
+    fontFamily: titleFont?.font,
+    fontWeight: titleFont?.weight,
+    fontSize: titleFont?.size,
+    lineHeight: titleFont?.lineHeight,
+    letterSpacing: titleFont?.letterSpacing,
+  }), [titleFont]);
 
   const descriptionStyles = useMemo(() => ({
-    color: style.descriptionFont?.color,
-    fontFamily: style.descriptionFont?.font,
-    fontWeight: style.descriptionFont?.weight,
-    fontSize: style.descriptionFont?.size,
-    lineHeight: style.descriptionFont?.lineHeight,
-    letterSpacing: style.descriptionFont?.letterSpacing,
-  }), [style]);
+    color: descriptionFont?.color,
+    fontFamily: descriptionFont?.font,
+    fontWeight: descriptionFont?.weight,
+    fontSize: descriptionFont?.size,
+    lineHeight: descriptionFont?.lineHeight,
+    letterSpacing: descriptionFont?.letterSpacing,
+  }), [descriptionFont]);
+
+  const checkboxLabelFont = resolveThemeValue(style?.checkboxLabelFont, theme, 'label_typography') as FontValue;
+  const checkboxActiveBackgroundColor = resolveThemeValue(style?.checkboxActiveBackgroundColor, theme, 'primary_color');
+  const checkboxInactiveBackgroundColor = style?.checkboxInactiveBackgroundColor;
+  const checkboxCheckColor = resolveThemeValue(style?.checkColor, theme, 'primary_contrast_color');
+  const checkboxBorderColor = resolveThemeValue(style?.borderColor, theme, 'primary_border_color');
 
   const checkboxStyles = useMemo(() => ({
-    backgroundColor: checked ? (style.checkboxActiveBackgroundColor || '#0374ff') : (style.checkboxInactiveBackgroundColor || '#E5E5E5'),
-    borderColor: style.checkboxBorderColor || '#E5E5E5',
-    borderWidth: style.checkboxBorder?.width ?? '0.5px',
+    backgroundColor: checked ? checkboxActiveBackgroundColor : checkboxInactiveBackgroundColor,
+    borderColor: checkboxBorderColor,
+    borderWidth: style.checkboxBorder?.width,
     borderStyle: style.checkboxBorder?.style,
     borderRadius : style.checkboxBorderRadius,
-    boxShadow: style.checkboxShadow,
     appearance: 'none',
     width: '14px',
     height: '14px',
   }), [
-    appearance,
     style,
     checked,
+    checkboxCheckColor,
+    checkboxBorderColor,
+    checkboxActiveBackgroundColor,
+    checkboxInactiveBackgroundColor
   ]);
 
   const switchStyles = useMemo(() => ({
-    backgroundColor: checked ? style.checkboxActiveBackgroundColor : (style.checkboxInactiveBackgroundColor || '#E5E5E5'),
-    borderColor: style.checkboxBorderColor || '#E5E5E5',
-    borderWidth: style.checkboxBorder?.width ?? '0.5px',
+    backgroundColor: checked ? checkboxActiveBackgroundColor : checkboxInactiveBackgroundColor,
+    borderColor: style.checkboxBorderColor,
+    borderWidth: style.checkboxBorder?.width,
     borderStyle: style.checkboxBorder?.style,
-    borderRadius : style.checkboxBorderRadius,
-    boxShadow: style.checkboxShadow,
   }), [
     appearance,
     style,
@@ -220,13 +207,13 @@ function AddOnBlockComponent({ context }: { context: BlockContextType }) {
   ]);
 
   const checkboxLabelStyles = useMemo(() => ({
-    color: style.checkboxLabelFont?.color,
-    fontFamily: style.checkboxLabelFont?.font,
-    fontWeight: style.checkboxLabelFont?.weight,
-    fontSize: style.checkboxLabelFont?.size,
-    lineHeight: style.checkboxLabelFont?.lineHeight,
-    letterSpacing: style.checkboxLabelFont?.letterSpacing,
-  }), [style]);
+    color: checkboxLabelFont?.color,
+    fontFamily: checkboxLabelFont?.font,
+    fontWeight: checkboxLabelFont?.weight,
+    fontSize: checkboxLabelFont?.size,
+    lineHeight: checkboxLabelFont?.lineHeight,
+    letterSpacing: checkboxLabelFont?.letterSpacing,
+  }), [checkboxLabelFont]);
 
   const checkIconStyles = useMemo(() => ({
     position: 'absolute',
@@ -234,61 +221,51 @@ function AddOnBlockComponent({ context }: { context: BlockContextType }) {
     userSelect: 'none',
     width: '10px',
     height: '10px',
-    top: '50%',
+    top: '55%',
     left: '50%',
     transform: 'translate(-50%, -50%)',
-    color: style.checkboxCheckColor || 'white',
-  }), [style]);
+    color: checkboxCheckColor,
+  }), [checkboxCheckColor]);
 
   const switchThumbStyles = useMemo(() => ({
-    backgroundColor: style.checkboxCheckColor || 'white',
-  }), [style]);
+    backgroundColor: checkboxCheckColor,
+  }), [checkboxCheckColor]);
 
   if (style.hidden) {
     return null;
   }
 
-  console.log('description, checkboxStyle', description, checkboxStyle)
-
   return (
-    <div className="flex flex-col gap-3" style={containerStyles}>
-      <div className="flex flex-col gap-3 p-4" style={innerContainerStyles}>
-        {(title || description) && (
-          <div className="flex flex-col gap-2" style={headerStyles}>
-            <span className="font-bold text-lg" style={titleStyles}>{title}</span>
-            <span className="font-normal text-base" style={descriptionStyles}>{
-              isMarkdown ? (
-                <ReactMarkdown>{description}</ReactMarkdown>
-              ) : (
-                description
-              )}
-            </span>
+    <div className="flex flex-col gap-3" style={innerContainerStyles}>
+      {(title || description) && (
+        <div className="flex flex-col gap-2" style={headerStyles}>
+          <MarkdownText theme={theme} text={title} style={titleStyles} />
+          <MarkdownText theme={theme} text={description} style={descriptionStyles} />
+        </div>
+      )}
+      {checkboxStyle === 'checkbox' && (   
+        <div className="flex items-center gap-2">
+          <div className="relative inline-block justify-center">
+            <input style={checkboxStyles} id={id} type="checkbox" name={context.blockId} checked={checked} onChange={handleChange} />
+            {(checked) && <Check strokeWidth="5" className="pb-0.5" style={checkIconStyles} />}
           </div>
-        )}
-        {checkboxStyle === 'checkbox' && (
-          <div className="flex items-center gap-2">
-            <div className="relative inline-block justify-center">
-              <input style={checkboxStyles} id={id} type="checkbox" name={context.blockId} checked={checked} onChange={handleChange} />
-              {(checked) && <Check strokeWidth="5" className="pb-0.5" style={checkIconStyles} />}
-            </div>
-            <span style={checkboxLabelStyles}>{label}</span>
-          </div>
-        )}
-        {checkboxStyle === 'switch' && (
-          <div className="flex items-center gap-2">
-            <Switch
-              id={id}
-              style={switchStyles}
-              thumbProps={{
-                style: switchThumbStyles,
-              }}
-              checked={checked}
-              onCheckedChange={handleChange}
-            />
-            <span style={checkboxLabelStyles}>{label}</span>
-          </div>
-        )}
-      </div>
+          <span style={checkboxLabelStyles}>{label}</span>
+        </div>
+      )}
+      {checkboxStyle === 'switch' && (
+        <div className="flex items-center gap-2">
+          <Switch
+            id={id}
+            style={switchStyles}
+            thumbProps={{
+              style: switchThumbStyles,
+            }}
+            checked={checked}
+            onCheckedChange={handleChange}
+          />
+          <span style={checkboxLabelStyles}>{label}</span>
+        </div>
+      )}
     </div>
   );
 }

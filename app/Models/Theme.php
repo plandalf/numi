@@ -23,9 +23,6 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property string $primary_surface_color
  * @property string $secondary_surface_color
  * 
- * @property string $label_text_color
- * @property string $body_text_color
- * 
  * @property string $primary_border_color
  * @property string $secondary_border_color
  * 
@@ -77,9 +74,6 @@ class Theme extends Model
         'canvas_color',
         'primary_surface_color',
         'secondary_surface_color',
-
-        'label_text_color',
-        'body_text_color',
 
         'primary_border_color',
         'secondary_border_color',

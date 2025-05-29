@@ -1,8 +1,11 @@
 import { BlockContextType } from "@/types/blocks";
-import Numi, { Appearance, Style } from "@/contexts/Numi";
+import Numi, { Appearance, FontValue, Style } from "@/contexts/Numi";
 import { useMemo } from "react";
+import { resolveThemeValue } from "@/lib/theme";
 
 function TextInputBlockComponent({ context }: { context: BlockContextType }) {
+
+  const theme = Numi.useTheme();
 
   const [id] = Numi.useStateString({
     label: 'Field Name',
@@ -67,9 +70,8 @@ function TextInputBlockComponent({ context }: { context: BlockContextType }) {
       },
     ),
     Style.border('border', 'Border', {}, { width: '1px', style: 'solid' }),
-    Style.borderRadius('borderRadius', 'Border Radius', {}, '5px'),
-    Style.borderColor('borderColor', 'Border Color', {}, '#bbbbbb'),
-    Style.shadow('shadow', 'Shadow', {}, '0px 0px 0px 0px #000000'),
+    Style.borderRadius('borderRadius', 'Border Radius', {}, theme?.border_radius),
+    Style.borderColor('borderColor', 'Border Color', {}, theme?.primary_border_color),
     Style.hidden('hidden', 'Hidden', {}, false),
   ]);
 
@@ -81,21 +83,23 @@ function TextInputBlockComponent({ context }: { context: BlockContextType }) {
   // validation
 
   const containerStyle = useMemo(() => ({
-    padding: appearance.padding,
-    rowGap: appearance.spacing,
-    margin: appearance.margin,
+    rowGap: resolveThemeValue(appearance.spacing, theme, 'spacing'),
+    margin: resolveThemeValue(appearance.margin, theme, 'margin'),
     alignItems: style.alignment != 'expand' ? style.alignment : 'flex-start'
   }), [appearance, style]);
+
+  const labelFont = resolveThemeValue(style?.font, theme, 'label_typography') as FontValue;
   
   const labelStyles = useMemo(() => ({
-    color: style.labelFont?.color,
-    fontFamily: style.labelFont?.font,
-    fontWeight: style.labelFont?.weight,
-    fontSize: style.labelFont?.size,
-    lineHeight: style.labelFont?.lineHeight,
-  }), [style]);
+    color: labelFont?.color,
+    fontFamily: labelFont?.font,
+    fontWeight: labelFont?.weight,
+    fontSize: labelFont?.size,
+    lineHeight: labelFont?.lineHeight,
+  }), [labelFont]);
 
   const inputStyles = useMemo(() => ({
+    padding: resolveThemeValue(appearance.padding, theme, 'padding'),
     width: style.alignment == 'expand' ? '100%' : 'auto',
     backgroundColor: style.inputBackgroundColor ?? 'white',
     color: style.inputFont?.color ?? 'black',
@@ -107,12 +111,11 @@ function TextInputBlockComponent({ context }: { context: BlockContextType }) {
     borderWidth: style.border?.width ?? '0.5px',
     borderStyle: style.border?.style,
     borderRadius : style.borderRadius,
-    boxShadow: style.shadow,
   }), [style]);
   
   return (
     <div className='flex flex-col' style={containerStyle}>
-      <label htmlFor="" style={labelStyles}>{label}</label>
+      {label && <label htmlFor="" style={labelStyles}>{label}</label>}
       <div className="flex flex-row" style={{ width: style.alignment == 'expand' ? '100%' : 'auto' }}>
         <input 
           id={id}

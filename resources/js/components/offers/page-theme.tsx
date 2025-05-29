@@ -76,24 +76,6 @@ export const colorFields = [
   },
 
   {
-    label: 'Text',
-    items: [
-      {
-        name: 'label_text_color',
-        label: 'Label Text',
-        inspector: 'colorPicker',
-        tooltip: 'Section header',
-      },
-      {
-        name: 'body_text_color',
-        label: 'Body Text',
-        inspector: 'colorPicker',
-        tooltip: 'Body/subtitle text',
-      },
-    ] as StyleItem[]
-  },
-
-  {
     label: 'Borders and dividers',
     items: [
       {
@@ -187,14 +169,22 @@ export const typographyFields = [
         label: 'Label',
         inspector: 'fontPicker',
         tooltip: 'Section header',
+        config: {
+          hideVerticalAlignment: true,
+          hideHorizontalAlignment: true,
+        }
       },
       {
         name: 'body_typography',
         label: 'Body',
         inspector: 'fontPicker',
         tooltip: 'Body/subtitle text',
+        config: {
+          hideVerticalAlignment: true,
+          hideHorizontalAlignment: true,
+        }
       },
-    ] as StyleItem[]
+    ]
   },
   {
     label: 'Markdown typography',
@@ -284,18 +274,27 @@ export const componentFields = [
         label: 'Padding',
         inspector: 'spacingPicker',
         tooltip: 'Padding for components',
+        config: {
+          hideTabs: true,
+        }
       },
       {
         name: 'spacing',
         label: 'Spacing',
         inspector: 'spacingPicker',
         tooltip: 'Spacing between components',
+        config: {
+          hideTabs: true,
+        }
       },
       {
         name: 'margin',
         label: 'Margin',
         inspector: 'spacingPicker',
         tooltip: 'Margin for components',
+        config: {
+          hideTabs: true,
+        }
       },
     ]
   },
@@ -372,7 +371,7 @@ export const PageTheme: React.FC = () => {
           <div className="flex items-center gap-4 justify-between w-full">
             <div className="flex items-center gap-4 ">
               <ChevronLeft className="size-6 cursor-pointer" onClick={() => setShowThemeSelector(true)} />
-              <span className="text-2xl font-bold">{theme?.name}</span>
+              <span className="text-xl font-bold">{theme?.name ?? 'Untitled Theme'}</span>
             </div>
 
             {isThemeChanged && (
@@ -392,24 +391,27 @@ export const PageTheme: React.FC = () => {
             <>
               <Separator />
               <span className="text-lg font-bold">{key}</span>
-              {value.map(f => (
-                <div
-                  key={f.label}
-                  className="flex flex-col gap-2"
-                >
-                  <span className="text-base">{f.label}</span>
-                  <StyleEditor
-                    items={
-                      f.items.map(i => ({
-                        ...i,
-                        value: theme?.[i.name as keyof Theme] as string ?? '',
-                      })) as StyleItem[]
-                    }
-                    onChange={(key, value) => handleThemeChange(key as keyof Theme, value)}
-                    fonts={fonts}
-                  />
-                </div>
-              ))}
+              {value.map(f => {
+                return (
+                  <div
+                    key={f.label}
+                    className="flex flex-col gap-2"
+                  >
+                    <span className="text-base">{f.label}</span>
+                    <StyleEditor
+                      items={
+                        f.items.map(i => ({
+                          ...i,
+                          value: theme?.[i.name as keyof Theme] as string ?? '',
+                          config: i.config ?? {},
+                        })) as StyleItem[]
+                      }
+                      onChange={(key, value) => handleThemeChange(key as keyof Theme, value)}
+                      fonts={fonts}
+                    />
+                  </div>
+                )
+              })}
             </>
           ))}
 

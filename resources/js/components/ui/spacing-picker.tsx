@@ -5,26 +5,34 @@ import { Tabs, TabsList, TabsTrigger } from "./tabs";
 import { DragAdjuster } from "./drag-adjuster";
 import { cn } from "@/lib/utils";
 
+export interface SpacingPickerConfig {
+  hideTabs?: boolean;
+}
+
 interface SpacingPickerProps {
   id?: string;
   value: string;
-  defaultValue?: string | null;
+  defaultValue: string;
   onChangeProperty: (value: string) => void;
   className?: string;
+  config?: SpacingPickerConfig;
 }
 
 export const SpacingPicker = ({
   id,
   value,
+  defaultValue,
   onChangeProperty,
-  className
+  className,
+  config
 }: SpacingPickerProps) => {
-  const initialCustomValue = (value && !['default', 'none'].includes(value)) ? value : '';
+  const { hideTabs } = config ?? {};
+  const initialCustomValue = (value && value !== defaultValue && value !== '0px') ? value : '';
 
   const [customInputValue, setCustomInputValue] = useState<string>(initialCustomValue);
   const [validationError, setValidationError] = useState<string | null>(null);
-  const [isCustomEditing, setIsCustomEditing] = useState<boolean>(
-    Boolean(value && !['default', 'none'].includes(value) && /^(\d+px)(\s+\d+px)*$/.test(value))
+  const [isCustomEditing, setIsCustomEditing] = useState<boolean>(hideTabs ||
+    Boolean(value && value !== defaultValue && value !== '0px' && /^(\d+px)(\s+\d+px)*$/.test(value))
   );
 
   // Validate spacing values based on format
@@ -66,12 +74,12 @@ export const SpacingPicker = ({
   const handleFnClick = () => {
     if (isCustomEditing) {
       setIsCustomEditing(false);
-      onChangeProperty('default');
+      onChangeProperty(defaultValue);
       setValidationError(null);
       setCustomInputValue('');
     } else {
       setIsCustomEditing(true);
-      const valueToEdit = (value && !['default', 'none'].includes(value)) ? value : '';
+      const valueToEdit = (value && value !== defaultValue && value !== '0px') ? value : '';
       setCustomInputValue(valueToEdit);
     }
   };
@@ -83,8 +91,8 @@ export const SpacingPicker = ({
       onChangeProperty('0px');
       setCustomInputValue('0px');
     } else {
-      onChangeProperty('default');
-      setCustomInputValue('');
+      onChangeProperty(defaultValue);
+      setCustomInputValue(defaultValue);
     }
   };
 
@@ -136,14 +144,16 @@ export const SpacingPicker = ({
   return (
     <>
       <div className={cn("flex items-center gap-2", className)}>
-        <Button
-          onClick={handleFnClick}
-          variant={isCustomEditing ? "secondary" : "ghost"}
-          size="xs"
-          aria-pressed={isCustomEditing}
-        >
-          Fn
-        </Button>
+        {!hideTabs && (
+          <Button
+            onClick={handleFnClick}
+            variant={isCustomEditing ? "secondary" : "ghost"}
+            size="xs"
+            aria-pressed={isCustomEditing}
+          >
+            Fn
+          </Button>
+        )}
         {isCustomEditing ? (
           <Input
             type="text"
@@ -155,14 +165,14 @@ export const SpacingPicker = ({
             title="Enter spacing values"
             className={`flex-grow ${validationError ? 'border-red-500' : ''}`}
           />
-        ) : (
+        ) : !hideTabs ? (
           <Tabs value={currentTabState} onValueChange={handleTabChange} className="w-full">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="normal">Normal</TabsTrigger>
               <TabsTrigger value="none">None</TabsTrigger>
             </TabsList>
           </Tabs>
-        )}
+        ) : null }
       </div>
     </>
   );

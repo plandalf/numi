@@ -1,4 +1,5 @@
-import Numi, { Appearance, Style } from "@/contexts/Numi";
+import Numi, { Appearance, FontValue, Style } from "@/contexts/Numi";
+import { resolveThemeValue } from "@/lib/theme";
 import { cn, formatMoney } from "@/lib/utils";
 import { BlockContextType } from "@/types/blocks";
 import { useState, useEffect, useMemo } from "react";
@@ -8,7 +9,7 @@ import { Loader2, XIcon } from "lucide-react";
 import { CheckoutItem } from "@/types/checkout";
 
 function CheckoutSummaryComponent({ context }: { context: BlockContextType }) {
-
+  const theme = Numi.useTheme();
   const { session, addDiscount, removeDiscount, isEditor } = Numi.useCheckout({
 
   });
@@ -81,125 +82,52 @@ function CheckoutSummaryComponent({ context }: { context: BlockContextType }) {
   };
 
   const style = Numi.useStyle([
-    Style.backgroundColor('backgroundColor', 'Background Color', {}, ''),
-    Style.font('titleFont', 'Title Font & Color',
+    Style.backgroundColor('backgroundColor', 'Background Color', {}, theme?.primary_surface_color),
+    Style.font('titleFont', 'Title Font & Color',fontConfig, theme?.label_typography as FontValue),
+    Style.font( 'labelFont', 'Label Font & Color',fontConfig, theme?.label_typography as FontValue),
+    Style.font( 'itemFont', 'Item Font & Color',fontConfig, theme?.body_typography as FontValue),
+    Style.font( 'itemPriceFont', 'Item Price Font & Color', fontConfig, theme?.label_typography as FontValue),
+    Style.font( 'itemQuantityFont', 'Item Quantity Font & Color',fontConfig, {
+      ...theme?.body_typography as FontValue,
+      color: '#6a7282'
+    }),
+    Style.backgroundColor('inputBackgroundColor', 'Input Background Color', {}, theme?.secondary_surface_color),
+    Style.font('inputFont', 'Input Font & Color',fontConfig, theme?.body_typography as FontValue),
+    Style.border('inputBorder', 'Input Border', {}, { width: '1px', style: 'solid' }),
+    Style.borderColor('inputBorderColor', 'Input Border Color', {}, theme?.primary_border_color),
+    Style.backgroundColor('buttonBackgroundColor', 'Button Background Color', {}, theme?.primary_color),
+    Style.font( 'buttonTextFont', 'Button Text Font & Color', fontConfig,
+      {
+        ...theme?.body_typography,
+        color: theme?.primary_contrast_color,
+      }
+    ),
+    Style.shadow('buttonShadow', 'Button Shadow', {}, theme?.shadow),
+    Style.font('summaryTextFont','Summary Text Font & Color',fontConfig, theme?.body_typography as FontValue),
+    Style.font('discountTextFont','Discount Text Font & Color',
       fontConfig,
       {
-        font: 'Inter',
-        weight: '900',
-        size: '18px',
-        lineHeight: '1.5',
-        letterSpacing: '0px',
+        ...theme?.body_typography,
+        color: '#00a63e'
       },
     ),
-    Style.font('labelFont', 'Label Font & Color',
-      fontConfig,
-      {
-        font: 'Inter',
-        weight: '400',
-        size: '16px',
-        lineHeight: '1.5',
-        letterSpacing: '0px',
-      },
-    ),
-    Style.font('itemFont', 'Item Font & Color',
-      fontConfig,
-      {
-        font: 'Inter',
-        weight: '400',
-        size: '16px',
-        lineHeight: '1.5',
-        letterSpacing: '0px',
-      },
-    ),
-    Style.font('itemPriceFont', 'Item Price Font & Color',
-      fontConfig,
-      {
-        font: 'Inter',
-        weight: '400',
-        size: '14px',
-        lineHeight: '1.5',
-        letterSpacing: '0px',
-      },
-    ),
-    Style.font('itemQuantityFont', 'Item Quantity Font & Color',
-      fontConfig,
-      {
-        color: '#6a7282',
-        font: 'Inter',
-        weight: '400',
-        size: '14px',
-        lineHeight: '1.5',
-        letterSpacing: '0px',
-      },
-    ),
-    Style.backgroundColor('inputBackgroundColor', 'Input Background Color', {}, '#FFFFFF'),
-    Style.font('inputFont', 'Input Font & Color',
-      fontConfig,
-      {
-        font: 'Inter',
-        weight: '400',
-        size: '14px',
-        lineHeight: '1.5',
-        letterSpacing: '0px',
-      },
-    ),
-    Style.backgroundColor('buttonBackgroundColor', 'Button Background Color', {}, '#f6f3f4'),
-    Style.font('buttonTextFont', 'Button Text Font & Color',
-      fontConfig,
-      {
-        color: '#1e2939',
-        font: 'Inter',
-        weight: '400',
-        size: '16px',
-        lineHeight: '1.5',
-        letterSpacing: '0px',
-      },
-    ),
-    Style.font('summaryTextFont', 'Summary Text Font & Color',
-      fontConfig,
-      {
-        font: 'Inter',
-        weight: '400',
-        size: '14px',
-        lineHeight: '1.5',
-        letterSpacing: '0px',
-      },
-    ),
-    Style.font('discountTextFont', 'Discount Text Font & Color',
-      fontConfig,
-      {
-        color: '#00a63e',
-        font: 'Inter',
-        weight: '400',
-        size: '14px',
-        lineHeight: '1.5',
-        letterSpacing: '0px',
-      },
-    ),
-    Style.font('totalTextFont', 'Total Text Font & Color',
-      fontConfig,
-      {
-        font: 'Inter',
-        weight: '900',
-        size: '18px',
-        lineHeight: '1.5',
-        letterSpacing: '0px',
-      },
-    ),
+    Style.font('totalTextFont', 'Total Text Font & Color',  fontConfig, theme?.label_typography as FontValue),
+    Style.backgroundColor('dividerColor', 'Divider Color', {}, theme?.secondary_border_color),
     Style.border('border', 'Border', {}, { width: '0px', style: 'solid' }),
-    Style.borderRadius('borderRadius', 'Border Radius', {}, '0px'),
+    Style.borderRadius('borderRadius', 'Border Radius', {}, theme?.border_radius),
     Style.borderColor('borderColor', 'Border Color', {}, ''),
-    Style.shadow('shadow', 'Shadow', {}, ''),
+    Style.shadow('shadow', 'Shadow', {}, theme?.shadow),
     Style.hidden('hidden', 'Hidden', {}, false),
   ]);
 
+
+
   const containerStyle = useMemo(() => {
     return {
-      backgroundColor: style.backgroundColor || '',
-      padding: appearance?.padding,
-      margin: appearance?.margin,
-      gap: !appearance?.spacing ? '0px' : appearance?.spacing,
+      backgroundColor: resolveThemeValue(style.backgroundColor, theme, 'primary_surface_color') as string,
+      padding: resolveThemeValue(appearance.padding, theme, 'padding'),
+      margin: resolveThemeValue(appearance.margin, theme, 'margin'),
+      gap: resolveThemeValue(appearance.spacing, theme, 'spacing'),
       borderColor: style.borderColor,
       borderWidth: style?.border?.width,
       borderStyle: style?.border?.style,
@@ -267,29 +195,42 @@ function CheckoutSummaryComponent({ context }: { context: BlockContextType }) {
     };
   }, [style?.itemQuantityFont]);
 
+  
+
   const inputStyle = useMemo(() => {
     return {
-      backgroundColor: style?.inputBackgroundColor,
+      backgroundColor: resolveThemeValue(style.inputBackgroundColor, theme, 'secondary_surface_color') as string,
       color: style?.inputFont?.color,
       fontFamily: style?.inputFont?.font,
       fontWeight: style?.inputFont?.weight,
       fontSize: style?.inputFont?.size,
       lineHeight: style?.inputFont?.lineHeight,
       letterSpacing: style?.inputFont?.letterSpacing,
+      borderColor: resolveThemeValue(style.inputBorderColor, theme, 'primary_border_color'),
+      borderWidth: style?.inputBorder?.width,
+      borderStyle: style?.inputBorder?.style,
     };
-  }, [style?.inputFont, style?.inputBackgroundColor]);
+  }, [style]);
+
+
+
 
   const buttonStyle = useMemo(() => {
+    const buttonTextFont = {
+      ...resolveThemeValue(style?.buttonTextFont, theme, 'body_typography') as FontValue,
+      color: resolveThemeValue(style?.buttonTextFont?.color, theme, 'primary_contrast_color'),
+    } as FontValue;
     return {
-      color: style.buttonTextFont?.color,
-      backgroundColor: style.buttonBackgroundColor,
-      fontFamily: style?.buttonTextFont?.font,
-      fontWeight: style?.buttonTextFont?.weight,
-      fontSize: style?.buttonTextFont?.size,
-      lineHeight: style?.buttonTextFont?.lineHeight,
-      letterSpacing: style?.buttonTextFont?.letterSpacing,
+      color: buttonTextFont?.color,
+      backgroundColor: resolveThemeValue(style.buttonBackgroundColor, theme, 'primary_color'),
+      fontFamily: buttonTextFont?.font,
+      fontWeight: buttonTextFont?.weight,
+      fontSize: buttonTextFont?.size,
+      lineHeight: buttonTextFont?.lineHeight,
+      letterSpacing: buttonTextFont?.letterSpacing,
+      boxShadow: style?.buttonShadow,
     };
-  }, [style?.buttonTextFont, style?.buttonBackgroundColor]);
+  }, [style?.buttonTextFont, style?.buttonBackgroundColor, style?.buttonShadow]);
 
   const summaryTextStyle = useMemo(() => {
     return {
@@ -323,6 +264,12 @@ function CheckoutSummaryComponent({ context }: { context: BlockContextType }) {
       letterSpacing: style?.totalTextFont?.letterSpacing,
     };
   }, [style?.totalTextFont]);
+
+  const dividerStyle = useMemo(() => {
+    return {
+      borderColor: resolveThemeValue(style.dividerColor, theme, 'secondary_border_color') as string,
+    };
+  }, [style]);
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isDiscountSubmitting, setIsDiscountSubmitting] = useState(false);
@@ -394,7 +341,7 @@ function CheckoutSummaryComponent({ context }: { context: BlockContextType }) {
 
       {/* Discount Code Form */}
       {showDiscountForm && (
-        <div className="mb-4 pb-4 border-b">
+        <div className="mb-4 pb-4 border-b" style={dividerStyle}>
           <label htmlFor="discount-code" className="block mb-1" style={labelStyle}>Discount code</label>
           {canAddDiscount && <div className="flex gap-2">
             <input
@@ -475,7 +422,7 @@ function CheckoutSummaryComponent({ context }: { context: BlockContextType }) {
       </div>
 
       {/* Total */}
-      <div className="flex justify-between font-semibold text-lg mt-4 pt-4 border-t">
+      <div className="flex justify-between font-semibold text-lg mt-4 pt-4 border-t" style={dividerStyle}>
         <span style={totalTextStyle}>Total</span>
         <span style={totalTextStyle}>{formatMoney(session.total, session.currency)}</span>
       </div>

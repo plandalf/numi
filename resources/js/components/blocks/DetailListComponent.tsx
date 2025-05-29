@@ -1,8 +1,9 @@
-import Numi, { Appearance, IconValue, Style } from "@/contexts/Numi";
+import Numi, { Appearance, FontValue, IconValue, Style } from "@/contexts/Numi";
 import { BlockContextType } from "@/types/blocks";
 import { useMemo } from "react";
 import { IconRenderer } from "../ui/icon-renderer";
 import { MarkdownText } from "../ui/markdown-text";
+import { resolveThemeValue } from "@/lib/theme";
 
 function DetailListBlockComponent({ context }: { context: BlockContextType }) {
 
@@ -28,7 +29,8 @@ function DetailListBlockComponent({ context }: { context: BlockContextType }) {
           },
           label: {
             title: "Label",
-            type: "string"
+            type: "string",
+            meta: { editor: "markdown" },
           },
           caption: {
             title: "Caption",
@@ -80,27 +82,8 @@ function DetailListBlockComponent({ context }: { context: BlockContextType }) {
       },
     }, 'start'),
     Style.backgroundColor('backgroundColor', 'Background Color', {}, ''),
-    Style.font('labelFont', 'Label Font & Color',
-      fontConfig,
-      {
-        font: 'Inter',
-        weight: '500',
-        size: '16px',
-        lineHeight: '1.5',
-        letterSpacing: '0px',
-      },
-    ),
-    Style.font('captionFont', 'Caption Font & Color',
-      fontConfig,
-      {
-        color: '#6a7282',
-        font: 'Inter',
-        weight: '400',
-        size: '14px',
-        lineHeight: '1.5',
-        letterSpacing: '0px',
-      },
-    ),
+    Style.font('labelFont', 'Label Font & Color', fontConfig, {}),
+    Style.font('captionFont', 'Caption Font & Color', fontConfig, {}),
     Style.alignment('iconAlignment', 'Icon Alignment', {
       options: {
         start: 'start',
@@ -108,7 +91,7 @@ function DetailListBlockComponent({ context }: { context: BlockContextType }) {
         end: 'end',
       },
     }, 'start'),
-    Style.textColor('iconColor', 'Icon Color', {}, '#6a7282'),
+    Style.textColor('iconColor', 'Icon Color', {}, theme?.primary_color),
     Style.dimensions('iconSize', 'Icon Size', {
       config: {
         hideWidth: true
@@ -122,9 +105,11 @@ function DetailListBlockComponent({ context }: { context: BlockContextType }) {
   ]);
 
   const appearance = Numi.useAppearance([
-    Appearance.padding('padding', 'Padding', {}),
+    // Appearance.padding('padding', 'Padding', {}),
     Appearance.margin('margin', 'Margin', {}),
     Appearance.spacing('spacing', 'Spacing', {}),
+    Appearance.spacing('labelAndCaptionSpacing', 'Label & Caption Spacing', {}),
+    Appearance.spacing('iconAndTextSpacing', 'Icon & Text Spacing', {}),
     Appearance.visibility('visibility', 'Visibility', {}, { conditional: [] }),
   ]);
 
@@ -136,43 +121,54 @@ function DetailListBlockComponent({ context }: { context: BlockContextType }) {
     borderStyle: style.border?.style,
     borderRadius : style.borderRadius,
     boxShadow: style.shadow,
-    padding: appearance?.padding,
-    margin: appearance?.margin,
-    gap: appearance?.spacing,
+    // padding: resolveThemeValue(appearance.padding, theme, 'padding'),
+    margin: resolveThemeValue(appearance.margin, theme, 'margin'),
+    gap: resolveThemeValue(appearance.spacing, theme, 'spacing'),
   }), [style, appearance]);
 
   const innerContainerStyle = useMemo(() => ({
     alignItems: style.textAlignment,
-    gap: appearance?.spacing,
+    gap: resolveThemeValue(appearance.spacing, theme, 'spacing'),
   }), [style,appearance]);
 
+  const labelFont = resolveThemeValue(style.labelFont, theme, 'h4_typography') as FontValue;
+  const captionFont = resolveThemeValue(style.captionFont, theme, 'body_typography') as FontValue;
+
   const labelStyle = useMemo(() => ({
-    color: style.labelFont?.color,
-    fontSize: style.labelFont?.size,
-    fontWeight: style.labelFont?.weight,
-    fontFamily: style.labelFont?.font,
-    lineHeight: style.labelFont?.lineHeight,
-    letterSpacing: style.labelFont?.letterSpacing,
-  }), [style]);
+    color: labelFont?.color,
+    fontSize: labelFont?.size,
+    fontWeight: labelFont?.weight,
+    fontFamily: labelFont?.font,
+    lineHeight: labelFont?.lineHeight,
+    letterSpacing: labelFont?.letterSpacing,
+  }), [labelFont]);
 
   const captionStyle = useMemo(() => ({
-    color: style.captionFont?.color,
-    fontSize: style.captionFont?.size,
-    fontWeight: style.captionFont?.weight,
-    fontFamily: style.captionFont?.font,
-    lineHeight: style.captionFont?.lineHeight,
-    letterSpacing: style.captionFont?.letterSpacing,
-  }), [style]);
+    color: captionFont?.color,
+    fontSize: captionFont?.size,
+    fontWeight: captionFont?.weight,
+    fontFamily: captionFont?.font,
+    lineHeight: captionFont?.lineHeight,
+    letterSpacing: captionFont?.letterSpacing,
+  }), [captionFont]);
 
   const tooltipIconStyle = useMemo(() => ({
-    color: style.captionFont?.color,
-  }), [style]);
+    color: captionFont?.color,
+  }), [captionFont]);
 
   const iconStyle = useMemo(() => ({
     alignSelf: style.iconAlignment ?? 'start',
-    color: style.iconColor,
+    color: resolveThemeValue(style.iconColor, theme, 'primary_color'),
     size: style.iconSize?.height ?? '15px',
   }), [style]);
+
+  const textContainerStyle = useMemo(() => ({
+    gap: resolveThemeValue(appearance.labelAndCaptionSpacing, theme, 'spacing') as string
+  }), [appearance]);
+
+  const containerStyle = useMemo(() => ({
+    gap: resolveThemeValue(appearance.iconAndTextSpacing, theme, 'spacing') as string
+  }), [appearance]);
 
   if(style.hidden) return null;
 
@@ -183,40 +179,46 @@ function DetailListBlockComponent({ context }: { context: BlockContextType }) {
     // This could be a filter toggle in the future
 
     return (
-      <div key={item.label}>
-        <div className="flex items-center space-x-2">
+      <div 
+        key={item.label}
+        className="flex items-center"
+        style={containerStyle}
+      >
+        <IconRenderer icon={item.icon} style={iconStyle} defaultIcon={
+          <span className="text-gray-500" style={iconStyle}>●</span>
+        }/>
 
-          <IconRenderer icon={item.icon} style={iconStyle} defaultIcon={
-            <span className="text-gray-500" style={iconStyle}>●</span>
-          }/>
-
-          {/* Main content */}
-          <div className="flex-1">
-            <div className="flex items-center">
-              <span className="font-medium" style={labelStyle}>
-                {item.label}
-              </span>
-
-              {item.tooltip && (
-                <div
-                  className="ml-2 text-gray-500 cursor-help"
-                  style={tooltipIconStyle}
-                  title={item.tooltip}
-                >
-                  ⓘ
-                </div>
-              )}
-            </div>
-
-            {item.caption && (
-              <MarkdownText
-                className="text-sm text-gray-500"
-                text={item.caption}
-                style={captionStyle}
-                theme={theme}
-              />
+        {/* Main content */}
+        <div
+          className="flex-1 flex flex-col"
+          style={textContainerStyle}
+        >
+          <div className="flex items-center">
+            <MarkdownText
+              className="font-medium"
+              text={item.label}
+              style={labelStyle}
+              theme={theme}
+            />
+            {item.tooltip && (
+              <div
+                className="ml-2 text-gray-500 cursor-help"
+                style={tooltipIconStyle}
+                title={item.tooltip}
+              >
+                ⓘ
+              </div>
             )}
           </div>
+
+          {item.caption && (
+            <MarkdownText
+              className="text-sm text-gray-500"
+              text={item.caption}
+              style={captionStyle}
+              theme={theme}
+            />
+          )}
         </div>
       </div>
     );

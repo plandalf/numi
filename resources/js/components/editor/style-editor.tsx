@@ -294,6 +294,7 @@ const StyleItemValuePreview = ({
               value={value as string}
               defaultValue={item.defaultValue}
               onChangeProperty={(value) => onChange(item.name, value)}
+              config={item.config}
             />
           </DropdownMenuContent>
         </DropdownMenu>

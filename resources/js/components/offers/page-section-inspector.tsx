@@ -1,8 +1,10 @@
 import { useEditor } from "@/contexts/offer/editor-context";
 import { getThemeColors } from "./page-theme";
 import { StyleEditor, type StyleItem } from "../editor/style-editor";
-import { Appearance, Style } from '@/contexts/Numi';
+import Numi, { Appearance, Style } from '@/contexts/Numi';
 import { SpacingEditor } from "../editor/spacing-editor";
+import { resolveThemeValue } from "@/lib/theme";
+import { Theme } from "@/types/theme";
 
 interface SectionInspectorProps {
   sectionId: string;
@@ -10,12 +12,12 @@ interface SectionInspectorProps {
 }
 
 export function SectionInspector({ sectionId /*, onClose */ }: SectionInspectorProps) {
-  const { data, selectedPage, updateSection } = useEditor();
+  const { data, selectedPage, updateSection, theme } = useEditor();
   const page = data.view.pages[selectedPage];
   const section = page.view[sectionId];
 
   if (!section) return null;
-  const themeColors = getThemeColors(data.theme);
+  const themeColors = getThemeColors(theme);
 
   const handleStyleChange = (key: string, value: string | boolean) => {
     updateSection(sectionId, {
@@ -48,7 +50,7 @@ export function SectionInspector({ sectionId /*, onClose */ }: SectionInspectorP
 
   const styleItems: StyleItem[] = [
     Style.image('backgroundImage', 'Background Image', {}, ''),
-    Style.backgroundColor('backgroundColor', 'Background Color', {}, '#FFFFFF'),
+    Style.backgroundColor('backgroundColor', 'Background Color', {}, theme?.canvas_color),
     Style.borderRadius('borderRadius', 'Border Radius', {}, '12px'),
     Style.hidden('hidden', 'Hidden', {}, false),
   ].map(style => ({
@@ -85,6 +87,9 @@ export function SectionInspector({ sectionId /*, onClose */ }: SectionInspectorP
                 value={section.appearance?.[item.name]}
                 defaultValue={item.defaultValue}
                 onChangeProperty={(newValue) => handleAppearanceChange(item.name, newValue)}
+                config={{
+                  hideTabs: true
+                }}
               />
               ) : null
             )

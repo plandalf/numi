@@ -41,9 +41,6 @@ class ThemeFactory extends Factory
             'primary_surface_color' => $this->faker->hexColor(),
             'secondary_surface_color' => $this->faker->hexColor(),
 
-            'label_text_color' => $this->faker->hexColor(),
-            'body_text_color' => $this->faker->hexColor(),
-
             'primary_border_color' => $this->faker->hexColor(),
             'secondary_border_color' => $this->faker->hexColor(),
 
