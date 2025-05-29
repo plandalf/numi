@@ -139,6 +139,7 @@ function EditApp({ publishableKey }: { publishableKey: string | undefined }) {
         shipping: 5,
         discount: 10,
         total: 105,
+        currency: 'USD',
       }
     ],
     currency: 'USD',

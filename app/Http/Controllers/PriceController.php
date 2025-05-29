@@ -30,8 +30,7 @@ class PriceController extends Controller
             ]);
         }
 
-        return redirect()->route('products.show', [$product])
-            ->with('success', 'Price created successfully.');
+        return redirect()->route('products.show', [$product]);
     }
 
     public function import(ImportRequest $request, Product $product, StorePrice $storePrice): RedirectResponse

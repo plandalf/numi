@@ -23,8 +23,6 @@ const NewProductAndPricesOfferItem = ({ open, setOpen, offerItemsCount, type, of
   const defaultKey = defaultName.toLowerCase().replace(/\s+/g, '_');
 
   const handlePricesSuccess = (price: Price) => {
-    router.reload({ only: ['products'] });
-
     const body = {
       name: defaultName,
       key: defaultKey,
@@ -43,7 +41,6 @@ const NewProductAndPricesOfferItem = ({ open, setOpen, offerItemsCount, type, of
         toast.error(`Failed to create price: ${Object.values(errors).flat().join(", ")}`);
       },
     });
-
   }
 
   return (
@@ -115,15 +112,15 @@ export const PageProducts = () => {
     }
 
     const handleDelete = (offerItem: OfferItem) => {
-      const toastId = toast.loading(`Deleting product...`);
+      const toastId = toast.loading(`Deleting offer item...`);
 
       router.delete(route("offers.items.destroy", { offer: offer.id, item: offerItem.id }), {
         preserveScroll: true,
         onSuccess: () => {
-          toast.success(`Product deleted successfully`, { id: toastId });
+          toast.success(`Offer item deleted successfully`, { id: toastId });
         },
         onError: (errors) => {
-          toast.error(`Failed to delete product: ${Object.values(errors).flat().join(", ")}`, { id: toastId });
+          toast.error(`Failed to delete offer item: ${Object.values(errors).flat().join(", ")}`, { id: toastId });
         },
       });
     }
@@ -136,7 +133,7 @@ export const PageProducts = () => {
       }, {
         preserveScroll: true,
         onSuccess: () => {
-          toast.success(`Product updated successfully`, { id: toastId });
+          toast.success(`Item updated successfully`, { id: toastId });
         },
         onError: (errors) => {
           toast.error(`Failed to update product: ${Object.values(errors).flat().join(", ")}`, { id: toastId });
@@ -204,7 +201,7 @@ export const PageProducts = () => {
       }, {
         preserveScroll: true,
         onSuccess: () => {
-          toast.success(`Product updated successfully`, { id: toastId });
+          toast.success(`Item updated successfully`, { id: toastId });
         },
       });
     }
@@ -308,7 +305,7 @@ export const PageProducts = () => {
   }, [offerItems]);
 
   const Warning = () => {
-    if (Object.values(validations).some(value => value)) {
+    if (validations.hasMultipleCurrencies || validations.hasMultipleGatewayProviders) {
       return (
         <div className="flex flex-col gap-3 border border-destructive text-destructive rounded-md p-4 mt-3.5">
           <div className="flex items-center gap-2">

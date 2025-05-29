@@ -21,7 +21,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea"; // If needed for properties JSON
 import { Plus, Trash2, Loader2 } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useLayoutEffect } from "react";
 import { toast } from "sonner";
 import { formatMoney, slugify, getSupportedCurrencies } from "@/lib/utils"; // Import slugify and getSupportedCurrencies
 import { type Price, type Product } from '@/types/offer'; // Assuming types are centralized
@@ -97,6 +97,7 @@ interface Props {
   onSuccess?: (price: Price) => void;
   hideDialog?: boolean;
   useJsonResponse?: boolean; // Add new prop to control response type
+  hideSuccessToast?: boolean;
 }
 
 // Add a type for Inertia page response
@@ -107,6 +108,28 @@ interface InertiaPageResponse {
   };
 }
 
+// Add this helper above the component
+const currencySymbols: Record<string, string> = {
+  usd: '$',
+  gbp: '£',
+  jpy: '¥',
+  cad: 'C$',
+  aud: 'A$',
+  nzd: 'NZ$',
+};
+
+// Helper functions for number formatting
+const formatNumberWithCommas = (numStr: string): string => {
+  if (!numStr) return "";
+  const parts = numStr.split('.');
+  parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  return parts.join('.');
+};
+
+const stripCommas = (numStr: string): string => {
+  return numStr.replace(/,/g, '');
+};
+
 export default function PriceForm({
   open,
   onOpenChange,
@@ -115,12 +138,16 @@ export default function PriceForm({
   listPrices,
   onSuccess,
   hideDialog = false,
-  useJsonResponse = false // Default to Inertia redirect
+  useJsonResponse = false,
+  hideSuccessToast = false
 }: Props) {
   const isEditing = !!initialData;
   const { props: pageProps } = usePage<PageProps>();
   const defaultCurrency = product.currency || pageProps.config?.cashier_currency || 'usd'; // Get default currency
   const [isLookupKeyManuallyEdited, setIsLookupKeyManuallyEdited] = useState(!!initialData?.lookup_key); // Track manual edits
+  const [amountDisplay, setAmountDisplay] = useState<string>("0.00"); // State for formatted amount string
+  const amountInputRef = useRef<HTMLInputElement>(null); // Ref for amount input to check focus
+  const [cursorPosition, setCursorPosition] = useState<number | null>(null); // For managing cursor
 
   // --- State for complex properties ---
   const [tiers, setTiers] = useState<TierConfig[]>(initialData?.properties?.tiers || [{ from: 0, to: null, unit_amount: 0 }]);
@@ -159,13 +186,34 @@ export default function PriceForm({
       setPackageConfig({ size: 1, unit_amount: 0 });
       setIsLookupKeyManuallyEdited(false);
       setShowMetadata(false);
+      setAmountDisplay("0.00"); // Reset amount display
     } else {
-      setData(getInitialFormData());
+      const initialFormState = getInitialFormData();
+      setData(initialFormState);
+      // Format initial amount to display string
+      const initialAmountStr = initialFormState.amount ? (initialFormState.amount / 100).toFixed(2) : "0.00";
+      setAmountDisplay(formatNumberWithCommas(initialAmountStr));
       setTiers(initialData?.properties?.tiers || [{ from: 0, to: null, unit_amount: 0 }]);
       setPackageConfig(initialData?.properties?.package || { size: 1, unit_amount: 0 });
       setIsLookupKeyManuallyEdited(!!initialData?.lookup_key);
     }
   }, [open, initialData, reset, defaultCurrency, setData]);
+
+  // Sync data.amount (cents) to amountDisplay (formatted string)
+  // This effect runs when data.amount changes, but avoids interference if the input is focused.
+  useEffect(() => {
+    if (document.activeElement !== amountInputRef.current) {
+      const amountStr = data.amount ? (data.amount / 100).toFixed(2) : "0.00";
+      setAmountDisplay(formatNumberWithCommas(amountStr));
+    }
+  }, [data.amount]);
+
+  useLayoutEffect(() => {
+    if (cursorPosition !== null && amountInputRef.current) {
+      amountInputRef.current.setSelectionRange(cursorPosition, cursorPosition);
+      setCursorPosition(null); // Reset after applying
+    }
+  }, [amountDisplay, cursorPosition]);
 
   // Update lookup_key when name changes (if not manually edited)
   useEffect(() => {
@@ -220,10 +268,174 @@ export default function PriceForm({
     setData('metadata', newEntries);
   };
 
+  const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const rawValue = e.target.value;
+    const currentCursor = e.target.selectionStart;
+
+    // Store the count of characters before the cursor that are not digits or a decimal point.
+    // This helps adjust the cursor if formatting characters (like commas) are added/removed.
+    let nonDigitCharsBeforeCursor = 0;
+    if (currentCursor !== null) {
+        for (let i = 0; i < currentCursor; i++) {
+            if (!/[\d.]/.test(rawValue[i])) {
+                nonDigitCharsBeforeCursor++;
+            }
+        }
+    }
+
+    const valueNoCommas = stripCommas(rawValue);
+
+    let newDisplayValue = "";
+    let newAmountInCents = 0;
+
+    // Sanitize (allow digits, one decimal, max two decimal places)
+    let sanitizedString = "";
+    let hasDecimal = false;
+    for (const char of valueNoCommas) {
+      if (/\d/.test(char)) {
+        if (char === '0' && sanitizedString === '0' && !hasDecimal) continue;
+        sanitizedString += char;
+      } else if (char === '.' && !hasDecimal) {
+        if (sanitizedString === "") sanitizedString = "0";
+        sanitizedString += char;
+        hasDecimal = true;
+      }
+    }
+
+    if (hasDecimal) {
+      const parts = sanitizedString.split('.');
+      if (parts[1] && parts[1].length > 2) {
+        sanitizedString = parts[0] + '.' + parts[1].substring(0, 2);
+      }
+    } else {
+      if (sanitizedString.length > 1 && sanitizedString.startsWith('0')) {
+        sanitizedString = sanitizedString.replace(/^0+/, '') || "0";
+      }
+    }
+
+    if (sanitizedString === "" || sanitizedString === "0" && valueNoCommas === "") {
+      // Allow user to clear input, will format to "0.00" on blur
+      newDisplayValue = "";
+      newAmountInCents = 0;
+    } else if (sanitizedString === "." || (sanitizedString === "0." && valueNoCommas.endsWith("."))) {
+       // Handles typing "." or "0." - allows user to continue typing cents.
+       // These will be formatted on blur or once more digits are added.
+      newDisplayValue = sanitizedString; // Keep as is for now
+      newAmountInCents = 0;
+    }
+     else {
+      let valueForParsing = sanitizedString;
+      if (valueForParsing.endsWith('.')) {
+        valueForParsing += "00"; // Ensure "123." becomes "123.00" for consistency before parsing
+      } else if (hasDecimal) {
+        const parts = valueForParsing.split('.');
+        valueForParsing = parts[0] + '.' + (parts[1] || "").padEnd(2, '0');
+      } else { // No decimal, e.g. "123"
+        valueForParsing += ".00";
+      }
+
+      const numericValue = parseFloat(valueForParsing);
+
+      if (!isNaN(numericValue)) {
+        newAmountInCents = Math.round(numericValue * 100);
+
+        // Determine the display value based on the sanitized input
+        // This ensures that if a user types "123.4", it shows "1,234.40" during input
+        let formattedForDisplay;
+        if (sanitizedString.includes('.')) {
+            const parts = sanitizedString.split('.');
+            formattedForDisplay = formatNumberWithCommas(parts[0]) + '.' + (parts[1] || "").padEnd(2, '0');
+        } else { // Integer part only, or empty
+            formattedForDisplay = formatNumberWithCommas(sanitizedString) + '.00';
+        }
+        newDisplayValue = formattedForDisplay;
+
+      } else {
+        newDisplayValue = amountDisplay; // Fallback, keep old
+        newAmountInCents = data.amount;
+      }
+    }
+
+    setAmountDisplay(newDisplayValue);
+    setData('amount', newAmountInCents);
+
+    // Cursor position adjustment
+    if (currentCursor !== null) {
+        // Calculate how many formatting chars (commas) are in the new display string *before* the equivalent raw input position
+        let newNonDigitCharsBeforeCursor = 0;
+        const strippedNewDisplay = stripCommas(newDisplayValue);
+
+        // Determine the length of the "prefix" of the new display value that corresponds to the original input's prefix
+        // This is complex because of dynamic formatting. A simpler approach:
+        // Count commas in the new string up to where the numeric content would align with the old cursor.
+
+        // More direct approach:
+        // After stripping commas from rawValue, the currentCursor effectively points to a position in a numbers-and-dot string.
+        // We want to find that same relative position in the newDisplayValue, accounting for newly added/removed commas.
+        let newCursor = currentCursor;
+        const newDisplayValueNoCommas = stripCommas(newDisplayValue);
+        const oldPrefixNoCommas = stripCommas(rawValue.substring(0, currentCursor));
+        let tempCursor = 0;
+        let numEquivalentCharsCount = 0;
+
+        for(let i=0; i < newDisplayValue.length; i++) {
+            if(numEquivalentCharsCount >= oldPrefixNoCommas.length) break;
+            tempCursor++;
+            if(/[\d.]/.test(newDisplayValue[i])) {
+                numEquivalentCharsCount++;
+            }
+        }
+        // If rawValue was empty, and new is "0.00", place cursor at start.
+        if(rawValue === "" && newDisplayValue === "0.00") {
+            newCursor = 0;
+        } else if (rawValue === "." && newDisplayValue === "0.00" ) { // From blur primarily
+            newCursor = 1; // "0|.00"
+        } else {
+           newCursor = tempCursor;
+        }
+
+
+        // If the user backspaced and the value became empty (e.g. cleared "1.00")
+        // and it then reformats to "0.00" on blur or later, this logic might need refinement.
+        // The current logic tries to place the cursor based on the *numeric* content.
+
+        // Special case for backspacing the first digit of cents: "1.20" -> delete "2" -> "1.00"
+        // If original was "X.Y0" and Y was deleted, cursor should be before Y (now 0).
+        // rawValue: "1.20", currentCursor at 3 (before 2) -> sanitized "1.0" -> display "1.00"
+        // oldPrefixNoCommas = "1."
+        // newDisplayValue = "1.00"
+        // tempCursor should become 3 (1.00)
+
+        // If backspacing ".00" to just "."
+        if (valueNoCommas === "." && newDisplayValue === ".") {
+            newCursor = 1; // Keep cursor after dot
+        } else if (valueNoCommas === "" && newDisplayValue === "") {
+            newCursor = 0;
+        }
+
+
+        setCursorPosition(newCursor);
+    }
+  };
+
+  const handleAmountBlur = () => {
+    const valueNoCommas = stripCommas(amountDisplay);
+    let numericValue = parseFloat(valueNoCommas);
+
+    if (isNaN(numericValue) || valueNoCommas.trim() === "" || valueNoCommas.trim() === ".") {
+      numericValue = 0;
+    }
+    const fixedValue = numericValue.toFixed(2); // "0.00", "123.50"
+    const formattedWithCommas = formatNumberWithCommas(fixedValue);
+
+    setAmountDisplay(formattedWithCommas);
+    setData('amount', Math.round(numericValue * 100));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const priceName = data.name || (isEditing ? 'this price' : 'new price');
-    const toastId = toast.loading(isEditing ? `Updating ${priceName}...` : `Creating ${priceName}...`);
+    const toastId = !hideSuccessToast ? toast.loading(isEditing ? `Updating ${priceName}...` : `Creating ${priceName}...`) : undefined;
 
     // Prepare the data for submission
     const formData = { ...data };
@@ -259,7 +471,9 @@ export default function PriceForm({
       if (isEditing && initialData) {
         put(route('products.prices.update', { product: product.id, price: initialData.id }), {
           onSuccess: () => {
-            toast.success(`Price ${priceName} updated successfully`, { id: toastId });
+            if (!hideSuccessToast) {
+              toast.success(`Price ${priceName} updated successfully`, { id: toastId });
+            }
             onOpenChange(false);
           },
           onError: () => {
@@ -269,7 +483,9 @@ export default function PriceForm({
       } else {
         post(route('products.prices.store', { product: product.id }), {
           onSuccess: () => {
-            toast.success(`Price ${priceName} created successfully`, { id: toastId });
+            if (!hideSuccessToast) {
+              toast.success(`Price ${priceName} created successfully`, { id: toastId });
+            }
             onOpenChange(false);
             reset();
           },
@@ -299,7 +515,9 @@ export default function PriceForm({
 
       // Check if response is a redirect
       if (response.redirected) {
-        toast.success(`Price ${priceName} ${isEditing ? 'updated' : 'created'} successfully`, { id: toastId });
+        if (!hideSuccessToast) {
+          toast.success(`Price ${priceName} ${isEditing ? 'updated' : 'created'} successfully`, { id: toastId });
+        }
         window.location.href = response.url;
         return;
       }
@@ -310,7 +528,9 @@ export default function PriceForm({
         throw result as ApiValidationError;
       }
 
-      toast.success(`Price ${priceName} ${isEditing ? 'updated' : 'created'} successfully`, { id: toastId });
+      if (!hideSuccessToast) {
+        toast.success(`Price ${priceName} ${isEditing ? 'updated' : 'created'} successfully`, { id: toastId });
+      }
 
       if (onSuccess && result.price) {
         onSuccess(result.price);
@@ -494,35 +714,37 @@ export default function PriceForm({
             {errors.type && <p className="text-sm text-red-500">{errors.type}</p>}
           </div>
 
-
-          {/* Amount Input */}
-          <div className="flex flex-row gap-4">
-            <div className="flex flex-col gap-2 w-full">
-              <Label htmlFor="amount">Amount (in cents)</Label>
+          {/* Amount + Currency Composite Input */}
+          <div className="flex flex-col gap-2 w-full">
+            <Label htmlFor="amount">Amount <span className="text-xs text-muted-foreground">(required)</span></Label>
+            <div className="flex w-full items-center rounded-md border border-input bg-background focus-within:ring-2 focus-within:ring-ring/50 focus-within:border-ring transition-colors">
+              {/* Currency Symbol Prefix */}
+              <span className="flex items-center px-3 text-muted-foreground text-base select-none">
+                {currencySymbols[data.currency?.toLowerCase?.()] || data.currency?.toUpperCase?.() || '$'}
+              </span>
+              {/* Amount Input */}
               <Input
                 id="amount"
                 autoComplete="off"
-                type="number"
-                min="0"
-                step="1" // Ensure integer input
-                value={data.amount}
-                onChange={e => setData('amount', Number(e.target.value))}
+                type="text"
+                inputMode="decimal"
+                value={amountDisplay}
+                onChange={handleAmountChange}
+                onBlur={handleAmountBlur}
+                ref={amountInputRef}
                 disabled={processing || ['tiered', 'volume', 'graduated', 'package'].includes(data.type)}
+                className="border-0 focus:ring-0 focus:border-none rounded-none flex-1 min-w-0 px-2 text-base bg-transparent shadow-none"
+                style={{ boxShadow: 'none' }}
+                aria-describedby="amount-currency-addon"
               />
-              {errors.amount && <p className="text-sm text-red-500">{errors.amount}</p>}
-              <p className="text-xs text-muted-foreground">
-                Base price in cents. Not used for complex models.
-              </p>
-            </div>
-            <div className="flex flex-col gap-2 w-full">
-              <Label htmlFor="currency">Currency</Label>
+              {/* Currency Abbreviation Suffix with Dropdown */}
               <Select
                 value={data.currency}
                 onValueChange={(value) => setData('currency', value.toLowerCase())}
                 disabled={processing || isEditing}
               >
-                <SelectTrigger id="currency">
-                  <SelectValue placeholder="Select currency" />
+                <SelectTrigger id="amount-currency-addon" className="rounded-none border-0 bg-transparent px-3 h-9 min-w-[64px] w-auto text-base focus:ring-0 focus:border-none">
+                  <SelectValue>{data.currency?.toUpperCase?.()}</SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   <SelectGroup>
@@ -534,8 +756,10 @@ export default function PriceForm({
                   </SelectGroup>
                 </SelectContent>
               </Select>
-              {errors.currency && <p className="text-sm text-red-500">{errors.currency}</p>}
             </div>
+            {errors.amount && <p className="text-sm text-red-500">{errors.amount}</p>}
+            {errors.currency && <p className="text-sm text-red-500">{errors.currency}</p>}
+            <p className="text-xs text-muted-foreground">Enter the price. Not used for complex models.</p>
           </div>
 
           {/* Recurring Fields */}

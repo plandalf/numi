@@ -5,10 +5,11 @@ import { useState, useEffect, useMemo } from "react";
 import { Button } from "../ui/button";
 import { Discount } from "@/types/product";
 import { Loader2, XIcon } from "lucide-react";
+import { CheckoutItem } from "@/types/checkout";
 
 function CheckoutSummaryComponent({ context }: { context: BlockContextType }) {
 
-  const { session, addDiscount, removeDiscount } = Numi.useCheckout({
+  const { session, addDiscount, removeDiscount, isEditor } = Numi.useCheckout({
 
   });
 
@@ -350,27 +351,28 @@ function CheckoutSummaryComponent({ context }: { context: BlockContextType }) {
     return null;
   }
 
+  console.log("session", session.line_items);
   return (
     <div className="flex flex-col p-4'" style={containerStyle}>
       <h3 className="font-medium text-lg mb-4" style={titleStyle}>{title}</h3>
       {/* Order Items */}
       <div className="space-y-3 mb-4">
-        {session.line_items.map((item: any) => (
+        {session.line_items.map((item: CheckoutItem) => (
           <div key={item.id} className="flex items-center gap-3">
-            {showImages && item.image && (
+            {showImages && item.product?.image && (
               <div className="w-12 h-12 border rounded flex-shrink-0">
-                <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
+                <img src={item.product?.image} alt={item.product?.name || item.name} className="w-full h-full object-cover" />
               </div>
             )}
             <div className="flex-grow">
               <div className="flex justify-between">
-                <div className="font-medium" style={itemStyle}>{item.name}</div>
-                {showItemPrices && item.price !== undefined && (
-                  <div className="text-gray-700" style={itemPriceStyle}>{formatMoney(item.price * item.quantity, item.currency)}</div>
+                <div className="font-medium" style={itemStyle}>{item.product?.name || item.name}</div>
+                {showItemPrices && item.total !== undefined && (
+                  <div className="text-gray-700" style={itemPriceStyle}>{formatMoney(item.total * item.quantity, item.currency)}</div>
                 )}
               </div>
               <div className="text-sm text-gray-500" style={itemQuantityStyle}>
-                Qty: {item.quantity} {showItemPrices && item.price !== undefined && `× ${formatMoney(item.price, item.currency)}`}
+                Qty: {item.quantity} {showItemPrices && item.total !== undefined && `× ${formatMoney(item.total, item.currency)}`}
               </div>
             </div>
           </div>
@@ -396,7 +398,7 @@ function CheckoutSummaryComponent({ context }: { context: BlockContextType }) {
               onClick={handleApplyDiscount}
               className="min-w-24 bg-gray-100 hover:bg-gray-200 text-gray-800 text-sm py-2 px-4 rounded"
               style={buttonStyle}
-              disabled={isDiscountSubmitting}
+              disabled={isDiscountSubmitting || isEditor}
             >
               {isDiscountSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Apply'}
             </Button>

@@ -39,12 +39,6 @@ export default function SetItemAction({ value = {}, onChange, action }: SetItemA
   }, [prices]);
 
   useEffect(() => {
-    if(action === 'deactivateLineItem') {
-      onChange({ required: false });
-    }
-  }, [action]);
-
-  useEffect(() => {
     // Only reset if action has changed
     if (prevActionRef.current !== action || !prevActionRef.current) {
       // Determine the desired reset state based on action

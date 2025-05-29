@@ -75,6 +75,7 @@ export default function AddNewProductWithPriceDialog({
               onSuccess={handlePriceSuccess}
               hideDialog={true}
               useJsonResponse
+              hideSuccessToast
             />
           )
         )}
