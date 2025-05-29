@@ -216,6 +216,7 @@ export const Style = {
   backgroundColor: (
     type: 
       "backgroundColor" 
+      | "dividerColor"
       | "iconColor" 
       | "imageBackgroundColor" 
       | "badgeBackgroundColor" 
@@ -628,9 +629,10 @@ const Numi = {
     }, [hook]);
 
     // If use as state, prioritize getting the field value from the global state
+    const defaultValue = get(blockContext.blockConfig, `content.${props.name}`) ?? props.initialValue;
     const value = props.asState 
-      ? blockContext.getFieldValue(props.name) ?? get(blockContext.blockConfig, `content.${props.name}`)
-      : get(blockContext.blockConfig, `content.${props.name}`) ?? props.initialValue;
+      ? blockContext.getFieldValue(props.name) ?? defaultValue
+      : defaultValue;
 
     useEffect(() => {
       setValue(value);
@@ -650,7 +652,7 @@ const Numi = {
     return [value, setValue, updateHook];
   },
 
-  useStateBoolean(props: { name: string; defaultValue: boolean; label?: string; inspector?: string, asState?: boolean }): [boolean, (value: boolean) => void] {
+  useStateBoolean(props: { name: string; defaultValue: boolean; label?: string; inspector?: string }): [boolean, (value: boolean) => void] {
     const blockContext = useContext(BlockContext);
 
     useEffect(() => {
@@ -678,12 +680,22 @@ const Numi = {
       }
     }, [blockContext.blockId, props.name]);
 
-    // If use as state, prioritize getting the field value from the global state
-    const value = props.asState 
-      ? blockContext.getFieldValue(props.name) ?? get(blockContext.blockConfig, `content.${props.name}`)
-      : get(blockContext.blockConfig, `content.${props.name}`) ?? props.defaultValue;
 
+    // For editor-editable values (checkbox inspector), prioritize block config
+    // Otherwise, use field state for runtime values
+    // const value = props.inspector === 'checkbox'
+    //   ? blockContext.blockConfig.content[props.name] ?? blockContext.getFieldValue(props.name) ?? props.defaultValue
+    //   : blockContext.getFieldValue(props.name) ?? blockContext.blockConfig.content[props.name] ?? props.defaultValue;
+    // // If use as state, prioritize getting the field value from the global state
+    // const defaultValue = get(blockContext.blockConfig, `content.${props.name}`) ?? props.defaultValue;
+    // const value = props.asState 
+    //   ? blockContext.getFieldValue(props.name) ?? defaultValue
+    //   : defaultValue;
+    const value = blockContext.blockConfig.content[props.name] ?? blockContext.getFieldValue(props.name) ?? props.defaultValue;
 
+    console.log(blockContext.getFieldValue(props.name) ?? blockContext.blockConfig.content[props.name] ?? props.defaultValue);
+    console.log(blockContext.blockConfig.content[props.name] ?? blockContext.getFieldValue(props.name) ?? props.defaultValue);
+    // console.log('value', value);
 
     const setValue = (newValue: boolean) => {
       blockContext.setFieldValue(props.name, newValue);

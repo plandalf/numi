@@ -494,7 +494,7 @@ export const layoutConfig = {
                 "id": "action",
                 "type": "box",
                 "props": {
-                  "className": "p-6 bg-white"
+                  "className": "p-6 flex flex-col"
                 },
               }
             ]

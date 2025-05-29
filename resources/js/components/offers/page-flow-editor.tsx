@@ -76,18 +76,12 @@ export function generateDefaultPage({
       position,
       view: {
         title: {
-          style: {
-              backgroundColor: '#FFFFFF'
-          },
           appearance: {
             padding: '24px'
           },
           blocks: []
         },
         content: {
-          style: {
-              backgroundColor: '#FFFFFF'
-          },
           appearance: {
             padding: '24px',
             spacing: '4px'
@@ -95,9 +89,6 @@ export function generateDefaultPage({
           blocks: []
         },
         action: {
-          style: {
-              backgroundColor: '#FFFFFF'
-          },
           appearance: {
             padding: '24px',
           },

@@ -1,10 +1,11 @@
 import Numi, { Style, Conditions, FontValue, BorderValue, DimensionValue, Appearance } from "@/contexts/Numi";
 import { BlockContextType } from "@/types/blocks";
 import { Switch } from "@/components/ui/switch";
-import { useMemo } from "react";
+import { useCallback, useEffect, useMemo } from "react";
 import { Check } from "lucide-react";
 import { Event, EVENT_LABEL_MAP } from "../editor/interaction-event-editor";
 import { resolveThemeValue } from "@/lib/theme";
+import { MarkdownText } from "../ui/markdown-text";
 
 function CheckboxBlockComponent({ context }: { context: BlockContextType }) {
 
@@ -14,13 +15,6 @@ function CheckboxBlockComponent({ context }: { context: BlockContextType }) {
     label: 'Field Name',
     name: 'id',
     defaultValue: '',
-  });
-
-  const [checked, setChecked] = Numi.useStateBoolean({
-    label: 'Checked',
-    name: 'value',
-    defaultValue: false,
-    inspector: 'hidden',
   });
 
   const [checkboxStyle] = Numi.useStateEnumeration({
@@ -41,11 +35,22 @@ function CheckboxBlockComponent({ context }: { context: BlockContextType }) {
     defaultValue: 'Checked?',
   });
 
-  const [isDefaultChecked, setIsDefaultChecked] = Numi.useStateBoolean({
+  const [isDefaultChecked] = Numi.useStateBoolean({
     name: 'is_default_checked',
     label: 'Default Checked',
     defaultValue: false,
   });
+
+  const [checked, setChecked] = Numi.useStateBoolean({
+    label: 'Checked',
+    name: 'value',
+    defaultValue: false,
+    inspector: 'hidden',
+  });
+
+  useEffect(() => {
+    setChecked(isDefaultChecked);
+  }, [isDefaultChecked]);
 
   // validation rules~
   const { isValid, errors, validate } = Numi.useValidation({
@@ -66,23 +71,23 @@ function CheckboxBlockComponent({ context }: { context: BlockContextType }) {
     }],
   });
 
-  function handleChange() {
+  const handleChange = useCallback(() => {
     const newChecked = !checked;
     setChecked(newChecked);
     executeCallbacks(newChecked ? Event.onSelect : Event.onUnSelect);
-  }
+  }, [executeCallbacks]);
 
   const appearance = Numi.useAppearance([
     Appearance.margin('margin', 'Margin', {}),
-    Appearance.padding('padding', 'Padding', {}),
+    // Appearance.padding('padding', 'Padding', {}),
     Appearance.spacing('spacing', 'Spacing', {}),
     Appearance.visibility('visibility', 'Visibility', {}, { conditional: [] }),
   ]);
 
   const style = Numi.useStyle([
-    Style.backgroundColor('activeBackgroundColor', 'Selected Color', {}, '#0374ff'),
+    Style.backgroundColor('activeBackgroundColor', 'Selected Color', {}),
     Style.backgroundColor('inactiveBackgroundColor', 'Unselected Color', {}, '#E5E5E5'),
-    Style.textColor('checkColor', 'Check Color', {}, '#FFFFFF'),
+    Style.textColor('checkColor', 'Check Color', {}),
     Style.font('font', 'Label Font & Color',
       {
         config: {
@@ -94,15 +99,15 @@ function CheckboxBlockComponent({ context }: { context: BlockContextType }) {
     ),
     Style.border('border', 'Border', {}, { width: '1px', style: 'solid' }),
     Style.borderRadius('borderRadius', 'Border Radius', {}, '5px'),
-    Style.borderColor('borderColor', 'Border Color', {}, '#E5E5E5'),
+    Style.borderColor('borderColor', 'Border Color', {}, theme?.primary_border_color),
     Style.hidden('hidden', 'Hidden', {}, false),
   ]);
 
-  const font = style?.font as FontValue;
+  const font = resolveThemeValue(style?.font, theme, 'label_typography') as FontValue;
   const border = style?.border as BorderValue;
-  const borderColor = style?.borderColor;
-  const checkColor = style?.checkColor;
-  const backgroundColorActive = style?.activeBackgroundColor;
+  const borderColor = resolveThemeValue(style?.borderColor, theme, 'primary_border_color');
+  const checkColor = resolveThemeValue(style?.checkColor, theme, 'primary_contrast_color');
+  const backgroundColorActive = resolveThemeValue(style?.activeBackgroundColor, theme, 'primary_color');
   const backgroundColorInactive = style?.inactiveBackgroundColor;
   const borderRadius = style?.borderRadius;
   const shadow = style?.shadow as string;
@@ -110,19 +115,19 @@ function CheckboxBlockComponent({ context }: { context: BlockContextType }) {
   const isManuallyStyledCheckbox = (borderRadius != undefined || backgroundColorActive != undefined || backgroundColorInactive != undefined);
 
   const containerStyles = useMemo(() => ({
-    padding: resolveThemeValue(appearance.padding, theme, 'padding'),
+    // padding: resolveThemeValue(appearance.padding, theme, 'padding'),
     margin: resolveThemeValue(appearance.margin, theme, 'margin'),
-    rowGap: resolveThemeValue(appearance.spacing, theme, 'spacing'),
+    gap: resolveThemeValue(appearance.spacing, theme, 'spacing'),
   }), [appearance]);
 
   const checkboxStyles = useMemo(() => ({
-    backgroundColor: checked ? (backgroundColorActive || '#0374ff') : (backgroundColorInactive || '#E5E5E5'),
-    borderColor: borderColor || '#E5E5E5',
-    borderWidth: border?.width ?? '0.5px',
+    backgroundColor: checked ? backgroundColorActive : backgroundColorInactive,
+    borderColor: borderColor,
+    borderWidth: border?.width,
     borderStyle: border?.style,
     borderRadius : borderRadius,
     boxShadow: shadow,
-    appearance: isManuallyStyledCheckbox ? 'none' : 'auto',
+    appearance: 'none',
     ...isManuallyStyledCheckbox ? {
       width: '14px',
       height: '14px',
@@ -139,11 +144,10 @@ function CheckboxBlockComponent({ context }: { context: BlockContextType }) {
   ]);
 
   const switchStyles = useMemo(() => ({
-    backgroundColor: checked ? backgroundColorActive : (backgroundColorInactive || '#E5E5E5'),
-    borderColor: borderColor || '#E5E5E5',
-    borderWidth: border?.width ?? '0.5px',
+    backgroundColor: checked ? backgroundColorActive : backgroundColorInactive,
+    borderColor: borderColor,
+    borderWidth: border?.width,
     borderStyle: border?.style,
-    borderRadius : borderRadius,
     boxShadow: shadow,
   }), [
     backgroundColorActive,
@@ -162,7 +166,7 @@ function CheckboxBlockComponent({ context }: { context: BlockContextType }) {
     fontSize: font?.size,
     lineHeight: font?.lineHeight,
     letterSpacing: font?.letterSpacing,
-  }), [style, font]);
+  }), [font]);
 
   const checkIconStyles = useMemo(() => ({
     position: 'absolute',
@@ -173,16 +177,20 @@ function CheckboxBlockComponent({ context }: { context: BlockContextType }) {
     top: '55%',
     left: '50%',
     transform: 'translate(-50%, -50%)',
-    color: checkColor || 'white',
+    color: checkColor,
   }), [checkColor]);
 
   const switchThumbStyles = useMemo(() => ({
-    backgroundColor: checkColor || 'white',
+    backgroundColor: checkColor,
   }), [checkColor]);
 
   if (style.hidden) {
     return null;
   }
+
+  const labelComponent = (
+    label && <span style={checkboxLabelStyles}>{label}</span>
+  );
   
   return (
     <div>
@@ -197,16 +205,15 @@ function CheckboxBlockComponent({ context }: { context: BlockContextType }) {
                 name={context.blockId}
                 checked={checked}
                 onChange={handleChange}
-                defaultValue={isDefaultChecked}
               />
               {(isManuallyStyledCheckbox && checked) && <Check strokeWidth="5" className="pb-0.5" style={checkIconStyles} />}
             </div>
-            {label && <span style={checkboxLabelStyles}>{label}</span>}
+            {label && labelComponent}
           </div>
         ) : (
           <div className="flex items-center" style={containerStyles}>
             <input style={checkboxStyles} id={id} type="checkbox" name={context.blockId} checked={checked} onChange={handleChange} />
-            {label && <span style={checkboxLabelStyles}>{label}</span>}
+            {label && labelComponent}
           </div>)
       )}
       {checkboxStyle === 'switch' && (
@@ -218,8 +225,7 @@ function CheckboxBlockComponent({ context }: { context: BlockContextType }) {
             }}
             checked={checked}
             onCheckedChange={handleChange}
-          />
-          {label && <span style={checkboxLabelStyles}>{label}</span>}
+          />{label && labelComponent}
         </div>
       )}
     </div>

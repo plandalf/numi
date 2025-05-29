@@ -11,6 +11,7 @@ import { CheckoutPageProps, NavigationBarProps, TailwindLayoutRendererProps } fr
 import { findUniqueFontsFromTheme, findUniqueFontsFromView } from '@/utils/font-finder';
 import WebFont from 'webfontloader';
 import { Theme } from '@/types/theme';
+import { resolveThemeValue } from '@/lib/theme';
 
 
 const NavigationBar = ({ barStyle, children, className, ...props }: NavigationBarProps) => {
@@ -62,7 +63,7 @@ const TailwindLayoutRenderer = ({
   };
 
   // Render the template
-  return renderElement(config.template, page, { componentRegistry, contentMap: {}, theme });
+  return renderElement(config.template, page, { componentRegistry, contentMap: {}}, theme, false);
 };
 
 
@@ -79,7 +80,8 @@ const renderElement = (
     componentRegistry: ComponentRegistry;
     contentMap: Record<string, React.ReactNode>;
   },
-  theme: Theme
+  theme: Theme,
+  isContained?: boolean
 ): React.ReactNode => {
   // Return null for undefined or null elements
   if (!element) return null;
@@ -93,21 +95,21 @@ const renderElement = (
       child,
       page,
       context,
-      theme
+      theme,
+      ((page?.view[id ?? ''] as PageSection)?.asContainer ?? false)
     ))
     : null;
 
   // If this element has an ID, check if it matches a section in the page view
   if (id && page.view[id]) {
-    const section = page.view[id];
+    const section = page.view[id] as PageSection;
     if (section && section.blocks) {
-
-      const backgroundColor = (section as PageSection)?.style?.backgroundColor;
-      const padding = (section as PageSection)?.appearance?.padding;
-      const margin = (section as PageSection)?.appearance?.margin;
-      const backgroundImage = (section as PageSection)?.style?.backgroundImage;
-      const hidden = (section as PageSection)?.style?.hidden;
-      const borderRadius = (section as PageSection)?.style?.borderRadius;
+      const backgroundColor = isContained ? section.style?.backgroundColor : resolveThemeValue(section.style?.backgroundColor, theme, 'canvas_color') as string;
+      const padding = section?.appearance?.padding;
+      const margin = section?.appearance?.margin;
+      const backgroundImage = section?.style?.backgroundImage;
+      const hidden = section?.style?.hidden;
+      const borderRadius = section?.style?.borderRadius;
 
       if (!element) return null;
 
@@ -129,11 +131,11 @@ const renderElement = (
               backgroundRepeat: 'no-repeat',
             } : {}),
             ...(hidden ? {display: 'none'} : {}),
-            rowGap: (section as PageSection)?.appearance?.spacing
+            gap: (section as PageSection)?.appearance?.spacing
           },
           id,
         },
-        <Section blocks={section.blocks} className={props.className} children={childElements}/>,
+        <Section blocks={section.blocks} className={props.className} children={childElements} />,
         componentRegistry
       );
     }
@@ -173,7 +175,7 @@ const createElement = (
 
 
 
-const CheckoutController = ({ offer, theme }: { offer: OfferConfiguration, theme: Theme }) => {
+const CheckoutController = ({ offer }: { offer: OfferConfiguration }) => {
   const {
     isSubmitting,
     submitError,
@@ -254,7 +256,7 @@ const CheckoutController = ({ offer, theme }: { offer: OfferConfiguration, theme
 
       <form onSubmit={handleSubmit} noValidate className="relative">
         <TailwindLayoutRenderer
-          theme={theme}
+          theme={offer.theme}
           layoutConfig={layoutConfig}
           page={currentPage}
           components={{ NavigationBar }}

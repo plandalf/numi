@@ -1,10 +1,12 @@
-import Numi, { Appearance, Style } from "@/contexts/Numi";
+import Numi, { Appearance, FontValue, Style } from "@/contexts/Numi";
 import { BlockContextType } from "@/types/blocks";
 import { useState, useEffect, useRef, useMemo } from "react";
 import { Elements, PaymentElement, useStripe, useElements, AddressElement } from '@stripe/react-stripe-js';
 import { loadStripe, Stripe } from '@stripe/stripe-js';
 import { useCheckoutState } from "@/pages/checkout-main";
 import { resolveThemeValue } from "@/lib/theme";
+import { addAlphaToColor } from "../ui/color-picker";
+import { MarkdownText } from "../ui/markdown-text";
 
 // Define the type for the checkout state
 interface CheckoutState {
@@ -22,14 +24,16 @@ function StripeElementsComponent({ context }: { context: BlockContextType }) {
     label: 'Title',
     name: 'title',
     defaultValue: 'Payment Information',
-    inspector: 'text',
+    inspector: 'multiline',
+    format: 'markdown',
   });
 
   const [description] = Numi.useStateString({
     label: 'Description',
     name: 'description',
     defaultValue: 'Enter your payment details to complete your purchase',
-    inspector: 'text',
+    inspector: 'multiline',
+    format: 'markdown',
   });
 
   const fontConfig = {
@@ -48,26 +52,8 @@ function StripeElementsComponent({ context }: { context: BlockContextType }) {
       },
     }, 'left'),
     Style.backgroundColor('backgroundColor', 'Background Color', {}, ''),
-    Style.font('titleTextFont', 'Title Text Font && Color',
-      fontConfig,
-      {
-        font: 'Inter',
-        weight: '500',
-        size: '18px',
-        lineHeight: '1.5',
-        letterSpacing: '0px',
-      },
-    ),
-    Style.font('descriptionTextFont', 'Description Text Font & Color',
-      fontConfig,
-      {
-        font: 'Inter',
-        weight: '400',
-        size: '14px',
-        lineHeight: '1.5',
-        letterSpacing: '0px',
-      },
-    ),
+    Style.font('titleTextFont', 'Title Text Font && Color',fontConfig, {}),
+    Style.font('descriptionTextFont', 'Description Text Font & Color', fontConfig, {}),
 
     // Error panel
     Style.backgroundColor('errorBackgroundColor', 'Error Background Color', {}, '#ffc9c9'),
@@ -86,21 +72,15 @@ function StripeElementsComponent({ context }: { context: BlockContextType }) {
     Style.borderColor('errorBorderColor', 'Error Border Color', {}, '#ffc9c9'),
 
     // Warning panel
-    Style.backgroundColor('warningBackgroundColor', 'Warning Background Color', {}, '#fefce8'),
+    Style.backgroundColor('warningBackgroundColor', 'Warning Background Color', {}, addAlphaToColor(theme?.warning_color, 0.10)),
     Style.font('warningTextFont', 'Warning Text Font & Color',
       fontConfig,
       {
-        color: '#a65f00',
-        font: 'Inter',
-        weight: '400',
-        size: '16px',
-        lineHeight: '1.5',
-        letterSpacing: '0px',
+        color: theme?.warning_color,
       },
     ),
     Style.border('warningBorder', 'Warning Border', {}, { width: '1px', style: 'solid' }),
-    Style.borderColor('warningBorderColor', 'Warning Border Color', {}, '#fff085'),
-
+    Style.borderColor('warningBorderColor', 'Warning Border Color', {}, theme?.warning_color),
 
     Style.border('border', 'Border', {}, { width: '0px', style: 'solid' }),
     Style.borderRadius('borderRadius', 'Border Radius', {}, '0px'),
@@ -110,7 +90,7 @@ function StripeElementsComponent({ context }: { context: BlockContextType }) {
   ]);
   
   const appearance = Numi.useAppearance([
-    Appearance.padding('padding', 'Padding', {}),
+    // Appearance.padding('padding', 'Padding', {}),
     Appearance.margin('margin', 'Margin', {}),
     Appearance.spacing('spacing', 'Spacing', {}),
     Appearance.visibility('visibility', 'Visibility', {}, { conditional: [] }),
@@ -118,33 +98,33 @@ function StripeElementsComponent({ context }: { context: BlockContextType }) {
 
   const containerStyle = useMemo(() => ({
     alignItems: style.alignment,
-    backgroundColor: style.backgroundColor || 'transparent',
+    backgroundColor: style.backgroundColor,
     borderColor: style.borderColor,
     borderWidth: style.border?.width,
     borderStyle: style.border?.style,
-    borderRadius : style.borderRadius ?? '3px',
+    borderRadius : style.borderRadius,
     boxShadow: style.shadow,
-    padding: resolveThemeValue(appearance.padding, theme, 'padding'),
+    // padding: resolveThemeValue(appearance.padding, theme, 'padding'),
     margin: resolveThemeValue(appearance.margin, theme, 'margin'),
     gap: resolveThemeValue(appearance.spacing, theme, 'spacing'),
   }), [style, appearance]);
 
   const titleStyle = useMemo(() => ({
-    color: style.titleTextFont?.color,
-    fontFamily: style.titleTextFont?.font,
-    fontSize: style.titleTextFont?.size,
-    fontWeight: style.titleTextFont?.weight,
-    lineHeight: style.titleTextFont?.lineHeight,
-    letterSpacing: style.titleTextFont?.letterSpacing,
+    color: style?.titleTextFont?.color,
+    fontFamily: style?.titleTextFont?.font,
+    fontSize: style?.titleTextFont?.size,
+    fontWeight: style?.titleTextFont?.weight,
+    lineHeight: style?.titleTextFont?.lineHeight,
+    letterSpacing: style?.titleTextFont?.letterSpacing,
   }), [style]);
 
   const descriptionStyle = useMemo(() => ({
-    color: style.descriptionTextFont?.color,
-    fontFamily: style.descriptionTextFont?.font,
-    fontSize: style.descriptionTextFont?.size,
-    fontWeight: style.descriptionTextFont?.weight,
-    lineHeight: style.descriptionTextFont?.lineHeight,
-    letterSpacing: style.descriptionTextFont?.letterSpacing,
+    color: style?.descriptionTextFont?.color,
+    fontFamily: style?.descriptionTextFont?.font,
+    fontSize: style?.descriptionTextFont?.size,
+    fontWeight: style?.descriptionTextFont?.weight,
+    lineHeight: style?.descriptionTextFont?.lineHeight,
+    letterSpacing: style?.descriptionTextFont?.letterSpacing,
   }), [style]);
 
   const errorPanelStyle = useMemo(() => ({
@@ -161,19 +141,22 @@ function StripeElementsComponent({ context }: { context: BlockContextType }) {
     borderRadius : style.errorBorderRadius ?? '3px',
   }), [style]);
 
+  const warningColor = resolveThemeValue(style.warningBackgroundColor, theme, 'warning_color') as string;
+  const warningColorWithAlpha = addAlphaToColor(warningColor, 0.10);
+
   const warningPanelStyle = useMemo(() => ({
-    backgroundColor: style.warningBackgroundColor,
-    color: style.warningTextFont?.color,
+    backgroundColor: warningColorWithAlpha,
+    color: style.warningTextFont?.color || warningColor,
     fontFamily: style.warningTextFont?.font,
     fontSize: style.warningTextFont?.size,
     fontWeight: style.warningTextFont?.weight,
     lineHeight: style.warningTextFont?.lineHeight,
     letterSpacing: style.warningTextFont?.letterSpacing,
-    borderColor: style.warningBorderColor,
+    borderColor: warningColor,
     borderWidth: style.warningBorder?.width,
     borderStyle: style.warningBorder?.style,
-    borderRadius : style.warningBorderRadius ?? '3px',
-  }), [style]);
+    borderRadius: style.warningBorderRadius ?? '3px',
+  }), [style, warningColor, warningColorWithAlpha]);
 
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -211,9 +194,8 @@ function StripeElementsComponent({ context }: { context: BlockContextType }) {
 
   return (
     <div className="flex flex-col" style={containerStyle}>
-      <h3 className="text-lg font-medium mb-2" style={titleStyle}>{title}</h3>
-      <p className="text-sm text-gray-600 mb-4" style={descriptionStyle}>{description}</p>
-
+      <MarkdownText theme={theme} text={title} style={titleStyle} />
+      <MarkdownText theme={theme} text={description} style={descriptionStyle} />
       {isLoading ? (
         <div className="flex justify-center items-center py-8">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>

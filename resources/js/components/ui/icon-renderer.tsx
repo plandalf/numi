@@ -9,6 +9,7 @@ export interface IconRendererProp {
     alignment?: string;
     size?: string;
     color?: string;
+    shadow?: string;
   }
 }
 
@@ -24,6 +25,7 @@ export const IconRenderer = memo(({ defaultIcon, icon, style }: IconRendererProp
           width: style?.size ?? '42px',
           height: style?.size ?? '42px',
           color: style?.color ?? 'black',
+          boxShadow: style?.shadow ?? 'none',
         }}
       />
     )
@@ -39,6 +41,7 @@ export const IconRenderer = memo(({ defaultIcon, icon, style }: IconRendererProp
           width: style?.size ?? '22px',
           height: style?.size ?? '22px',
           lineHeight: '1',
+          boxShadow: style?.shadow ?? 'none',
         }}>
           {icon.emoji}
       </span>
@@ -52,6 +55,7 @@ export const IconRenderer = memo(({ defaultIcon, icon, style }: IconRendererProp
           alignSelf: style?.alignment,
           width: style?.size ?? '22px',
           height: style?.size ?? '22px',
+          boxShadow: style?.shadow ?? 'none',
         }}
       />
     )

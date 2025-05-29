@@ -24,6 +24,24 @@ export function parseHexAlpha(hex: string) {
   return { rgb, alpha };
 }
 
+// Helper function to add alpha to hex color
+export const addAlphaToColor = (hexColor: string, alpha: number): string => {
+  if (!hexColor) return '#00000003';
+  
+  // Remove # if present
+  const hex = hexColor.replace('#', '');
+  
+  // If hex already has alpha (8 digits), replace it
+  if (hex.length === 8) {
+    return `#${hex.substring(0, 6)}${Math.round(alpha * 255).toString(16).padStart(2, '0')}`;
+  }
+  
+  // Convert alpha to hex (1% = 0.01 = 03 in hex)
+  const alphaHex = Math.round(alpha * 255).toString(16).padStart(2, '0');
+  
+  return `#${hex}${alphaHex}`;
+}
+
 // Utility: combine rgb and alpha to hex
 function combineHexAlpha(rgb: string, alpha: number) {
   const a = Math.round(alpha).toString(16).padStart(2, '0').toUpperCase();

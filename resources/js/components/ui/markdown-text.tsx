@@ -57,10 +57,12 @@ const Container = styled.div<{
     h3 { ${Object.entries(getTypographyStyle({ theme, element: 'h3', style })).map(([k, v]) => `${k}: ${v}`).join(';')} }
     h4 { ${Object.entries(getTypographyStyle({ theme, element: 'h4', style })).map(([k, v]) => `${k}: ${v}`).join(';')} }
     h5 { ${Object.entries(getTypographyStyle({ theme, element: 'h5', style })).map(([k, v]) => `${k}: ${v}`).join(';')} }
+    blockquote > p{ ${Object.entries(getTypographyStyle({ theme, element: 'label', style })).map(([k, v]) => `${k}: ${v}`).join(';')} }
     p { ${Object.entries(getTypographyStyle({ theme, element: 'body', style })).map(([k, v]) => `${k}: ${v}`).join(';')} }
-    span { ${Object.entries(getTypographyStyle({ theme, element: 'body', style })).map(([k, v]) => `${k}: ${v}`).join(';')} }
-    a { ${Object.entries(getTypographyStyle({ theme, element: 'body', style: { ...style, textDecoration: 'underline' } })).map(([k, v]) => `${k}: ${v}`).join(';')} }
-    label { ${Object.entries(getTypographyStyle({ theme, element: 'label', style })).map(([k, v]) => `${k}: ${v}`).join(';')} }
+    a { text-decoration: underline; }
+    code { ${Object.entries(getTypographyStyle({ theme, element: 'body', style: {...style, fontFamily: theme?.mono_font} })).map(([k, v]) => `${k}: ${v}`).join(';')} }
+    pre { ${Object.entries(getTypographyStyle({ theme, element: 'body', style: {...style, fontFamily: theme?.mono_font} })).map(([k, v]) => `${k}: ${v}`).join(';')} }
+    ul,ol > li { ${Object.entries(getTypographyStyle({ theme, element: 'body', style })).map(([k, v]) => `${k}: ${v}`).join(';')} }
   `}
 `;
 

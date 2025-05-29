@@ -55,7 +55,6 @@ class CheckoutController extends Controller
         return Inertia::render('checkout', [
             'fonts' => FontResource::collection(FontElement::cases()),
             'offer' => new OfferResource($offer),
-            'theme' => new ThemeResource($offer?->theme ?? new Theme()),
             'checkoutSession' => new CheckoutSessionResource($checkout),
         ]);
     }

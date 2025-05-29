@@ -43,7 +43,7 @@ function LinkBlockComponent() {
         right: 'Right',
       },
     }, 'left'),
-    Style.backgroundColor('backgroundColor', 'Background Color', {}, '#FFFFFF'),
+    Style.backgroundColor('backgroundColor', 'Background Color', {}),
     
     Style.backgroundColor('iconColor', 'Icon Color', {}, '#000000'),
     Style.dimensions('iconSize', 'Icon Size', {
@@ -78,9 +78,6 @@ function LinkBlockComponent() {
   const border = style?.border as BorderValue;
   const borderRadius = style?.borderRadius;
   const shadow = style?.shadow as string;
-
-  console.log('linkFont', linkFont);
-  console.log('style.linkFont', style.linkFont);
 
   const markdownStyles = useMemo(() => ({
     backgroundColor: style.backgroundColor,

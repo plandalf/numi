@@ -62,16 +62,11 @@ function ButtonBlockComponent({ context }: { context: BlockContextType }) {
       },
       {
         color: theme?.primary_contrast_color,
-        font: theme?.body_typography?.font,
-        weight: theme?.body_typography?.weight,
-        size: theme?.body_typography?.size,
-        lineHeight: theme?.body_typography?.lineHeight ?? '1.5',
-        letterSpacing: theme?.body_typography?.letterSpacing ?? '0px',
       },
     ),
     Style.border('border', 'Border', {}, { width: '0px', style: 'solid' }),
-    Style.borderRadius('borderRadius', 'Radius', {}, theme?.border_radius),
-    Style.borderColor('borderColor', 'Border Color', {}, '#000000'),
+    Style.borderRadius('borderRadius', 'Border Radius', {}, theme?.border_radius),
+    Style.borderColor('borderColor', 'Border Color', {}, ''),
     Style.shadow('shadow', 'Shadow', {}, theme?.shadow),
     Style.hidden('hidden', 'Hidden', {}, false),
   ]);
@@ -84,10 +79,9 @@ function ButtonBlockComponent({ context }: { context: BlockContextType }) {
     Appearance.alignment('alignment', 'Alignment', {}, 'left'),
   ]);
 
-  const textColor = resolveThemeValue(style?.font?.color, theme, 'primary_contrast_color');
   const font = {
     ...resolveThemeValue(style?.font, theme, 'body_typography') as FontValue,
-    color: textColor,
+    color: resolveThemeValue(style?.font?.color, theme, 'primary_contrast_color'),
   } as FontValue;
 
   const border = style?.border as BorderValue;
@@ -108,12 +102,16 @@ function ButtonBlockComponent({ context }: { context: BlockContextType }) {
     }],
   });
 
+  const containerStyles = useMemo(() => ({
+    margin: resolveThemeValue(appearance.margin, theme, 'margin'),
+  }), [appearance, theme]);
+
   const buttonStyles = useMemo(() => ({
     backgroundColor: resolveThemeValue(style.backgroundColor, theme, 'primary_color'),
     color: font?.color,
-    fontFamily: font?.font || theme?.body_typography?.font,
-    fontWeight: font?.weight || theme?.body_typography?.weight,
-    fontSize: font?.size || theme?.body_typography?.size,
+    fontFamily: font?.font,
+    fontWeight: font?.weight,
+    fontSize: font?.size,
     lineHeight: font?.lineHeight,
     letterSpacing: font?.letterSpacing,
     borderColor: style.borderColor,
@@ -122,7 +120,6 @@ function ButtonBlockComponent({ context }: { context: BlockContextType }) {
     borderRadius : borderRadius,
     boxShadow: shadow,
     padding: resolveThemeValue(appearance.padding, theme, 'padding'),
-    margin: resolveThemeValue(appearance.margin, theme, 'margin'),
     gap: resolveThemeValue(appearance.spacing, theme, 'spacing'),
   }), [style, font, border, borderRadius, shadow, appearance]);
 
@@ -149,7 +146,7 @@ function ButtonBlockComponent({ context }: { context: BlockContextType }) {
 
   const iconStyles = useMemo(() => ({
     size: style?.iconSize?.height,
-    color: textColor,
+    color: resolveThemeValue(style.iconColor, theme, 'primary_contrast_color'),
   }), [style]);
 
   if (style.hidden) {
@@ -157,7 +154,7 @@ function ButtonBlockComponent({ context }: { context: BlockContextType }) {
   }
 
   return (
-    <div className={containerClasses}>
+    <div className={containerClasses} style={containerStyles}>
       {type === 'submit' && submitError && (
         <div className="text-sm text-red-600">
           {submitError}

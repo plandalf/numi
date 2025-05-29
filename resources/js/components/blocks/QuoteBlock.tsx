@@ -94,6 +94,13 @@ function QuoteBlockComponent({ context }: { context: BlockContextType }) {
     defaultValue: '',
     inspector: 'file',
   });
+  
+  const fontConfig = {
+    config: {
+      hideVerticalAlignment: true,
+      hideHorizontalAlignment: true,
+    },
+  };
 
   const style = Numi.useStyle([
     Style.backgroundColor('backgroundColor', 'Background Color', {}, ''),
@@ -119,33 +126,9 @@ function QuoteBlockComponent({ context }: { context: BlockContextType }) {
         right: 'right',
       },
     }, 'left'),
-    Style.font('quoteTextFont', 'Quote Text Font & Color',
-      {
-        config: {
-          hideVerticalAlignment: true,
-          hideHorizontalAlignment: true,
-        },
-      },
-      {},
-    ),
-    Style.font('authorFont', 'Author Font & Color',
-      {
-        config: {
-          hideVerticalAlignment: true,
-          hideHorizontalAlignment: true,
-        },
-      },
-      {},
-    ),
-    Style.font('affiliationFont', 'Affiliation Font & Color',
-      {
-        config: {
-          hideVerticalAlignment: true,
-          hideHorizontalAlignment: true,
-        },
-      },
-      {},
-    ),
+    Style.font('quoteTextFont', 'Quote Text Font & Color', fontConfig, {}),
+    Style.font('authorFont', 'Author Font & Color', fontConfig, {}),
+    Style.font('affiliationFont', 'Affiliation Font & Color', fontConfig, {}),
 
     Style.dimensions('imageSize', 'Image Size', {},
       quoteStyle === 'minimal'
@@ -175,7 +158,7 @@ function QuoteBlockComponent({ context }: { context: BlockContextType }) {
   ]);
 
   const quoteTextFont = resolveThemeValue(style.quoteTextFont, theme, 'body_typography') as FontValue;
-  const authorFont = resolveThemeValue(style.authorFont, theme, 'h4_typography') as FontValue;
+  const authorFont = resolveThemeValue(style.authorFont, theme, 'label_typography') as FontValue;
   const affiliationFont = resolveThemeValue(style.affiliationFont, theme, 'body_typography') as FontValue;
 
   const containerStyles = useMemo(() => ({
@@ -240,6 +223,7 @@ function QuoteBlockComponent({ context }: { context: BlockContextType }) {
   }), [style]);
 
   const quoteValue = quote || "Insert your inspirational quote here";
+
   const quoteText = (
     <MarkdownText
       text={quoteValue}

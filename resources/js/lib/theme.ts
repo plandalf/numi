@@ -3,8 +3,9 @@ import { Theme } from "@/types/theme";
 /**
  * Resolves a theme value by checking:
  * 1. If value is empty/null/undefined, returns the default from theme
- * 2. If value is a string containing theme variable ({{theme.property}}), resolves it
- * 3. Otherwise returns the original value maintaining its type
+ * 2. If value is an empty object, returns the default from theme
+ * 3. If value is a string containing theme variable ({{theme.property}}), resolves it
+ * 4. Otherwise returns the original value maintaining its type
  * 
  * @param value The current value to resolve (can be any type)
  * @param theme The theme object to get values from
@@ -19,6 +20,17 @@ export function resolveThemeValue<T>(
   // Handle null/undefined with default theme value
   if (value == null && defaultThemeKey) {
     return theme?.[defaultThemeKey] ?? null;
+  }
+
+  // Handle empty objects with default theme value
+  if (
+    typeof value === 'object' && 
+    value !== null && 
+    !Array.isArray(value) && 
+    Object.keys(value).length === 0 && 
+    defaultThemeKey
+  ) {
+    return theme?.[defaultThemeKey] ?? value;
   }
 
   // Only process string values for theme variable substitution

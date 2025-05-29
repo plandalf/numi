@@ -40,9 +40,9 @@ function TextBlockComponent({ context }: { context: BlockContextType }) {
       {},
     ),
     Style.border('border', 'Border', {}, { width: '0px', style: 'solid' }),
-    Style.borderRadius('borderRadius', 'Border Radius', {}, '0px'),
-    Style.borderColor('borderColor', 'Border Color', {}, '#000000'),
-    Style.shadow('shadow', 'Shadow', {}, '0px 0px 0px 0px #000000'),
+    Style.borderRadius('borderRadius', 'Border Radius', {}, theme?.border_radius),
+    Style.borderColor('borderColor', 'Border Color', {}, ''),
+    Style.shadow('shadow', 'Shadow', {}, ''),
     Style.hidden('hidden', 'Hidden', {}, false),
   ]);
   

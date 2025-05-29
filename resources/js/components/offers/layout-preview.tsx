@@ -128,7 +128,7 @@ const layoutConfig: TailwindLayoutConfig = {
                 "id": "action",
                 "type": "box",
                 "props": {
-                  "className": "p-6 bg-white"
+                  "className": "p-6"
                 }
               }
             ]
@@ -203,6 +203,7 @@ interface RecursiveRenderElementProps {
   selectedSectionId: string | null | undefined;
   onBlockSelect?: (blockId: string) => void;
   onSectionSelect?: (sectionId: string) => void;
+  isContained?: boolean;
 }
 
 const RecursiveRenderElement: React.FC<RecursiveRenderElementProps> = React.memo(({
@@ -213,12 +214,14 @@ const RecursiveRenderElement: React.FC<RecursiveRenderElementProps> = React.memo
   selectedSectionId,
   onBlockSelect,
   onSectionSelect,
+  isContained,
 }) => {
+  
   const sectionContainerStyle = useMemo(() => {
     if (!element?.id || !page?.view || !(element.id in page.view)) return {};
     const section = page.view[element.id] as PageSection;
 
-    const backgroundColor = section.style?.backgroundColor;
+    const backgroundColor = isContained ? section.style?.backgroundColor : resolveThemeValue(section.style?.backgroundColor, theme, 'canvas_color');
     const padding = section.appearance?.padding;
     const margin = section.appearance?.margin;
     const backgroundImage = section.style?.backgroundImage;
@@ -238,13 +241,13 @@ const RecursiveRenderElement: React.FC<RecursiveRenderElementProps> = React.memo
       } : {}),
       ...(hidden ? {display: 'none'} : {}),
     };
-  }, [element?.id, page?.view]);
+  }, [element?.id, page?.view, theme]);
 
   const sectionStyle = useMemo(() => {
     if (!element?.id || !page?.view || !(element.id in page.view)) return {};
     const section = page.view[element.id] as PageSection;
-    const spacing = resolveThemeValue(section.appearance?.spacing, theme, 'spacing');
-    return { rowGap: spacing };
+    const spacing = section.appearance?.spacing;
+    return { gap: spacing };
   }, [element?.id, page?.view]);
 
   if (!element) return null;
@@ -275,6 +278,7 @@ const RecursiveRenderElement: React.FC<RecursiveRenderElementProps> = React.memo
           onBlockSelect={onBlockSelect}
           onSectionSelect={onSectionSelect}
           theme={theme}
+          isContained={(page.view[element.id ?? ''] as PageSection)?.asContainer ?? false}
         />
       ))
     : null;

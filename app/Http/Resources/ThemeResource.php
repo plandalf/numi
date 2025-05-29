@@ -12,21 +12,21 @@ class ThemeResource extends JsonResource
 
     protected static $defaultValues = [
         'primary_color' => '#000000',
-        'primary_contrast_color' => '#000000',
+        'primary_contrast_color' => '#FFFFFF',
 
         'secondary_color' => '#000000',
-        'secondary_contrast_color' => '#000000',
+        'secondary_contrast_color' => '#FFFFFF',
 
-        'canvas_color' => '#000000',
-        'primary_surface_color' => '#000000',
-        'secondary_surface_color' => '#000000',
+        'canvas_color' => '#FFFFFF',
+        'primary_surface_color' => '#FFFFFF',
+        'secondary_surface_color' => '#FFFFFF',
 
         'primary_border_color' => '#000000',
         'secondary_border_color' => '#000000',
 
-        'warning_color' => '#000000',
-        'success_color' => '#000000',
-        'highlight_color' => '#000000',
+        'warning_color' => '#FF0000',
+        'success_color' => '#00FF00',
+        'highlight_color' => '#0000FF',
 
         'main_font' => FontElement::INTER->value,
         'mono_font' => FontElement::INTER->value,
@@ -90,11 +90,11 @@ class ThemeResource extends JsonResource
             'color' => '#000000'
         ],
 
-        'border_radius' => '12px',
-        'shadow' => '0 0px 0px 0 rgba(0, 0, 0, 0.05)',
+        'border_radius' => '5px',
+        'shadow' => '0px 0px 0px 0px #000000',
 
-        'padding' => '5px 10px 5px 10px',
-        'margin' => '5px 10px 5px 10px',
+        'padding' => '15px',
+        'margin' => '0px',
         'spacing' => '5px',
     ];
 
