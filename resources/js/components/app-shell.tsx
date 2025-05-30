@@ -60,7 +60,7 @@ export function AppShell({ children }: AppShellProps) {
             <div className="flex items-center gap-6">
               {
                 organization?.on_trial && (
-                  <Link href="/organizations/billing" className="bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded-full text-sm font-medium hover:bg-yellow-200 font-semibold flex items-center gap-1">
+                  <Link href="/organizations/settings/billing" className="bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded-full text-sm font-medium hover:bg-yellow-200 font-semibold flex items-center gap-1">
                     <AlertCircleIcon className="size-4" /> {organization?.trial_days_left} day{organization?.trial_days_left === 1 ? '' : 's'} trial left
                   </Link>
                 )
