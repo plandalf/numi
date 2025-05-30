@@ -6,6 +6,7 @@ use App\Database\Traits\UuidRouteKey;
 use App\Enums\CheckoutSessionStatus;
 use App\Models\Customer;
 use App\Models\Order\Order;
+use App\Models\Organization;
 use App\Models\Store\Offer;
 use App\Modules\Integrations\AbstractIntegration;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -45,6 +46,11 @@ class CheckoutSession extends Model
     protected $attributes = [
         'status' => CheckoutSessionStatus::STARTED,
     ];
+
+    public function organization(): BelongsTo
+    {
+        return $this->belongsTo(Organization::class, 'organization_id');
+    }
 
     public function offer(): BelongsTo
     {

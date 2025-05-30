@@ -9,14 +9,7 @@ import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { useState } from 'react';
 import { Copy, ExternalLink, QrCode } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
-
-interface Offer {
-    id: number;
-    name: string;
-    status: 'draft' | 'published';
-    created_at: string;
-    updated_at: string;
-}
+import { Offer } from '@/types/offer';
 
 interface Props {
     offer: Offer;
@@ -45,7 +38,7 @@ export default function Sharing({ offer }: Props) {
     const [showEmbedInfo, setShowEmbedInfo] = useState(false);
     const [selectedEmbedType, setSelectedEmbedType] = useState('standard');
 
-    const offerUrl = `${window.location.origin}/o/${offer.id}`;
+    const offerUrl = offer.public_url;
 
     const handlePublish = () => {
         router.post(`/offers/${offer.id}/publish`);
@@ -201,4 +194,4 @@ export default function Sharing({ offer }: Props) {
             </Dialog>
         </AppOfferLayout>
     );
-} 
+}

@@ -26,6 +26,7 @@ class Organization extends Model
         'pm_type',
         'pm_last_four',
         'trial_ends_at',
+        'subdomain',
     ];
 
     protected $appends = [
@@ -126,5 +127,18 @@ class Organization extends Model
         }
 
         return $this->onGenericTrial();
+    }
+
+    public function getSubdomainHost()
+    {
+        $appUrl = config('app.url');
+        $baseDomain = parse_url($appUrl, PHP_URL_HOST);
+
+        // Remove port from base domain if it exists
+        if (str_contains($baseDomain, ':')) {
+            $baseDomain = explode(':', $baseDomain)[0];
+        }
+
+        return $this->subdomain ? Str::lower($this->subdomain . '.' . $baseDomain) : null;
     }
 }

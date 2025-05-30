@@ -32,6 +32,7 @@ export interface Offer {
     theme_id: string | null;
     created_at: string;
     updated_at: string;
+    public_url: string;
 
 }
 

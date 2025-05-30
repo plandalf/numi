@@ -11,6 +11,7 @@ use App\Http\Resources\ThemeResource;
 use App\Models\Checkout\CheckoutSession;
 use App\Models\Store\Offer;
 use App\Models\Theme;
+use App\Traits\HandlesLandingPageDomains;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Str;
@@ -18,14 +19,18 @@ use Inertia\Inertia;
 
 class CheckoutController extends Controller
 {
+    use HandlesLandingPageDomains;
+
     public function __construct(
         private readonly CreateCheckoutSessionAction $createCheckoutSessionAction
     ) {}
 
-    public function initialize(string $offerId)
+    public function initialize(string $offerId, Request $request)
     {
         $offer = Offer::retrieve($offerId);
         $checkoutSession = $this->createCheckoutSessionAction->execute($offer);
+
+        $this->handleInvalidDomain($request, $checkoutSession);
 
         return redirect()->to(URL::signedRoute('checkouts.show', [
             'checkout' => $checkoutSession->getRouteKey(),
@@ -38,6 +43,8 @@ class CheckoutController extends Controller
         if (! $request->hasValidSignature()) {
             abort(403, 'Invalid or expired checkout link.');
         }
+
+        $this->handleInvalidDomain($request, $checkout);
 
         $offer = $checkout->offer;
 

@@ -14,12 +14,13 @@ class OrganizationResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
-
         return [
             'id' => $this->id,
             'ulid' => $this->ulid,
             'name' => $this->name,
             'invite_link' => $this->invite_link,
+            'default_currency' => $this->default_currency,
+            'subdomain' => $this->subdomain,
             'created_at' => $this->created_at?->toISOString(),
             'updated_at' => $this->updated_at?->toISOString(),
             'on_trial' => $this->on_trial,

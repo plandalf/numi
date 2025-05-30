@@ -84,7 +84,7 @@ class OffersController extends Controller
             ->get();
 
         // Load the offer with its theme and items
-        $offer->load(['offerItems.prices.product', 'theme', 'screenshot']);
+        $offer->load(['offerItems.prices.product', 'theme', 'screenshot', 'organization']);
 
         $stripeIntegration = Integration::where('organization_id', $offer->organization_id)->where('type', IntegrationType::STRIPE)->first();
 

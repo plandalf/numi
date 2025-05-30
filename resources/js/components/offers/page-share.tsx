@@ -32,7 +32,7 @@ export function PageShare() {
   const [showEmbedInfo, setShowEmbedInfo] = useState(false);
   const [selectedEmbedType, setSelectedEmbedType] = useState();
 
-  const offerUrl = `${window.location.origin}/o/${offer.id}`;
+  const offerUrl = offer.public_url;
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);

@@ -83,6 +83,8 @@ class OrganizationController extends Controller
     {
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
+            'default_currency' => ['required', 'string', 'in:' . implode(',', array_keys(Organization::AVAILABLE_CURRENCIES))],
+            'subdomain' => ['required', 'string', 'min:5', 'regex:/^[a-z0-9-]+$/', 'unique:organizations,subdomain,' . $organization->id],
         ]);
 
         $organization->update($validated);

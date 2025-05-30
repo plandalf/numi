@@ -13,6 +13,7 @@ import SettingsLayout from '@/layouts/settings-layout';
 import { type Organization } from '@/types';
 import { Head, useForm } from '@inertiajs/react';
 import { Loader2 } from "lucide-react";
+import { cn } from '@/lib/utils';
 
 interface Props {
     organization: Organization;
@@ -35,6 +36,7 @@ export default function General({ organization }: Props) {
     const form = useForm({
         name: organization.name,
         default_currency: organization.default_currency,
+        subdomain: organization.subdomain || '',
     });
 
     const handleSubmit = (e: React.FormEvent) => {
@@ -56,21 +58,44 @@ export default function General({ organization }: Props) {
                     <CardContent>
                         <form onSubmit={handleSubmit} className="space-y-4">
                             <div className="space-y-2">
-                                <Label htmlFor="name">Organization name</Label>
+                                <Label htmlFor="name" className={cn(form.errors.name && "text-destructive")}>Organization name</Label>
                                 <Input
                                     id="name"
                                     value={form.data.name}
                                     onChange={(e) => form.setData('name', e.target.value)}
                                     placeholder="Acme Corp"
+                                    className={cn(form.errors.name && "border-destructive")}
                                 />
+                                {form.errors.name && (
+                                    <p className="text-sm text-destructive">{form.errors.name}</p>
+                                )}
                             </div>
                             <div className="space-y-2">
-                                <Label htmlFor="currency">Default Currency</Label>
+                                <Label htmlFor="subdomain" className={cn(form.errors.subdomain && "text-destructive")}>Subdomain</Label>
+                                <Input
+                                    id="subdomain"
+                                    value={form.data.subdomain}
+                                    onChange={(e) => form.setData('subdomain', e.target.value.toLowerCase())}
+                                    placeholder="acme"
+                                    pattern="[a-z0-9-]+"
+                                    minLength={5}
+                                    title="Subdomain must be at least 5 characters and can only contain lowercase letters, numbers, and dashes"
+                                    className={cn(form.errors.subdomain && "border-destructive")}
+                                />
+                                <p className="text-sm text-muted-foreground">
+                                    Must be at least 5 characters. Only lowercase letters, numbers, and dashes allowed.
+                                </p>
+                                {form.errors.subdomain && (
+                                    <p className="text-sm text-destructive">{form.errors.subdomain}</p>
+                                )}
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="currency" className={cn(form.errors.default_currency && "text-destructive")}>Default Currency</Label>
                                 <Select
                                     value={form.data.default_currency}
                                     onValueChange={(value) => form.setData('default_currency', value)}
                                 >
-                                    <SelectTrigger>
+                                    <SelectTrigger className={cn(form.errors.default_currency && "border-destructive")}>
                                         <SelectValue placeholder="Select currency" />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -81,6 +106,9 @@ export default function General({ organization }: Props) {
                                         ))}
                                     </SelectContent>
                                 </Select>
+                                {form.errors.default_currency && (
+                                    <p className="text-sm text-destructive">{form.errors.default_currency}</p>
+                                )}
                             </div>
                             <Button
                                 type="submit"
