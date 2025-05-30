@@ -32,5 +32,12 @@ function logname(...$arguments): string
     $callerName = class_basename(! is_null($caller) ? $caller['class'] : null);
     $callerFn = ! is_null($caller) ? $caller['function'] : null;
 
-    return trim($callerName.'@'.$callerFn.Str::start(implode('.', Arr::flatten($arguments)), '.'), '.\\,@');
+    return trim($callerName . '@' . $callerFn . Str::start(implode('.', Arr::flatten($arguments)), '.'), '.\\,@');
+}
+
+function redirect_now($to, $status = 302, $headers = [])
+{
+    $headers['Location'] = $to;
+
+    abort($status, '', $headers);
 }

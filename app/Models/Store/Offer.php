@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Models\Catalog\Price;
+use App\Models\Organization;
 use Illuminate\Support\Str;
 
 /**
@@ -75,6 +76,11 @@ class Offer extends Model
         });
     }
 
+    public function organization(): BelongsTo
+    {
+        return $this->belongsTo(Organization::class, 'organization_id');
+    }
+
     public function productImage(): BelongsTo
     {
         return $this->belongsTo(Media::class, 'product_image_id');
@@ -118,5 +124,21 @@ class Offer extends Model
     public function isArchived(): bool
     {
         return $this->status === self::STATUS_ARCHIVED;
+    }
+
+    public function getPublicUrlAttribute(): string
+    {
+        $organization = $this->organization;
+        $subdomain = $organization->subdomain;
+
+        if ($subdomain) {
+            return str_replace(
+                ['http://', 'https://'],
+                ['http://' . $subdomain . '.', 'https://' . $subdomain . '.'],
+                route('offers.show', $this)
+            );
+        }
+
+        return route('offers.show', $this);
     }
 }

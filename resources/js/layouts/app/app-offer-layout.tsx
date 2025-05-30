@@ -99,7 +99,7 @@ function OfferHeader({ offer, isNameDialogOpen, setIsNameDialogOpen }: AppHeader
     const isShareMode = viewMode === 'share';
     const isEditorMode = viewMode === 'editor';
 
-    const offerUrl = `${window.location.origin}/o/${offer.id}`;
+    const offerUrl = offer.public_url;
 
     const handlePublish = () => {
         setStatus('live');

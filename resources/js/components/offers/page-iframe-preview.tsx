@@ -3,7 +3,7 @@ import { cn } from '@/lib/utils';
 
 export function PageIframePreview() {
   const { offer, previewSize } = useEditor();
-  const offerUrl = `${window.location.origin}/o/${offer.id}`;
+  const offerUrl = offer.public_url;
 
   return (
     <div className="w-full h-full flex items-center justify-center">
