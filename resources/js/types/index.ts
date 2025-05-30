@@ -6,6 +6,7 @@ export interface Organization {
     ulid: string;
     invite_link: string;
     join_token: string;
+    default_currency: string;
     users?: (User & {
         pivot: {
             role: string;
