@@ -39,7 +39,7 @@ interface AppHeaderProps {
 export const PREVIEW_SIZES = {
     'desktop': {
         width: 1024,
-        height: 575,
+        height: 764,
     },
     'mobile': {
         width: 390,
@@ -74,7 +74,10 @@ function OfferHeader({ offer, isNameDialogOpen, setIsNameDialogOpen }: AppHeader
         }, {
             preserveScroll: true,
             preserveState: true,
-            onSuccess: () => setIsNameDialogOpen(false),
+            onSuccess: () => {
+                setIsNameDialogOpen(false);
+                toast.success('Offer updated successfully');
+            },
             onError: (error: Record<string, string>) => {
             const errorMessages = Object.values(error).flat();
             toast.error(<>

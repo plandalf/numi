@@ -523,7 +523,7 @@ export const layoutConfig = {
             "id": "promo_header",
             "type": "box",
             "props": {
-              "className": "min-h-1 h-auto p-6"
+              "className": "h-auto p-6"
             }
           },
           {

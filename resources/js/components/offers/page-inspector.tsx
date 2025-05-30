@@ -49,7 +49,10 @@ export const AppearanceSection = ({ globalState, block, onUpdate }: { globalStat
                 key={hook.name}
                 label={hook.label}
                 value={block.appearance?.[hook.name]}
+                defaultValue={hook.defaultValue}
+                defaultThemeKey={hook.name}
                 onChangeProperty={value => onAppearanceChange(hook.name, value)}
+                config={hook.config}
               />
             ) : (
               <div>
@@ -66,8 +69,8 @@ export const AppearanceSection = ({ globalState, block, onUpdate }: { globalStat
 const StyleSection = ({ globalState, block, onUpdate }: { globalState: GlobalState | null, block: Block, onUpdate: (block: Block) => void }) => {
 
   const { fonts } = usePage<EditProps>().props;
-  const { data } = useEditor();
-  const themeColors = getThemeColors(data.theme);
+  const { theme } = useEditor();
+  const themeColors = getThemeColors(theme);
 
   if (!globalState) return null;
 
@@ -124,8 +127,6 @@ const ValidationSection = ({ block, onUpdate }: { block: Block, onUpdate: (block
       }
     });
   };
-
-  // const themeColors = getThemeColors(data.theme);
 
   return (
     <>
@@ -201,8 +202,8 @@ export const Inspector = ({
   onSave: () => void;
 }) => {
   const globalState = useContext(GlobalStateContext);
-  const { data } = useEditor();
-  const themeColors = getThemeColors(data.theme);
+  const { theme } = useEditor();
+  const themeColors = getThemeColors(theme);
   // Update local state when incoming block changes
 
   const handleContentChange = (fieldName: string, value: any) => {
@@ -215,8 +216,6 @@ export const Inspector = ({
       }
     });
   };
-
-  console.log('block.content', block.content);
 
   if (!block) {
     return <div>
@@ -313,6 +312,7 @@ export const Inspector = ({
                               hook.options.map(opt => typeof opt === 'string' ? opt : opt.value)
                               : []
                             }
+                            icons={hook.icons}
                             inspector={hook.inspector}
                             labels={hook.labels}
                           />

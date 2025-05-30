@@ -105,23 +105,23 @@ function DetailListBlockComponent({ context }: { context: BlockContextType }) {
   ]);
 
   const appearance = Numi.useAppearance([
-    // Appearance.padding('padding', 'Padding', {}),
+    Appearance.padding('padding', 'Padding', {}, '0px'),
     Appearance.margin('margin', 'Margin', {}),
-    Appearance.spacing('spacing', 'Spacing', {}),
-    Appearance.spacing('labelAndCaptionSpacing', 'Label & Caption Spacing', {}),
-    Appearance.spacing('iconAndTextSpacing', 'Icon & Text Spacing', {}),
+    Appearance.spacing('spacing', 'Spacing', { config: { format: 'single' } }),
+    Appearance.spacing('labelAndCaptionSpacing', 'Label & Caption Spacing', { config: { format: 'single' } }),
+    Appearance.spacing('iconAndTextSpacing', 'Icon & Text Spacing', { config: { format: 'single' } }),
     Appearance.visibility('visibility', 'Visibility', {}, { conditional: [] }),
   ]);
 
   const containerStyles = useMemo(() => ({
-    backgroundColor: style.backgroundColor || 'transparent',
-    color: style.textColor || 'black',
-    borderColor: style.borderColor,
+    backgroundColor: resolveThemeValue(style.backgroundColor, theme),
+    color: resolveThemeValue(style.textColor, theme),
+    borderColor: resolveThemeValue(style.borderColor, theme),
     borderWidth: style.border?.width,
     borderStyle: style.border?.style,
     borderRadius : style.borderRadius,
     boxShadow: style.shadow,
-    // padding: resolveThemeValue(appearance.padding, theme, 'padding'),
+    padding: resolveThemeValue(appearance.padding, theme, 'padding'),
     margin: resolveThemeValue(appearance.margin, theme, 'margin'),
     gap: resolveThemeValue(appearance.spacing, theme, 'spacing'),
   }), [style, appearance]);
@@ -131,30 +131,27 @@ function DetailListBlockComponent({ context }: { context: BlockContextType }) {
     gap: resolveThemeValue(appearance.spacing, theme, 'spacing'),
   }), [style,appearance]);
 
-  const labelFont = resolveThemeValue(style.labelFont, theme, 'h4_typography') as FontValue;
-  const captionFont = resolveThemeValue(style.captionFont, theme, 'body_typography') as FontValue;
-
   const labelStyle = useMemo(() => ({
-    color: labelFont?.color,
-    fontSize: labelFont?.size,
-    fontWeight: labelFont?.weight,
-    fontFamily: labelFont?.font,
-    lineHeight: labelFont?.lineHeight,
-    letterSpacing: labelFont?.letterSpacing,
-  }), [labelFont]);
+    color: resolveThemeValue(style.labelFont?.color, theme),
+    fontSize: style.labelFont?.size,
+    fontWeight: style.labelFont?.weight,
+    fontFamily: style.labelFont?.font,
+    lineHeight: style.labelFont?.lineHeight,
+    letterSpacing: style.labelFont?.letterSpacing,
+  }), [style]);
 
   const captionStyle = useMemo(() => ({
-    color: captionFont?.color,
-    fontSize: captionFont?.size,
-    fontWeight: captionFont?.weight,
-    fontFamily: captionFont?.font,
-    lineHeight: captionFont?.lineHeight,
-    letterSpacing: captionFont?.letterSpacing,
-  }), [captionFont]);
+    color: resolveThemeValue(style.captionFont?.color, theme),
+    fontSize: style.captionFont?.size,
+    fontWeight: style.captionFont?.weight,
+    fontFamily: style.captionFont?.font,
+    lineHeight: style.captionFont?.lineHeight,
+    letterSpacing: style.captionFont?.letterSpacing,
+  }), [style]);
 
   const tooltipIconStyle = useMemo(() => ({
-    color: captionFont?.color,
-  }), [captionFont]);
+    color: resolveThemeValue(style.captionFont?.color, theme),
+  }), [style]);
 
   const iconStyle = useMemo(() => ({
     alignSelf: style.iconAlignment ?? 'start',
@@ -177,7 +174,6 @@ function DetailListBlockComponent({ context }: { context: BlockContextType }) {
 
     // Don't render if item is disabled and we're showing only enabled items
     // This could be a filter toggle in the future
-
     return (
       <div 
         key={item.label}

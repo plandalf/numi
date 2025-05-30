@@ -73,9 +73,9 @@ function OptionSelectorComponent({ context }: { context: BlockContextType }) {
   });
 
   const appearance = Numi.useAppearance([
-    // Appearance.padding('padding', 'Padding', {}),
+    Appearance.padding('padding', 'Padding', {}, '0px'),
     Appearance.margin('margin', 'Margin', {}),
-    Appearance.spacing('spacing', 'Spacing', {}, '0px'),
+    Appearance.spacing('spacing', 'Spacing', { config: { format: 'single' } }, '0px'),
     Appearance.visibility('visibility', 'Visibility', {}, { conditional: [] }),
   ]);
 
@@ -96,7 +96,7 @@ function OptionSelectorComponent({ context }: { context: BlockContextType }) {
 
   const style = Numi.useStyle([
     Style.backgroundColor('backgroundColor', 'Background Color', {}, '#FFFFFF'),
-    Style.backgroundColor('activeBackgroundColor', 'Selected Color', {}),
+    Style.backgroundColor('activeBackgroundColor', 'Selected Color', {}, ''),
     Style.alignment('activeTextAlignment', 'Selected Text Alignment', defaultAlignmentArgs, 'center'),
     Style.font('activeTextFont', 'Selected Text Font & Color', fontConfig, {}),
     Style.border('activeBorder', 'Selected Border', {}, { width: '2px', style: 'solid' }),
@@ -105,14 +105,14 @@ function OptionSelectorComponent({ context }: { context: BlockContextType }) {
     Style.shadow('activeShadow', 'Selected Shadow', {}),
 
     Style.alignment('inactiveTextAlignment', 'Unselected Text Alignment', defaultAlignmentArgs, 'center'),
-    Style.backgroundColor('inactiveBackgroundColor', 'Unselected Color', {}),
-    Style.font('inactiveTextFont', 'Unselected Text Font & Color', fontConfig, {}),
+    Style.backgroundColor('inactiveBackgroundColor', 'Unselected Color', {}, ''),
+    Style.font('inactiveTextFont', 'Unselected Text Font & Color', fontConfig, { color: '#000000' }),
     Style.border('inactiveBorder', 'Unselected Border', {}, { width: '0px', style: 'solid' }),
     Style.borderRadius('inactiveBorderRadius', 'Unselected Radius', {}, theme?.border_radius),
     Style.borderColor('inactiveBorderColor', 'Unselected Border Color', {}),
     Style.shadow('inactiveShadow', 'Unselected Shadow', {}),
 
-    Style.backgroundColor('badgeBackgroundColor', 'Badge Background Color', {}, addAlphaToColor(theme?.secondary_color, 0.75)),
+    Style.backgroundColor('badgeBackgroundColor', 'Badge Background Color', {}, theme?.highlight_color),
     Style.font('badgeTextFont', 'Badge Text Font', fontConfig, {
       size: '12px'
     }),
@@ -138,7 +138,8 @@ function OptionSelectorComponent({ context }: { context: BlockContextType }) {
   };
 
   const inactiveTextFont = {
-    ...resolveThemeValue(style.inactiveTextFont, theme, 'body_typography') as FontValue
+    ...resolveThemeValue(style.inactiveTextFont, theme, 'body_typography') as FontValue,
+    color: resolveThemeValue(style.inactiveTextFont?.color, theme),
   };
 
   const badgeBackgroundColor = resolveThemeValue(style.badgeBackgroundColor, theme, 'secondary_color') as string;
@@ -147,28 +148,30 @@ function OptionSelectorComponent({ context }: { context: BlockContextType }) {
     color: resolveThemeValue(style.badgeTextFont?.color, theme, 'secondary_contrast_color') as string,
   };
 
+  console.log('activeBorderColor', style.activeBorderColor);
+
   const containerStyle = useMemo(() => ({
-    backgroundColor: style.backgroundColor,
-    borderColor: style.borderColor,
+    backgroundColor: resolveThemeValue(style.backgroundColor, theme),
+    borderColor: resolveThemeValue(style.borderColor, theme),
     borderWidth: style.border?.width,
     borderStyle: style.border?.style,
     borderRadius : style.borderRadius,
     boxShadow: style.shadow,
-    // padding: resolveThemeValue(appearance.padding, theme, 'padding'),
+    padding: resolveThemeValue(appearance.padding, theme, 'padding'),
     margin: resolveThemeValue(appearance.margin, theme, 'margin'),
     gap: resolveThemeValue(appearance.spacing, theme, 'spacing'),
   }), [style, appearance]);
 
   const activeTabStyle = useMemo(() => ({
     justifyContent: style.activeTextAlignment,
-    backgroundColor: activeBackgroundColorWithAlpha,
+    backgroundColor:  style?.activeBackgroundColor ? resolveThemeValue(style?.activeBackgroundColor, theme) : activeBackgroundColorWithAlpha,
     color: activeTextFont?.color,
     fontSize: activeTextFont?.size,
     fontWeight: activeTextFont?.weight,
     fontFamily: activeTextFont?.font,
     lineHeight: activeTextFont?.lineHeight,
     letterSpacing: activeTextFont?.letterSpacing,
-    borderColor: activeBackgroundColor,
+    borderColor: style?.activeBorderColor ? resolveThemeValue(style?.activeBorderColor, theme) : activeBackgroundColor,
     borderWidth: style.activeBorder?.width,
     borderStyle: style.activeBorder?.style,
     borderRadius: style.activeBorderRadius,
@@ -177,14 +180,14 @@ function OptionSelectorComponent({ context }: { context: BlockContextType }) {
 
   const inactiveTabStyle = useMemo(() => ({
     justifyContent: style.inactiveTextAlignment,
-    backgroundColor: style.inactiveBackgroundColor || 'white',
+    backgroundColor: resolveThemeValue(style?.inactiveBackgroundColor, theme),
     color: inactiveTextFont?.color,
     fontSize: inactiveTextFont?.size,
     fontWeight: inactiveTextFont?.weight,
     fontFamily: inactiveTextFont?.font,
     lineHeight: inactiveTextFont?.lineHeight,
     letterSpacing: inactiveTextFont?.letterSpacing,
-    borderColor: style.inactiveBorderColor,
+    borderColor: resolveThemeValue(style?.inactiveBorderColor, theme),
     borderWidth: style.inactiveBorder?.width,
     borderStyle: style.inactiveBorder?.style,
     borderRadius: style.inactiveBorderRadius,
@@ -199,7 +202,7 @@ function OptionSelectorComponent({ context }: { context: BlockContextType }) {
     fontFamily: badgeTextFont?.font,
     lineHeight: badgeTextFont?.lineHeight,
     letterSpacing: badgeTextFont?.letterSpacing,
-    borderColor: style.badgeBorderColor,
+    borderColor: resolveThemeValue(style.badgeBorderColor, theme),
     borderWidth: style.badgeBorder?.width,
     borderStyle: style.badgeBorder?.style,
     borderRadius: style.badgeBorderRadius,

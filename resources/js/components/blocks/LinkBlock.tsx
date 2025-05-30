@@ -43,9 +43,9 @@ function LinkBlockComponent() {
         right: 'Right',
       },
     }, 'left'),
-    Style.backgroundColor('backgroundColor', 'Background Color', {}),
+    Style.backgroundColor('backgroundColor', 'Background Color', {}, ''),
     
-    Style.backgroundColor('iconColor', 'Icon Color', {}, '#000000'),
+    Style.backgroundColor('iconColor', 'Icon Color', {}, ''),
     Style.dimensions('iconSize', 'Icon Size', {
       config: {
         hideWidth: true
@@ -70,7 +70,7 @@ function LinkBlockComponent() {
 
   const appearance = Numi.useAppearance([
     Appearance.padding('padding', 'Padding', {}),
-    Appearance.spacing('spacing', 'Spacing', {}),
+    Appearance.spacing('spacing', 'Spacing', { config: { format: 'single' } }),
     Appearance.margin('margin', 'Margin', {}),
     Appearance.visibility('visibility', 'Visibility', {}, { conditional: [] }),
   ]);
@@ -80,23 +80,23 @@ function LinkBlockComponent() {
   const shadow = style?.shadow as string;
 
   const markdownStyles = useMemo(() => ({
-    backgroundColor: style.backgroundColor,
-    color: style.linkFont?.color,
+    color: resolveThemeValue(style.linkFont?.color, theme),
     fontFamily: linkFont?.font,
     fontWeight: linkFont?.weight,
     fontSize: linkFont?.size,
     lineHeight: linkFont?.lineHeight,
     letterSpacing: linkFont?.letterSpacing,
-    borderColor: style.borderColor,
+    textDecoration: 'underline',
+  }), [style, linkFont, border, borderRadius, shadow, appearance]);
+
+  const linkStyles = useMemo(() => ({
+    borderColor: resolveThemeValue(style.borderColor, theme),
     borderWidth: border?.width,
     borderStyle: border?.style,
     borderRadius : borderRadius ?? '3px',
     boxShadow: shadow,
-    textDecoration: 'underline',
+    backgroundColor: resolveThemeValue(style.backgroundColor, theme),
     padding: resolveThemeValue(appearance.padding, theme, 'padding'),
-  }), [style, linkFont, border, borderRadius, shadow, appearance]);
-
-  const linkStyles = useMemo(() => ({
     gap: resolveThemeValue(appearance.spacing, theme, 'spacing'),
   }), [appearance]);
 
@@ -125,7 +125,7 @@ function LinkBlockComponent() {
 
   const iconStyles = useMemo(() => ({
     size: style?.iconSize?.height ?? '16px',
-    color: style?.iconColor ?? 'black',
+    color: resolveThemeValue(style?.iconColor, theme),
   }), [style]);
 
   if (style.hidden) {

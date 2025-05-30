@@ -112,7 +112,7 @@ export const Appearance = {
     type: string = 'padding',
     label: string = 'Padding',
     args: HookArgs,
-    defaultValue: SpacingValue = '{{theme.padding}}',
+    defaultValue: SpacingValue = '',
   ) => ({
     type,
     label,
@@ -126,26 +126,28 @@ export const Appearance = {
     type: string = 'margin',
     label: string = 'Margin',
     args: HookArgs,
-    defaultValue: SpacingValue = '{{theme.margin}}',
+    defaultValue: SpacingValue = '',
   ) => ({
     type,
     label,
     defaultValue,
     inspector: args?.inspector ?? 'spacingPicker',
     options: args?.options ?? {},
+    config: args?.config ?? {},
   }),
 
   spacing: (
     type: string = 'spacing',
     label: string = 'Spacing',
     args: HookArgs,
-    defaultValue: SpacingValue = '{{theme.spacing}}',
+    defaultValue: SpacingValue = '',
   ) => ({
     type,
     label,
     defaultValue,
     inspector: args?.inspector ?? 'spacingPicker',
     options: args?.options ?? {},
+    config: args?.config ?? {},
   }),
 
   visibility: (
@@ -310,7 +312,7 @@ export const Style = {
     type: string = 'borderColor',
     label: string = 'Border Color',
     args: HookArgs,
-    defaultValue: string = '#FFFFFF',
+    defaultValue: string = '',
   ) => ({
     label,
     type,
@@ -686,21 +688,7 @@ const Numi = {
     }, [blockContext.blockId, props.name]);
 
 
-    // For editor-editable values (checkbox inspector), prioritize block config
-    // Otherwise, use field state for runtime values
-    // const value = props.inspector === 'checkbox'
-    //   ? blockContext.blockConfig.content[props.name] ?? blockContext.getFieldValue(props.name) ?? props.defaultValue
-    //   : blockContext.getFieldValue(props.name) ?? blockContext.blockConfig.content[props.name] ?? props.defaultValue;
-    // // If use as state, prioritize getting the field value from the global state
-    // const defaultValue = get(blockContext.blockConfig, `content.${props.name}`) ?? props.defaultValue;
-    // const value = props.asState 
-    //   ? blockContext.getFieldValue(props.name) ?? defaultValue
-    //   : defaultValue;
     const value = blockContext.blockConfig.content[props.name] ?? blockContext.getFieldValue(props.name) ?? props.defaultValue;
-
-    console.log(blockContext.getFieldValue(props.name) ?? blockContext.blockConfig.content[props.name] ?? props.defaultValue);
-    console.log(blockContext.blockConfig.content[props.name] ?? blockContext.getFieldValue(props.name) ?? props.defaultValue);
-    // console.log('value', value);
 
     const setValue = (newValue: boolean) => {
       blockContext.setFieldValue(props.name, newValue);

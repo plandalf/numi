@@ -22,7 +22,7 @@ function TextBlockComponent({ context }: { context: BlockContextType }) {
   const isMarkdown = format === 'markdown';
 
   const appearance = Numi.useAppearance([
-    // Appearance.padding('padding', 'Padding', {}),
+    Appearance.padding('padding', 'Padding', {}, '0px'),
     Appearance.margin('margin', 'Margin', {}),
     Appearance.visibility('visibility', 'Visibility', {}, { conditional: [] }),
   ]);
@@ -53,8 +53,8 @@ function TextBlockComponent({ context }: { context: BlockContextType }) {
   const shadow = style?.shadow as string;
 
   const textStyles = useMemo(() => ({
-    backgroundColor: style.backgroundColor,
-    color: font?.color,
+    backgroundColor: resolveThemeValue(style.backgroundColor, theme),
+    color: resolveThemeValue(font?.color, theme),
     fontFamily: font?.font,
     fontWeight: font?.weight,
     fontSize: font?.size,
@@ -62,12 +62,12 @@ function TextBlockComponent({ context }: { context: BlockContextType }) {
     lineHeight: font?.lineHeight,
 
     letterSpacing: font?.letterSpacing,
-    borderColor: style.borderColor,
+    borderColor: resolveThemeValue(style.borderColor, theme),
     borderWidth: border?.width,
     borderStyle: border?.style,
     borderRadius : borderRadius ?? '3px',
     boxShadow: shadow,
-    // padding: resolveThemeValue(appearance.padding, theme, 'padding'),
+    padding: resolveThemeValue(appearance.padding, theme, 'padding'),
     margin: resolveThemeValue(appearance.margin, theme, 'margin'),
     whiteSpace: 'pre-line',
   }), [style, font, border, borderRadius, shadow]);
