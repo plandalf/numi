@@ -2,6 +2,8 @@ import { type BreadcrumbItem, type SharedData } from '@/types';
 import { Transition } from '@headlessui/react';
 import { Head, Link, useForm, usePage } from '@inertiajs/react';
 import { FormEventHandler } from 'react';
+import { Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 
 import DeleteUser from '@/components/delete-user';
 import HeadingSmall from '@/components/heading-small';
@@ -35,8 +37,16 @@ export default function Profile({ mustVerifyEmail, status }: { mustVerifyEmail: 
     const submit: FormEventHandler = (e) => {
         e.preventDefault();
 
+        const toastId = toast.loading('Updating profile...');
+
         patch(route('profile.update'), {
             preserveScroll: true,
+            onSuccess: () => {
+                toast.success('Profile updated successfully', { id: toastId });
+            },
+            onError: () => {
+                toast.error('Failed to update profile', { id: toastId });
+            }
         });
     };
 
@@ -105,17 +115,10 @@ export default function Profile({ mustVerifyEmail, status }: { mustVerifyEmail: 
                         )}
 
                         <div className="flex items-center gap-4">
-                            <Button disabled={processing}>Save</Button>
-
-                            <Transition
-                                show={recentlySuccessful}
-                                enter="transition ease-in-out"
-                                enterFrom="opacity-0"
-                                leave="transition ease-in-out"
-                                leaveTo="opacity-0"
-                            >
-                                <p className="text-sm text-neutral-600">Saved</p>
-                            </Transition>
+                            <Button disabled={processing}>
+                                {processing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                Save
+                            </Button>
                         </div>
                     </form>
                 </div>

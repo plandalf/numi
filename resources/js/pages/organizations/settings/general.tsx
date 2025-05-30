@@ -11,8 +11,8 @@ import {
 } from "@/components/ui/select";
 import SettingsLayout from '@/layouts/settings-layout';
 import { type Organization } from '@/types';
-import { Head, router } from '@inertiajs/react';
-import { useState } from 'react';
+import { Head, useForm } from '@inertiajs/react';
+import { Loader2 } from "lucide-react";
 
 interface Props {
     organization: Organization;
@@ -32,15 +32,14 @@ const AVAILABLE_CURRENCIES = {
 } as const;
 
 export default function General({ organization }: Props) {
-    const [name, setName] = useState(organization.name);
-    const [defaultCurrency, setDefaultCurrency] = useState(organization.default_currency);
+    const form = useForm({
+        name: organization.name,
+        default_currency: organization.default_currency,
+    });
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        router.put(route('organizations.update', organization.id), { 
-            name,
-            default_currency: defaultCurrency,
-        });
+        form.put(route('organizations.update', organization.id));
     };
 
     return (
@@ -60,16 +59,16 @@ export default function General({ organization }: Props) {
                                 <Label htmlFor="name">Organization name</Label>
                                 <Input
                                     id="name"
-                                    value={name}
-                                    onChange={(e) => setName(e.target.value)}
+                                    value={form.data.name}
+                                    onChange={(e) => form.setData('name', e.target.value)}
                                     placeholder="Acme Corp"
                                 />
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="currency">Default Currency</Label>
                                 <Select
-                                    value={defaultCurrency}
-                                    onValueChange={setDefaultCurrency}
+                                    value={form.data.default_currency}
+                                    onValueChange={(value) => form.setData('default_currency', value)}
                                 >
                                     <SelectTrigger>
                                         <SelectValue placeholder="Select currency" />
@@ -83,11 +82,19 @@ export default function General({ organization }: Props) {
                                     </SelectContent>
                                 </Select>
                             </div>
-                            <Button type="submit">Save changes</Button>
+                            <Button
+                                type="submit"
+                                disabled={form.processing}
+                            >
+                                {form.processing && (
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                )}
+                                Save changes
+                            </Button>
                         </form>
                     </CardContent>
                 </Card>
             </div>
         </SettingsLayout>
     );
-} 
+}

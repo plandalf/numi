@@ -5,6 +5,8 @@ import { type BreadcrumbItem } from '@/types';
 import { Transition } from '@headlessui/react';
 import { Head, useForm } from '@inertiajs/react';
 import { FormEventHandler, useRef } from 'react';
+import { Loader2 } from "lucide-react";
+import { toast } from "sonner";
 
 import HeadingSmall from '@/components/heading-small';
 import { Button } from '@/components/ui/button';
@@ -33,8 +35,13 @@ export default function Password() {
 
         put(route('password.update'), {
             preserveScroll: true,
-            onSuccess: () => reset(),
+            onSuccess: () => {
+                reset();
+                toast.success('Password updated successfully');
+            },
             onError: (errors) => {
+                toast.error('Failed to update password');
+
                 if (errors.password) {
                     reset('password', 'password_confirmation');
                     passwordInput.current?.focus();
@@ -108,17 +115,16 @@ export default function Password() {
                         </div>
 
                         <div className="flex items-center gap-4">
-                            <Button disabled={processing}>Save password</Button>
-
-                            <Transition
-                                show={recentlySuccessful}
-                                enter="transition ease-in-out"
-                                enterFrom="opacity-0"
-                                leave="transition ease-in-out"
-                                leaveTo="opacity-0"
-                            >
-                                <p className="text-sm text-neutral-600">Saved</p>
-                            </Transition>
+                            <Button disabled={processing}>
+                                {processing ? (
+                                    <>
+                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                        Saving...
+                                    </>
+                                ) : (
+                                    'Save password'
+                                )}
+                            </Button>
                         </div>
                     </form>
                 </div>

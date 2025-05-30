@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Enums\IntegrationType;
 use App\Models\Catalog\Product;
 use App\Models\Integration;
+use App\Models\Catalog\Price;
 use App\Modules\Integrations\Contracts\HasPrices;
 use App\Modules\Integrations\Contracts\HasProducts;
 use App\Modules\Integrations\Contracts\SupportsAuthorization;
@@ -82,6 +83,11 @@ class IntegrationsController extends Controller
             $allPrices = collect();
             $startingAfter = null;
 
+            $importedPrices = Price::query()
+                ->where('organization_id', request()->user()->currentOrganization->id)
+                ->where('integration_id', $integration->id)
+                ->get();
+
             do {
                 $params = [
                     'product' => $gatewayProductId,
@@ -102,6 +108,12 @@ class IntegrationsController extends Controller
                 $startingAfter = $prices->has_more ? end($prices->data)->id : null;
             } while ($startingAfter);
 
+            $allPrices = $allPrices->map(function ($price) use ($importedPrices) {
+                $importedPrice = $importedPrices->first(fn($importedPrice) => $importedPrice->gateway_price_id === $price->id);
+                $price->imported = $importedPrice !== null;
+
+                return $price;
+            });
             return response()->json($allPrices->toArray());
         }
 

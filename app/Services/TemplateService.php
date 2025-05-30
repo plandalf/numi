@@ -52,7 +52,7 @@ class TemplateService
             $offer->organization_id = $organizationId;
             $offer->name = $template->name;
             $offer->view = $template->view;
-            $offer->theme_id = $template->theme->id;
+            $offer->theme_id = optional($template->theme)->id;
             $offer->save();
 
             return $offer;
@@ -63,7 +63,7 @@ class TemplateService
         return Template::create($data);
     }
 
-    public function createTemplateWithTheme(array $data) 
+    public function createTemplateWithTheme(array $data)
     {
         return DB::transaction(function () use ($data) {
             $theme = $this->themeService->createTheme([
