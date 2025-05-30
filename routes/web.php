@@ -23,6 +23,7 @@ use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use Workflow\WorkflowStub;
 use App\Http\Controllers\OrdersController;
+use App\Http\Controllers\FeedbackController;
 
 Route::redirect('/', '/dashboard')->name('home');
 
@@ -257,6 +258,8 @@ Route::middleware(['auth'])->group(function () {
 Route::get('m/{dir}/{media}.{extension}', function (string $dir, \App\Models\Media $media) {
     return redirect()->away($media->getSignedUrl(60));
 });
+
+Route::post('/feedback', [FeedbackController::class, 'submit'])->name('feedback.submit');
 
 require __DIR__.'/settings.php';
 require __DIR__.'/auth.php';
