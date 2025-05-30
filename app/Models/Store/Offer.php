@@ -14,9 +14,9 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use App\Models\Catalog\Price;
 use App\Models\Organization;
 use Illuminate\Support\Str;
+use Illuminate\Support\Uri;
 
 /**
  * @property int $organization_id
@@ -30,6 +30,8 @@ use Illuminate\Support\Str;
  * @property Carbon $updated_at
  * @property Carbon|null $deleted_at
  * @property string $uuid
+ * @property string $public_url
+ * @property Organization $organization
  */
 #[ObservedBy(OfferObserver::class)]
 class Offer extends Model
@@ -129,14 +131,13 @@ class Offer extends Model
     public function getPublicUrlAttribute(): string
     {
         $organization = $this->organization;
-        $subdomain = $organization->subdomain;
+        $subdomain = $organization->getSubdomainHost();
 
         if ($subdomain) {
-            return str_replace(
-                ['http://', 'https://'],
-                ['http://' . $subdomain . '.', 'https://' . $subdomain . '.'],
-                route('offers.show', $this)
-            );
+            $uri = Uri::route('offers.show', ['offer' => $this])
+                ->withHost($subdomain);
+
+            return $uri->__toString();
         }
 
         return route('offers.show', $this);
