@@ -6,7 +6,7 @@ import { useMemo } from "react";
 function ImageBlockComponent() {
 
   const theme = Numi.useTheme();
-  
+
   const [image] = Numi.useStateString({
     label: 'Image',
     name: 'image',

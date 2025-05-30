@@ -3,7 +3,7 @@ import { AppShell } from '@/components/app-shell';
 
 import { Button } from '@/components/ui/button';
 import { Link, router } from '@inertiajs/react';
-import { ArrowLeft, CircleCheck, Eye, Flame, Pencil, Share, ChevronDown, X, DollarSign } from 'lucide-react';
+import { ArrowLeft, CircleCheck, Eye, Flame, Pencil, Share, ChevronDown, X, DollarSign, Loader2 } from 'lucide-react';
 
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
@@ -53,6 +53,7 @@ function OfferHeader({ offer, isNameDialogOpen, setIsNameDialogOpen }: AppHeader
     const { data, viewMode, setViewMode, setPreviewSize, handleSave } = useEditor();
 
     const [name, setName] = useState(data.name);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     const [showPublishDialog, setShowPublishDialog] = useState(false);
 
@@ -65,6 +66,7 @@ function OfferHeader({ offer, isNameDialogOpen, setIsNameDialogOpen }: AppHeader
 
     const handleNameSubmit = (e: React.FormEvent) => {
         e.preventDefault();
+        setIsSubmitting(true);
 
         router.put(route('offers.update', offer.id), {
             name,
@@ -75,19 +77,21 @@ function OfferHeader({ offer, isNameDialogOpen, setIsNameDialogOpen }: AppHeader
             preserveScroll: true,
             preserveState: true,
             onSuccess: () => {
-                setIsNameDialogOpen(false);
                 toast.success('Offer updated successfully');
+                setIsSubmitting(false);
+                setIsNameDialogOpen(false);
             },
             onError: (error: Record<string, string>) => {
-            const errorMessages = Object.values(error).flat();
-            toast.error(<>
-                <p>Failed to save offer</p>
-                <ul className='list-disc list-inside'>
-                {errorMessages.map((e: string) => (
-                    <li key={e}>{e}</li>
-                ))}
-                </ul>
-            </>);
+                setIsSubmitting(false);
+                const errorMessages = Object.values(error).flat();
+                toast.error(<>
+                    <p>Failed to save offer</p>
+                    <ul className='list-disc list-inside'>
+                    {errorMessages.map((e: string) => (
+                        <li key={e}>{e}</li>
+                    ))}
+                    </ul>
+                </>);
             },
         });
     };
@@ -292,8 +296,15 @@ function OfferHeader({ offer, isNameDialogOpen, setIsNameDialogOpen }: AppHeader
                             />
                         </div>
                         <div className="flex justify-end">
-                            <Button type="submit">
-                                Save
+                            <Button type="submit" disabled={isSubmitting}>
+                                {isSubmitting ? (
+                                    <>
+                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                        Saving...
+                                    </>
+                                ) : (
+                                    'Save'
+                                )}
                             </Button>
                         </div>
                     </form>

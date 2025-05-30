@@ -18,6 +18,7 @@ import { router } from '@inertiajs/react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Combobox } from "@/components/combobox";
 import PriceForm from "../prices/PriceForm";
+import { Badge } from "@/components/ui/badge";
 
 /**
  * Generates an ordinal name based on a number
@@ -72,6 +73,20 @@ interface AddOfferItemFormData {
   is_required?: boolean;
   default_price_id?: number | null;
 }
+
+interface PriceLabelProps {
+  price: Price;
+}
+
+const PriceLabel = ({ price }: PriceLabelProps) => (
+  <div className="flex items-center gap-2">
+    <span>{price.name}</span>
+    <span>-</span>
+    <span>{formatMoney(price.amount, price.currency)}</span>
+    <span>-</span>
+    <Badge variant="secondary">{price.type}</Badge>
+  </div>
+);
 
 export default function AddProductForm({
   open,
@@ -140,7 +155,7 @@ export default function AddProductForm({
   const pricesOptions = useMemo(() => {
     return (selectedProduct?.prices || []).map(price => ({
       value: price.id.toString(),
-      label: price.name || `${price.type} - ${formatMoney(price.amount, price.currency)}`
+      label: `${price.name} - ${formatMoney(price.amount, price.currency)} - ${price.type}`
     }));
   }, [selectedProduct]);
 
@@ -211,7 +226,7 @@ export default function AddProductForm({
                           className="mt-1 w-full"
                           items={(selectedProduct?.prices || []).map(price => ({
                             value: price.id.toString(),
-                            label: price.name || `${price.type} - ${formatMoney(price.amount, price.currency)}`
+                            label: `${price.name} - ${formatMoney(price.amount, price.currency)} ${price.type !== 'one_time' ? `(${price.renew_interval})` : ''}`
                           }))}
                           placeholder="Select prices"
                           selected={data.prices}
@@ -235,9 +250,11 @@ export default function AddProductForm({
                           <div key={priceId} className="flex justify-between bg-[#191D3A] rounded-md p-2 px-4 text-white text-sm">
                             <div className="flex items-center gap-2">
                               <CircleCheck className="w-5 h-5" />
-                              <h3>{price.name || `${price.type}`}</h3>
-                              <p className="text-xs">-</p>
-                              <p>{formatMoney(price.amount, price.currency)}</p>
+                              <span>{price.name}</span>
+                              <span>-</span>
+                              <span>{formatMoney(price.amount, price.currency)}</span>
+                              <span>-</span>
+                              <Badge variant="secondary">{price.type}</Badge>
                             </div>
                             <Trash2
                               className="w-5 h-5 hover:text-red-500 cursor-pointer"

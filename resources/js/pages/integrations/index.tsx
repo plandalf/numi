@@ -38,12 +38,6 @@ export default function Integrate({ integrations }: IntegrationsPageProps) {
                 Create Stripe Live Integration
               </Button>
             </Link>
-            <Link href="/integrations/stripe_test/authorizations" method="post" as="button">
-              <Button>
-                <Plus className="w-4 h-4 mr-2" />
-                Create Stripe Test Integration
-              </Button>
-            </Link>
           </div>
         </header>
 

@@ -56,6 +56,7 @@ type StripePrice = {
   }[];
   unit_amount: number|null;
   currency: string;
+  imported?: boolean;
 }
 
 type ProductFormData = {
@@ -236,6 +237,8 @@ export const PriceStep = ({ integrationId, onClickSave, onClickBack, selectedPri
   const comboboxItems = prices.map(price => ({
     value: price.id,
     label: price.nickname || price.id,
+    badge: price.imported ? <Badge variant="outline">Imported</Badge> : null,
+    disabled: price.imported,
   }));
 
   const getAmount = (price: StripePrice) => {
