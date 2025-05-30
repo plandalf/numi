@@ -135,25 +135,25 @@ function QuoteBlockComponent({ context }: { context: BlockContextType }) {
         ? { width: '100px', height: '100px'}
         : { width: '56px', height: '56px'}
     ),
-    Style.backgroundColor('imageBackgroundColor', 'Image Background Color', {}),
+    Style.backgroundColor('imageBackgroundColor', 'Image Background Color', {}, ''),
     Style.border('imageBorder', 'Image Border', {}, { width: '0px', style: 'solid' }),
     Style.borderRadius('imageBorderRadius', 'Image Border Radius', {}, theme?.border_radius),
     Style.borderColor('imageBorderColor', 'Image Border Color', {}, theme?.primary_color),
-    Style.shadow('imageShadow', 'Image Shadow', {}, theme?.shadow),
+    Style.shadow('imageShadow', 'Image Shadow', {}),
 
     Style.border('border', 'Border', {}, { width: '0px', style: 'solid' }),
     Style.borderRadius('borderRadius', 'Border Radius', {}, '0px'),
     Style.borderColor('borderColor', 'Border Color', {}, ''),
-    Style.shadow('shadow', 'Shadow', {}, '0px 0px 0px 0px '),
+    Style.shadow('shadow', 'Shadow', {}, '0px 0px 0px 0px'),
     Style.hidden('hidden', 'Hidden', {}, false),
   ]);
 
   const appearance = Numi.useAppearance([
-    // Appearance.padding('padding', 'Padding', {}),
+    Appearance.padding('padding', 'Padding', {}, '0px'),
     Appearance.margin('margin', 'Margin', {}),
-    Appearance.spacing('spacing', 'Spacing', {}),
-    Appearance.spacing('imageSpacing', 'Image Spacing', {}),
-    Appearance.spacing('authorSpacing', 'Author Spacing', {}),
+    Appearance.spacing('spacing', 'Spacing', { config: { format: 'single' } }),
+    Appearance.spacing('imageSpacing', 'Image Spacing', { config: { format: 'single' } }),
+    Appearance.spacing('authorSpacing', 'Author Spacing', { config: { format: 'single' } }),
     Appearance.visibility('visibility', 'Visibility', {}, { conditional: [] }),
   ]);
 
@@ -162,14 +162,14 @@ function QuoteBlockComponent({ context }: { context: BlockContextType }) {
   const affiliationFont = resolveThemeValue(style.affiliationFont, theme, 'body_typography') as FontValue;
 
   const containerStyles = useMemo(() => ({
-    backgroundColor: style.backgroundColor || 'transparent',
-    color: style.textColor || 'black',
-    borderColor: style.borderColor,
+    backgroundColor: resolveThemeValue(style.backgroundColor, theme),
+    color: resolveThemeValue(style.textColor, theme),
+    borderColor: resolveThemeValue(style.borderColor, theme),
     borderWidth: style.border?.width,
     borderStyle: style.border?.style,
     borderRadius : style.borderRadius ?? '3px',
     boxShadow: style?.shadow,
-    // padding: resolveThemeValue(appearance.padding, theme, 'padding'),
+    padding: resolveThemeValue(appearance.padding, theme, 'padding'),
     margin: resolveThemeValue(appearance.margin, theme, 'margin'),
     gap: resolveThemeValue(appearance.spacing, theme, 'spacing'),
   }), [style, appearance]);
@@ -178,10 +178,10 @@ function QuoteBlockComponent({ context }: { context: BlockContextType }) {
   const authorSpacing = resolveThemeValue(appearance.authorSpacing, theme, 'spacing') as string;
 
   const imageStyles = useMemo(() => ({
-    backgroundColor: style.imageBackgroundColor,
+    backgroundColor: resolveThemeValue(style.imageBackgroundColor, theme),
     width: style.imageSize?.width,
     height: style.imageSize?.height,
-    borderColor: style.imageBorderColor,
+    borderColor: resolveThemeValue(style.imageBorderColor, theme),
     borderWidth: style.imageBorder?.width,
     borderStyle: style.imageBorder?.style,
     borderRadius : style.imageBorderRadius ?? '3px',
@@ -190,7 +190,7 @@ function QuoteBlockComponent({ context }: { context: BlockContextType }) {
 
   const quoteTextStyles = useMemo(() => ({
     textAlign: style?.quoteTextAlignment,
-    color: quoteTextFont?.color,
+    color: resolveThemeValue(quoteTextFont?.color, theme),
     fontSize: quoteTextFont?.size,
     fontWeight: quoteTextFont?.weight,
     fontFamily: quoteTextFont?.font,
@@ -199,7 +199,7 @@ function QuoteBlockComponent({ context }: { context: BlockContextType }) {
   }), [style, quoteTextFont]);
 
   const authorStyles = useMemo(() => ({
-    color: authorFont?.color,
+    color: resolveThemeValue(authorFont?.color, theme),
     fontSize: authorFont?.size,
     fontWeight: authorFont?.weight,
     fontFamily: authorFont?.font,
@@ -208,7 +208,7 @@ function QuoteBlockComponent({ context }: { context: BlockContextType }) {
   }), [style, authorFont]);
 
   const affiliationStyles = useMemo(() => ({
-    color: affiliationFont?.color,
+    color: resolveThemeValue(affiliationFont?.color, theme),
     fontSize: affiliationFont?.size,
     fontWeight: affiliationFont?.weight,
     fontFamily: affiliationFont?.font,
@@ -219,7 +219,7 @@ function QuoteBlockComponent({ context }: { context: BlockContextType }) {
   const iconStyles = useMemo(() => ({
     alignment: style?.iconAlignment,
     size: style?.iconSize?.height ?? '42px',
-    color: style?.iconColor ?? 'black',
+    color: resolveThemeValue(style?.iconColor, theme),
   }), [style]);
 
   const quoteValue = quote || "Insert your inspirational quote here";

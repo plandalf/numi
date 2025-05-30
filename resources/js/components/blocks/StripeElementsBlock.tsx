@@ -90,27 +90,27 @@ function StripeElementsComponent({ context }: { context: BlockContextType }) {
   ]);
   
   const appearance = Numi.useAppearance([
-    // Appearance.padding('padding', 'Padding', {}),
+    Appearance.padding('padding', 'Padding', {}, '0px'),
     Appearance.margin('margin', 'Margin', {}),
-    Appearance.spacing('spacing', 'Spacing', {}),
+    Appearance.spacing('spacing', 'Spacing', { config: { format: 'single' } }),
     Appearance.visibility('visibility', 'Visibility', {}, { conditional: [] }),
   ]);
 
   const containerStyle = useMemo(() => ({
     alignItems: style.alignment,
-    backgroundColor: style.backgroundColor,
-    borderColor: style.borderColor,
+    backgroundColor: resolveThemeValue(style.backgroundColor, theme),
+    borderColor: resolveThemeValue(style.borderColor, theme),
     borderWidth: style.border?.width,
     borderStyle: style.border?.style,
     borderRadius : style.borderRadius,
     boxShadow: style.shadow,
-    // padding: resolveThemeValue(appearance.padding, theme, 'padding'),
+    padding: resolveThemeValue(appearance.padding, theme, 'padding'),
     margin: resolveThemeValue(appearance.margin, theme, 'margin'),
     gap: resolveThemeValue(appearance.spacing, theme, 'spacing'),
   }), [style, appearance]);
 
   const titleStyle = useMemo(() => ({
-    color: style?.titleTextFont?.color,
+    color: resolveThemeValue(style?.titleTextFont?.color, theme),
     fontFamily: style?.titleTextFont?.font,
     fontSize: style?.titleTextFont?.size,
     fontWeight: style?.titleTextFont?.weight,
@@ -119,7 +119,7 @@ function StripeElementsComponent({ context }: { context: BlockContextType }) {
   }), [style]);
 
   const descriptionStyle = useMemo(() => ({
-    color: style?.descriptionTextFont?.color,
+    color: resolveThemeValue(style?.descriptionTextFont?.color, theme),
     fontFamily: style?.descriptionTextFont?.font,
     fontSize: style?.descriptionTextFont?.size,
     fontWeight: style?.descriptionTextFont?.weight,
@@ -128,14 +128,14 @@ function StripeElementsComponent({ context }: { context: BlockContextType }) {
   }), [style]);
 
   const errorPanelStyle = useMemo(() => ({
-    backgroundColor: style.errorBackgroundColor,
-    color: style.errorTextFont?.color,
+    backgroundColor: resolveThemeValue(style?.errorBackgroundColor, theme),
+    color: resolveThemeValue(style?.errorTextFont?.color, theme),
     fontFamily: style.errorTextFont?.font,
     fontSize: style.errorTextFont?.size,
     fontWeight: style.errorTextFont?.weight,
     lineHeight: style.errorTextFont?.lineHeight,
     letterSpacing: style.errorTextFont?.letterSpacing,
-    borderColor: style.errorBorderColor,
+    borderColor: resolveThemeValue(style?.errorBorderColor, theme),
     borderWidth: style.errorBorder?.width,
     borderStyle: style.errorBorder?.style,
     borderRadius : style.errorBorderRadius ?? '3px',
@@ -145,14 +145,14 @@ function StripeElementsComponent({ context }: { context: BlockContextType }) {
   const warningColorWithAlpha = addAlphaToColor(warningColor, 0.10);
 
   const warningPanelStyle = useMemo(() => ({
-    backgroundColor: warningColorWithAlpha,
-    color: style.warningTextFont?.color || warningColor,
+    backgroundColor: style?.warningBackgroundColor ? resolveThemeValue(style?.warningBackgroundColor, theme) : warningColorWithAlpha,
+    color: resolveThemeValue(style?.warningTextFont?.color, theme),
     fontFamily: style.warningTextFont?.font,
     fontSize: style.warningTextFont?.size,
     fontWeight: style.warningTextFont?.weight,
     lineHeight: style.warningTextFont?.lineHeight,
     letterSpacing: style.warningTextFont?.letterSpacing,
-    borderColor: warningColor,
+    borderColor: resolveThemeValue(style?.warningBorderColor, theme),
     borderWidth: style.warningBorder?.width,
     borderStyle: style.warningBorder?.style,
     borderRadius: style.warningBorderRadius ?? '3px',

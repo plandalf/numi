@@ -6,6 +6,7 @@ import update from "immutability-helper";
 import { toast } from 'sonner';
 import { generateDefaultPage } from '@/components/offers/page-flow-editor';
 import { Template } from '@/types/template';
+import { useDebounce } from '@/hooks/use-debounce';
 
 interface EditorContextType {
   data: EditFormData;
@@ -144,6 +145,7 @@ export function EditorProvider({ offer, organizationThemes, organizationTemplate
     height: number;
   }>({ width: 1024, height: 768 });
   const [theme, setTheme] = useState<Theme>(props.theme);
+  const [enableAutoSave, setEnableAutoSave] = useState(false);
 
   const { data, setData, put, processing, errors, setDefaults } = useForm<EditFormData>({
     name: offer.name,
@@ -180,21 +182,41 @@ export function EditorProvider({ offer, organizationThemes, organizationTemplate
     }
   }, [data]);
 
+  const handleSaveError = (error: Record<string, string>) => {
+    const errorMessages = Object.values(error).flat();
+    toast.error(<>
+      <p>Failed to save offer</p>
+      <ul className='list-disc list-inside'>
+        {errorMessages.map((e: string) => (
+          <li key={e}>{e}</li>
+        ))}
+      </ul>
+    </>);
+  };
+
   const handleSave = () => {
     put(route('offers.update', offer.id), {
-      onError: (error: Record<string, string>) => {
-        const errorMessages = Object.values(error).flat();
-        toast.error(<>
-          <p>Failed to save offer</p>
-          <ul className='list-disc list-inside'>
-            {errorMessages.map((e: string) => (
-              <li key={e}>{e}</li>
-            ))}
-          </ul>
-        </>);
+      onSuccess: () => {
+        toast.success('Offer updated successfully');
       },
+      onError: handleSaveError,
     });
   };
+
+
+  const debouncedView = useDebounce(data?.view, 250);
+
+  useEffect(() => {
+    if(!enableAutoSave) {
+      setEnableAutoSave(true);
+    }
+
+    if (enableAutoSave) {
+      put(route('offers.update', offer.id), {
+        onError: handleSaveError,
+      });
+    }
+  }, [debouncedView]);
 
   const handleNameSubmit = (e: React.FormEvent) => {
     e.preventDefault();

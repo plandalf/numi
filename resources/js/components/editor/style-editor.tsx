@@ -27,6 +27,7 @@ import { TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
 import { Tooltip } from '../ui/tooltip';
 import { cn } from '@/lib/utils';
 import { SpacingPicker } from '../ui/spacing-picker';
+import { getMatchedThemeValue } from '@/lib/theme';
 
 export interface StyleItem {
   name: string;
@@ -56,7 +57,7 @@ interface StyleEditorProps {
   items: StyleItem[];
   onChange: (key: string, value: any) => void;
   onDelete?: (key: string) => void;
-  themeColors?: Record<string, string>;
+  themeColors?: Record<string, { value: string, label: string }>;
   fonts?: Font[];
 }
 
@@ -76,6 +77,10 @@ const StyleItemValuePreview = ({
   switch (item.inspector) {
     case 'colorPicker':
       const { rgb } = parseHexAlpha(value as string);
+      const matchedThemeValue = getMatchedThemeValue(value as string);
+
+      const colorValue = matchedThemeValue ? themeColors?.[matchedThemeValue]?.value : rgb;
+      const colorLabel = matchedThemeValue ? themeColors?.[matchedThemeValue]?.label : rgb;
       return (
         <ColorPicker
           type="advanced"
@@ -83,8 +88,8 @@ const StyleItemValuePreview = ({
           onChange={(value) => onChange(item.name, value)}
           trigger={
             <div className="flex-1 flex flex-row gap-2 items-center cursor-pointer">
-               <div className="w-5 h-5 rounded cursor-pointer" style={{ backgroundColor: value as string }} />
-               <span className="text-xs">{rgb}</span>
+               {colorValue && <div className="w-5 h-5 rounded cursor-pointer" style={{ backgroundColor: colorValue as string }} />}
+               <span className="text-xs">{colorLabel != '' ? colorLabel : 'Select'}</span>
             </div>
           }
           themeColors={themeColors}
@@ -112,12 +117,18 @@ const StyleItemValuePreview = ({
       );
     case 'fontPicker':
       const fontValue = value as FontValue;
+      const matchedColorThemeValue = getMatchedThemeValue(value?.color as string);
       const fontValueAsTitle = `${fontValue.font ?? 'Font'} ${WEIGHT_LABELS[fontValue.weight as keyof typeof WEIGHT_LABELS] ?? ''}`
       return (
         <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
           <DropdownMenuTrigger asChild>
             <span className="flex flex-row gap-2 items-center cursor-pointer">
-              <Type className="size-5 border border-gray-200 rounded p-0.5" style={{ color: fontValue?.color, borderColor: fontValue?.color }}  />
+              <Type
+                className="size-5 border border-gray-200 rounded p-0.5"
+                style={{
+                  color: matchedColorThemeValue ? themeColors?.[matchedColorThemeValue]?.value : fontValue?.color ?? '#000000',
+                }} 
+              />
               <span
                 className="flex-1 text-xs line-clamp-2"
                 title={fontValueAsTitle}
@@ -134,6 +145,7 @@ const StyleItemValuePreview = ({
               fonts={fonts ?? []}
               onClose={() => setIsOpen(false)}
               config={item.config}
+              themeColors={themeColors}
             />
           </DropdownMenuContent>
         </DropdownMenu>
@@ -293,6 +305,7 @@ const StyleItemValuePreview = ({
               className="w-full max-w-[300px] p-2"
               value={value as string}
               defaultValue={item.defaultValue}
+              defaultThemeKey={item.name}
               onChangeProperty={(value) => onChange(item.name, value)}
               config={item.config}
             />

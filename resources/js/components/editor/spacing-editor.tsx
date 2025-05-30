@@ -5,6 +5,7 @@ export interface SpacingEditorProps {
   label?: string;
   value: string | null;
   defaultValue?: string | null;
+  defaultThemeKey?: string;
   onChangeProperty: (value: string | null) => void;
   config?: SpacingPickerConfig;
 }
@@ -13,6 +14,7 @@ export function SpacingEditor({
   label,
   value,
   defaultValue,
+  defaultThemeKey,
   onChangeProperty,
   config
 }: SpacingEditorProps) {
@@ -23,6 +25,7 @@ export function SpacingEditor({
         id={`${label}-input`}
         value={value}
         defaultValue={defaultValue ?? ''}
+        defaultThemeKey={defaultThemeKey}
         onChangeProperty={onChangeProperty}
         config={config}
       />

@@ -94,7 +94,7 @@ class ThemeResource extends JsonResource
         'shadow' => '0px 0px 0px 0px #000000',
 
         'padding' => '15px',
-        'margin' => '0px',
+        'margin' => '5px',
         'spacing' => '5px',
     ];
 

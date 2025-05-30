@@ -1,5 +1,13 @@
 import { Theme } from "@/types/theme";
 
+export const getMatchedThemeValue = (value: string) => {
+  const themeVarMatch = value.match(/{{theme\.([a-zA-Z_]+)}}/);
+  if (themeVarMatch?.[1]) {
+    return themeVarMatch[1] as keyof Theme;
+  }
+  return null;
+};
+
 /**
  * Resolves a theme value by checking:
  * 1. If value is empty/null/undefined, returns the default from theme
@@ -41,9 +49,8 @@ export function resolveThemeValue<T>(
     }
 
     // Check for theme variable pattern {{theme.property}}
-    const themeVarMatch = value.match(/{{theme\.([a-zA-Z_]+)}}/);
-    if (themeVarMatch?.[1]) {
-      const themeProperty = themeVarMatch[1] as keyof Theme;
+    const themeProperty = getMatchedThemeValue(value);
+    if (themeProperty) {
       return theme?.[themeProperty] ?? value;
     }
   }

@@ -10,7 +10,7 @@ export interface ColorPickerProps {
   onBlur?: () => void;
   className?: string;
   type?: 'simple' | 'advanced';
-  themeColors?: Record<string, string>;
+  themeColors?: Record<string, { value: string, label: string }>;
   trigger?: React.ReactNode;
 }
 

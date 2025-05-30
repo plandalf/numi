@@ -26,6 +26,18 @@ interface DimensionPickerProps {
   className?: string;
 }
 
+type Unit = 'px' | 'rem' | '%';
+
+const extractValueAndUnit = (dimension: string): { value: number; unit: Unit } => {
+  const match = dimension.match(/^([\d.]+)(px|rem|%)$/);
+  if (!match) return { value: 0, unit: 'px' };
+  return { value: parseFloat(match[1]), unit: match[2] as Unit };
+};
+
+const formatWithUnit = (value: number, unit: Unit): string => {
+  return `${value}${unit}`;
+};
+
 export const DimensionPicker: React.FC<DimensionPickerProps> = ({
   value,
   onChange,
@@ -40,23 +52,33 @@ export const DimensionPicker: React.FC<DimensionPickerProps> = ({
   const [localHeight, setLocalHeight] = useState(typeof value.height === 'string' ? value.height : '');
   const [isWidthFunction, setIsWidthFunction] = useState(false);
   const [isHeightFunction, setIsHeightFunction] = useState(false);
+  const [widthUnit, setWidthUnit] = useState<Unit>('px');
+  const [heightUnit, setHeightUnit] = useState<Unit>('px');
 
   useEffect(() => {
-    setLocalWidth(typeof value.width === 'string' ? value.width : '');
+    if (typeof value.width === 'string') {
+      setLocalWidth(value.width);
+      const { unit } = extractValueAndUnit(value.width);
+      setWidthUnit(unit);
+    }
   }, [value.width]);
 
   useEffect(() => {
-    setLocalHeight(typeof value.height === 'string' ? value.height : '');
+    if (typeof value.height === 'string') {
+      setLocalHeight(value.height);
+      const { unit } = extractValueAndUnit(value.height);
+      setHeightUnit(unit);
+    }
   }, [value.height]);
 
   const handleWidthChange = (newValue: number) => {
-    const formatted = `${newValue}px`;
+    const formatted = formatWithUnit(newValue, widthUnit);
     setLocalWidth(formatted);
     onChange({ ...value, width: formatted });
   };
 
   const handleHeightChange = (newValue: number) => {
-    const formatted = `${newValue}px`;
+    const formatted = formatWithUnit(newValue, heightUnit);
     setLocalHeight(formatted);
     onChange({ ...value, height: formatted });
   };
@@ -72,27 +94,40 @@ export const DimensionPicker: React.FC<DimensionPickerProps> = ({
   const handleWidthBlur = () => {
     const newValue = localWidth.trim();
     
-    // Auto-format numbers to pixels
-    if (/^\d+$/.test(newValue)) {
-      const formatted = `${newValue}px`;
+    // Check for valid unit formats
+    const unitMatch = newValue.match(/^([\d.]+)(px|rem|%|)$/);
+    if (unitMatch) {
+      const numValue = parseFloat(unitMatch[1]);
+      const unit = (unitMatch[2] || 'px') as Unit;
+      const formatted = formatWithUnit(numValue, unit);
       setLocalWidth(formatted);
-      onChange({ ...value, width: formatted });
-    } else if (newValue === 'auto' || newValue.endsWith('%')) {
-      onChange({ ...value, width: newValue });
+      setWidthUnit(unit);
+      onChange({ width: formatted, height: value.height as string });
+    } else if (newValue === 'auto') {
+      onChange({ width: newValue, height: value.height as string });
     }
   };
 
   const handleHeightBlur = () => {
     const newValue = localHeight.trim();
     
-    // Auto-format numbers to pixels
-    if (/^\d+$/.test(newValue)) {
-      const formatted = `${newValue}px`;
+    // Check for valid unit formats
+    const unitMatch = newValue.match(/^([\d.]+)(px|rem|%|)$/);
+    if (unitMatch) {
+      const numValue = parseFloat(unitMatch[1]);
+      const unit = (unitMatch[2] || 'px') as Unit;
+      const formatted = formatWithUnit(numValue, unit);
       setLocalHeight(formatted);
-      onChange({ ...value, height: formatted });
-    } else if (newValue === 'auto' || newValue.endsWith('%')) {
-      onChange({ ...value, height: newValue });
+      setHeightUnit(unit);
+      onChange({ width: value.width as string, height: formatted });
+    } else if (newValue === 'auto') {
+      onChange({ width: value.width as string, height: newValue });
     }
+  };
+
+  const getDimensionValue = (dimension: string): number => {
+    const { value } = extractValueAndUnit(dimension);
+    return value || 0;
   };
 
   const getRadiusValue = (radius: string) => {
@@ -118,7 +153,7 @@ export const DimensionPicker: React.FC<DimensionPickerProps> = ({
           <div className="flex flex-row gap-2 w-full items-center">
             <Button
               onClick={() => setIsWidthFunction(!isWidthFunction)}
-              variant={isWidthFunction ? "secondary" : "ghost"} // Visually indicate active state
+              variant={isWidthFunction ? "secondary" : "ghost"}
               size="xs"
             >
               Fn
@@ -131,12 +166,12 @@ export const DimensionPicker: React.FC<DimensionPickerProps> = ({
                   value={localWidth}
                   onChange={handleWidthInputChange}
                   onBlur={handleWidthBlur}
-                  placeholder="auto, 100%, 100px"
+                  placeholder="100px, 2rem, 50%"
                 />
               </div>
             ) : (
               <DragAdjuster
-                value={getRadiusValue(localWidth)}
+                value={getDimensionValue(localWidth)}
                 onChange={handleWidthChange}
                 min={minWidth}
                 max={maxWidth}
@@ -160,7 +195,7 @@ export const DimensionPicker: React.FC<DimensionPickerProps> = ({
           <div className="flex flex-row gap-2 w-full items-center">
             <Button
               onClick={() => setIsHeightFunction(!isHeightFunction)}
-              variant={isHeightFunction ? "secondary" : "ghost"} // Visually indicate active state
+              variant={isHeightFunction ? "secondary" : "ghost"}
               size="xs"
             >
               Fn
@@ -173,12 +208,12 @@ export const DimensionPicker: React.FC<DimensionPickerProps> = ({
                   value={localHeight}
                   onChange={handleHeightInputChange}
                   onBlur={handleHeightBlur}
-                  placeholder="auto, 100%, 100px"
+                  placeholder="100px, 2rem, 50%"
                 />
               </div>
             ) : (
               <DragAdjuster
-                value={getRadiusValue(localHeight)}
+                value={getDimensionValue(localHeight)}
                 onChange={handleHeightChange}
                 min={minHeight}
                 max={maxHeight}

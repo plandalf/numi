@@ -35,7 +35,7 @@ function TextInputBlockComponent({ context }: { context: BlockContextType }) {
   const appearance = Numi.useAppearance([
     Appearance.padding('padding', 'Padding', {}),
     Appearance.margin('margin', 'Margin', {}),
-    Appearance.spacing('spacing', 'Spacing', {}),
+    Appearance.spacing('spacing', 'Spacing', { config: { format: 'single' } }),
     Appearance.visibility('visibility', 'Visibility', {}, { conditional: [] }),
   ]);
 
@@ -88,7 +88,10 @@ function TextInputBlockComponent({ context }: { context: BlockContextType }) {
     alignItems: style.alignment != 'expand' ? style.alignment : 'flex-start'
   }), [appearance, style]);
 
-  const labelFont = resolveThemeValue(style?.font, theme, 'label_typography') as FontValue;
+  const labelFont = {
+    ...resolveThemeValue(style?.labelFont, theme, 'label_typography') as FontValue,
+    color: resolveThemeValue(style?.labelFont?.color, theme),
+  };
   
   const labelStyles = useMemo(() => ({
     color: labelFont?.color,
@@ -101,13 +104,13 @@ function TextInputBlockComponent({ context }: { context: BlockContextType }) {
   const inputStyles = useMemo(() => ({
     padding: resolveThemeValue(appearance.padding, theme, 'padding'),
     width: style.alignment == 'expand' ? '100%' : 'auto',
-    backgroundColor: style.inputBackgroundColor ?? 'white',
-    color: style.inputFont?.color ?? 'black',
+    backgroundColor: resolveThemeValue(style.inputBackgroundColor, theme),
+    color: resolveThemeValue(style.inputFont?.color, theme),
     fontFamily: style.inputFont?.font,
     fontWeight: style.inputFont?.weight,
     fontSize: style.inputFont?.size,
     lineHeight: style.inputFont?.lineHeight,
-    borderColor: style.borderColor,
+    borderColor: resolveThemeValue(style.borderColor, theme),
     borderWidth: style.border?.width ?? '0.5px',
     borderStyle: style.border?.style,
     borderRadius : style.borderRadius,
