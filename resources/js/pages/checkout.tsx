@@ -12,6 +12,7 @@ import { findUniqueFontsFromTheme, findUniqueFontsFromView } from '@/utils/font-
 import WebFont from 'webfontloader';
 import { Theme } from '@/types/theme';
 import { resolveThemeValue } from '@/lib/theme';
+import { ChevronLeftIcon } from 'lucide-react';
 
 
 const NavigationBar = ({ barStyle, children, className, ...props }: NavigationBarProps) => {
@@ -27,12 +28,12 @@ const NavigationBar = ({ barStyle, children, className, ...props }: NavigationBa
         <button
           onClick={onBack}
           type="button"
-          className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900"
+          className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 flex-shrink-0 flex items-center"
         >
-          Back
+          <ChevronLeftIcon className="w-5 h-5 mr-2" />
         </button>
       )}
-      <div>
+      <div className="flex-grow">
       {children}
       </div>
     </div>
@@ -118,7 +119,7 @@ const renderElement = (
         type,
         {
           ...props,
-          style: { 
+          style: {
             ...props.style,
             backgroundColor,
             padding,
