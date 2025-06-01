@@ -10,6 +10,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Session;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -83,6 +84,19 @@ class OrganizationController extends Controller
     {
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
+            'default_currency' => [
+                Rule::in(['USD', 'GBP', 'AUD', 'NZD', 'JPY', 'EUR'])
+            ],
+            'checkout_success_url' => [
+                'nullable',
+                'string',
+                'url',
+            ],
+            'checkout_cancel_url' => [
+                'nullable',
+                'string',
+                'url',
+            ],
         ]);
 
         $organization->update($validated);

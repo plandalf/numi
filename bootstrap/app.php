@@ -33,6 +33,9 @@ return Application::configure(basePath: dirname(__DIR__))
             'organization' => RequireOrganization::class,
             'subscription' => RequiresSubscription::class,
         ]);
+//        $middleware->api([
+//           //
+//        ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //

@@ -104,21 +104,7 @@ class OffersController extends Controller
 
     public function update(OfferUpdateRequest $request, Offer $offer)
     {
-        $forUpdate = [];
-
-        if ($request->validated('name')) {
-            $forUpdate['name'] = $request->validated('name');
-        }
-
-        if ($request->validated('view')) {
-            $forUpdate['view'] = $request->validated('view');
-        }
-
-        if ($request->validated('theme_id')) {
-            $forUpdate['theme_id'] = $request->validated('theme_id');
-        }
-
-        $offer->update($forUpdate);
+        $offer->update($request->validated());
 
         return redirect()->back()->with('success', 'Offer updated successfully');
     }

@@ -29,6 +29,8 @@ use Illuminate\Support\Str;
  * @property Carbon $updated_at
  * @property Carbon|null $deleted_at
  * @property string $uuid
+ * @property string|null $checkout_success_url
+ * @property string|null $checkout_cancel_url
  */
 #[ObservedBy(OfferObserver::class)]
 class Offer extends Model
@@ -50,6 +52,8 @@ class Offer extends Model
         'view',
         'properties',
         'uuid',
+        'checkout_success_url',
+        'checkout_cancel_url',
     ];
 
     protected $casts = [

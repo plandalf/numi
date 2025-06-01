@@ -54,44 +54,75 @@ export default function General({ organization }: Props) {
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <form onSubmit={handleSubmit} className="space-y-4">
-                            <div className="space-y-2">
-                                <Label htmlFor="name">Organization name</Label>
-                                <Input
-                                    id="name"
-                                    value={form.data.name}
-                                    onChange={(e) => form.setData('name', e.target.value)}
-                                    placeholder="Acme Corp"
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="currency">Default Currency</Label>
-                                <Select
-                                    value={form.data.default_currency}
-                                    onValueChange={(value) => form.setData('default_currency', value)}
-                                >
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Select currency" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {Object.entries(AVAILABLE_CURRENCIES).map(([code, name]) => (
-                                            <SelectItem key={code} value={code}>
-                                                {code} - {name}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <Button
-                                type="submit"
-                                disabled={form.processing}
-                            >
-                                {form.processing && (
-                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                )}
-                                Save changes
-                            </Button>
-                        </form>
+                      <form onSubmit={handleSubmit} className="space-y-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="name">Organization name</Label>
+                          <Input
+                            id="name"
+                            value={form.data.name}
+                            onChange={(e) => form.setData('name', e.target.value)}
+                            placeholder="Acme Corp"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="currency">Default Currency</Label>
+                          <Select
+                            value={form.data.default_currency}
+                            onValueChange={(value) => form.setData('default_currency', value)}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select currency" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {Object.entries(AVAILABLE_CURRENCIES).map(([code, name]) => (
+                                <SelectItem key={code} value={code}>
+                                  {code} - {name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="name">Checkout Success URL</Label>
+                          <Input
+                            id="checkout_success_url"
+                            value={form.data.checkout_success_url}
+                            onChange={(e) => form.setData('checkout_success_url', e.target.value)}
+                            placeholder="https://yourdomain.com/success"
+                          />
+                          {form.errors.checkout_success_url && (
+                            <p className="text-red-500 text-sm">
+                              {form.errors.checkout_success_url}
+                            </p>
+                          )}
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="name">Checkout Cancel URL</Label>
+                          <Input
+                            id="checkout_cancel_url"
+                            value={form.data.checkout_cancel_url}
+                            onChange={(e) => form.setData('checkout_cancel_url', e.target.value)}
+                            placeholder="https://yourdomain.com/cancel"
+                          />
+                          {form.errors.checkout_cancel_url && (
+                            <p className="text-red-500 text-sm">
+                              {form.errors.checkout_cancel_url}
+                            </p>
+                          )}
+                        </div>
+
+                        <Button
+                          type="submit"
+                          disabled={form.processing}
+                        >
+                          {form.processing && (
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          )}
+                          Save changes
+                        </Button>
+                      </form>
                     </CardContent>
                 </Card>
             </div>

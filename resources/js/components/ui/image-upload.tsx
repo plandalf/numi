@@ -27,8 +27,8 @@ interface PageProps {
 interface Props {
     label?: string;
     className?: string;
-    value?: string | null;
-    onChange?: (url: string | null) => void;
+    value?: number | null;
+    onChange?: (media: { id: number, url: string } | null) => void;
     onError?: (error: string) => void;
     maxSize?: number; // in bytes
     preview?: string | null;
@@ -97,15 +97,8 @@ export function ImageUpload({
             await axios.post(route('medias.finalize', { media: data.media_id }))
                 .then(res => {
                     const responseData = res.data;
-
-                    console.log('onSuccess', responseData);
-                    // 4. Update preview and notify parent
-                    const objectUrl = URL.createObjectURL(file);
-                    setPreviewUrl(objectUrl);
-                    console.log(objectUrl);
-
-                    // Pass entire media object instead of just ID
-                    onChange?.(responseData.data.path);
+                    setPreviewUrl(responseData.data.url);
+                    onChange?.({ id: responseData.data.id, url: responseData.data.url });
                 });
 
         } catch (error) {

@@ -122,14 +122,6 @@ Route::get('/workflow-test', function () {
 
 })->name('workflow-test');
 
-Route::get('test', function () {
-
-    $offer = Offer::query()->first();
-    dispatch_sync(new \App\Jobs\TakeOfferScreenshotJob($offer));
-    $offer->refresh();
-    dd($offer->screenshot);
-    dump($offer->toArray());
-});
 
 // get offer controller
 // redirect to
