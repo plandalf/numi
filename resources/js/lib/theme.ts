@@ -1,7 +1,7 @@
 import { Theme } from "@/types/theme";
 
 export const getMatchedThemeValue = (value: string) => {
-  const themeVarMatch = value.match(/{{theme\.([a-zA-Z_]+)}}/);
+  const themeVarMatch = value?.match(/{{theme\.([a-zA-Z_]+)}}/);
   if (themeVarMatch?.[1]) {
     return themeVarMatch[1] as keyof Theme;
   }
@@ -14,7 +14,7 @@ export const getMatchedThemeValue = (value: string) => {
  * 2. If value is an empty object, returns the default from theme
  * 3. If value is a string containing theme variable ({{theme.property}}), resolves it
  * 4. Otherwise returns the original value maintaining its type
- * 
+ *
  * @param value The current value to resolve (can be any type)
  * @param theme The theme object to get values from
  * @param defaultThemeKey The theme property key to use as default
@@ -32,10 +32,10 @@ export function resolveThemeValue<T>(
 
   // Handle empty objects with default theme value
   if (
-    typeof value === 'object' && 
-    value !== null && 
-    !Array.isArray(value) && 
-    Object.keys(value).length === 0 && 
+    typeof value === 'object' &&
+    value !== null &&
+    !Array.isArray(value) &&
+    Object.keys(value).length === 0 &&
     defaultThemeKey
   ) {
     return theme?.[defaultThemeKey] ?? value;

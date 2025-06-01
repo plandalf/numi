@@ -27,12 +27,12 @@ class ThemeService
         return $query->get();
     }
 
-    public function createTheme(array $data) 
+    public function createTheme(array $data)
     {
-        return Theme::create($data);
+        return Theme::create(array_merge($data, Theme::themeDefaults()));
     }
 
-    public function updateTheme(Theme $theme, array $data) 
+    public function updateTheme(Theme $theme, array $data)
     {
         return $theme->update($data);
     }

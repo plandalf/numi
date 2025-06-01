@@ -140,7 +140,7 @@ export function Sidebar() {
             variant="outline"
             size="icon"
             className={cn("h-10 w-10",
-              activeTab === 'elements' ? "bg-gray-900 text-white hover:bg-gray-900 hover:text-white" : "hover:bg-gray-500 hover:text-white"
+              activeTab === 'elements' ? "bg-primary text-white hover:bg-gray-900 hover:text-white" : "bg-default text-white border-default hover:bg-primary hover:opacity-80 hover:border-gray-900 hover:text-white"
             )}
             onClick={() => onTabClick('elements')}
             tooltip="Elements"
@@ -177,7 +177,7 @@ export function Sidebar() {
 
       {/* Right column: Content */}
       <div className={cn(
-        "flex flex-col flex-grow overflow-hidden transition-all duration-300",
+        "flex flex-col flex-grow overflow-hidden transition-all duration-300 border-r",
         !isEditorMode ? "w-0 hidden" : "w-[346px]"
       )}>
         {/* Upper right: Label */}
