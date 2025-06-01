@@ -21,7 +21,7 @@ trait HandlesLandingPageDomains
         $org = $model->organization;
         $domain = $org->getSubdomainHost();
 
-        if ($currentHost !== $domain) {
+        if ($currentHost !== $domain && !empty($domain)) {
             // Create new URL with updated host
             $newUrl = $url->withHost($domain);
 
