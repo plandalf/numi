@@ -133,8 +133,8 @@ function OptionSelectorComponent({ context }: { context: BlockContextType }) {
   const activeBackgroundColorWithAlpha = addAlphaToColor(activeBackgroundColor, 0.10);
 
   const activeTextFont = {
-    ...resolveThemeValue(style.activeTextFont, theme, 'label_typography') as FontValue,
-    color: resolveThemeValue(style.activeTextFont?.color, theme, 'secondary_contrast_color') as string,
+    ...resolveThemeValue(style.activeTextFont, theme, 'body_typography') as FontValue,
+    color: resolveThemeValue(style.activeTextFont?.color, theme, 'secondary_color') as string,
   };
 
   const inactiveTextFont = {
@@ -145,7 +145,7 @@ function OptionSelectorComponent({ context }: { context: BlockContextType }) {
   const badgeBackgroundColor = resolveThemeValue(style.badgeBackgroundColor, theme, 'secondary_color') as string;
   const badgeTextFont = {
     ...resolveThemeValue(style.badgeTextFont, theme, 'body_typography') as FontValue,
-    color: resolveThemeValue(style.badgeTextFont?.color, theme, 'secondary_contrast_color') as string,
+    color: resolveThemeValue(style.badgeTextFont?.color, theme, 'secondary_color') as string,
   };
 
   console.log('activeBorderColor', style.activeBorderColor);
