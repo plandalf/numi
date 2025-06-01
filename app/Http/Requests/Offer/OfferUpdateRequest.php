@@ -28,7 +28,7 @@ class OfferUpdateRequest extends FormRequest
             'name' => ['nullable', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:1000'],
             'product_image_id' => ['nullable', 'integer', 'exists:medias,id'],
-            'status' => ['required', 'in:draft,published,archived'],
+            'status' => ['in:draft,published,archived'],
             'theme_id' => ['nullable', 'exists:themes,id'],
             'checkout_success_url' => ['nullable', 'url', 'max:255'],
             'checkout_cancel_url' => ['nullable', 'url', 'max:255'],
@@ -54,4 +54,4 @@ class OfferUpdateRequest extends FormRequest
             'checkout_cancel_url.url' => 'The cancel URL must be a valid URL.',
         ];
     }
-} 
+}

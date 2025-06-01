@@ -13,6 +13,7 @@ function ImageBlockComponent() {
     defaultValue: '',
     inspector: 'file',
   });
+  console.log("STR", image);
 
   const style = Numi.useStyle([
     Style.alignment('alignment', 'Alignment', {

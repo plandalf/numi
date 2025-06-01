@@ -80,8 +80,8 @@ Add professional checkout to any process - your website, apps, forms, or custom 
 - **Payment plans** that make expensive services accessible
 
 ### 5. **Pricing That Respects Your Business**
-- **Start free** up to $10K annual volume
-- **$25/month** vs $300+ for closed platform competitors
+- **Just $25/month** vs $300+ for closed platform competitors
+- **Up to 250 orders included** - perfect for growing businesses
 - **No transaction fees** beyond Stripe's standard rates
 - **No platform lock-in** - your data, your integrations
 
@@ -146,7 +146,7 @@ Add professional checkout to any process - your website, apps, forms, or custom 
 - **Real-time analytics** that connect to your business intelligence
 
 ### **Grows With Your Ambition**
-- **Start simple** with basic checkout
+- **Start with 250 orders/month** included
 - **Add integrations** as your workflow grows
 - **Advanced automation** that connects everything
 - **Enterprise features** with unlimited flexibility
@@ -170,12 +170,27 @@ Add professional checkout to any process - your website, apps, forms, or custom 
 
 ### **Growth: $25/month**
 Everything growing businesses need
-- Up to $100K annual processed volume
+- Up to 250 orders per month
 - Advanced integrations (Zapier, webhooks)
 - Subscription billing
 - Payment plans
 - Priority support
 - **[Start 14-day trial →]**
+
+### **Professional: $99/month**
+For established businesses ready to scale
+- Up to 2,500 orders per month
+- Custom API access
+- Advanced automation features
+- Phone support
+- **[Schedule demo →]**
+
+### **Enterprise: Custom**
+For high-volume success stories
+- Unlimited orders and integrations
+- Custom feature development
+- Dedicated success manager
+- **[Contact sales →]**
 
 **Transparent pricing. No integration fees. No platform lock-in.**
 
@@ -189,13 +204,13 @@ Every day with disconnected billing is potential efficiency lost. Every closed p
 
 ### **Get Started Right Now:**
 
-1. **[Create your free account](https://numi.co/signup)** - no credit card needed
+1. **[Start your 14-day trial](https://plandalf.dev/signup)** - no credit card needed for trial
 2. **Pick a template** that matches your business model  
 3. **Customize with your branding** in our visual editor
 4. **Connect to your existing tools** with one-click integrations
 5. **Launch** and watch everything work together seamlessly
 
-**[Start Your Integration Story →](https://numi.co/signup)**
+**[Start Your 14-Day Trial →](https://plandalf.dev/signup)**
 
 ---
 
@@ -214,25 +229,19 @@ Yes - through our API, webhooks, Zapier connections, and direct integrations. If
 You keep using your own Stripe account. Numi just adds beautiful checkout pages and powerful integrations that make Stripe work better with your entire business ecosystem.
 
 ### **"What if I need a custom integration?"**
-Our API is completely open, and our team helps with custom integrations on Professional and Enterprise plans. We love connecting to new tools.
+Our API is completely open, and our team helps with custom integrations. We love connecting to new tools!
 
 ---
 
 ## Ready to Connect Everything?
 
-**Join 5,000+ business owners who finally got billing that works with their workflow.**
-
-**[Start Your Free Account](https://numi.co/signup)** - Create your first integrated checkout in 15 minutes
+**[Start Your 14-Day Trial](https://plandalf.dev/signup)** - Create your first integrated checkout in 15 minutes
 
 ---
 
 ### **Want to See It in Action?**
 
-**[Book a 15-minute demo](https://cal.com/numi/demo)** - We'll show you exactly how Numi integrates with your specific tools
-
-**[Join our community](https://discord.gg/numi)** - Connect with other business owners sharing integration tips
-
-**[Browse our integrations](https://docs.numi.co/integrations)** - See all the tools that work with Numi
+**[Browse our integrations](https://plandalf.dev/signup)** - See all the tools that work with Numi
 
 ---
 
