@@ -88,7 +88,7 @@ function StripeElementsComponent({ context }: { context: BlockContextType }) {
     Style.shadow('shadow', 'Shadow', {}, ''),
     Style.hidden('hidden', 'Hidden', {}, false),
   ]);
-  
+
   const appearance = Numi.useAppearance([
     Appearance.padding('padding', 'Padding', {}, '0px'),
     Appearance.margin('margin', 'Margin', {}),
@@ -104,9 +104,9 @@ function StripeElementsComponent({ context }: { context: BlockContextType }) {
     borderStyle: style.border?.style,
     borderRadius : style.borderRadius,
     boxShadow: style.shadow,
-    padding: resolveThemeValue(appearance.padding, theme, 'padding'),
-    margin: resolveThemeValue(appearance.margin, theme, 'margin'),
-    gap: resolveThemeValue(appearance.spacing, theme, 'spacing'),
+    padding:style.padding,
+    margin: style.margin,
+    gap: style.spacing,
   }), [style, appearance]);
 
   const titleStyle = useMemo(() => ({
@@ -187,15 +187,19 @@ function StripeElementsComponent({ context }: { context: BlockContextType }) {
 
     initializeStripe();
   }, [session.publishable_key]);
-  
+
   if(style.hidden) {
     return null;
   }
 
   return (
     <div className="flex flex-col" style={containerStyle}>
-      <MarkdownText theme={theme} text={title} style={titleStyle} />
-      <MarkdownText theme={theme} text={description} style={descriptionStyle} />
+      {title && (
+        <MarkdownText theme={theme} text={title} style={titleStyle} />
+      )}
+      {description && (
+        <MarkdownText theme={theme} text={description} style={descriptionStyle} />
+      )}
       {isLoading ? (
         <div className="flex justify-center items-center py-8">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
