@@ -97,6 +97,7 @@ class OrganizationController extends Controller
                 'string',
                 'url',
             ],
+            'subdomain' => ['string', 'min:5', 'regex:/^[a-z0-9-]+$/', 'unique:organizations,subdomain,' . $organization->id],
         ]);
 
         $organization->update($validated);

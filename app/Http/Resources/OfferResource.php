@@ -50,6 +50,9 @@ class OfferResource extends JsonResource
 
             'created_at' => $this->created_at?->toISOString(),
             'updated_at' => $this->updated_at?->toISOString(),
+            'public_url' => $this->whenLoaded('organization', function () {
+                return $this->public_url;
+            }),
         ];
     }
 }

@@ -13,6 +13,7 @@ import SettingsLayout from '@/layouts/settings-layout';
 import { type Organization } from '@/types';
 import { Head, useForm } from '@inertiajs/react';
 import { Loader2 } from "lucide-react";
+import { cn } from '@/lib/utils';
 
 interface Props {
     organization: Organization;
@@ -35,6 +36,9 @@ export default function General({ organization }: Props) {
     const form = useForm({
         name: organization.name,
         default_currency: organization.default_currency,
+        checkout_success_url: organization.checkout_success_url,
+        checkout_cancel_url: organization.checkout_cancel_url,
+        subdomain: organization.subdomain || '',
     });
 
     const handleSubmit = (e: React.FormEvent) => {
@@ -82,6 +86,26 @@ export default function General({ organization }: Props) {
                             </SelectContent>
                           </Select>
                         </div>
+                        
+                        <div className="space-y-2">
+                          <Label htmlFor="subdomain" className={cn(form.errors.subdomain && "text-destructive")}>Subdomain</Label>
+                          <Input
+                              id="subdomain"
+                              value={form.data.subdomain}
+                              onChange={(e) => form.setData('subdomain', e.target.value.toLowerCase())}
+                              placeholder="acme"
+                              pattern="[a-z0-9-]+"
+                              minLength={5}
+                              title="Subdomain must be at least 5 characters and can only contain lowercase letters, numbers, and dashes"
+                              className={cn(form.errors.subdomain && "border-destructive")}
+                          />
+                          <p className="text-sm text-muted-foreground">
+                              Must be at least 5 characters. Only lowercase letters, numbers, and dashes allowed.
+                          </p>
+                          {form.errors.subdomain && (
+                              <p className="text-sm text-destructive">{form.errors.subdomain}</p>
+                          )}
+                        </div>
 
                         <div className="space-y-2">
                           <Label htmlFor="name">Checkout Success URL</Label>
@@ -123,6 +147,7 @@ export default function General({ organization }: Props) {
                           Save changes
                         </Button>
                       </form>
+\
                     </CardContent>
                 </Card>
             </div>
