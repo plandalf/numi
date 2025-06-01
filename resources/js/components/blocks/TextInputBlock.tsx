@@ -31,7 +31,7 @@ function TextInputBlockComponent({ context }: { context: BlockContextType }) {
       isRequired: true,
     },
   });
-  
+
   const appearance = Numi.useAppearance([
     Appearance.padding('padding', 'Padding', {}),
     Appearance.margin('margin', 'Margin', {}),
@@ -76,15 +76,10 @@ function TextInputBlockComponent({ context }: { context: BlockContextType }) {
   ]);
 
   const { isDisabled } = Numi.useInteraction();
-  // or, we wrap this manually?
-
-  // const { fields, session } = Numi.useCheckout();
-
-  // validation
 
   const containerStyle = useMemo(() => ({
-    rowGap: resolveThemeValue(appearance.spacing, theme, 'spacing'),
-    margin: resolveThemeValue(appearance.margin, theme, 'margin'),
+    rowGap: appearance.spacing,
+    margin: appearance.margin,
     alignItems: style.alignment != 'expand' ? style.alignment : 'flex-start'
   }), [appearance, style]);
 
@@ -92,7 +87,7 @@ function TextInputBlockComponent({ context }: { context: BlockContextType }) {
     ...resolveThemeValue(style?.labelFont, theme, 'label_typography') as FontValue,
     color: resolveThemeValue(style?.labelFont?.color, theme),
   };
-  
+
   const labelStyles = useMemo(() => ({
     color: labelFont?.color,
     fontFamily: labelFont?.font,
@@ -115,17 +110,17 @@ function TextInputBlockComponent({ context }: { context: BlockContextType }) {
     borderStyle: style.border?.style,
     borderRadius : style.borderRadius,
   }), [style]);
-  
+
   return (
     <div className='flex flex-col' style={containerStyle}>
       {label && <label htmlFor="" style={labelStyles}>{label}</label>}
       <div className="flex flex-row" style={{ width: style.alignment == 'expand' ? '100%' : 'auto' }}>
-        <input 
+        <input
           id={id}
           className="border border-gray-300 rounded-md p-2"
-          type="text" 
+          type="text"
           value={text}
-          onChange={(e) => setText(e.target.value)} 
+          onChange={(e) => setText(e.target.value)}
           style={inputStyles}
         />
       </div>

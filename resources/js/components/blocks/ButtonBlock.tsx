@@ -119,8 +119,8 @@ function ButtonBlockComponent({ context }: { context: BlockContextType }) {
     borderStyle: border?.style,
     borderRadius : borderRadius,
     boxShadow: shadow,
-    padding: resolveThemeValue(appearance.padding, theme, 'padding'),
-    gap: resolveThemeValue(appearance.spacing, theme, 'spacing'),
+    padding: appearance.padding,
+    gap: appearance.spacing,
   }), [style, font, border, borderRadius, shadow, appearance]);
 
   const buttonClasses = useMemo(() => cx({

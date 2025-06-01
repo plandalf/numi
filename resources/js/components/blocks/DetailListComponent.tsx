@@ -121,9 +121,9 @@ function DetailListBlockComponent({ context }: { context: BlockContextType }) {
     borderStyle: style.border?.style,
     borderRadius : style.borderRadius,
     boxShadow: style.shadow,
-    padding: resolveThemeValue(appearance.padding, theme, 'padding'),
-    margin: resolveThemeValue(appearance.margin, theme, 'margin'),
-    gap: resolveThemeValue(appearance.spacing, theme, 'spacing'),
+    padding: appearance.padding,
+    margin: appearance.margin,
+    gap: appearance.spacing,
   }), [style, appearance]);
 
   const innerContainerStyle = useMemo(() => ({
@@ -175,7 +175,7 @@ function DetailListBlockComponent({ context }: { context: BlockContextType }) {
     // Don't render if item is disabled and we're showing only enabled items
     // This could be a filter toggle in the future
     return (
-      <div 
+      <div
         key={item.label}
         className="flex items-center"
         style={containerStyle}

@@ -114,9 +114,9 @@ function CheckboxBlockComponent({ context }: { context: BlockContextType }) {
   const isManuallyStyledCheckbox = (borderRadius != undefined || backgroundColorActive != undefined || backgroundColorInactive != undefined);
 
   const containerStyles = useMemo(() => ({
-    padding: resolveThemeValue(appearance.padding, theme, 'padding'),
-    margin: resolveThemeValue(appearance.margin, theme, 'margin'),
-    gap: resolveThemeValue(appearance.spacing, theme, 'spacing'),
+    padding: appearance.padding,
+    margin: appearance.margin,
+    gap: appearance.spacing,
   }), [appearance]);
 
   const checkboxStyles = useMemo(() => ({
@@ -190,11 +190,11 @@ function CheckboxBlockComponent({ context }: { context: BlockContextType }) {
   const labelComponent = (
     label && <span style={checkboxLabelStyles}>{label}</span>
   );
-  
+
   return (
     <div>
       {checkboxStyle === 'checkbox' && (
-        isManuallyStyledCheckbox ? (    
+        isManuallyStyledCheckbox ? (
           <div className="flex items-center gap-2" style={containerStyles}>
             <div className="relative flex justify-center">
               <input

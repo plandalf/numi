@@ -132,9 +132,9 @@ function AddOnBlockComponent({ context }: { context: BlockContextType }) {
 
   const innerContainerStyles = useMemo(() => ({
     backgroundColor: resolveThemeValue(style.backgroundColor, theme),
-    padding: resolveThemeValue(appearance.padding, theme, 'padding'),
-    margin: resolveThemeValue(appearance.margin, theme, 'margin'),
-    gap: resolveThemeValue(appearance.spacing, theme, 'spacing'),
+    padding: appearance.padding,
+    margin: appearance.margin,
+    gap: appearance.spacing,
     borderColor: style.borderColor,
     borderWidth: style.border?.width,
     borderStyle: style.border?.style,
@@ -241,7 +241,7 @@ function AddOnBlockComponent({ context }: { context: BlockContextType }) {
           <MarkdownText theme={theme} text={description} style={descriptionStyles} />
         </div>
       )}
-      {checkboxStyle === 'checkbox' && (   
+      {checkboxStyle === 'checkbox' && (
         <div className="flex items-center gap-2">
           <div className="relative inline-block justify-center">
             <input style={checkboxStyles} id={id} type="checkbox" name={context.blockId} checked={checked} onChange={handleChange} />

@@ -45,7 +45,7 @@ function TextBlockComponent({ context }: { context: BlockContextType }) {
     Style.shadow('shadow', 'Shadow', {}, ''),
     Style.hidden('hidden', 'Hidden', {}, false),
   ]);
-  
+
 
   const font = style?.font as FontValue;
   const border = style?.border as BorderValue;
@@ -67,8 +67,8 @@ function TextBlockComponent({ context }: { context: BlockContextType }) {
     borderStyle: border?.style,
     borderRadius : borderRadius ?? '3px',
     boxShadow: shadow,
-    padding: resolveThemeValue(appearance.padding, theme, 'padding'),
-    margin: resolveThemeValue(appearance.margin, theme, 'margin'),
+    padding: appearance.padding,
+    margin: appearance.margin,
     whiteSpace: 'pre-line',
   }), [style, font, border, borderRadius, shadow]);
 

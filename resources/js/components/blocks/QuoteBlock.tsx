@@ -94,7 +94,7 @@ function QuoteBlockComponent({ context }: { context: BlockContextType }) {
     defaultValue: '',
     inspector: 'file',
   });
-  
+
   const fontConfig = {
     config: {
       hideVerticalAlignment: true,
@@ -169,9 +169,9 @@ function QuoteBlockComponent({ context }: { context: BlockContextType }) {
     borderStyle: style.border?.style,
     borderRadius : style.borderRadius ?? '3px',
     boxShadow: style?.shadow,
-    padding: resolveThemeValue(appearance.padding, theme, 'padding'),
-    margin: resolveThemeValue(appearance.margin, theme, 'margin'),
-    gap: resolveThemeValue(appearance.spacing, theme, 'spacing'),
+    padding: appearance.padding,
+    margin: appearance.margin,
+    gap: appearance.spacing,
   }), [style, appearance]);
 
   const imageSpacing = resolveThemeValue(appearance.imageSpacing, theme, 'spacing') as string;
@@ -249,7 +249,7 @@ function QuoteBlockComponent({ context }: { context: BlockContextType }) {
       style={affiliationStyles}
     />
   );
-   
+
   const defaultIcon = (
     <svg
       style={{
