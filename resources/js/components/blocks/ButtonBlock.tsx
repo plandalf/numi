@@ -103,7 +103,7 @@ function ButtonBlockComponent({ context }: { context: BlockContextType }) {
   });
 
   const containerStyles = useMemo(() => ({
-    margin: resolveThemeValue(appearance.margin, theme, 'margin'),
+    margin: appearance.margin,
   }), [appearance, theme]);
 
   const buttonStyles = useMemo(() => ({
