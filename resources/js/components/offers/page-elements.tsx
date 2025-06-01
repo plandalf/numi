@@ -62,9 +62,10 @@ export const CustomElementIcon = ({ type }: CustomElementIconProps) => {
 interface BlockItemProps {
   blockType: string;
   title: string;
+  color: string;
 }
 
-const BlockTemplateItem = ({ blockType, title }: BlockItemProps) => {
+const BlockTemplateItem = ({ blockType, title, color }: BlockItemProps) => {
 
   const {
     attributes,
@@ -85,12 +86,12 @@ const BlockTemplateItem = ({ blockType, title }: BlockItemProps) => {
         "opacity-60": isDragging,
       })}
     >
-      <div className="flex items-center justify-center bg-slate-800 rounded-md w-full h-14 mb-2">
-        <span className="text-white">
+      <div className={`flex items-center justify-center rounded-md w-full h-14 mb-2 ${color}`}>
+        <span className="">
           <CustomElementIcon type={blockType as keyof typeof blockTypes} />
         </span>
       </div>
-      <div className="text-sm text-black whitespace-nowrap text-xs">{title}</div>
+      <div className=" whitespace-nowrap font-bold text-sm">{title}</div>
     </div>
   );
 };
@@ -112,10 +113,16 @@ const interactiveElements = [
 ];
 
 const paymentElements = [
-  { type: 'checkout_summary', title: 'Order Summary' },
-  { type: 'payment_method', title: 'Payment Method' },
+  { type: 'checkout_summary', title: 'Order Info' },
+  { type: 'payment_method', title: 'Payment Form' },
   { type: 'add_on', title: 'Add On' },
 ];
+
+const elementColors = {
+  base: 'bg-blue-200 text-blue-900 border border-blue-300',
+  interactive: 'bg-purple-200 text-purple-900 border border-purple-300',
+  payment: 'bg-green-200 text-green-900 border border-green-300',
+}
 
 export const allElementTypes = [
   ...baseElements,
@@ -131,9 +138,9 @@ interface ElementCategoryProps {
 
 const ElementCategory = ({ title, children }: ElementCategoryProps) => {
   return (
-    <div className="flex flex-col gap-4 mb-6">
-      <h3 className="text-sm text-black/50 font-light">{title}</h3>
-      <div className="grid grid-cols-3 gap-2">
+    <div className="flex flex-col gap-4 mb-4 border-b pb-6">
+      <h3 className="text-sm text-black/60 font-medium">{title}</h3>
+      <div className="grid grid-cols-3 gap-x-2 gap-y-3">
         {children}
       </div>
     </div>
@@ -181,6 +188,7 @@ export const PageElements: React.FC = () => {
           <ElementCategory title="Base Elements">
             {filteredBaseElements.map((element) => (
               <BlockTemplateItem
+                color={elementColors.base}
                 key={element.type}
                 blockType={element.type}
                 title={element.title}
@@ -193,6 +201,7 @@ export const PageElements: React.FC = () => {
           <ElementCategory title="Interactive Elements">
             {filteredInteractiveElements.map((element) => (
               <BlockTemplateItem
+                color={elementColors.interactive}
                 key={element.type}
                 blockType={element.type}
                 title={element.title}
@@ -205,6 +214,7 @@ export const PageElements: React.FC = () => {
           <ElementCategory title="Payments">
             {filteredPaymentElements.map((element) => (
               <BlockTemplateItem
+                  color={elementColors.payment}
                   key={element.type}
                   blockType={element.type}
                   title={element.title}

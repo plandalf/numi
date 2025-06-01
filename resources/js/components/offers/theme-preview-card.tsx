@@ -31,9 +31,9 @@ export const ThemePreviewCard: React.FC<ThemePreviewCardProps> = ({ theme, class
       onClick={onClick}
     >
       <div className="p-4">
-        <h3 className="flex flex-row text-lg font-semibold mb-3 justify-between" style={{ color: primaryContrast === '#ffffff' ? '#000000' : primaryContrast }}>
+        <h3 className="flex flex-row text-lg font-semibold mb-3 justify-between" >
           {theme.name || 'Untitled Theme'}
-          {selected && 
+          {selected &&
             <span className="flex flex-row items-center gap-1 text-xs  text-green-500 rounded-md px-2 py-1 bg-green-500/10">
               <CheckIcon className="w-4 h-4" />Selected
             </span>
@@ -44,7 +44,7 @@ export const ThemePreviewCard: React.FC<ThemePreviewCardProps> = ({ theme, class
             <div
               key={index}
               className="h-8 w-8 rounded-md border"
-              style={{ 
+              style={{
                 backgroundColor: color,
                 borderRadius: '6px', // Slightly smaller radius for swatches
               }}

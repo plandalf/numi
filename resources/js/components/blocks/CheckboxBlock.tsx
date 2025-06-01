@@ -78,14 +78,14 @@ function CheckboxBlockComponent({ context }: { context: BlockContextType }) {
 
   const appearance = Numi.useAppearance([
     Appearance.margin('margin', 'Margin', {}),
-    // Appearance.padding('padding', 'Padding', {}),
-    Appearance.spacing('spacing', 'Spacing', {}),
+    Appearance.padding('padding', 'Padding', {}, '0px'),
+    Appearance.spacing('spacing', 'Spacing', { config: { format: 'single' } }),
     Appearance.visibility('visibility', 'Visibility', {}, { conditional: [] }),
   ]);
 
   const style = Numi.useStyle([
-    Style.backgroundColor('activeBackgroundColor', 'Selected Color', {}),
-    Style.backgroundColor('inactiveBackgroundColor', 'Unselected Color', {}, '#E5E5E5'),
+    Style.backgroundColor('activeBackgroundColor', 'Selected Color', {}, theme?.primary_color),
+    Style.backgroundColor('inactiveBackgroundColor', 'Unselected Color', {}, theme?.primary_contrast_color),
     Style.textColor('checkColor', 'Check Color', {}),
     Style.font('font', 'Label Font & Color',
       {
@@ -107,14 +107,14 @@ function CheckboxBlockComponent({ context }: { context: BlockContextType }) {
   const borderColor = resolveThemeValue(style?.borderColor, theme, 'primary_border_color');
   const checkColor = resolveThemeValue(style?.checkColor, theme, 'primary_contrast_color');
   const backgroundColorActive = resolveThemeValue(style?.activeBackgroundColor, theme, 'primary_color');
-  const backgroundColorInactive = style?.inactiveBackgroundColor;
+  const backgroundColorInactive = resolveThemeValue(style?.inactiveBackgroundColor, theme);
   const borderRadius = style?.borderRadius;
   const shadow = style?.shadow as string;
 
   const isManuallyStyledCheckbox = (borderRadius != undefined || backgroundColorActive != undefined || backgroundColorInactive != undefined);
 
   const containerStyles = useMemo(() => ({
-    // padding: resolveThemeValue(appearance.padding, theme, 'padding'),
+    padding: resolveThemeValue(appearance.padding, theme, 'padding'),
     margin: resolveThemeValue(appearance.margin, theme, 'margin'),
     gap: resolveThemeValue(appearance.spacing, theme, 'spacing'),
   }), [appearance]);
@@ -159,7 +159,7 @@ function CheckboxBlockComponent({ context }: { context: BlockContextType }) {
   ]);
 
   const checkboxLabelStyles = useMemo(() => ({
-    color: font?.color,
+    color: resolveThemeValue(font?.color, theme),
     fontFamily: font?.font,
     fontWeight: font?.weight,
     fontSize: font?.size,

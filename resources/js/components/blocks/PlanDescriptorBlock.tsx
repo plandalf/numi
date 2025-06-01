@@ -12,7 +12,7 @@ function PlanDescriptorComponent({ context }: { context: BlockContextType }) {
     
   const appearance = Numi.useAppearance([
     Appearance.padding('padding', 'Padding', {}),
-    Appearance.spacing('spacing', 'Spacing', {}),
+    Appearance.spacing('spacing', 'Spacing', { config: { format: 'single' } }),
     Appearance.visibility('visibility', 'Visibility', {}, { conditional: [] }),
   ]);
 

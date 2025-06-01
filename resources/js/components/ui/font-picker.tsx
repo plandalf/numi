@@ -7,7 +7,8 @@ import { AlignCenterIcon, AlignLeftIcon, AlignRightIcon, ArrowDownToLine, ArrowU
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './select';
 import { Input } from './input';
 import { FontValue } from '@/contexts/Numi';
-import { ColorPicker } from './color-picker';
+import { AdvancedColorPicker } from './color-picker';
+import { useDebounce } from '@/hooks/use-debounce';
 
 export const WEIGHT_LABELS: Record<string, string> = {
   '100': 'Thin',
@@ -50,6 +51,7 @@ interface FontPickerProps {
   config?: FontPickerConfig;
   className?: string;
   fonts: Font[];
+  themeColors?: Record<string, { value: string, label: string }>;
 }
 
 export const FontPicker: React.FC<FontPickerProps> = ({
@@ -58,7 +60,8 @@ export const FontPicker: React.FC<FontPickerProps> = ({
   onClose,
   config,
   className,
-  fonts,
+  fonts,  
+  themeColors,
 }) => {
   const {
     hideLabel, hideLineHeight,
@@ -76,6 +79,12 @@ export const FontPicker: React.FC<FontPickerProps> = ({
   const [localLineHeight, setLocalLineHeight] = useState(typeof value.lineHeight === 'string' ? value.lineHeight : '');
   const [localColor, setLocalColor] = useState(typeof value.color === 'string' ? value.color : '#000000');
 
+  // Debounced values
+  const debouncedSize = useDebounce(localSize, 100);
+  const debouncedLetterSpacing = useDebounce(localLetterSpacing, 100);
+  const debouncedLineHeight = useDebounce(localLineHeight, 100);
+  const debouncedColor = useDebounce(localColor, 100);
+
   useEffect(() => {
     setLocalSize(typeof value.size === 'string' ? value.size : '');
   }, [value.size]);
@@ -92,11 +101,39 @@ export const FontPicker: React.FC<FontPickerProps> = ({
     setLocalColor(typeof value.color === 'string' ? value.color : '');
   }, [value.color]);
 
+  // Effect for debounced size updates
+  useEffect(() => {
+    if (debouncedSize && debouncedSize !== value.size) {
+      const formatted = formatPxValue(debouncedSize);
+      onChange({ ...value, size: formatted });
+    }
+  }, [debouncedSize]);
+
+  // Effect for debounced letter spacing updates
+  useEffect(() => {
+    if (debouncedLetterSpacing && debouncedLetterSpacing !== value.letterSpacing) {
+      const formatted = formatPxValue(debouncedLetterSpacing);
+      onChange({ ...value, letterSpacing: formatted });
+    }
+  }, [debouncedLetterSpacing]);
+
+  // Effect for debounced line height updates
+  useEffect(() => {
+    if (debouncedLineHeight && debouncedLineHeight !== value.lineHeight) {
+      onChange({ ...value, lineHeight: debouncedLineHeight });
+    }
+  }, [debouncedLineHeight]);
+
+  // Effect for debounced color updates
+  useEffect(() => {
+    if (debouncedColor && debouncedColor !== value.color) {
+      onChange({ ...value, color: debouncedColor });
+    }
+  }, [debouncedColor]);
+
   const handleFontChange = (newFont: string) => {
     const newSelectedFont = fonts?.find(f => f.name === newFont);
     const newAvailableWeights = newSelectedFont?.weights || [];
-    
-    // If current weight is not in the new font's weights, default to Regular (400)
     const newWeight = newAvailableWeights.includes(value?.weight || '') ? value.weight : '400';
     onChange({ ...value, font: newFont, weight: newWeight });
   };
@@ -241,9 +278,10 @@ export const FontPicker: React.FC<FontPickerProps> = ({
       )}
       {(!hideColor) && (
         <div className="flex flex-row gap-2 w-full">
-          <ColorPicker
+          <AdvancedColorPicker
             value={localColor}
-            onChange={(color) => onChange({ ...value, color })}
+            onChange={setLocalColor}
+            themeColors={themeColors}
           />
         </div>
       )}

@@ -74,7 +74,7 @@ function ButtonBlockComponent({ context }: { context: BlockContextType }) {
   const appearance = Numi.useAppearance([
     Appearance.padding('padding', 'Padding', {}),
     Appearance.margin('margin', 'Margin', {}),
-    Appearance.spacing('spacing', 'Spacing', {}),
+    Appearance.spacing('spacing', 'Spacing', { config: { format: 'single' } }),
     Appearance.visibility('visibility', 'Visibility', {}, { conditional: [] }),
     Appearance.alignment('alignment', 'Alignment', {}, 'left'),
   ]);
@@ -114,7 +114,7 @@ function ButtonBlockComponent({ context }: { context: BlockContextType }) {
     fontSize: font?.size,
     lineHeight: font?.lineHeight,
     letterSpacing: font?.letterSpacing,
-    borderColor: style.borderColor,
+    borderColor: resolveThemeValue(style.borderColor, theme),
     borderWidth: border?.width,
     borderStyle: border?.style,
     borderRadius : borderRadius,

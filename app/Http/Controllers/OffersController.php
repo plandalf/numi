@@ -106,7 +106,7 @@ class OffersController extends Controller
     {
         $offer->update($request->validated());
 
-        return redirect()->back()->with('success', 'Offer updated successfully');
+        return redirect()->back();
     }
 
     public function destroy(Offer $offer): \Illuminate\Http\RedirectResponse

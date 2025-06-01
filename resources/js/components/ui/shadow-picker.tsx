@@ -15,7 +15,7 @@ interface ShadowPickerProps {
   onClose?: () => void;
   config?: ShadowPickerConfig;
   className?: string;
-  themeColors?: Record<string, string>;
+  themeColors?: Record<string, { value: string, label: string }>;
 } 
 
 export const parseShadow = (shadowValue: string) => {
@@ -165,7 +165,7 @@ const ShadowPicker: React.FC<ShadowPickerProps> = ({ value, onChange, onClose, c
           type="advanced"
           value={shadow.color}
           onChange={val => handleChange('color', val)}
-          themeColors={themeColors}
+          // themeColors={themeColors}
           className='gap-2 w-40'
         />
       </div>

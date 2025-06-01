@@ -54,7 +54,6 @@ export function Combobox({
   popoverClassName = '',
   ...props
 }: ComboboxProps) {
-  console.log('items', items);
   const [open, setOpen] = React.useState(false);
   const [value, setValue] = React.useState<string | string[]>(
     multiple

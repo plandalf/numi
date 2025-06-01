@@ -20,7 +20,6 @@ import { StyleEditor } from '../editor/style-editor';
 import { StyleItem } from '../editor/style-editor';
 import { Separator } from '../ui/separator';
 
-
 export const colorFields = [
   {
     label: 'Core theme colors',
@@ -125,11 +124,13 @@ export const getThemeColors = (theme?: Theme | null) => {
       ...f.items.reduce((acc, i) => {
         return {
           ...acc,
-          [i.name]: theme?.[i.name as keyof Theme] as string ?? ''
+          [i.name]: {
+            value: theme?.[i.name as keyof Theme] as string ?? '',
+            label: i.label,
+          }
         };
       }, {})
     };
-
   }, {});
 };
 

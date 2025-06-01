@@ -6,7 +6,7 @@ export interface IconRendererProp {
   defaultIcon?: any;
   icon: IconValue;
   style: {
-    alignment?: string;
+    alignSelf?: string;
     size?: string;
     color?: string;
     shadow?: string;
@@ -21,7 +21,7 @@ export const IconRenderer = memo(({ defaultIcon, icon, style }: IconRendererProp
     return (
       <Component
         style={{
-          alignSelf: style?.alignment,
+          alignSelf: style?.alignSelf,
           width: style?.size ?? '42px',
           height: style?.size ?? '42px',
           color: style?.color ?? 'black',
@@ -35,7 +35,7 @@ export const IconRenderer = memo(({ defaultIcon, icon, style }: IconRendererProp
     return (
       <span
         style={{
-          alignSelf: style?.alignment,
+          alignSelf: style?.alignSelf,
           fontSize: style?.size ?? '22px',
           color: style?.color ?? 'black',
           width: style?.size ?? '22px',
@@ -52,7 +52,7 @@ export const IconRenderer = memo(({ defaultIcon, icon, style }: IconRendererProp
       <img
         src={icon.url}
         style={{
-          alignSelf: style?.alignment,
+          alignSelf: style?.alignSelf,
           width: style?.size ?? '22px',
           height: style?.size ?? '22px',
           boxShadow: style?.shadow ?? 'none',

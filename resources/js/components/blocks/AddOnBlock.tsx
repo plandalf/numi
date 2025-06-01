@@ -90,9 +90,9 @@ function AddOnBlockComponent({ context }: { context: BlockContextType }) {
   }
 
   const appearance = Numi.useAppearance([
-    // Appearance.padding('padding', 'Padding', {}),
+    Appearance.padding('padding', 'Padding', {}, '0px'),
     Appearance.margin('margin', 'Margin', {}),
-    Appearance.spacing('spacing', 'Spacing', {}),
+    Appearance.spacing('spacing', 'Spacing', { config: { format: 'single' } }),
     Appearance.visibility('visibility', 'Visibility', {}, { conditional: [] }),
   ]);
 
@@ -105,7 +105,7 @@ function AddOnBlockComponent({ context }: { context: BlockContextType }) {
 
 
   const style = Numi.useStyle([
-    Style.backgroundColor('backgroundColor', 'Background Color', {}),
+    Style.backgroundColor('backgroundColor', 'Background Color', {}, ''),
     Style.alignment('alignment', 'Alignment', {
       options: {
         left: 'left',
@@ -115,14 +115,10 @@ function AddOnBlockComponent({ context }: { context: BlockContextType }) {
     }, 'left'),
     Style.font('titleFont', 'Title Font & Color',fontConfig, theme?.label_typography as FontValue),
     Style.font('descriptionFont', 'Description Font & Color',fontConfig, theme?.body_typography as FontValue),
-    Style.backgroundColor('checkboxActiveBackgroundColor', 'Checkbox Selected Color', {}),
-    Style.backgroundColor('checkboxInactiveBackgroundColor', 'Checkbox Unselected Color', {}, '#E5E5E5'),
-    Style.textColor('checkboxCheckColor', 'Checkbox Check Color', {}),
-    Style.font('checkboxLabelFont', 'Checkbox Label Font & Color', fontConfig,
-      {
-        color: '#000000',
-      },
-    ),
+    Style.backgroundColor('checkboxActiveBackgroundColor', 'Checkbox Selected Color', {}, theme?.primary_color),
+    Style.backgroundColor('checkboxInactiveBackgroundColor', 'Checkbox Unselected Color', {}, theme?.primary_contrast_color),
+    Style.textColor('checkboxCheckColor', 'Checkbox Check Color', {}, ''),
+    Style.font('checkboxLabelFont', 'Checkbox Label Font & Color', fontConfig, {}),
     Style.border('checkboxBorder', 'Checkbox Border', {}, { width: '1px', style: 'solid' }),
     Style.borderRadius('checkboxBorderRadius', 'Checkbox Border Radius', {}, '5px'),
     Style.borderColor('checkboxBorderColor', 'Checkbox Border Color', {}, theme?.primary_border_color),
@@ -135,8 +131,8 @@ function AddOnBlockComponent({ context }: { context: BlockContextType }) {
   ]);
 
   const innerContainerStyles = useMemo(() => ({
-    backgroundColor: style.backgroundColor,
-    // padding: resolveThemeValue(appearance.padding, theme, 'padding'),
+    backgroundColor: resolveThemeValue(style.backgroundColor, theme),
+    padding: resolveThemeValue(appearance.padding, theme, 'padding'),
     margin: resolveThemeValue(appearance.margin, theme, 'margin'),
     gap: resolveThemeValue(appearance.spacing, theme, 'spacing'),
     borderColor: style.borderColor,
@@ -154,7 +150,7 @@ function AddOnBlockComponent({ context }: { context: BlockContextType }) {
   const descriptionFont = resolveThemeValue(style.descriptionFont, theme, 'body_typography') as FontValue;
 
   const titleStyles = useMemo(() => ({
-    color: titleFont?.color,
+    color: resolveThemeValue(titleFont?.color, theme),
     fontFamily: titleFont?.font,
     fontWeight: titleFont?.weight,
     fontSize: titleFont?.size,
@@ -163,7 +159,7 @@ function AddOnBlockComponent({ context }: { context: BlockContextType }) {
   }), [titleFont]);
 
   const descriptionStyles = useMemo(() => ({
-    color: descriptionFont?.color,
+    color: resolveThemeValue(descriptionFont?.color, theme),
     fontFamily: descriptionFont?.font,
     fontWeight: descriptionFont?.weight,
     fontSize: descriptionFont?.size,
@@ -173,9 +169,9 @@ function AddOnBlockComponent({ context }: { context: BlockContextType }) {
 
   const checkboxLabelFont = resolveThemeValue(style?.checkboxLabelFont, theme, 'label_typography') as FontValue;
   const checkboxActiveBackgroundColor = resolveThemeValue(style?.checkboxActiveBackgroundColor, theme, 'primary_color');
-  const checkboxInactiveBackgroundColor = style?.checkboxInactiveBackgroundColor;
-  const checkboxCheckColor = resolveThemeValue(style?.checkColor, theme, 'primary_contrast_color');
-  const checkboxBorderColor = resolveThemeValue(style?.borderColor, theme, 'primary_border_color');
+  const checkboxInactiveBackgroundColor = resolveThemeValue(style?.checkboxInactiveBackgroundColor, theme);
+  const checkboxCheckColor = resolveThemeValue(style?.checkboxCheckColor, theme, 'primary_contrast_color');
+  const checkboxBorderColor = resolveThemeValue(style?.checkboxBorderColor, theme, 'primary_border_color');
 
   const checkboxStyles = useMemo(() => ({
     backgroundColor: checked ? checkboxActiveBackgroundColor : checkboxInactiveBackgroundColor,
@@ -189,7 +185,6 @@ function AddOnBlockComponent({ context }: { context: BlockContextType }) {
   }), [
     style,
     checked,
-    checkboxCheckColor,
     checkboxBorderColor,
     checkboxActiveBackgroundColor,
     checkboxInactiveBackgroundColor
@@ -197,7 +192,7 @@ function AddOnBlockComponent({ context }: { context: BlockContextType }) {
 
   const switchStyles = useMemo(() => ({
     backgroundColor: checked ? checkboxActiveBackgroundColor : checkboxInactiveBackgroundColor,
-    borderColor: style.checkboxBorderColor,
+    borderColor: checkboxBorderColor,
     borderWidth: style.checkboxBorder?.width,
     borderStyle: style.checkboxBorder?.style,
   }), [
@@ -207,7 +202,7 @@ function AddOnBlockComponent({ context }: { context: BlockContextType }) {
   ]);
 
   const checkboxLabelStyles = useMemo(() => ({
-    color: checkboxLabelFont?.color,
+    color: resolveThemeValue(checkboxLabelFont?.color, theme),
     fontFamily: checkboxLabelFont?.font,
     fontWeight: checkboxLabelFont?.weight,
     fontSize: checkboxLabelFont?.size,
@@ -234,6 +229,9 @@ function AddOnBlockComponent({ context }: { context: BlockContextType }) {
   if (style.hidden) {
     return null;
   }
+  const labelComponent = (
+    label && <span style={checkboxLabelStyles}>{label}</span>
+  );
 
   return (
     <div className="flex flex-col gap-3" style={innerContainerStyles}>
@@ -249,7 +247,7 @@ function AddOnBlockComponent({ context }: { context: BlockContextType }) {
             <input style={checkboxStyles} id={id} type="checkbox" name={context.blockId} checked={checked} onChange={handleChange} />
             {(checked) && <Check strokeWidth="5" className="pb-0.5" style={checkIconStyles} />}
           </div>
-          <span style={checkboxLabelStyles}>{label}</span>
+          {label && labelComponent}
         </div>
       )}
       {checkboxStyle === 'switch' && (
@@ -263,7 +261,7 @@ function AddOnBlockComponent({ context }: { context: BlockContextType }) {
             checked={checked}
             onCheckedChange={handleChange}
           />
-          <span style={checkboxLabelStyles}>{label}</span>
+            {label && labelComponent}
         </div>
       )}
     </div>

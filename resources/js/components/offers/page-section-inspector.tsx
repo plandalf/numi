@@ -63,9 +63,9 @@ export function SectionInspector({ sectionId /*, onClose */ }: SectionInspectorP
   }));
 
   const appearanceItems = [
-    Appearance.padding('padding', 'Padding', {}),
+    Appearance.padding('padding', 'Padding', {}, '0px'),
     Appearance.margin('margin', 'Margin', {}),
-    Appearance.spacing('spacing', 'Spacing', {}),
+    Appearance.spacing('spacing', 'Spacing', { config: { format: 'single' } }),
   ].map(appearance => ({
     name: appearance.type,
     label: appearance.label,

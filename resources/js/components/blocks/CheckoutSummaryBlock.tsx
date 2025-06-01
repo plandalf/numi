@@ -70,7 +70,7 @@ function CheckoutSummaryComponent({ context }: { context: BlockContextType }) {
   const appearance = Numi.useAppearance([
     Appearance.padding('padding', 'Padding', {}),
     Appearance.margin('margin', 'Margin', {}),
-    Appearance.spacing('spacing', 'Spacing', {}),
+    Appearance.spacing('spacing', 'Spacing', { config: { format: 'single' } }),
     Appearance.visibility('visibility', 'Visibility', {}, { conditional: [] }),
   ]);
 
@@ -84,10 +84,10 @@ function CheckoutSummaryComponent({ context }: { context: BlockContextType }) {
   const style = Numi.useStyle([
     Style.backgroundColor('backgroundColor', 'Background Color', {}, theme?.primary_surface_color),
     Style.font('titleFont', 'Title Font & Color',fontConfig, theme?.label_typography as FontValue),
-    Style.font( 'labelFont', 'Label Font & Color',fontConfig, theme?.label_typography as FontValue),
-    Style.font( 'itemFont', 'Item Font & Color',fontConfig, theme?.body_typography as FontValue),
-    Style.font( 'itemPriceFont', 'Item Price Font & Color', fontConfig, theme?.label_typography as FontValue),
-    Style.font( 'itemQuantityFont', 'Item Quantity Font & Color',fontConfig, {
+    Style.font('labelFont', 'Label Font & Color',fontConfig, theme?.label_typography as FontValue),
+    Style.font('itemFont', 'Item Font & Color',fontConfig, theme?.body_typography as FontValue),
+    Style.font('itemPriceFont', 'Item Price Font & Color', fontConfig, theme?.label_typography as FontValue),
+    Style.font('itemQuantityFont', 'Item Quantity Font & Color',fontConfig, {
       ...theme?.body_typography as FontValue,
       color: '#6a7282'
     }),
@@ -128,7 +128,7 @@ function CheckoutSummaryComponent({ context }: { context: BlockContextType }) {
       padding: resolveThemeValue(appearance.padding, theme, 'padding'),
       margin: resolveThemeValue(appearance.margin, theme, 'margin'),
       gap: resolveThemeValue(appearance.spacing, theme, 'spacing'),
-      borderColor: style.borderColor,
+      borderColor: resolveThemeValue(style.borderColor, theme),
       borderWidth: style?.border?.width,
       borderStyle: style?.border?.style,
       borderRadius: style?.borderRadius ?? '3px',
@@ -142,7 +142,7 @@ function CheckoutSummaryComponent({ context }: { context: BlockContextType }) {
 
   const titleStyle = useMemo(() => {
     return {
-      color: style.titleFont?.color,
+      color: resolveThemeValue(style.titleFont?.color, theme),
       fontFamily: style?.titleFont?.font,
       fontWeight: style?.titleFont?.weight,
       fontSize: style?.titleFont?.size,
@@ -153,7 +153,7 @@ function CheckoutSummaryComponent({ context }: { context: BlockContextType }) {
 
   const labelStyle = useMemo(() => {
     return {
-      color: style.labelFont?.color,
+      color: resolveThemeValue(style.labelFont?.color, theme),
       fontFamily: style?.labelFont?.font,
       fontWeight: style?.labelFont?.weight,
       fontSize: style?.labelFont?.size,
@@ -164,7 +164,7 @@ function CheckoutSummaryComponent({ context }: { context: BlockContextType }) {
 
   const itemStyle = useMemo(() => {
     return {
-      color: style.itemFont?.color,
+      color: resolveThemeValue(style.itemFont?.color, theme),
       fontFamily: style?.itemFont?.font,
       fontWeight: style?.itemFont?.weight,
       fontSize: style?.itemFont?.size,
@@ -175,7 +175,7 @@ function CheckoutSummaryComponent({ context }: { context: BlockContextType }) {
 
   const itemPriceStyle = useMemo(() => {
     return {
-      color: style.itemPriceFont?.color,
+      color: resolveThemeValue(style.itemPriceFont?.color, theme),
       fontFamily: style?.itemPriceFont?.font,
       fontWeight: style?.itemPriceFont?.weight,
       fontSize: style?.itemPriceFont?.size,
@@ -186,7 +186,7 @@ function CheckoutSummaryComponent({ context }: { context: BlockContextType }) {
 
   const itemQuantityStyle = useMemo(() => {
     return {
-      color: style.itemQuantityFont?.color,
+      color: resolveThemeValue(style.itemQuantityFont?.color, theme),
       fontFamily: style?.itemQuantityFont?.font,
       fontWeight: style?.itemQuantityFont?.weight,
       fontSize: style?.itemQuantityFont?.size,
@@ -200,7 +200,7 @@ function CheckoutSummaryComponent({ context }: { context: BlockContextType }) {
   const inputStyle = useMemo(() => {
     return {
       backgroundColor: resolveThemeValue(style.inputBackgroundColor, theme, 'secondary_surface_color') as string,
-      color: style?.inputFont?.color,
+      color: resolveThemeValue(style?.inputFont?.color, theme),
       fontFamily: style?.inputFont?.font,
       fontWeight: style?.inputFont?.weight,
       fontSize: style?.inputFont?.size,
@@ -221,7 +221,7 @@ function CheckoutSummaryComponent({ context }: { context: BlockContextType }) {
       color: resolveThemeValue(style?.buttonTextFont?.color, theme, 'primary_contrast_color'),
     } as FontValue;
     return {
-      color: buttonTextFont?.color,
+      color: resolveThemeValue(buttonTextFont?.color, theme),
       backgroundColor: resolveThemeValue(style.buttonBackgroundColor, theme, 'primary_color'),
       fontFamily: buttonTextFont?.font,
       fontWeight: buttonTextFont?.weight,
@@ -234,7 +234,7 @@ function CheckoutSummaryComponent({ context }: { context: BlockContextType }) {
 
   const summaryTextStyle = useMemo(() => {
     return {
-      color: style.summaryTextFont?.color,
+      color: resolveThemeValue(style.summaryTextFont?.color, theme),
       fontFamily: style?.summaryTextFont?.font,
       fontWeight: style?.summaryTextFont?.weight,
       fontSize: style?.summaryTextFont?.size,
@@ -245,7 +245,7 @@ function CheckoutSummaryComponent({ context }: { context: BlockContextType }) {
 
   const discountTextStyle = useMemo(() => {
     return {
-      color: style?.discountTextFont?.color,
+      color: resolveThemeValue(style?.discountTextFont?.color, theme),
       fontFamily: style?.discountTextFont?.font,
       fontWeight: style?.discountTextFont?.weight,
       fontSize: style?.discountTextFont?.size,
@@ -256,7 +256,7 @@ function CheckoutSummaryComponent({ context }: { context: BlockContextType }) {
 
   const totalTextStyle = useMemo(() => {
     return {
-      color: style?.totalTextFont?.color,
+      color: resolveThemeValue(style?.totalTextFont?.color, theme),
       fontFamily: style?.totalTextFont?.font,
       fontWeight: style?.totalTextFont?.weight,
       fontSize: style?.totalTextFont?.size,

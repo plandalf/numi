@@ -22,7 +22,7 @@ function ImageBlockComponent() {
         center: 'Center',
         right: 'Right',
       },
-    }, 'left'),
+    }, 'center'),
     Style.dimensions('dimensions', 'Dimensions', {
       config: {
         minWidth: 10,
@@ -33,12 +33,12 @@ function ImageBlockComponent() {
     }, { width: '100%', height: '100%' }),
     Style.border('border', 'Border', {}, { width: '-px', style: 'solid' }),
     Style.borderRadius('borderRadius', 'Border Radius', {}, theme?.border_radius),
-    Style.borderColor('borderColor', 'Border Color', {}, '#000000'),
+    Style.borderColor('borderColor', 'Border Color', {}, ''),
     Style.shadow('shadow', 'Shadow', {}, theme?.shadow),
   ]);
 
   const appearance = Numi.useAppearance([
-    // Appearance.padding('padding', 'Padding', {}),
+    Appearance.padding('padding', 'Padding', {}, '0px'),
     Appearance.margin('margin', 'Margin', {}),
     Appearance.visibility('visibility', 'Visibility', {}, { conditional: [] }),
   ]);
@@ -53,14 +53,16 @@ function ImageBlockComponent() {
   const styleProps = useMemo(() => {
     return {
       borderRadius: style?.borderRadius,
-      borderColor: style?.borderColor,
+      borderColor: resolveThemeValue(style?.borderColor, theme),
       borderWidth: style?.border?.width,
       borderStyle: style?.border?.style,
       boxShadow: style?.shadow,
-      // padding: resolveThemeValue(appearance.padding, theme, 'padding'),
-      // margin: resolveThemeValue(appearance.margin, theme, 'margin'),
+      padding: resolveThemeValue(appearance.padding, theme, 'padding'),
+      margin: resolveThemeValue(appearance.margin, theme, 'margin'),
       width: style?.dimensions?.width,
       height: style?.dimensions?.height,
+      maxWidth: '-webkit-fill-available',
+      maxHeight: '-webkit-fill-available',
     }
   }, [style, appearance]);
 
@@ -74,7 +76,6 @@ function ImageBlockComponent() {
   }, [style.alignment]);
 
   if (!image) {
-    console.log('no image');
     return (
       <div className='text-center'>
         <div className="text-gray-500">Upload an image</div>
