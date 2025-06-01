@@ -14,17 +14,20 @@ class OrganizationResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
-
         return [
             'id' => $this->id,
             'ulid' => $this->ulid,
             'name' => $this->name,
             'invite_link' => $this->invite_link,
+            'default_currency' => $this->default_currency,
+            'subdomain' => $this->subdomain,
             'created_at' => $this->created_at?->toISOString(),
             'updated_at' => $this->updated_at?->toISOString(),
             'on_trial' => $this->on_trial,
             'trial_days_left' => $this->trial_days_left,
             'trial_period_expired' => $this->trial_period_expired,
+            'checkout_success_url' => $this->checkout_success_url,
+            'checkout_cancel_url' => $this->checkout_cancel_url,
 
             $this->when(
                 $this->resource->relationLoaded('subscriptions'),

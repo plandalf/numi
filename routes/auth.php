@@ -12,6 +12,8 @@ use App\Http\Controllers\OrganizationController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('guest')->group(function () {
+    Route::redirect('/signup', '/register', 301);
+
     Route::get('register', [RegisteredUserController::class, 'create'])
         ->name('register');
 

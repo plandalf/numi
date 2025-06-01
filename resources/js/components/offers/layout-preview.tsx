@@ -216,7 +216,7 @@ const RecursiveRenderElement: React.FC<RecursiveRenderElementProps> = React.memo
   onSectionSelect,
   isContained,
 }) => {
-  
+
   const sectionContainerStyle = useMemo(() => {
     if (!element?.id || !page?.view || !(element.id in page.view)) return {};
     const section = page.view[element.id] as PageSection;

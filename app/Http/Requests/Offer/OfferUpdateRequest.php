@@ -26,8 +26,13 @@ class OfferUpdateRequest extends FormRequest
     {
         return [
             'name' => ['nullable', 'string', 'max:255'],
-            'view' => ['nullable', 'array'],
+            'description' => ['nullable', 'string', 'max:1000'],
+            'product_image_id' => ['nullable', 'integer', 'exists:medias,id'],
+            'status' => ['in:draft,published,archived'],
             'theme_id' => ['nullable', 'exists:themes,id'],
+            'checkout_success_url' => ['nullable', 'url', 'max:255'],
+            'checkout_cancel_url' => ['nullable', 'url', 'max:255'],
+            'view' => ['nullable', 'array'],
         ];
     }
 
@@ -43,6 +48,10 @@ class OfferUpdateRequest extends FormRequest
             'theme_id.exists' => 'The selected theme does not exist.',
             'image_url.url' => 'The image URL must be a valid URL.',
             'product_image_id.exists' => 'The selected product image does not exist.',
+            'status.in' => 'Invalid status value.',
+            'default_currency.max' => 'Currency code must be 3 characters.',
+            'checkout_success_url.url' => 'The success URL must be a valid URL.',
+            'checkout_cancel_url.url' => 'The cancel URL must be a valid URL.',
         ];
     }
-} 
+}

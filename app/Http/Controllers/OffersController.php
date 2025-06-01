@@ -84,7 +84,7 @@ class OffersController extends Controller
             ->get();
 
         // Load the offer with its theme and items
-        $offer->load(['offerItems.prices.product', 'theme', 'screenshot']);
+        $offer->load(['offerItems.prices.product', 'theme', 'screenshot', 'organization']);
 
         $stripeIntegration = Integration::where('organization_id', $offer->organization_id)->where('type', IntegrationType::STRIPE)->first();
 
@@ -104,21 +104,7 @@ class OffersController extends Controller
 
     public function update(OfferUpdateRequest $request, Offer $offer)
     {
-        $forUpdate = [];
-
-        if ($request->validated('name')) {
-            $forUpdate['name'] = $request->validated('name');
-        }
-
-        if ($request->validated('view')) {
-            $forUpdate['view'] = $request->validated('view');
-        }
-
-        if ($request->validated('theme_id')) {
-            $forUpdate['theme_id'] = $request->validated('theme_id');
-        }
-
-        $offer->update($forUpdate);
+        $offer->update($request->validated());
 
         return redirect()->back();
     }

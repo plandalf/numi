@@ -7,6 +7,7 @@ export interface Organization {
     invite_link: string;
     join_token: string;
     default_currency: string;
+    subdomain: string;
     users?: (User & {
         pivot: {
             role: string;
@@ -14,7 +15,9 @@ export interface Organization {
     })[];
     on_trial: boolean;
     trial_days_left: string;
-    subscriptions?: Subscription[];
+  checkout_success_url?: string;
+  checkout_cancel_url?: string;
+  subscriptions?: Subscription[];
 }
 
 export interface Subscription {

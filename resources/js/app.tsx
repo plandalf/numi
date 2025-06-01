@@ -14,29 +14,45 @@ const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
 // Configure NProgress
 NProgress.configure({
     showSpinner: false,
-    trickleSpeed: 200,
-    minimum: 0.1,
+    trickleSpeed: 400, // Slower trickle speed
+    minimum: 0.2, // Start at 20%
     easing: 'ease',
-    speed: 500,
+    speed: 800, // Slower animation
 });
+
+let timeout: NodeJS.Timeout | null = null;
 
 // Add event listeners for Inertia navigation
 router.on('start', () => {
+    // Clear any existing timeout
+    if (timeout) {
+        clearTimeout(timeout);
+        timeout = null;
+    }
     NProgress.start();
 });
 
 router.on('progress', (event: any) => {
     if (event?.detail?.progress?.percentage) {
-        NProgress.set((event.detail.progress.percentage / 100) * 0.9);
+        const progress = Math.min((event.detail.progress.percentage / 100) * 0.9, 0.9);
+        NProgress.set(progress);
     }
 });
 
 router.on('finish', () => {
-    NProgress.done(true); // Force complete the progress
+    // Delay the completion slightly to ensure smooth transition
+    timeout = setTimeout(() => {
+        NProgress.done(true);
+        timeout = null;
+    }, 250);
 });
 
 router.on('invalid', () => {
-    NProgress.done(true); // Also complete on invalid requests
+    if (timeout) {
+        clearTimeout(timeout);
+        timeout = null;
+    }
+    NProgress.done(true);
 });
 
 createInertiaApp({
