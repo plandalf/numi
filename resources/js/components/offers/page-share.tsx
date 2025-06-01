@@ -44,18 +44,14 @@ export function PageShare() {
           case 'standard':
               return `<a href="${offerUrl}" target="_blank">Open Offer</a>`;
           case 'popup':
-              return `<script>
-function openOfferPopup() {
-  window.open('${offerUrl}', 'offer', 'width=800,height=600');
-}
-</script>
-<button onclick="openOfferPopup()">Open Offer</button>`;
+              return `<script src="${window.location.origin}/js/v1.js"></script>
+<button data-numi-offer="${offer.id}" data-numi-embed-type="popup">Open Offer</button>`;
           case 'fullscreen':
               return `<script src="${window.location.origin}/js/v1.js"></script>
-<button data-numi-offer="${offer.id}" data-type="fullscreen">Open Offer</button>`;
+<div data-numi-offer="${offer.id}" data-numi-embed-type="fullscreen">Open Offer</div>`;
           case 'slider':
               return `<script src="${window.location.origin}/js/v1.js"></script>
-<button data-numi-offer="${offer.id}" data-type="slider">Open Offer</button>`;
+<button data-numi-offer="${offer.id}" data-numi-embed-type="slider">Open Offer</button>`;
           default:
               return '';
       }

@@ -26,6 +26,8 @@ class OrganizationResource extends JsonResource
             'on_trial' => $this->on_trial,
             'trial_days_left' => $this->trial_days_left,
             'trial_period_expired' => $this->trial_period_expired,
+            'checkout_success_url' => $this->checkout_success_url,
+            'checkout_cancel_url' => $this->checkout_cancel_url,
 
             $this->when(
                 $this->resource->relationLoaded('subscriptions'),

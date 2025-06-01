@@ -40,6 +40,14 @@ class OfferResource extends JsonResource
             'properties' => $this->properties,
             'items' => OfferItemResource::collection($this->whenLoaded('offerItems')),
             'theme' => new ThemeResource($this?->theme ?? new Theme),
+
+            'checkout_success_url' => $this->checkout_success_url ?? $this->whenLoaded('organization', function () {
+                return $this->organization->checkout_success_url;
+            }, null),
+            'checkout_cancel_url' => $this->checkout_cancel_url ?? $this->whenLoaded('organization', function () {
+                return $this->organization->checkout_cancel_url;
+            }, null),
+
             'created_at' => $this->created_at?->toISOString(),
             'updated_at' => $this->updated_at?->toISOString(),
             'public_url' => $this->whenLoaded('organization', function () {

@@ -30,6 +30,8 @@ use Illuminate\Support\Uri;
  * @property Carbon $updated_at
  * @property Carbon|null $deleted_at
  * @property string $uuid
+ * @property string|null $checkout_success_url
+ * @property string|null $checkout_cancel_url
  * @property string $public_url
  * @property Organization $organization
  */
@@ -53,6 +55,8 @@ class Offer extends Model
         'view',
         'properties',
         'uuid',
+        'checkout_success_url',
+        'checkout_cancel_url',
     ];
 
     protected $casts = [

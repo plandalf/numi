@@ -342,7 +342,7 @@ ${spinAnimationStyles}
             initialized: element.dataset.numiInitialized !== undefined,
             inheritParameters: element.dataset.numiInheritParameters !== undefined,
             dynamicResize: element.dataset.numiDynamicResize !== undefined,
-            offerPublicIdentifier: element.dataset.numiId,
+            offerPublicIdentifier: element.dataset.numiOffer,
             buttonText: element.dataset.numiButtonText,
             buttonFloat: element.dataset.numiButtonFloat,
             buttonColor,
@@ -359,14 +359,52 @@ ${spinAnimationStyles}
         return config;
     };
     const getSharedIframeSrc = (configDomain, offerPublicIdentifier, inheritParameters, target) => {
-        let domain = 'https://embed.numi.com';
+        // 1. Use configDomain if set
+        let domain = null;
         if (configDomain) {
             if (configDomain === 'localhost:8002') {
                 domain = `http://${configDomain}`;
-            }
-            else {
+            } else {
                 domain = `https://${configDomain}`;
             }
+        } else {
+            // 2. Try to get the domain from the script's own src
+            let scriptSrc = null;
+            if (typeof document !== 'undefined') {
+                if (document.currentScript && document.currentScript.src) {
+                    scriptSrc = document.currentScript.src;
+                } else {
+                    // Fallback: search for a script tag ending in /js/v1.js
+                    const scripts = document.getElementsByTagName('script');
+                    for (let i = 0; i < scripts.length; i++) {
+                        if (scripts[i].src && scripts[i].src.match(/\/js\/v1\.js([?#].*)?$/)) {
+                            scriptSrc = scripts[i].src;
+                            break;
+                        }
+                    }
+                }
+            }
+            if (scriptSrc) {
+                try {
+                    const url = new URL(scriptSrc, window.location.origin);
+                    domain = url.origin;
+                } catch (e) {
+                    // ignore, fallback below
+                }
+            }
+        }
+        // 3. If still not set, use the domain argument (from config)
+        if (!domain && target && target.dataset && target.dataset.numiDomain) {
+            const fallbackDomain = target.dataset.numiDomain;
+            if (fallbackDomain === 'localhost:8002') {
+                domain = `http://${fallbackDomain}`;
+            } else {
+                domain = `https://${fallbackDomain}`;
+            }
+        }
+        // 4. Final fallback
+        if (!domain) {
+            domain = 'https://plandalf.dev';
         }
         const formLink = `${domain}/o/${offerPublicIdentifier}`;
         const iframeSrc = new URL(formLink);
@@ -640,17 +678,45 @@ ${spinAnimationStyles}
         if (initialized)
             return;
         const standardContainer = document.createElement('div');
-        standardContainer.className = 'numi-embed-standard';
-        standardContainer.style.opacity = '0';
+        if (isFullScreen) {
+            // Fullscreen modal overlay styles
+            standardContainer.className = 'numi-embed-fullscreen-modal';
+            Object.assign(standardContainer.style, {
+                position: 'fixed',
+                top: '0',
+                left: '0',
+                width: '100vw',
+                height: '100vh',
+                zIndex: '1000000000',
+                background: 'rgba(0,0,0,0.85)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                opacity: '0',
+                transition: 'opacity 0.25s ease-in-out',
+            });
+        } else {
+            standardContainer.className = 'numi-embed-standard';
+            standardContainer.style.opacity = '0';
+        }
         const standardLoading = document.createElement('div');
         standardLoading.className = 'numi-embed-loading';
         standardLoading.style.display = 'block';
         standardContainer.appendChild(standardLoading);
         // relative while we show loading icon
-        target.style.position = 'relative';
+        if (!isFullScreen) target.style.position = 'relative';
         const iframeContainer = document.createElement('div');
         iframeContainer.className = 'numi-embed-iframe-container';
         iframeContainer.style.opacity = '1';
+        if (isFullScreen) {
+            Object.assign(iframeContainer.style, {
+                width: '100vw',
+                height: '100vh',
+                position: 'relative',
+                borderRadius: '0',
+                boxShadow: '0 0 0 0',
+            });
+        }
         standardContainer.appendChild(iframeContainer);
         const iframe = document.createElement('iframe');
         const iframeSrc = getSharedIframeSrc(domain, offerPublicIdentifier, inheritParameters, target);
@@ -665,7 +731,7 @@ ${spinAnimationStyles}
         if (parentPage) {
             iframeSrc.searchParams.append('numi-embed-parent-page', parentPage);
         }
-        if (dynamicResize) {
+        if (dynamicResize && !isFullScreen) {
             iframeSrc.searchParams.append('numi-embed-dynamic-resize', 'true');
             // transition for when the height changes (potentially)
             target.style.transition = 'height 150ms ease';
@@ -696,16 +762,63 @@ ${spinAnimationStyles}
         iframe.style.border = '0px';
         if (isFullScreen) {
             iframe.style.borderRadius = '0px';
+            iframe.style.width = '100vw';
+            iframe.style.height = '100vh';
+            iframe.style.display = 'block';
         }
         iframe.title = `${offerPublicIdentifier}`;
         iframe.addEventListener('load', () => {
             if (standardLoading) {
                 standardLoading.style.display = 'none';
             }
+            if (isFullScreen) {
+                standardContainer.style.opacity = '1';
+            }
         }, true);
         iframeContainer.appendChild(iframe);
-        target.appendChild(standardContainer);
-        standardContainer.style.opacity = '1';
+        if (isFullScreen) {
+            // Add a close button
+            const closeIcon = document.createElement('a');
+            closeIcon.className = 'numi-embed-fullscreen-close-icon';
+            closeIcon.innerHTML = XIcon;
+            Object.assign(closeIcon.style, {
+                position: 'absolute',
+                top: '32px',
+                right: '32px',
+                width: '32px',
+                height: '32px',
+                background: '#171717',
+                color: '#fff',
+                borderRadius: '50%',
+                padding: '6px',
+                zIndex: '1000000001',
+                cursor: 'pointer',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+                opacity: '0.9',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                transition: 'opacity 0.2s',
+            });
+            closeIcon.onclick = (e) => {
+                e.preventDefault();
+                document.body.classList.remove('noscroll');
+                standardContainer.style.opacity = '0';
+                setTimeout(() => {
+                    standardContainer.remove();
+                }, 250);
+            };
+            iframeContainer.appendChild(closeIcon);
+            // Show modal
+            document.body.appendChild(standardContainer);
+            document.body.classList.add('noscroll');
+            setTimeout(() => {
+                standardContainer.style.opacity = '1';
+            }, 10);
+        } else {
+            target.appendChild(standardContainer);
+            standardContainer.style.opacity = '1';
+        }
         // so that any other script imports don't accidentally try initializing
         // this again
         target.setAttribute('data-numi-initialized', 'true');
@@ -728,7 +841,7 @@ ${spinAnimationStyles}
             }
         });
     }
-    
+
     // @ts-ignore
     const slidersInitialized = window.__numiSlidersInitialized;
     const sliderTargets = document.querySelectorAll("[data-numi-embed-type='slider']");
