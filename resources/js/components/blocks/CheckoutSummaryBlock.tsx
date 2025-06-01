@@ -125,9 +125,9 @@ function CheckoutSummaryComponent({ context }: { context: BlockContextType }) {
   const containerStyle = useMemo(() => {
     return {
       backgroundColor: resolveThemeValue(style.backgroundColor, theme, 'primary_surface_color') as string,
-      padding: style.padding,
-      margin: style.margin,
-      gap: style.spacing,
+      padding: appearance.padding,
+      margin: appearance.margin,
+      gap: appearance.spacing,
       borderColor: resolveThemeValue(style.borderColor, theme),
       borderWidth: style?.border?.width,
       borderStyle: style?.border?.style,

@@ -104,9 +104,9 @@ function StripeElementsComponent({ context }: { context: BlockContextType }) {
     borderStyle: style.border?.style,
     borderRadius : style.borderRadius,
     boxShadow: style.shadow,
-    padding:style.padding,
-    margin: style.margin,
-    gap: style.spacing,
+    padding:appearance.padding,
+    margin: appearance.margin,
+    gap: appearance.spacing,
   }), [style, appearance]);
 
   const titleStyle = useMemo(() => ({
