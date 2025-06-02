@@ -18,6 +18,7 @@ use function Illuminate\Events\queueable;
  */
 class Organization extends Model
 {
+    public const DEFAULT_SUBDOMAIN = 'checkout';
     /** @use HasFactory<\Database\Factories\OrganizationFactory> */
     use Billable, HasFactory;
 
@@ -145,6 +146,8 @@ class Organization extends Model
             $baseDomain = explode(':', $baseDomain)[0];
         }
 
-        return $this->subdomain ? Str::lower($this->subdomain . '.' . $baseDomain) : null;
+        $subdomain = $this->subdomain ?? self::DEFAULT_SUBDOMAIN;
+
+        return Str::lower($subdomain . '.' . $baseDomain);
     }
 }
