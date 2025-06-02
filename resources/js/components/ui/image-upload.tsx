@@ -100,7 +100,7 @@ export function ImageUpload({
                 .then(res => {
                     const responseData = res.data;
                     setPreviewUrl(responseData.data.url);
-                    onChange?.({ id: responseData.data.id, url: responseData.data.url });
+                    onChange?.({ id: responseData.data.id, url: responseData.data.path });
                 });
 
         } catch (error) {
