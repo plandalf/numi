@@ -16,6 +16,7 @@ class FeedbackController extends Controller
     {
         $validated = $request->validate([
             'feedback' => ['required', 'string', 'max:2000'],
+            'imageUrl' => ['nullable', 'string', 'max:2000'],
         ]);
 
         $user = Auth::user();
@@ -25,7 +26,8 @@ class FeedbackController extends Controller
             ->notify(new FeedbackSubmittedNotification(
                 $validated['feedback'],
                 $user,
-                $organization
+                $organization,
+                $validated['imageUrl'] ?? null
             ));
 
         return response()->json(['message' => 'Feedback sent successfully.']);

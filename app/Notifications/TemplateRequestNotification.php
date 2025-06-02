@@ -12,25 +12,20 @@ use Illuminate\Notifications\Slack\BlockKit\Blocks\SectionBlock;
 use Illuminate\Notifications\Slack\BlockKit\Blocks\ImageBlock;
 use App\Models\User;
 
-class FeedbackSubmittedNotification extends Notification
+class TemplateRequestNotification extends Notification
 {
     use Queueable;
-
-    public string $feedback;
-    public ?User $user;
-    public $organization;
-    public ?string $imageUrl;
 
     /**
      * Create a new notification instance.
      */
     public function __construct(
-        string $feedback, 
-        ?User $user = null, 
-        $organization = null, 
-        ?string $imageUrl = null
+         public string $description, 
+         public ?User $user = null, 
+         public $organization = null, 
+         public ?string $imageUrl = null
     ) {
-        $this->feedback = $feedback;
+        $this->description = $description;
         $this->user = $user;
         $this->organization = $organization;
         $this->imageUrl = $imageUrl;
@@ -49,9 +44,9 @@ class FeedbackSubmittedNotification extends Notification
     public function toSlack(object $notifiable): SlackMessage
     {
         $message = (new SlackMessage)
-            ->text('💬 New feedback received!')
+            ->text('🎨 New template request received!')
             ->dividerBlock()
-            ->headerBlock('💬 Feedback Submitted')
+            ->headerBlock('🎨 Template Request')
             ->contextBlock(function (ContextBlock $block) {
                 $block->text(
                     '*From:* ' . ($this->user ? $this->user->name . ' ('.$this->user->email.')' : 'Guest')
@@ -59,7 +54,7 @@ class FeedbackSubmittedNotification extends Notification
                     . ($this->imageUrl ? "\n*Attached Image:* " . $this->imageUrl : ''))->markdown();
                 })
             ->sectionBlock(function (SectionBlock $block) {
-                $block->text('"' . $this->feedback.  '"')->markdown();
+                $block->text('"' . $this->description.  '"')->markdown();
             })
             ->dividerBlock();
 

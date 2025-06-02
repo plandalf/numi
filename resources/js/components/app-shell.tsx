@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button';
 import axios from '@/lib/axios';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { UserMenuContent } from '@/components/user-menu-content';
+import { ImageUpload } from './ui/image-upload';
 
 interface AppShellProps {
     children: React.ReactNode;
@@ -26,6 +27,7 @@ export function AppShell({ children }: AppShellProps) {
   // Feedback popover state
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [feedback, setFeedback] = useState('');
+  const [image, setImage] = useState<{ id: number, url: string } | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -35,13 +37,24 @@ export function AppShell({ children }: AppShellProps) {
     setSubmitting(true);
     setError(null);
     try {
-      await axios.post('/feedback', { feedback });
+      await axios.post('/feedback', { feedback, imageUrl: image?.url });
       setSuccess(true);
       setFeedback('');
+      setImage(null);
     } catch {
       setError('Could not send feedback. Please try again.');
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const onPopupChange = (status: boolean) => {
+    setFeedbackOpen(status);
+    if(!status) {
+      setSuccess(false);
+      setError(null);
+      setFeedback('');
+      setImage(null);
     }
   };
 
@@ -65,7 +78,7 @@ export function AppShell({ children }: AppShellProps) {
                   </Link>
                 )
               }
-              <Popover open={feedbackOpen} onOpenChange={setFeedbackOpen}>
+              <Popover open={feedbackOpen} onOpenChange={onPopupChange}>
                 <PopoverTrigger asChild>
                   <Button
                     variant="outline"
@@ -79,11 +92,11 @@ export function AppShell({ children }: AppShellProps) {
                 </PopoverTrigger>
                 <PopoverContent className="w-80 p-4" align="end">
                   {success ? (
-                    <div className="flex flex-col items-center gap-2">
+                    <div className="flex flex-col items-center gap-5">
                       <div className="text-green-700 font-medium text-center">
                         Your feedback was sent :)<br />We'll get in touch soon.
                       </div>
-                      <Button variant="secondary" size="sm" onClick={() => { setSuccess(false); setFeedbackOpen(false); }}>
+                      <Button variant="secondary" size="sm" onClick={() => { setSuccess(false); onPopupChange(false); }}>
                         Close
                       </Button>
                     </div>
@@ -98,6 +111,12 @@ export function AppShell({ children }: AppShellProps) {
                         required
                         className="resize-none"
                         autoFocus
+                      />
+                      <ImageUpload
+                        preview={image?.url}
+                        onChange={setImage}
+                        label="Attach an image"
+                        buttonClassName="text-gray-500"
                       />
                       <div className="flex items-center justify-between text-xs text-muted-foreground">
                         <span>Need help? <a href="mailto:dev@plandalf.com" className="underline">Contact us</a></span>
@@ -120,7 +139,7 @@ export function AppShell({ children }: AppShellProps) {
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                  <div className="flex items-center gap-1">
+                  <div className="flex items-center gap-1 cursor-pointer">
                     <UserInfo user={auth.user} />
                     <ChevronsUpDown className="ml-auto size-4" />
                   </div>

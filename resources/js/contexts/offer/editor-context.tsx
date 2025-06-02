@@ -429,13 +429,11 @@ export function EditorProvider({ offer, organizationThemes, organizationTemplate
   const [selectedSectionId, setSelectedSectionIdState] = useState<string | null>(null);
 
   const onSelectBlock = useCallback((blockId: string | null) => {
-    setSelectedSectionIdState(null);
     setSelectedBlockIdState(blockId);
   }, []);
 
   const onSelectSection = useCallback((sectionId: string | null) => {
     setSelectedSectionIdState(sectionId);
-    setSelectedBlockIdState(null);
   }, []);
 
   const updateSection = (sectionId: string, sectionDataToMerge: Partial<ViewSection>) => {

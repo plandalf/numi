@@ -37,6 +37,7 @@ export type ComboboxProps = {
   required?: boolean;
   multiple?: boolean;
   disabled?: boolean;
+  hideChevron?: boolean
   popoverClassName?: string;
 } & PopoverProps;
 
@@ -51,6 +52,7 @@ export function Combobox({
   required = false,
   multiple = false,
   disabled = false,
+  hideChevron = false,
   popoverClassName = '',
   ...props
 }: ComboboxProps) {
@@ -131,7 +133,11 @@ export function Combobox({
             className,
           )}
         >
-          <span className="truncate flex flex-row flex-1 text-left">
+          <span className={cn(
+            "truncate flex flex-row flex-1 text-left",
+            placeholderIcon && "justify-center",
+            !placeholderIcon && "justify-start"
+          )}>
             {getSelectedLabels().length > 0
               ? multiple && Array.isArray(value) && value.length > 2
                 ? (() => {
@@ -158,7 +164,9 @@ export function Combobox({
                 <span className="text-red-500 ml-1">*</span>
               )}
           </span>
-          <ChevronsUpDown className="opacity-50 ml-2 flex-shrink-0" />
+          {!hideChevron && (
+            <ChevronsUpDown className="opacity-50 ml-2 flex-shrink-0" />
+          )}
         </Button>
       </PopoverTrigger>
       <PopoverContent

@@ -17,7 +17,8 @@ import {
   Columns2Icon,
   TextCursorInputIcon,
   LinkIcon,
-  PlusIcon
+  PlusIcon,
+  HeadingIcon
 } from 'lucide-react';
 import { useDraggable } from '@dnd-kit/core';
 import SearchBar from './search-bar';
@@ -53,6 +54,8 @@ export const CustomElementIcon = ({ type }: CustomElementIconProps) => {
         return <ShoppingCartIcon className="w-6 h-6" />;
     case 'add_on':
         return <PlusIcon className="w-6 h-6" />;
+    case 'heading':
+        return <HeadingIcon className="w-6 h-6" />;
     default:
         return null;
   }
@@ -102,6 +105,7 @@ const baseElements = [
   { type: 'quote', title: 'Quote' },
   { type: 'detail_list', title: 'Detail List' },
   { type: 'image', title: 'Image Block' },
+  { type: 'heading', title: 'Heading' },
 ];
 
 const interactiveElements = [

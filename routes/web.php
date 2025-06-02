@@ -221,6 +221,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('/templates', [TemplateController::class, 'store'])->name('templates.store');
         Route::put('/templates/{template}', [TemplateController::class, 'update'])->name('templates.update');
         Route::post('/templates/{template}/use', [TemplateController::class, 'useTemplate'])->name('templates.use');
+        Route::post('/templates/request', [TemplateController::class, 'requestTemplate'])->name('templates.request');
 
         // Media Upload Route
         Route::post('media', [MediaController::class, 'store'])->name('media.store');
