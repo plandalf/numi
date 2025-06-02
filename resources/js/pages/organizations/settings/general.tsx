@@ -86,7 +86,7 @@ export default function General({ organization }: Props) {
                             </SelectContent>
                           </Select>
                         </div>
-                        
+
                         <div className="space-y-2">
                           <Label htmlFor="subdomain" className={cn(form.errors.subdomain && "text-destructive")}>Subdomain</Label>
                           <Input
@@ -147,7 +147,6 @@ export default function General({ organization }: Props) {
                           Save changes
                         </Button>
                       </form>
-\
                     </CardContent>
                 </Card>
             </div>

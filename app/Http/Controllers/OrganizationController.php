@@ -50,6 +50,7 @@ class OrganizationController extends Controller
 
         $organization = Organization::create([
             ...$validated,
+            'subdomain' => $this->organizationService->generateSubdomain($validated['name']),
             'trial_ends_at' => now()->addDays(
                 (int) config('cashier.trial_days')
             ),
