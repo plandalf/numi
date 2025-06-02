@@ -1,12 +1,10 @@
-import React, { act, useState } from 'react';
-import { Button } from '../ui/button';
+import React, { useState } from 'react';
 import { Image, Info, PlusIcon, Ruler, Type } from 'lucide-react';
 import { Label } from '../ui/label';
 import { Separator } from '../ui/separator';
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuItem,
   DropdownMenuTrigger,
 } from '../ui/dropdown-menu';
 import { ColorPicker, parseHexAlpha } from '../ui/color-picker';
@@ -345,7 +343,6 @@ export const StyleEditor: React.FC<StyleEditorProps> = ({
   themeColors,
   fonts,
 } : StyleEditorProps) => {
-
   const itemsWithValue = items.filter((item) => item.value != undefined);
   const itemsWithoutValue = items.filter((item) => item.value == undefined);
 
@@ -398,6 +395,7 @@ export const StyleEditor: React.FC<StyleEditorProps> = ({
             label: item.label
           }))}
           className="flex-1 min-w-[200px]"
+          selected={''}
           onSelect={(selected) => handleChange(selected as string)}
           placeholderIcon={<PlusIcon className="w-4 h-4" />}
           placeholder={itemsWithValue.length > 0 ? 'Add another style' : 'Add a style'}
