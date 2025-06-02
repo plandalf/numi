@@ -401,6 +401,7 @@ export const StyleEditor: React.FC<StyleEditorProps> = ({
           placeholder={itemsWithValue.length > 0 ? 'Add another style' : 'Add a style'}
           hideSearch={itemsWithoutValue.length === 0}
           disabled={itemsWithoutValue.length === 0}
+          hideChevron
         />
       )}
     </div>

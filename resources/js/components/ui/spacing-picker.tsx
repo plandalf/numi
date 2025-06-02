@@ -155,8 +155,6 @@ export const SpacingPicker = ({
   };
 
   const activeTab = value === '0px' ? 'none' : 'normal';
-  console.log('value', value)
-  console.log('activeTab', activeTab)
   const currentTabState = isCustomEditing ? undefined : activeTab;
   const isMultiValue = format === 'multi';
 

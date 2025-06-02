@@ -3,37 +3,26 @@
 namespace App\Notifications;
 
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 use Illuminate\Notifications\Slack\SlackMessage;
 use Illuminate\Notifications\Slack\BlockKit\Blocks\ContextBlock;
 use Illuminate\Notifications\Slack\BlockKit\Blocks\SectionBlock;
-use Illuminate\Notifications\Slack\BlockKit\Blocks\ImageBlock;
 use App\Models\User;
 
-class FeedbackSubmittedNotification extends Notification
+class UserRegisteredNotification extends Notification
 {
     use Queueable;
 
-    public string $feedback;
     public ?User $user;
     public $organization;
-    public ?string $imageUrl;
 
     /**
      * Create a new notification instance.
      */
-    public function __construct(
-        string $feedback, 
-        ?User $user = null, 
-        $organization = null, 
-        ?string $imageUrl = null
-    ) {
-        $this->feedback = $feedback;
+    public function __construct(?User $user = null, $organization = null)
+    {
         $this->user = $user;
         $this->organization = $organization;
-        $this->imageUrl = $imageUrl;
     }
 
     /**
@@ -48,22 +37,17 @@ class FeedbackSubmittedNotification extends Notification
 
     public function toSlack(object $notifiable): SlackMessage
     {
-        $message = (new SlackMessage)
-            ->text('💬 New feedback received!')
+        return (new SlackMessage)
+            ->text('👤 New user registered!')
             ->dividerBlock()
-            ->headerBlock('💬 Feedback Submitted')
+            ->headerBlock('👤 User Registered')
             ->contextBlock(function (ContextBlock $block) {
                 $block->text(
                     '*From:* ' . ($this->user ? $this->user->name . ' ('.$this->user->email.')' : 'Guest')
                     . ($this->organization ? "\n*Organization:* " . ($this->organization?->name ?? 'Guest') : '')
-                    . ($this->imageUrl ? "\n*Attached Image:* " . $this->imageUrl : ''))->markdown();
-                })
-            ->sectionBlock(function (SectionBlock $block) {
-                $block->text('"' . $this->feedback.  '"')->markdown();
+                )->markdown();
             })
             ->dividerBlock();
-
-        return $message;
     }
 
     /**

@@ -37,7 +37,7 @@ export const AppearanceSection = ({ globalState, block, onUpdate }: { globalStat
       <h3 className="font-semibold">Appearance</h3>
       {appearanceHooks.map((hook) => {
         return (
-          <>
+          <div key={hook.name}>
             {hook.inspector === 'visibilityPicker' ? (
               <ConditionVisibilityEditor
                 key={hook.name}
@@ -59,7 +59,7 @@ export const AppearanceSection = ({ globalState, block, onUpdate }: { globalStat
                 {hook.name}
               </div>
             )}
-          </>
+          </div>
         );
       })}
     </div>

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { cn } from '@/lib/utils';
-import { findBlockInPage, findSectionInPage } from '@/components/offers/page-preview';
+import { findBlockInPage, findSectionInPage, findSectionInPageViaBlock } from '@/components/offers/page-preview';
 import { Inspector } from '@/components/offers/page-inspector';
 import { SectionInspector } from '@/components/offers/page-section-inspector';
 import { useEditor } from '@/contexts/offer/editor-context';
@@ -11,6 +11,8 @@ import {
   Settings2,
   Package,
   ChevronLeft,
+  ArrowLeft,
+  ArrowLeftCircleIcon,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import PageTheme from './page-theme';
@@ -120,13 +122,16 @@ export function Sidebar() {
     }
   };
 
-  const onTabClick = (tab: SidebarTab) => {
-    console.log('onTabClick', tab);
-    setActiveTab(tab);
+  const removeSelection = () => {
     setSelectedBlockId(null);
     setSelectedSectionId(null);
   }
 
+  const onTabClick = (tab: SidebarTab) => {
+    console.log('onTabClick', tab);
+    setActiveTab(tab);
+    removeSelection();
+  }
   return (
     <div className={cn(
       "flex h-full overflow-hidden shadow-xl transition-all duration-300",
@@ -189,13 +194,23 @@ export function Sidebar() {
                   variant="ghost"
                   size="icon"
                   className="h-8 w-8"
-                  onClick={() => setSelectedBlockId(null)}
+                  onClick={removeSelection}
                 >
                   <ChevronLeft className="size-6" />
                 </Button>
-                <h2 className="text-lg font-bold truncate">
-                  {findBlockInPage(data.view.pages[selectedPage], selectedBlockId)?.type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                </h2>
+                <div className="flex flex-col items-start">
+                  <span className="flex flex-row gap-x-1 items-center text-xs text-gray-500">
+                    Section: 
+                    <span className="font-bold text-xs text-gray-500 hover:underline cursor-pointer transition-all duration-300" onClick={() => {
+                      setSelectedSectionId(findSectionInPageViaBlock(data.view.pages[selectedPage], selectedBlockId)?.id ?? '');
+                      setSelectedBlockId(null);
+                    }}>{findSectionInPageViaBlock(data.view.pages[selectedPage], selectedBlockId)?.id?.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                    </span>
+                  </span>
+                  <h2 className="text-lg font-bold truncate leading-6">
+                    {findBlockInPage(data.view.pages[selectedPage], selectedBlockId)?.type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                  </h2>
+                </div>
               </div>
               <DeleteBlockDialog onDelete={handleDeleteBlock} />
             </div>
@@ -205,7 +220,7 @@ export function Sidebar() {
                 variant="ghost"
                 size="icon"
                 className="h-8 w-8"
-                onClick={() => setSelectedSectionId(null)}
+                onClick={removeSelection}
               >
                 <ChevronLeft className="size-6" />
               </Button>

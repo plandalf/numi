@@ -5,10 +5,12 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Models\Organization;
 use App\Models\User;
+use App\Notifications\UserRegisteredNotification;
 use App\Services\OrganizationService;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Session;
@@ -78,12 +80,20 @@ class RegisteredUserController extends Controller
 
             // Clear the join token from the session
             Session::forget('join_token');
-
-            return redirect()
-                ->route('dashboard')
-                ->with('success', 'Account created and joined organization successfully.');
         }
 
-        return redirect()->route('dashboard');
+        Notification::route('slack', config('services.slack.notifications.channel'))
+            ->notify(new UserRegisteredNotification(
+                $user,
+                $organization
+            ));
+        
+        $redirectResponse = redirect()->route('dashboard');
+
+        if($organization) {
+            return $redirectResponse->with('success', 'Account created and joined organization successfully.');
+        }
+
+        return $redirectResponse;
     }
 }

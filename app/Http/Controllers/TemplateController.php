@@ -5,8 +5,11 @@ namespace App\Http\Controllers;
 use App\Http\Requests\CreateUpdateTemplateWithThemeRequest;
 use App\Http\Resources\TemplateResource;
 use App\Models\Template;
+use App\Notifications\TemplateRequestNotification;
 use App\Services\TemplateService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Notification;
 use Inertia\Inertia;
 
 class TemplateController extends Controller
@@ -65,5 +68,26 @@ class TemplateController extends Controller
             ]
         );
         return redirect()->back()->with('success', 'Template updated successfully');
+    }
+
+    public function requestTemplate(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'description' => ['required', 'string', 'max:2000'],
+            'imageUrl' => ['nullable', 'string', 'max:2000'],
+        ]);
+
+        $user = $request->user();
+        $organization = $user?->currentOrganization;
+
+        Notification::route('slack', config('services.slack.notifications.channel'))
+            ->notify(new TemplateRequestNotification(
+                $validated['description'],
+                $user,
+                $organization,
+                $validated['imageUrl'] ?? null
+            ));
+
+        return response()->json(['message' => 'Feedback sent successfully.']);
     }
 }

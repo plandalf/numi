@@ -11,6 +11,7 @@ import TextInputBlockComponent from "./TextInputBlock";
 import ImageBlockComponent from '@/components/blocks/ImageBlock';
 import LinkBlockComponent from "./LinkBlock";
 import AddOnBlockComponent from "./AddOnBlock";
+import HeadingBlockComponent from "./HeadingBlock";
 
 export const blockTypes = {
   text: TextBlockComponent,
@@ -26,6 +27,7 @@ export const blockTypes = {
   add_on: AddOnBlockComponent,
   payment_method: PaymentMethodBlock,
   plan_descriptor: PlanDescriptorComponent,
+  heading: HeadingBlockComponent,
 }
 
 type BlockMeta = {

@@ -11,7 +11,7 @@ interface CardIconPanelProps {
 
 export const CardIconPanel: React.FC<CardIconPanelProps> = ({ options, value, onChange, icons, labels }) => {
   return (
-    <div className="flex justify-between">
+    <div className="flex justify-between flex-wrap gap-2">
       {options.map((option) => {
         const isSelected = value === option;
         return (
@@ -20,7 +20,7 @@ export const CardIconPanel: React.FC<CardIconPanelProps> = ({ options, value, on
             type="button"
             title={labels?.[option] ?? option}
             className={cn(
-              'flex flex-col items-center justify-center rounded-lg border transition-colors px-4 py-1 max-w-[90px] bg-blue-950 border-transparent cursor-pointer',
+              'flex flex-col items-center justify-center rounded-lg border transition-all ease-in-out duration-200 px-4 py-1 max-w-[90px] bg-blue-950 border-transparent cursor-pointer',
               isSelected ? 'ring-3 ring-teal-600' : 'hover:bg-blue-950/50',
             )}
             onClick={() => onChange(option)}

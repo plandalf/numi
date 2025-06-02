@@ -202,7 +202,7 @@ interface RecursiveRenderElementProps {
   componentRegistry: ComponentRegistry;
   selectedSectionId: string | null | undefined;
   onBlockSelect?: (blockId: string) => void;
-  onSectionSelect?: (sectionId: string) => void;
+  onSectionSelect?: (sectionId: string | null) => void;
   isContained?: boolean;
 }
 
@@ -295,6 +295,7 @@ const RecursiveRenderElement: React.FC<RecursiveRenderElementProps> = React.memo
         sectionName={id as keyof LocalPageView}
         style={sectionStyle}
         onBlockSelect={onBlockSelect}
+        onSectionSelect={onSectionSelect}
         children={childElements}
       />,
       componentRegistry
@@ -445,10 +446,11 @@ const MemoizedBlockRenderer: React.FC<React.ComponentProps<typeof BlockRendererC
 // Section Component
 interface SectionPropsExtended extends SectionProps {
   onBlockSelect?: (blockId: string) => void;
+  onSectionSelect?: (sectionId: string | null) => void;
   children?: React.ReactNode;
 }
 
-const SectionComponent = ({ section, sectionName: id, style, onBlockSelect, children }: SectionPropsExtended) => {
+const SectionComponent = ({ section, sectionName: id, style, onBlockSelect, children, onSectionSelect }: SectionPropsExtended) => {
   const { setNodeRef, isOver, active } = useDroppable({
     id: `section:${id}`,
   });
@@ -475,6 +477,11 @@ const SectionComponent = ({ section, sectionName: id, style, onBlockSelect, chil
   // If the section is a container, it is not draggable.
   const isDraggable = !(section as PageSection)?.asContainer;
 
+  const handleBlockSelect = (blockId: string) => {
+    onBlockSelect?.(blockId);
+    onSectionSelect?.(null);
+  }
+
   const component = (
     <div
      className={cx({
@@ -491,7 +498,7 @@ const SectionComponent = ({ section, sectionName: id, style, onBlockSelect, chil
           <MemoizedBlockRenderer
             block={block as BlockConfig}
             key={block.id}
-            onBlockSelect={onBlockSelect}
+            onBlockSelect={handleBlockSelect}
           >
             {(blockContext) => {
                 const Component = blockTypes[block.type as keyof typeof blockTypes];

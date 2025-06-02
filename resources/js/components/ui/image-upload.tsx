@@ -26,6 +26,7 @@ interface PageProps {
 
 interface Props {
     label?: string;
+    buttonClassName?: string;
     className?: string;
     value?: number | null;
     onChange?: (media: { id: number, url: string } | null) => void;
@@ -37,6 +38,7 @@ interface Props {
 
 export function ImageUpload({
     label,
+    buttonClassName,
     className,
     value,
     onChange,
@@ -158,7 +160,8 @@ export function ImageUpload({
                     className={cn(
                         'group relative aspect-square w-full overflow-hidden rounded-lg border-2 border-dashed',
                         isUploading && 'cursor-not-allowed opacity-50',
-                        error && 'border-destructive'
+                        error && 'border-destructive',
+                        buttonClassName
                     )}
                     onClick={() => fileInputRef.current?.click()}
                     disabled={disabled || isUploading}
@@ -167,8 +170,8 @@ export function ImageUpload({
                         <Loader2 className="h-6 w-6 animate-spin" />
                     ) : (
                         <>
-                            <Upload className="h-6 w-6 transition-transform group-hover:scale-110" />
-                            {label && <Label className="text-sm">{label}</Label>}
+                            <Upload className='h-6 w-6 transition-transform group-hover:scale-110 cursor-pointer' />
+                            {label && <Label className='text-sm cursor-pointer'>{label}</Label>}
                         </>
                     )}
                 </Button>

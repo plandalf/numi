@@ -27,6 +27,25 @@ export function findBlockInPage(page: Page, blockId: string): Block | null {
     return null;
 }
 
+export function findSectionInPageViaBlock(page: Page, blockId: string): PageSection | null {
+    if (!page || !page.view) {
+        console.error('Invalid page or view in findSectionInPageViaBlock');
+        return null;
+    }
+
+    const sections = Object.keys(page.view);
+
+    for (const sectionName of sections) {
+        const section = page.view[sectionName];
+        if (!section || !section.blocks) continue;
+
+        const block = section.blocks.find(block => block.id === blockId);
+        if (block) return {...section, id: sectionName};
+    }
+
+    return null;
+}
+
 export function findSectionInPage(page: Page, sectionId: string): PageSection | null {
   if (!page || !page.view) {
       console.error('Invalid page or view in findSectionInPage');
