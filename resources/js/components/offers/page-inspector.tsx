@@ -19,6 +19,7 @@ import { usePage } from '@inertiajs/react';
 import { EditProps } from '@/pages/offers/edit';
 import { SpacingEditor } from '../editor/spacing-editor';
 import { startCase } from 'lodash';
+import { NumberEditor } from '../editor/number-editor';
 
 export const AppearanceSection = ({ globalState, block, onUpdate }: { globalState: GlobalState | null, block: Block, onUpdate: (block: Block) => void }) => {
   if (!globalState) return null;
@@ -315,6 +316,12 @@ export const Inspector = ({
                             icons={hook.icons}
                             inspector={hook.inspector}
                             labels={hook.labels}
+                          />
+                        ) : hook.type === 'number' ? (
+                          <NumberEditor
+                            label={hook.label || hook.name}
+                            value={block.content?.[hook.name] ?? hook.defaultValue}
+                            onChange={value => handleContentChange(hook.name, value)}
                           />
                         ) : hook.type === 'jsonSchema' && hook.schema ? (
                           <JSONSchemaEditor

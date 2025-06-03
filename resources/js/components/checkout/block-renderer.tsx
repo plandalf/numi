@@ -44,7 +44,6 @@ export function BlockRenderer({ block, children }: {
     return null;
   }
 
-
   return (
     <BlockContext.Provider value={blockContext}>
       {children(blockContext)}

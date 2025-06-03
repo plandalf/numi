@@ -12,12 +12,14 @@ import ImageBlockComponent from '@/components/blocks/ImageBlock';
 import LinkBlockComponent from "./LinkBlock";
 import AddOnBlockComponent from "./AddOnBlock";
 import HeadingBlockComponent from "./HeadingBlock";
+import DetailTimelineBlock from '@/components/blocks/DetailTimelineBlock';
 
 export const blockTypes = {
   text: TextBlockComponent,
   checkbox: CheckboxBlockComponent,
   text_input: TextInputBlockComponent,
   detail_list: DetailListBlockComponent,
+  detail_timeline: DetailTimelineBlock,
   button: ButtonBlockComponent,
   link: LinkBlockComponent,
   image: ImageBlockComponent,
