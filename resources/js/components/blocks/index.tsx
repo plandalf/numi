@@ -13,6 +13,7 @@ import LinkBlockComponent from "./LinkBlock";
 import AddOnBlockComponent from "./AddOnBlock";
 import HeadingBlockComponent from "./HeadingBlock";
 import DetailTimelineBlock from '@/components/blocks/DetailTimelineBlock';
+import RadioListBlock from "./RadioListBlock";
 
 export const blockTypes = {
   text: TextBlockComponent,
@@ -25,6 +26,7 @@ export const blockTypes = {
   image: ImageBlockComponent,
   quote: QuoteBlockComponent,
   option_selector: OptionSelectorComponent,
+  radio_list: RadioListBlock,
   checkout_summary: CheckoutSummaryComponent,
   add_on: AddOnBlockComponent,
   payment_method: PaymentMethodBlock,
@@ -105,6 +107,12 @@ export const blockMetas: Record<keyof typeof blockTypes, BlockMeta> = {
     title: 'Plan Descriptor Block',
     icon: '📋',
     description: 'A block for displaying plan descriptions and details.',
+  },
+  radio_list: {
+    id: 'radio_list',
+    title: 'Radio List Block',
+    icon: '🔘',
+    description: 'A block for displaying a list of radio options.',
   },
 };
 

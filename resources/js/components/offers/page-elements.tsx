@@ -18,7 +18,9 @@ import {
   TextCursorInputIcon,
   LinkIcon,
   PlusIcon,
-  HeadingIcon, SquareChartGanttIcon
+  HeadingIcon, SquareChartGanttIcon,
+  RadioIcon,
+  ListIcon
 } from 'lucide-react';
 import { useDraggable } from '@dnd-kit/core';
 import SearchBar from './search-bar';
@@ -54,6 +56,8 @@ export const CustomElementIcon = ({ type }: CustomElementIconProps) => {
       return <CreditCard className="w-6 h-6"/>;
     case 'checkout_summary':
         return <ShoppingCartIcon className="w-6 h-6" />;
+    case 'radio_list':
+        return <ListIcon className="w-6 h-6" />;
     case 'add_on':
         return <PlusIcon className="w-6 h-6" />;
     case 'heading':
@@ -116,6 +120,7 @@ const interactiveElements = [
   { type: 'checkbox', title: 'Checkbox' },
   { type: 'detail_timeline', title: 'Timeline' },
   { type: 'option_selector', title: 'Option Slide' },
+  { type: 'radio_list', title: 'Radio List' },
   { type: 'text_input', title: 'Entry Field' },
 ];
 
