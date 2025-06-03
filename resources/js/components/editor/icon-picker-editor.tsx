@@ -15,14 +15,14 @@ interface IconPickerEditorProps {
 }
 
 export const IconPickerEditor: React.FC<IconPickerEditorProps> = ({ label, value, onChange }) => {
-  
+
   const [isOpen, setIsOpen] = useState(false);
   const previewValue = value?.icon ?? value?.emoji ?? value?.url;
 
   const title = useMemo(() => {
     if (value?.icon) {
       const Component = LucideIcons[value.icon as keyof typeof LucideIcons];
-  
+
       return (
         <div className="flex flex-row items-center gap-2">
           <Component className="size-4" />
@@ -32,7 +32,7 @@ export const IconPickerEditor: React.FC<IconPickerEditorProps> = ({ label, value
         </div>
       )
     }
-    
+
     if(value?.emoji) {
       return (
         <div className="flex flex-row items-center gap-2">
@@ -43,11 +43,11 @@ export const IconPickerEditor: React.FC<IconPickerEditorProps> = ({ label, value
         </div>
       )
     }
-    
-    if(value?.url) {
+
+    if (value?.url) {
       return 'Click to view uploaded image';
     }
-    
+
     return 'Select an Icon';
   }, [previewValue]);
 
@@ -95,7 +95,7 @@ export const IconPickerEditor: React.FC<IconPickerEditorProps> = ({ label, value
               'hover:bg-red-500 p-0.5 rounded-full text-gray-500 hover:text-gray-700',
               'cursor-pointer mr-2 transition-all duration-200'
             )}
-            onClick={() => 
+            onClick={() =>
               onChange({ icon: undefined, emoji: undefined, url: undefined })
             }
           />
@@ -103,4 +103,4 @@ export const IconPickerEditor: React.FC<IconPickerEditorProps> = ({ label, value
       </div>
     </div>
   );
-}; 
+};

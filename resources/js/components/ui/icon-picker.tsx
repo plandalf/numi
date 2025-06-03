@@ -14,7 +14,7 @@ interface IconPickerProps {
   onChange: (value: IconValue) => void;
   onClose?: () => void;
   className?: string;
-} 
+}
 
 const ICONS_PER_PAGE = 50;
 
@@ -34,7 +34,7 @@ const IconPicker: React.FC<IconPickerProps> = ({ value, onChange, onClose, class
   }, [search]);
 
   const groupedEmojis = useMemo(() => {
-    const filtered = emojis.filter(emoji => 
+    const filtered = emojis.filter(emoji =>
       emoji.name.toLowerCase().includes(emojiSearch.toLowerCase()) ||
       emoji.category.toLowerCase().includes(emojiSearch.toLowerCase())
     );
@@ -58,8 +58,8 @@ const IconPicker: React.FC<IconPickerProps> = ({ value, onChange, onClose, class
     onClose?.();
   };
 
-  const handleImageUpload = (url: string) => {
-    onChange({ icon: undefined, emoji: undefined, url: url });
+  const handleImageUpload = (data: object) => {
+    onChange({ icon: undefined, emoji: undefined, url: data.url });
     onClose?.();
   };
 
@@ -110,7 +110,7 @@ const IconPicker: React.FC<IconPickerProps> = ({ value, onChange, onClose, class
             inputClassName="w-full border-none !ring-0 focus:!ring-0 shadow-none"
           />
           <Separator className="mb-3"/>
-          <ScrollArea 
+          <ScrollArea
             ref={scrollContainerRef}
             className="h-[300px]"
           >
@@ -143,7 +143,7 @@ const IconPicker: React.FC<IconPickerProps> = ({ value, onChange, onClose, class
             inputClassName="w-full border-none !ring-0 focus:!ring-0 shadow-none"
           />
           <Separator className="mb-3"/>
-          <ScrollArea 
+          <ScrollArea
             ref={emojiScrollContainerRef}
             className="h-[300px]"
           >
@@ -183,4 +183,4 @@ const IconPicker: React.FC<IconPickerProps> = ({ value, onChange, onClose, class
   );
 };
 
-export default IconPicker; 
+export default IconPicker;
