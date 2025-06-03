@@ -311,7 +311,6 @@ function CheckoutSummaryComponent({ context }: { context: BlockContextType }) {
     return null;
   }
 
-  console.log("session", session.line_items);
   return (
     <div className="flex flex-col p-4'" style={containerStyle}>
       <h3 className="font-medium text-lg mb-4" style={titleStyle}>{title}</h3>

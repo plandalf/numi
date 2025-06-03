@@ -52,7 +52,7 @@ function ButtonBlockComponent({ context }: { context: BlockContextType }) {
       }
     }, {height: '16px'}),
     Style.backgroundColor('iconColor', 'Icon Color', {}, theme?.primary_contrast_color),
-    Style.backgroundColor('backgroundColor', 'Background Color', {}, theme?.primary_color),
+    Style.backgroundColor('backgroundColor', 'Button Color', {}, theme?.primary_color),
     Style.font('font', 'Button Font & Color',
       {
         config: {

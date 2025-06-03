@@ -148,8 +148,6 @@ function OptionSelectorComponent({ context }: { context: BlockContextType }) {
     color: resolveThemeValue(style.badgeTextFont?.color, theme, 'secondary_color') as string,
   };
 
-  console.log('activeBorderColor', style.activeBorderColor);
-
   const containerStyle = useMemo(() => ({
     backgroundColor: resolveThemeValue(style.backgroundColor, theme),
     borderColor: resolveThemeValue(style.borderColor, theme),

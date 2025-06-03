@@ -38,21 +38,24 @@ class OfferResource extends JsonResource
             'organization_id' => $this->organization_id,
             'view' => $this->view,
             'properties' => $this->properties,
-            'items' => OfferItemResource::collection($this->whenLoaded('offerItems')),
-            'theme' => new ThemeResource($this?->theme ?? new Theme),
-
             'checkout_success_url' => $this->checkout_success_url ?? $this->whenLoaded('organization', function () {
                 return $this->organization->checkout_success_url;
             }, null),
             'checkout_cancel_url' => $this->checkout_cancel_url ?? $this->whenLoaded('organization', function () {
                 return $this->organization->checkout_cancel_url;
             }, null),
+            'is_hosted' => $this->is_hosted,
 
             'created_at' => $this->created_at?->toISOString(),
             'updated_at' => $this->updated_at?->toISOString(),
             'public_url' => $this->whenLoaded('organization', function () {
                 return $this->public_url;
             }),
+            'items' => OfferItemResource::collection($this->whenLoaded('offerItems')),
+            'theme' => new ThemeResource($this?->theme ?? new Theme),
+            'hosted_page' => $this->whenLoaded('hostedPage', function () {
+                return new HostedPageResource($this?->hostedPage);
+            }, null),
         ];
     }
 }

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Resources\OrganizationResource;
 use App\Models\Organization;
+use App\Models\Theme;
 use App\Models\User;
 use App\Services\OrganizationService;
 use Illuminate\Http\RedirectResponse;
@@ -54,6 +55,11 @@ class OrganizationController extends Controller
             'trial_ends_at' => now()->addDays(
                 (int) config('cashier.trial_days')
             ),
+        ]);
+
+        $organization->themes()->create([
+            'name' => 'Default theme',
+            ...Theme::themeDefaults()
         ]);
 
         $organization->users()->attach($request->user());

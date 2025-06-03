@@ -32,7 +32,13 @@ class OfferUpdateRequest extends FormRequest
             'theme_id' => ['nullable', 'exists:themes,id'],
             'checkout_success_url' => ['nullable', 'url', 'max:255'],
             'checkout_cancel_url' => ['nullable', 'url', 'max:255'],
+            'is_hosted' => ['nullable', 'boolean'],
             'view' => ['nullable', 'array'],
+            'hosted_page' => ['nullable', 'array'],
+            'hosted_page.logo_image_id' => ['nullable', 'exists:medias,id'],
+            'hosted_page.background_image_id' => ['nullable', 'exists:medias,id'],
+            'hosted_page.style' => ['nullable', 'array'],
+            'hosted_page.style.*' => ['nullable'],
         ];
     }
 
@@ -52,6 +58,8 @@ class OfferUpdateRequest extends FormRequest
             'default_currency.max' => 'Currency code must be 3 characters.',
             'checkout_success_url.url' => 'The success URL must be a valid URL.',
             'checkout_cancel_url.url' => 'The cancel URL must be a valid URL.',
+            'hosted_page.logo_image_id.exists' => 'The selected logo image does not exist.',
+            'hosted_page.background_image_id.exists' => 'The selected background image does not exist.',
         ];
     }
 }

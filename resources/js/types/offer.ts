@@ -1,6 +1,7 @@
 import { RuleGroup } from "@/components/editor/condition-visibility-editor";
 import { Theme } from "./theme";
 import { EventAction } from "@/components/editor/interaction-event-editor";
+import { HostedPage } from ".";
 
 export interface Offer {
     id: number;
@@ -29,6 +30,10 @@ export interface Offer {
         id: number;
         url: string;
     } | null;
+    checkout_success_url?: string | null;
+    checkout_cancel_url?: string | null;
+    is_hosted?: boolean | null;
+    hosted_page?: HostedPage;
     theme_id: string | null;
     created_at: string;
     updated_at: string;

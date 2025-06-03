@@ -1,6 +1,6 @@
 import type { OfferConfiguration, Page, Product } from '@/types/offer';
 import React from 'react';
-import { Font } from '.';
+import { Font, HostedPage } from '.';
 import { Discount } from './product';
 import { Theme } from './theme';
 
@@ -79,6 +79,7 @@ export interface TailwindLayoutRendererProps {
   contentMap?: Record<string, React.ReactNode>;
   page: Page;
   components?: Record<string, React.ComponentType<any>>;
+  hostedPage?: HostedPage;
 }
 
 

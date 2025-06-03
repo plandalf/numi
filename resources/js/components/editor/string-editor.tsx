@@ -40,10 +40,10 @@ export const StringEditor: React.FC<StringEditorProps> = ({ label, placeholder, 
       {label && <Label className="text-sm capitalize">{label}</Label>}
       {multiline ? (
       <Textarea
-        className="bg-white"
+        className="!min-h-16 bg-white"
         value={value}
         onChange={e => handleChange(e)}
-        rows={5}
+        rows={2}
         placeholder={placeholder}
         onBlur={() => validate(value)}
       />

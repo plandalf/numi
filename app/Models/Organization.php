@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Str;
 use Laravel\Cashier\Billable;
 
@@ -88,6 +89,11 @@ class Organization extends Model
     public function themes(): HasMany
     {
         return $this->hasMany(Theme::class);
+    }
+
+    public function hostedPage(): HasOne
+    {
+        return $this->hasOne(HostedPage::class);
     }
 
     public function getInviteLinkAttribute(): string

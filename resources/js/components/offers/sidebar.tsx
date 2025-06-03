@@ -128,7 +128,6 @@ export function Sidebar() {
   }
 
   const onTabClick = (tab: SidebarTab) => {
-    console.log('onTabClick', tab);
     setActiveTab(tab);
     removeSelection();
   }
@@ -234,7 +233,7 @@ export function Sidebar() {
         </div>
 
         {/* Lower right: Content */}
-        <ScrollArea className="flex-grow overflow-y-auto">
+        <ScrollArea className="flex-grow overflow-y-hidden">
           {renderTabContent()}
         </ScrollArea>
       </div>

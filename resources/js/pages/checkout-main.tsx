@@ -463,7 +463,7 @@ export const layoutConfig = {
   "template": {
     "type": "grid",
     "props": {
-      "className": "grid grid-cols-1 md:grid-cols-2 h-screen w-full"
+      "className": "grid grid-cols-1 md:grid-cols-2 w-full h-full min-h-[inherit]"
     },
     "children": [
       {

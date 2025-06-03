@@ -23,12 +23,12 @@ function QuoteBlockComponent({ context }: { context: BlockContextType }) {
     icons: {
       modern: (<svg xmlns="http://www.w3.org/2000/svg" width="61" height="47" viewBox="0 0 61 47" fill="none">
         <path d="M6.78728 7.51802C6.78728 8.15203 6.55296 8.69916 6.082 9.15236C5.61104 9.6079 5.01248 9.83567 4.28632 9.83567C3.45344 9.83567 2.78064 9.5445 2.26792 8.96215C1.7552 8.3798 1.5 7.65422 1.5 6.78774C1.5 4.88102 2.01272 3.45802 3.03816 2.5164C4.0636 1.57478 5.20504 1.0394 6.46712 0.912598V2.84984C5.8036 2.95551 5.20736 3.24669 4.67144 3.72337C4.13784 4.20005 3.85944 4.78709 3.83856 5.48685C4.01024 5.38118 4.23296 5.32717 4.51136 5.32717C5.21664 5.32717 5.77112 5.52207 6.17712 5.91422C6.58312 6.30636 6.78496 6.8394 6.78496 7.51802H6.78728ZM13.1 7.51802C13.1 8.15203 12.8657 8.69916 12.3947 9.15236C11.9238 9.6079 11.3252 9.83567 10.599 9.83567C9.76616 9.83567 9.09336 9.5445 8.58064 8.96215C8.06792 8.3798 7.81272 7.65422 7.81272 6.78774C7.81272 4.88337 8.32544 3.45802 9.35088 2.5164C10.3763 1.57478 11.5178 1.0394 12.7798 0.912598V2.84984C12.1163 2.95551 11.5201 3.24669 10.9842 3.72337C10.4506 4.20005 10.1722 4.78709 10.1513 5.48685C10.323 5.38118 10.5457 5.32717 10.8241 5.32717C11.5294 5.32717 12.0838 5.52207 12.4898 5.91422C12.8958 6.30636 13.0977 6.8394 13.0977 7.51802H13.1Z" fill="#189AB4"/>
-        <path d="M59.5 16.8257H1.5M59.5 24.4103H1.5M59.5 42.7026H20.5111M40.4889 32.8872H1.5" stroke="#DFF6FC" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M59.5 16.8257H1.5M59.5 24.4103H1.5M59.5 42.7026H20.5111M40.4889 32.8872H1.5" stroke="#DFF6FC" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
         <circle cx="5.06923" cy="42.851" r="3.56923" fill="#189AB4"/>
       </svg>),
       classic: (<svg xmlns="http://www.w3.org/2000/svg" width="67" height="36" viewBox="0 0 67 36" fill="none">
-        <path d="M60.2152 6.03271H10.2319M60.2152 12.569H10.2319" stroke="#DFF6FC" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-        <path d="M50.7356 20.6826H23.1586" stroke="#189AB4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M60.2152 6.03271H10.2319M60.2152 12.569H10.2319" stroke="#DFF6FC" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+        <path d="M50.7356 20.6826H23.1586" stroke="#189AB4" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
         <circle cx="14.5408" cy="23.2684" r="4.3089" fill="#189AB4"/>
         <rect x="1.25227" y="0.5" width="64.4953" height="34.333" rx="5.5" stroke="#DFF6FC"/>
         <path d="M24.8822 23.2676L25.4147 24.4021L26.6057 24.5852L25.7439 25.4678L25.9473 26.7147L24.8822 26.1257L23.817 26.7147L24.0204 25.4678L23.1586 24.5852L24.3496 24.4021L24.8822 23.2676Z" fill="#189AB4"/>
@@ -44,8 +44,8 @@ function QuoteBlockComponent({ context }: { context: BlockContextType }) {
         <path d="M47.6547 25.5692V25.2384H48.7695C48.7804 25.296 48.786 25.3642 48.786 25.4381C48.786 25.6863 48.7182 25.9932 48.4995 26.2118C48.2868 26.4333 48.0151 26.5515 47.655 26.5515C46.9878 26.5515 46.4267 26.0079 46.4267 25.3407C46.4267 24.6734 46.9878 24.1299 47.655 24.1299C48.0242 24.1299 48.2872 24.2747 48.4847 24.4635L48.2513 24.697C48.1096 24.5641 47.9177 24.4607 47.6547 24.4607C47.1674 24.4607 46.7863 24.8534 46.7863 25.3407C46.7863 25.8279 47.1674 26.2206 47.6547 26.2206C47.9708 26.2206 48.1508 26.0937 48.2661 25.9784C48.3596 25.8849 48.4211 25.7513 48.4454 25.5688L47.6547 25.5692Z" fill="#189AB4"/>
       </svg>),
       minimal: (<svg xmlns="http://www.w3.org/2000/svg" width="67" height="21" viewBox="0 0 67 21" fill="none">
-        <path d="M66.0001 2.27588H25.0346M66.0001 10.2414H25.0346" stroke="#DFF6FC" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-        <path d="M56.4153 18.2065H25.0346" stroke="#189AB4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M66.0001 2.27588H25.0346M66.0001 10.2414H25.0346" stroke="#DFF6FC" stroke-width="2" strokeLinecap="round" strokeLinejoin="round"/>
+        <path d="M56.4153 18.2065H25.0346" stroke="#189AB4" stroke-width="2" strokeLinecap="round" strokeLinejoin="round"/>
         <circle cx="10.2414" cy="10.2414" r="10.2414" fill="#189AB4"/>
       </svg>),
     },
@@ -157,7 +157,7 @@ function QuoteBlockComponent({ context }: { context: BlockContextType }) {
     Appearance.visibility('visibility', 'Visibility', {}, { conditional: [] }),
   ]);
 
-  const quoteTextFont = resolveThemeValue(style.quoteTextFont, theme, 'body_typography') as FontValue;
+  const quoteTextFont =  style.quoteTextFont as FontValue;
   const authorFont = resolveThemeValue(style.authorFont, theme, 'label_typography') as FontValue;
   const affiliationFont = resolveThemeValue(style.affiliationFont, theme, 'body_typography') as FontValue;
 
@@ -233,21 +233,27 @@ function QuoteBlockComponent({ context }: { context: BlockContextType }) {
   );
 
   const authorText = (
-    <MarkdownText
-      className="text-base font-medium"
-      text={author || "Quote author"}
-      theme={theme}
-      style={authorStyles}
-    />
+    author 
+    ? (
+      <MarkdownText
+        className="text-base font-medium"
+        text={author}
+        theme={theme}
+        style={authorStyles}
+      />
+    ) : null
   );
 
   const affiliationText = (
-    <MarkdownText
-      className="text-sm"
-      text={affiliation || "Affiliation"}
-      theme={theme}
-      style={affiliationStyles}
-    />
+    affiliation 
+    ? (
+      <MarkdownText
+        className="text-sm"
+        text={affiliation}
+        theme={theme}
+        style={affiliationStyles}
+      />
+    ) : null
   );
 
   const defaultIcon = (
