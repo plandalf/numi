@@ -23,6 +23,7 @@ use App\Models\Store\Offer;
 use App\Models\Theme;
 use App\Services\TemplateService;
 use App\Services\ThemeService;
+use App\Services\HostedPageService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -33,7 +34,8 @@ class OffersController extends Controller
 {
     public function __construct(
         protected TemplateService $templateService,
-        protected ThemeService $themeService
+        protected ThemeService $themeService,
+        protected HostedPageService $hostedPageService,
     ) {}
 
     public function index(): Response
@@ -84,7 +86,14 @@ class OffersController extends Controller
             ->get();
 
         // Load the offer with its theme and items
-        $offer->load(['offerItems.prices.product', 'theme', 'screenshot', 'organization']);
+        $offer->load([
+            'offerItems.prices.product', 
+            'theme', 
+            'screenshot', 
+            'organization', 
+            'hostedPage.logoImage', 
+            'hostedPage.backgroundImage',
+        ]);
 
         $stripeIntegration = Integration::where('organization_id', $offer->organization_id)->where('type', IntegrationType::STRIPE)->first();
 
@@ -104,7 +113,20 @@ class OffersController extends Controller
 
     public function update(OfferUpdateRequest $request, Offer $offer)
     {
-        $offer->update($request->validated());
+        $validated = $request->validated();
+        
+        // Remove hosted_page data from the main update
+        if(isset($validated['hosted_page'])) {
+            $hostedPageData = $validated['hosted_page'] ?? [];
+            unset($validated['hosted_page']);
+
+            $this->hostedPageService->updateViaOffer(
+                $offer,
+                $hostedPageData
+            );
+        }
+        
+        $offer->update($validated);
 
         return redirect()->back();
     }

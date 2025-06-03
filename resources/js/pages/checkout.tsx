@@ -1,6 +1,7 @@
 import { Head } from '@inertiajs/react';
 import {
   GlobalStateProvider, layoutConfig,
+  LoadingError,
   NavigationProvider, PageNotFound, Section,
   useCheckoutState,
   useNavigation,
@@ -273,7 +274,6 @@ export default function CheckoutPage({ offer, fonts, error, checkoutSession }: C
   if (error) {
     return <LoadingError error={error}/>;
   }
-
   const firstPage = offer.view.pages[offer.view.first_page];
 
   if (!firstPage) {
@@ -295,7 +295,7 @@ export default function CheckoutPage({ offer, fonts, error, checkoutSession }: C
 
   return (
     <>
-      <Head title={`Checkout: ${offer.name}`} />
+      <Head title={`Checkout: ${offer.name ?? 'Untitled Offer'}`} />
       <GlobalStateProvider offer={offer} session={checkoutSession}>
         <NavigationProvider>
           <div className="min-h-screen bg-gray-50">

@@ -40,6 +40,21 @@ export interface User {
     organizations: Organization[];
 }
 
+export interface HostedPage {
+    id: number;
+    logo_image_id: number | null;
+    logo_image: {
+        id: number;
+        url: string;
+    };
+    background_image_id: number | null;
+    background_image: {
+        id: number;
+        url: string;
+    };
+    style: Record<string, any>;
+}
+
 export interface NavItem {
     title: string;
     href: string;

@@ -389,7 +389,7 @@ export const PageTheme: React.FC = () => {
           </div>
 
           {Object.entries(fields).map(([key, value]) => (
-            <>
+            <div key={key} className="flex flex-col gap-4">
               <Separator />
               <span className="text-lg font-bold">{key}</span>
               {value.map(f => {
@@ -413,7 +413,7 @@ export const PageTheme: React.FC = () => {
                   </div>
                 )
               })}
-            </>
+            </div>
           ))}
 
           <Dialog open={showSaveDialog} onOpenChange={setShowSaveDialog}>

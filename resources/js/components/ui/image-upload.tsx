@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react';
 import { router } from '@inertiajs/react';
 import { Button } from '@/components/ui/button';
-import { Loader2, Upload, X } from 'lucide-react';
+import { ImageIcon, Loader2, Upload, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Page } from '@inertiajs/core';
 import axios from 'axios';
@@ -26,6 +26,7 @@ interface PageProps {
 
 interface Props {
     label?: string;
+    logo?: React.ReactNode;
     buttonClassName?: string;
     className?: string;
     value?: number | null;
@@ -34,10 +35,12 @@ interface Props {
     maxSize?: number; // in bytes
     preview?: string | null;
     disabled?: boolean;
+    previewType?: 'image' | 'text';
 }
 
 export function ImageUpload({
     label,
+    logo,
     buttonClassName,
     className,
     value,
@@ -46,6 +49,7 @@ export function ImageUpload({
     maxSize = 10 * 1024 * 1024, // 10MB default
     preview,
     disabled = false,
+    previewType = 'image',
 }: Props) {
     const [isUploading, setIsUploading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -136,6 +140,7 @@ export function ImageUpload({
             />
 
             {previewUrl ? (
+                previewType === 'image' ? (
                 <div className="relative w-full overflow-hidden rounded-lg border flex justify-center">
                     <img
                         src={previewUrl}
@@ -153,6 +158,19 @@ export function ImageUpload({
                         <X className="h-4 w-4" />
                     </Button>
                 </div>
+                ) : (
+                    <div
+                        className="cursor-pointer flex gap-2 [&_svg]:shrink-0  h-9 px-4 py-2 group relative aspect-square w-full overflow-hidden rounded-lg border-2 border-dashed bg-white justify-start !px-4"
+                        onClick={() => fileInputRef.current?.click()}
+                    >
+                        <ImageIcon className="size-4 transition-transform group-hover:scale-110 cursor-pointer" />
+                        <p className="text-sm truncate break-all">{previewUrl}</p>
+                        <X className="h-4 w-4 cursor-pointer hover:text-red-500" onClick={(event) => {
+                            event.stopPropagation();
+                            handleClear();
+                        }}/>
+                    </div>
+                )
             ) : (
                 <Button
                     type="button"
@@ -170,7 +188,7 @@ export function ImageUpload({
                         <Loader2 className="h-6 w-6 animate-spin" />
                     ) : (
                         <>
-                            <Upload className='h-6 w-6 transition-transform group-hover:scale-110 cursor-pointer' />
+                            {logo ? logo : <Upload className='h-6 w-6 transition-transform group-hover:scale-110 cursor-pointer' />}    
                             {label && <Label className='text-sm cursor-pointer'>{label}</Label>}
                         </>
                     )}

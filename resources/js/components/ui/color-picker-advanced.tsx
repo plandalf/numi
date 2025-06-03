@@ -35,7 +35,6 @@ export const AdvancedColorPicker: React.FC<AdvancedColorPickerProps> = ({
     }
     return initialValue;
   }, [initialValue, matchedThemeValue]);
-  console.log('value', value)
 
   const { rgb, alpha } = parseHexAlpha(value);
   const percent = Math.round((alpha / 255) * 100);

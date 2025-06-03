@@ -7,6 +7,7 @@ use App\Database\Traits\HasSqids;
 use App\Database\Traits\UuidRouteKey;
 use App\Models\Media;
 use App\Models\Theme;
+use App\Models\HostedPage;
 use App\Observers\OfferObserver;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
@@ -57,6 +58,7 @@ class Offer extends Model
         'uuid',
         'checkout_success_url',
         'checkout_cancel_url',
+        'is_hosted',
     ];
 
     protected $casts = [
@@ -105,6 +107,11 @@ class Offer extends Model
     public function screenshot(): BelongsTo
     {
         return $this->belongsTo(Media::class, 'screenshot_id');
+    }
+
+    public function hostedPage(): BelongsTo
+    {
+        return $this->belongsTo(HostedPage::class, 'hosted_page_id');
     }
 
     public function scopePublished($query)
