@@ -59,7 +59,7 @@ const IconPicker: React.FC<IconPickerProps> = ({ value, onChange, onClose, class
   };
 
   const handleImageUpload = (data: object) => {
-    onChange({ icon: undefined, emoji: undefined, url: data.path });
+    onChange({ icon: undefined, emoji: undefined, url: data.url });
     onClose?.();
   };
 
