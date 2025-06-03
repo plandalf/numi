@@ -157,7 +157,7 @@ function QuoteBlockComponent({ context }: { context: BlockContextType }) {
     Appearance.visibility('visibility', 'Visibility', {}, { conditional: [] }),
   ]);
 
-  const quoteTextFont = resolveThemeValue(style.quoteTextFont, theme, 'body_typography') as FontValue;
+  const quoteTextFont =  style.quoteTextFont as FontValue;
   const authorFont = resolveThemeValue(style.authorFont, theme, 'label_typography') as FontValue;
   const affiliationFont = resolveThemeValue(style.affiliationFont, theme, 'body_typography') as FontValue;
 
@@ -233,21 +233,27 @@ function QuoteBlockComponent({ context }: { context: BlockContextType }) {
   );
 
   const authorText = (
-    <MarkdownText
-      className="text-base font-medium"
-      text={author || "Quote author"}
-      theme={theme}
-      style={authorStyles}
-    />
+    author 
+    ? (
+      <MarkdownText
+        className="text-base font-medium"
+        text={author}
+        theme={theme}
+        style={authorStyles}
+      />
+    ) : null
   );
 
   const affiliationText = (
-    <MarkdownText
-      className="text-sm"
-      text={affiliation || "Affiliation"}
-      theme={theme}
-      style={affiliationStyles}
-    />
+    affiliation 
+    ? (
+      <MarkdownText
+        className="text-sm"
+        text={affiliation}
+        theme={theme}
+        style={affiliationStyles}
+      />
+    ) : null
   );
 
   const defaultIcon = (
