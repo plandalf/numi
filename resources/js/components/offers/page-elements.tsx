@@ -18,7 +18,7 @@ import {
   TextCursorInputIcon,
   LinkIcon,
   PlusIcon,
-  HeadingIcon
+  HeadingIcon, SquareChartGanttIcon
 } from 'lucide-react';
 import { useDraggable } from '@dnd-kit/core';
 import SearchBar from './search-bar';
@@ -44,6 +44,8 @@ export const CustomElementIcon = ({ type }: CustomElementIconProps) => {
         return <SquareCheck className="w-6 h-6" />;
     case 'option_selector':
         return <Columns2Icon className="w-6 h-6 inline-block" />;
+    case 'detail_timeline':
+        return <SquareChartGanttIcon className="w-6 h-6" />;
     case 'text_input':
         return <TextCursorInputIcon className="w-6 h-6" />;
     case 'image':
@@ -112,6 +114,7 @@ const interactiveElements = [
   { type: 'button', title: 'Button' },
   { type: 'link', title: 'Link' },
   { type: 'checkbox', title: 'Checkbox' },
+  { type: 'detail_timeline', title: 'Timeline' },
   { type: 'option_selector', title: 'Option Slide' },
   { type: 'text_input', title: 'Entry Field' },
 ];
