@@ -225,12 +225,13 @@ const CheckoutController = ({ offer }: { offer: OfferConfiguration }) => {
   const isHosted = offer.is_hosted && !isMobile;
   const hostedPage = offer.hosted_page;
   const style = hostedPage?.style;
-  
+
   const formClassName = useMemo(() => {
     if (isHosted) {
       return 'transition-all bg-background rounded-lg shadow-lg w-full h-full max-w-5xl flex items-center justify-center';
     }
-    return 'min-h-screen relative h-screen';
+
+    return 'min-h-screen relative h-screen w-full';
   }, [isHosted, isMobile]);
 
   const formStyle = useMemo(() => {
