@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('store_offers', function (Blueprint $table) {
-            $table->bigInteger('hosted_page_id')->after('theme_id');
+            $table->bigInteger('hosted_page_id')->after('theme_id')->nullable();
             $table->boolean('is_hosted')->default(false)->after('hosted_page_id');
         });
     }
