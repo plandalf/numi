@@ -8,7 +8,7 @@ import { ArrowLeft, CircleCheck, Eye, Flame, Pencil, Share, ChevronDown, X, Doll
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
@@ -16,14 +16,7 @@ import { useEditor } from '@/contexts/offer/editor-context';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { PublishStatusCard } from '@/components/offers/publish-status-card';
 import { toast } from 'sonner';
-
-interface Offer {
-    id: number;
-    name: string;
-    created_at: string;
-    updated_at: string;
-    status: string;
-}
+import { Offer } from '@/types/offer';
 
 interface Props {
     children: React.ReactNode;
@@ -42,15 +35,15 @@ export const PREVIEW_SIZES = {
         height: 764,
     },
     'mobile': {
-        width: 390,
-        height: 575,
+        width: 430,
+        height: 650,
     },
 }
 
 function OfferHeader({ offer, isNameDialogOpen, setIsNameDialogOpen }: AppHeaderProps) {
     const [status, setStatus] = useState(offer.status);
     const isMobile = useIsMobile();
-    const { data, viewMode, setViewMode, setPreviewSize, handleSave } = useEditor();
+    const { data, viewMode, setViewMode, setPreviewSize, handleSave, previewType, setPreviewType } = useEditor();
 
     const [name, setName] = useState(data.name);
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -58,7 +51,6 @@ function OfferHeader({ offer, isNameDialogOpen, setIsNameDialogOpen }: AppHeader
     const [showPublishDialog, setShowPublishDialog] = useState(false);
 
     // Preview mode state
-    const [previewType, setPreviewType] = useState<'desktop' | 'mobile'>('desktop');
     const onPreviewSizeChange = (size: 'desktop' | 'mobile') => {
         setPreviewType(size);
         setPreviewSize(PREVIEW_SIZES[size]);

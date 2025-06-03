@@ -144,18 +144,23 @@ export default function OfferSettings() {
 
 
   const styleItems: StyleItem[] = [
-    Style.dimensions('minHeight', 'Minimuim height', {
+    Style.dimensions('minHeight', 'Minimum height', {
       config: {
         hideWidth: true,
         maxHeight: 1000,
       }
-    }, { height: '900px'}),
-    Style.dimensions('logoHeight', 'Logo height', {
+    }, { height: '764px'}),
+    Style.dimensions('logoDimension', 'Logo Dimension', {
+      config: {
+        maxHeight: 500,
+      }
+    }, {height: '60px', width: '60px'}),
+    Style.dimensions('logoSpacing', 'Logo Spacing', {
       config: {
         hideWidth: true,
-        maxHeight: 1000,
+        maxHeight: 500,
       }
-    }, { height: '40px'}),
+    }, {height: '30px'}),
     Style.backgroundColor('backgroundColor', 'Background Color', {}, ''),
     Style.shadow('shadow', 'Shadow', {}, ''),
     Style.border('border', 'Border', {}, { width: '0px', style: 'solid' }),

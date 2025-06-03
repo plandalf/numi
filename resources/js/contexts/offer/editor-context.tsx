@@ -63,6 +63,9 @@ interface EditorContextType {
 
   viewMode: 'editor' | 'preview' | 'share';
   setViewMode: React.Dispatch<React.SetStateAction<'editor' | 'preview' | 'share'>>;
+  
+  previewType: 'desktop' | 'mobile';
+  setPreviewType: React.Dispatch<React.SetStateAction<'desktop' | 'mobile'>>;
   previewSize: {
     width: number;
     height: number;
@@ -144,6 +147,7 @@ export function EditorProvider({ offer, organizationThemes, organizationTemplate
     width: number;
     height: number;
   }>({ width: 1024, height: 768 });
+  const [previewType, setPreviewType] = useState<'desktop' | 'mobile'>('desktop');
   const [theme, setTheme] = useState<Theme>(props.theme);
   const [enableAutoSave, setEnableAutoSave] = useState(false);
 
@@ -529,6 +533,7 @@ export function EditorProvider({ offer, organizationThemes, organizationTemplate
     setSelectedSectionId: onSelectSection,
     viewMode, setViewMode,
     previewSize, setPreviewSize,
+    previewType, setPreviewType,
     deleteBlock,
   };
 

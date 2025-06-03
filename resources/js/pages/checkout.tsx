@@ -14,6 +14,8 @@ import WebFont from 'webfontloader';
 import { Theme } from '@/types/theme';
 import { resolveThemeValue } from '@/lib/theme';
 import { ChevronLeftIcon } from 'lucide-react';
+import { useMemo } from 'react';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 
 const NavigationBar = ({ barStyle, children, className, ...props }: NavigationBarProps) => {
@@ -186,6 +188,7 @@ const CheckoutController = ({ offer }: { offer: OfferConfiguration }) => {
     setSubmitError,
     submitPage,
   } = useCheckoutState();
+  const isMobile = useIsMobile();
 
   const { validateAllFields } = useValidateFields();
   const { currentPage, goToNextPage } = useNavigation();
@@ -218,6 +221,49 @@ const CheckoutController = ({ offer }: { offer: OfferConfiguration }) => {
       setSubmitting(false);
     }
   };
+
+  const isHosted = offer.is_hosted && !isMobile;
+  const hostedPage = offer.hosted_page;
+  const style = hostedPage?.style;
+  
+  const formClassName = useMemo(() => {
+    if (isHosted) {
+      return 'transition-all bg-background rounded-lg shadow-lg w-full h-full max-w-5xl flex items-center justify-center';
+    }
+    return 'min-h-screen relative h-screen';
+  }, [isHosted, isMobile]);
+
+  const formStyle = useMemo(() => {
+    if (isHosted) {
+      return {
+        minHeight: style?.minHeight?.height ?? '764px',
+        ...(style?.shadow ? {
+          boxShadow: style.shadow,
+        } : {}),
+        ...(style?.border ? {
+          borderWidth: style.border?.width,
+          borderStyle: style.border?.style,
+        } : {}),
+        ...(style?.borderColor ? {
+          borderColor: style.borderColor,
+        } : {}),
+        ...(style?.borderRadius ? {
+          borderRadius: style.borderRadius,
+          overflow: 'hidden',
+        } : {}),
+        maxWidth: '1024px',
+
+      };
+    }
+    return {};
+  }, [isHosted, style]);
+
+  const logoStyle = useMemo(() => {
+      return {
+        width: style?.logoDimension?.width ?? '60px',
+        height: style?.logoDimension?.height ?? '60px',
+      };
+  }, [style]);
 
   if (!currentPage) {
     console.error('No page found');
@@ -255,8 +301,15 @@ const CheckoutController = ({ offer }: { offer: OfferConfiguration }) => {
           </div>
         </div>
       )}
-
-      <form onSubmit={handleSubmit} noValidate className="relative">
+      {isHosted && hostedPage?.logo_image && (
+          <img src={hostedPage.logo_image.url} style={logoStyle} />
+      )}
+      <form
+        onSubmit={handleSubmit}
+        noValidate
+        className={formClassName}
+        style={formStyle}
+      >
         <TailwindLayoutRenderer
           theme={offer.theme}
           layoutConfig={layoutConfig}
@@ -274,6 +327,7 @@ export default function CheckoutPage({ offer, fonts, error, checkoutSession }: C
   if (error) {
     return <LoadingError error={error}/>;
   }
+
   const firstPage = offer.view.pages[offer.view.first_page];
 
   if (!firstPage) {
@@ -293,12 +347,30 @@ export default function CheckoutPage({ offer, fonts, error, checkoutSession }: C
     WebFont.load({ google: { families: uniqueFonts }});
   }
 
+  const containerStyle = useMemo(() => {
+    if (offer?.is_hosted) {
+      return {
+        ...(offer?.hosted_page?.background_image ? {
+          backgroundImage: `url(${offer?.hosted_page?.background_image?.url})`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+        } : offer?.hosted_page?.style?.backgroundColor ? {
+          backgroundColor: offer?.hosted_page?.style?.backgroundColor,
+        } : {}),
+        ...(offer?.hosted_page?.style?.logoSpacing ? {
+          gap: offer?.hosted_page?.style?.logoSpacing?.height,
+        } : {}),
+      };
+    }
+    return {};
+  }, [offer?.is_hosted, offer?.hosted_page]);
+
   return (
     <>
       <Head title={`Checkout: ${offer.name ?? 'Untitled Offer'}`} />
       <GlobalStateProvider offer={offer} session={checkoutSession}>
         <NavigationProvider>
-          <div className="min-h-screen bg-gray-50">
+          <div className="min-h-screen bg-gray-50 flex flex-col gap-4 justify-center items-center" style={containerStyle}>
             {error ? (
               <div className="p-4">
                 <div className="bg-red-50 text-red-900 p-4 rounded-md">

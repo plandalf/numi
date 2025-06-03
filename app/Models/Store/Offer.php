@@ -65,6 +65,7 @@ class Offer extends Model
         'status' => 'string',
         'view' => 'json',
         'properties' => 'array',
+        'is_hosted' => 'boolean',
     ];
 
     protected $with = ['productImage'];

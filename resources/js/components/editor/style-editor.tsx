@@ -212,16 +212,16 @@ const StyleItemValuePreview = ({
           </DropdownMenuContent>
         </DropdownMenu>
       );
-    case 'borderRadiusPicker':
-      return (
-        <BorderRadiusPicker
-          className="w-full max-w-[300px]"
-          value={value}
-          onChange={(value) => onChange(item.name, value as BorderValue)}
-          min={item.config?.min}
-          max={item.config?.max}
-        />
-      );
+      case 'borderRadiusPicker':
+        return (
+          <BorderRadiusPicker
+            className="w-full max-w-[300px]"
+            value={value}
+            onChange={(value) => onChange(item.name, value as BorderValue)}
+            min={item.config?.min}
+            max={item.config?.max}
+          />
+        );
     case 'shadowPicker':
       return (
         <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
