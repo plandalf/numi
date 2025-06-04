@@ -51,7 +51,7 @@ class OffersController extends Controller
             'name' => null,
             'status' => 'draft',
             'organization_id' => $organization->id,
-            'hosted_page_id' => $organization->hostedPage->id,
+            'hosted_page_id' => $organization?->hostedPage ? $organization->hostedPage->id : null,
         ]);
 
         $offer->offerItems()->create([
@@ -85,7 +85,7 @@ class OffersController extends Controller
         );
 
         // If the offer has no hosted page, set the hosted page to the organization's hosted page
-        if(!$offer->hosted_page_id) {
+        if(!$offer->hosted_page_id && $offer->organization->hostedPage) {
             $offer->update([
                 'hosted_page_id' => $offer->organization->hostedPage->id,
             ]);
