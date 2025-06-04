@@ -12,9 +12,9 @@ export function PageIframePreview() {
         className="w-[90%] h-[95%] flex flex-col bg-background max-h-[95%]" 
         style={{
           width: !isHosted ? previewSize.width : 1284,
-          height: !isHosted ? previewSize.height : 1024,
+          height: !isHosted ? previewSize.height : 1080,
           ...(isHosted ? {
-            zoom: 0.8
+            zoom: 0.7
           } : {}),
         }}
       >
