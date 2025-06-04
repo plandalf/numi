@@ -11,11 +11,13 @@ use App\Http\Resources\ThemeResource;
 use App\Models\Checkout\CheckoutSession;
 use App\Models\Store\Offer;
 use App\Models\Theme;
+use App\Models\Catalog\Price;
 use App\Traits\HandlesLandingPageDomains;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
+use Illuminate\Validation\ValidationException;
 
 class CheckoutController extends Controller
 {
@@ -28,7 +30,33 @@ class CheckoutController extends Controller
     public function initialize(string $offerId, Request $request)
     {
         $offer = Offer::retrieve($offerId);
-        $checkoutSession = $this->createCheckoutSessionAction->execute($offer);
+        $checkoutItems = $request->get('items', []);
+
+        if (!empty($checkoutItems)) {
+            foreach ($checkoutItems as $key => $item) {
+                if (!isset($item['lookup_key'])) {
+                    throw ValidationException::withMessages([
+                        'items' => ['Each item must have a lookup_key'],
+                    ]);
+                }
+
+                $price = Price::query()
+                    ->where('organization_id', $offer->organization_id)
+                    ->where('lookup_key', $item['lookup_key'])
+                    ->where('is_active', true)
+                    ->first();
+
+                if ($price) {
+                    $checkoutItems[$key]['price_id'] = $price->id;
+                } else {
+                    return [
+                        'items' => ["Price with lookup_key '{$item['lookup_key']}' not found"],
+                    ];
+                }
+            }
+        }
+
+        $checkoutSession = $this->createCheckoutSessionAction->execute($offer, $checkoutItems);
 
         $this->handleInvalidDomain($request, $checkoutSession);
 

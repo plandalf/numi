@@ -606,6 +606,7 @@ export default function PriceForm({
               placeholder="e.g., Monthly Standard"
               disabled={processing}
               required
+              className="bg-white"
             />
             {errors.name && <p className="text-sm text-red-500">{errors.name}</p>}
           </div>
@@ -620,6 +621,7 @@ export default function PriceForm({
               placeholder="e.g., standard_monthly"
               disabled={processing}
               required
+              className="bg-white"
             />
             {errors.lookup_key && <p className="text-sm text-red-500">{errors.lookup_key}</p>}
             <p className="text-xs text-muted-foreground">
@@ -638,7 +640,7 @@ export default function PriceForm({
           </div>
 
           {showMetadata && (
-            <Card className="bg-gray-50">
+            <Card className="bg-[#F7F9FF]">
               <CardContent className="px-4 space-y-4">
                 {data.metadata.map((entry, index) => (
                   <div key={index} className="flex flex-row gap-4 items-end">
@@ -651,6 +653,7 @@ export default function PriceForm({
                         value={entry.tag_name}
                         onChange={(e) => updateMetadataEntry(index, 'tag_name', e.target.value)}
                         disabled={processing}
+                        className="bg-white"
                       />
                     </div>
 
@@ -663,6 +666,7 @@ export default function PriceForm({
                         value={entry.copy}
                         onChange={(e) => updateMetadataEntry(index, 'copy', e.target.value)}
                         disabled={processing}
+                        className="bg-white"
                       />
                     </div>
 
@@ -706,7 +710,6 @@ export default function PriceForm({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="one_time">One Time</SelectItem>
-                <SelectItem value="recurring">Recurring</SelectItem>
                 <SelectItem value="package">Package (Unit Based)</SelectItem>
                 <SelectItem value="tiered">Tiered (Usage Based)</SelectItem>
               </SelectContent>
@@ -733,7 +736,7 @@ export default function PriceForm({
                 onBlur={handleAmountBlur}
                 ref={amountInputRef}
                 disabled={processing || ['tiered', 'volume', 'graduated', 'package'].includes(data.type)}
-                className="border-0 focus:ring-0 focus:border-none rounded-none flex-1 min-w-0 px-2 text-base bg-transparent shadow-none"
+                className="border-0 focus:ring-0 focus:border-none rounded-none flex-1 min-w-0 px-2 text-base bg-white shadow-none"
                 style={{ boxShadow: 'none' }}
                 aria-describedby="amount-currency-addon"
               />
@@ -764,7 +767,7 @@ export default function PriceForm({
 
           {/* Recurring Fields */}
           {data.type === 'recurring' && (
-            <Card className="bg-gray-50">
+            <Card className="bg-[#F7F9FF]">
               <CardContent className="px-4 space-y-4">
                 <div className="text-sm font-medium">Recurring Settings</div>
                 <div className="flex flex-row gap-4 items-end">
@@ -799,6 +802,7 @@ export default function PriceForm({
                       onChange={e => setData('recurring_interval_count', e.target.value ? Number(e.target.value) : null)}
                       disabled={processing}
                       placeholder="e.g., 1"
+                      className="bg-white"
                     />
                     {errors.recurring_interval_count && <p className="text-sm text-red-500">{errors.recurring_interval_count}</p>}
                   </div>
@@ -813,6 +817,7 @@ export default function PriceForm({
                     onChange={e => setData('billing_anchor', e.target.value || null)}
                     disabled={processing}
                     placeholder="e.g., start_of_month"
+                    className="bg-white"
                   />
                   {errors.billing_anchor && <p className="text-sm text-red-500">{errors.billing_anchor}</p>}
                 </div>
@@ -828,6 +833,7 @@ export default function PriceForm({
                     onChange={e => setData('cancel_after_cycles', e.target.value ? Number(e.target.value) : null)}
                     disabled={processing}
                     placeholder="e.g., 12 (for 12 cycles)"
+                    className="bg-white"
                   />
                   {errors.cancel_after_cycles && <p className="text-sm text-red-500">{errors.cancel_after_cycles}</p>}
                   <p className="text-xs text-muted-foreground">
@@ -840,7 +846,7 @@ export default function PriceForm({
 
           {/* Tiered Pricing Fields */}
           {(data.type === "tiered" /* || data.type === "volume" || data.type === "graduated" */) && (
-            <Card className="bg-gray-50">
+            <Card className="bg-[#F7F9FF]">
               <CardContent className="px-4 space-y-4">
                 <div className="text-sm font-medium">Tiered Pricing Configuration</div>
                 <div className="flex flex-col gap-4">
@@ -859,7 +865,7 @@ export default function PriceForm({
                           value={tier.from}
                           onChange={(e) => updateTier(index, 'from', Number(e.target.value))}
                           disabled={index > 0 || processing}
-                          className="h-8"
+                          className="h-8 bg-white"
                         />
                       </div>
 
@@ -874,7 +880,7 @@ export default function PriceForm({
                           onChange={(e) => updateTier(index, 'to', e.target.value ? Number(e.target.value) : null)}
                           placeholder="∞"
                           disabled={processing}
-                          className="h-8"
+                          className="h-8 bg-white"
                         />
                       </div>
 
@@ -888,7 +894,7 @@ export default function PriceForm({
                           value={tier.unit_amount}
                           onChange={(e) => updateTier(index, 'unit_amount', Number(e.target.value))}
                           disabled={processing}
-                          className="h-8"
+                          className="h-8 bg-white"
                         />
                       </div>
 
@@ -923,7 +929,7 @@ export default function PriceForm({
 
           {/* Package Pricing Fields */}
           {data.type === "package" && (
-            <Card className="bg-gray-50">
+            <Card className="bg-[#F7F9FF]">
               <CardContent className="px-4 space-y-4">
                 <div className="text-sm font-medium">Package Pricing Configuration</div>
                 <div className="flex flex-row gap-4">
@@ -938,6 +944,7 @@ export default function PriceForm({
                       value={packageConfig.size}
                       onChange={(e) => setPackageConfig({ ...packageConfig, size: Number(e.target.value) })}
                       disabled={processing}
+                      className="bg-white"
                     />
                   </div>
 
@@ -952,6 +959,7 @@ export default function PriceForm({
                       value={packageConfig.unit_amount}
                       onChange={(e) => setPackageConfig({ ...packageConfig, unit_amount: Number(e.target.value) })}
                       disabled={processing}
+                      className="bg-white"
                     />
                   </div>
                 </div>

@@ -4,6 +4,7 @@ namespace App\Models\Checkout;
 
 use App\Database\Traits\UuidRouteKey;
 use App\Enums\CheckoutSessionStatus;
+use App\Enums\IntegrationType;
 use App\Models\Customer;
 use App\Models\Order\Order;
 use App\Models\Organization;
@@ -138,9 +139,20 @@ class CheckoutSession extends Model
         return $this->belongsTo(Customer::class, 'customer_id');
     }
 
-    public function integration(): BelongsTo
+    public function integration()
     {
-        return $this->lineItems->first()->price->integration();
+        /**
+         * Right now, we have two integrations, Stripe and Plandalf.
+         * Plandalf has no payment integration yet, so by default, we use Stripe.
+         */
+        return $this->hasOneThrough(
+            \App\Models\Integration::class,
+            Organization::class,
+            'id', // Foreign key on organizations table
+            'organization_id', // Foreign key on integrations table
+            'organization_id', // Local key on checkout_sessions table
+            'id' // Local key on organizations table
+        )->where('type', IntegrationType::STRIPE);
     }
 
     public function order(): HasOne

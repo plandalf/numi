@@ -11,6 +11,9 @@ import { CheckoutSession } from '@/types/checkout';
 import { BlockRenderer } from '@/components/checkout/block-renderer';
 import { SetItemActionValue } from '@/components/actions/set-item-action';
 import { Theme } from '@/types/theme';
+import { sendMessage } from '@/utils/sendMessage';
+import { CheckoutSuccess } from '@/events/CheckoutSuccess';
+import { CheckoutResized } from '@/events/CheckoutResized';
 // Form and validation context
 type FormData = Record<string, any>;
 type ValidationErrors = Record<string, string[]>;
@@ -248,6 +251,10 @@ export function GlobalStateProvider({ offer, session: defaultSession, editor = f
         setSubmitError(response.data?.message || 'Failed to commit checkout');
         return false;
       }
+
+      if (action === 'commit') {
+        sendMessage(new CheckoutSuccess(response.data.checkout_session));
+      }
       return true;
     } catch (error) {
       if (axios.isAxiosError(error)) {
@@ -276,6 +283,7 @@ export function GlobalStateProvider({ offer, session: defaultSession, editor = f
 
 
     if (response.status === 200) {
+      sendMessage(new CheckoutResized());
       setSession(response.data);
     }
 
