@@ -52,6 +52,7 @@ class Offer extends Model
         'name',
         'description',
         'product_image_id',
+        'hosted_page_id',
         'status',
         'view',
         'properties',
