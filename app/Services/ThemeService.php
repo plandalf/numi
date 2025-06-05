@@ -29,7 +29,7 @@ class ThemeService
 
     public function createTheme(array $data)
     {
-        return Theme::create(array_merge($data, Theme::themeDefaults()));
+        return Theme::create(array_merge(Theme::themeDefaults(), $data));
     }
 
     public function updateTheme(Theme $theme, array $data)

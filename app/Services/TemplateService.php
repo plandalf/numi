@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Models\HostedPage;
+use App\Models\Organization;
 use App\Models\Store\Offer;
 use App\Models\Template;
 use App\Models\Theme;
@@ -48,11 +50,16 @@ class TemplateService
     public function createOfferFromTemplate(Template $template, int $organizationId): Offer
     {
         return DB::transaction(function () use ($template, $organizationId) {
+            $organization = Organization::find($organizationId);
+
             $offer = new Offer;
             $offer->organization_id = $organizationId;
             $offer->name = $template->name;
             $offer->view = $template->view;
             $offer->theme_id = optional($template->theme)->id;
+            $offer->hosted_page_id =  $organization?->hostedPage
+                ? $organization->hostedPage->id
+                : HostedPage::getDefaultForOrganization($organization);
             $offer->save();
 
             return $offer;

@@ -17,6 +17,8 @@ import { hasVisibilityCondition as hasVisibilityConditionFn } from "@/lib/blocks
 import { Badge } from '../ui/badge';
 import { Theme } from '@/types/theme';
 import { resolveThemeValue } from '@/lib/theme';
+import { NavigationBar } from '@/pages/checkout';
+import { NavigationBarProps } from '@/types/checkout';
 
 // Local interfaces that match the actual structure
 interface LocalPageView {
@@ -110,7 +112,7 @@ const layoutConfig: TailwindLayoutConfig = {
                 "children": [
                   {
                     "id": "title",
-                    "type": "box",
+                    "type": "NavigationBar",
                     "props": {
                       "className": "space-y-1 p-6"
                     }
@@ -247,7 +249,13 @@ const RecursiveRenderElement: React.FC<RecursiveRenderElementProps> = React.memo
     if (!element?.id || !page?.view || !(element.id in page.view)) return {};
     const section = page.view[element.id] as PageSection;
     const spacing = section.appearance?.spacing;
-    return { gap: spacing };
+    const alignment = section.style?.alignment;
+    return {
+      gap: spacing,
+      ...(alignment ? {
+        justifyContent: alignment,
+      } : {}),
+    };
   }, [element?.id, page?.view]);
 
   if (!element) return null;
@@ -547,6 +555,7 @@ export default function LayoutPreview({ page, selectedBlockId, onSelectBlock, th
   }, [onSelectBlock]);
 
   const componentsForRenderer = useMemo(() => ({
+    NavigationBar,
     // No custom components needing selectedBlockId or handleBlockSelect in this example.
     // The `Section` component used in the previous `TailwindLayoutRenderer`'s `components` prop
     // was effectively being shadowed by the `Section` component defined in this file and passed

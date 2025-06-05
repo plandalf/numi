@@ -10,6 +10,9 @@ import { DragAdjuster } from './drag-adjuster';
 
 export interface BorderPickerConfig {
   hideLabel?: boolean;
+  step?: number;
+  min?: number;
+  max?: number;
 }
 
 interface BorderPickerProps {
@@ -27,7 +30,7 @@ export const BorderPicker: React.FC<BorderPickerProps> = ({
   config,
   className,
 }) => {
-  const { hideLabel } = config || {};
+  const { hideLabel, step = 0.5, min = 0, max = 40 } = config || {};
 
   const styleOptions = [
     { value: 'none', label: 'None' },
@@ -72,7 +75,9 @@ export const BorderPicker: React.FC<BorderPickerProps> = ({
           <DragAdjuster
             value={getRadiusValue(localWidth)}
             onChange={handleWidthChange}
-            max={40}
+            step={step}
+            min={min}
+            max={max}
           >
             <div title='Border Width' className="flex flex-row gap-2 bg-gray-200/50 rounded-md py-2 px-3 items-center  w-full">
               <svg width="19" height="18" viewBox="0 0 19 18" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M16.5 16H2.5V11.3331H16.5V16Z" fill="#808ABF"/><path d="M16.5 8.53311H2.5V5.73311H16.5V8.53311Z" fill="#808ABF"/><path d="M16.5 2.93311H2.5V2H16.5V2.93311Z" fill="#808ABF"/></svg>
