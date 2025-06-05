@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\Organization;
+use App\Models\Theme;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 
@@ -19,6 +20,11 @@ class OrganizationSeeder extends Seeder
             'default_currency' => 'USD',
         ]);
 
+        $demoOrg->themes()->create([
+            'name' => 'Default theme',
+            ...Theme::themeDefaults()
+        ]);
+
         // Attach admin user to demo organization
         $adminUser = User::where('email', 'dev@plandalf.com')->first();
         if ($adminUser) {
@@ -32,6 +38,11 @@ class OrganizationSeeder extends Seeder
             // Attach 2-3 random users to each organization
             $users = User::inRandomOrder()->limit(rand(2, 3))->get();
             $organization->users()->attach($users->pluck('id'));
+
+            $organization->themes()->create([
+                'name' => 'Default theme',
+                ...Theme::themeDefaults()
+            ]);
         });
     }
 }
