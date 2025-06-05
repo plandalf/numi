@@ -247,7 +247,13 @@ const RecursiveRenderElement: React.FC<RecursiveRenderElementProps> = React.memo
     if (!element?.id || !page?.view || !(element.id in page.view)) return {};
     const section = page.view[element.id] as PageSection;
     const spacing = section.appearance?.spacing;
-    return { gap: spacing };
+    const alignment = section.style?.alignment;
+    return {
+      gap: spacing,
+      ...(alignment ? {
+        justifyContent: alignment,
+      } : {}),
+    };
   }, [element?.id, page?.view]);
 
   if (!element) return null;

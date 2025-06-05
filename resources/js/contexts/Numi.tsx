@@ -200,6 +200,7 @@ export const Style = {
     } as Record<string, string>,
     defaultValue,
     inspector: args.inspector ?? 'alignmentPicker',
+    config: args.config ?? {},
   }),
 
   image: (

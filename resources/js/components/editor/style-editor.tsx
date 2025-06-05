@@ -9,7 +9,7 @@ import {
 } from '../ui/dropdown-menu';
 import { ColorPicker, parseHexAlpha } from '../ui/color-picker';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
-import AlignmentPicker, { alignmentIcons } from '../ui/alignment-picker';
+import AlignmentPicker, { alignmentIcons, getAlignmentPickerValue } from '../ui/alignment-picker';
 import { Kebab } from '../ui/kebab';
 import { Checkbox } from '../ui/checkbox';
 import { Font } from '@/types';
@@ -99,9 +99,9 @@ const StyleItemValuePreview = ({
           <DropdownMenuTrigger asChild>
             <span className="flex-1 flex flex-row gap-2 items-center cursor-pointer">
               <span className="bg-gray-200 rounded p-0.5">
-                {alignmentIcons[value as keyof typeof alignmentIcons]}
+                {getAlignmentPickerValue(value, item.config?.orientation ?? 'vertical')}
                 </span>
-              <span className="flex-1 uppercase text-xs line-clamp-2">{value}</span>
+              <span className="flex-1 capitalize text-xs line-clamp-2">{value}</span>
             </span>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="center" className="justify-center">
@@ -109,6 +109,7 @@ const StyleItemValuePreview = ({
               value={value as string}
               onChange={(value) => onChange(item.name, value)}
               options={Object.keys(item.options || {})}
+              config={item.config}
             />
           </DropdownMenuContent>
         </DropdownMenu>

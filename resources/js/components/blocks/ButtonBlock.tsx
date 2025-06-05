@@ -73,7 +73,6 @@ function ButtonBlockComponent({ context }: { context: BlockContextType }) {
     Appearance.margin('margin', 'Margin', {}),
     Appearance.spacing('spacing', 'Spacing', { config: { format: 'single' } }),
     Appearance.visibility('visibility', 'Visibility', {}, { conditional: [] }),
-    Appearance.alignment('alignment', 'Alignment', {}, 'left'),
   ]);
 
   const font = {
@@ -125,6 +124,7 @@ function ButtonBlockComponent({ context }: { context: BlockContextType }) {
     "border border-gray-300 rounded-md p-2": true,
     "hover:cursor-pointer hover:brightness-90 active:brightness-85": !isSubmitting,
     "w-full justify-center": style.alignment === 'expand',
+    "w-fit": style.alignment !== 'expand',
     "opacity-50 cursor-not-allowed": isSubmitting,
     "border-none": style.border === 'none',
     "border-[1px]": style.border === 'xs',
@@ -135,9 +135,9 @@ function ButtonBlockComponent({ context }: { context: BlockContextType }) {
   }), [style.alignment, style.fontWeight, style.border, isSubmitting]);
 
   const containerClasses = useMemo(() => cn("space-y-2 flex flex-col", {
-    "justify-start": style.alignment === 'left',
-    "justify-center": style.alignment === 'center',
-    "justify-end": style.alignment === 'right',
+    "items-start": style.alignment === 'left',
+    "items-center": style.alignment === 'center',
+    "items-end": style.alignment === 'right',
     "justify-stretch": style.alignment === 'expand',
   }), [style.alignment]);
 
