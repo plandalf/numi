@@ -60,9 +60,15 @@ class CheckoutController extends Controller
 
         $this->handleInvalidDomain($request, $checkoutSession);
 
-        return redirect()->to(URL::signedRoute('checkouts.show', [
+        $params = [
             'checkout' => $checkoutSession->getRouteKey(),
-        ], now()->addDays(5)));
+        ];
+
+        if ($request->has('redirect_url')) {
+            $params['redirect_url'] = $request->get('redirect_url');
+        }
+
+        return redirect()->to(URL::signedRoute('checkouts.show', $params, now()->addDays(5)));
     }
 
     public function show(CheckoutSession $checkout, Request $request)
@@ -77,7 +83,7 @@ class CheckoutController extends Controller
         $checkout->load([
             'lineItems.offerItem',
             'offer.theme',
-            'offer.hostedPage.logoImage', 
+            'offer.hostedPage.logoImage',
             'offer.hostedPage.backgroundImage',
             'lineItems.price.integration',
             'lineItems.price.product'
