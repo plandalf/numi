@@ -11,7 +11,7 @@ class CreateCheckoutSessionAction
         private readonly CreateCheckoutLineItemAction $createCheckoutLineItemAction
     ) {}
 
-    public function execute(Offer $offer): CheckoutSession
+    public function execute(Offer $offer, array $checkoutItems): CheckoutSession
     {
         $checkoutSession = CheckoutSession::create([
             'organization_id' => $offer->organization_id,
@@ -25,7 +25,18 @@ class CreateCheckoutSessionAction
 
             $this->createCheckoutLineItemAction->execute(
                 $checkoutSession,
-                $offerItem
+                $offerItem,
+                $offerItem->default_price_id,
+                 1
+            );
+        }
+
+        foreach ($checkoutItems as $item) {
+            $this->createCheckoutLineItemAction->execute(
+                $checkoutSession,
+                null,
+                $item['price_id'],
+                $item['quantity']
             );
         }
 

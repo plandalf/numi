@@ -66,6 +66,7 @@ class CheckoutSessionController extends Controller
 
             return response()->json([
                 'message' => 'Commit successful',
+                'checkout_session' => new CheckoutSessionResource($checkoutSession),
             ]);
         } catch (Exception $e) {
             return response()->json([

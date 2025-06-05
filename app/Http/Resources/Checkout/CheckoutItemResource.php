@@ -12,8 +12,8 @@ class CheckoutItemResource extends JsonResource
     {
         return [
             'id' => $this->id,
-            'offer_item' => $this->offerItem->name,
-            'name' => $this->offerItem->name,
+            'offer_item' => $this->offerItem?->name,
+            'name' => $this->offerItem?->name,
             'quantity' => $this->quantity,
             'subtotal' => $this->subtotal,
             'currency' => $this->currency,

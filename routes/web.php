@@ -125,16 +125,14 @@ Route::get('/workflow-test', function () {
 
 // get offer controller
 // redirect to
-Route::get('/o/{offer}/{environment?}', [CheckoutController::class, 'initialize'])
-    ->name('offers.show')
-    ->where('environment', 'live|test');
+Route::middleware(['frame-embed'])->group(function () {
+    Route::get('/o/{offer}/{environment?}', [CheckoutController::class, 'initialize'])
+        ->name('offers.show')
+        ->where('environment', 'live|test');
 
-Route::get('/checkout/{checkout}', [CheckoutController::class, 'show'])
-    ->name('checkouts.show');
-
-// Route::get('/checkout/{checkout}', [CheckoutController::class, 'show'])
-// ->name('offers.show')
-// ->where('environment', 'live|test');
+    Route::get('/checkout/{checkout}', [CheckoutController::class, 'show'])
+        ->name('checkouts.show');
+});
 
 Route::post('/checkouts/{checkoutSession}/mutations', [CheckoutSessionController::class, 'storeMutation'])
     ->name('checkouts.mutations.store');

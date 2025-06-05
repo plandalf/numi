@@ -16,6 +16,11 @@ import { resolveThemeValue } from '@/lib/theme';
 import { ChevronLeftIcon } from 'lucide-react';
 import { useMemo } from 'react';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { sendMessage } from '@/utils/sendMessage';
+import { OnInit } from '@/events/OnInit';
+import { useEffect } from 'react';
+import { PageChanged } from '@/events/PageChanged';
+import { CheckoutInit } from '@/events/CheckoutInit';
 
 
 export const NavigationBar = ({ barStyle, children, className, ...props }: NavigationBarProps) => {
@@ -266,6 +271,14 @@ const CheckoutController = ({ offer }: { offer: OfferConfiguration }) => {
       };
   }, [style]);
 
+  useEffect(() => {
+    if(currentPage.type === 'payment') {
+      sendMessage(new CheckoutInit());
+    }
+
+    sendMessage(new PageChanged(currentPage.id));
+  }, [currentPage]);
+
   if (!currentPage) {
     console.error('No page found');
     return null;
@@ -365,6 +378,10 @@ export default function CheckoutPage({ offer, fonts, error, checkoutSession }: C
     }
     return {};
   }, [offer?.is_hosted, offer?.hosted_page]);
+
+  useEffect(() => {
+    sendMessage(new OnInit());
+  }, []);
 
   return (
     <>

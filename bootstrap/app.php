@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\FrameEmbedMiddleware;
 use App\Http\Middleware\HandleAppearance;
 use App\Http\Middleware\HandleInertiaRequests;
 use App\Http\Middleware\RequireOrganization;
@@ -32,6 +33,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'organization' => RequireOrganization::class,
             'subscription' => RequiresSubscription::class,
+            'frame-embed' => FrameEmbedMiddleware::class,
         ]);
 //        $middleware->api([
 //           //

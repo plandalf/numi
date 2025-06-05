@@ -13,13 +13,6 @@ import { Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { type Product } from "@/types/offer"; // Changed from @/types/product
 import { toast } from "sonner";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from "@/components/ui/select";
 import { ImageUpload } from "../ui/image-upload";
 
 interface Props {
@@ -228,7 +221,7 @@ export default function ProductForm({
           onChange={handleLookupKeyChange}
           onBlur={handleLookupKeyBlur}
           placeholder="e.g., standard_subscription"
-          disabled={processing || isEditing}
+          disabled={processing}
         />
         {errors.lookup_key && <p className="text-sm text-red-500">{errors.lookup_key}</p>}
         <p className="text-xs text-muted-foreground">
@@ -240,7 +233,7 @@ export default function ProductForm({
         <Label>Product Image</Label>
         <ImageUpload
           preview={data.image}
-          onChange={(value) => setData("image", value)}
+          onChange={(value) => setData("image", value?.url || null)}
         />
       </div>
       <div className="flex justify-end space-x-2 pt-4">

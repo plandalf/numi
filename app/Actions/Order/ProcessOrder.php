@@ -70,8 +70,6 @@ class ProcessOrder
                 throw new \Exception('No items found in the order');
             }
 
-            $integrationClient = $orderItems->first()->price->integrationClient();
-
             // Get discounts from checkout session
             $discounts = $checkoutSession->discounts ?? [];
 
@@ -106,7 +104,8 @@ class ProcessOrder
                     }
                 }
                 // Handle one-time payment items
-                elseif ($type === ChargeType::ONE_TIME->value && $integrationClient instanceof Stripe) {
+                elseif ($type === ChargeType::ONE_TIME->value) {
+                    /** @var Stripe $integrationClient */
                     $paymentIntent = $integrationClient->createPaymentIntent([
                         'order' => $order,
                         'items' => $items->toArray(),

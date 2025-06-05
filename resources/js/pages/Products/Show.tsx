@@ -19,6 +19,16 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import ProductForm from "@/components/Products/ProductForm";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface ProductShowPageProps extends InertiaPageProps {
   product: Product;
@@ -33,6 +43,8 @@ export default function Show() {
   const [isPriceFormOpen, setIsPriceFormOpen] = useState(false);
   const [editingPrice, setEditingPrice] = useState<Price | undefined>(undefined);
   const [isProductFormOpen, setIsProductFormOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [priceToDelete, setPriceToDelete] = useState<Price | undefined>(undefined);
 
   const [isAddExistingStripePriceDialogOpen, setIsAddExistingStripePriceDialogOpen] = useState(false);
   const openPriceForm = (price?: Price) => {
@@ -46,15 +58,35 @@ export default function Show() {
     }
   }
 
-  const handleDeletePrice = (priceId: number) => {
-    if (!confirm('Are you sure you want to delete this price?')) return;
+  const handleDeletePrice = () => {
+    if (!priceToDelete) return;
 
-    router.delete(route('products.prices.destroy', { product: product.id, price: priceId }), {
+    const toastId = toast.loading('Deleting price...');
+
+    router.delete(route('products.prices.destroy', { product: product.id, price: priceToDelete.id }), {
       preserveScroll: true,
-      onSuccess: () => toast.success('Price deleted successfully.'),
+      onSuccess: () => {
+        toast.success('Price deleted successfully.', { id: toastId });
+        setPriceToDelete(undefined);
+      },
       onError: (error) => {
         const errorMsg = Object.values(error).flat().join(", ");
-        toast.error(`Failed to delete price: ${errorMsg || 'Unknown error'}`);
+        toast.error(`Failed to delete price: ${errorMsg || 'Unknown error'}`, { id: toastId });
+      }
+    });
+  };
+
+  const handleDeleteProduct = () => {
+    const toastId = toast.loading('Deleting product...');
+
+    router.delete(route('products.destroy', product.id), {
+      onSuccess: () => {
+        toast.success('Product deleted successfully', { id: toastId });
+        router.visit(route('products.index'));
+      },
+      onError: (error) => {
+        const errorMsg = Object.values(error).flat().join(", ");
+        toast.error(`Failed to delete product: ${errorMsg || 'Unknown error'}`, { id: toastId });
       }
     });
   };
@@ -114,9 +146,17 @@ export default function Show() {
             )}
           </div>
           <div>
-            <Button variant="outline" onClick={() => setIsProductFormOpen(true)}>
-              <Edit className="w-4 h-4 mr-2" /> Edit product
-            </Button>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => setIsProductFormOpen(true)}>
+                <Edit className="w-4 h-4 mr-2" /> Edit product
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={() => setIsDeleteDialogOpen(true)}
+              >
+                <Trash2 className="w-4 h-4 mr-2" /> Delete product
+              </Button>
+            </div>
           </div>
         </div>
 
@@ -133,9 +173,9 @@ export default function Show() {
           <PriceTable
             prices={prices}
             onEdit={openPriceForm}
-            onDelete={(price) => handleDeletePrice(price.id)}
+            onDelete={(price) => setPriceToDelete(price)}
             showActions
-            />
+          />
         </div>
 
         {/* Price Form Dialog */}
@@ -146,6 +186,29 @@ export default function Show() {
           initialData={editingPrice}
           listPrices={listPrices || []}
         /> }
+
+        {/* Delete Price Dialog */}
+        <AlertDialog open={!!priceToDelete} onOpenChange={(open) => !open && setPriceToDelete(undefined)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Are you sure you want to delete this price?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This action cannot be undone. This will permanently delete the price
+                {priceToDelete?.gateway_price_id && ' from both Plandalf and Stripe'}.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleDeletePrice}
+                className="bg-red-600 focus:ring-red-600 hover:bg-red-700"
+              >
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
         <AddExistingStripePriceDialog
           open={isAddExistingStripePriceDialogOpen}
           onOpenChange={setIsAddExistingStripePriceDialogOpen}
@@ -158,6 +221,27 @@ export default function Show() {
           onOpenChange={setIsProductFormOpen}
           initialData={product as any}
         />
+
+        <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Are you sure you want to delete this product?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This action cannot be undone. This will permanently delete the product
+                {prices.length > 0 && ' and all associated prices'}.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleDeleteProduct}
+                className="bg-red-600 focus:ring-red-600 hover:bg-red-700"
+              >
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </AppLayout>
   );

@@ -11,6 +11,9 @@ import { CheckoutSession } from '@/types/checkout';
 import { BlockRenderer } from '@/components/checkout/block-renderer';
 import { SetItemActionValue } from '@/components/actions/set-item-action';
 import { Theme } from '@/types/theme';
+import { sendMessage } from '@/utils/sendMessage';
+import { CheckoutSuccess } from '@/events/CheckoutSuccess';
+import { CheckoutResized } from '@/events/CheckoutResized';
 // Form and validation context
 type FormData = Record<string, any>;
 type ValidationErrors = Record<string, string[]>;
@@ -248,6 +251,22 @@ export function GlobalStateProvider({ offer, session: defaultSession, editor = f
         setSubmitError(response.data?.message || 'Failed to commit checkout');
         return false;
       }
+
+      if (action === 'commit') {
+        sendMessage(new CheckoutSuccess(response.data.checkout_session));
+      }
+
+      if(!nextPageId) {
+        // Check for redirect_url in URL params
+        const urlParams = new URLSearchParams(window.location.search);
+        const redirectUrl = urlParams.get('redirect_url'); // TODO: append the checkout session token to the redirect url
+        if (redirectUrl) {
+          window.location.href = redirectUrl;
+          return true;
+        }
+      }
+
+
       return true;
     } catch (error) {
       if (axios.isAxiosError(error)) {
@@ -276,6 +295,7 @@ export function GlobalStateProvider({ offer, session: defaultSession, editor = f
 
 
     if (response.status === 200) {
+      sendMessage(new CheckoutResized());
       setSession(response.data);
     }
 
