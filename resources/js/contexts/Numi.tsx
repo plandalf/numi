@@ -380,16 +380,34 @@ const Numi = {
   ) {
     const checkout = Numi.useCheckout();
     const blockContext = useContext(BlockContext);
+    const [hook, setHook] = useState<HookUsage>({
+      name: props.name,
+      type: 'eventCallback',
+      defaultValue: null,
+      options: props.elements,
+      events: props.events ?? [],
+    });
+
+    // Create a ref to hold the debounced function
+    const debouncedUpdateRef = useRef<ReturnType<typeof debounce> | null>(null);
+
+    // Initialize the debounced function on first render
+    useEffect(() => {
+      debouncedUpdateRef.current = debounce((newHook: Partial<HookUsage>) => {
+        setHook(prevHook => ({ ...prevHook, ...newHook }));
+      }, 300); // 300ms delay
+
+      // Cleanup function to cancel pending debounced calls
+      return () => {
+        if (debouncedUpdateRef.current) {
+          debouncedUpdateRef.current.cancel();
+        }
+      };
+    }, []);
 
     useEffect(() => {
-      blockContext.registerHook({
-        name: props.name,
-        type: 'eventCallback',
-        defaultValue: null,
-        options: props.elements,
-        events: props.events ?? [],
-      });
-    }, []);
+      blockContext.registerHook(hook);
+    }, [hook]);
 
     const executeCallbacks = useCallback((type: Event, element?: string) => {
       if (blockContext.blockConfig.interaction?.[type]) {
@@ -416,9 +434,16 @@ const Numi = {
       }
     }, [blockContext]);
 
+    const updateHook = useCallback((newHook: Partial<HookUsage>) => {
+      if (debouncedUpdateRef.current) {
+        debouncedUpdateRef.current(newHook);
+      }
+    }, []);
+
     return {
       interaction: blockContext.blockConfig.interaction,
-      executeCallbacks
+      executeCallbacks,
+      updateHook
     };
   },
 
@@ -536,7 +561,7 @@ const Numi = {
       const style: Record<string, any> = {};
 
 
-      
+
       // Get the value from block config or use default
       styleProps.forEach(prop => {
         if (prop.type) {
@@ -637,7 +662,7 @@ const Numi = {
 
     // If use as state, prioritize getting the field value from the global state
     const defaultValue = get(blockContext.blockConfig, `content.${props.name}`) ?? props.initialValue;
-    const value = props.asState 
+    const value = props.asState
       ? blockContext.getFieldValue(props.name) ?? defaultValue
       : defaultValue;
 

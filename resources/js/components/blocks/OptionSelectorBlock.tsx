@@ -67,7 +67,7 @@ function OptionSelectorComponent({ context }: { context: BlockContextType }) {
             type: "string"
           }
         },
-        required: ["key"]
+        required: ["key", "label"]
       }
     }
   });
@@ -214,7 +214,7 @@ function OptionSelectorComponent({ context }: { context: BlockContextType }) {
     return Array.isArray(items) ? items.filter(item => item.key).map(item => ({ value: item.key, label: item.label })) : [];
   }, [items]);
 
-  const { executeCallbacks } = Numi.useEventCallback({
+  const { executeCallbacks, updateHook: updateEventCallbackHook } = Numi.useEventCallback({
     name: 'onClick',
     elements: interactionElements,
     events: [{
@@ -237,12 +237,12 @@ function OptionSelectorComponent({ context }: { context: BlockContextType }) {
   useEffect(() => {
     if (!Array.isArray(items) || items.length === 0) return;
 
-    const itemKeys = items.filter(item => item.key).map(item => item.key);
-    const prevItemKeys = prevItemsRef.current.filter(item => item.key).map(item => item.key);
-
+    const prevItems = prevItemsRef.current;
     // Only update if the items have actually changed
-    if (JSON.stringify(itemKeys) !== JSON.stringify(prevItemKeys)) {
-      updateSelectedTabHook({ options: itemKeys });
+    if (JSON.stringify(items) !== JSON.stringify(prevItems)) {
+      updateSelectedTabHook({ options: items });
+      updateEventCallbackHook({ options: interactionElements });
+
       prevItemsRef.current = items;
     }
   }, [items, updateSelectedTabHook]);

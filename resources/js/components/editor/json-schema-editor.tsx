@@ -57,7 +57,7 @@ export function JSONSchemaEditor({
             schema.items.required.forEach((propName: string) => {
               if (schema.items && 'properties' in schema.items && schema.items.properties) {
                 const propSchema = schema.items.properties[propName];
-                newItem[propName] = getDefaultForType(propSchema.type as JsonSchemaType);
+                newItem[propName] = getDefaultForAttribute(propName, items.length) ?? getDefaultForType(propSchema.type as JsonSchemaType);
               }
             });
           }
@@ -207,6 +207,13 @@ export function JSONSchemaEditor({
   );
 }
 
+function getDefaultForAttribute(attribute: string, itemCount: number): any {
+  switch (attribute) {
+    case 'label': return `Section ${itemCount + 1}`;
+    case 'key': return `section-${itemCount + 1}`;
+    default: return null;
+  }
+}
 function getDefaultForType(type: JsonSchemaType): any {
   switch (type) {
     case 'string': return '';
