@@ -261,7 +261,7 @@ const StyleItemValuePreview = ({
             <span className="flex-1 flex flex-row gap-2 items-center cursor-pointer">
               <Image className="size-4" />
               <span
-                className="flex-1 text-xs line-clamp-2"
+                className="flex-1 text-xs line-clamp-2 break-all"
               >
                 {value !== '' ? value : 'Select image'}
               </span>
