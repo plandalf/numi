@@ -1,7 +1,7 @@
 import Numi, { Style, Conditions, FontValue, BorderValue, DimensionValue, Appearance } from "@/contexts/Numi";
 import { BlockContextType } from "@/types/blocks";
 import { Switch } from "@/components/ui/switch";
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { Check } from "lucide-react";
 import { Event, EVENT_LABEL_MAP } from "../editor/interaction-event-editor";
 import ReactMarkdown from "react-markdown";
@@ -57,7 +57,7 @@ function AddOnBlockComponent({ context }: { context: BlockContextType }) {
     defaultValue: 'I agree to the terms and conditions',
   });
 
-  const [isDefaultChecked, setIsDefaultChecked] = Numi.useStateBoolean({
+  const [isDefaultChecked] = Numi.useStateBoolean({
     name: 'is_default_checked',
     label: 'Default Checked',
     defaultValue: false,
@@ -81,7 +81,9 @@ function AddOnBlockComponent({ context }: { context: BlockContextType }) {
     }],
   });
 
-  const isMarkdown = format === 'markdown';
+  useEffect(() => {
+    setChecked(isDefaultChecked);
+  }, [isDefaultChecked]);
 
   function handleChange() {
     const newChecked = !checked;
@@ -243,7 +245,7 @@ function AddOnBlockComponent({ context }: { context: BlockContextType }) {
       )}
       {checkboxStyle === 'checkbox' && (
         <div className="flex items-center gap-2">
-          <div className="relative inline-block justify-center">
+          <div className="relative flex justify-center">
             <input style={checkboxStyles} id={id} type="checkbox" name={context.blockId} checked={checked} onChange={handleChange} />
             {(checked) && <Check strokeWidth="5" className="pb-0.5" style={checkIconStyles} />}
           </div>
