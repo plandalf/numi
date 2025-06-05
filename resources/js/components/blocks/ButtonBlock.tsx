@@ -60,9 +60,6 @@ function ButtonBlockComponent({ context }: { context: BlockContextType }) {
           hideHorizontalAlignment: true,
         },
       },
-      {
-        color: theme?.primary_contrast_color,
-      },
     ),
     Style.border('border', 'Border', {}, { width: '0px', style: 'solid' }),
     Style.borderRadius('borderRadius', 'Border Radius', {}, theme?.border_radius),
@@ -108,7 +105,7 @@ function ButtonBlockComponent({ context }: { context: BlockContextType }) {
 
   const buttonStyles = useMemo(() => ({
     backgroundColor: resolveThemeValue(style.backgroundColor, theme, 'primary_color'),
-    color: font?.color,
+    color: resolveThemeValue(font.color, theme, 'primary_contrast_color'),
     fontFamily: font?.font,
     fontWeight: font?.weight,
     fontSize: font?.size,
