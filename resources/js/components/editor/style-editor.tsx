@@ -270,7 +270,7 @@ const StyleItemValuePreview = ({
           <DropdownMenuContent align="start" side="right" className="justify-center">
             <ImageUpload
               className="w-full w-[250px] cursor-pointer"
-              onChange={(value) => onChange(item.name, value)} preview={value}
+              onChange={(value) => onChange(item.name, value?.url)} preview={value?.url}
               label="Upload an image"
             />
           </DropdownMenuContent>
