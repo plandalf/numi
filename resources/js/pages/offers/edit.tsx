@@ -23,7 +23,7 @@ import PageFlowEditor from '@/components/offers/page-flow-editor';
 import { ReactFlowProvider } from '@xyflow/react';
 import update from "immutability-helper";
 import { CreditCard } from 'lucide-react';
-import { GlobalStateProvider } from '@/pages/checkout-main';
+import { GlobalStateProvider, NavigationProvider, useNavigation } from '@/pages/checkout-main';
 import { DndContext, DragOverlay, DragStartEvent, useSensor, PointerSensor, useSensors, rectIntersection, DragOverEvent, DragEndEvent } from "@dnd-kit/core";
 
 import { v4 as uuidv4 } from 'uuid';
@@ -123,7 +123,8 @@ function EditApp({ publishableKey }: { publishableKey: string | undefined }) {
     setData,
     selectedPage,
     offer,
-    setSelectedBlockId
+    setSelectedBlockId,
+    handlePageNameClick
   } = useEditor();
 
   const session: CheckoutSession = {
@@ -564,25 +565,26 @@ function EditApp({ publishableKey }: { publishableKey: string | undefined }) {
       <Head title={`Edit ${offer.name || 'Untitled Offer'}`} />
 
       <GlobalStateProvider offer={data} session={session} editor>
+        <NavigationProvider onPageChange={handlePageNameClick}>
 
-        <DndContext
-          sensors={sensors}
-          onDragStart={handleDragStart}
-          onDragEnd={handleDragEnd}
-          onDragOver={handleDragOver}
-          collisionDetection={rectIntersection}
-        >
-          <DragOverlay dropAnimation={null}>
-            {activeItem && (
-              <DragOverlayPreview item={activeItem}/>
-            )}
-          </DragOverlay>
-          <div className="flex flex-grow h-[calc(100vh-60px)]">
-            <Sidebar />
-            <MainContent />
-          </div>
-        </DndContext>
-
+          <DndContext
+            sensors={sensors}
+            onDragStart={handleDragStart}
+            onDragEnd={handleDragEnd}
+            onDragOver={handleDragOver}
+            collisionDetection={rectIntersection}
+          >
+            <DragOverlay dropAnimation={null}>
+              {activeItem && (
+                <DragOverlayPreview item={activeItem}/>
+              )}
+            </DragOverlay>
+            <div className="flex flex-grow h-[calc(100vh-60px)]">
+              <Sidebar />
+              <MainContent />
+            </div>
+          </DndContext>
+        </NavigationProvider>
       </GlobalStateProvider>
 
       {/* Page Logic Dialog */}
@@ -644,7 +646,10 @@ function MainContent() {
   return (
     <div className="flex-1 flex flex-col min-w-0 relative">
       {/* Preview Area - Make it fill the available space */}
-      <div className="absolute inset-0 bottom-[68px] overflow-hidden">
+      <div className={cn(
+        "absolute inset-0 overflow-hidden",
+        !isPreviewMode ? "bottom-[68px]" : "bottom-0"
+      )}>
       <div className="h-full bg-[#F7F9FF]">
           {isShareMode ? (
             <PageShare />
@@ -660,12 +665,13 @@ function MainContent() {
       </div>
 
       {/* Toolbar */}
-      <Toolbar />
+      {!isPreviewMode && <Toolbar />}
     </div>
   )
 }
 
 function Toolbar() {
+  const { goToPage } = useNavigation();
   const {
     data,
     inputRef,
@@ -682,6 +688,11 @@ function Toolbar() {
     setShowPageLogic,
     showPageLogic,
   } = useEditor();
+
+  const onPageClick = (pageId: string, name: string) => {
+    handlePageNameClick(pageId, name)
+    goToPage(pageId);
+  }
 
   return (
     <div className="absolute bottom-0 left-0 right-0 bg-[#F7F9FF]">
@@ -731,7 +742,7 @@ function Toolbar() {
                   />
                 ) : (
                   <button
-                    onClick={() => handlePageNameClick(pageId, page.name)}
+                    onClick={() => onPageClick(pageId, page.name)}
                     className="focus:outline-none flex items-center gap-2 cursor-pointer"
                   >
                     <span className="text-muted-foreground ">

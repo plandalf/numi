@@ -18,7 +18,7 @@ import { useMemo } from 'react';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 
-const NavigationBar = ({ barStyle, children, className, ...props }: NavigationBarProps) => {
+export const NavigationBar = ({ barStyle, children, className, ...props }: NavigationBarProps) => {
   const { goToPrevPage, canGoBack, canGoForward } = useNavigation();
 
   function onBack() {
@@ -31,7 +31,7 @@ const NavigationBar = ({ barStyle, children, className, ...props }: NavigationBa
         <button
           onClick={onBack}
           type="button"
-          className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 flex-shrink-0 flex items-center"
+          className="cursor-pointer hover:scale-105 transition-all duration-300 px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 flex-shrink-0 flex items-center"
         >
           <ChevronLeftIcon className="w-5 h-5 mr-2" />
         </button>

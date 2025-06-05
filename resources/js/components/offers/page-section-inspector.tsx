@@ -49,6 +49,16 @@ export function SectionInspector({ sectionId /*, onClose */ }: SectionInspectorP
   };
 
   const styleItems: StyleItem[] = [
+    Style.alignment('alignment', 'Alignment', {
+      options: {
+        start: 'Start',
+        center: 'Center',
+        end: 'End',
+      },
+      config: {
+        orientation: 'horizontal'
+      }
+    }, 'start'),
     Style.image('backgroundImage', 'Background Image', {}, ''),
     Style.backgroundColor('backgroundColor', 'Background Color', {}, theme?.canvas_color),
     Style.borderRadius('borderRadius', 'Border Radius', {}, '12px'),
@@ -59,8 +69,10 @@ export function SectionInspector({ sectionId /*, onClose */ }: SectionInspectorP
     value: section.style?.[style.type],
     defaultValue: style.defaultValue,
     inspector: style.inspector as StyleItem['inspector'],
-    options: style.options
+    options: style.options,
+    config: style.config
   }));
+
 
   const appearanceItems = [
     Appearance.padding('padding', 'Padding', {}, '0px'),

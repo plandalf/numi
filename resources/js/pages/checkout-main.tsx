@@ -584,6 +584,7 @@ interface NavigationContextType {
   navigationHistory: NavigationHistoryEntry[];
 
   // Navigation Methods
+  goToPage: (pageId: string) => void;
   goToNextPage: (fieldErrors: Record<string, string[]>) => Promise<void>;
   goToPrevPage: () => void;
   canGoBack: () => boolean;
@@ -639,7 +640,12 @@ export const handleNavigationLogic = (page: Page, getFieldValue: (field: string)
   return page.next_page.default_next_page || null;
 };
 
-export const NavigationProvider = ({ children }: { children: React.ReactNode }) => {
+interface NavigationProviderProps {
+  children: React.ReactNode;
+  onPageChange?: (pageId: string, name: string) => void;
+}
+
+export const NavigationProvider = ({ children, onPageChange }: NavigationProviderProps) => {
   const { offer } = useCheckoutState();
   const { fieldStates } = useCheckoutState();
 
@@ -711,9 +717,25 @@ export const NavigationProvider = ({ children }: { children: React.ReactNode }) 
     if (canGoBack()) {
       const previousPage = pageHistory[pageHistory.length - 1];
       setCurrentPageId(previousPage);
+      onPageChange?.(previousPage, pages[previousPage].name);
       setPageHistory(prev => prev.slice(0, -1));
       addToNavigationHistory(previousPage, 'backward', pages[previousPage].type);
     }
+  };
+
+  const goToPage = (pageId: string) => {
+    const nextPage = pages[pageId];
+
+    // Update navigation state
+    setPageHistory(prev => [...prev, currentPageId]);
+
+    if (!completedPages.includes(currentPageId)) {
+      setCompletedPages(prev => [...prev, currentPageId]);
+    }
+
+    addToNavigationHistory(pageId, 'forward', nextPage.type);
+    setCurrentPageId(pageId);
+    onPageChange?.(pageId, nextPage.name);
   };
 
   const goToNextPage = async (fieldErrors: Record<string, string[]>) => {
@@ -729,21 +751,12 @@ export const NavigationProvider = ({ children }: { children: React.ReactNode }) 
       return;
     }
 
-    const nextPage = pages[nextPageId];
-
-    // Update navigation state
-    setPageHistory(prev => [...prev, currentPageId]);
-
-    if (!completedPages.includes(currentPageId)) {
-      setCompletedPages(prev => [...prev, currentPageId]);
-    }
-
-    addToNavigationHistory(nextPageId, 'forward', nextPage.type);
-    setCurrentPageId(nextPageId);
+    goToPage(nextPageId);
   };
 
   const value: NavigationContextType = {
     currentPage,
+    goToPage,
     goToNextPage,
     goToPrevPage,
     currentPageId,

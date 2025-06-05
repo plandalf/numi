@@ -33,6 +33,8 @@ function CheckboxBlockComponent({ context }: { context: BlockContextType }) {
     label: 'Label',
     name: 'label',
     defaultValue: 'Checked?',
+    inspector: 'multiline',
+    format: 'markdown',
   });
 
   const [isDefaultChecked] = Numi.useStateBoolean({
@@ -102,7 +104,7 @@ function CheckboxBlockComponent({ context }: { context: BlockContextType }) {
     Style.hidden('hidden', 'Hidden', {}, false),
   ]);
 
-  const font = resolveThemeValue(style?.font, theme, 'label_typography') as FontValue;
+  const font = style.font;
   const border = style?.border as BorderValue;
   const borderColor = resolveThemeValue(style?.borderColor, theme, 'primary_border_color');
   const checkColor = resolveThemeValue(style?.checkColor, theme, 'primary_contrast_color');
@@ -188,7 +190,7 @@ function CheckboxBlockComponent({ context }: { context: BlockContextType }) {
   }
 
   const labelComponent = (
-    label && <span style={checkboxLabelStyles}>{label}</span>
+    label && <MarkdownText text={label} theme={theme} style={checkboxLabelStyles} />
   );
 
   return (

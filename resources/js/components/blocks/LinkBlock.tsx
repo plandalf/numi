@@ -7,12 +7,27 @@ import { resolveThemeValue } from '@/lib/theme';
 import { MarkdownText } from '../ui/markdown-text';
 
 function LinkBlockComponent() {
+  const { isEditor } = Numi.useCheckout({});
+
   const theme = Numi.useTheme();
   const [text] = Numi.useStateString({
     label: 'Text',
     name: 'value',
     defaultValue: 'Submit',
-    meta: { editor: "markdown" },
+    inspector: 'multiline',
+    format: 'markdown',
+  });
+
+  const [linkStyle] = Numi.useStateEnumeration({
+    name: 'style',
+    initialValue: 'link',
+    options: ['link', 'button'],
+    labels: {
+      link: 'Link',
+      button: 'Button',
+    } as Record<string, string>,
+    inspector: 'select',
+    label: 'Style',
   });
 
   const [url] = Numi.useStateString({
@@ -23,7 +38,7 @@ function LinkBlockComponent() {
       validations: ['url'],
     },
   });
-  
+
   const [icon] = Numi.useStateJsonSchema({
     name: 'icon',
     label: 'Icon',
@@ -35,23 +50,23 @@ function LinkBlockComponent() {
     },
   });
 
+  const [openInNewTab] = Numi.useStateBoolean({
+    label: 'Open in new tab',
+    name: 'openInNewTab',
+    defaultValue: false,
+  });
+
   const style = Numi.useStyle([
-    Style.alignment('alignment', 'Alignment', {
-      options: {
-        left: 'Left',
-        center: 'Center',
-        right: 'Right',
-      },
-    }, 'left'),
+    Style.alignment('alignment', 'Alignment', {}, 'left'),
     Style.backgroundColor('backgroundColor', 'Background Color', {}, ''),
-    
+
     Style.backgroundColor('iconColor', 'Icon Color', {}, ''),
     Style.dimensions('iconSize', 'Icon Size', {
       config: {
         hideWidth: true
       }
     }, {height: '16px'}),
-    
+
     Style.font('linkFont', 'Link Font & Color',
       {
         config: {
@@ -59,10 +74,14 @@ function LinkBlockComponent() {
           hideHorizontalAlignment: true,
         },
       },
-      {},
+      {
+        ...(linkStyle === 'button' && {
+          color: theme?.primary_contrast_color,
+        }),
+      },
     ),
     Style.border('border', 'Border', {}, { width: '0px', style: 'solid' }),
-    Style.borderRadius('borderRadius', 'Radius', {}, '5px'),
+    Style.borderRadius('borderRadius', 'Radius', {}, ''),
     Style.borderColor('borderColor', 'Border Color', {}, '#000000'),
     Style.shadow('shadow', 'Shadow', {}, '0px 0px 0px 0px #000000'),
     Style.hidden('hidden', 'Hidden', {}, false),
@@ -74,19 +93,28 @@ function LinkBlockComponent() {
     Appearance.margin('margin', 'Margin', {}),
     Appearance.visibility('visibility', 'Visibility', {}, { conditional: [] }),
   ]);
-  const linkFont = resolveThemeValue(style.linkFont, theme, 'body_typography') as FontValue;
+
+  const linkFont = style.linkFont;
+
+
   const border = style?.border as BorderValue;
   const borderRadius = style?.borderRadius;
   const shadow = style?.shadow as string;
 
   const markdownStyles = useMemo(() => ({
-    color: resolveThemeValue(style.linkFont?.color, theme),
+    color: resolveThemeValue(
+      style?.linkFont?.color,
+      theme,
+      linkStyle === 'button' ? 'primary_contrast_color' : undefined
+    ),
     fontFamily: linkFont?.font,
     fontWeight: linkFont?.weight,
     fontSize: linkFont?.size,
     lineHeight: linkFont?.lineHeight,
     letterSpacing: linkFont?.letterSpacing,
-    textDecoration: 'underline',
+    ...(linkStyle === 'link' && {
+      textDecoration: 'underline',
+    }),
   }), [style, linkFont, border, borderRadius, shadow, appearance]);
 
   const linkStyles = useMemo(() => ({
@@ -95,14 +123,22 @@ function LinkBlockComponent() {
     borderStyle: border?.style,
     borderRadius : borderRadius ?? '3px',
     boxShadow: shadow,
-    backgroundColor: resolveThemeValue(style.backgroundColor, theme),
-    padding: resolveThemeValue(appearance.padding, theme, 'padding'),
-    gap: resolveThemeValue(appearance.spacing, theme, 'spacing'),
+    backgroundColor: resolveThemeValue(
+      style.backgroundColor,
+      theme,
+      linkStyle === 'button' ? 'primary_color' : undefined
+    ),
+    padding: !appearance.padding && linkStyle === 'button' ? resolveThemeValue(appearance.padding, theme, 'padding') : appearance.padding,
+    gap: appearance.spacing,
   }), [appearance]);
 
   const linkClasses = useMemo(() => cx({
+    "flex flex-row gap-x-2 items-center text-center": true,
+    "border border-gray-300 rounded-md": true,
+    "hover:cursor-pointer hover:brightness-90 active:brightness-85": true,
+    "w-full justify-center": style.alignment === 'expand',
+    "w-fit": style.alignment !== 'expand',
     'text-sm flex flex-row gap-x-4 items-center': true,
-    "w-full": style.alignment === 'expand',
     "border-none": style.border === 'none',
     "border-[1px]": style.border === 'xs',
     "border-[4px]": style.border === 'sm',
@@ -119,13 +155,17 @@ function LinkBlockComponent() {
   }), [style.alignment]);
 
   const containerStyles = useMemo(() => ({
-    margin: resolveThemeValue(appearance.margin, theme, 'margin'),
+    margin: appearance.margin,
     textAlign: style.textAlignment,
   }), [appearance, style.textAlignment]);
 
   const iconStyles = useMemo(() => ({
     size: style?.iconSize?.height ?? '16px',
-    color: resolveThemeValue(style?.iconColor, theme),
+    color: resolveThemeValue(
+      style?.iconColor,
+      theme,
+      linkStyle === 'button' ? 'primary_contrast_color' : undefined
+    ),
   }), [style]);
 
   if (style.hidden) {
@@ -138,6 +178,13 @@ function LinkBlockComponent() {
         href={url}
         className={linkClasses}
         style={linkStyles}
+        onClick={(e) => {
+          if (isEditor) {
+            e.preventDefault();
+            return;
+          }
+        }}
+        target={openInNewTab ? '_blank' : '_self'}
       >
         <IconRenderer icon={icon} style={iconStyles} defaultIcon={''}/>
         <MarkdownText text={text} theme={theme} style={markdownStyles} />

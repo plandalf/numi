@@ -46,7 +46,7 @@ export const SpacingPicker = ({
     if (!input) return { isValid: true, error: null };
 
     const values = input.trim().split(/\s+/);
-    const validUnitFormat = /^\d+(px|rem)$/;
+    const validUnitFormat = /^-?\d*\.?\d+(px|rem)$/;
 
     // Check if each value matches the unit format
     const areAllValuesValid = values.every(val => validUnitFormat.test(val));
@@ -126,7 +126,7 @@ export const SpacingPicker = ({
 
     // Split input into values and filter out empty strings
     const values = customInputValue.trim().split(/\s+/).filter(Boolean);
-    const validUnitFormat = /^\d+(?:\.\d+)?(?:px|rem)$/;
+    const validUnitFormat = /^-?\d*\.?\d+(?:px|rem)$/;
 
     // Format values with units
     const formattedValues = values.map(val => {
@@ -134,7 +134,7 @@ export const SpacingPicker = ({
       if (validUnitFormat.test(val)) return val;
       
       // If value is just a number, add px as default unit
-      const numericValue = val.replace(/[^0-9.]/g, '');
+      const numericValue = val.replace(/[^0-9.-]/g, '');
       return numericValue ? `${numericValue}px` : '';
     }).filter(Boolean);
 
