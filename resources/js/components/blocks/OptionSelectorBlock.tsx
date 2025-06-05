@@ -106,7 +106,9 @@ function OptionSelectorComponent({ context }: { context: BlockContextType }) {
 
     Style.alignment('inactiveTextAlignment', 'Unselected Text Alignment', defaultAlignmentArgs, 'center'),
     Style.backgroundColor('inactiveBackgroundColor', 'Unselected Color', {}, ''),
-    Style.font('inactiveTextFont', 'Unselected Text Font & Color', fontConfig, { color: '#000000' }),
+    Style.font('inactiveTextFont', 'Unselected Text Font & Color', fontConfig, {
+      ...theme?.body_typography
+    }),
     Style.border('inactiveBorder', 'Unselected Border', {}, { width: '0px', style: 'solid' }),
     Style.borderRadius('inactiveBorderRadius', 'Unselected Radius', {}, theme?.border_radius),
     Style.borderColor('inactiveBorderColor', 'Unselected Border Color', {}),
