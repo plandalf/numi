@@ -38,7 +38,7 @@ function LinkBlockComponent() {
       validations: ['url'],
     },
   });
-  
+
   const [icon] = Numi.useStateJsonSchema({
     name: 'icon',
     label: 'Icon',
@@ -59,14 +59,14 @@ function LinkBlockComponent() {
   const style = Numi.useStyle([
     Style.alignment('alignment', 'Alignment', {}, 'left'),
     Style.backgroundColor('backgroundColor', 'Background Color', {}, ''),
-    
+
     Style.backgroundColor('iconColor', 'Icon Color', {}, ''),
     Style.dimensions('iconSize', 'Icon Size', {
       config: {
         hideWidth: true
       }
     }, {height: '16px'}),
-    
+
     Style.font('linkFont', 'Link Font & Color',
       {
         config: {
@@ -103,8 +103,8 @@ function LinkBlockComponent() {
 
   const markdownStyles = useMemo(() => ({
     color: resolveThemeValue(
-      style?.linkFont?.color, 
-      theme, 
+      style?.linkFont?.color,
+      theme,
       linkStyle === 'button' ? 'primary_contrast_color' : undefined
     ),
     fontFamily: linkFont?.font,
@@ -123,19 +123,18 @@ function LinkBlockComponent() {
     borderStyle: border?.style,
     borderRadius : borderRadius ?? '3px',
     boxShadow: shadow,
-    
     backgroundColor: resolveThemeValue(
-      style.backgroundColor, 
-      theme, 
+      style.backgroundColor,
+      theme,
       linkStyle === 'button' ? 'primary_color' : undefined
     ),
-    padding: resolveThemeValue(appearance.padding, theme, 'padding'),
-    gap: resolveThemeValue(appearance.spacing, theme, 'spacing'),
+    padding: !appearance.padding && linkStyle === 'button' ? resolveThemeValue(appearance.padding, theme, 'padding') : appearance.padding,
+    gap: appearance.spacing,
   }), [appearance]);
 
   const linkClasses = useMemo(() => cx({
     "flex flex-row gap-x-2 items-center text-center": true,
-    "border border-gray-300 rounded-md p-2": true,
+    "border border-gray-300 rounded-md": true,
     "hover:cursor-pointer hover:brightness-90 active:brightness-85": true,
     "w-full justify-center": style.alignment === 'expand',
     "w-fit": style.alignment !== 'expand',
@@ -156,15 +155,15 @@ function LinkBlockComponent() {
   }), [style.alignment]);
 
   const containerStyles = useMemo(() => ({
-    margin: resolveThemeValue(appearance.margin, theme, 'margin'),
+    margin: appearance.margin,
     textAlign: style.textAlignment,
   }), [appearance, style.textAlignment]);
 
   const iconStyles = useMemo(() => ({
     size: style?.iconSize?.height ?? '16px',
     color: resolveThemeValue(
-      style?.iconColor, 
-      theme, 
+      style?.iconColor,
+      theme,
       linkStyle === 'button' ? 'primary_contrast_color' : undefined
     ),
   }), [style]);

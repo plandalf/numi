@@ -17,6 +17,7 @@ use App\Http\Resources\ProductResource;
 use App\Http\Resources\TemplateResource;
 use App\Http\Resources\ThemeResource;
 use App\Models\Catalog\Product;
+use App\Models\HostedPage;
 use App\Models\Integration;
 use App\Models\Organization;
 use App\Models\Store\Offer;
@@ -51,7 +52,9 @@ class OffersController extends Controller
             'name' => null,
             'status' => 'draft',
             'organization_id' => $organization->id,
-            'hosted_page_id' => $organization?->hostedPage ? $organization->hostedPage->id : null,
+            'hosted_page_id' => $organization?->hostedPage
+                ? $organization->hostedPage->id
+                : HostedPage::getDefaultForOrganization($organization),
         ]);
 
         $offer->offerItems()->create([
@@ -100,11 +103,11 @@ class OffersController extends Controller
 
         // Load the offer with its theme and items
         $offer->load([
-            'offerItems.prices.product', 
-            'theme', 
-            'screenshot', 
-            'organization', 
-            'hostedPage.logoImage', 
+            'offerItems.prices.product',
+            'theme',
+            'screenshot',
+            'organization',
+            'hostedPage.logoImage',
             'hostedPage.backgroundImage',
         ]);
 
@@ -127,7 +130,7 @@ class OffersController extends Controller
     public function update(OfferUpdateRequest $request, Offer $offer)
     {
         $validated = $request->validated();
-        
+
         // Remove hosted_page data from the main update
         if(isset($validated['hosted_page'])) {
             $hostedPageData = $validated['hosted_page'] ?? [];
@@ -138,7 +141,7 @@ class OffersController extends Controller
                 $hostedPageData
             );
         }
-        
+
         $offer->update($validated);
 
         return redirect()->back();
