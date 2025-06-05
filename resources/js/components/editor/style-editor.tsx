@@ -150,7 +150,14 @@ const StyleItemValuePreview = ({
       );
     case 'borderPicker':
       const borderValue = value as BorderValue;
-      const borderValueAsTitle = `${borderValue.width}, ${borderValue.style}`;
+      const borderValueAsTitle = 
+        borderValue.width && borderValue.style 
+          ? `${borderValue.width}, ${borderValue.style}` 
+          : borderValue.width 
+            ? `${borderValue.width}` 
+            : borderValue.style 
+              ? `${borderValue.style}` 
+              :'Select';
 
       return (
         <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>

@@ -20,7 +20,8 @@ import {
   PlusIcon,
   HeadingIcon, SquareChartGanttIcon,
   RadioIcon,
-  ListIcon
+  ListIcon,
+  Minus
 } from 'lucide-react';
 import { useDraggable } from '@dnd-kit/core';
 import SearchBar from './search-bar';
@@ -62,6 +63,8 @@ export const CustomElementIcon = ({ type }: CustomElementIconProps) => {
         return <PlusIcon className="w-6 h-6" />;
     case 'heading':
         return <HeadingIcon className="w-6 h-6" />;
+    case 'divider':
+        return <Minus className="w-6 h-6" />;
     default:
         return null;
   }
@@ -112,6 +115,7 @@ const baseElements = [
   { type: 'detail_list', title: 'Detail List' },
   { type: 'image', title: 'Image Block' },
   { type: 'heading', title: 'Heading' },
+  { type: 'divider', title: 'Divider' },
 ];
 
 const interactiveElements = [

@@ -14,6 +14,7 @@ import AddOnBlockComponent from "./AddOnBlock";
 import HeadingBlockComponent from "./HeadingBlock";
 import DetailTimelineBlock from '@/components/blocks/DetailTimelineBlock';
 import RadioListBlock from "./RadioListBlock";
+import DividerBlockComponent from "./DividerBlock";
 
 export const blockTypes = {
   text: TextBlockComponent,
@@ -32,6 +33,7 @@ export const blockTypes = {
   payment_method: PaymentMethodBlock,
   plan_descriptor: PlanDescriptorComponent,
   heading: HeadingBlockComponent,
+  divider: DividerBlockComponent,
 }
 
 type BlockMeta = {
