@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import { generateDefaultPage } from '@/components/offers/page-flow-editor';
 import { Template } from '@/types/template';
 import { useDebounce } from '@/hooks/use-debounce';
+import { FormDataConvertible } from '@inertiajs/core';
 
 interface EditorContextType {
   data: EditFormData;
@@ -63,7 +64,7 @@ interface EditorContextType {
 
   viewMode: 'editor' | 'preview' | 'share';
   setViewMode: React.Dispatch<React.SetStateAction<'editor' | 'preview' | 'share'>>;
-  
+
   previewType: 'desktop' | 'mobile';
   setPreviewType: React.Dispatch<React.SetStateAction<'desktop' | 'mobile'>>;
   previewSize: {
@@ -118,6 +119,7 @@ type EditFormData = {
   };
   theme_id: string | null;
   screenshot: Offer['screenshot'];
+  [key: string]: FormDataConvertible | Record<string, any> | null | undefined;
 }
 
 export interface EditProps {
@@ -154,7 +156,7 @@ export function EditorProvider({ offer, organizationThemes, organizationTemplate
   const { data, setData, put, processing, errors, setDefaults } = useForm<EditFormData>({
     name: offer.name,
     view: offer.view,
-    theme_id: offer.theme?.id,
+    theme_id: offer.theme?.id ?? null,
     screenshot: offer.screenshot,
   });
 
@@ -257,6 +259,19 @@ export function EditorProvider({ offer, organizationThemes, organizationTemplate
     setEditingPageName(null);
   };
 
+  const sortPages = (pages: Record<string, Page>): Record<string, Page> => {
+    const entries = Object.entries(pages);
+    const sortedEntries = entries.sort((a, b) => {
+      // Entry pages come first
+      if (a[1].type === 'entry' && b[1].type !== 'entry') return -1;
+      if (a[1].type !== 'entry' && b[1].type === 'entry') return 1;
+      // Then sort by page number
+      return (a[1].pageNumber || 0) - (b[1].pageNumber || 0);
+    });
+
+    return Object.fromEntries(sortedEntries);
+  };
+
   const handlePageAction = (pageId: string, action: 'rename' | 'duplicate' | 'changeType' | 'delete') => {
     switch (action) {
       case 'rename':
@@ -267,13 +282,13 @@ export function EditorProvider({ offer, organizationThemes, organizationTemplate
       case 'duplicate': {
         const newId = `page_${Math.random().toString(36).substr(2, 9)}`;
         const pageToDuplicate = data.view.pages[pageId];
-        const updatedPages = {
+        const updatedPages = sortPages({
           ...data.view.pages,
           [newId]: {
             ...pageToDuplicate,
             name: `${pageToDuplicate.name} (Copy)`,
           }
-        };
+        });
         setData(update(data, { view: { pages: { $set: updatedPages } } }));
         setTimeout(() => { handleSave(); }, 0);
         break;
@@ -310,15 +325,29 @@ export function EditorProvider({ offer, organizationThemes, organizationTemplate
             };
           }
         });
-        setData(update(data, { view: { pages: { $set: pagesToUpdate } }}));
-        if (selectedPage === pageId) {
-          const remainingPageIds = Object.keys(pagesToUpdate);
-          if (remainingPageIds.length > 0) {
-            const firstPageId = data.view.first_page;
-            const newSelectedPageId = (firstPageId && pagesToUpdate[firstPageId])
-              ? firstPageId
-              : remainingPageIds[0];
-            setSelectedPage(newSelectedPageId);
+
+        // If this was the last page, create a new default view
+        if (Object.keys(pagesToUpdate).length === 0) {
+          const defaultView = generateDefaultView();
+          setData(update(data, {
+            view: {
+              pages: { $set: defaultView.pages },
+              first_page: { $set: defaultView.first_page }
+            }
+          }));
+          setSelectedPage(defaultView.first_page);
+        } else {
+          const sortedPages = sortPages(pagesToUpdate);
+          setData(update(data, { view: { pages: { $set: sortedPages } }}));
+          if (selectedPage === pageId) {
+            const remainingPageIds = Object.keys(sortedPages);
+            if (remainingPageIds.length > 0) {
+              const firstPageId = data.view.first_page;
+              const newSelectedPageId = (firstPageId && sortedPages[firstPageId])
+                ? firstPageId
+                : remainingPageIds[0];
+              setSelectedPage(newSelectedPageId);
+            }
           }
         }
         setTimeout(() => { handleSave(); }, 0);
@@ -345,10 +374,10 @@ export function EditorProvider({ offer, organizationThemes, organizationTemplate
         : currentPage.name
     };
 
-    const updatedPages = {
+    const updatedPages = sortPages({
       ...data.view.pages,
       [pageId]: updatedPage
-    };
+    });
 
     setData(update(data, { view: { pages: { $set: updatedPages } } }));
     setShowPageTypeDialog(false);
@@ -390,13 +419,15 @@ export function EditorProvider({ offer, organizationThemes, organizationTemplate
   const handleAddPage = (type: PageType) => {
     const id = `page_${Math.random().toString(36).substr(2, 9)}`;
 
-    const updatedPages = {
-      ...data.view.pages,
-      [id]: {
-        ...generateDefaultPage({ id, type, position: { x: 0, y: 0 }, pageNumber: Object.keys(data.view.pages).length + 1 }),
-        name: type === 'entry' ? 'Entry Page' : type === 'ending' ? 'Ending Page' : 'New Page',
-      }
+    const newPage = {
+      ...generateDefaultPage({ id, type, position: { x: 0, y: 0 }, pageNumber: Object.keys(data.view.pages).length + 1 }),
+      name: type === 'entry' ? 'Entry Page' : type === 'ending' ? 'Ending Page' : 'New Page',
     };
+
+    const updatedPages = sortPages({
+      ...data.view.pages,
+      [id]: newPage
+    });
 
     const updatedView = {
       ...data.view,

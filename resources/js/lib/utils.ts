@@ -6,11 +6,11 @@ export function cn(...inputs: ClassValue[]) {
     return twMerge(clsx(inputs));
 }
 
-export function formatMoney(amount: number, currency: string): string {
+export function formatMoney(amount: number, currency?: string): string {
     // Convert cents to dollars/euros/etc.
     const value = amount / 100;
     return new Intl.NumberFormat(undefined, { // Use user's locale
-        style: 'currency',
+        style: currency ? 'currency' : 'decimal',
         currency: currency,
         minimumFractionDigits: 2, // Ensure two decimal places
     }).format(value);

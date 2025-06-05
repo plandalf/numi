@@ -57,14 +57,6 @@ class OffersController extends Controller
                 : HostedPage::getDefaultForOrganization($organization),
         ]);
 
-        $offer->offerItems()->create([
-            'key' => 'primary',
-            'name' => 'Primary Item',
-            'is_required' => true,
-            'sort_order' => 0,
-            'default_price_id' => null,
-        ]);
-
         $offer->load([
             'hostedPage.logoImage',
             'hostedPage.backgroundImage',
