@@ -1,5 +1,4 @@
 import { useEditor } from '@/contexts/offer/editor-context';
-import { cn } from '@/lib/utils';
 
 export function PageIframePreview() {
   const { offer, previewSize, previewType } = useEditor();
@@ -9,7 +8,7 @@ export function PageIframePreview() {
   return (
     <div className="w-full h-full flex items-center justify-center">
       <div
-        className="w-[90%] h-[95%] flex flex-col bg-background max-h-[95%]" 
+        className="w-[90%] h-[95%] flex flex-col bg-background max-h-[95%] rounded-lg shadow-lg" 
         style={{
           width: !isHosted ? previewSize.width : 1284,
           height: !isHosted ? previewSize.height : 1080,
