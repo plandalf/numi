@@ -523,15 +523,15 @@ export default function PriceForm({
         toast.success(`Price ${priceName} ${isEditing ? 'updated' : 'created'} successfully`, { id: toastId });
       }
 
-      // if (response.request.responseURL && response.request.responseURL !== window.location.href) {
-      //   window.location.href = response.request.responseURL;
-      //   return;
-      // }
 
       if (onSuccess && result.price) {
         onSuccess(result.price);
       } else {
         onOpenChange(false);
+        if (response.request.responseURL && response.request.responseURL !== window.location.href) {
+          window.location.href = response.request.responseURL;
+          return;
+        }
       }
 
       if (!isEditing) {

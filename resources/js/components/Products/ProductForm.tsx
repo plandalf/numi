@@ -159,13 +159,6 @@ export default function ProductForm({
       // Axios throws on non-2xx by default, no need to check response.ok
       const result = response.data;
 
-      // Check for redirect (Axios doesn't expose `.redirected` like fetch)
-      if (response.request.responseURL && response.request.responseURL !== window.location.href) {
-        toast.success(`Product ${productName} ${isEditing ? 'updated' : 'created'} successfully`, { id: toastId });
-        window.location.href = response.request.responseURL;
-        return;
-      }
-
       // Success path
       toast.success(`Product ${productName} ${isEditing ? 'updated' : 'created'} successfully`, { id: toastId });
 
@@ -173,6 +166,13 @@ export default function ProductForm({
         onSuccess(result.product);
       } else {
         onOpenChange(false);
+
+        // Check for redirect (Axios doesn't expose `.redirected` like fetch)
+        if (response.request.responseURL && response.request.responseURL !== window.location.href) {
+          toast.success(`Product ${productName} ${isEditing ? 'updated' : 'created'} successfully`, { id: toastId });
+          window.location.href = response.request.responseURL;
+          return;
+        }
       }
 
       if (!isEditing) {
