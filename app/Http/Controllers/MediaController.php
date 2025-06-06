@@ -51,13 +51,8 @@ class MediaController extends Controller
         ]);
 
         ['url' => $uploadUrl, 'headers' => $headers] = $disk === 'local'
-            ? [
-                'url' => route('medias.upload', $media),
-                'headers' => [],
-            ] : Storage::disk($disk)->temporaryUploadUrl(
-            $key,
-            now()->addMinutes(10)
-        );
+            ? ['url' => route('medias.upload', $media), 'headers' => []]
+            : Storage::disk($disk)->temporaryUploadUrl($key, now()->addMinutes(10));
 
         return response()->json([
             'uuid' => $uuid,

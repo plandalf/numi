@@ -84,20 +84,28 @@ export function ImageUpload({
                 size: file.size,
                 mime_type: file.type,
             });
+            const config = {
+              headers: {
+                'Content-Type': file.type,
+                ...data.headers
+              },
+              withCredentials: false,
+              onUploadProgress: (progressEvent) => {
+                const progress = Math.round(
+                  (progressEvent.loaded * 100) / (progressEvent.total || file.size)
+                );
+                console.log('progress: ', progressEvent);
+                // updateProgress(item.id, progress, 'uploading');
+              },
+            };
+            console.log({
+              config,
+              data,
+              file,
+            })
 
-            const uploadResponse = await axios.put(data.uploadUrl, file, {
-                headers: {
-                    'Content-Type': file.type,
-                    ...data.headers
-                },
-                onUploadProgress: (progressEvent) => {
-                    const progress = Math.round(
-                        (progressEvent.loaded * 100) / (progressEvent.total || file.size)
-                    );
-                    console.log('progress: ', progressEvent);
-                    // updateProgress(item.id, progress, 'uploading');
-                }
-            });
+            const uploadResponse = await axios.post(data.uploadUrl, file, config);
+            console.log({ uploadResponse })
 
             // 3. Finalize the upload
             await axios.post(route('medias.finalize', { media: data.media_id }))
@@ -108,7 +116,13 @@ export function ImageUpload({
                 });
 
         } catch (error) {
-            console.error('Upload failed:', error);
+          if (axios.isAxiosError(error)) {
+            console.error('Axios error response:', error.response);
+            console.error('Axios error request:', error.request);
+            console.error('Axios error message:', error.message);
+          } else {
+            console.error('Unexpected error:', error);
+          }
             const message = error instanceof Error ? error.message : 'Upload failed. Please try again.';
             setError(message);
             onError?.(message);
@@ -188,7 +202,7 @@ export function ImageUpload({
                         <Loader2 className="h-6 w-6 animate-spin" />
                     ) : (
                         <>
-                            {logo ? logo : <Upload className='h-6 w-6 transition-transform group-hover:scale-110 cursor-pointer' />}    
+                            {logo ? logo : <Upload className='h-6 w-6 transition-transform group-hover:scale-110 cursor-pointer' />}
                             {label && <Label className='text-sm cursor-pointer'>{label}</Label>}
                         </>
                     )}
