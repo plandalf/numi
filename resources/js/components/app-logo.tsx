@@ -11,7 +11,7 @@ export default function AppLogo() {
                     <AppLogoIcon className="" />
                 </div>
                 <div className="ml-1 grid flex-1 text-left text-sm">
-                    <span className="truncate leading-none font-semibold text-xl uppercase font-sora">Numi</span>
+                    <span className="truncate leading-none font-semibold text-xl uppercase font-sora">Plandalf</span>
                 </div>
             </div>
 
