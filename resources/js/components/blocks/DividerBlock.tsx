@@ -23,8 +23,8 @@ function DividerBlockComponent({ context }: { context: BlockContextType }) {
   ]);
 
   const dividerStyles = useMemo(() => ({
-    backgroundColor: resolveThemeValue(style.backgroundColor, theme, 'primary_border_color'),
-    borderColor: resolveThemeValue(style.borderColor, theme),
+    backgroundColor: resolveThemeValue(style.backgroundColor, theme, 'secondary_border_color'),
+    borderColor: resolveThemeValue(style.borderColor, theme, 'secondary_border_color'),
     ...style.border ? {
       borderWidth: style?.border?.width,
       borderStyle: style?.border?.style,

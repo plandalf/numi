@@ -8,6 +8,7 @@ import { generateDefaultPage } from '@/components/offers/page-flow-editor';
 import { Template } from '@/types/template';
 import { useDebounce } from '@/hooks/use-debounce';
 import { FormDataConvertible } from '@inertiajs/core';
+import { SidebarTab } from '@/components/offers/sidebar';
 
 interface EditorContextType {
   data: EditFormData;
@@ -67,6 +68,10 @@ interface EditorContextType {
 
   previewType: 'desktop' | 'mobile';
   setPreviewType: React.Dispatch<React.SetStateAction<'desktop' | 'mobile'>>;
+
+  activeTab: SidebarTab;
+  setActiveTab: React.Dispatch<React.SetStateAction<SidebarTab>>;
+
   previewSize: {
     width: number;
     height: number;
@@ -152,6 +157,7 @@ export function EditorProvider({ offer, organizationThemes, organizationTemplate
   const [previewType, setPreviewType] = useState<'desktop' | 'mobile'>('desktop');
   const [theme, setTheme] = useState<Theme>(props.theme);
   const [enableAutoSave, setEnableAutoSave] = useState(false);
+  const [activeTab, setActiveTab] = useState<SidebarTab>('elements');
 
   const { data, setData, put, processing, errors, setDefaults } = useForm<EditFormData>({
     name: offer.name,
@@ -565,6 +571,7 @@ export function EditorProvider({ offer, organizationThemes, organizationTemplate
     viewMode, setViewMode,
     previewSize, setPreviewSize,
     previewType, setPreviewType,
+    activeTab, setActiveTab,
     deleteBlock,
   };
 

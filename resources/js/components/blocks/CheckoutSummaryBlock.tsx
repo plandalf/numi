@@ -7,6 +7,7 @@ import { Button } from "../ui/button";
 import { Discount } from "@/types/product";
 import { CircleAlert, Loader2, XIcon } from "lucide-react";
 import { CheckoutItem } from "@/types/checkout";
+import { Separator } from "../ui/separator";
 
 function CheckoutSummaryComponent({ context }: { context: BlockContextType }) {
   const theme = Numi.useTheme();
@@ -315,7 +316,7 @@ function CheckoutSummaryComponent({ context }: { context: BlockContextType }) {
 
   const dividerStyle = useMemo(() => {
     return {
-      borderColor: resolveThemeValue(style.dividerColor, theme, 'secondary_border_color') as string,
+      backgroundColor: resolveThemeValue(style.dividerColor, theme, 'primary_border_color') as string,
     };
   }, [style]);
 
@@ -373,10 +374,10 @@ function CheckoutSummaryComponent({ context }: { context: BlockContextType }) {
   }, [session.currency, showCurrency]);
 
   return (
-    <div className="flex flex-col p-4" style={containerStyle}>
-      <h3 className="font-medium text-lg mb-4" style={titleStyle}>{title}</h3>
+    <div className="flex flex-col p-4 gap-4" style={containerStyle}>
+      <h3 className="font-medium text-lg" style={titleStyle}>{title}</h3>
       {/* Order Items */}
-      <div className="space-y-3 mb-4 overflow-y-auto h-auto max-h-[300px]">
+      <div className="space-y-3 overflow-y-auto h-auto max-h-[300px]">
         {session.line_items.length === 0 && (
           <div className="flex gap-3 border border-destructive text-destructive rounded-md p-4 mt-3.5">
             <CircleAlert className="w-5 h-5 mt-0.5" />
@@ -404,10 +405,12 @@ function CheckoutSummaryComponent({ context }: { context: BlockContextType }) {
           </div>
         ))}
       </div>
-
+      {(showDiscountForm || showSubtotal || showShipping || showTaxes) && (
+        <Separator style={dividerStyle} />
+      )}
       {/* Discount Code Form */}
       {showDiscountForm && (
-        <div className="mb-4 pb-4 border-b" style={dividerStyle}>
+        <div className="flex flex-col gap-2">
           <label htmlFor="discount-code" className="block mb-1" style={labelStyle}>Discount code</label>
           {canAddDiscount && <div className="flex gap-2">
             <input
@@ -431,6 +434,7 @@ function CheckoutSummaryComponent({ context }: { context: BlockContextType }) {
             </Button>
           </div>}
           {errors.discount && <p className="text-sm text-red-500">{errors.discount}</p>}
+          {session.discounts && session.discounts.length > 0 && (
           <div className="flex gap-2 mt-2">
             {session.discounts?.map((discount: Discount) => (
               <div key={discount.id} className="flex justify-between items-center bg-gray-100 p-2 gap-2">
@@ -444,12 +448,14 @@ function CheckoutSummaryComponent({ context }: { context: BlockContextType }) {
                   <XIcon className="w-4 h-4 hover:text-red-500" />
                 </button>
               </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
       {/* Order Summary Calculations */}
+      {(showSubtotal || showShipping || showTaxes || (session.discounts && session.discounts.length > 0)) && (
       <div className="space-y-2 text-sm flex flex-col" style={summaryContainerStyle}>
         {showSubtotal && <div className="flex justify-between">
           <span style={summaryTextStyle}>Subtotal</span>
@@ -484,11 +490,13 @@ function CheckoutSummaryComponent({ context }: { context: BlockContextType }) {
               return acc;
             }, 0), currency)}</span>
           </div>
-        )}
-      </div>
+          )}
+        </div>
+      )}
 
+      <Separator style={dividerStyle} />
       {/* Total */}
-      <div className="flex justify-between font-semibold text-lg mt-4 pt-4 border-t" style={dividerStyle}>
+      <div className="flex justify-between font-semibold text-lg">
         <span style={totalTextStyle}>{totalLabel}</span>
         <span style={totalTextStyle}>{formatMoney(session.total, currency)}</span>
       </div>

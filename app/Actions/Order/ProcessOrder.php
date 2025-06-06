@@ -73,6 +73,16 @@ class ProcessOrder
             // Get discounts from checkout session
             $discounts = $checkoutSession->discounts ?? [];
 
+            // If everything is a one-time charge and the total is zero, mark the order as completed
+            if ($groupedItems->has(ChargeType::ONE_TIME->value) && $groupedItems->count() === 1) {
+                $total = $order->total_amount;
+                if ($total <= 0) {
+                    $order->markAsCompleted();
+                    $order->save();
+                    return $order;
+                }
+            }
+
             // Process each group of items based on their type
             $groupedItems->each(function (Collection $items, $type) use ($integrationClient, $order, $checkoutSession, $discounts) {
                 // Handle subscription items (graduated, volume, package)

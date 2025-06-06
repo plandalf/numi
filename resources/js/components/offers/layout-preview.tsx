@@ -93,7 +93,7 @@ const layoutConfig: TailwindLayoutConfig = {
         "type": "box",
         "id": "core-box",
         "props": {
-          "className": "h-full overflow-hidden"
+          "className": "h-full min-h-[inherit] overflow-y-auto"
         },
         "children": [
           {
@@ -155,7 +155,7 @@ const layoutConfig: TailwindLayoutConfig = {
             "id": "promo_content",
             "type": "box",
             "props": {
-              "className": "h-full flex flex-col flex-grow space-y-2 p-6"
+              "className": "h-full flex flex-col flex-grow space-y-2 p-6 min-h-max"
             }
           }
         ]
