@@ -686,12 +686,20 @@ function Toolbar() {
     getOrderedPages,
     viewMode,
     setShowPageLogic,
-    showPageLogic,
+    setActiveTab,
+    setSelectedBlockId,
+    setSelectedSectionId
   } = useEditor();
 
   const onPageClick = (pageId: string, name: string) => {
     handlePageNameClick(pageId, name)
     goToPage(pageId);
+
+    if(pageId != selectedPage) {
+      setSelectedBlockId(null);
+      setSelectedSectionId(null);
+      setActiveTab('layers');
+    }
   }
 
   return (
