@@ -5,11 +5,18 @@ namespace App\Providers;
 use App\Models\Organization;
 use App\Models\Subscription;
 use App\Models\SubscriptionItem;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Facades\Date;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\URL;
+use Illuminate\Support\Facades\Vite;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Validation\Rules\Password;
 use Laravel\Cashier\Cashier;
 
 class AppServiceProvider extends ServiceProvider
@@ -38,6 +45,13 @@ class AppServiceProvider extends ServiceProvider
         Cashier::useSubscriptionItemModel(SubscriptionItem::class);
 
         $this->bootModelRules();
+
+        Vite::useAggressivePrefetching();
+        URL::forceHttps(app()->isProduction());
+        Model::automaticallyEagerLoadRelationships();
+        Date::use(CarbonImmutable::class);
+        DB::prohibitDestructiveCommands(app()->isProduction());
+        Password::defaults(fn (): ?Password => app()->isProduction() ? Password::min(12)->max(255)->uncompromised() : null);
     }
 
     private function bootModelRules(): void
