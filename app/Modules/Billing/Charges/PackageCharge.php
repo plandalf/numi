@@ -14,7 +14,7 @@ class PackageCharge extends Price
     {
         $freeUnits = $this->properties['free_units'] ?? 0;
         $packageSize = $this->properties['package_size'] ?? 1;
-        $packageAmount = new Money($this->properties['amount'], $this->currency);
+        $packageAmount = new Money($this->properties['amount'] ?? 0, $this->currency);
 
         // If quantity is less than or equal to free units, no charge
         if ($quantity <= $freeUnits) {
