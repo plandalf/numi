@@ -144,7 +144,7 @@ export default function OfferSettings() {
 
 
   const styleItems: StyleItem[] = [
-    Style.dimensions('minHeight', 'Minimum height', {
+    Style.dimensions('maxHeight', 'Maximum height', {
       config: {
         hideWidth: true,
         maxHeight: 1000,

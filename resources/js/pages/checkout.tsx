@@ -242,7 +242,10 @@ const CheckoutController = ({ offer }: { offer: OfferConfiguration }) => {
   const formStyle = useMemo(() => {
     if (isHosted) {
       return {
-        minHeight: style?.minHeight?.height ?? '764px',
+        ...(style?.maxHeight?.height ? {
+          minHeight: style?.maxHeight?.height,
+          maxHeight: style?.maxHeight?.height,
+        } : {}),
         ...(style?.shadow ? {
           boxShadow: style.shadow,
         } : {}),
