@@ -36,9 +36,9 @@ export const NavigationBar = ({ barStyle, children, className, ...props }: Navig
         <button
           onClick={onBack}
           type="button"
-          className="cursor-pointer hover:scale-105 transition-all duration-300 px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 flex-shrink-0 flex items-center"
+          className="m-0 cursor-pointer hover:scale-105 transition-all duration-300 px-4 text-sm font-medium text-gray-700 hover:text-gray-900 flex-shrink-0 flex items-center"
         >
-          <ChevronLeftIcon className="w-5 h-5 mr-2" />
+          <ChevronLeftIcon className="size-4 mr-2" />
         </button>
       )}
       <div className="flex-grow">
