@@ -7,6 +7,7 @@ import { useForm } from '@inertiajs/react'; // Or use fetch like in ProductCreat
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
 import { type Price } from '@/types/offer';
+import axios from '@/lib/axios';
 
 interface Props {
     open: boolean;
@@ -22,8 +23,8 @@ export default function PriceCreateModal({ open, onOpenChange, onSuccess, produc
         amount: 0, // Amount in cents
         currency: defaultCurrency,
         // Send defaults needed by the StoreRequest
-        scope: 'list', 
-        pricing_model: 'one_time', 
+        scope: 'list',
+        pricing_model: 'one_time',
         // Add other fields if the simple endpoint requires them, or rely on backend defaults
     });
 
@@ -33,25 +34,20 @@ export default function PriceCreateModal({ open, onOpenChange, onSuccess, produc
 
         // Using fetch API for JSON response
         try {
-            const response = await fetch(route('products.prices.storeSimple', { product: productId }), {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json',
-                    'X-CSRF-TOKEN': (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content,
-                },
-                body: JSON.stringify({...data, amount: data.amount}), // Send amount in cents
-            });
-
-            const responseData = await response.json();
-
-            if (!response.ok) {
-                let errorMessage = `Failed to create price: ${responseData.message || response.statusText}`;
-                if (responseData.errors) {
-                    errorMessage = `Failed to create price: ${Object.values(responseData.errors).flat().join(', ')}`;
-                }
-                throw new Error(errorMessage);
+          const response = await axios.post(
+            route('products.prices.storeSimple', { product: productId }),
+            { ...data, amount: data.amount }, // payload
+            {
+              headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+              },
             }
+          );
+
+          const responseData = response.data;
+
+
 
             toast.success(`Price created successfully!`, { id: toastId });
             onSuccess(responseData as Price); // Pass back the new price data
@@ -59,9 +55,17 @@ export default function PriceCreateModal({ open, onOpenChange, onSuccess, produc
             onOpenChange(false);
 
         } catch (error: any) {
-            console.error("Price creation error:", error);
-            toast.error(error.message || 'An unexpected error occurred.', { id: toastId });
-            // Handle form errors if needed
+
+          toast.error(error.message || 'An unexpected error occurred.', { id: toastId });
+
+          const responseData = error.response?.data;
+          let errorMessage = `Failed to create price: ${responseData?.message || error.message}`;
+
+          if (responseData?.errors) {
+            errorMessage = `Failed to create price: ${Object.values(responseData.errors).flat().join(', ')}`;
+          }
+
+          throw new Error(errorMessage);
         }
     };
 
@@ -132,4 +136,4 @@ export default function PriceCreateModal({ open, onOpenChange, onSuccess, produc
             </DialogContent>
         </Dialog>
     );
-} 
+}

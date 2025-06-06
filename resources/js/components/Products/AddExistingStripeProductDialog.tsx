@@ -23,6 +23,7 @@ import {
 import { formatMoney } from '@/lib/utils';
 import { toast } from 'sonner';
 import { Badge } from '../ui/badge';
+import axios from '@/lib/axios';
 
 interface AddExistingStripeProductDialogProps {
   onOpenChange?: (open: boolean) => void;
@@ -87,9 +88,8 @@ const ProductStep = ({ integrationId, onClickNext, onClickCancel, productFormDat
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const response = await fetch(`/integrations/${integrationId}/products`);
-        const data = await response.json();
-        setProducts(data);
+        const response = await axios.get(`/integrations/${integrationId}/products`);
+        setProducts(response.data);
       } catch (error) {
         console.error('Error fetching products:', error);
       } finally {
@@ -215,9 +215,8 @@ export const PriceStep = ({ integrationId, onClickSave, onClickBack, selectedPri
   useEffect(() => {
     const fetchPrices = async () => {
       try {
-        const response = await fetch(`/integrations/${integrationId}/products/${productId}/prices`);
-        const data = await response.json();
-        setPrices(data);
+        const response = await axios.get(`/integrations/${integrationId}/products/${productId}/prices`);
+        setPrices(response.data);
       } catch (error) {
         console.error('Error fetching prices:', error);
       } finally {

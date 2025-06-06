@@ -6,7 +6,8 @@ import { Label } from '@/components/ui/label';
 import { useForm } from '@inertiajs/react'; // Use Inertia form for consistency?
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
-import { type Product } from '@/types/offer'; // Assuming Product type is here
+import { type Product } from '@/types/offer';
+import axios from '@/lib/axios'; // Assuming Product type is here
 
 interface Props {
     open: boolean;
@@ -24,45 +25,44 @@ export default function ProductCreateModal({ open, onOpenChange, onSuccess }: Pr
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         const toastId = toast.loading('Creating product...');
-        
+
         // Using fetch API for JSON response handling
-        try {
-            const response = await fetch(route('products.store'), {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json',
-                    // Add CSRF token header - IMPORTANT!
-                    'X-CSRF-TOKEN': (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content,
-                },
-                body: JSON.stringify(data),
-            });
+      try {
+        const response = await axios.post(
+          route('products.store'),
+          data, // Axios handles JSON.stringify internally
+          {
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+            },
+          }
+        );
 
-            const responseData = await response.json();
+        const responseData = response.data;
 
-            if (!response.ok) {
-                // Handle validation errors or other server errors
-                let errorMessage = `Failed to create product: ${responseData.message || response.statusText}`;
-                if (responseData.errors) {
-                    // Format validation errors
-                    errorMessage = `Failed to create product: ${Object.values(responseData.errors).flat().join(', ')}`;
-                }
-                throw new Error(errorMessage);
-            }
+        toast.success(`Product "${responseData.name}" created successfully!`, { id: toastId });
+        onSuccess(responseData as Product);
+        reset();
+        onOpenChange(false);
 
-            toast.success(`Product "${responseData.name}" created successfully!`, { id: toastId });
-            onSuccess(responseData as Product); // Pass the created product data back
-            reset(); // Reset form fields
-            onOpenChange(false); // Close modal
+      } catch (error: any) {
+        const responseData = error.response?.data;
+        let errorMessage = `Failed to create product: ${responseData?.message || error.message}`;
 
-        } catch (error: any) {
-            console.error("Product creation error:", error);
-            toast.error(error.message || 'An unexpected error occurred.', { id: toastId });
-            // Optionally set form errors if backend provides them in a compatible format
-            // if (error.response?.data?.errors) {
-            //    setErrors(error.response.data.errors);
-            // }
+        if (responseData?.errors) {
+          errorMessage = `Failed to create product: ${Object.values(responseData.errors).flat().join(', ')}`;
         }
+
+        console.error("Product creation error:", error);
+        toast.error(errorMessage, { id: toastId });
+
+        // Optionally set form errors:
+        // if (responseData?.errors) {
+        //   setErrors(responseData.errors);
+        // }
+      }
+
     };
 
     // Reset form when modal closes
@@ -126,4 +126,4 @@ export default function ProductCreateModal({ open, onOpenChange, onSuccess }: Pr
             </DialogContent>
         </Dialog>
     );
-} 
+}

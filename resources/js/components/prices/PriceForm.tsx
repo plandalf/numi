@@ -24,7 +24,8 @@ import { Plus, Trash2, Loader2 } from "lucide-react";
 import { useState, useEffect, useRef, useLayoutEffect } from "react";
 import { toast } from "sonner";
 import { formatMoney, slugify, getSupportedCurrencies } from "@/lib/utils"; // Import slugify and getSupportedCurrencies
-import { type Price, type Product } from '@/types/offer'; // Assuming types are centralized
+import { type Price, type Product } from '@/types/offer';
+import axios from '@/lib/axios'; // Assuming types are centralized
 
 // Placeholder Types if not globally defined
 type User = { id: number; name: string; email: string; /* ... other user fields */ };
@@ -503,34 +504,29 @@ export default function PriceForm({
         ? route('products.prices.update', { product: product.id, price: initialData!.id })
         : route('products.prices.store', { product: product.id });
 
-      const response = await fetch(url, {
-        method: isEditing ? 'PUT' : 'POST',
+      const method = isEditing ? 'put' : 'post';
+
+      const response = await axios({
+        method,
+        url,
+        data: formData,
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
-          'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
         },
-        body: JSON.stringify(formData)
       });
 
-      // Check if response is a redirect
-      if (response.redirected) {
-        if (!hideSuccessToast) {
-          toast.success(`Price ${priceName} ${isEditing ? 'updated' : 'created'} successfully`, { id: toastId });
-        }
-        window.location.href = response.url;
-        return;
-      }
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw result as ApiValidationError;
-      }
+      // Handle response
+      const result = response.data;
 
       if (!hideSuccessToast) {
         toast.success(`Price ${priceName} ${isEditing ? 'updated' : 'created'} successfully`, { id: toastId });
       }
+
+      // if (response.request.responseURL && response.request.responseURL !== window.location.href) {
+      //   window.location.href = response.request.responseURL;
+      //   return;
+      // }
 
       if (onSuccess && result.price) {
         onSuccess(result.price);

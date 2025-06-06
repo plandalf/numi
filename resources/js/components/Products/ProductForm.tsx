@@ -14,6 +14,7 @@ import { useEffect, useState } from "react";
 import { type Product } from "@/types/offer"; // Changed from @/types/product
 import { toast } from "sonner";
 import { ImageUpload } from "../ui/image-upload";
+import axios from '@/lib/axios';
 
 interface Props {
   open: boolean;
@@ -138,35 +139,34 @@ export default function ProductForm({
       return;
     }
 
-    // For JSON responses, use fetch API
     try {
-      const response = await fetch(
-        isEditing ? route("products.update", initialData.id) : route("products.store"),
-        {
-          method: isEditing ? 'PUT' : 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
-          },
-          body: JSON.stringify(data)
-        }
-      );
+      const url = isEditing
+        ? route("products.update", initialData.id)
+        : route("products.store");
 
-      // Check if response is a redirect
-      if (response.redirected) {
-        // Show success toast and redirect to the new URL
+      const method = isEditing ? 'put' : 'post';
+
+      const response = await axios({
+        method,
+        url,
+        data,
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+      });
+
+      // Axios throws on non-2xx by default, no need to check response.ok
+      const result = response.data;
+
+      // Check for redirect (Axios doesn't expose `.redirected` like fetch)
+      if (response.request.responseURL && response.request.responseURL !== window.location.href) {
         toast.success(`Product ${productName} ${isEditing ? 'updated' : 'created'} successfully`, { id: toastId });
-        window.location.href = response.url;
+        window.location.href = response.request.responseURL;
         return;
       }
 
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw result as ApiValidationError;
-      }
-
+      // Success path
       toast.success(`Product ${productName} ${isEditing ? 'updated' : 'created'} successfully`, { id: toastId });
 
       if (onSuccess && result.product) {
