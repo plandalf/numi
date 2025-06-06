@@ -24,7 +24,7 @@ import OfferSettings from './offer-settings';
 
 import { DeleteBlockDialog } from './dialogs/delete-block-dialog';
 
-type SidebarTab = 'elements' | 'products' | 'themes' | 'settings' | 'layers';
+export type SidebarTab = 'elements' | 'products' | 'themes' | 'settings' | 'layers';
 
 // Define proper type for the iconButtons array
 type IconButton = {
@@ -45,7 +45,6 @@ const iconButtons: IconButton[] = [
 
 
 export function Sidebar() {
-  const [activeTab, setActiveTab] = useState<SidebarTab>('elements');
   const [searchQuery, setSearchQuery] = useState('');
 
   const {
@@ -58,6 +57,8 @@ export function Sidebar() {
     updateBlock,
     viewMode,
     deleteBlock,
+    activeTab,
+    setActiveTab,
   } = useEditor();
 
   const isEditorMode = viewMode === 'editor';

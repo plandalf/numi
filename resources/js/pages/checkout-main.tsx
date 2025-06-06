@@ -483,13 +483,13 @@ export const layoutConfig = {
   "template": {
     "type": "grid",
     "props": {
-      "className": "grid grid-cols-1 md:grid-cols-2 w-full h-full min-h-[inherit]"
+      "className": "grid grid-cols-1 md:grid-cols-2 w-full h-full min-h-[inherit] max-h-[inherit]"
     },
     "children": [
       {
         "type": "box",
         "props": {
-          "className": "h-full overflow-hidden"
+          "className": "h-full min-h-[inherit] max-h-[inherit] overflow-y-auto"
         },
         "children": [
           {
@@ -536,7 +536,7 @@ export const layoutConfig = {
         "type": "box",
         "id": "promo_box",
         "props": {
-          "className": "hidden md:flex h-full overflow-y-auto flex-col"
+          "className": "hidden md:flex h-full overflow-y-auto flex-col  min-h-[inherit] max-h-[inherit]"
         },
         "children": [
           {
@@ -550,7 +550,7 @@ export const layoutConfig = {
             "id": "promo_content",
             "type": "box",
             "props": {
-              "className": "h-full flex flex-col flex-grow space-y-2 p-6"
+              "className": "h-full flex flex-col flex-grow space-y-2 p-6 min-h-max"
             }
           }
         ]
