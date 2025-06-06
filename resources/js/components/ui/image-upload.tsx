@@ -104,7 +104,7 @@ export function ImageUpload({
               file,
             })
 
-            const uploadResponse = await axios.post(data.uploadUrl, file, config);
+            const uploadResponse = await axios.put(data.uploadUrl, file, config);
             console.log({ uploadResponse })
 
             // 3. Finalize the upload
