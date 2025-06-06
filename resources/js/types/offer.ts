@@ -322,6 +322,7 @@ export interface Page {
     view: PageView;
     layout: { sm: string };
     provides: string[];
+    pageNumber?: number;
     next_page: {
         branches: {
             next_page: string | null;

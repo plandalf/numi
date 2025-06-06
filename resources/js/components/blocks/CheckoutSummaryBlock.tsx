@@ -5,7 +5,7 @@ import { BlockContextType } from "@/types/blocks";
 import { useState, useEffect, useMemo } from "react";
 import { Button } from "../ui/button";
 import { Discount } from "@/types/product";
-import { Loader2, XIcon } from "lucide-react";
+import { CircleAlert, Loader2, XIcon } from "lucide-react";
 import { CheckoutItem } from "@/types/checkout";
 
 function CheckoutSummaryComponent({ context }: { context: BlockContextType }) {
@@ -31,6 +31,46 @@ function CheckoutSummaryComponent({ context }: { context: BlockContextType }) {
   const [showItemPrices] = Numi.useStateBoolean({
     label: 'Show Item Prices',
     name: 'showItemPrices',
+    defaultValue: true,
+    inspector: 'checkbox',
+    group: 'lineItems',
+  });
+
+  const [showSubtotal] = Numi.useStateBoolean({
+    label: 'Show Subtotal',
+    name: 'showSubtotal',
+    defaultValue: true,
+    inspector: 'checkbox',
+    group: 'lineItems',
+  });
+
+  const [showTaxes] = Numi.useStateBoolean({
+    label: 'Show Taxes',
+    name: 'showTaxes',
+    defaultValue: true,
+    inspector: 'checkbox',
+    group: 'lineItems',
+  });
+
+  const [showShipping] = Numi.useStateBoolean({
+    label: 'Show Shipping',
+    name: 'showShipping',
+    defaultValue: true,
+    inspector: 'checkbox',
+    group: 'lineItems',
+  });
+
+  const [showQuantity] = Numi.useStateBoolean({
+    label: 'Show Quantity',
+    name: 'showQuantity',
+    defaultValue: true,
+    inspector: 'checkbox',
+    group: 'lineItems',
+  });
+
+  const [showCurrency] = Numi.useStateBoolean({
+    label: 'Show Currency',
+    name: 'showCurrency',
     defaultValue: true,
     inspector: 'checkbox',
     group: 'lineItems',
@@ -67,10 +107,18 @@ function CheckoutSummaryComponent({ context }: { context: BlockContextType }) {
     group: 'discountCodes',
   });
 
+  const [totalLabel, setTotalLabel] = Numi.useStateString({
+    label: 'Label',
+    name: 'totalLabel',
+    defaultValue: 'Total',
+    group: 'total',
+  });
+
   const appearance = Numi.useAppearance([
     Appearance.padding('padding', 'Padding', {}),
     Appearance.margin('margin', 'Margin', {}),
     Appearance.spacing('spacing', 'Spacing', { config: { format: 'single' } }),
+    Appearance.spacing('summarySpacing', 'Summary spacing', { config: { format: 'single' } }),
     Appearance.visibility('visibility', 'Visibility', {}, { conditional: [] }),
   ]);
 
@@ -83,35 +131,35 @@ function CheckoutSummaryComponent({ context }: { context: BlockContextType }) {
 
   const style = Numi.useStyle([
     Style.backgroundColor('backgroundColor', 'Background Color', {}, theme?.primary_surface_color),
-    Style.font('titleFont', 'Title Font & Color',fontConfig, theme?.label_typography as FontValue),
-    Style.font('labelFont', 'Label Font & Color',fontConfig, theme?.label_typography as FontValue),
-    Style.font('itemFont', 'Item Font & Color',fontConfig, theme?.body_typography as FontValue),
+    Style.font('titleFont', 'Title Font & Color', fontConfig, theme?.label_typography as FontValue),
+    Style.font('labelFont', 'Label Font & Color', fontConfig, theme?.label_typography as FontValue),
+    Style.font('itemFont', 'Item Font & Color', fontConfig, theme?.body_typography as FontValue),
     Style.font('itemPriceFont', 'Item Price Font & Color', fontConfig, theme?.label_typography as FontValue),
-    Style.font('itemQuantityFont', 'Item Quantity Font & Color',fontConfig, {
+    Style.font('itemQuantityFont', 'Item Quantity Font & Color', fontConfig, {
       ...theme?.body_typography as FontValue,
       color: '#6a7282'
     }),
     Style.backgroundColor('inputBackgroundColor', 'Input Background Color', {}, theme?.secondary_surface_color),
-    Style.font('inputFont', 'Input Font & Color',fontConfig, theme?.body_typography as FontValue),
+    Style.font('inputFont', 'Input Font & Color', fontConfig, theme?.body_typography as FontValue),
     Style.border('inputBorder', 'Input Border', {}, { width: '1px', style: 'solid' }),
     Style.borderColor('inputBorderColor', 'Input Border Color', {}, theme?.primary_border_color),
     Style.backgroundColor('buttonBackgroundColor', 'Button Background Color', {}, theme?.primary_color),
-    Style.font( 'buttonTextFont', 'Button Text Font & Color', fontConfig,
+    Style.font('buttonTextFont', 'Button Text Font & Color', fontConfig,
       {
         ...theme?.body_typography,
         color: theme?.primary_contrast_color,
       }
     ),
     Style.shadow('buttonShadow', 'Button Shadow', {}, theme?.shadow),
-    Style.font('summaryTextFont','Summary Text Font & Color',fontConfig, theme?.body_typography as FontValue),
-    Style.font('discountTextFont','Discount Text Font & Color',
+    Style.font('summaryTextFont', 'Summary Text Font & Color', fontConfig, theme?.body_typography as FontValue),
+    Style.font('discountTextFont', 'Discount Text Font & Color',
       fontConfig,
       {
         ...theme?.body_typography,
         color: '#00a63e'
       },
     ),
-    Style.font('totalTextFont', 'Total Text Font & Color',  fontConfig, theme?.label_typography as FontValue),
+    Style.font('totalTextFont', 'Total Text Font & Color', fontConfig, theme?.label_typography as FontValue),
     Style.backgroundColor('dividerColor', 'Divider Color', {}, theme?.secondary_border_color),
     Style.border('border', 'Border', {}, { width: '0px', style: 'solid' }),
     Style.borderRadius('borderRadius', 'Border Radius', {}, theme?.border_radius),
@@ -271,6 +319,12 @@ function CheckoutSummaryComponent({ context }: { context: BlockContextType }) {
     };
   }, [style]);
 
+  const summaryContainerStyle = useMemo(() => {
+    return {
+      gap: appearance.summarySpacing,
+    };
+  }, [appearance.summarySpacing]);
+
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isDiscountSubmitting, setIsDiscountSubmitting] = useState(false);
 
@@ -311,11 +365,24 @@ function CheckoutSummaryComponent({ context }: { context: BlockContextType }) {
     return null;
   }
 
+  const currency = useMemo(() => {
+    if (showCurrency) {
+      return session.currency;
+    }
+    return undefined;
+  }, [session.currency, showCurrency]);
+
   return (
-    <div className="flex flex-col p-4'" style={containerStyle}>
+    <div className="flex flex-col p-4" style={containerStyle}>
       <h3 className="font-medium text-lg mb-4" style={titleStyle}>{title}</h3>
       {/* Order Items */}
-      <div className="space-y-3 mb-4">
+      <div className="space-y-3 mb-4 overflow-y-auto h-auto max-h-[300px]">
+        {session.line_items.length === 0 && (
+          <div className="flex gap-3 border border-destructive text-destructive rounded-md p-4 mt-3.5">
+            <CircleAlert className="w-5 h-5 mt-0.5" />
+            No items to checkout
+          </div>
+        ) }
         {session.line_items.map((item: CheckoutItem) => (
           <div key={item.id} className="flex items-center gap-3">
             {showImages && item.product?.image && (
@@ -327,12 +394,12 @@ function CheckoutSummaryComponent({ context }: { context: BlockContextType }) {
               <div className="flex justify-between">
                 <div className="font-medium" style={itemStyle}>{item.product?.name || item.name}</div>
                 {showItemPrices && item.total !== undefined && (
-                  <div className="text-gray-700" style={itemPriceStyle}>{formatMoney(item.total, item.currency)}</div>
+                  <div className="text-gray-700" style={itemPriceStyle}>{formatMoney(item.total, currency)}</div>
                 )}
               </div>
-              <div className="text-sm text-gray-500" style={itemQuantityStyle}>
-                Qty: {item.quantity} {showItemPrices && item.total !== undefined && `× ${formatMoney(item.subtotal, item.currency)}`}
-              </div>
+              {showQuantity && <div className="text-sm text-gray-500" style={itemQuantityStyle}>
+                Qty: {item.quantity} {showItemPrices && item.total !== undefined && `× ${formatMoney(item.subtotal, currency)}`}
+              </div>}
             </div>
           </div>
         ))}
@@ -383,24 +450,24 @@ function CheckoutSummaryComponent({ context }: { context: BlockContextType }) {
       )}
 
       {/* Order Summary Calculations */}
-      <div className="space-y-2 text-sm">
-        <div className="flex justify-between">
+      <div className="space-y-2 text-sm flex flex-col" style={summaryContainerStyle}>
+        {showSubtotal && <div className="flex justify-between">
           <span style={summaryTextStyle}>Subtotal</span>
-          <span style={summaryTextStyle}>{formatMoney(session.subtotal, session.currency)}</span>
-        </div>
+          <span style={summaryTextStyle}>{formatMoney(session.subtotal, currency)}</span>
+        </div>}
 
-        {session.shipping > 0 && (
+        {showShipping && session.shipping > 0 && (
           <div className="flex justify-between">
             <span style={summaryTextStyle}>Shipping</span>
-            <span style={summaryTextStyle}>{formatMoney(session.shipping, session.currency)}</span>
+            <span style={summaryTextStyle}>{formatMoney(session.shipping, currency)}</span>
           </div>
         )}
 
 
-        {session.taxes > 0 && (
+        {showTaxes && session.taxes > 0 && (
           <div className="flex justify-between">
             <span style={summaryTextStyle}>Taxes</span>
-            <span style={summaryTextStyle}>{formatMoney(session.taxes, session.currency)}</span>
+            <span style={summaryTextStyle}>{formatMoney(session.taxes, currency)}</span>
           </div>
         )}
 
@@ -415,15 +482,15 @@ function CheckoutSummaryComponent({ context }: { context: BlockContextType }) {
                 return acc + (session.subtotal * (discount.percent_off / 100));
               }
               return acc;
-            }, 0), session.currency)}</span>
+            }, 0), currency)}</span>
           </div>
         )}
       </div>
 
       {/* Total */}
       <div className="flex justify-between font-semibold text-lg mt-4 pt-4 border-t" style={dividerStyle}>
-        <span style={totalTextStyle}>Total</span>
-        <span style={totalTextStyle}>{formatMoney(session.total, session.currency)}</span>
+        <span style={totalTextStyle}>{totalLabel}</span>
+        <span style={totalTextStyle}>{formatMoney(session.total, currency)}</span>
       </div>
     </div>
   );
