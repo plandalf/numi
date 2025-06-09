@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Requests\Price;
 
 use App\Enums\ChargeType;
+use App\Enums\RenewInterval;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
@@ -63,16 +64,14 @@ class StoreRequest extends FormRequest
             'renew_interval' => [
                 new RequiredIf($this->input('type') === 'recurring'),
                 'nullable',
-                Rule::in(['day', 'week', 'month', 'year']),
+                Rule::in(RenewInterval::values()),
             ],
             'billing_anchor' => [
-                new RequiredIf($this->input('type') === 'recurring'),
                 'nullable',
                 'string',
                 'max:255', // Consider specific values if applicable
             ],
             'recurring_interval_count' => [
-                new RequiredIf($this->input('type') === 'recurring'),
                 'nullable',
                 'integer',
                 'min:1',
@@ -96,7 +95,7 @@ class StoreRequest extends FormRequest
             $this->merge(['parent_list_price_id' => null]);
         }
 
-        if ($this->input('type') !== 'recurring') {
+        if ($this->input('type') === ChargeType::ONE_TIME->value) {
             $this->merge([
                 'renew_interval' => null,
                 'recurring_interval_count' => null,
