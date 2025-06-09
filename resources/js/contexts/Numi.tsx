@@ -374,7 +374,7 @@ const Numi = {
     props: {
       name: string;
       elements?: Record<'value' | 'label', string>[],
-      events?: { label: string; events: Event[] }[],
+      events?: { label: string; events: Event[], required?: boolean }[],
       interaction?: Record<string, any>
     }
   ) {

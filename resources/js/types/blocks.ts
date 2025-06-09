@@ -39,7 +39,7 @@ export interface HookUsage {
     min?: number; // For number type
     max?: number; // For number type
     items?: any[];
-    events?: { label: string; events: Event[] }[];
+    events?: { label: string; events: Event[], required?: boolean }[];
     group?: string;
   }
 
