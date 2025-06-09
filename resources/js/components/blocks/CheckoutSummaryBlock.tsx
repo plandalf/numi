@@ -53,6 +53,13 @@ function CheckoutSummaryComponent({ context }: { context: BlockContextType }) {
     group: 'lineItems',
   });
 
+  const [taxesLabel] = Numi.useStateString({
+    label: 'Taxes Label',
+    name: 'taxesLabel',
+    defaultValue: 'Taxes',
+    group: 'lineItems',
+  });
+
   const [showShipping] = Numi.useStateBoolean({
     label: 'Show Shipping',
     name: 'showShipping',
@@ -472,7 +479,7 @@ function CheckoutSummaryComponent({ context }: { context: BlockContextType }) {
 
         {showTaxes && session.taxes > 0 && (
           <div className="flex justify-between">
-            <span style={summaryTextStyle}>Taxes</span>
+            <span style={summaryTextStyle}>{taxesLabel}</span>
             <span style={summaryTextStyle}>{formatMoney(session.taxes, currency)}</span>
           </div>
         )}

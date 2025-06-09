@@ -11,7 +11,7 @@ use Illuminate\Http\Request;
 
 class StorePrice
 {
-    public function __invoke(Product $product, Request $request): Price
+    public function __invoke(Product $product, Request $request): ?Price
     {
         // Validation ensures product belongs to the current organization
         $validated = $request->validated();

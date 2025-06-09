@@ -40,9 +40,18 @@ class OrganizationService
         $baseSubdomain = Str::slug($name);
         $subdomain = $baseSubdomain;
         $counter = 1;
+        $restrictedSubdomains = config('restricted-subdomains');
 
-        while (Organization::where('subdomain', $subdomain)->exists()) {
-            // If subdomain exists, append a random 4 character string
+        // First check if base subdomain is restricted
+        if (in_array($subdomain, $restrictedSubdomains)) {
+            $subdomain = $baseSubdomain . '-' . Str::lower(Str::random(4));
+        }
+
+        while (
+            Organization::where('subdomain', $subdomain)->exists() ||
+            in_array($subdomain, $restrictedSubdomains)
+        ) {
+            // If subdomain exists or is restricted, append a random 4 character string
             $subdomain = $baseSubdomain . '-' . Str::lower(Str::random(4));
 
             // if we somehow still get collisions, return null to use checkout as default

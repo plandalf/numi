@@ -3,7 +3,9 @@
 namespace App\Actions\Order;
 
 use App\Enums\ChargeType;
+use App\Enums\RenewInterval;
 use App\Exceptions\Payment\PaymentException;
+use App\Models\Catalog\Price;
 use App\Models\Checkout\CheckoutSession;
 use App\Models\Order\Order;
 use App\Models\Order\OrderItem;
@@ -86,12 +88,13 @@ class ProcessOrder
             // Process each group of items based on their type
             $groupedItems->each(function (Collection $items, $type) use ($integrationClient, $order, $checkoutSession, $discounts) {
                 // Handle subscription items (graduated, volume, package)
-                if (in_array($type, [ChargeType::GRADUATED->value, ChargeType::VOLUME->value, ChargeType::PACKAGE->value])
+                if (in_array($type, [ChargeType::GRADUATED->value, ChargeType::VOLUME->value, ChargeType::PACKAGE->value, ChargeType::RECURRING->value])
                     && $integrationClient instanceof CanCreateSubscription) {
                     $subscription = $integrationClient->createSubscription([
                         'order' => $order,
                         'items' => $items->toArray(),
                         'discounts' => $discounts,
+                        'cancel_at' => $this->getAutoCancelationTimestamp($items->first()->price),
                     ]);
 
                     // Validate the subscription payment
@@ -174,5 +177,29 @@ class ProcessOrder
             $checkoutSession->markAsFailed(true);
             throw $e;
         }
+    }
+
+    public function getAutoCancelationTimestamp(Price $price)
+    {
+        if($price->type === ChargeType::ONE_TIME->value) {
+            return null;
+        }
+
+        $cancelAfterCycles = $price->cancel_after_cycles;
+        if ($cancelAfterCycles) {
+            $renewInterval = $price->renew_interval;
+
+            if ($renewInterval === RenewInterval::DAY->value) {
+                return now()->addDays($cancelAfterCycles)->timestamp;
+            } elseif ($renewInterval === RenewInterval::WEEK->value) {
+                return now()->addWeeks($cancelAfterCycles)->timestamp;
+            } elseif ($renewInterval === RenewInterval::MONTH->value) {
+                return now()->addMonths($cancelAfterCycles)->timestamp;
+            } elseif ($renewInterval === RenewInterval::YEAR->value) {
+                return now()->addYears($cancelAfterCycles)->timestamp;
+            }
+        }
+
+        return null;
     }
 }

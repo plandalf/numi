@@ -77,7 +77,8 @@ function AddOnBlockComponent({ context }: { context: BlockContextType }) {
     ],
     events: [{
       label: EVENT_LABEL_MAP[Event.onSelect],
-      events: [Event.onSelect, Event.onUnSelect]
+      events: [Event.onSelect, Event.onUnSelect],
+      required: true,
     }],
   });
 
@@ -234,6 +235,10 @@ function AddOnBlockComponent({ context }: { context: BlockContextType }) {
   const labelComponent = (
     label && <span style={checkboxLabelStyles}>{label}</span>
   );
+
+  useEffect(() => {
+    executeCallbacks(checked ? Event.onSelect : Event.onUnSelect);
+  }, []);
 
   return (
     <div className="flex flex-col gap-3" style={innerContainerStyles}>

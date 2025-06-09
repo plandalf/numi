@@ -51,7 +51,7 @@ export default function Show() {
     setEditingPrice(price);
 
     /** Check if product is connected to an integration */
-    if (product.integration_id) {
+    if (product.integration_id && !price) {
       setIsAddExistingStripePriceDialogOpen(true);
     } else {
       setIsPriceFormOpen(true);

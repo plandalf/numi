@@ -97,7 +97,8 @@ class CheckoutController extends Controller
         /**
          * @todo Replace with the actual view json
          */
-        $json['first_page'] = $checkout->metadata['current_page_id'] ?? $json['first_page'];
+        $json['first_page'] = data_get($checkout->metadata, 'current_page_id', $json['first_page']);
+        $json['page_history'] = data_get($checkout->metadata, 'page_history', []);
         $offer->view = $json;
 
         return Inertia::render('checkout', [

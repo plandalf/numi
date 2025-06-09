@@ -231,6 +231,7 @@ export function GlobalStateProvider({ offer, session: defaultSession, editor = f
         metadata: {
           fields: fieldStates,
           current_page_id: nextPageId,
+          page_history: [...offer.view.page_history ?? [], pageId],
         }
       }
 
@@ -674,7 +675,7 @@ export const NavigationProvider = ({ children, onPageChange }: NavigationProvide
   }, [offer]);
 
   const [currentPageId, setCurrentPageId] = useState(offer.view.first_page);
-  const [pageHistory, setPageHistory] = useState<string[]>([]);
+  const [pageHistory, setPageHistory] = useState<string[]>(offer.view.page_history || []);
   const [completedPages, setCompletedPages] = useState<string[]>([]);
   const [navigationHistory, setNavigationHistory] = useState<NavigationHistoryEntry[]>([]);
 

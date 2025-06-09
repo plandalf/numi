@@ -97,6 +97,7 @@ class Stripe extends AbstractIntegration implements CanCreateSubscription, CanSe
         $order = $data['order'] ?? null;
         $items = $data['items'] ?? [];
         $discounts = $data['discounts'] ?? [];
+        $cancelAt = $data['cancel_at'] ?? null;
 
         if (! $order || empty($items)) {
             throw new \InvalidArgumentException('Order and items are required to create a subscription');
@@ -130,6 +131,10 @@ class Stripe extends AbstractIntegration implements CanCreateSubscription, CanSe
             ],
             'expand' => ['latest_invoice.payment_intent'],
         ];
+
+        if ($cancelAt) {
+            $subscriptionData['cancel_at'] = $cancelAt;
+        }
 
         // Add discounts if any
         if (!empty($discounts)) {

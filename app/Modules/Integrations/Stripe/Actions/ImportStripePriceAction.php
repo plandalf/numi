@@ -105,8 +105,14 @@ class ImportStripePriceAction
      */
     private function determinePriceType(StripePrice $stripePrice): string
     {
-        if ($stripePrice->billing_scheme === 'per_unit') {
+        //one time flat rate
+        if ($stripePrice->billing_scheme === 'per_unit' && $stripePrice->recurring === null) {
             return 'one_time';
+        }
+
+        //recurring flat rate
+        if($stripePrice->billing_scheme === 'per_unit') {
+            return 'recurring';
         }
 
         if ($stripePrice->billing_scheme === 'tiered') {

@@ -5,6 +5,7 @@ namespace App\Models\Catalog;
 use App\Enums\IntegrationType;
 use App\Enums\ProductStatus;
 use App\Models\Integration;
+use App\Models\Organization;
 use App\Modules\Integrations\AbstractIntegration;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -43,6 +44,11 @@ class Product extends Model
         'gateway_provider' => IntegrationType::class,
         'status' => ProductStatus::class,
     ];
+
+    public function organization(): BelongsTo
+    {
+        return $this->belongsTo(Organization::class);
+    }
 
     public function prices(): HasMany
     {

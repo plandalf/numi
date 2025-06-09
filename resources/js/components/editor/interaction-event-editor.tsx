@@ -8,7 +8,7 @@ import {
   DialogTitle,
   DialogClose,
 } from '../ui/dialog';
-import { MousePointerClick, Trash2 } from 'lucide-react';
+import { CircleAlert, MousePointerClick, Trash2 } from 'lucide-react';
 import { usePage } from '@inertiajs/react';
 import { EditProps } from '@/pages/offers/edit';
 import { Combobox } from '../combobox';
@@ -71,6 +71,7 @@ interface ActionEditorProps {
   elementOptions?: Record<'value' | 'label', string>[];
   events?: Record<'value' | 'label', string>[];
   event?: Event;
+  required?: boolean;
 }
 
 interface ActionSelectorProps {
@@ -95,7 +96,7 @@ function ActionSelector({ action, value, onChange }: ActionSelectorProps) {
 
 export const AddActionDialog: React.FC<ActionEditorProps> = ({ label, value, onChange, open, onOpenChange, elementOptions, events }) => {
   const getDefaultElement = () => {
-    if(elementOptions && elementOptions.length === 1) return elementOptions[0].value;
+    if (elementOptions && elementOptions.length === 1) return elementOptions[0].value;
 
     return '';
   };
@@ -106,11 +107,11 @@ export const AddActionDialog: React.FC<ActionEditorProps> = ({ label, value, onC
   const flattenedActions = Object.values(value || {}).flat().filter(v => v);
   const defaultValue = flattenedActions.length > 0
     ? flattenedActions.map(v => ({
-        ...v,
-        event: v.event || events?.[0]?.value || Event.onClick,
-        action: v.action,
-        element: elementOptions?.some(opt => opt.value === v.element) ? v.element : getDefaultElement()
-      }))
+      ...v,
+      event: v.event || events?.[0]?.value || Event.onClick,
+      action: v.action,
+      element: elementOptions?.some(opt => opt.value === v.element) ? v.element : getDefaultElement()
+    }))
     : [emptyAction];
 
   const [actions, setActions] = useState<EventAction[]>(defaultValue);
@@ -165,24 +166,24 @@ export const AddActionDialog: React.FC<ActionEditorProps> = ({ label, value, onC
               <div className="flex flex-col border-b gap-2 p-4 mb-4 bg-[#F7F9FF] w-full rounded-md border">
                 <div className="flex flex-row justify-between w-full">
                   <div className="flex flex-row flex-wrap gap-2 items-center w-full">
-                  <Combobox
-                    items={events ?? []}
-                    selected={act.event}
-                    className="flex-1 min-w-[200px]"
-                    onSelect={(selected) => handleFieldChange(idx, 'event', selected as Event)}
-                    placeholder="Event..."
-                    hideSearch
-                    disabled={events?.length === 1}
-                  />
-                  <Combobox
-                    items={elementOptions ?? []}
-                    selected={act.element}
-                    className="flex-1 min-w-[200px]"
-                    onSelect={(selected) => handleFieldChange(idx, 'element', selected as string)}
-                    placeholder="Element..."
-                    hideSearch
-                    disabled={elementOptions?.length === 1}
-                  />
+                    <Combobox
+                      items={events ?? []}
+                      selected={act.event}
+                      className="flex-1 min-w-[200px]"
+                      onSelect={(selected) => handleFieldChange(idx, 'event', selected as Event)}
+                      placeholder="Event..."
+                      hideSearch
+                      disabled={events?.length === 1}
+                    />
+                    <Combobox
+                      items={elementOptions ?? []}
+                      selected={act.element}
+                      className="flex-1 min-w-[200px]"
+                      onSelect={(selected) => handleFieldChange(idx, 'element', selected as string)}
+                      placeholder="Element..."
+                      hideSearch
+                      disabled={elementOptions?.length === 1}
+                    />
                   </div>
                   <Button
                     variant="ghost"
@@ -208,7 +209,7 @@ export const AddActionDialog: React.FC<ActionEditorProps> = ({ label, value, onC
                 </div>
                 <Separator className="w-full" />
                 <div className="flex flex-col gap-2 items-center w-full">
-                <ActionSelector
+                  <ActionSelector
                     action={act.action}
                     value={act.value}
                     onChange={(value) => handleFieldChange(idx, 'value', value)}
@@ -227,12 +228,10 @@ export const AddActionDialog: React.FC<ActionEditorProps> = ({ label, value, onC
   );
 };
 
-type InteractionEventEditorProps = Pick<ActionEditorProps, 'label' | 'value' | 'onChange' | 'elementOptions' | 'events'>;
+type InteractionEventEditorProps = Pick<ActionEditorProps, 'label' | 'value' | 'onChange' | 'elementOptions' | 'events' | 'required'>;
 
-export const InteractionEventEditor: React.FC<InteractionEventEditorProps> = ({ label, value, onChange, elementOptions, events = EVENTS }) => {
+export const InteractionEventEditor: React.FC<InteractionEventEditorProps> = ({ label, value, onChange, elementOptions, events = EVENTS, required }) => {
   const [open, setOpen] = useState(false);
-  const [selectedActionIndex, setSelectedActionIndex] = useState<number>();
-  const [selectedEvent, setSelectedEvent] = useState<Event>();
 
   const { offer } = usePage<EditProps>().props;
 
@@ -265,15 +264,11 @@ export const InteractionEventEditor: React.FC<InteractionEventEditorProps> = ({ 
   };
 
   const handleOnItemClick = (event: Event, index: number, action: EventAction) => {
-    setSelectedActionIndex(index);
-    setSelectedEvent(event);
     setOpen(true);
   }
 
   const handleOnDialogChange = (open: boolean) => {
     setOpen(open);
-    setSelectedActionIndex(undefined);
-    setSelectedEvent(undefined);
   }
 
   const handleOnSave = (groupedActions: GroupedEventActions) => {
@@ -291,6 +286,17 @@ export const InteractionEventEditor: React.FC<InteractionEventEditorProps> = ({ 
         <div key={event} className="mb-4">
           {events.length > 1 && <h3 className="text-sm font-semibold mb-2">{events?.find(e => e.value === event)?.label}</h3>}
           <div className="space-y-1">
+            {required && actions.length === 0 && <div className="flex gap-3 border border-destructive text-destructive rounded-md p-4 mt-3.5">
+              <CircleAlert className="w-5 h-5 mt-0.5" />
+              <div className="flex gap-1 flex-col">
+                <div className="font-medium">
+                  No actions found.
+                </div>
+                <div className="">
+                  You ned to add at least 1 action to this event
+                </div>
+              </div>
+            </div>}
             {actions.map((action, index) => {
               if (!action) return null;
               const description = getActionDescription(action);
@@ -309,7 +315,7 @@ export const InteractionEventEditor: React.FC<InteractionEventEditorProps> = ({ 
       ))}
       <Button variant="secondary" className="w-full bg-gray-900 text-white hover:bg-gray-800" onClick={handleOnCreate}>
         <MousePointerClick className="w-4 h-4" />
-      {label}
+        {label}
       </Button>
       {open && <AddActionDialog
         label={label}

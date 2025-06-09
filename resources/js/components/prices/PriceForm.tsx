@@ -239,7 +239,7 @@ export default function PriceForm({
     if (!['tiered', 'volume', 'graduated', 'package'].includes(data.type)) {
       setData('properties', null);
     }
-    if (data.type !== 'recurring') {
+    if (data.type === 'one_time') {
       setData('renew_interval', null);
       setData('recurring_interval_count', null);
       setData('billing_anchor', null);
@@ -706,8 +706,11 @@ export default function PriceForm({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="one_time">One Time</SelectItem>
-                <SelectItem value="package">Package (Unit Based)</SelectItem>
-                <SelectItem value="tiered">Tiered (Usage Based)</SelectItem>
+                <SelectItem value="package">Package (Recurring)</SelectItem>
+                <SelectItem value="tiered">Tiered (Recurring)</SelectItem>
+                <SelectItem value="volume">Volume (Recurring)</SelectItem>
+                <SelectItem value="graduated">Graduated (Recurring)</SelectItem>
+                <SelectItem value="recurring">Flat Rate (Recurring)</SelectItem>
               </SelectContent>
             </Select>
             {errors.type && <p className="text-sm text-red-500">{errors.type}</p>}
@@ -762,7 +765,7 @@ export default function PriceForm({
           </div>
 
           {/* Recurring Fields */}
-          {data.type === 'recurring' && (
+          {['recurring', 'tiered', 'volume', 'graduated', 'package'].includes(data.type) && (
             <Card className="bg-[#F7F9FF]">
               <CardContent className="px-4 space-y-4">
                 <div className="text-sm font-medium">Recurring Settings</div>
@@ -772,7 +775,7 @@ export default function PriceForm({
                     <Select
                       value={data.renew_interval || ''}
                       onValueChange={(value: RecurringInterval) => setData('renew_interval', value)}
-                      disabled={processing}
+                      disabled={processing || data.gateway_price_id !== null} // If price is already created in gateway, we can't change the interval
                     >
                       <SelectTrigger id="renew_interval">
                         <SelectValue placeholder="Select interval" />
@@ -786,7 +789,7 @@ export default function PriceForm({
                     </Select>
                     {errors.renew_interval && <p className="text-sm text-red-500">{errors.renew_interval}</p>}
                   </div>
-                  <div className="flex flex-col gap-2 w-full">
+                  {/* <div className="flex flex-col gap-2 w-full">
                     <Label htmlFor="recurring_interval_count">Interval Count</Label>
                     <Input
                       id="recurring_interval_count"
@@ -801,11 +804,10 @@ export default function PriceForm({
                       className="bg-white"
                     />
                     {errors.recurring_interval_count && <p className="text-sm text-red-500">{errors.recurring_interval_count}</p>}
-                  </div>
+                  </div> */}
                 </div>
-                <div className="flex flex-col gap-2">
+                {/* <div className="flex flex-col gap-2">
                   <Label htmlFor="billing_anchor">Billing Anchor (Optional)</Label>
-                  {/* Replace with Select if predefined anchors are known */}
                   <Input
                     id="billing_anchor"
                     autoComplete="off"
@@ -816,7 +818,7 @@ export default function PriceForm({
                     className="bg-white"
                   />
                   {errors.billing_anchor && <p className="text-sm text-red-500">{errors.billing_anchor}</p>}
-                </div>
+                </div> */}
                 <div className="flex flex-col gap-2">
                   <Label htmlFor="cancel_after_cycles">Cancel After Cycles (Optional)</Label>
                   <Input

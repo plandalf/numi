@@ -168,6 +168,7 @@ export const InteractionSection = ({ globalState, block, onUpdate }: { globalSta
               onChange={value => onUpdate({ ...block, interaction: { ...block.interaction, ...value } })}
               elementOptions={(interactionHook?.options ?? []) as Record<'value' | 'label', string>[]}
               events={options}
+              required={event.required}
             />
           )
         })}

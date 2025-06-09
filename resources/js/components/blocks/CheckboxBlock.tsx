@@ -68,7 +68,8 @@ function CheckboxBlockComponent({ context }: { context: BlockContextType }) {
     ],
     events: [{
       label: EVENT_LABEL_MAP[Event.onSelect],
-      events: [Event.onSelect, Event.onUnSelect]
+      events: [Event.onSelect, Event.onUnSelect],
+      required: true,
     }],
   });
 
@@ -192,6 +193,10 @@ function CheckboxBlockComponent({ context }: { context: BlockContextType }) {
   const labelComponent = (
     label && <MarkdownText text={label} theme={theme} style={checkboxLabelStyles} />
   );
+
+  useEffect(() => {
+    executeCallbacks(checked ? Event.onSelect : Event.onUnSelect);
+  }, []);
 
   return (
     <div>

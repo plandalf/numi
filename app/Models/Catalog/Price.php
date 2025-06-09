@@ -7,6 +7,7 @@ use App\Models\Integration;
 use App\Modules\Billing\Charges\GraduatedCharge;
 use App\Modules\Billing\Charges\OneTimeCharge;
 use App\Modules\Billing\Charges\PackageCharge;
+use App\Modules\Billing\Charges\RecurringCharge;
 use App\Modules\Billing\Charges\VolumeCharge;
 use App\Modules\Billing\CurrencyCast;
 use App\Modules\Billing\MoneyCast;
@@ -108,6 +109,7 @@ class Price extends Model
         'one_time' => OneTimeCharge::class,
         'volume' => VolumeCharge::class,
         'package' => PackageCharge::class,
+        'recurring' => RecurringCharge::class,
     ];
 
     public function product(): BelongsTo

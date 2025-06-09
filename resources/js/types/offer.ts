@@ -19,6 +19,7 @@ export interface Offer {
     organization_id: number;
     view: {
         first_page: string;
+        page_history: string[];
         pages: Record<string, Page>;
     };
     properties: Record<string, any> | null;

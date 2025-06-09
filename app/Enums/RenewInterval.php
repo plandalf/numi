@@ -2,13 +2,12 @@
 
 namespace App\Enums;
 
-enum ChargeType: string
+enum RenewInterval: string
 {
-    case ONE_TIME = 'one_time';
-    case GRADUATED = 'graduated';
-    case VOLUME = 'volume';
-    case PACKAGE = 'package';
-    case RECURRING = 'recurring';
+    case DAY = 'day';
+    case WEEK = 'week';
+    case MONTH = 'month';
+    case YEAR = 'year';
 
     /**
      * Get all available charge types as an array of values.
@@ -26,11 +25,10 @@ enum ChargeType: string
     public function label(): string
     {
         return match ($this) {
-            self::ONE_TIME => 'One Time',
-            self::GRADUATED => 'Graduated',
-            self::VOLUME => 'Volume',
-            self::PACKAGE => 'Package',
-            self::RECURRING => 'Recurring',
+            self::DAY => 'Day',
+            self::WEEK => 'Week',
+            self::MONTH => 'Month',
+            self::YEAR => 'Year',
         };
     }
 }

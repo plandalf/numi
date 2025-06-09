@@ -7,11 +7,11 @@ use App\Models\Organization;
 use App\Models\Theme;
 use App\Models\User;
 use App\Services\OrganizationService;
+use App\Http\Requests\Organization\StoreOrganizationRequest;
+use App\Http\Requests\Organization\UpdateOrganizationRequest;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Session;
-use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -43,11 +43,9 @@ class OrganizationController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request): RedirectResponse
+    public function store(StoreOrganizationRequest $request): RedirectResponse
     {
-        $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-        ]);
+        $validated = $request->validated();
 
         $organization = Organization::create([
             ...$validated,
@@ -87,25 +85,9 @@ class OrganizationController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, Organization $organization): RedirectResponse
+    public function update(UpdateOrganizationRequest $request, Organization $organization): RedirectResponse
     {
-        $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'default_currency' => [
-                Rule::in(['USD', 'GBP', 'AUD', 'NZD', 'JPY', 'EUR'])
-            ],
-            'checkout_success_url' => [
-                'nullable',
-                'string',
-                'url',
-            ],
-            'checkout_cancel_url' => [
-                'nullable',
-                'string',
-                'url',
-            ],
-            'subdomain' => ['string', 'min:5', 'regex:/^[a-z0-9-]+$/', 'unique:organizations,subdomain,' . $organization->id],
-        ]);
+        $validated = $request->validated();
 
         $organization->update($validated);
 

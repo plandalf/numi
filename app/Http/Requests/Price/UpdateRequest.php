@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Price;
 
+use App\Enums\ChargeType;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
@@ -76,14 +77,12 @@ class UpdateRequest extends FormRequest
             ],
             'billing_anchor' => [
                 'sometimes',
-                new RequiredIf($this->input('type', $price->type) === 'recurring'),
                 'nullable',
                 'string',
                 'max:255',
             ],
             'recurring_interval_count' => [
                 'sometimes',
-                new RequiredIf($this->input('type', $price->type) === 'recurring'),
                 'nullable',
                 'integer',
                 'min:1',
@@ -109,7 +108,7 @@ class UpdateRequest extends FormRequest
         }
 
         // Ensure recurring fields are null if not recurring model
-        if ($this->input('type', $price->type) !== 'recurring') {
+        if ($this->input('type', $price->type) === ChargeType::ONE_TIME->value) {
             $this->merge([
                 'renew_interval' => null,
                 'recurring_interval_count' => null,
