@@ -662,9 +662,15 @@ const Numi = {
     }, [hook]);
 
     // If use as state, prioritize getting the field value from the global state
-    const defaultValue = get(blockContext.blockConfig, `content.${props.name}`) ?? props.initialValue;
-    const value = props.asState
-      ? blockContext.getFieldValue(props.name) ?? defaultValue
+    const defaultValue = props.asState
+      ? blockContext.getFieldValue(props.name) ?? get(blockContext.blockConfig, `content.${props.name}`) ?? props.initialValue
+      : get(blockContext.blockConfig, `content.${props.name}`) ?? props.initialValue;
+
+    const value = props.asState 
+      ? Numi.useSessionValue({
+          blockId: blockContext.blockId,
+          defaultValue
+        })
       : defaultValue;
 
     useEffect(() => {
@@ -685,7 +691,7 @@ const Numi = {
     return [value, setValue, updateHook];
   },
 
-  useStateBoolean(props: { name: string; defaultValue: boolean; label?: string; inspector?: string, group?: string }): [boolean, (value: boolean) => void] {
+  useStateBoolean(props: { name: string; defaultValue: boolean; label?: string; inspector?: string, group?: string; asState?: boolean; }): [boolean, (value: boolean) => void] {
     const blockContext = useContext(BlockContext);
 
     useEffect(() => {
@@ -715,7 +721,13 @@ const Numi = {
     }, [blockContext.blockId, props.name]);
 
 
-    const value = blockContext.blockConfig.content[props.name] ?? blockContext.getFieldValue(props.name) ?? props.defaultValue;
+    const defaultValue = blockContext.blockConfig.content[props.name] ?? blockContext.getFieldValue(props.name) ?? props.defaultValue;
+    const value = props.asState 
+      ? Numi.useSessionValue({
+          blockId: blockContext.blockId,
+          defaultValue
+        })
+      : defaultValue;
 
     const setValue = (newValue: boolean) => {
       blockContext.setFieldValue(props.name, newValue);
@@ -724,7 +736,7 @@ const Numi = {
     return [value, setValue];
   },
 
-  useStateString(props: { label: string; name: string; defaultValue: string; inspector?: string, format?: string, config?: Record<string, any>, group?: string }): [string, (value: string) => void, string] {
+  useStateString(props: { label: string; name: string; defaultValue: string; inspector?: string, format?: string, config?: Record<string, any>, group?: string; asState?: boolean; }): [string, (value: string) => void, string] {
     const blockContext = useContext(BlockContext);
 
     useEffect(() => {
@@ -756,9 +768,15 @@ const Numi = {
 
     // For editor-editable values (not hidden), prioritize block config
     // For runtime-editable values (hidden), prioritize field state
-    const value = props.inspector !== 'hidden'
+    const defaultValue = props.inspector !== 'hidden'
       ? get(blockContext.blockConfig, `content.${props.name}`) ?? blockContext.getFieldValue(props.name) ?? props.defaultValue
       : blockContext.getFieldValue(props.name) ?? get(blockContext.blockConfig, `content.${props.name}`) ?? props.defaultValue;
+    const value = props.asState
+      ? Numi.useSessionValue({
+          blockId: blockContext.blockId,
+          defaultValue
+        })
+      : defaultValue;
     const format = get(blockContext.blockConfig, `content.format`) ?? props.format ?? 'plain';
 
     const setValue = (newValue: string) => {
@@ -816,6 +834,22 @@ const Numi = {
     };
 
     return [value, setValue];
+  },
+
+  // Gets the value from the session properties and if not found, returns the default value
+  useSessionValue(props: { blockId: string; defaultValue: any }): any {
+    const { isEditor, session } = Numi.useCheckout();
+
+    return useMemo(() => {
+      if(!isEditor 
+        && session.properties
+        && Object.keys(session.properties).includes(props.blockId)
+      ){
+        return session.properties[props.blockId];
+      }
+
+      return props.defaultValue;
+    }, [props.blockId, isEditor, session.properties, props.defaultValue]);
   },
 
   useRuntimeString(props: { name: string; defaultValue: string }): [string, (value: string) => void] {

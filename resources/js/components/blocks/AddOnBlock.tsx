@@ -1,7 +1,7 @@
 import Numi, { Style, Conditions, FontValue, BorderValue, DimensionValue, Appearance } from "@/contexts/Numi";
 import { BlockContextType } from "@/types/blocks";
 import { Switch } from "@/components/ui/switch";
-import { useEffect, useMemo } from "react";
+import { useCallback, useEffect, useMemo } from "react";
 import { Check } from "lucide-react";
 import { Event, EVENT_LABEL_MAP } from "../editor/interaction-event-editor";
 import ReactMarkdown from "react-markdown";
@@ -9,6 +9,8 @@ import { resolveThemeValue } from "@/lib/theme";
 import { MarkdownText } from "../ui/markdown-text";
 
 function AddOnBlockComponent({ context }: { context: BlockContextType }) {
+
+  const { updateSessionProperties } = Numi.useCheckout({});
 
   const theme = Numi.useTheme();
 
@@ -37,6 +39,7 @@ function AddOnBlockComponent({ context }: { context: BlockContextType }) {
     name: 'value',
     defaultValue: false,
     inspector: 'hidden',
+    asState: true,
   });
 
   const [checkboxStyle] = Numi.useStateEnumeration({
@@ -86,11 +89,12 @@ function AddOnBlockComponent({ context }: { context: BlockContextType }) {
     setChecked(isDefaultChecked);
   }, [isDefaultChecked]);
 
-  function handleChange() {
+  const handleChange = useCallback(() => {
     const newChecked = !checked;
     setChecked(newChecked);
     executeCallbacks(newChecked ? Event.onSelect : Event.onUnSelect);
-  }
+    updateSessionProperties(context.blockId, newChecked);
+  }, [executeCallbacks, updateSessionProperties, context.blockId, checked]);
 
   const appearance = Numi.useAppearance([
     Appearance.padding('padding', 'Padding', {}, '0px'),

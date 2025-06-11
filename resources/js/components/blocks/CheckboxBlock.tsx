@@ -9,6 +9,8 @@ import { MarkdownText } from "../ui/markdown-text";
 
 function CheckboxBlockComponent({ context }: { context: BlockContextType }) {
 
+  const { updateSessionProperties } = Numi.useCheckout({});
+
   const theme = Numi.useTheme();
 
   const [id] = Numi.useStateString({
@@ -48,6 +50,7 @@ function CheckboxBlockComponent({ context }: { context: BlockContextType }) {
     name: 'value',
     defaultValue: false,
     inspector: 'hidden',
+    asState: true,
   });
 
   useEffect(() => {
@@ -77,7 +80,8 @@ function CheckboxBlockComponent({ context }: { context: BlockContextType }) {
     const newChecked = !checked;
     setChecked(newChecked);
     executeCallbacks(newChecked ? Event.onSelect : Event.onUnSelect);
-  }, [executeCallbacks]);
+    updateSessionProperties(context.blockId, newChecked);
+  }, [executeCallbacks, updateSessionProperties, context.blockId, checked]);
 
   const appearance = Numi.useAppearance([
     Appearance.margin('margin', 'Margin', {}),

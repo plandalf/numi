@@ -34,6 +34,7 @@ export interface CheckoutSession {
 
   status: 'open' | 'processing' | 'completed' | 'abandoned';
 
+  properties: Record<string, any>;
   line_items: CheckoutItem[];
 
   currency: string;
