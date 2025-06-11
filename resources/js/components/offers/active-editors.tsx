@@ -106,8 +106,7 @@ export const ActiveEditors = memo(({ offerId }: ActiveEditorsProps) => {
                             <TooltipTrigger asChild>
                                 <Avatar className="h-8 w-8 border-2 border-white dark:border-gray-800">
                                     <AvatarImage src={user.avatar} alt={user.name} />
-                                    <AvatarFallback className="bg-blue-500 text-white text-xs">
-                                        {getInitials(user.name)}
+                                    <AvatarFallback className="bg-gray-800">
                                     </AvatarFallback>
                                 </Avatar>
                             </TooltipTrigger>
