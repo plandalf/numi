@@ -18,6 +18,7 @@ import { Badge } from '../ui/badge';
 import { Theme } from '@/types/theme';
 import { resolveThemeValue } from '@/lib/theme';
 import { NavigationBar } from '@/pages/checkout';
+import { EyeIcon, EyeOffIcon } from 'lucide-react';
 
 // Local interfaces that match the actual structure
 interface LocalPageView {
@@ -452,9 +453,9 @@ const BlockRendererComponent = ({ block, children, onBlockSelect }: {
         )} */}
         {children(blockContext)}
         {hasVisibilityCondition && <Badge variant="outline" className={cn("absolute top-0 right-0", {
-          "bg-green-500 text-white": isVisible,
-          "bg-red-500 text-white": !isVisible,
-        })}>Conditional: {isVisible ? 'visible' : 'hidden'}</Badge>}
+          "bg-green-100 text-green-500": isVisible,
+          "bg-red-100 text-red-500": !isVisible,
+        })}>{isVisible ? <EyeIcon className="size-5" /> : <EyeOffIcon className="size-5" />}</Badge>}
       </BlockContext.Provider>
     </div>
   );

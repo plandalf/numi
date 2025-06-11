@@ -23,6 +23,8 @@ export const isBlockVisible = (
   if (typeof visibility === 'object' && 'conditional' in visibility) {
     const condition = visibility.conditional;
 
+    // console.log('condition-visibility', condition, context);
+
     try {
       const result = evaluateRuleGroup(condition, context);
       // Evaluate the rule group

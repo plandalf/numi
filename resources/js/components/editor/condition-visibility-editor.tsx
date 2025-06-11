@@ -126,6 +126,8 @@ export const AddVisibilityCondition: React.FC<{
   const fieldStates = context?.fieldStates ?? {};
   const hookUsage = context?.hookUsage ?? {};
 
+  console.log('query', query, context);
+
   const fields = useMemo(() => {
     return Object.values(fieldStates).map(field => ({
       name: `fields['${field.blockId}'].value`,
@@ -172,8 +174,8 @@ export const AddVisibilityCondition: React.FC<{
     }
 
     return [
-      { name: 'active', label: 'Active' },
-      { name: 'inactive', label: 'Inactive' },
+      { name: true, label: 'Active' },
+      { name: false, label: 'Inactive' },
     ];
   };
 
