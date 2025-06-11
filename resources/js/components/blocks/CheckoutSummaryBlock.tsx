@@ -382,7 +382,7 @@ function CheckoutSummaryComponent({ context }: { context: BlockContextType }) {
 
   return (
     <div className="flex flex-col p-4 gap-4" style={containerStyle}>
-      <h3 className="font-medium text-lg" style={titleStyle}>{title}</h3>
+      {title && <h3 className="font-medium text-lg" style={titleStyle}>{title}</h3>}
       {/* Order Items */}
       <div className="space-y-3 overflow-y-auto h-auto max-h-[300px]">
         {session.line_items.length === 0 && (

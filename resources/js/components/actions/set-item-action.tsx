@@ -15,7 +15,7 @@ export type SetItemActionValue = {
 interface SetItemActionProps {
   value?: SetItemActionValue;
   onChange: (value: SetItemActionValue) => void;
-  action: 'setItem' | 'setLineItemQuantity' | 'changeLineItemPrice' | 'deactivateLineItem';
+  action: 'setItem' | 'setLineItemQuantity' | 'changeLineItemPrice' | 'deactivateLineItem' | 'activateLineItem';
 }
 
 export default function SetItemAction({ value = {}, onChange, action }: SetItemActionProps) {
@@ -42,6 +42,9 @@ export default function SetItemAction({ value = {}, onChange, action }: SetItemA
     if(action === 'deactivateLineItem') {
       onChange({ required: false, item: value?.item });
     }
+    if(action === 'activateLineItem') {
+      onChange({ required: true, item: value?.item });
+    }
   }, [action, value?.item]);
 
   useEffect(() => {
@@ -52,6 +55,8 @@ export default function SetItemAction({ value = {}, onChange, action }: SetItemA
         switch (action) {
           case 'deactivateLineItem':
             return { required: false };
+          case 'activateLineItem':
+            return { required: true };
           case 'setItem':
             return {};
           case 'setLineItemQuantity':
@@ -106,7 +111,7 @@ export default function SetItemAction({ value = {}, onChange, action }: SetItemA
           />
         </div>
       )}
-      {(action === 'setItem' || action === 'deactivateLineItem') && (
+      {(action === 'setItem' || action === 'deactivateLineItem' || action === 'activateLineItem') && (
         <div className="flex flex-row gap-4 items-center w-full">
           <Label className="text-sm w-16">Required?</Label>
           <Combobox
@@ -115,7 +120,7 @@ export default function SetItemAction({ value = {}, onChange, action }: SetItemA
             selected={typeof value?.required === 'boolean' ? value?.required ? 'true' : 'false' : ''}
             onSelect={(selected) => onChange({ ...value, required: selected === '' ? undefined : selected === 'true' })}
             placeholder="Select an option"
-            disabled={action === 'deactivateLineItem'}
+            disabled={action === 'deactivateLineItem' || action === 'activateLineItem'}
             hideSearch
           />
         </div>
