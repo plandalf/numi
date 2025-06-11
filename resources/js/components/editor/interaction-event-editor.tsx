@@ -20,6 +20,7 @@ const ACTION_OPTIONS = [
   { value: 'changeLineItemPrice', label: 'Change line item price' },
   { value: 'setLineItemQuantity', label: 'Set line item quantity' },
   { value: 'deactivateLineItem', label: 'Deactivate line item' },
+  { value: 'activateLineItem', label: 'Activate line item' },
   { value: 'setItem', label: 'Set line item (advanced)' },
   { value: 'redirect', label: 'Redirect to URL' },
 ];
@@ -85,6 +86,7 @@ function ActionSelector({ action, value, onChange }: ActionSelectorProps) {
     case 'setLineItemQuantity':
     case 'changeLineItemPrice':
     case 'deactivateLineItem':
+    case 'activateLineItem':
     case 'setItem':
       return <SetItemAction value={value as SetItemActionValue} onChange={onChange} action={action} />;
     case 'redirect':

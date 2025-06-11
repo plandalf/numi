@@ -423,6 +423,7 @@ const Numi = {
             case 'setLineItemQuantity':
             case 'changeLineItemPrice':
             case 'deactivateLineItem':
+            case 'activateLineItem':
             case 'setItem':
               checkout.updateLineItem(callback.value);
               break;
