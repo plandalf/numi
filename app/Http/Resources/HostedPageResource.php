@@ -32,6 +32,7 @@ class HostedPageResource extends JsonResource
                 ];
             }),
             'style' => $this->style,
+            'appearance' => $this->appearance,
             'created_at' => $this->created_at?->toISOString(),
             'updated_at' => $this->updated_at?->toISOString(),
         ];

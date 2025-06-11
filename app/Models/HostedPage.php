@@ -13,10 +13,12 @@ class HostedPage extends Model
         'logo_image_id',
         'background_image_id',
         'style',
+        'appearance',
     ];
 
     protected $casts = [
         'style' => 'array',
+        'appearance' => 'array',
     ];
 
     public static function getDefaultForOrganization(Organization $organization)

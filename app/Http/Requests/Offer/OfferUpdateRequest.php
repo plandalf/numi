@@ -39,6 +39,8 @@ class OfferUpdateRequest extends FormRequest
             'hosted_page.background_image_id' => ['nullable', 'exists:medias,id'],
             'hosted_page.style' => ['nullable', 'array'],
             'hosted_page.style.*' => ['nullable'],
+            'hosted_page.appearance' => ['nullable', 'array'],
+            'hosted_page.appearance.*' => ['nullable'],
         ];
     }
 
