@@ -242,10 +242,10 @@ const CheckoutController = ({ offer }: { offer: OfferConfiguration }) => {
   const formStyle = useMemo(() => {
     if (isHosted) {
       return {
-        ...(style?.maxHeight?.height ? {
-          minHeight: style?.maxHeight?.height,
-          maxHeight: style?.maxHeight?.height,
-        } : {}),
+        minHeight: style?.maxHeight?.height ?? "764px",
+        maxHeight: style?.maxHeight?.height ?? "764px",
+        minWidth: style?.maxWidth?.width ?? "1024px",
+        maxWidth: style?.maxWidth?.width ?? "1024px",
         ...(style?.shadow ? {
           boxShadow: style.shadow,
         } : {}),
@@ -260,7 +260,6 @@ const CheckoutController = ({ offer }: { offer: OfferConfiguration }) => {
           borderRadius: style.borderRadius,
           overflow: 'hidden',
         } : {}),
-        maxWidth: '1024px',
 
       };
     }

@@ -150,6 +150,12 @@ export default function OfferSettings() {
         maxHeight: 1000,
       }
     }, { height: '764px'}),
+    Style.dimensions('maxWidth', 'Maximum width', {
+      config: {
+        hideHeight: true,
+        maxWidth: 1920,
+      }
+    }, { width: '1024px'}),
     Style.dimensions('logoDimension', 'Logo Dimension', {
       config: {
         maxHeight: 500,
