@@ -9,6 +9,7 @@ import { Template } from '@/types/template';
 import { useDebounce } from '@/hooks/use-debounce';
 import { FormDataConvertible } from '@inertiajs/core';
 import { SidebarTab } from '@/components/offers/sidebar';
+import { router } from "@inertiajs/react";
 
 interface EditorContextType {
   data: EditFormData;
@@ -207,7 +208,10 @@ export function EditorProvider({ offer, organizationThemes, organizationTemplate
   };
 
   const handleSave = () => {
-    put(route('offers.update', offer.id), {
+    router.put(route('offers.update', offer.id), {
+      ...data,
+      view: JSON.stringify(data.view)
+    }, {
       onSuccess: () => {
         toast.success('Offer updated successfully');
       },
@@ -224,15 +228,19 @@ export function EditorProvider({ offer, organizationThemes, organizationTemplate
     }
 
     if (enableAutoSave) {
-      put(route('offers.update', offer.id), {
-        onError: handleSaveError,
+      router.put(route('offers.update', offer.id), {
+        ...data,
+        view: JSON.stringify(data.view)
       });
     }
   }, [debouncedView]);
 
   const handleNameSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    put(route('offers.update', offer.id), {
+    router.put(route('offers.update', offer.id), {
+      ...data,
+      view: JSON.stringify(data.view)
+    }, {
       onSuccess: () => setIsNameDialogOpen(false),
     });
   };

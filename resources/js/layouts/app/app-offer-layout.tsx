@@ -62,7 +62,7 @@ function OfferHeader({ offer, isNameDialogOpen, setIsNameDialogOpen }: AppHeader
 
         router.put(route('offers.update', offer.id), {
             name,
-            view: data.view,
+            view: JSON.stringify(data.view),
             theme: data.theme,
             screenshot: data.screenshot,
         }, {
