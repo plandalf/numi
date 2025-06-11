@@ -63,6 +63,12 @@ interface EditorContextType {
   selectedSectionId: string | null;
   setSelectedSectionId: (sectionId: string | null) => void;
 
+  hoveredBlockId: string | null;
+  setHoveredBlockId: (blockId: string | null) => void;
+
+  hoveredSectionId: string | null;
+  setHoveredSectionId: (sectionId: string | null) => void;
+
   viewMode: 'editor' | 'preview' | 'share';
   setViewMode: React.Dispatch<React.SetStateAction<'editor' | 'preview' | 'share'>>;
 
@@ -468,6 +474,8 @@ export function EditorProvider({ offer, organizationThemes, organizationTemplate
 
   const [selectedBlockId, setSelectedBlockIdState] = useState<string | null>(null);
   const [selectedSectionId, setSelectedSectionIdState] = useState<string | null>(null);
+  const [hoveredBlockId, setHoveredBlockIdState] = useState<string | null>(null);
+  const [hoveredSectionId, setHoveredSectionIdState] = useState<string | null>(null);
 
   const onSelectBlock = useCallback((blockId: string | null) => {
     setSelectedBlockIdState(blockId);
@@ -475,6 +483,14 @@ export function EditorProvider({ offer, organizationThemes, organizationTemplate
 
   const onSelectSection = useCallback((sectionId: string | null) => {
     setSelectedSectionIdState(sectionId);
+  }, []);
+
+  const onHoverBlock = useCallback((blockId: string | null) => {
+    setHoveredBlockIdState(blockId);
+  }, []);
+
+  const onHoverSection = useCallback((sectionId: string | null) => {
+    setHoveredSectionIdState(sectionId);
   }, []);
 
   const updateSection = (sectionId: string, sectionDataToMerge: Partial<ViewSection>) => {
@@ -568,6 +584,10 @@ export function EditorProvider({ offer, organizationThemes, organizationTemplate
     setSelectedBlockId: onSelectBlock,
     selectedSectionId,
     setSelectedSectionId: onSelectSection,
+    hoveredBlockId,
+    setHoveredBlockId: onHoverBlock,
+    hoveredSectionId,
+    setHoveredSectionId: onHoverSection,
     viewMode, setViewMode,
     previewSize, setPreviewSize,
     previewType, setPreviewType,

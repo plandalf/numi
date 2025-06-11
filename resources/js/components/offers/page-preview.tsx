@@ -90,7 +90,7 @@ export default function PagePreview({ page, onUpdatePage }: PreviewProps) {
   const [pendingChanges, setPendingChanges] = useState<Block | null>(null);
   const [livePreviewPage, setLivePreviewPage] = useState<Page>(page);
 
-  const { selectedBlockId, setSelectedBlockId, previewSize, theme } = useEditor();
+  const { selectedBlockId, setSelectedBlockId, hoveredBlockId, hoveredSectionId, previewSize, theme } = useEditor();
 
   // Update live preview when page changes from outside
   useEffect(() => {
@@ -134,6 +134,8 @@ return (
           page={livePreviewPage}
           theme={theme}
           selectedBlockId={selectedBlockId}
+          hoveredBlockId={hoveredBlockId}
+          hoveredSectionId={hoveredSectionId}
           onSelectBlock={setSelectedBlockId}
         />
       </div>

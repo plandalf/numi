@@ -49,6 +49,8 @@ interface LayoutPreviewProps {
     page: LocalPage;
     theme: Theme;
     selectedBlockId?: string | null;
+    hoveredBlockId?: string | null;
+    hoveredSectionId?: string | null;
     onSelectBlock?: (blockId: string) => void;
     onAddBlock?: (section: keyof LocalPageView, blockType: BlockType, index?: number) => void;
 }
@@ -203,6 +205,7 @@ interface RecursiveRenderElementProps {
   theme: Theme;
   componentRegistry: ComponentRegistry;
   selectedSectionId: string | null | undefined;
+  hoveredSectionId?: string | null;
   onBlockSelect?: (blockId: string) => void;
   onSectionSelect?: (sectionId: string | null) => void;
   isContained?: boolean;
@@ -214,6 +217,7 @@ const RecursiveRenderElement: React.FC<RecursiveRenderElementProps> = React.memo
   theme,
   componentRegistry,
   selectedSectionId,
+  hoveredSectionId,
   onBlockSelect,
   onSectionSelect,
   isContained,
@@ -269,7 +273,8 @@ const RecursiveRenderElement: React.FC<RecursiveRenderElementProps> = React.memo
     className: cn(
       "relative",
       props.className,
-      selectedSectionId === id && 'shadow-[inset_0_0_0_1.5px_#3B82F6]'
+      selectedSectionId === id && 'shadow-[inset_0_0_0_1.5px_#3B82F6]',
+      hoveredSectionId === id && 'shadow-[inset_0_0_0_1.5px_#FB923C]'
     )
   };
 
@@ -283,6 +288,7 @@ const RecursiveRenderElement: React.FC<RecursiveRenderElementProps> = React.memo
           page={page}
           componentRegistry={componentRegistry}
           selectedSectionId={selectedSectionId}
+          hoveredSectionId={hoveredSectionId}
           onBlockSelect={onBlockSelect}
           onSectionSelect={onSectionSelect}
           theme={theme}
@@ -332,7 +338,7 @@ const TailwindLayoutRenderer = ({
     ...components
   }), [components]);
 
-  const { selectedSectionId, setSelectedSectionId } = useEditor();
+  const { selectedSectionId, setSelectedSectionId, hoveredSectionId } = useEditor();
 
   // console.log(`TailwindLayoutRenderer rendering. Context selectedSectionId: ${selectedSectionId}`);
 
@@ -343,6 +349,7 @@ const TailwindLayoutRenderer = ({
       theme={theme}
       componentRegistry={componentRegistry}
       selectedSectionId={selectedSectionId}
+      hoveredSectionId={hoveredSectionId}
       onBlockSelect={onBlockSelect}
       onSectionSelect={setSelectedSectionId}
     />
@@ -357,7 +364,7 @@ const BlockRendererComponent = ({ block, children, onBlockSelect }: {
 }) => {
   const globalStateContext = useContext(GlobalStateContext);
 
-  const { selectedBlockId, setSelectedBlockId, theme } = useEditor();
+  const { selectedBlockId, setSelectedBlockId, hoveredBlockId, setHoveredBlockId, setHoveredSectionId, theme } = useEditor();
   const {
     attributes,
     listeners,
@@ -406,6 +413,9 @@ const BlockRendererComponent = ({ block, children, onBlockSelect }: {
     if (block) {
       setSelectedBlockId(block.id)
       onBlockSelect?.(block.id);
+      // Clear hover states when clicking
+      setHoveredBlockId(null);
+      setHoveredSectionId(null);
     }
   }
 
@@ -430,6 +440,7 @@ const BlockRendererComponent = ({ block, children, onBlockSelect }: {
         "group relative cursor-pointer": true,
         "hover:outline hover:outline-2 hover:outline-blue-300": true,
         "outline outline-2 outline-blue-500": selectedBlockId === block.id,
+        "outline outline-2 outline-orange-400": hoveredBlockId === block.id,
       })}
       onClick={handleClick}>
       <BlockContext.Provider value={blockContext}>
@@ -462,6 +473,8 @@ const SectionComponent = ({ section, sectionName: id, style, onBlockSelect, chil
   const { setNodeRef, isOver, active } = useDroppable({
     id: `section:${id}`,
   });
+  
+  const { setHoveredBlockId, setHoveredSectionId } = useEditor();
 
   const blocksToRender = useMemo(() => {
     if (section && 'blocks' in section && Array.isArray(section.blocks)) {
@@ -488,6 +501,16 @@ const SectionComponent = ({ section, sectionName: id, style, onBlockSelect, chil
   const handleBlockSelect = (blockId: string) => {
     onBlockSelect?.(blockId);
     onSectionSelect?.(null);
+    // Clear hover states when selecting blocks
+    setHoveredBlockId(null);
+    setHoveredSectionId(null);
+  }
+
+  const handleSectionClick = () => {
+    onSectionSelect?.(id);
+    // Clear hover states when clicking on section
+    setHoveredBlockId(null);
+    setHoveredSectionId(null);
   }
 
   const component = (
@@ -538,7 +561,7 @@ const SectionComponent = ({ section, sectionName: id, style, onBlockSelect, chil
 };
 const Section = React.memo(SectionComponent);
 
-export default function LayoutPreview({ page, selectedBlockId, onSelectBlock, theme }: LayoutPreviewProps) {
+export default function LayoutPreview({ page, selectedBlockId, hoveredBlockId, hoveredSectionId, onSelectBlock, theme }: LayoutPreviewProps) {
   const { setSelectedBlockId: setContextSelectedBlockId } = useEditor(); // Get setSelectedBlockId from context
 
   // Sync selectedBlockId prop with context

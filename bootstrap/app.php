@@ -35,9 +35,6 @@ return Application::configure(basePath: dirname(__DIR__))
             'subscription' => RequiresSubscription::class,
             'frame-embed' => FrameEmbedMiddleware::class,
         ]);
-//        $middleware->api([
-//           //
-//        ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //
