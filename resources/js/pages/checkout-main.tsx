@@ -1,5 +1,5 @@
 import { Head } from '@inertiajs/react';
-import { useState, createContext, useContext, useMemo, CSSProperties } from 'react';
+import { useState, createContext, useContext, useMemo } from 'react';
 import { type Block, type Page as OfferPage, type OfferConfiguration, } from '@/types/offer';
 import { cn } from '@/lib/utils';
 
@@ -52,6 +52,9 @@ export interface GlobalState {
   updateLineItem: (offerItemId: string, price: string) => Promise<void>;
   addDiscount: (discount: string) => Promise<boolean>;
   removeDiscount: (discount: string) => Promise<boolean>;
+
+  // Checkout
+  updateSessionProperties: (blockId: string, value: any) => Promise<void>;
 
   offer: OfferConfiguration;
   theme: Theme;
@@ -211,6 +214,31 @@ export function GlobalStateProvider({ offer, session: defaultSession, editor = f
 
   const setPageSubmissionProps = (callback: () => Promise<unknown>) => {
     setSubmissionProps(() => callback);
+  };
+
+
+  const updateSessionProperties = async (blockId: string, value: any) => {
+    if (editor) return;
+
+    // Update local state immediately
+    const newProperties = {
+      ...session.properties,
+      [blockId]: value
+    };
+    
+    setSession(prev => ({
+      ...prev,
+      properties: newProperties
+    }));
+    try {
+      const response = await axios.post(`/checkouts/${session.id}/mutations`, {
+        action: 'setProperties',
+        properties: JSON.stringify(newProperties)
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Failed to update properties:', error);
+    }
   };
 
   const submitPage = async (pageId: string): Promise<boolean> => {
@@ -424,6 +452,7 @@ export function GlobalStateProvider({ offer, session: defaultSession, editor = f
     setPageSubmissionProps,
     // Validation
     // validatePage,
+    updateSessionProperties,
     validateField,
     updateLineItem,
     addDiscount,
@@ -574,6 +603,8 @@ export type CheckoutState = {
   error: string | null;
 
   // fields?
+  isEditor: boolean;
+  updateSessionProperties: (blockId: string, value: any) => Promise<void>;
 
   addItem: (item: Omit<Item, 'id'>) => Promise<void>;
   removeItem: (id: string) => void;

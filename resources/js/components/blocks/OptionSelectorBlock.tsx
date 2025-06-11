@@ -17,6 +17,7 @@ interface ItemType {
 
 function OptionSelectorComponent({ context }: { context: BlockContextType }) {
 
+  const { updateSessionProperties } = Numi.useCheckout({});
   const theme = Numi.useTheme();
 
   const defaultValue = [{
@@ -226,7 +227,8 @@ function OptionSelectorComponent({ context }: { context: BlockContextType }) {
   const handleTabChange = useCallback((value: string) => {
     setSelectedTab(value);
     executeCallbacks(Event.onClick, value);
-  }, [executeCallbacks]);
+    updateSessionProperties(context.blockId, value);
+  }, [executeCallbacks, updateSessionProperties, context.blockId]);
 
   useEffect(() => {
     executeCallbacks(Event.onClick, selectedTab);

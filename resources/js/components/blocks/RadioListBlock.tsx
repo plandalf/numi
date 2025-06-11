@@ -13,6 +13,7 @@ interface ItemType {
 
 function RadioListBlock() {
 
+  const { updateSessionProperties } = Numi.useCheckout({});
   const theme = Numi.useTheme();
 
   const defaultValue = [{
@@ -202,7 +203,8 @@ function RadioListBlock() {
   const handleTabChange = useCallback((value: string) => {
     setSelectedTab(value);
     executeCallbacks(Event.onClick, value);
-  }, [executeCallbacks]);
+    updateSessionProperties(blockContext.blockId, value);
+  }, [executeCallbacks, updateSessionProperties, blockContext.blockId]);
 
   useEffect(() => {
     executeCallbacks(Event.onClick, selectedTab);

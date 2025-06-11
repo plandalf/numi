@@ -34,6 +34,8 @@ class CheckoutSessionController extends Controller
                     'metadata' => $request->input('metadata'),
                 ]);
                 break;
+            case 'setProperties':
+                return $this->setProperties($checkoutSession, $request);
             case 'commit':
                 return $this->commit($checkoutSession, $request);
             case 'setItem':
@@ -116,6 +118,18 @@ class CheckoutSessionController extends Controller
             ...$args,
             'organization_id' => $checkoutSession->organization_id,
             'deleted_at' => null,
+        ]);
+
+        $checkoutSession->load(['lineItems.offerItem', 'offer.theme', 'lineItems.price.integration', 'lineItems.price.product']);
+        return new CheckoutSessionResource($checkoutSession);
+    }
+
+    private function setProperties(CheckoutSession $checkoutSession, Request $request)
+    {
+        $properties = json_decode($request->input('properties'), true);
+
+        $checkoutSession->update([
+            'properties' => $properties,
         ]);
 
         $checkoutSession->load(['lineItems.offerItem', 'offer.theme', 'lineItems.price.integration', 'lineItems.price.product']);

@@ -4,7 +4,7 @@ import { useMemo } from "react";
 import { resolveThemeValue } from "@/lib/theme";
 
 function TextInputBlockComponent({ context }: { context: BlockContextType }) {
-
+  const { updateSessionProperties } = Numi.useCheckout();
   const theme = Numi.useTheme();
 
   const [id] = Numi.useStateString({
@@ -17,7 +17,8 @@ function TextInputBlockComponent({ context }: { context: BlockContextType }) {
     label: 'Text',
     name: 'value',
     defaultValue: '',
-    inspector: "hidden"
+    inspector: "hidden",
+    asState: true,
   });
 
   const [label] = Numi.useStateString({
@@ -111,6 +112,11 @@ function TextInputBlockComponent({ context }: { context: BlockContextType }) {
     borderRadius : style.borderRadius,
   }), [style]);
 
+  const onTextChange = (e: React.ChangeEvent<HTMLInputElement>) => {  
+    setText(e.target.value);
+    updateSessionProperties(context.blockId, e.target.value);
+  };
+
   return (
     <div className='flex flex-col' style={containerStyle}>
       {label && <label htmlFor="" style={labelStyles}>{label}</label>}
@@ -120,7 +126,7 @@ function TextInputBlockComponent({ context }: { context: BlockContextType }) {
           className="border border-gray-300 rounded-md p-2"
           type="text"
           value={text}
-          onChange={(e) => setText(e.target.value)}
+          onChange={onTextChange}
           style={inputStyles}
         />
       </div>

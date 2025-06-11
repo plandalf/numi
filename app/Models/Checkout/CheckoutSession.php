@@ -33,6 +33,7 @@ class CheckoutSession extends Model
         'uuid',
         'deleted_at',
         'discounts',
+        'properties',
         // 'customer_id',
     ];
 
@@ -42,6 +43,7 @@ class CheckoutSession extends Model
         'finalized_at' => 'datetime',
         'metadata' => 'array',
         'discounts' => 'array',
+        'properties' => 'array',
     ];
 
     protected $attributes = [
