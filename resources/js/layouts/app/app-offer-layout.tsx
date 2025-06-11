@@ -1,9 +1,21 @@
 import { AppContent } from '@/components/app-content';
-import { AppShell } from '@/components/app-shell';
+import { ActiveEditors } from '@/components/offers/active-editors';
 
 import { Button } from '@/components/ui/button';
 import { Link, router } from '@inertiajs/react';
-import { ArrowLeft, CircleCheck, Eye, Flame, Pencil, Share, ChevronDown, X, DollarSign, Loader2 } from 'lucide-react';
+import {
+  ArrowLeft,
+  CircleCheck,
+  Eye,
+  Flame,
+  Pencil,
+  Share,
+  ChevronDown,
+  X,
+  DollarSign,
+  Loader2,
+  ExternalLinkIcon
+} from 'lucide-react';
 
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
@@ -95,7 +107,7 @@ function OfferHeader({ offer, isNameDialogOpen, setIsNameDialogOpen }: AppHeader
     const offerUrl = offer.public_url;
 
     const handlePublish = () => {
-        setStatus('live');
+        setStatus('published');
         setShowPublishDialog(true);
     };
 
@@ -129,11 +141,12 @@ function OfferHeader({ offer, isNameDialogOpen, setIsNameDialogOpen }: AppHeader
                 </div>
                 {!isMobile && (
                     <Badge variant="secondary" className={cn("capitalize flex-shrink-0", {
-                        "bg-green-500": offer.status === 'live',
+                        "bg-green-500": offer.status === 'published',
                         "bg-white": offer.status === 'draft',
                     })}>{offer.status}</Badge>
                 )}
             </div>
+
 
             {/* Right side */}
             {isPreviewMode && (
@@ -195,6 +208,9 @@ function OfferHeader({ offer, isNameDialogOpen, setIsNameDialogOpen }: AppHeader
 
             {isEditorMode && (
               <div className="flex items-center space-x-3 h-full flex-shrink-0">
+
+                <ActiveEditors offerId={offer.id} />
+
                 <Button
                     variant="outline"
                     tooltip="Preview the design of the Offer."
@@ -246,6 +262,18 @@ function OfferHeader({ offer, isNameDialogOpen, setIsNameDialogOpen }: AppHeader
                     </div>
                   </DropdownMenuContent>
                 </DropdownMenu>
+
+                <Button
+                  asChild
+                  variant="outline-transparent"
+                  tooltip="Go to your checkout"
+                >
+                  <a href={route('offers.show', offer.id)} target="_blank">
+                    <ExternalLinkIcon className="size-4" />
+                    {!isMobile && 'Checkout'}
+                  </a>
+                </Button>
+
                 <Button
                     variant="outline-transparent"
                     tooltip="Share to other platforms"

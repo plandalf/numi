@@ -19,6 +19,7 @@
         "laravel/tinker": "^2.10.1",
         "league/flysystem-aws-s3-v3": "^3.0",
         "moneyphp/money": "^4.7",
+        "pusher/pusher-php-server": "^7.2",
         "socialiteproviders/stripe": "^4.1",
         "sqids/sqids": "^0.5.0",
         "symfony/intl": "^7.2",
