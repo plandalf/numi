@@ -24,7 +24,7 @@ export function BlockRenderer({ block, children }: {
       }
     },
     getFieldValue: (fieldName) => {
-      return globalStateContext.getFieldState(block.id, fieldName)?.value;
+      return globalStateContext.getFieldState(block.id, fieldName);
     },
     setFieldValue: (fieldName, value) => {
       globalStateContext.updateFieldState(block.id, fieldName, value);

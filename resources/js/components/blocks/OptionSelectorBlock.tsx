@@ -32,13 +32,14 @@ function OptionSelectorComponent({ context }: { context: BlockContextType }) {
   const options = get(blockContext.blockConfig, `content.items`, defaultValue) as ItemType[];
 
   const [selectedTab, setSelectedTab, updateSelectedTabHook] = Numi.useStateEnumeration({
-    name: 'selectedTab',
+    name: 'value',
     initialValue: options[0]?.key ?? undefined,
     options: Array.isArray(options) ? options?.filter((item) => item.key).map((item) => item.key) : [],
     inspector: 'select',
     label: 'Default (Selected Tab)',
     asState: true,
   });
+  console.log('selectedTab', selectedTab);
 
   const [items] = Numi.useStateJsonSchema({
     name: 'items',
@@ -130,7 +131,6 @@ function OptionSelectorComponent({ context }: { context: BlockContextType }) {
     Style.shadow('shadow', 'Shadow', {}, theme?.shadow),
     Style.hidden('hidden', 'Hidden', {}, false),
   ]);
-
 
   const activeBackgroundColor = resolveThemeValue(style.activeBackgroundColor, theme, 'secondary_color') as string;
   const activeBackgroundColorWithAlpha = addAlphaToColor(activeBackgroundColor, 0.10);
@@ -225,19 +225,22 @@ function OptionSelectorComponent({ context }: { context: BlockContextType }) {
   });
 
   const handleTabChange = useCallback((value: string) => {
+    console.log('handleTabChange', value);
     setSelectedTab(value);
     executeCallbacks(Event.onClick, value);
-    updateSessionProperties(context.blockId, value);
-  }, [executeCallbacks, updateSessionProperties, context.blockId]);
+    // updateSessionProperties(context.blockId, value);
+  }, [executeCallbacks, updateSessionProperties, context.blockId, selectedTab]);
 
-  useEffect(() => {
-    executeCallbacks(Event.onClick, selectedTab);
-  }, []);
+  // useEffect(() => {
+  //   executeCallbacks(Event.onClick, selectedTab);
+  // }, [selectedTab]);
 
   const prevItemsRef = useRef(items);
 
   useEffect(() => {
     if (!Array.isArray(items) || items.length === 0) return;
+
+    console.log('items', items);
 
     const prevItems = prevItemsRef.current;
     // Only update if the items have actually changed

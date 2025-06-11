@@ -14,7 +14,8 @@ import { Theme } from '@/types/theme';
 import { sendMessage } from '@/utils/sendMessage';
 import { CheckoutSuccess } from '@/events/CheckoutSuccess';
 import { CheckoutResized } from '@/events/CheckoutResized';
-// Form and validation context
+import { get } from 'lodash';
+
 type FormData = Record<string, any>;
 type ValidationErrors = Record<string, string[]>;
 
@@ -62,8 +63,12 @@ export interface GlobalState {
 }
 
 export function GlobalStateProvider({ offer, session: defaultSession, editor = false, children }: { offer: OfferConfiguration, session: CheckoutSession, editor?: boolean, children: React.ReactNode }) {
+  console.log('session', defaultSession);
   // Field states for all blocks
-  const [fieldStates, setFieldStates] = useState<Record<string, FieldState>>({});
+  const [fieldStates, setFieldStates] = useState<Record<string, FieldState>>(defaultSession.properties || {});
+
+
+  console.log('fieldStates', fieldStates);
   const [hookUsage, setHookUsage] = useState<Record<string, HookUsage[]>>({});
   const [registeredHooks, setRegisteredHooks] = useState<Set<string>>(new Set());
   const [session, setSession] = useState<CheckoutSession>(defaultSession);
@@ -76,20 +81,39 @@ export function GlobalStateProvider({ offer, session: defaultSession, editor = f
 
   // Update field state function
   const updateFieldState = (blockId: string, fieldName: string, value: any) => {
-    setFieldStates(prev => ({
+    setFieldStates(prev  => ({
       ...prev,
-      [`${blockId}:${fieldName}`]: {
-        blockId,
-        fieldName,
-        value,
-        type: typeof value === 'boolean' ? 'boolean' : typeof value === 'number' ? 'number' : 'string'
+      [blockId]: {
+        ...prev[blockId],
+        [fieldName]: value
       }
     }));
+    // basic key value instead of all block stuff
+    // setFieldStates(prev => ({
+    //   ...prev,
+    //   [`${blockId}:${fieldName}`]: {
+    //     value: value,
+    //   }
+    // }));
+
+    // setFieldStates(prev => ({
+    //   ...prev,
+    //   [`${blockId}:${fieldName}`]: {
+    //     blockId,
+    //     fieldName,
+    //     value,
+    //     type: typeof value === 'boolean' ? 'boolean' : typeof value === 'number' ? 'number' : 'string'
+    //   }
+    // }));
   };
 
   // Get field state function
   const getFieldState = (blockId: string, fieldName: string) => {
-    return fieldStates[`${blockId}:${fieldName}`];
+    if (blockId === 'optionSelector2') {
+
+      console.log('getFieldState', blockId, get(fieldStates, `${blockId}.${fieldName}`));
+    }
+    return get(fieldStates, `${blockId}.${fieldName}`);
   };
 
   // Register hook function
@@ -202,14 +226,6 @@ export function GlobalStateProvider({ offer, session: defaultSession, editor = f
     }
 
     return true;
-  };
-
-
-
-  // Helper to get field value by ID
-  const getFieldValue = (fieldId: string): any => {
-    const state = Object.values(fieldStates).find(state => state.blockId === fieldId);
-    return state?.value;
   };
 
   const setPageSubmissionProps = (callback: () => Promise<unknown>) => {
@@ -405,7 +421,7 @@ export function GlobalStateProvider({ offer, session: defaultSession, editor = f
 
   const fields = useMemo(() => {
     // First reduction: Group fields by blockId
-    const groupedFields = Object.values(fieldStates).reduce((acc, field) => {
+    const groupedFields = Object.values(fieldStates || {}).reduce((acc, field) => {
       if (!acc[field.blockId] || !Array.isArray(acc[field.blockId])) {
         acc[field.blockId] = [];
       }
