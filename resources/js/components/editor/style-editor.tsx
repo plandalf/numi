@@ -402,7 +402,6 @@ export const StyleEditor: React.FC<StyleEditorProps> = ({
             value: item.name,
             label: item.label
           }))}
-          className="flex-1 min-w-[200px]"
           selected={''}
           onSelect={(selected) => handleChange(selected as string)}
           placeholderIcon={<PlusIcon className="w-4 h-4" />}

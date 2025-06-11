@@ -173,9 +173,9 @@ export const PageProducts = () => {
                 <Switch defaultChecked={item.is_required} onCheckedChange={(checked) => handleToggleRequired(item, checked)} />
               </div>
               <Prices prices={item.prices ?? []} offerItem={item} />
-              <div className="flex bg-white border rounded-md px-4 py-2 items-center w-full justify-center hover:bg-gray-50 cursor-pointer" onClick={() => handleEdit(item)}>
-                <PlusIcon className="w-4 h-4" /> Add another price
-              </div>
+              <Button variant="outline" className="w-full" onClick={() => handleEdit(item)}>
+                <PlusIcon className="w-4 h-4" /> Add a price
+              </Button>
             </div>
           </div>
         ))}
@@ -261,10 +261,10 @@ export const PageProducts = () => {
         )}
         <Button
           variant="default"
-          className="w-full bg-gray-900 text-white hover:bg-gray-800 flex justify-between"
+          className="w-full"
           onClick={() => handleAddPrice(OfferItemType.STANDARD)}
         >
-          <span>Add another</span>
+          <span>Add another product</span>
           <CirclePlus className="w-4 h-4" />
         </Button>      </div>
     )
