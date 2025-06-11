@@ -18,7 +18,6 @@ import { Badge } from '../ui/badge';
 import { Theme } from '@/types/theme';
 import { resolveThemeValue } from '@/lib/theme';
 import { NavigationBar } from '@/pages/checkout';
-import { NavigationBarProps } from '@/types/checkout';
 
 // Local interfaces that match the actual structure
 interface LocalPageView {

@@ -53,6 +53,7 @@ export interface HostedPage {
         url: string;
     };
     style: Record<string, any>;
+    appearance: Record<string, any>;
 }
 
 export interface NavItem {

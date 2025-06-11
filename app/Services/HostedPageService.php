@@ -26,6 +26,7 @@ class HostedPageService
             'logo_image_id' => $data['logo_image_id'] ?? null,
             'background_image_id' => $data['background_image_id'] ?? null,
             'style' => $data['style'] ?? [],
+            'appearance' => $data['appearance'] ?? [],
         ]);
 
         $hostedPage->save();

@@ -36,9 +36,9 @@ export const NavigationBar = ({ barStyle, children, className, ...props }: Navig
         <button
           onClick={onBack}
           type="button"
-          className="m-0 cursor-pointer hover:scale-105 transition-all duration-300 px-4 text-sm font-medium text-gray-700 hover:text-gray-900 flex-shrink-0 flex items-center"
+          className="relative m-0 h-4 w-8 cursor-pointer hover:scale-105 transition-all duration-300 text-sm font-medium text-gray-700 hover:text-gray-900 flex-shrink-0 flex items-center"
         >
-          <ChevronLeftIcon className="size-4 mr-2" />
+          <ChevronLeftIcon strokeWidth={4} className="size-6 absolute -left-1 top-1/2 -translate-y-1/2" />
         </button>
       )}
       <div className="flex-grow">
@@ -230,6 +230,7 @@ const CheckoutController = ({ offer }: { offer: OfferConfiguration }) => {
   const isHosted = offer.is_hosted && !isMobile;
   const hostedPage = offer.hosted_page;
   const style = hostedPage?.style;
+  const appearance = hostedPage?.appearance;
 
   const formClassName = useMemo(() => {
     if (isHosted) {
@@ -242,10 +243,10 @@ const CheckoutController = ({ offer }: { offer: OfferConfiguration }) => {
   const formStyle = useMemo(() => {
     if (isHosted) {
       return {
-        ...(style?.maxHeight?.height ? {
-          minHeight: style?.maxHeight?.height,
-          maxHeight: style?.maxHeight?.height,
-        } : {}),
+        minHeight: style?.maxHeight?.height ?? "764px",
+        maxHeight: style?.maxHeight?.height ?? "764px",
+        minWidth: style?.maxWidth?.width ?? "1024px",
+        maxWidth: style?.maxWidth?.width ?? "1024px",
         ...(style?.shadow ? {
           boxShadow: style.shadow,
         } : {}),
@@ -260,12 +261,10 @@ const CheckoutController = ({ offer }: { offer: OfferConfiguration }) => {
           borderRadius: style.borderRadius,
           overflow: 'hidden',
         } : {}),
-        maxWidth: '1024px',
-
       };
     }
     return {};
-  }, [isHosted, style]);
+  }, [isHosted, style, appearance]);
 
   const logoStyle = useMemo(() => {
       return {
@@ -376,6 +375,9 @@ export default function CheckoutPage({ offer, fonts, error, checkoutSession }: C
         } : {}),
         ...(offer?.hosted_page?.style?.logoSpacing ? {
           gap: offer?.hosted_page?.style?.logoSpacing?.height,
+        } : {}),
+        ...(offer?.hosted_page?.appearance?.padding ? {
+          padding: offer?.hosted_page?.appearance?.padding,
         } : {}),
       };
     }

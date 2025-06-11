@@ -12,7 +12,7 @@ import {
 import { EditProps } from "@/pages/offers/edit";
 import { router, useForm, usePage } from "@inertiajs/react";
 import { ImageIcon, Info, InfoIcon, TrashIcon } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -23,12 +23,14 @@ import type { Offer } from '@/types/offer';
 import { useEditor } from '@/contexts/offer/editor-context';
 import { Separator } from "../ui/separator";
 import { StyleEditor, StyleItem } from "../editor/style-editor";
-import { Style } from "@/contexts/Numi";
+import { Appearance, Style } from "@/contexts/Numi";
 import { getThemeColors } from "./page-theme";
 import { Switch } from "../ui/switch";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip";
 import { PageProps } from '@inertiajs/core';
 import { HostedPage } from "@/types";
+import { SpacingEditor } from "../editor/spacing-editor";
+import { useDebounce } from "@/hooks/use-debounce";
 
 interface ImageUploadMedia {
   id: number;
@@ -52,7 +54,7 @@ interface FormData extends Pick<
   | 'checkout_cancel_url' 
   | 'is_hosted'
 >{
-  hosted_page: Pick<HostedPage, 'logo_image_id' | 'background_image_id' | 'style'>;
+  hosted_page: Pick<HostedPage, 'logo_image_id' | 'background_image_id' | 'style' | 'appearance'>;
 }
 
 export default function OfferSettings() {
@@ -72,6 +74,7 @@ export default function OfferSettings() {
   const initialBackgroundImageId = offer.hosted_page?.background_image_id ?? null;
   const initialBackgroundImageUrl = offer.hosted_page?.background_image?.url ?? null;
   const [backgroundImagePreview, setBackgroundImagePreview] = useState<string | null>(initialBackgroundImageUrl);
+  const [enableAutoSave, setEnableAutoSave] = useState(false);
 
   const form = useForm<FormData>({
     name: offer.name || '',
@@ -86,13 +89,22 @@ export default function OfferSettings() {
       logo_image_id: initialLogoImageId,
       background_image_id: initialBackgroundImageId,
       style: offer.hosted_page?.style ?? {},
+      appearance: offer.hosted_page?.appearance ?? {},
     },
   });
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    form.put(route('offers.update', offer.id));
-  };
+  const debouncedForm = useDebounce(form?.data, 250);
+
+  useEffect(() => {
+    if(!enableAutoSave) {
+      setEnableAutoSave(true);
+    }
+
+    if (enableAutoSave) {
+      form.put(route('offers.update', offer.id));
+    }
+  }, [debouncedForm]);
+
 
   const handleThemeChange = (value: string) => {
     form.setData('theme_id', value);
@@ -103,12 +115,21 @@ export default function OfferSettings() {
   };
 
   const handleStyleChange = (key: string, value: string | boolean) => {
-    console.log({key, value});
 
     form.setData('hosted_page', {
       ...form.data.hosted_page,
       style: {
         ...form.data.hosted_page.style,
+        [key]: value
+      }
+    });
+  };
+
+  const handleAppearanceChange = (key: string, value: string | null) => {
+    form.setData('hosted_page', {
+      ...form.data.hosted_page,
+      appearance: {
+        ...form.data.hosted_page.appearance,
         [key]: value
       }
     });
@@ -150,6 +171,12 @@ export default function OfferSettings() {
         maxHeight: 1000,
       }
     }, { height: '764px'}),
+    Style.dimensions('maxWidth', 'Maximum width', {
+      config: {
+        hideHeight: true,
+        maxWidth: 1920,
+      }
+    }, { width: '1024px'}),
     Style.dimensions('logoDimension', 'Logo Dimension', {
       config: {
         maxHeight: 500,
@@ -176,8 +203,20 @@ export default function OfferSettings() {
     config: style?.config ?? {},
   }));
 
+
+  const appearanceItems = [
+    Appearance.padding('padding', 'Padding', {}, '0px'),
+  ].map(appearance => ({
+    name: appearance.type,
+    label: appearance.label,
+    value: form.data.hosted_page?.appearance?.[appearance.type],
+    defaultValue: appearance.defaultValue,
+    inspector: appearance.inspector,
+    options: appearance.options
+  }));
+
   return (
-    <form onSubmit={handleSubmit} className="offer-settings flex flex-col h-full p-4 w-full gap-3 overflow-y-hidden">
+    <form className="offer-settings flex flex-col h-full p-4 w-full gap-3 overflow-y-hidden">
       {/* General Section */}
       <div className="flex flex-col gap-4">
         <h2 className="text-lg font-semibold">General</h2>
@@ -323,6 +362,22 @@ export default function OfferSettings() {
             themeColors={themeColors}
           />
         </div>
+        <h3 className="font-semibold">Appearance</h3>
+          {appearanceItems.map((item) => (
+            (item.inspector === 'spacingPicker' ?(
+              <SpacingEditor
+                key={item.name}
+                label={item.label}
+                value={form.data.hosted_page?.appearance?.[item.name]}
+                defaultValue={item.defaultValue}
+                onChangeProperty={(newValue) => handleAppearanceChange(item.name, newValue)}
+                config={{
+                  hideTabs: true
+                }}
+              />
+              ) : null
+            )
+        ))}
       </div>
 
 
@@ -369,9 +424,6 @@ export default function OfferSettings() {
           </Select>
           {form.errors.theme_id && <p className="text-destructive text-sm">{form.errors.theme_id}</p>}
         </div>
-        <Button type="submit" disabled={form.processing} className="w-full">
-          {form.processing ? 'Saving...' : 'Save Settings'}
-        </Button>
       </div>
 
 
