@@ -81,9 +81,9 @@ export function AppShell({ children }: AppShellProps) {
               <Popover open={feedbackOpen} onOpenChange={onPopupChange}>
                 <PopoverTrigger asChild>
                   <Button
-                    variant="outline"
+                    variant="dark-outline"
                     size="sm"
-                    className="flex items-center gap-1 text-white bg-gray-700"
+                    className="flex items-center gap-1 "
                     aria-label="Send feedback"
                   >
                     <MessageCircle className="size-4" />

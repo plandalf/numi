@@ -60,6 +60,7 @@ export default function Dashboard({ offers, globalTemplates, organizationTemplat
               </div>
               <div className="flex justify-end">
                 <Button
+                  variant="default"
                   onClick={handleCreateOffer}
                 >
                   <Plus className="mr-2 h-4 w-4" />
@@ -75,7 +76,7 @@ export default function Dashboard({ offers, globalTemplates, organizationTemplat
                   offers.map((offer) => (
                     <Card
                       key={offer.id}
-                      className="cursor-pointer"
+                      className="cursor-pointer !bg-[#d1dafb1a] !hover:bg-[#d1dafb40] hover:scale-101 transition-all duration-200 active:scale-100"
                       onClick={() => router.get(route('offers.edit', offer.id))}
                     >
                       <CardHeader>
