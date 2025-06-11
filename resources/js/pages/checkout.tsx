@@ -8,7 +8,7 @@ import {
   useValidateFields
 } from '@/pages/checkout-main';
 import type { OfferConfiguration, Page, PageSection } from '@/types/offer';
-import { CheckoutPageProps, NavigationBarProps, TailwindLayoutRendererProps } from '@/types/checkout';
+import { CheckoutPageProps, CheckoutSession, NavigationBarProps, TailwindLayoutRendererProps } from '@/types/checkout';
 import { findUniqueFontsFromTheme, findUniqueFontsFromView } from '@/utils/font-finder';
 import WebFont from 'webfontloader';
 import { Theme } from '@/types/theme';
@@ -20,7 +20,7 @@ import { sendMessage } from '@/utils/sendMessage';
 import { OnInit } from '@/events/OnInit';
 import { useEffect } from 'react';
 import { PageChanged } from '@/events/PageChanged';
-import { CheckoutInit } from '@/events/CheckoutInit';
+import { PaymentInitialized } from '@/events/PaymentInitialized';
 
 
 export const NavigationBar = ({ barStyle, children, className, ...props }: NavigationBarProps) => {
@@ -184,7 +184,7 @@ const createElement = (
 
 
 
-const CheckoutController = ({ offer }: { offer: OfferConfiguration }) => {
+const CheckoutController = ({ offer, session }: { offer: OfferConfiguration, session: CheckoutSession }) => {
   const {
     isSubmitting,
     submitError,
@@ -274,8 +274,8 @@ const CheckoutController = ({ offer }: { offer: OfferConfiguration }) => {
   }, [style]);
 
   useEffect(() => {
-    if(currentPage.type === 'payment') {
-      sendMessage(new CheckoutInit());
+    if (currentPage.type === 'payment') {
+      sendMessage(new PaymentInitialized(session));
     }
 
     sendMessage(new PageChanged(currentPage.id));
@@ -385,7 +385,7 @@ export default function CheckoutPage({ offer, fonts, error, checkoutSession }: C
   }, [offer?.is_hosted, offer?.hosted_page]);
 
   useEffect(() => {
-    sendMessage(new OnInit());
+    sendMessage(new OnInit(checkoutSession));
   }, []);
 
   return (
@@ -401,7 +401,7 @@ export default function CheckoutPage({ offer, fonts, error, checkoutSession }: C
                 </div>
               </div>
             ) : (
-                <CheckoutController offer={offer} />
+                <CheckoutController offer={offer} session={checkoutSession} />
             )}
           </div>
         </NavigationProvider>

@@ -3,8 +3,8 @@ import { TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
 import { DialogDescription, DialogTitle } from "../ui/dialog";
 import { DialogContent, DialogHeader } from "../ui/dialog";
 import { useEditor } from "@/contexts/offer/editor-context";
-import { Block, PageSection, PageView } from "@/types/offer";
-import { blockTypes, getBlockMeta } from '@/components/blocks';
+import { Block, PageView } from "@/types/offer";
+import { allElementTypes } from './page-elements';
 import { cn } from "@/lib/utils";
 import { ChevronRight, CircleChevronRight, DiamondPlus, EyeOff, SquarePlus } from "lucide-react";
 import { Button } from "../ui/button";
@@ -29,8 +29,16 @@ export const PageLayers: React.FC<PageLayersProps> = ({ onAddNewElementClick }) 
     setSelectedBlockId,
     selectedSectionId,
     setSelectedSectionId,
+    setHoveredBlockId,
+    setHoveredSectionId,
     theme,
   } = useEditor();
+
+  // Helper function to get block type title from page-elements
+  const getBlockTypeTitle = (blockType: string): string => {
+    const element = allElementTypes.find(el => el.type === blockType);
+    return element?.title ?? blockType.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+  };
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [layerTemplateTab, setLayerTemplateTab] = useState<'new' | 'saved'>('new');
@@ -146,7 +154,16 @@ export const PageLayers: React.FC<PageLayersProps> = ({ onAddNewElementClick }) 
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex-1 overflow-y-auto p-4">
+      <div 
+        className="flex-1 overflow-y-auto p-4"
+        onClick={(e) => {
+          // Clear hover states when clicking on empty areas
+          if (e.target === e.currentTarget) {
+            setHoveredBlockId(null);
+            setHoveredSectionId(null);
+          }
+        }}
+      >
         <div className="flex flex-col">
           {sortedSections.length === 0 ? (
             <div className="text-muted-foreground text-center py-8">No sections on this page.</div>
@@ -161,7 +178,13 @@ export const PageLayers: React.FC<PageLayersProps> = ({ onAddNewElementClick }) 
                         selectedSectionId === section.id && 'ring-2 ring-primary bg-primary/10',
                         section.hidden && 'opacity-50'
                       )}
-                      onClick={() => setSelectedSectionId(section.id)}
+                      onClick={() => {
+                        setSelectedSectionId(section.id);
+                        setHoveredSectionId(null);
+                        setHoveredBlockId(null);
+                      }}
+                      onMouseEnter={() => setHoveredSectionId(section.id)}
+                      onMouseLeave={() => setHoveredSectionId(null)}
                     >
                       <span className="font-bold text-base text-black/90 flex items-center gap-x-2">
                         {section.hidden && <EyeOff className="w-4 h-4 text-muted-foreground" />}
@@ -171,8 +194,8 @@ export const PageLayers: React.FC<PageLayersProps> = ({ onAddNewElementClick }) 
                     </div>
                     {section.blocks.length > 0 && (
                       <div className="flex flex-col gap-2">
-                        {section.blocks.map((block, idx) => {
-                          const meta = getBlockMeta(block.type as keyof typeof blockTypes);
+                        {section.blocks.map((block) => {
+                          const blockTypeTitle = getBlockTypeTitle(block.type);
                           return (
                             <button
                               key={block.id}
@@ -180,13 +203,24 @@ export const PageLayers: React.FC<PageLayersProps> = ({ onAddNewElementClick }) 
                                 'flex items-center justify-between w-full px-4 py-2 rounded-lg bg-[#EBEFFF] hover:bg-[#EBEFFF]/75 transition-colors group cursor-pointer',
                                 selectedBlockId === block.id && 'ring-2 ring-primary bg-primary/10'
                               )}
-                              onClick={() => setSelectedBlockId(block.id)}
+                              onClick={() => {
+                                setSelectedBlockId(block.id);
+                                setHoveredBlockId(null);
+                                setHoveredSectionId(null);
+                              }}
+                              onMouseEnter={() => setHoveredBlockId(block.id)}
+                              onMouseLeave={() => setHoveredBlockId(null)}
                               type="button"
                             >
                               <div className="flex items-center justify-between w-full">
-                                <span className="font-medium text-sm text-left text-black/60 group-hover:text-black transition-colors">
-                                  {meta?.title ?? block.type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())} {section.blocks.length > 1 ? idx + 1 : ''}
-                                </span>
+                                <div className="flex items-center gap-2">
+                                  <span className="font-semibold text-sm text-left text-black group-hover:text-black transition-colors">
+                                    {block.id}
+                                  </span>
+                                  <span className="text-xs text-gray-500">
+                                    {blockTypeTitle}
+                                  </span>
+                                </div>
                                 <div className="flex items-center gap-2">
                                   <CircleChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-black transition-all group-hover:mr-1" />
                                 </div>

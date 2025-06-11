@@ -22,6 +22,7 @@ class FrameEmbedMiddleware
         $response->headers->set('X-XSS-Protection', '1; mode=block');
         $response->headers->set('Referrer-Policy', 'strict-origin-when-cross-origin');
         $response->headers->set('Content-Security-Policy', "frame-ancestors *");
+        $response->headers->set('Permissions-Policy', "payment=(self)");
 
         return $response;
     }

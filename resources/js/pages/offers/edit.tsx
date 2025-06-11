@@ -166,6 +166,40 @@ function EditApp({ publishableKey }: { publishableKey: string | undefined }) {
   const [activeItem, setActiveItem] = useState<ActiveDndItem | null>(null);
   const dragOverRafRef = useRef<number | null>(null); // Ref for requestAnimationFrame
 
+  function generateIdForBlockType(type: string) {
+    // Count all blocks of the given type across all pages and sections
+    let count = 0;
+    
+    // Iterate through all pages
+    Object.values(data.view.pages).forEach(page => {
+      // Iterate through all sections in each page
+      Object.values(page.view).forEach(section => {
+        // Count blocks of the specified type in this section
+        if (section.blocks) {
+          section.blocks.forEach(block => {
+            if (block.type === type) {
+              count++;
+            }
+          });
+        }
+      });
+    });
+    
+    // Convert snake_case to camelCase
+    const camelCaseType = type
+      .split('_')
+      .map((word, index) => {
+        if (index === 0) {
+          return word.toLowerCase();
+        }
+        return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+      })
+      .join('');
+    
+    // Return the camelCase type with the next sequential number
+    return `${camelCaseType}${count + 1}`;
+  }
+
   function setSections(newSectionsForPage: Record<string, ViewSection> | ((currentSections: Record<string, ViewSection>) => Record<string, ViewSection>)) {
     setData(currentEditorData => {
       const currentSectionsOfPage = currentEditorData.view.pages[selectedPage]?.view;
@@ -343,7 +377,7 @@ function EditApp({ publishableKey }: { publishableKey: string | undefined }) {
     if (activeTypeCalculated === 'template') {
       if (prototype && prototype.sectionId) {
         const newBlockToAdd: Block = {
-          id: uuidv4(),
+          id: generateIdForBlockType(prototype.block.type),
           object: 'block',
           type: prototype.block.type,
           content: {},
@@ -607,7 +641,6 @@ function DragOverlayPreview({ item }: { item: ActiveDndItem | null }) {
     const elementTypeMeta = allElementTypes.find(t => t.type === item.id);
     return (
       <div
-
         className={cn(
           'flex flex-col items-center justify-center rounded-md cursor-move transition-all min-h-20 w-full'
         )}
@@ -622,12 +655,9 @@ function DragOverlayPreview({ item }: { item: ActiveDndItem | null }) {
     )
   }
 
-  // todo: the preview
-
   return (
     <div>
       <h3>{item?.type} : {item?.id} </h3>
-      {/* <pre>{JSON.stringify(activeItemData, null, 2)}</pre> */}
     </div>
   );
 }
