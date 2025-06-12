@@ -106,7 +106,7 @@ export const PageLayers: React.FC<PageLayersProps> = ({ onAddNewElementClick }) 
     setSaving(true);
 
     router.put(route('templates.update', selectedTemplateId), {
-      view: data.view,
+      view: JSON.stringify(data.view),
       theme: theme,
       ...(data?.screenshot?.url && {
         preview_images: [data.screenshot.url]
@@ -135,7 +135,7 @@ export const PageLayers: React.FC<PageLayersProps> = ({ onAddNewElementClick }) 
 
     router.post(route('templates.store'), {
       name: templateName,
-      view: data.view,
+      view: JSON.stringify(data.view),
       theme: theme,
       ...(data?.screenshot?.url && {
         preview_images: [data.screenshot.url]
