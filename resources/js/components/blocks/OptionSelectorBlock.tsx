@@ -32,7 +32,7 @@ function OptionSelectorComponent({ context }: { context: BlockContextType }) {
   const options = get(blockContext.blockConfig, `content.items`, defaultValue) as ItemType[];
 
   const [selectedTab, setSelectedTab, updateSelectedTabHook] = Numi.useStateEnumeration({
-    name: 'selectedTab',
+    name: 'value',
     initialValue: options[0]?.key ?? undefined,
     options: Array.isArray(options) ? options?.filter((item) => item.key).map((item) => item.key) : [],
     inspector: 'select',
@@ -131,7 +131,6 @@ function OptionSelectorComponent({ context }: { context: BlockContextType }) {
     Style.hidden('hidden', 'Hidden', {}, false),
   ]);
 
-
   const activeBackgroundColor = resolveThemeValue(style.activeBackgroundColor, theme, 'secondary_color') as string;
   const activeBackgroundColorWithAlpha = addAlphaToColor(activeBackgroundColor, 0.10);
 
@@ -228,7 +227,7 @@ function OptionSelectorComponent({ context }: { context: BlockContextType }) {
     setSelectedTab(value);
     executeCallbacks(Event.onClick, value);
     updateSessionProperties(context.blockId, value);
-  }, [executeCallbacks, updateSessionProperties, context.blockId]);
+  }, [executeCallbacks, updateSessionProperties, context.blockId, selectedTab]);
 
   useEffect(() => {
     executeCallbacks(Event.onClick, selectedTab);

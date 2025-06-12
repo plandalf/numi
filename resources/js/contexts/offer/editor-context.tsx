@@ -60,6 +60,7 @@ interface EditorContextType {
 
   selectedBlockId: string | null;
   setSelectedBlockId: (blockId: string | null) => void;
+  getBlock: (blockId: string) => Block | null;
 
   selectedSectionId: string | null;
   setSelectedSectionId: (sectionId: string | null) => void;
@@ -485,6 +486,23 @@ export function EditorProvider({ offer, organizationThemes, organizationTemplate
   const [hoveredBlockId, setHoveredBlockIdState] = useState<string | null>(null);
   const [hoveredSectionId, setHoveredSectionIdState] = useState<string | null>(null);
 
+  const getBlock = (blockId: string): Block | null => {
+    let foundBlock: Block | null = null;
+
+    Object.values(data.view.pages).some(page => {
+      return Object.values(page.view).some(section => {
+        const block = section.blocks?.find(block => block.id === blockId);
+        if (block) {
+          foundBlock = block;
+          return true;
+        }
+        return false;
+      });
+    });
+
+    return foundBlock;
+  }
+
   const onSelectBlock = useCallback((blockId: string | null) => {
     setSelectedBlockIdState(blockId);
   }, []);
@@ -590,6 +608,7 @@ export function EditorProvider({ offer, organizationThemes, organizationTemplate
     updateSection,
     selectedBlockId,
     setSelectedBlockId: onSelectBlock,
+    getBlock,
     selectedSectionId,
     setSelectedSectionId: onSelectSection,
     hoveredBlockId,

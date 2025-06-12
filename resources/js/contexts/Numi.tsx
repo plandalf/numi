@@ -7,7 +7,6 @@ import debounce from "lodash/debounce";
 import { Theme } from "@/types/theme";
 import { CheckoutState, GlobalStateContext } from '@/pages/checkout-main';
 import { CallbackType, Event } from "@/components/editor/interaction-event-editor";
-import { resolveThemeValue } from "@/lib/theme";
 
 export const BlockContext = createContext<BlockContextType>({
   blockId: '',
@@ -477,13 +476,6 @@ const Numi = {
   useCheckout(options: CheckoutOptions = {}): CheckoutState {
     const checkout = useContext(GlobalStateContext);
 
-    // useEffect(() => {
-    //   // Cleanup function
-    //   return () => {
-    //     // Any cleanup needed
-    //   };
-    // }, []);
-
     return checkout;
   },
 
@@ -628,10 +620,19 @@ const Numi = {
     group?: string;
   }): [any, (newValue: any) => void, (hook: Partial<HookUsage>) => void] {
     const blockContext = useContext(BlockContext);
+    const { session } = Numi.useCheckout();
+
+    // If use as state, prioritize getting the field value from the global state
+    const defaultValue = props.asState
+      ? session.properties?.[blockContext.blockId] ?? blockContext.getFieldValue(props.name) ?? get(blockContext.blockConfig, `content.${props.name}`) ?? props.initialValue
+      : get(blockContext.blockConfig, `content.${props.name}`) ?? props.initialValue;
+
+    const [value, setValue] = useState(defaultValue);
+
     const [hook, setHook] = useState<HookUsage>({
       name: props.name,
       type: 'enumeration',
-      defaultValue: props.initialValue,
+      defaultValue: defaultValue,
       options: props.options,
       labels: props.labels,
       icons: props.icons,
@@ -659,26 +660,12 @@ const Numi = {
 
     useEffect(() => {
       blockContext.registerHook(hook);
+      blockContext.registerField('value', defaultValue);
     }, [hook]);
 
-    // If use as state, prioritize getting the field value from the global state
-    const defaultValue = props.asState
-      ? blockContext.getFieldValue(props.name) ?? get(blockContext.blockConfig, `content.${props.name}`) ?? props.initialValue
-      : get(blockContext.blockConfig, `content.${props.name}`) ?? props.initialValue;
-
-    const value = props.asState 
-      ? Numi.useSessionValue({
-          blockId: blockContext.blockId,
-          defaultValue
-        })
-      : defaultValue;
-
-    useEffect(() => {
-      setValue(value);
-    }, []);
-
-    const setValue = (newValue: any) => {
-      blockContext.setFieldValue(props.name, newValue);
+    const setFieldValue = (newValue: any) => {
+      blockContext.setFieldValue('value', newValue);
+      setValue(newValue);
     };
 
     const updateHook = useCallback((newHook: Partial<HookUsage>) => {
@@ -687,53 +674,52 @@ const Numi = {
       }
     }, []);
 
-
-    return [value, setValue, updateHook];
+    return [value, setFieldValue, updateHook];
   },
 
-  useStateBoolean(props: { name: string; defaultValue: boolean; label?: string; inspector?: string, group?: string; asState?: boolean; }): [boolean, (value: boolean) => void] {
+  useStateBoolean({ name, defaultValue: initialDefaultValue, label, inspector, group, asState }: { name: string; defaultValue: boolean; label?: string; inspector?: string, group?: string; asState?: boolean; }): [boolean, (value: boolean) => void] {
     const blockContext = useContext(BlockContext);
+    const defaultValue = Numi.useSessionValue({ blockId: blockContext.blockId, defaultValue: blockContext.blockConfig.content[name] ?? blockContext.getFieldValue(name) ?? initialDefaultValue});
+    const [value, setValue] = useState(defaultValue);
+
+    useEffect(() => {
+      setValue(blockContext.blockConfig.content[name] ?? blockContext.getFieldValue(name));
+    }, [blockContext.blockConfig.content[name], blockContext.getFieldValue(name)]);
 
     useEffect(() => {
       blockContext.registerHook({
-        name: props.name,
+        name: name,
         type: 'boolean',
-        defaultValue: props.defaultValue,
-        inspector: props.inspector ?? 'checkbox',
-        label: props.label,
-        group: props.group,
+        defaultValue: defaultValue,
+        inspector: inspector ?? 'checkbox',
+        label: label,
+        group: group,
       });
+
+      blockContext.registerField('value', defaultValue);
 
       const existingState = blockContext.globalState.getFieldState(
         blockContext.blockId,
-        props.name
+        name
       );
 
       if (!existingState) {
         // Use block config value as initial value if it exists
-        const initialValue = blockContext.blockConfig.content[props.name] ?? props.defaultValue;
+        const initialValue = blockContext.blockConfig.content[name] ?? defaultValue;
         blockContext.globalState.updateFieldState(
           blockContext.blockId,
-          props.name,
+          name,
           initialValue
         );
       }
-    }, [blockContext.blockId, props.name]);
+    }, [blockContext.blockId, name]);
 
-
-    const defaultValue = blockContext.blockConfig.content[props.name] ?? blockContext.getFieldValue(props.name) ?? props.defaultValue;
-    const value = props.asState 
-      ? Numi.useSessionValue({
-          blockId: blockContext.blockId,
-          defaultValue
-        })
-      : defaultValue;
-
-    const setValue = (newValue: boolean) => {
-      blockContext.setFieldValue(props.name, newValue);
+    const setFieldValue = (newValue: boolean) => {
+      blockContext.setFieldValue(name, newValue);
+      setValue(newValue);
     };
 
-    return [value, setValue];
+    return [value, setFieldValue];
   },
 
   useStateString(props: { label: string; name: string; defaultValue: string; inspector?: string, format?: string, config?: Record<string, any>, group?: string; asState?: boolean; }): [string, (value: string) => void, string] {
@@ -771,16 +757,12 @@ const Numi = {
     const defaultValue = props.inspector !== 'hidden'
       ? get(blockContext.blockConfig, `content.${props.name}`) ?? blockContext.getFieldValue(props.name) ?? props.defaultValue
       : blockContext.getFieldValue(props.name) ?? get(blockContext.blockConfig, `content.${props.name}`) ?? props.defaultValue;
-    const value = props.asState
-      ? Numi.useSessionValue({
-          blockId: blockContext.blockId,
-          defaultValue
-        })
-      : defaultValue;
+
+    const value = defaultValue;
     const format = get(blockContext.blockConfig, `content.format`) ?? props.format ?? 'plain';
 
     const setValue = (newValue: string) => {
-      blockContext.setFieldValue(props.name, newValue);
+      blockContext.setFieldValue('value', newValue);
     };
 
     return [value, setValue, format];
@@ -830,7 +812,7 @@ const Numi = {
       : Number(blockContext.getFieldValue(props.name)) ?? Number(get(blockContext.blockConfig, `content.${props.name}`)) ?? props.defaultValue;
 
     const setValue = (newValue: number) => {
-      blockContext.setFieldValue(props.name, newValue);
+      blockContext.setFieldValue('value', newValue);
     };
 
     return [value, setValue];
@@ -841,7 +823,7 @@ const Numi = {
     const { isEditor, session } = Numi.useCheckout();
 
     return useMemo(() => {
-      if(!isEditor 
+      if(!isEditor
         && session.properties
         && Object.keys(session.properties).includes(props.blockId)
       ){

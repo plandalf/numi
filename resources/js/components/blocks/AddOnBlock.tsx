@@ -240,10 +240,9 @@ function AddOnBlockComponent({ context }: { context: BlockContextType }) {
     label && <span style={checkboxLabelStyles}>{label}</span>
   );
 
-  // Removing this since this initial checked state should not trigger callbacks
-  // useEffect(() => {
-  //   executeCallbacks(checked ? Event.onSelect : Event.onUnSelect);
-  // }, []);
+  useEffect(() => {
+    executeCallbacks(checked ? Event.onSelect : Event.onUnSelect);
+  }, []);
 
   return (
     <div className="flex flex-col gap-3" style={innerContainerStyles}>

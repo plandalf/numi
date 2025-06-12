@@ -1,6 +1,6 @@
 import { Head } from '@inertiajs/react';
-import { useState, createContext, useContext, useMemo } from 'react';
-import { type Block, type Page as OfferPage, type OfferConfiguration, } from '@/types/offer';
+import { useState, createContext, useContext, useMemo, useEffect, useRef } from 'react';
+import { type Block, type Page as OfferPage, type OfferConfiguration, OfferItem, } from '@/types/offer';
 import { cn } from '@/lib/utils';
 
 import { BlockConfig, FieldState, HookUsage } from '@/types/blocks';
@@ -14,16 +14,16 @@ import { Theme } from '@/types/theme';
 import { sendMessage } from '@/utils/sendMessage';
 import { CheckoutSuccess } from '@/events/CheckoutSuccess';
 import { CheckoutResized } from '@/events/CheckoutResized';
+import { updateSessionLineItems } from '@/utils/editor-session';
 // Form and validation context
+
 type FormData = Record<string, any>;
 type ValidationErrors = Record<string, string[]>;
 
 // Contexts
 export const GlobalStateContext = createContext<GlobalState | null>(null);
-type Field = { id: string; name: string; value: any };
-
 export interface GlobalState {
-  fields: Record<string, Record<string, Field> | Field>;
+  fields: Record<string, FieldState>;
   fieldStates: Record<string, FieldState>; // key is `${blockId}:${fieldName}`
   updateFieldState: (blockId: string, fieldName: string, value: any) => void;
   getFieldState: (blockId: string, fieldName: string) => FieldState | undefined;
@@ -61,9 +61,10 @@ export interface GlobalState {
   isEditor: boolean;
 }
 
-export function GlobalStateProvider({ offer, session: defaultSession, editor = false, children }: { offer: OfferConfiguration, session: CheckoutSession, editor?: boolean, children: React.ReactNode }) {
+export function GlobalStateProvider({ offer, offerItems, session: defaultSession, editor = false, children }: { offer: OfferConfiguration, offerItems?: OfferItem[], session: CheckoutSession, editor?: boolean, children: React.ReactNode }) {
   // Field states for all blocks
-  const [fieldStates, setFieldStates] = useState<Record<string, FieldState>>({});
+  const [fieldStates, setFieldStates] = useState<Record<string, FieldState>>(defaultSession.properties || {});
+
   const [hookUsage, setHookUsage] = useState<Record<string, HookUsage[]>>({});
   const [registeredHooks, setRegisteredHooks] = useState<Set<string>>(new Set());
   const [session, setSession] = useState<CheckoutSession>(defaultSession);
@@ -72,7 +73,36 @@ export function GlobalStateProvider({ offer, session: defaultSession, editor = f
   const [errors, setErrors] = useState<ValidationErrors>({});
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [isSubmitting, setSubmitting] = useState<boolean>(false);
+  const previousItemsRef = useRef<OfferItem[]|undefined>(undefined);
 
+
+  const updatedItems = useMemo(() => {
+    // Find which items were updated
+    const updatedItems = offerItems?.filter((item) => {
+      const prevItem = previousItemsRef.current?.find(p => p.id === item.id);
+      return prevItem && (
+        prevItem.is_required !== item.is_required ||
+        prevItem.default_price_id !== item.default_price_id
+      );
+    });
+
+    previousItemsRef.current = offerItems;
+
+    return updatedItems;
+  }, [offerItems]);
+
+  useEffect(() => {
+    if(updatedItems && updatedItems.length > 0) {
+      updatedItems.forEach(item => {
+        updateLineItem({
+          item: item.id,
+          price: item.prices.find(p => p.id == item.default_price_id)?.lookup_key ?? undefined,
+          quantity: 1,
+          required: item.is_required
+        });
+      });
+    }
+  }, [updatedItems]);
 
   // Update field state function
   const updateFieldState = (blockId: string, fieldName: string, value: any) => {
@@ -85,6 +115,23 @@ export function GlobalStateProvider({ offer, session: defaultSession, editor = f
         type: typeof value === 'boolean' ? 'boolean' : typeof value === 'number' ? 'number' : 'string'
       }
     }));
+    // basic key value instead of all block stuff
+    // setFieldStates(prev => ({
+    //   ...prev,
+    //   [`${blockId}:${fieldName}`]: {
+    //     value: value,
+    //   }
+    // }));
+
+    // setFieldStates(prev => ({
+    //   ...prev,
+    //   [`${blockId}:${fieldName}`]: {
+    //     blockId,
+    //     fieldName,
+    //     value,
+    //     type: typeof value === 'boolean' ? 'boolean' : typeof value === 'number' ? 'number' : 'string'
+    //   }
+    // }));
   };
 
   // Get field state function
@@ -204,32 +251,25 @@ export function GlobalStateProvider({ offer, session: defaultSession, editor = f
     return true;
   };
 
-
-
-  // Helper to get field value by ID
-  const getFieldValue = (fieldId: string): any => {
-    const state = Object.values(fieldStates).find(state => state.blockId === fieldId);
-    return state?.value;
-  };
-
   const setPageSubmissionProps = (callback: () => Promise<unknown>) => {
     setSubmissionProps(() => callback);
   };
 
 
   const updateSessionProperties = async (blockId: string, value: any) => {
-    if (editor) return;
-
     // Update local state immediately
     const newProperties = {
       ...session.properties,
       [blockId]: value
     };
-    
+
     setSession(prev => ({
       ...prev,
       properties: newProperties
     }));
+
+    if (editor) return;
+
     try {
       const response = await axios.post(`/checkouts/${session.id}/mutations`, {
         action: 'setProperties',
@@ -311,6 +351,7 @@ export function GlobalStateProvider({ offer, session: defaultSession, editor = f
 
   const updateLineItem = async ({ item, price, quantity, required }: SetItemActionValue) => {
     if (editor) {
+      setSession(updateSessionLineItems({ offerItems, item, price, quantity, required, checkoutSession: session }));
       return;
     }
 
@@ -404,30 +445,12 @@ export function GlobalStateProvider({ offer, session: defaultSession, editor = f
   };
 
   const fields = useMemo(() => {
-    // First reduction: Group fields by blockId
-    const groupedFields = Object.values(fieldStates).reduce((acc, field) => {
-      if (!acc[field.blockId] || !Array.isArray(acc[field.blockId])) {
-        acc[field.blockId] = [];
-      }
-      acc[field.blockId] = [{
-        id: field.blockId,
-        name: field.fieldName,
-        value: field.value
-      }];
-      return acc;
-    }, {} as Record<string, Array<{ id: string; name: string; value: any }>>);
-
-    return Object.entries(groupedFields).reduce((acc, [blockId, fields]) => {
-      if (fields.length === 1) {
-        acc[blockId] = fields[0];
-      } else {
-        acc[blockId] = fields.reduce((fieldAcc, field) => {
-          fieldAcc[field.name] = field;
-          return fieldAcc;
-        }, {} as Record<string, any>);
-      }
-      return acc;
-    }, {} as Record<string, { id: string; name: string; value: any } | Record<string, any>>);
+    return Object.values(fieldStates)
+      .filter(field => field.fieldName === 'value')
+      .reduce((acc, field) => {
+        acc[field.blockId] = field;
+        return acc;
+      }, {} as Record<string, FieldState>);
   }, [fieldStates]);
 
   // Create context value

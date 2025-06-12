@@ -391,7 +391,7 @@ export default function CheckoutPage({ offer, fonts, error, checkoutSession }: C
   return (
     <>
       <Head title={`Checkout: ${offer.name ?? 'Untitled Offer'}`} />
-      <GlobalStateProvider offer={offer} session={checkoutSession}>
+      <GlobalStateProvider offer={offer} session={checkoutSession} offerItems={offer.items}>
         <NavigationProvider>
           <div className="min-h-screen bg-gray-50 flex flex-col gap-4 justify-center items-center" style={containerStyle}>
             {error ? (

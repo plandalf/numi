@@ -28,7 +28,7 @@ function RadioListBlock() {
   const options = get(blockContext.blockConfig, `content.items`, defaultValue) as ItemType[];
 
   const [selectedTab, setSelectedTab, updateSelectedTabHook] = Numi.useStateEnumeration({
-    name: 'selectedTab',
+    name: 'value',
     initialValue: options[0]?.key ?? undefined,
     options: Array.isArray(options) ? options?.filter((item) => item.key).map((item) => item.key) : [],
     inspector: 'select',

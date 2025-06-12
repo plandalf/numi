@@ -1,5 +1,5 @@
 import { Label } from '../ui/label';
-import React, { useContext, useMemo } from 'react';
+import React, { useContext, useMemo, useState, useEffect } from 'react';
 import { Button } from '../ui/button';
 import {
   Dialog,
@@ -22,6 +22,8 @@ import 'react-querybuilder/dist/query-builder.css';
 import { Trash2, ChevronDown, Eye } from 'lucide-react';
 import { Combobox } from '../combobox';
 import { Badge } from '../ui/badge';
+import { useEditor } from '@/contexts/offer/editor-context';
+import { useDebounce } from '@/hooks/use-debounce';
 
 const ACTION_OPTIONS = [
   { value: 'show', label: 'Show' },
@@ -116,25 +118,32 @@ export const AddVisibilityCondition: React.FC<{
 }> = ({ value, onChange }) => {
   const [open, setOpen] = React.useState(false);
   const [action, setAction] = React.useState<string>(value?.action || 'show');
-
+  const { getBlock } = useEditor();
   // Convert our rule group to QueryBuilder format
   const [query, setQuery] = React.useState<RuleGroupType>(
     mapRuleGroupToQueryBuilderFormat(value)
   );
 
   const context = useContext(GlobalStateContext);
-  const fieldStates = context?.fieldStates ?? {};
+  const fieldStates = context?.fields ?? {};
   const hookUsage = context?.hookUsage ?? {};
 
-  console.log('query', query, context);
-
   const fields = useMemo(() => {
-    return Object.values(fieldStates).map(field => ({
-      name: `fields['${field.blockId}'].value`,
-      label: `${field.blockId}.${field.fieldName}`,
-      blockId: field.blockId,
-      fieldName: field.fieldName,
-    }));
+    return Object.values(fieldStates).map(field => {
+      if(field.fieldName !== 'value') {
+        return null;
+      }
+
+      const block = getBlock(field.blockId);
+      if (!block) return null;
+
+      return ({
+        name: `fields['${field.blockId}'].value`,
+        label: `${block.name || field.blockId}.${field.fieldName}`,
+        blockId: field.blockId,
+        fieldName: field.fieldName,
+      })
+    }).filter((fields) => fields !== null);
   }, [fieldStates]);
 
   const operators = [
@@ -173,10 +182,7 @@ export const AddVisibilityCondition: React.FC<{
       ];
     }
 
-    return [
-      { name: true, label: 'Active' },
-      { name: false, label: 'Inactive' },
-    ];
+    return [];
   };
 
   const handleQueryChange = (queryRules: RuleGroupType) => {
@@ -199,6 +205,32 @@ export const AddVisibilityCondition: React.FC<{
 
   const CustomValueEditor = (props: any) => {
     const valueOptions = getValueOptions(props.field);
+    const [localValue, setLocalValue] = useState(props.value || '');
+    const debouncedValue = useDebounce(localValue, 500);
+
+    useEffect(() => {
+      if (debouncedValue !== props.value) {
+        props.handleOnChange(debouncedValue);
+      }
+    }, [debouncedValue, props.handleOnChange]);
+
+    useEffect(() => {
+      if (props.value !== localValue) {
+        setLocalValue(props.value || '');
+      }
+    }, [props.value]);
+
+    if(valueOptions.length === 0) {
+      return (
+        <input
+          type="text"
+          value={localValue}
+          onChange={(e) => setLocalValue(e.target.value)}
+          className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+          placeholder="Enter value..."
+        />
+      );
+    }
 
     return (
       <DropdownMenu>
@@ -208,7 +240,7 @@ export const AddVisibilityCondition: React.FC<{
             className="w-32 flex-shrink-0 justify-between"
           >
             <span className="truncate">
-              {valueOptions.find(op => op.name === props.value)?.label || 'Select value'}
+              {valueOptions.find(op => op.name === localValue)?.label || 'Select value'}
             </span>
             <ChevronDown className="h-4 w-4 opacity-50" />
           </Button>
@@ -217,7 +249,7 @@ export const AddVisibilityCondition: React.FC<{
           {valueOptions.map(option => (
             <DropdownMenuItem
               key={option.name}
-              onClick={() => props.handleOnChange(option.name)}
+              onClick={() => setLocalValue(option.name)}
             >
               {option.label}
             </DropdownMenuItem>
