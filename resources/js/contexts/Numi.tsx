@@ -679,8 +679,12 @@ const Numi = {
 
   useStateBoolean({ name, defaultValue: initialDefaultValue, label, inspector, group, asState }: { name: string; defaultValue: boolean; label?: string; inspector?: string, group?: string; asState?: boolean; }): [boolean, (value: boolean) => void] {
     const blockContext = useContext(BlockContext);
-    const defaultValue = Numi.useDefaultValue({ blockId: blockContext.blockId, fallback: initialDefaultValue});
+    const defaultValue = Numi.useSessionValue({ blockId: blockContext.blockId, defaultValue: blockContext.blockConfig.content[name] ?? blockContext.getFieldValue(name) ?? initialDefaultValue});
     const [value, setValue] = useState(defaultValue);
+
+    useEffect(() => {
+      setValue(blockContext.blockConfig.content[name] ?? blockContext.getFieldValue(name));
+    }, [blockContext.blockConfig.content[name], blockContext.getFieldValue(name)]);
 
     useEffect(() => {
       blockContext.registerHook({
@@ -815,7 +819,7 @@ const Numi = {
   },
 
   // Gets the value from the session properties and if not found, returns the default value
-  useDefaultValue(props: { blockId: string; fallback: any }): any {
+  useSessionValue(props: { blockId: string; defaultValue: any }): any {
     const { isEditor, session } = Numi.useCheckout();
 
     return useMemo(() => {
@@ -826,8 +830,8 @@ const Numi = {
         return session.properties[props.blockId];
       }
 
-      return props.fallback;
-    }, [props.blockId, isEditor, session.properties, props.fallback]);
+      return props.defaultValue;
+    }, [props.blockId, isEditor, session.properties, props.defaultValue]);
   },
 
   useRuntimeString(props: { name: string; defaultValue: string }): [string, (value: string) => void] {
