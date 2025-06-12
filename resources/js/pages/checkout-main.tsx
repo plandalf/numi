@@ -16,6 +16,7 @@ import { CheckoutSuccess } from '@/events/CheckoutSuccess';
 import { CheckoutResized } from '@/events/CheckoutResized';
 import { updateSessionLineItems } from '@/utils/editor-session';
 // Form and validation context
+
 type FormData = Record<string, any>;
 type ValidationErrors = Record<string, string[]>;
 
@@ -62,9 +63,10 @@ export interface GlobalState {
   isEditor: boolean;
 }
 
-export function GlobalStateProvider({ offer, offerItems, session: defaultSession, editor = false, children }: { offer: OfferConfiguration, offerItems: OfferItem[], session: CheckoutSession, editor?: boolean, children: React.ReactNode }) {
+export function GlobalStateProvider({ offer, offerItems, session: defaultSession, editor = false, children }: { offer: OfferConfiguration, offerItems?: OfferItem[], session: CheckoutSession, editor?: boolean, children: React.ReactNode }) {
   // Field states for all blocks
-  const [fieldStates, setFieldStates] = useState<Record<string, FieldState>>({});
+  const [fieldStates, setFieldStates] = useState<Record<string, FieldState>>(defaultSession.properties || {});
+
   const [hookUsage, setHookUsage] = useState<Record<string, HookUsage[]>>({});
   const [registeredHooks, setRegisteredHooks] = useState<Set<string>>(new Set());
   const [session, setSession] = useState<CheckoutSession>(defaultSession);
@@ -73,13 +75,13 @@ export function GlobalStateProvider({ offer, offerItems, session: defaultSession
   const [errors, setErrors] = useState<ValidationErrors>({});
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [isSubmitting, setSubmitting] = useState<boolean>(false);
-  const previousItemsRef = useRef<OfferItem[]>([]);
+  const previousItemsRef = useRef<OfferItem[]|undefined>(undefined);
 
 
   const updatedItems = useMemo(() => {
     // Find which items were updated
-    const updatedItems = offerItems.filter((item) => {
-      const prevItem = previousItemsRef.current.find(p => p.id === item.id);
+    const updatedItems = offerItems?.filter((item) => {
+      const prevItem = previousItemsRef.current?.find(p => p.id === item.id);
       return prevItem && (
         prevItem.is_required !== item.is_required ||
         prevItem.default_price_id !== item.default_price_id
@@ -92,7 +94,7 @@ export function GlobalStateProvider({ offer, offerItems, session: defaultSession
   }, [offerItems]);
 
   useEffect(() => {
-    if(updatedItems.length > 0) {
+    if(updatedItems && updatedItems.length > 0) {
       updatedItems.forEach(item => {
         updateLineItem({
           item: item.id,
@@ -115,6 +117,23 @@ export function GlobalStateProvider({ offer, offerItems, session: defaultSession
         type: typeof value === 'boolean' ? 'boolean' : typeof value === 'number' ? 'number' : 'string'
       }
     }));
+    // basic key value instead of all block stuff
+    // setFieldStates(prev => ({
+    //   ...prev,
+    //   [`${blockId}:${fieldName}`]: {
+    //     value: value,
+    //   }
+    // }));
+
+    // setFieldStates(prev => ({
+    //   ...prev,
+    //   [`${blockId}:${fieldName}`]: {
+    //     blockId,
+    //     fieldName,
+    //     value,
+    //     type: typeof value === 'boolean' ? 'boolean' : typeof value === 'number' ? 'number' : 'string'
+    //   }
+    // }));
   };
 
   // Get field state function
@@ -234,22 +253,12 @@ export function GlobalStateProvider({ offer, offerItems, session: defaultSession
     return true;
   };
 
-
-
-  // Helper to get field value by ID
-  const getFieldValue = (fieldId: string): any => {
-    const state = Object.values(fieldStates).find(state => state.blockId === fieldId);
-    return state?.value;
-  };
-
   const setPageSubmissionProps = (callback: () => Promise<unknown>) => {
     setSubmissionProps(() => callback);
   };
 
 
   const updateSessionProperties = async (blockId: string, value: any) => {
-    if (editor) return;
-
     // Update local state immediately
     const newProperties = {
       ...session.properties,
@@ -260,6 +269,9 @@ export function GlobalStateProvider({ offer, offerItems, session: defaultSession
       ...prev,
       properties: newProperties
     }));
+
+    if (editor) return;
+
     try {
       const response = await axios.post(`/checkouts/${session.id}/mutations`, {
         action: 'setProperties',

@@ -73,49 +73,56 @@ export function Sidebar() {
     }
   };
 
-  // Get all block IDs across all pages and sections for validation
-  const getAllBlockIds = useCallback(() => {
-    const blockIds = new Set<string>();
-    
+  // Get all block names across all pages and sections for validation
+  const getAllBlockNames = useCallback(() => {
+    const blockNames = new Set<string>();
+
     Object.values(data.view.pages).forEach(page => {
       Object.values(page.view).forEach(section => {
         if (section.blocks) {
           section.blocks.forEach(block => {
-            blockIds.add(block.id);
+            if (block.name) {
+              blockNames.add(block.name);
+            }
           });
         }
       });
     });
-    
-    return blockIds;
+
+    return blockNames;
   }, [data.view.pages]);
 
-  const validateBlockId = useCallback((newId: string) => {
-    if (!newId.trim()) {
-      return 'Block ID cannot be empty';
+  const validateBlockName = useCallback((newName: string) => {
+    if (!newName.trim()) {
+      return 'Block name cannot be empty';
     }
-    
+
     // Check for valid slug characters (alphanumeric, dashes, underscores)
     const slugPattern = /^[a-zA-Z0-9_-]+$/;
-    if (!slugPattern.test(newId)) {
-      return 'Block ID can only contain letters, numbers, dashes, and underscores';
+    if (!slugPattern.test(newName)) {
+      return 'Block name can only contain letters, numbers, dashes, and underscores';
     }
-    
-    if (newId === selectedBlockId) {
-      return null; // Same ID, no change
+
+
+    if(selectedBlockId ) {
+      const currentBlock = findBlockInPage(data.view.pages[selectedPage], selectedBlockId);
+      if (newName === currentBlock?.name) {
+        return null;
+      }
     }
-    
-    const allBlockIds = getAllBlockIds();
-    if (allBlockIds.has(newId)) {
-      return 'Block ID already exists';
+
+    const allBlockNames = getAllBlockNames();
+    if (allBlockNames.has(newName)) {
+      return 'Block name already exists';
     }
-    
+
     return null;
-  }, [selectedBlockId, getAllBlockIds]);
+  }, [selectedBlockId, getAllBlockNames]);
 
   const startEditingBlockId = () => {
     if (selectedBlockId) {
-      setEditBlockIdValue(selectedBlockId);
+      const currentBlock = findBlockInPage(data.view.pages[selectedPage], selectedBlockId);
+      setEditBlockIdValue(currentBlock?.name ?? selectedBlockId);
       setIsEditingBlockId(true);
       setBlockIdError(null);
     }
@@ -129,20 +136,18 @@ export function Sidebar() {
 
   const saveBlockId = () => {
     // Format the input to slug format before validation and saving
-    const formattedId = formatToSlug(editBlockIdValue);
-    
-    const error = validateBlockId(formattedId);
+    const formattedName = formatToSlug(editBlockIdValue);
+
+    const error = validateBlockName(formattedName);
     if (error) {
       setBlockIdError(error);
       return;
     }
-    
-    if (selectedBlockId && formattedId !== selectedBlockId) {
+    if (selectedBlockId) {
       const currentBlock = findBlockInPage(data.view.pages[selectedPage], selectedBlockId);
-      if (currentBlock) {
-        // Update the block with the new formatted ID
-        const updatedBlock = { ...currentBlock, id: formattedId };
-        
+      if (currentBlock && formattedName !== currentBlock.name) {
+        const updatedBlock = { ...currentBlock, name: formattedName };
+
         // Find the section containing this block
         const page = data.view.pages[selectedPage];
         const sectionId = Object.keys(page.view).find((section) => {
@@ -153,20 +158,20 @@ export function Sidebar() {
           // Update the block directly in the data structure
           const sectionBlocks = page.view[sectionId].blocks;
           const blockIndex = sectionBlocks.findIndex(b => b.id === selectedBlockId);
-          
+
           if (blockIndex !== -1) {
             // Replace the block with the updated one
             const newBlocks = [...sectionBlocks];
             newBlocks[blockIndex] = updatedBlock;
-            
+
             // Update the section with the new blocks array
             updateSection(sectionId, { blocks: newBlocks });
-            setSelectedBlockId(formattedId);
+            setSelectedBlockId(currentBlock.id);
           }
         }
       }
     }
-    
+
     setIsEditingBlockId(false);
     setEditBlockIdValue('');
     setBlockIdError(null);
@@ -182,7 +187,7 @@ export function Sidebar() {
   const handleBlockIdChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     // Allow any characters while typing
     setEditBlockIdValue(e.target.value);
-    
+
     // Clear error when user starts typing
     if (blockIdError) {
       setBlockIdError(null);
@@ -334,7 +339,7 @@ export function Sidebar() {
                     }}>{findSectionInPageViaBlock(data.view.pages[selectedPage], selectedBlockId)?.id?.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
                     </span>
                   </span>
-                  
+
                   <div className="flex items-center gap-2 w-full">
                     {isEditingBlockId ? (
                       <div className="flex-1">
@@ -354,13 +359,13 @@ export function Sidebar() {
                         )}
                       </div>
                     ) : (
-                      <div 
+                      <div
                         className="flex items-center gap-1 cursor-pointer hover:bg-gray-100 rounded px-1 py-0.5 transition-colors group"
                         onClick={startEditingBlockId}
                       >
-                        
+
                         <h2 className="text-lg font-bold truncate leading-6">
-                          {selectedBlockId}
+                          {findBlockInPage(data.view.pages[selectedPage], selectedBlockId)?.name ?? selectedBlockId}
                         </h2>
                         <Edit3 className="h-3 w-3 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" />
                       </div>

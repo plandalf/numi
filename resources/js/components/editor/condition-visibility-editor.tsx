@@ -22,6 +22,7 @@ import 'react-querybuilder/dist/query-builder.css';
 import { Trash2, ChevronDown, Eye } from 'lucide-react';
 import { Combobox } from '../combobox';
 import { Badge } from '../ui/badge';
+import { useEditor } from '@/contexts/offer/editor-context';
 
 const ACTION_OPTIONS = [
   { value: 'show', label: 'Show' },
@@ -116,7 +117,7 @@ export const AddVisibilityCondition: React.FC<{
 }> = ({ value, onChange }) => {
   const [open, setOpen] = React.useState(false);
   const [action, setAction] = React.useState<string>(value?.action || 'show');
-
+  const { getBlock } = useEditor();
   // Convert our rule group to QueryBuilder format
   const [query, setQuery] = React.useState<RuleGroupType>(
     mapRuleGroupToQueryBuilderFormat(value)
@@ -126,15 +127,22 @@ export const AddVisibilityCondition: React.FC<{
   const fieldStates = context?.fieldStates ?? {};
   const hookUsage = context?.hookUsage ?? {};
 
-  console.log('query', query, context);
-
   const fields = useMemo(() => {
-    return Object.values(fieldStates).map(field => ({
-      name: `fields['${field.blockId}'].value`,
-      label: `${field.blockId}.${field.fieldName}`,
-      blockId: field.blockId,
-      fieldName: field.fieldName,
-    }));
+    return Object.values(fieldStates).map(field => {
+      if(field.fieldName !== 'value') {
+        return null;
+      }
+
+      const block = getBlock(field.blockId);
+      if (!block) return null;
+
+      return ({
+        name: `fields['${field.blockId}'].value`,
+        label: `${block.name || field.blockId}.${field.fieldName}`,
+        blockId: field.blockId,
+        fieldName: field.fieldName,
+      })
+    }).filter((fields) => fields !== null);
   }, [fieldStates]);
 
   const operators = [

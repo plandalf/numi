@@ -207,6 +207,7 @@ export interface BlockProps {
 
 export interface Block {
     id: string;
+    name?: string;
     type: string;
     object: 'block' | 'field';
     content?: {

@@ -7,7 +7,6 @@ import debounce from "lodash/debounce";
 import { Theme } from "@/types/theme";
 import { CheckoutState, GlobalStateContext } from '@/pages/checkout-main';
 import { CallbackType, Event } from "@/components/editor/interaction-event-editor";
-import { resolveThemeValue } from "@/lib/theme";
 
 export const BlockContext = createContext<BlockContextType>({
   blockId: '',
@@ -477,13 +476,6 @@ const Numi = {
   useCheckout(options: CheckoutOptions = {}): CheckoutState {
     const checkout = useContext(GlobalStateContext);
 
-    // useEffect(() => {
-    //   // Cleanup function
-    //   return () => {
-    //     // Any cleanup needed
-    //   };
-    // }, []);
-
     return checkout;
   },
 
@@ -659,26 +651,23 @@ const Numi = {
 
     useEffect(() => {
       blockContext.registerHook(hook);
+      blockContext.registerField('value', props.initialValue);
     }, [hook]);
+
+    const { updateSessionProperties } = useContext(GlobalStateContext);
 
     // If use as state, prioritize getting the field value from the global state
     const defaultValue = props.asState
       ? blockContext.getFieldValue(props.name) ?? get(blockContext.blockConfig, `content.${props.name}`) ?? props.initialValue
       : get(blockContext.blockConfig, `content.${props.name}`) ?? props.initialValue;
 
-    const value = props.asState 
-      ? Numi.useSessionValue({
-          blockId: blockContext.blockId,
-          defaultValue
-        })
-      : defaultValue;
-
-    useEffect(() => {
-      setValue(value);
-    }, []);
+    const value = defaultValue;
+    console.log('value!!!', value, props.name, { big: blockContext.getFieldValue(props.name) });
 
     const setValue = (newValue: any) => {
-      blockContext.setFieldValue(props.name, newValue);
+      blockContext.setFieldValue('value', newValue);
+
+      updateSessionProperties(blockContext.blockId, { value: newValue });
     };
 
     const updateHook = useCallback((newHook: Partial<HookUsage>) => {
@@ -686,7 +675,6 @@ const Numi = {
         debouncedUpdateRef.current(newHook);
       }
     }, []);
-
 
     return [value, setValue, updateHook];
   },
@@ -722,7 +710,7 @@ const Numi = {
 
 
     const defaultValue = blockContext.blockConfig.content[props.name] ?? blockContext.getFieldValue(props.name) ?? props.defaultValue;
-    const value = props.asState 
+    const value = props.asState
       ? Numi.useSessionValue({
           blockId: blockContext.blockId,
           defaultValue
@@ -771,16 +759,12 @@ const Numi = {
     const defaultValue = props.inspector !== 'hidden'
       ? get(blockContext.blockConfig, `content.${props.name}`) ?? blockContext.getFieldValue(props.name) ?? props.defaultValue
       : blockContext.getFieldValue(props.name) ?? get(blockContext.blockConfig, `content.${props.name}`) ?? props.defaultValue;
-    const value = props.asState
-      ? Numi.useSessionValue({
-          blockId: blockContext.blockId,
-          defaultValue
-        })
-      : defaultValue;
+
+    const value = defaultValue;
     const format = get(blockContext.blockConfig, `content.format`) ?? props.format ?? 'plain';
 
     const setValue = (newValue: string) => {
-      blockContext.setFieldValue(props.name, newValue);
+      blockContext.setFieldValue('value', newValue);
     };
 
     return [value, setValue, format];
@@ -830,7 +814,7 @@ const Numi = {
       : Number(blockContext.getFieldValue(props.name)) ?? Number(get(blockContext.blockConfig, `content.${props.name}`)) ?? props.defaultValue;
 
     const setValue = (newValue: number) => {
-      blockContext.setFieldValue(props.name, newValue);
+      blockContext.setFieldValue('value', newValue);
     };
 
     return [value, setValue];
@@ -841,7 +825,7 @@ const Numi = {
     const { isEditor, session } = Numi.useCheckout();
 
     return useMemo(() => {
-      if(!isEditor 
+      if(!isEditor
         && session.properties
         && Object.keys(session.properties).includes(props.blockId)
       ){
