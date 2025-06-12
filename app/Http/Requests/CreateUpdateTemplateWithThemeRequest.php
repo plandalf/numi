@@ -10,6 +10,21 @@ use Illuminate\Foundation\Http\FormRequest;
 class CreateUpdateTemplateWithThemeRequest extends FormRequest
 {
     /**
+     * We're encoding view field to preserve the actual contents like
+     * the empty strings & strings with spaces as it is needed for the editor.
+     * We could be using the array request type but the empty strings are getting
+     * cleaned up by our global middleware `ConvertEmptyStringsToNull`.
+     */
+    public function prepareForValidation()
+    {
+        if ($this->view) {
+            $this->merge([
+                'view' => json_decode($this->view, true),
+            ]);
+        }
+    }
+
+    /**
      * Determine if the user is authorized to make this request.
      */
     public function authorize(): bool
