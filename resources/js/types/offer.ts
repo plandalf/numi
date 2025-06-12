@@ -59,6 +59,7 @@ export interface OfferItem {
     updated_at: string;
     product: Product | null;
     prices: Price[];
+    quantity: number;
     type: OfferItemType;
 }
 
@@ -84,7 +85,7 @@ export interface Price {
     archived_at?: string | null;
     created_at?: string;
     updated_at?: string;
-    product?: Product | null;
+    product?: Product;
     metadata?: Record<"copy"|"tag_name", string>[] | null;
 }
 

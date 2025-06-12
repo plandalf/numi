@@ -198,10 +198,9 @@ function CheckboxBlockComponent({ context }: { context: BlockContextType }) {
     label && <MarkdownText text={label} theme={theme} style={checkboxLabelStyles} />
   );
 
-  // Removing this since this initial checked state should not trigger callbacks
-  // useEffect(() => {
-  //   executeCallbacks(checked ? Event.onSelect : Event.onUnSelect);
-  // }, []);
+  useEffect(() => {
+    executeCallbacks(checked ? Event.onSelect : Event.onUnSelect);
+  }, []);
 
   return (
     <div>

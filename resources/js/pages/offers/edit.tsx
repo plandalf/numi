@@ -127,33 +127,30 @@ function EditApp({ publishableKey }: { publishableKey: string | undefined }) {
     handlePageNameClick
   } = useEditor();
 
+  const lineItems = offer.items.filter(item => item.is_required).map(item => {
+    const defaultPrice = item.prices.find(price => price.id === item.default_price_id);
+    return {
+      id: item.id,
+      name: defaultPrice?.product?.name || item.name,
+      price: defaultPrice?.amount,
+      currency: 'USD',
+      quantity: 1,
+      subtotal: defaultPrice?.amount ?? 0,
+      taxes: 0,
+      shipping: 0,
+      discount: 0,
+      total: defaultPrice?.amount ?? 0,
+      product: defaultPrice?.product,
+    }
+  });
+
   const session: CheckoutSession = {
     id: '123',
-    line_items: [
-      {
-        id: '123',
-        slot: '123',
-        name: '123',
-        quantity: 1,
-        subtotal: 100,
-        taxes: 10,
-        shipping: 5,
-        discount: 10,
-        total: 105,
-        currency: 'USD',
-        product: {
-          id: '123',
-          name: '123',
-          image: '/assets/icons/numi.png',
-          price: 100,
-          currency: 'USD',
-        }
-      }
-    ],
+    line_items: lineItems,
     currency: 'USD',
-    subtotal: 100,
-    discount: 10,
-    total: 105,
+    subtotal: lineItems.reduce((acc, item) => Number(acc) + Number(item.subtotal), 0),
+    discount: 0,
+    total: lineItems.reduce((acc, item) => Number(acc) + Number(item.total), 0),
     metadata: {},
     integration_client: IntegrationClient.STRIPE,
     status: 'open',
@@ -162,6 +159,7 @@ function EditApp({ publishableKey }: { publishableKey: string | undefined }) {
     publishable_key: publishableKey,
   }
 
+  console.log('session', session);
   const [prototype, setPrototype] = useState<null | { sectionId: string; index: number; block: Block }>();
   const [activeItem, setActiveItem] = useState<ActiveDndItem | null>(null);
   const dragOverRafRef = useRef<number | null>(null); // Ref for requestAnimationFrame
@@ -169,7 +167,7 @@ function EditApp({ publishableKey }: { publishableKey: string | undefined }) {
   function generateIdForBlockType(type: string) {
     // Count all blocks of the given type across all pages and sections
     let count = 0;
-    
+
     // Iterate through all pages
     Object.values(data.view.pages).forEach(page => {
       // Iterate through all sections in each page
@@ -184,7 +182,7 @@ function EditApp({ publishableKey }: { publishableKey: string | undefined }) {
         }
       });
     });
-    
+
     // Convert snake_case to camelCase
     const camelCaseType = type
       .split('_')
@@ -195,7 +193,7 @@ function EditApp({ publishableKey }: { publishableKey: string | undefined }) {
         return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
       })
       .join('');
-    
+
     // Return the camelCase type with the next sequential number
     return `${camelCaseType}${count + 1}`;
   }
@@ -598,7 +596,7 @@ function EditApp({ publishableKey }: { publishableKey: string | undefined }) {
     <AppOfferLayout offer={offer}>
       <Head title={`Edit ${offer.name || 'Untitled Offer'}`} />
 
-      <GlobalStateProvider offer={data} session={session} editor>
+      <GlobalStateProvider offer={data} offerItems={offer.items} session={session} editor>
         <NavigationProvider onPageChange={handlePageNameClick}>
 
           <DndContext

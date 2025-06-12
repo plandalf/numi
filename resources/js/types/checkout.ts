@@ -10,12 +10,8 @@ export enum IntegrationClient {
 }
 
 export type CheckoutItem = {
-  id: string;
-
-  slot: string;
-
+  id: number;
   name: string;
-  // price: number;
   quantity: number;
   currency: string;
   metadata?: Record<string, any>;

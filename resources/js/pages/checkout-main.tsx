@@ -1,6 +1,6 @@
 import { Head } from '@inertiajs/react';
-import { useState, createContext, useContext, useMemo } from 'react';
-import { type Block, type Page as OfferPage, type OfferConfiguration, } from '@/types/offer';
+import { useState, createContext, useContext, useMemo, useEffect, useRef } from 'react';
+import { type Block, type Page as OfferPage, type OfferConfiguration, OfferItem, } from '@/types/offer';
 import { cn } from '@/lib/utils';
 
 import { BlockConfig, FieldState, HookUsage } from '@/types/blocks';
@@ -14,6 +14,7 @@ import { Theme } from '@/types/theme';
 import { sendMessage } from '@/utils/sendMessage';
 import { CheckoutSuccess } from '@/events/CheckoutSuccess';
 import { CheckoutResized } from '@/events/CheckoutResized';
+import { updateSessionLineItems } from '@/utils/editor-session';
 // Form and validation context
 type FormData = Record<string, any>;
 type ValidationErrors = Record<string, string[]>;
@@ -61,7 +62,7 @@ export interface GlobalState {
   isEditor: boolean;
 }
 
-export function GlobalStateProvider({ offer, session: defaultSession, editor = false, children }: { offer: OfferConfiguration, session: CheckoutSession, editor?: boolean, children: React.ReactNode }) {
+export function GlobalStateProvider({ offer, offerItems, session: defaultSession, editor = false, children }: { offer: OfferConfiguration, offerItems: OfferItem[], session: CheckoutSession, editor?: boolean, children: React.ReactNode }) {
   // Field states for all blocks
   const [fieldStates, setFieldStates] = useState<Record<string, FieldState>>({});
   const [hookUsage, setHookUsage] = useState<Record<string, HookUsage[]>>({});
@@ -72,7 +73,36 @@ export function GlobalStateProvider({ offer, session: defaultSession, editor = f
   const [errors, setErrors] = useState<ValidationErrors>({});
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [isSubmitting, setSubmitting] = useState<boolean>(false);
+  const previousItemsRef = useRef<OfferItem[]>([]);
 
+
+  const updatedItems = useMemo(() => {
+    // Find which items were updated
+    const updatedItems = offerItems.filter((item) => {
+      const prevItem = previousItemsRef.current.find(p => p.id === item.id);
+      return prevItem && (
+        prevItem.is_required !== item.is_required ||
+        prevItem.default_price_id !== item.default_price_id
+      );
+    });
+
+    previousItemsRef.current = offerItems;
+
+    return updatedItems;
+  }, [offerItems]);
+
+  useEffect(() => {
+    if(updatedItems.length > 0) {
+      updatedItems.forEach(item => {
+        updateLineItem({
+          item: item.id,
+          price: item.prices.find(p => p.id == item.default_price_id)?.lookup_key ?? undefined,
+          quantity: 1,
+          required: item.is_required
+        });
+      });
+    }
+  }, [updatedItems]);
 
   // Update field state function
   const updateFieldState = (blockId: string, fieldName: string, value: any) => {
@@ -225,7 +255,7 @@ export function GlobalStateProvider({ offer, session: defaultSession, editor = f
       ...session.properties,
       [blockId]: value
     };
-    
+
     setSession(prev => ({
       ...prev,
       properties: newProperties
@@ -311,6 +341,7 @@ export function GlobalStateProvider({ offer, session: defaultSession, editor = f
 
   const updateLineItem = async ({ item, price, quantity, required }: SetItemActionValue) => {
     if (editor) {
+      setSession(updateSessionLineItems({ offerItems, item, price, quantity, required, checkoutSession: session }));
       return;
     }
 

@@ -6,7 +6,7 @@ import { Combobox } from "../combobox";
 import { Input } from "../ui/input";
 
 export type SetItemActionValue = {
-  item?: string;
+  item?: number;
   price?: string;
   required?: boolean;
   quantity?: number;
