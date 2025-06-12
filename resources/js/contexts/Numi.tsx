@@ -620,10 +620,19 @@ const Numi = {
     group?: string;
   }): [any, (newValue: any) => void, (hook: Partial<HookUsage>) => void] {
     const blockContext = useContext(BlockContext);
+    const { session } = Numi.useCheckout();
+
+    // If use as state, prioritize getting the field value from the global state
+    const defaultValue = props.asState
+      ? session.properties?.[blockContext.blockId] ?? blockContext.getFieldValue(props.name) ?? get(blockContext.blockConfig, `content.${props.name}`) ?? props.initialValue
+      : get(blockContext.blockConfig, `content.${props.name}`) ?? props.initialValue;
+
+    const [value, setValue] = useState(defaultValue);
+
     const [hook, setHook] = useState<HookUsage>({
       name: props.name,
       type: 'enumeration',
-      defaultValue: props.initialValue,
+      defaultValue: defaultValue,
       options: props.options,
       labels: props.labels,
       icons: props.icons,
@@ -631,7 +640,6 @@ const Numi = {
       label: props.label,
       group: props.group,
     });
-    const { session } = Numi.useCheckout();
 
     // Create a ref to hold the debounced function
     const debouncedUpdateRef = useRef<ReturnType<typeof debounce> | null>(null);
@@ -652,19 +660,12 @@ const Numi = {
 
     useEffect(() => {
       blockContext.registerHook(hook);
-      blockContext.registerField('value', props.initialValue);
+      blockContext.registerField('value', defaultValue);
     }, [hook]);
 
-    // If use as state, prioritize getting the field value from the global state
-    const defaultValue = props.asState
-      ? session.properties?.[blockContext.blockId] ?? blockContext.getFieldValue(props.name) ?? get(blockContext.blockConfig, `content.${props.name}`) ?? props.initialValue
-      : get(blockContext.blockConfig, `content.${props.name}`) ?? props.initialValue;
-
-    const value = defaultValue;
-    console.log('value!!!', value, props.name, { big: blockContext.getFieldValue(props.name) });
-
-    const setValue = (newValue: any) => {
+    const setFieldValue = (newValue: any) => {
       blockContext.setFieldValue('value', newValue);
+      setValue(newValue);
     };
 
     const updateHook = useCallback((newHook: Partial<HookUsage>) => {
@@ -673,7 +674,7 @@ const Numi = {
       }
     }, []);
 
-    return [value, setValue, updateHook];
+    return [value, setFieldValue, updateHook];
   },
 
   useStateBoolean({ name, defaultValue: initialDefaultValue, label, inspector, group, asState }: { name: string; defaultValue: boolean; label?: string; inspector?: string, group?: string; asState?: boolean; }): [boolean, (value: boolean) => void] {
