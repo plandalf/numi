@@ -226,6 +226,7 @@ function OptionSelectorComponent({ context }: { context: BlockContextType }) {
   const handleTabChange = useCallback((value: string) => {
     setSelectedTab(value);
     executeCallbacks(Event.onClick, value);
+    updateSessionProperties(context.blockId, value);
   }, [executeCallbacks, updateSessionProperties, context.blockId, selectedTab]);
 
   useEffect(() => {

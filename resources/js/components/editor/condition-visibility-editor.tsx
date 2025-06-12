@@ -124,7 +124,7 @@ export const AddVisibilityCondition: React.FC<{
   );
 
   const context = useContext(GlobalStateContext);
-  const fieldStates = context?.fieldStates ?? {};
+  const fieldStates = context?.fields ?? {};
   const hookUsage = context?.hookUsage ?? {};
 
   const fields = useMemo(() => {

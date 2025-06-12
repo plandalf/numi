@@ -22,10 +22,8 @@ type ValidationErrors = Record<string, string[]>;
 
 // Contexts
 export const GlobalStateContext = createContext<GlobalState | null>(null);
-type Field = { id: string; name: string; value: any };
-
 export interface GlobalState {
-  fields: Record<string, Record<string, Field> | Field>;
+  fields: Record<string, FieldState>;
   fieldStates: Record<string, FieldState>; // key is `${blockId}:${fieldName}`
   updateFieldState: (blockId: string, fieldName: string, value: any) => void;
   getFieldState: (blockId: string, fieldName: string) => FieldState | undefined;
@@ -447,30 +445,12 @@ export function GlobalStateProvider({ offer, offerItems, session: defaultSession
   };
 
   const fields = useMemo(() => {
-    // First reduction: Group fields by blockId
-    const groupedFields = Object.values(fieldStates).reduce((acc, field) => {
-      if (!acc[field.blockId] || !Array.isArray(acc[field.blockId])) {
-        acc[field.blockId] = [];
-      }
-      acc[field.blockId] = [{
-        id: field.blockId,
-        name: field.fieldName,
-        value: field.value
-      }];
-      return acc;
-    }, {} as Record<string, Array<{ id: string; name: string; value: any }>>);
-
-    return Object.entries(groupedFields).reduce((acc, [blockId, fields]) => {
-      if (fields.length === 1) {
-        acc[blockId] = fields[0];
-      } else {
-        acc[blockId] = fields.reduce((fieldAcc, field) => {
-          fieldAcc[field.name] = field;
-          return fieldAcc;
-        }, {} as Record<string, any>);
-      }
-      return acc;
-    }, {} as Record<string, { id: string; name: string; value: any } | Record<string, any>>);
+    return Object.values(fieldStates)
+      .filter(field => field.fieldName === 'value')
+      .reduce((acc, field) => {
+        acc[field.blockId] = field;
+        return acc;
+      }, {} as Record<string, FieldState>);
   }, [fieldStates]);
 
   // Create context value
