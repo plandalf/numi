@@ -81,7 +81,7 @@ class CheckoutController extends Controller
         $this->handleInvalidDomain($request, $checkout);
 
         $checkout->load([
-            'lineItems.offerItem',
+            'lineItems.offerItem.offerPrices',
             'offer.theme',
             'offer.hostedPage.logoImage',
             'offer.hostedPage.backgroundImage',

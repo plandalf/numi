@@ -1,5 +1,5 @@
 import { Button } from '@/components/ui/button';
-import { CircleAlert, CirclePlus, PlusIcon, Pencil, Info } from 'lucide-react';
+import { CircleAlert, CirclePlus, PlusIcon, Pencil, Info, Edit3 } from 'lucide-react';
 import { useForm, usePage } from '@inertiajs/react';
 import { EditProps } from '@/pages/offers/edit';
 import { OfferItem, OfferItemType, Price, Product } from '@/types/offer';
@@ -17,6 +17,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
+import { EditableLabel } from '../ui/editable-label';
 
 
 const NewProductAndPricesOfferItem = ({ open, setOpen, offerItemsCount, type, offerId }: { offerId: number, offerItemsCount: number, type: OfferItemType, open: boolean, setOpen: (open: boolean) => void }) => {
@@ -78,13 +79,13 @@ export const PageProducts = () => {
     setSelectedOfferItemType(OfferItemType.STANDARD);
   }
 
-  const handleRenameClick = (item: OfferItem) => {
+  const handleRenameOfferItemClick = (item: OfferItem) => {
     setRenameValue(item.name);
     setRenameItemId(item.id);
     setIsRenameDialogOpen(true);
   };
 
-  const handleRenameSubmit = async (e: React.FormEvent) => {
+  const handleRenameOfferItemSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!renameItemId) return;
     setRenameLoading(true);
@@ -147,7 +148,7 @@ export const PageProducts = () => {
         {offerItems.map((item, key) => (
           <div key={item.id}>
             <div className="flex justify-between gap-2">
-              <div className="flex gap-1 text-sm break-all">
+              <div className="flex gap-1 text-sm break-word">
                 <span
                   className="self-center"
                 >{key + 1}. {item.name}</span>
@@ -155,7 +156,7 @@ export const PageProducts = () => {
                   type="button"
                   variant="ghost"
                   size="icon"
-                  onClick={() => handleRenameClick(item)}
+                  onClick={() => handleRenameOfferItemClick(item)}
                   className="ml-1 !h-8 !w-8"
                   tooltip="Rename"
                 >
@@ -230,14 +231,42 @@ export const PageProducts = () => {
       });
     }
 
+
+    const savePriceName = (value: string, priceId: number) => {
+      router.put(route("offers.items.prices.update", { 
+          offer: offer.id,
+          item: offerItem.id,
+          price: priceId
+        }), {
+        name: value
+      }, {
+        preserveScroll: true,
+        onSuccess: () => {
+          toast.success(`Item updated successfully`);
+        },
+      });
+    };
+
+
     return (
       <>
         {prices.map((price) => (
           <div className="flex bg-white border rounded-md gap-2 px-4 py-2 justify-between w-full">
-            <div className="flex flex-col gap-1 self-center">
-              <div className="text-sm font-bold break-all">{price.product?.name || price.name}</div>
-              <div className="text-xs">{price.name} {price.currency.toUpperCase()} ${price.amount / 100}</div>
-              {price.lookup_key && <div className="text-xs">{price.lookup_key}</div>}
+            <div className="flex flex-col gap-1.5 self-center">
+              <div className="text-xs underline break-all px-1 ">{price.product?.name}</div>
+              <EditableLabel
+                value={price.name ?? ''}
+                onSave={(value) => savePriceName(value, price.id)}
+              >
+                <div
+                  className="min-h-[28px] w-[210px] break-all flex items-center gap-2 cursor-pointer hover:bg-gray-100 rounded px-1 py-0.5 transition-colors group text-sm font-bold break-word"
+                >
+                  {price.name}
+                  <Edit3 className="size-4 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+                </div>
+              </EditableLabel>
+              <div className="text-xs px-1">{price.currency.toUpperCase()} ${price.amount / 100}</div>
+              {price.lookup_key && <div className="text-xs px-1">{price.lookup_key}</div>}
 
               {price.id === offerItem.default_price_id && (
                 <Badge variant="secondary">Default</Badge>
@@ -401,7 +430,7 @@ export const PageProducts = () => {
             <DialogTitle>Rename product</DialogTitle>
             <DialogDescription>Give this product a new name.</DialogDescription>
           </DialogHeader>
-          <form onSubmit={handleRenameSubmit} className="space-y-4">
+          <form onSubmit={handleRenameOfferItemSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="rename-product-name">Name</Label>
               <Input

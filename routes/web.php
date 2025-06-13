@@ -24,6 +24,7 @@ use Inertia\Inertia;
 use Workflow\WorkflowStub;
 use App\Http\Controllers\OrdersController;
 use App\Http\Controllers\FeedbackController;
+use App\Http\Controllers\OfferItemPriceController;
 
 Route::redirect('/', '/dashboard')->name('home');
 
@@ -204,6 +205,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
             // Add offerItem routes
             Route::resource('items', OfferItemsController::class)->names('items');
+            Route::put('items/{item}/prices/{price}', [OfferItemPriceController::class, 'update'])->name('items.prices.update');
 
             Route::get('integrate', [OffersController::class, 'integrate'])->name('integrate');
             Route::get('sharing', [OffersController::class, 'sharing'])->name('sharing');
