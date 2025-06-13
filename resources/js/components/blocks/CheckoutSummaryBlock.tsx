@@ -398,7 +398,7 @@ function CheckoutSummaryComponent({ context }: { context: BlockContextType }) {
                 <img src={item.product?.image} alt={item.product?.name || item.name} className="w-full h-full object-cover" />
               </div>
             )}
-            <div className="flex-grow">
+            <div className="flex-grow overflow-hidden">
               <div className="flex justify-between">
                 <div className="font-medium" style={itemStyle}>{item.product?.name || item.name}</div>
                 {showItemPrices && item.total !== undefined && (
