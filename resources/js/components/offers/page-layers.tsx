@@ -47,11 +47,11 @@ export const PageLayers: React.FC<PageLayersProps> = ({ onAddNewElementClick }) 
   const [selectedTemplateId, setSelectedTemplateId] = useState('');
   const [selectTemplateError, setSelectTemplateError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-  
+
   // Get sections and blocks for the selected page
   const page = data.view.pages[selectedPage];
   const sections: { id: string; name: string; blocks: Block[]; hidden?: boolean }[] = [];
-  
+
   if (page && page.view) {
     Object.entries(page.view as PageView).forEach(([sectionId, section]) => {
       if (section && Array.isArray(section.blocks)) {
@@ -68,7 +68,7 @@ export const PageLayers: React.FC<PageLayersProps> = ({ onAddNewElementClick }) 
   // Sort sections in chronological order
   const sortedSections = sections.sort((a, b) => {
     const order = ['title', 'content', 'action', 'promo_box', 'promo_header', 'promo_content'];
-    
+
     // Get index from order array, return -1 if not found
     const getOrderIndex = (id: string): number => {
       return order.findIndex(section => id.toLowerCase() === section);
@@ -79,11 +79,11 @@ export const PageLayers: React.FC<PageLayersProps> = ({ onAddNewElementClick }) 
 
     // If both sections are not in the order array, maintain their relative position
     if (aIndex === -1 && bIndex === -1) return 0;
-    
+
     // If one section is not in order array, put it at the end
     if (aIndex === -1) return 1;
     if (bIndex === -1) return -1;
-    
+
     // Sort by index in order array
     return aIndex - bIndex;
   });
@@ -154,7 +154,7 @@ export const PageLayers: React.FC<PageLayersProps> = ({ onAddNewElementClick }) 
 
   return (
     <div className="flex flex-col h-full">
-      <div 
+      <div
         className="flex-1 overflow-y-auto p-4"
         onClick={(e) => {
           // Clear hover states when clicking on empty areas
@@ -238,7 +238,7 @@ export const PageLayers: React.FC<PageLayersProps> = ({ onAddNewElementClick }) 
         </div>
         <Button
           variant="default"
-          className="w-full mt-4 bg-gray-900 text-white hover:bg-gray-800 flex items-center justify-center gap-2"
+          className="w-full mt-4 \"
           onClick={onAddNewElementClick}
         >
           <span>Add another element</span>
@@ -278,11 +278,11 @@ export const PageLayers: React.FC<PageLayersProps> = ({ onAddNewElementClick }) 
                     variant="default"
                     className="w-full flex items-center"
                     type="button"
-                    onClick={handleCreateTemplate} 
+                    onClick={handleCreateTemplate}
                     disabled={saving}
                   >
-                    {saving 
-                      ? 'Creating...' 
+                    {saving
+                      ? 'Creating...'
                       : 'Create Template'
                     }
                   </Button>
@@ -309,8 +309,8 @@ export const PageLayers: React.FC<PageLayersProps> = ({ onAddNewElementClick }) 
                     onClick={handleSaveTemplate}
                     disabled={saving}
                   >
-                    {saving 
-                      ? 'Updating...' 
+                    {saving
+                      ? 'Updating...'
                       : 'Update Template'
                     }
                   </Button>
