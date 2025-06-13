@@ -430,7 +430,7 @@ function CheckoutSummaryComponent({ context }: { context: BlockContextType }) {
               style={inputStyle}
               autoComplete="off"
             />
-            <Button
+            <button
               type="button"
               onClick={handleApplyDiscount}
               className="min-w-24 bg-gray-100 hover:bg-gray-200 text-gray-800 text-sm py-2 px-4 rounded"
@@ -438,7 +438,7 @@ function CheckoutSummaryComponent({ context }: { context: BlockContextType }) {
               disabled={isDiscountSubmitting || isEditor}
             >
               {isDiscountSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : discountCtaLabel}
-            </Button>
+            </button>
           </div>}
           {errors.discount && <p className="text-sm text-red-500">{errors.discount}</p>}
           {session.discounts && session.discounts.length > 0 && (
