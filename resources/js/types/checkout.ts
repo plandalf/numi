@@ -1,4 +1,4 @@
-import type { OfferConfiguration, Page, Product } from '@/types/offer';
+import type { OfferConfiguration, Page, Price, Product } from '@/types/offer';
 import React from 'react';
 import { Font, HostedPage } from '.';
 import { Discount } from './product';
@@ -23,6 +23,7 @@ export type CheckoutItem = {
   total: number;
   product?: Product;
   is_highlighted?: boolean;
+  price?: Price;
 };
 
 export interface CheckoutSession {

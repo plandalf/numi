@@ -132,7 +132,6 @@ function EditApp({ publishableKey }: { publishableKey: string | undefined }) {
     return {
       id: item.id,
       name: defaultPrice?.product?.name || item.name,
-      price: defaultPrice?.amount,
       is_highlighted: item.is_highlighted,
       currency: 'USD',
       quantity: 1,
@@ -142,6 +141,7 @@ function EditApp({ publishableKey }: { publishableKey: string | undefined }) {
       discount: 0,
       total: defaultPrice?.amount ?? 0,
       product: defaultPrice?.product,
+      price: defaultPrice,
     }
   }), [offer.items]);
 
@@ -158,6 +158,7 @@ function EditApp({ publishableKey }: { publishableKey: string | undefined }) {
     taxes: 10,
     shipping: 5,
     publishable_key: publishableKey,
+    properties: {},
   }), [lineItems, publishableKey]);
 
   const [prototype, setPrototype] = useState<null | { sectionId: string; index: number; block: Block }>();

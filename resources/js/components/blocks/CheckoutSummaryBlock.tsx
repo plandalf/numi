@@ -381,6 +381,43 @@ function CheckoutSummaryComponent({ context }: { context: BlockContextType }) {
     return undefined;
   }, [session.currency, showCurrency]);
 
+  const LineItem = ({ item }: { item: CheckoutItem }) => {
+    return (<div className="flex-grow overflow-hidden">
+      <div className="flex justify-between">
+        <div className="font-medium" style={itemStyle}></div>
+          {item?.is_highlighted ? 
+            // Use H3 styling for highlighted items
+            <MarkdownText
+              theme={theme}
+              text={`### ${item.product?.name || item.name}`}
+              className="font-medium break-all"
+            />
+          : 
+            <div
+              className="font-medium break-all"
+              style={itemStyle}
+            >
+              {item.price?.name}
+            </div>
+          }
+        {showItemPrices && item.total !== undefined && (
+          <div className="text-gray-700" style={itemPriceStyle}>{formatMoney(item.total, currency)}</div>
+        )}
+      </div>
+      {showQuantity && item.price?.type === 'one_time' && <div className="text-sm text-gray-500" style={itemQuantityStyle}>
+        Qty: {item.quantity} {showItemPrices && item.total !== undefined && `× ${formatMoney(item.subtotal, currency)}`}
+      </div>}
+      {item.price && item.price.type !== 'one_time' && (
+          <div className="text-gray-700">
+              <div>Price per {item.price.renew_interval}: {formatMoney(item.total, currency)}</div>
+              {item.price.cancel_after_cycles && (
+                <div>Total ({item.price.cancel_after_cycles} {item.price.renew_interval}s): {formatMoney(item.price.cancel_after_cycles * item.total, currency)}</div>
+              )}
+          </div>
+        )}
+    </div>)
+  }
+
   return (
     <div className="flex flex-col p-4 gap-4" style={containerStyle}>
       {title && <h3 className="font-medium text-lg" style={titleStyle}>{title}</h3>}
@@ -391,7 +428,7 @@ function CheckoutSummaryComponent({ context }: { context: BlockContextType }) {
             <CircleAlert className="w-5 h-5 mt-0.5" />
             No items to checkout
           </div>
-        ) }
+        )}
         {session.line_items.map((item: CheckoutItem) => (
           <div key={item.id} className="flex items-center gap-3">
             {showImages && item.product?.image && (
@@ -399,31 +436,7 @@ function CheckoutSummaryComponent({ context }: { context: BlockContextType }) {
                 <img src={item.product?.image} alt={item.product?.name || item.name} className="w-full h-full object-cover" />
               </div>
             )}
-            <div className="flex-grow overflow-hidden">
-              <div className="flex justify-between gap-4">
-                {item?.is_highlighted ? 
-                  // Use H3 styling for highlighted items
-                  <MarkdownText
-                    theme={theme}
-                    text={`### ${item.product?.name || item.name}`}
-                    className="font-medium break-all"
-                  />
-                : 
-                  <div
-                    className="font-medium break-all"
-                    style={itemStyle}
-                  >
-                    {item.product?.name || item.name}
-                  </div>
-                }
-                {showItemPrices && item.total !== undefined && (
-                  <div className="text-gray-700" style={itemPriceStyle}>{formatMoney(item.total, currency)}</div>
-                )}
-              </div>
-              {showQuantity && <div className="text-sm text-gray-500" style={itemQuantityStyle}>
-                Qty: {item.quantity} {showItemPrices && item.total !== undefined && `× ${formatMoney(item.subtotal, currency)}`}
-              </div>}
-            </div>
+            <LineItem item={item} />
           </div>
         ))}
       </div>
@@ -457,19 +470,19 @@ function CheckoutSummaryComponent({ context }: { context: BlockContextType }) {
           </div>}
           {errors.discount && <p className="text-sm text-red-500">{errors.discount}</p>}
           {session.discounts && session.discounts.length > 0 && (
-          <div className="flex gap-2 mt-2">
-            {session.discounts?.map((discount: Discount) => (
-              <div key={discount.id} className="flex justify-between items-center bg-gray-100 p-2 gap-2">
-                <span>{discount.name}</span>
-                <button
-                  type="button"
-                  onClick={() => handleRemoveDiscount(discount.id)}
-                  className="cursor-pointer bg-gray-100 hover:bg-gray-200 text-gray-800 text-sm rounded"
-                  style={buttonStyle}
-                >
-                  <XIcon className="w-4 h-4 hover:text-red-500" />
-                </button>
-              </div>
+            <div className="flex gap-2 mt-2">
+              {session.discounts?.map((discount: Discount) => (
+                <div key={discount.id} className="flex justify-between items-center bg-gray-100 p-2 gap-2">
+                  <span>{discount.name}</span>
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveDiscount(discount.id)}
+                    className="cursor-pointer bg-gray-100 hover:bg-gray-200 text-gray-800 text-sm rounded"
+                    style={buttonStyle}
+                  >
+                    <XIcon className="w-4 h-4 hover:text-red-500" />
+                  </button>
+                </div>
               ))}
             </div>
           )}
@@ -478,40 +491,40 @@ function CheckoutSummaryComponent({ context }: { context: BlockContextType }) {
 
       {/* Order Summary Calculations */}
       {(showSubtotal || showShipping || showTaxes || (session.discounts && session.discounts.length > 0)) && (
-      <div className="space-y-2 text-sm flex flex-col" style={summaryContainerStyle}>
-        {showSubtotal && <div className="flex justify-between">
-          <span style={summaryTextStyle}>Subtotal</span>
-          <span style={summaryTextStyle}>{formatMoney(session.subtotal, currency)}</span>
-        </div>}
+        <div className="space-y-2 text-sm flex flex-col" style={summaryContainerStyle}>
+          {showSubtotal && <div className="flex justify-between">
+            <span style={summaryTextStyle}>Subtotal</span>
+            <span style={summaryTextStyle}>{formatMoney(session.subtotal, currency)}</span>
+          </div>}
 
-        {showShipping && session.shipping > 0 && (
-          <div className="flex justify-between">
-            <span style={summaryTextStyle}>Shipping</span>
-            <span style={summaryTextStyle}>{formatMoney(session.shipping, currency)}</span>
-          </div>
-        )}
+          {showShipping && session.shipping > 0 && (
+            <div className="flex justify-between">
+              <span style={summaryTextStyle}>Shipping</span>
+              <span style={summaryTextStyle}>{formatMoney(session.shipping, currency)}</span>
+            </div>
+          )}
 
 
-        {showTaxes && session.taxes > 0 && (
-          <div className="flex justify-between">
-            <span style={summaryTextStyle}>{taxesLabel}</span>
-            <span style={summaryTextStyle}>{formatMoney(session.taxes, currency)}</span>
-          </div>
-        )}
+          {showTaxes && session.taxes > 0 && (
+            <div className="flex justify-between">
+              <span style={summaryTextStyle}>{taxesLabel}</span>
+              <span style={summaryTextStyle}>{formatMoney(session.taxes, currency)}</span>
+            </div>
+          )}
 
-        {session.discounts && session.discounts.length > 0 && (
-          <div className="flex justify-between text-green-600">
-            <span style={discountTextStyle}>Discount</span>
-            <span style={discountTextStyle}>-{formatMoney(session.discounts.reduce((acc, discount) => {
-              if (discount.amount_off !== null) {
-                return acc + discount.amount_off;
-              } else if (discount.percent_off !== null) {
-                // Calculate percentage discount based on subtotal
-                return acc + (session.subtotal * (discount.percent_off / 100));
-              }
-              return acc;
-            }, 0), currency)}</span>
-          </div>
+          {session.discounts && session.discounts.length > 0 && (
+            <div className="flex justify-between text-green-600">
+              <span style={discountTextStyle}>Discount</span>
+              <span style={discountTextStyle}>-{formatMoney(session.discounts.reduce((acc, discount) => {
+                if (discount.amount_off !== null) {
+                  return acc + discount.amount_off;
+                } else if (discount.percent_off !== null) {
+                  // Calculate percentage discount based on subtotal
+                  return acc + (session.subtotal * (discount.percent_off / 100));
+                }
+                return acc;
+              }, 0), currency)}</span>
+            </div>
           )}
         </div>
       )}

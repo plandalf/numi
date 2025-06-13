@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources\Checkout;
 
+use App\Http\Resources\PriceResource;
 use App\Http\Resources\ProductResource;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -26,6 +27,7 @@ class CheckoutItemResource extends JsonResource
                     return new ProductResource($this->price->product);
                 },
             ),
+            'price' => new PriceResource($this->whenLoaded('price')),
             // 'discount' => $this->price->calculateDiscount()->getAmount(),
         ];
     }

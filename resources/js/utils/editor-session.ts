@@ -42,7 +42,6 @@ const createLineItem = (item: OfferItem, quantity: number, defaultPrice?: Price)
   return {
     id: item.id,
     name: defaultPrice?.product?.name || item.name,
-    price: defaultPrice?.amount,
     currency: 'USD',
     quantity: quantity,
     subtotal: defaultPrice?.amount ?? 0,
@@ -52,5 +51,6 @@ const createLineItem = (item: OfferItem, quantity: number, defaultPrice?: Price)
     total: defaultPrice?.amount ?? 0,
     product: defaultPrice?.product,
     is_highlighted: item.is_highlighted ?? false,
+    price: defaultPrice,
   }
 }

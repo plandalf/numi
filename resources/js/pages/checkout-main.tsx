@@ -274,7 +274,9 @@ export function GlobalStateProvider({ offer, offerItems, session: defaultSession
     try {
       const response = await axios.post(`/checkouts/${session.id}/mutations`, {
         action: 'setProperties',
-        properties: JSON.stringify(newProperties)
+        properties: JSON.stringify({
+          [blockId]: value
+        })
       });
       return response.data;
     } catch (error) {
