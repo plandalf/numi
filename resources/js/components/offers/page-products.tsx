@@ -145,18 +145,20 @@ export const PageProducts = () => {
       <div className="flex flex-col gap-3.5">
         {offerItems.map((item, key) => (
           <div key={item.id}>
-            <div className="flex justify-between">
-              <div className="flex items-center gap-1 text-sm">
-                {key + 1}. {item.name}
+            <div className="flex justify-between gap-2">
+              <div className="flex gap-1 text-sm break-all">
+                <span
+                  className="self-center"
+                >{key + 1}. {item.name}</span>
                 <Button
                   type="button"
                   variant="ghost"
                   size="icon"
                   onClick={() => handleRenameClick(item)}
-                  className="ml-1"
+                  className="ml-1 !h-8 !w-8"
                   tooltip="Rename"
                 >
-                  <Pencil className="w-4 h-4 text-muted-foreground" />
+                  <Pencil className="size-3 leading-none text-muted-foreground" />
                 </Button>
               </div>
               <Kebab items={[{
@@ -209,9 +211,9 @@ export const PageProducts = () => {
     return (
       <>
         {prices.map((price) => (
-          <div className="flex bg-white border rounded-md px-4 py-2 items-center justify-between w-full">
-            <div className="flex flex-col gap-1">
-              <div className="text-sm font-bold">{price.product?.name || price.name}</div>
+          <div className="flex bg-white border rounded-md gap-2 px-4 py-2 justify-between w-full">
+            <div className="flex flex-col gap-1 self-center">
+              <div className="text-sm font-bold break-all">{price.product?.name || price.name}</div>
               <div className="text-xs">{price.name} {price.currency.toUpperCase()} ${price.amount / 100}</div>
               {price.lookup_key && <div className="text-xs">{price.lookup_key}</div>}
 

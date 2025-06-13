@@ -399,8 +399,8 @@ function CheckoutSummaryComponent({ context }: { context: BlockContextType }) {
               </div>
             )}
             <div className="flex-grow overflow-hidden">
-              <div className="flex justify-between">
-                <div className="font-medium" style={itemStyle}>{item.product?.name || item.name}</div>
+              <div className="flex justify-between gap-4">
+                <div className="font-medium break-all" style={itemStyle}>{item.product?.name || item.name}</div>
                 {showItemPrices && item.total !== undefined && (
                   <div className="text-gray-700" style={itemPriceStyle}>{formatMoney(item.total, currency)}</div>
                 )}
