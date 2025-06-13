@@ -8,6 +8,7 @@ import { Discount } from "@/types/product";
 import { CircleAlert, Loader2, XIcon } from "lucide-react";
 import { CheckoutItem } from "@/types/checkout";
 import { Separator } from "../ui/separator";
+import { MarkdownText } from "../ui/markdown-text";
 
 function CheckoutSummaryComponent({ context }: { context: BlockContextType }) {
   const theme = Numi.useTheme();
@@ -400,7 +401,21 @@ function CheckoutSummaryComponent({ context }: { context: BlockContextType }) {
             )}
             <div className="flex-grow overflow-hidden">
               <div className="flex justify-between gap-4">
-                <div className="font-medium break-all" style={itemStyle}>{item.product?.name || item.name}</div>
+                {item?.is_highlighted ? 
+                  // Use H3 styling for highlighted items
+                  <MarkdownText
+                    theme={theme}
+                    text={`### ${item.product?.name || item.name}`}
+                    className="font-medium break-all"
+                  />
+                : 
+                  <div
+                    className="font-medium break-all"
+                    style={itemStyle}
+                  >
+                    {item.product?.name || item.name}
+                  </div>
+                }
                 {showItemPrices && item.total !== undefined && (
                   <div className="text-gray-700" style={itemPriceStyle}>{formatMoney(item.total, currency)}</div>
                 )}

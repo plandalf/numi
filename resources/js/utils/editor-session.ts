@@ -10,7 +10,14 @@ type UpdateSessionArgs = {
   quantity?: number;
 };
 
-export const updateSessionLineItems = ({ offerItems, item, price, quantity, required, checkoutSession }: UpdateSessionArgs): CheckoutSession => {
+export const updateSessionLineItems = ({
+  offerItems,
+  item,
+  price,
+  quantity,
+  required,
+  checkoutSession
+}: UpdateSessionArgs): CheckoutSession => {
   const lineItems = offerItems.map(i => {
     if(i.id != item) {
       return checkoutSession.line_items.find(li => li.id == i.id);
@@ -44,5 +51,6 @@ const createLineItem = (item: OfferItem, quantity: number, defaultPrice?: Price)
     discount: 0,
     total: defaultPrice?.amount ?? 0,
     product: defaultPrice?.product,
+    is_highlighted: item.is_highlighted ?? false,
   }
 }

@@ -15,7 +15,7 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from '@/components/ui/input';
-import { useState, useRef } from 'react';
+import { useState, useRef, useMemo } from 'react';
 import { cn } from '@/lib/utils';
 import { MoreVertical, ArrowRightToLine, FileText, CheckSquare, Plus } from 'lucide-react';
 import PagePreview from '@/components/offers/page-preview';
@@ -127,12 +127,13 @@ function EditApp({ publishableKey }: { publishableKey: string | undefined }) {
     handlePageNameClick
   } = useEditor();
 
-  const lineItems = offer.items.filter(item => item.is_required).map(item => {
+  const lineItems = useMemo(() => offer.items.filter(item => item.is_required).map(item => {
     const defaultPrice = item.prices.find(price => price.id === item.default_price_id);
     return {
       id: item.id,
       name: defaultPrice?.product?.name || item.name,
       price: defaultPrice?.amount,
+      is_highlighted: item.is_highlighted,
       currency: 'USD',
       quantity: 1,
       subtotal: defaultPrice?.amount ?? 0,
@@ -142,9 +143,9 @@ function EditApp({ publishableKey }: { publishableKey: string | undefined }) {
       total: defaultPrice?.amount ?? 0,
       product: defaultPrice?.product,
     }
-  });
+  }), [offer.items]);
 
-  const session: CheckoutSession = {
+  const session: CheckoutSession = useMemo(() => ({
     id: '123',
     line_items: lineItems,
     currency: 'USD',
@@ -157,9 +158,8 @@ function EditApp({ publishableKey }: { publishableKey: string | undefined }) {
     taxes: 10,
     shipping: 5,
     publishable_key: publishableKey,
-  }
+  }), [lineItems, publishableKey]);
 
-  console.log('session', session);
   const [prototype, setPrototype] = useState<null | { sectionId: string; index: number; block: Block }>();
   const [activeItem, setActiveItem] = useState<ActiveDndItem | null>(null);
   const dragOverRafRef = useRef<number | null>(null); // Ref for requestAnimationFrame

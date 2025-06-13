@@ -47,6 +47,7 @@ class OfferItemStoreRequest extends FormRequest
             ],
             'sort_order' => ['integer', 'min:0'],
             'is_required' => ['boolean'],
+            'is_highlighted' => ['boolean'],
             'prices' => ['array'],
             'prices.*' => ['integer', Rule::exists('catalog_prices', 'id')->where(function ($query) use ($organizationId) {
                 return $query->where('organization_id', $organizationId)
@@ -67,6 +68,13 @@ class OfferItemStoreRequest extends FormRequest
                 'is_required' => filter_var($this->input('is_required'), FILTER_VALIDATE_BOOLEAN),
             ]);
         }
+
+        if ($this->has('is_highlighted')) {
+            $this->merge([
+                'is_highlighted' => filter_var($this->input('is_highlighted'), FILTER_VALIDATE_BOOLEAN),
+            ]);
+        }
+
         // Ensure sort_order is integer
         if ($this->has('sort_order')) {
             $this->merge([

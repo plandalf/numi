@@ -32,6 +32,7 @@ class OfferItemFactory extends Factory
             'key' => fake()->slug(2),
             'default_price_id' => Price::factory(),
             'is_required' => fake()->boolean(70),
+            'is_highlighted' => fake()->boolean(30),
             'sort_order' => fake()->numberBetween(1, 100),
         ];
     }

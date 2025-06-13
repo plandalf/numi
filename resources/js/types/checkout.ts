@@ -22,6 +22,7 @@ export type CheckoutItem = {
   discount: number;
   total: number;
   product?: Product;
+  is_highlighted?: boolean;
 };
 
 export interface CheckoutSession {

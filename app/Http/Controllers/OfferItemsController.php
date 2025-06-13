@@ -21,6 +21,7 @@ class OfferItemsController extends Controller {
             'name' => $validated['name'],
             'key' => $validated['key'],
             'is_required' => $isRequired,
+            'is_highlighted' => $validated['is_highlighted'] ?? false,
             'offer_id' => $offer->id,
             'type' => $validated['type'],
         ]);
@@ -47,6 +48,7 @@ class OfferItemsController extends Controller {
         $prices = $validated['prices'] ?? null;
         $name = $validated['name'] ?? null;
         $isRequired = $validated['is_required'] ?? null;
+        $isHighlighted = $validated['is_highlighted'] ?? null;
         $defaultPriceId = $validated['default_price_id'] ?? null;
 
         if($name) {
@@ -55,6 +57,10 @@ class OfferItemsController extends Controller {
 
         if ($defaultPriceId) {
             $item->default_price_id = $defaultPriceId;
+        }
+
+        if($isHighlighted !== null) {
+            $item->is_highlighted = $isHighlighted;
         }
 
         if ($prices) {

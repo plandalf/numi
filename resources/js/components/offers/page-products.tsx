@@ -125,11 +125,11 @@ export const PageProducts = () => {
       });
     }
 
-    const handleToggleRequired = (item: OfferItem, checked: boolean) => {
+    const handleToggle = (key: 'is_required' | 'is_highlighted', item: OfferItem, checked: boolean) => {
       const toastId = toast.loading(`Updating product...`);
 
       router.put(route("offers.items.update", { offer: offer.id, item: item.id }), {
-        is_required: checked
+        [key]: checked
       }, {
         preserveScroll: true,
         onSuccess: () => {
@@ -172,7 +172,11 @@ export const PageProducts = () => {
             <div className="flex gap-3 mt-2 rounded-md p-2 items-center justify-between flex-col border bg-[#F7F9FF]">
               <div className="flex bg-white border rounded-md px-4 py-2 items-center justify-between w-full">
                 <div>Required</div>
-                <Switch defaultChecked={item.is_required} onCheckedChange={(checked) => handleToggleRequired(item, checked)} />
+                <Switch defaultChecked={item.is_required} onCheckedChange={(checked) => handleToggle('is_required', item, checked)} />
+              </div>
+              <div className="flex bg-white border rounded-md px-4 py-2 items-center justify-between w-full">
+                <div>Highlighted</div>
+                <Switch defaultChecked={item.is_highlighted} onCheckedChange={(checked) => handleToggle('is_highlighted', item, checked)} />
               </div>
               <Prices prices={item.prices ?? []} offerItem={item} />
               <Button variant="outline" className="w-full" onClick={() => handleEdit(item)}>
