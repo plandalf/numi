@@ -132,7 +132,6 @@ function EditApp({ publishableKey }: { publishableKey: string | undefined }) {
     return {
       id: item.id,
       name: defaultPrice?.product?.name || item.name,
-      price: defaultPrice?.amount,
       currency: 'USD',
       quantity: 1,
       subtotal: defaultPrice?.amount ?? 0,
@@ -141,6 +140,7 @@ function EditApp({ publishableKey }: { publishableKey: string | undefined }) {
       discount: 0,
       total: defaultPrice?.amount ?? 0,
       product: defaultPrice?.product,
+      price: defaultPrice,
     }
   });
 
@@ -157,6 +157,7 @@ function EditApp({ publishableKey }: { publishableKey: string | undefined }) {
     taxes: 10,
     shipping: 5,
     publishable_key: publishableKey,
+    properties: {},
   }
 
   console.log('session', session);
