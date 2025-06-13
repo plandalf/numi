@@ -1,5 +1,5 @@
 import { Button } from '@/components/ui/button';
-import { CircleAlert, CirclePlus, PlusIcon, Pencil } from 'lucide-react';
+import { CircleAlert, CirclePlus, PlusIcon, Pencil, Info } from 'lucide-react';
 import { useForm, usePage } from '@inertiajs/react';
 import { EditProps } from '@/pages/offers/edit';
 import { OfferItem, OfferItemType, Price, Product } from '@/types/offer';
@@ -16,6 +16,7 @@ import AddNewProductWithPriceDialog from './dialogs/AddNewProductWithPriceDialog
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
 
 
 const NewProductAndPricesOfferItem = ({ open, setOpen, offerItemsCount, type, offerId }: { offerId: number, offerItemsCount: number, type: OfferItemType, open: boolean, setOpen: (open: boolean) => void }) => {
@@ -175,7 +176,24 @@ export const PageProducts = () => {
                 <Switch defaultChecked={item.is_required} onCheckedChange={(checked) => handleToggle('is_required', item, checked)} />
               </div>
               <div className="flex bg-white border rounded-md px-4 py-2 items-center justify-between w-full">
-                <div>Highlighted</div>
+                <div className="flex items-center gap-2">
+                  Highlighted
+                  <TooltipProvider delayDuration={1500}>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Info className="size-3.5 cursor-help text-gray-500 hover:text-gray-700 hover:scale-110 transition-all duration-300 ease-in-out" />
+                        </TooltipTrigger>
+                        <TooltipContent
+                          side="right"
+                          align="center"
+                          className="max-w-[300px]"
+                        >
+                          Highlights the product in the checkout summary. <br/>
+                          This uses the H3 styling from themes.
+                        </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
                 <Switch defaultChecked={item.is_highlighted} onCheckedChange={(checked) => handleToggle('is_highlighted', item, checked)} />
               </div>
               <Prices prices={item.prices ?? []} offerItem={item} />
