@@ -1,7 +1,7 @@
 import Numi, { Style, Conditions, FontValue, BorderValue, DimensionValue, Appearance } from "@/contexts/Numi";
 import { BlockContextType } from "@/types/blocks";
 import { Switch } from "@/components/ui/switch";
-import { useCallback, useEffect, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Check } from "lucide-react";
 import { Event, EVENT_LABEL_MAP } from "../editor/interaction-event-editor";
 import { resolveThemeValue } from "@/lib/theme";
@@ -10,7 +10,7 @@ import { MarkdownText } from "../ui/markdown-text";
 function CheckboxBlockComponent({ context }: { context: BlockContextType }) {
 
   const { updateSessionProperties } = Numi.useCheckout({});
-
+  const [isInitialExecuteCallbackRun, setIsInitialExecuteCallbackRun] = useState(false);
   const theme = Numi.useTheme();
 
   const [id] = Numi.useStateString({
@@ -45,17 +45,13 @@ function CheckboxBlockComponent({ context }: { context: BlockContextType }) {
     defaultValue: false,
   });
 
-  const [checked, setChecked] = Numi.useStateBoolean({
+  const [checked, setChecked, checkedSessionValue] = Numi.useStateBoolean({
     label: 'Checked',
     name: 'value',
     defaultValue: false,
     inspector: 'hidden',
     asState: true,
   });
-
-  useEffect(() => {
-    setChecked(isDefaultChecked);
-  }, [isDefaultChecked]);
 
   // validation rules~
   const { isValid, errors, validate } = Numi.useValidation({
@@ -199,8 +195,17 @@ function CheckboxBlockComponent({ context }: { context: BlockContextType }) {
   );
 
   useEffect(() => {
-    executeCallbacks(checked ? Event.onSelect : Event.onUnSelect);
-  }, []);
+    if (checkedSessionValue === null) {
+      updateSessionProperties(context.blockId, isDefaultChecked);
+      setChecked(isDefaultChecked);
+    } else {
+      if (!isInitialExecuteCallbackRun) {
+        executeCallbacks(checked ? Event.onSelect : Event.onUnSelect);
+        setIsInitialExecuteCallbackRun(true);
+      }
+    }
+  }, [isDefaultChecked, checkedSessionValue, isInitialExecuteCallbackRun]);
+
 
   return (
     <div>

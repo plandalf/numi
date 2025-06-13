@@ -110,7 +110,7 @@ class CheckoutSession extends Model
 
     public function getSubtotalAttribute()
     {
-        return $this->lineItems->sum('subtotal');
+        return $this->lineItems->sum('total');
     }
 
     public function getCurrencyAttribute()

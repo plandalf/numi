@@ -677,9 +677,10 @@ const Numi = {
     return [value, setFieldValue, updateHook];
   },
 
-  useStateBoolean({ name, defaultValue: initialDefaultValue, label, inspector, group, asState }: { name: string; defaultValue: boolean; label?: string; inspector?: string, group?: string; asState?: boolean; }): [boolean, (value: boolean) => void] {
+  useStateBoolean({ name, defaultValue: initialDefaultValue, label, inspector, group, asState }: { name: string; defaultValue: boolean; label?: string; inspector?: string, group?: string; asState?: boolean; }): [boolean, (value: boolean) => void, boolean] {
     const blockContext = useContext(BlockContext);
-    const defaultValue = Numi.useSessionValue({ blockId: blockContext.blockId, defaultValue: blockContext.blockConfig.content[name] ?? blockContext.getFieldValue(name) ?? initialDefaultValue});
+    const sessionValue = Numi.getSessionValue({ blockId: blockContext.blockId });
+    const defaultValue = sessionValue ?? blockContext.blockConfig.content[name] ?? blockContext.getFieldValue(name) ?? initialDefaultValue;
     const [value, setValue] = useState(defaultValue);
 
     useEffect(() => {
@@ -719,7 +720,7 @@ const Numi = {
       setValue(newValue);
     };
 
-    return [value, setFieldValue];
+    return [value, setFieldValue, sessionValue];
   },
 
   useStateString(props: { label: string; name: string; defaultValue: string; inspector?: string, format?: string, config?: Record<string, any>, group?: string; asState?: boolean; }): [string, (value: string) => void, string] {
@@ -819,7 +820,7 @@ const Numi = {
   },
 
   // Gets the value from the session properties and if not found, returns the default value
-  useSessionValue(props: { blockId: string; defaultValue: any }): any {
+  getSessionValue(props: { blockId: string; }): any {
     const { isEditor, session } = Numi.useCheckout();
 
     return useMemo(() => {
@@ -830,8 +831,8 @@ const Numi = {
         return session.properties[props.blockId];
       }
 
-      return props.defaultValue;
-    }, [props.blockId, isEditor, session.properties, props.defaultValue]);
+      return null;
+    }, [props.blockId, isEditor, session.properties]);
   },
 
   useRuntimeString(props: { name: string; defaultValue: string }): [string, (value: string) => void] {
