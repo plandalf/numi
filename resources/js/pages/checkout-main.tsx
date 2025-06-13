@@ -82,7 +82,9 @@ export function GlobalStateProvider({ offer, offerItems, session: defaultSession
       const prevItem = previousItemsRef.current?.find(p => p.id === item.id);
       return prevItem && (
         prevItem.is_required !== item.is_required ||
-        prevItem.default_price_id !== item.default_price_id
+        prevItem.is_highlighted !== item.is_highlighted ||
+        prevItem.default_price_id !== item.default_price_id ||
+        prevItem.prices.some(p => !item.prices.some(p2 => p2.name === p.name))
       );
     });
 

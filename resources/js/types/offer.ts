@@ -53,6 +53,7 @@ export interface OfferItem {
     key: string;
     default_price_id: number | null;
     is_required: boolean;
+    is_highlighted: boolean;
     sort_order: number;
     default_price: Price | null;
     created_at: string;

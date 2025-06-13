@@ -57,6 +57,7 @@ class OfferItemUpdateRequest extends FormRequest
             ],
             'sort_order' => ['sometimes', 'integer', 'min:0'],
             'is_required' => ['sometimes', 'boolean'],
+            'is_highlighted' => ['sometimes', 'boolean'],
             'default_price_id' => [
                 'nullable',
                 'integer',
