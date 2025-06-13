@@ -349,7 +349,7 @@ export function Sidebar() {
                           onKeyDown={handleBlockIdKeyDown}
                           onBlur={saveBlockId}
                           className={cn(
-                            "h-6 text-xs",
+                            "h-[28px] text-sm w-[235px] font-bold p-1 focus-visible:ring-0 focus-visible:ring-offset-0 border-none",
                             blockIdError && "border-red-500 focus:border-red-500"
                           )}
                           autoFocus
@@ -360,14 +360,14 @@ export function Sidebar() {
                       </div>
                     ) : (
                       <div
-                        className="flex items-center gap-1 cursor-pointer hover:bg-gray-100 rounded px-1 py-0.5 transition-colors group"
+                        className="w-[235px] flex items-center gap-1 cursor-pointer hover:bg-gray-100 rounded px-1 py-0.5 transition-colors group"
                         onClick={startEditingBlockId}
                       >
 
-                        <h2 className="text-lg font-bold truncate leading-6">
+                        <h2 className="text-sm font-bold truncate leading-6">
                           {findBlockInPage(data.view.pages[selectedPage], selectedBlockId)?.name ?? selectedBlockId}
                         </h2>
-                        <Edit3 className="h-3 w-3 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+                        <Edit3 className="size-5 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" />
                       </div>
                     )}
                   </div>

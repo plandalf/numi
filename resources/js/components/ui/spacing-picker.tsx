@@ -164,8 +164,9 @@ export const SpacingPicker = ({
         {!hideTabs && (
           <Button
             onClick={handleFnClick}
-            variant={isCustomEditing ? "secondary" : "ghost"}
+            variant={isCustomEditing ? "default" : "ghost"}
             size="xs"
+            className="!text-[12px] rounded-md"
             aria-pressed={isCustomEditing}
           >
             Fn
@@ -180,7 +181,7 @@ export const SpacingPicker = ({
             onBlur={handleCustomInputBlur}
             placeholder={isMultiValue ? "e.g., 10px 20px or 1rem 2rem" : "e.g., 10px or 1rem"}
             title={isMultiValue ? "Enter multiple spacing values" : "Enter a spacing value"}
-            className={`flex-grow ${validationError ? 'border-red-500' : ''}`}
+            className={`h-[40px] flex-grow ${validationError ? 'border-red-500' : ''}`}
           />
         ) : !hideTabs ? (
           <Tabs value={currentTabState} onValueChange={handleTabChange} className="w-full">
