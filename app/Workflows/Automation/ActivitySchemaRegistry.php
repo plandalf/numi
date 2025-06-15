@@ -55,6 +55,52 @@ class ActivitySchemaRegistry
         return $result;
     }
 
+    public static function getAllActivitySchemas(): array
+    {
+        // Auto-register activities if not already registered
+        self::autoRegisterActivities();
+        
+        $result = [];
+
+        foreach (self::$typeMap as $type => $class) {
+            $reflection = new ReflectionClass($class);
+            $attrs = $reflection->getAttributes(Activity::class);
+            $meta = ! empty($attrs) ? $attrs[0]->newInstance() : null;
+
+            $result[$type] = [
+                'type' => $type,
+                'name' => $meta?->name ?? class_basename($class),
+                'description' => $meta?->description ?? '',
+                'sections' => self::getSchema($class),
+            ];
+        }
+
+        return $result;
+    }
+
+    private static function autoRegisterActivities(): void
+    {
+        if (empty(self::$typeMap)) {
+            // Register built-in activities
+            $activities = [
+                \App\Workflows\Automation\EmailActivity::class,
+                \App\Workflows\Automation\WebhookActivity::class,
+                \App\Workflows\Automation\CustomFunctionActivity::class,
+            ];
+
+            foreach ($activities as $activityClass) {
+                if (class_exists($activityClass)) {
+                    $reflection = new ReflectionClass($activityClass);
+                    $attrs = $reflection->getAttributes(Activity::class);
+                    if (!empty($attrs)) {
+                        $attr = $attrs[0]->newInstance();
+                        self::$typeMap[$attr->type] = $activityClass;
+                    }
+                }
+            }
+        }
+    }
+
     public static function getSchema(string $activityClass): array
     {
         if (isset(self::$schemas[$activityClass])) {

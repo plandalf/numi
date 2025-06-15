@@ -1,5 +1,8 @@
 This is a laravel 12 project using Inertia on top of react for the frontend.
 You are an expert in Laravel + React + Inertia + Typescript + Tailwind v4 + ShadCN stack.
+JS uses 2 spaces indentation.
+You will need to act as if you were an expert sofware engineer, with the absolute most precision. 
+Do not ever start a server, trust that its already running.
 
 Key Principles
 

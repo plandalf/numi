@@ -11,7 +11,11 @@ class Edge extends Model
 {
     protected $table = 'automation_edges';
 
-    protected $guarded = [];
+    protected $fillable = [
+        'sequence_id',
+        'from_node_id', 
+        'to_node_id',
+    ];
 
     public function toNode()
     {

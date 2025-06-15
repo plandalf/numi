@@ -15,7 +15,21 @@ class Sequence extends Model
 {
     protected $table = 'automation_sequences';
 
-    protected $guarded = [];
+    protected $fillable = [
+        'name',
+        'organization_id',
+        'description',
+        'snapshot',
+        'is_published',
+        'version',
+        'last_published_at',
+    ];
+
+    protected $casts = [
+        'snapshot' => 'json',
+        'is_published' => 'boolean',
+        'last_published_at' => 'datetime',
+    ];
 
     public function triggers()
     {
@@ -30,5 +44,10 @@ class Sequence extends Model
     public function edges()
     {
         return $this->hasMany(Edge::class);
+    }
+
+    public function workflows()
+    {
+        return $this->hasMany(StoredWorkflow::class);
     }
 }

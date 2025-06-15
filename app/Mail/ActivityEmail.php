@@ -12,12 +12,16 @@ class ActivityEmail extends Mailable
 {
     use Queueable, SerializesModels;
 
+    public string $emailSubject;
+    public string $emailBody;
+
     /**
      * Create a new message instance.
      */
-    public function __construct()
+    public function __construct(string $subject = '', string $body = '')
     {
-        //
+        $this->emailSubject = $subject;
+        $this->emailBody = $body;
     }
 
     /**
@@ -26,7 +30,7 @@ class ActivityEmail extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: $this->subject,
+            subject: $this->emailSubject,
         );
     }
 
@@ -38,6 +42,10 @@ class ActivityEmail extends Mailable
         return new Content(
             view: 'emails.activity',
             text: 'emails.activity-plain',
+            with: [
+                'body' => $this->emailBody,
+                'subject' => $this->emailSubject,
+            ]
         );
     }
 

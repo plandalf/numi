@@ -24,101 +24,150 @@ use Inertia\Inertia;
 use Workflow\WorkflowStub;
 use App\Http\Controllers\OrdersController;
 use App\Http\Controllers\FeedbackController;
+use App\Http\Controllers\JavaScriptExecutionController;
+use App\Http\Controllers\AutomationController;
 
 Route::redirect('/', '/dashboard')->name('home');
 
 Route::get('/workflow-test', function () {
-
-    $order = new \App\Models\Order\Order;
-    $order->organization_id = 1;
-    $order->checkout_session_id = 1;
-    $order->status = \App\Enums\OrderStatus::COMPLETED;
-    $order->save();
-
-
-    $order = \App\Models\Order\Order::find($order->id);
-
-    dd($order->toArray());
-
-
-    $event = new ResourceEvent;
-    $event->action = 'c';
-    $event->organization_id = 1;
-    $event->subject()->associate($order);
-    $event->snapshot = [
-        'customer' => [
-            'email' => 'mitch@flindev.com',
-        ],
-    ];
-    $event->save();
-
-    // triggers = event + model ?
+    // Create a complete example automation as requested in the challenge
+    
+    // Create the sequence
     $sequence = \App\Models\Automation\Sequence::query()
         ->firstOrCreate([
-            'name' => '',
+            'name' => 'Order Confirmation Flow',
             'organization_id' => 1,
         ]);
 
-    $email = \App\Models\Automation\Node::query()
+    // Clean up existing nodes and edges for this sequence
+    $sequence->edges()->delete();
+    $sequence->nodes()->delete();
+    $sequence->triggers()->delete();
+
+    // 1. Send email to customer
+    $customerEmail = \App\Models\Automation\Node::query()
         ->create([
             'sequence_id' => $sequence->id,
             'type' => 'email',
             'arguments' => [
-                'subject' => 'what is going on?',
+                'subject' => 'Thanks for your order! 🎉',
                 'recipients' => [
-                    ['email' => '{{trigger.customer.email}}'],
+                    ['email' => '{{trigger.customer.email}}', 'name' => '{{trigger.customer.name}}'],
                 ],
-                'body' => 'Hi {{trigger.customer.name}}\nThanks for buying',
+                'body' => 'Hi {{trigger.customer.name}},\n\nThanks for your order! We are processing it now and will send you an update soon.\n\nBest regards,\nThe Team',
             ],
         ]);
 
+    // 2. Send email to us about the order
+    $internalEmail = \App\Models\Automation\Node::query()
+        ->create([
+            'sequence_id' => $sequence->id,
+            'type' => 'email',
+            'arguments' => [
+                'subject' => 'New Order Received - {{trigger.order.id}}',
+                'recipients' => [
+                    ['email' => 'team@example.com', 'name' => 'Order Team'],
+                ],
+                'body' => 'New order received:\n\nOrder ID: {{trigger.order.id}}\nCustomer: {{trigger.customer.name}} ({{trigger.customer.email}})\nAmount: {{trigger.order.amount}}\n\nPlease process this order.',
+            ],
+        ]);
+
+    // 3. Custom function to fetch customer details from Stripe
+    $stripeFunction = \App\Models\Automation\Node::query()
+        ->create([
+            'sequence_id' => $sequence->id,
+            'type' => 'custom_function',
+            'arguments' => [
+                'code' => '// Fetch customer details from Stripe
+const stripe = createStripe(context.stripe_secret_key);
+
+try {
+    // Get customer from Stripe
+    const customer = await stripe.customers.retrieve(context.trigger.customer.stripe_id);
+    
+    // Return enriched customer data
+    return {
+        success: true,
+        customer: {
+            ...context.trigger.customer,
+            stripe_data: {
+                created: customer.created,
+                default_source: customer.default_source,
+                invoice_settings: customer.invoice_settings,
+                metadata: customer.metadata
+            }
+        }
+    };
+} catch (error) {
+    return {
+        success: false,
+        error: error.message
+    };
+}',
+                'timeout' => 30,
+            ],
+        ]);
+
+    // 4. Send webhook to predetermined endpoint
+    $webhook = \App\Models\Automation\Node::query()
+        ->create([
+            'sequence_id' => $sequence->id,
+            'type' => 'webhook',
+            'arguments' => [
+                'url' => 'https://webhook.site/unique-id-here',
+                'method' => 'POST',
+                'headers' => [
+                    'Content-Type' => 'application/json',
+                    'Authorization' => 'Bearer {{secrets.webhook_token}}',
+                ],
+                'body' => [
+                    'event' => 'order.created',
+                    'order' => [
+                        'id' => '{{trigger.order.id}}',
+                        'amount' => '{{trigger.order.amount}}',
+                        'status' => '{{trigger.order.status}}',
+                    ],
+                    'customer' => [
+                        'id' => '{{trigger.customer.id}}',
+                        'email' => '{{trigger.customer.email}}',
+                        'name' => '{{trigger.customer.name}}',
+                    ],
+                    'timestamp' => '{{trigger.timestamp}}',
+                ],
+                'timeout' => 30,
+            ],
+        ]);
+
+    // Create trigger
     $trigger = \App\Models\Automation\Trigger::query()
         ->create([
             'sequence_id' => $sequence->id,
             'event_name' => 'order.created',
             'target_type' => 'offer',
             'target_id' => 3,
-            'next_node_id' => $email->id,
+            'next_node_id' => $customerEmail->id,
         ]);
 
-    $webhookAction = \App\Models\Automation\Node::query()
-        ->create([
-            'sequence_id' => $sequence->id,
-            'type' => 'webhook',
-            'arguments' => [
-                'url' => 'https://webhook.site/545ae49e-d183-4ea1-8855-ddf9b227e55e',
-                'type' => 'advanced',
-                'method' => 'POST',
-                'query' => [
-                    'key' => 'value',
-                ],
-                'headers' => [
-                    'accept' => 'application/json',
-                ],
-                'body' => [
-                    'hello' => 'there 👋',
-                ],
-            ],
-        ]);
+    // Create edges to connect the flow
+    \App\Models\Automation\Edge::query()->create([
+        'from_node_id' => $customerEmail->id,
+        'to_node_id' => $internalEmail->id,
+        'sequence_id' => $sequence->id,
+    ]);
 
-    $node = \App\Models\Automation\Edge::query()
-        ->firstOrCreate([
-            'from_node_id' => $email->id,
-            'to_node_id' => $webhookAction->id,
-            'sequence_id' => $sequence->id,
-        ]);
-    $stored = \App\Models\Automation\StoredWorkflow::query()
-        ->create([
-            'class' => RunSequenceWorkflow::class,
-            'organization_id' => 1,
-        ]);
+    \App\Models\Automation\Edge::query()->create([
+        'from_node_id' => $internalEmail->id,
+        'to_node_id' => $stripeFunction->id,
+        'sequence_id' => $sequence->id,
+    ]);
 
-    $wf = WorkflowStub::fromStoredWorkflow($stored);
+    \App\Models\Automation\Edge::query()->create([
+        'from_node_id' => $stripeFunction->id,
+        'to_node_id' => $webhook->id,
+        'sequence_id' => $sequence->id,
+    ]);
 
-    dd(
-        $wf->start($trigger, $event),
-        $wf->id(),
-    );
+    return redirect('/automation')->with('success', 'Example automation sequence created! The flow includes: Order trigger → Customer email → Internal email → Stripe function → Webhook');
 
 })->name('workflow-test');
 
@@ -231,6 +280,21 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         Route::get('/orders', [OrdersController::class, 'index'])->name('orders.index');
         Route::get('/orders/{order:uuid}', [OrdersController::class, 'show'])->name('orders.show');
+
+        // Automation routes
+Route::resource('automation/sequences', AutomationController::class)->names('automation.sequences');
+Route::post('/automation/sequences/{sequence}/duplicate', [AutomationController::class, 'duplicate'])->name('automation.duplicate');
+Route::post('/automation/sequences/{sequence}/test', [AutomationController::class, 'test'])->name('automation.test');
+Route::get('/automation/sequences/{sequence}/workflow-runs', [AutomationController::class, 'getWorkflowRuns'])->name('automation.workflow-runs');
+Route::post('/automation/sequences/{sequence}/nodes', [AutomationController::class, 'createDraftNode'])->name('automation.nodes.create');
+Route::put('/automation/sequences/{sequence}/nodes/{node}', [AutomationController::class, 'updateDraftNode'])->name('automation.nodes.update');
+Route::post('/automations/test-action', [AutomationController::class, 'testAction'])->name('automation.test-action');
+Route::post('/automations/workflow-status', [AutomationController::class, 'workflowStatus'])->name('automation.workflow-status');
+
+        // Template Editor Demo Route
+        Route::get('/template-editor-demo', function () {
+            return Inertia::render('TemplateEditorDemo');
+        })->name('template-editor-demo');
     });
 });
 
@@ -251,6 +315,10 @@ Route::get('m/{dir}/{media}.{extension}', function (string $dir, \App\Models\Med
 });
 
 Route::post('/feedback', [FeedbackController::class, 'submit'])->name('feedback.submit');
+
+// JavaScript Execution routes
+Route::get('/test', [JavaScriptExecutionController::class, 'test'])->name('js-execution.test');
+Route::post('/js-execute', [JavaScriptExecutionController::class, 'execute'])->name('js-execution.execute');
 
 require __DIR__.'/settings.php';
 require __DIR__.'/auth.php';

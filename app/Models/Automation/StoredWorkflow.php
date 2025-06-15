@@ -7,11 +7,21 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Workflow\Models\StoredWorkflow as BaseStoredWorkflow;
 
 /**
- * @property
+ * @property int|null $sequence_id
+ * @property Sequence|null $sequence
  */
 class StoredWorkflow extends BaseStoredWorkflow
 {
     protected $table = 'workflows';
+    
+    protected $fillable = [
+        'organization_id',
+        'sequence_id',
+        'class',
+        'arguments',
+        'output',
+        'status',
+    ];
 
     public function sequence(): BelongsTo
     {

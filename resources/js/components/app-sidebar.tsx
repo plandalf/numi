@@ -42,8 +42,8 @@ const mainNavItems: NavItem[] = [
         icon: PlugZapIcon,
     },
   {
-        title: 'Sequences',
-        href: '/sequences',
+        title: 'Automation',
+        href: '/automation/sequences',
         icon: BotIcon,
     },
   {

@@ -1,1 +1,1 @@
-hello
+{{ strip_tags($body) }}
