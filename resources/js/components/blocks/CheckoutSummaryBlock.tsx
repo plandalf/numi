@@ -382,7 +382,6 @@ function CheckoutSummaryComponent({ context }: { context: BlockContextType }) {
   }, [session.currency, showCurrency]);
 
   const LineItem = ({ item }: { item: CheckoutItem }) => {
-
     return (<div className="flex-grow overflow-hidden">
       <div className="flex justify-between gap-4">
           {item?.is_highlighted ? 
