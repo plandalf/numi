@@ -1,7 +1,7 @@
 import Numi, { Style, Conditions, FontValue, BorderValue, DimensionValue, Appearance } from "@/contexts/Numi";
 import { BlockContextType } from "@/types/blocks";
 import { Switch } from "@/components/ui/switch";
-import { useCallback, useEffect, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Check } from "lucide-react";
 import { Event, EVENT_LABEL_MAP } from "../editor/interaction-event-editor";
 import ReactMarkdown from "react-markdown";
@@ -11,6 +11,7 @@ import { MarkdownText } from "../ui/markdown-text";
 function AddOnBlockComponent({ context }: { context: BlockContextType }) {
 
   const { updateSessionProperties } = Numi.useCheckout({});
+  const [isInitialExecuteCallbackRun, setIsInitialExecuteCallbackRun] = useState(false);
 
   const theme = Numi.useTheme();
 
@@ -34,7 +35,7 @@ function AddOnBlockComponent({ context }: { context: BlockContextType }) {
     format: 'markdown',
   });
 
-  const [checked, setChecked] = Numi.useStateBoolean({
+  const [checked, setChecked, checkedSessionValue] = Numi.useStateBoolean({
     label: 'Checked',
     name: 'value',
     defaultValue: false,
@@ -84,10 +85,6 @@ function AddOnBlockComponent({ context }: { context: BlockContextType }) {
       required: true,
     }],
   });
-
-  useEffect(() => {
-    setChecked(isDefaultChecked);
-  }, [isDefaultChecked]);
 
   const handleChange = useCallback(() => {
     const newChecked = !checked;
@@ -241,8 +238,16 @@ function AddOnBlockComponent({ context }: { context: BlockContextType }) {
   );
 
   useEffect(() => {
-    executeCallbacks(checked ? Event.onSelect : Event.onUnSelect);
-  }, []);
+    if (checkedSessionValue === null) {
+      updateSessionProperties(context.blockId, isDefaultChecked);
+      setChecked(isDefaultChecked);
+    } else {
+      if (!isInitialExecuteCallbackRun) {
+        executeCallbacks(checked ? Event.onSelect : Event.onUnSelect);
+        setIsInitialExecuteCallbackRun(true);
+      }
+    }
+  }, [isDefaultChecked, checkedSessionValue, isInitialExecuteCallbackRun]);
 
   return (
     <div className="flex flex-col gap-3" style={innerContainerStyles}>

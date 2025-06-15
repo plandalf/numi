@@ -129,7 +129,7 @@ class CheckoutSessionController extends Controller
         $properties = json_decode($request->input('properties'), true);
 
         $checkoutSession->update([
-            'properties' => $properties,
+            'properties' => array_merge($checkoutSession->properties ?? [], $properties),
         ]);
 
         $checkoutSession->load(['lineItems.offerItem', 'offer.theme', 'lineItems.price.integration', 'lineItems.price.product']);
