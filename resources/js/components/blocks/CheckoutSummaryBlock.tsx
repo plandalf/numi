@@ -8,6 +8,7 @@ import { Discount } from "@/types/product";
 import { CircleAlert, Loader2, XIcon } from "lucide-react";
 import { CheckoutItem } from "@/types/checkout";
 import { Separator } from "../ui/separator";
+import { MarkdownText } from "../ui/markdown-text";
 
 function CheckoutSummaryComponent({ context }: { context: BlockContextType }) {
   const theme = Numi.useTheme();
@@ -381,9 +382,23 @@ function CheckoutSummaryComponent({ context }: { context: BlockContextType }) {
   }, [session.currency, showCurrency]);
 
   const LineItem = ({ item }: { item: CheckoutItem }) => {
-    return (<div className="flex-grow">
-      <div className="flex justify-between">
-        <div className="font-medium" style={itemStyle}>{item.product?.name || item.name}</div>
+    return (<div className="flex-grow overflow-hidden">
+      <div className="flex justify-between gap-4">
+          {item?.is_highlighted ? 
+            // Use H3 styling for highlighted items
+            <MarkdownText
+              theme={theme}
+              text={`### ${item.price?.name}`}
+              className="font-medium break-all"
+            />
+          : 
+            <div
+              className="font-medium break-all"
+              style={itemStyle}
+            >
+              {item.price?.name}
+            </div>
+          }
         {showItemPrices && item.total !== undefined && (
           <div className="text-gray-700" style={itemPriceStyle}>{formatMoney(item.total, currency)}</div>
         )}
@@ -392,7 +407,7 @@ function CheckoutSummaryComponent({ context }: { context: BlockContextType }) {
         Qty: {item.quantity} {showItemPrices && item.total !== undefined && `× ${formatMoney(item.subtotal, currency)}`}
       </div>}
       {item.price && item.price.type !== 'one_time' && (
-          <div className="text-gray-700">
+          <div className="text-sm text-gray-700">
               <div>Price per {item.price.renew_interval}: {formatMoney(item.total, currency)}</div>
               {item.price.cancel_after_cycles && (
                 <div>Total ({item.price.cancel_after_cycles} {item.price.renew_interval}s): {formatMoney(item.price.cancel_after_cycles * item.total, currency)}</div>

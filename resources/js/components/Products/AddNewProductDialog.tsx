@@ -47,21 +47,21 @@ export default function AddNewProductDialog({
       }
     }
     return (
-      <Card className="flex flex-row items-center justify-between p-4 text-white w-full bg-[#6772E5] hover:bg-[#6772E5]/80 cursor-pointer" onClick={handleClick}>
-              <div className='flex gap-4 items-center'>
-                <img src="/assets/icons/stripe.svg" alt="Stripe" className="w-10 h-10" />
+      <Card className="flex flex-row items-center justify-between p-4 text-white w-full !bg-[#6772E5] hover:!bg-[#6772E5]/80 cursor-pointer" onClick={handleClick}>
+        <div className='flex gap-4 items-center'>
+          <img src="/assets/icons/stripe.svg" alt="Stripe" className="w-10 h-10" />
 
-                <div className='text-start'>
-                  <p className="text-xl sm:text-xl font-semibold">{hasIntegrations ? 'Import an existing product' : 'Connect to Stripe'}</p>
-                  <p className="text-sm text-white">
-                    Use products from your Stripe account
-                  </p>
-                </div>
-              </div>
-              <div>
-                <CircleChevronRight className="w-6 h-6" />
-              </div>
-            </Card>
+          <div className='text-start'>
+            <p className="text-xl sm:text-xl font-semibold">{hasIntegrations ? 'Import an existing product' : 'Connect to Stripe'}</p>
+            <p className="text-sm text-white">
+              Use products from your Stripe account
+            </p>
+          </div>
+        </div>
+        <div>
+          <CircleChevronRight className="w-6 h-6" />
+        </div>
+      </Card>
     )
   }
 

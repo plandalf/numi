@@ -15,7 +15,13 @@ class OfferItemResource extends JsonResource
     public function toArray(Request $request): array
     {
         return array_merge(parent::toArray($request), [
-            'prices' => PriceResource::collection($this->whenLoaded('prices')),
+            'prices' => PriceResource::collection($this->whenLoaded('prices', function () {
+                return $this->prices->map(function ($price) {
+                    $offerPrice = $this->offerPrices->firstWhere('price_id', $price->id);
+                    $price->name = $offerPrice?->name ?? $price->name;
+                    return $price;
+                });
+            })),
         ]);
     }
 }
