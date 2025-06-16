@@ -194,6 +194,10 @@ function CheckboxBlockComponent({ context }: { context: BlockContextType }) {
     label && <MarkdownText text={label} theme={theme} style={checkboxLabelStyles} />
   );
 
+  useEffect(() => {
+    setChecked(isDefaultChecked);
+  }, [isDefaultChecked]);
+
   // useEffect(() => {
   //   if (checkedSessionValue === null) {
   //     updateSessionProperties(context.blockId, isDefaultChecked);
