@@ -237,6 +237,10 @@ function AddOnBlockComponent({ context }: { context: BlockContextType }) {
     label && <span style={checkboxLabelStyles}>{label}</span>
   );
 
+  useEffect(() => {
+    setChecked(isDefaultChecked);
+  }, [isDefaultChecked]);
+
   // useEffect(() => {
   //   if (checkedSessionValue === null) {
   //     updateSessionProperties(context.blockId, isDefaultChecked);
