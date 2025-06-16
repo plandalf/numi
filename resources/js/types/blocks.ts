@@ -60,6 +60,7 @@ export interface BlockContextType {
     setFieldValue: (fieldName: string, value: any) => void;
     registerHook: (hook: HookUsage) => void;
     theme?: Theme | null;
+    hidden?: boolean;
 }
 
 

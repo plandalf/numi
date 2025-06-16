@@ -14,6 +14,12 @@ export function BlockRenderer({ block, children }: {
     throw new Error('BlockRenderer must be used within a GlobalStateProvider');
   }
 
+  const isVisible = useMemo(() => {
+    const visibility = block.appearance?.visibility;
+
+    return isBlockVisible({ fields: globalStateContext.fields }, visibility);
+  }, [block, globalStateContext]);
+
   const blockContext: BlockContextType = {
     theme: globalStateContext.theme,
     blockId: block.id,
@@ -32,14 +38,9 @@ export function BlockRenderer({ block, children }: {
     },
     registerHook: (hook: HookUsage) => {
       globalStateContext.registerHook(block, hook);
-    }
+    },
+    hidden: !isVisible,
   };
-
-  const isVisible = useMemo(() => {
-    const visibility = block.appearance?.visibility;
-
-    return isBlockVisible({ fields: globalStateContext.fields }, visibility);
-  }, [block, globalStateContext]);
 
   return (
     <BlockContext.Provider value={blockContext}>

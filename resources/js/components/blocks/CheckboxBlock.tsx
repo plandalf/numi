@@ -1,16 +1,16 @@
-import Numi, { Style, Conditions, FontValue, BorderValue, DimensionValue, Appearance } from "@/contexts/Numi";
+import Numi, { Style, BorderValue, Appearance } from "@/contexts/Numi";
 import { BlockContextType } from "@/types/blocks";
 import { Switch } from "@/components/ui/switch";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo } from "react";
 import { Check } from "lucide-react";
 import { Event, EVENT_LABEL_MAP } from "../editor/interaction-event-editor";
 import { resolveThemeValue } from "@/lib/theme";
 import { MarkdownText } from "../ui/markdown-text";
+import { useVisibilityChange } from "@/hooks/use-visibility-change";
 
 function CheckboxBlockComponent({ context }: { context: BlockContextType }) {
 
   const { updateSessionProperties } = Numi.useCheckout({});
-  // const [isInitialExecuteCallbackRun, setIsInitialExecuteCallbackRun] = useState(false);
   const theme = Numi.useTheme();
 
   const [id] = Numi.useStateString({
@@ -195,20 +195,16 @@ function CheckboxBlockComponent({ context }: { context: BlockContextType }) {
   );
 
   useEffect(() => {
-    setChecked(isDefaultChecked);
-  }, [isDefaultChecked]);
+    if(checkedSessionValue === null) {
+      updateSessionProperties(context.blockId, isDefaultChecked);
+      setChecked(isDefaultChecked);
+    }
+  }, [isDefaultChecked, checkedSessionValue]);
 
-  // useEffect(() => {
-  //   if (checkedSessionValue === null) {
-  //     updateSessionProperties(context.blockId, isDefaultChecked);
-  //     setChecked(isDefaultChecked);
-  //   } else {
-  //     if (!isInitialExecuteCallbackRun) {
-  //       executeCallbacks(checked ? Event.onSelect : Event.onUnSelect);
-  //       setIsInitialExecuteCallbackRun(true);
-  //     }
-  //   }
-  // }, [isDefaultChecked, checkedSessionValue, isInitialExecuteCallbackRun]);
+  useVisibilityChange({ hidden: context.hidden, onVisible: () => {
+    updateSessionProperties(context.blockId, isDefaultChecked);
+    setChecked(isDefaultChecked);
+  }});
 
 
   return (
