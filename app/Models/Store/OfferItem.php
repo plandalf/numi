@@ -8,6 +8,7 @@ use App\Enums\Store\OfferItemType;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -23,12 +24,14 @@ class OfferItem extends Model
         'name',
         'default_price_id',
         'is_required',
+        'is_highlighted',
         'sort_order',
         'type',
     ];
 
     protected $casts = [
         'is_required' => 'boolean',
+        'is_highlighted' => 'boolean',
         'sort_order' => 'integer',
         'type' => OfferItemType::class,
     ];

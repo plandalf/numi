@@ -193,6 +193,7 @@ const CheckoutController = ({ offer, session }: { offer: OfferConfiguration, ses
     setSubmitError,
     submitPage,
   } = useCheckoutState();
+
   const isMobile = useIsMobile();
 
   const { validateAllFields } = useValidateFields();

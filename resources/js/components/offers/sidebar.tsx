@@ -23,6 +23,7 @@ import PageProducts from './page-products';
 import OfferSettings from './offer-settings';
 
 import { DeleteBlockDialog } from './dialogs/delete-block-dialog';
+import { EditableLabel } from '../ui/editable-label';
 
 export type SidebarTab = 'elements' | 'products' | 'themes' | 'settings' | 'layers';
 
@@ -45,8 +46,6 @@ const iconButtons: IconButton[] = [
 
 
 export function Sidebar() {
-  const [isEditingBlockId, setIsEditingBlockId] = useState(false);
-  const [editBlockIdValue, setEditBlockIdValue] = useState('');
   const [blockIdError, setBlockIdError] = useState<string | null>(null);
 
   const {
@@ -119,24 +118,10 @@ export function Sidebar() {
     return null;
   }, [selectedBlockId, getAllBlockNames]);
 
-  const startEditingBlockId = () => {
-    if (selectedBlockId) {
-      const currentBlock = findBlockInPage(data.view.pages[selectedPage], selectedBlockId);
-      setEditBlockIdValue(currentBlock?.name ?? selectedBlockId);
-      setIsEditingBlockId(true);
-      setBlockIdError(null);
-    }
-  };
 
-  const cancelEditingBlockId = () => {
-    setIsEditingBlockId(false);
-    setEditBlockIdValue('');
-    setBlockIdError(null);
-  };
-
-  const saveBlockId = () => {
+  const saveBlockId = (value: string) => {
     // Format the input to slug format before validation and saving
-    const formattedName = formatToSlug(editBlockIdValue);
+    const formattedName = formatToSlug(value);
 
     const error = validateBlockName(formattedName);
     if (error) {
@@ -184,21 +169,9 @@ export function Sidebar() {
       .replace(/^_+|_+$/g, ''); // Remove leading/trailing underscores
   };
 
-  const handleBlockIdChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    // Allow any characters while typing
-    setEditBlockIdValue(e.target.value);
-
-    // Clear error when user starts typing
+  const handleBlockIdChange = () => {
     if (blockIdError) {
       setBlockIdError(null);
-    }
-  };
-
-  const handleBlockIdKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      saveBlockId();
-    } else if (e.key === 'Escape') {
-      cancelEditingBlockId();
     }
   };
 
@@ -341,35 +314,22 @@ export function Sidebar() {
                   </span>
 
                   <div className="flex items-center gap-2 w-full">
-                    {isEditingBlockId ? (
-                      <div className="flex-1">
-                        <Input
-                          value={editBlockIdValue}
-                          onChange={handleBlockIdChange}
-                          onKeyDown={handleBlockIdKeyDown}
-                          onBlur={saveBlockId}
-                          className={cn(
-                            "h-6 text-xs",
-                            blockIdError && "border-red-500 focus:border-red-500"
-                          )}
-                          autoFocus
-                        />
-                        {blockIdError && (
-                          <div className="text-xs text-red-500 mt-1">{blockIdError}</div>
-                        )}
-                      </div>
-                    ) : (
+                    <EditableLabel
+                      className="w-[235px]"
+                      value={findBlockInPage(data.view.pages[selectedPage], selectedBlockId)?.name ?? selectedBlockId}
+                      onSave={saveBlockId}
+                      onChange={handleBlockIdChange}
+                    >
                       <div
-                        className="flex items-center gap-1 cursor-pointer hover:bg-gray-100 rounded px-1 py-0.5 transition-colors group"
-                        onClick={startEditingBlockId}
+                        className="w-[235px] justify-between flex items-center gap-1 cursor-pointer hover:bg-gray-100 rounded px-1 py-0.5 transition-colors group"
                       >
 
-                        <h2 className="text-lg font-bold truncate leading-6">
+                        <h2 className="text-sm font-bold truncate leading-6">
                           {findBlockInPage(data.view.pages[selectedPage], selectedBlockId)?.name ?? selectedBlockId}
                         </h2>
-                        <Edit3 className="h-3 w-3 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+                        <Edit3 className="size-4 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" />
                       </div>
-                    )}
+                    </EditableLabel>
                   </div>
                 </div>
               </div>

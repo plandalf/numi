@@ -107,14 +107,14 @@ export default function Show() {
             <div className="grid gap-2">
               <Label className="font-medium">Product name</Label>
 
-              <p>
+              <p className="break-all">
                 {product.name}
               </p>
             </div>
             <div className="grid gap-2">
               <Label className="font-medium">Lookup key</Label>
 
-              <p>
+              <p className="break-all">
                 {product.lookup_key}
               </p>
             </div>

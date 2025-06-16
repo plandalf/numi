@@ -107,7 +107,7 @@ class CheckoutSessionController extends Controller
             if (!$required) {
                 $checkoutSession->lineItems()->where('offer_item_id', $request->input('offer_item_id'))->delete();
 
-                $checkoutSession->load(['lineItems.offerItem', 'offer.theme', 'lineItems.price.integration', 'lineItems.price.product']);
+                $checkoutSession->load(['lineItems.offerItem.offerPrices', 'offer.theme', 'lineItems.price.integration', 'lineItems.price.product']);
                 return new CheckoutSessionResource($checkoutSession);
             }
         }
@@ -120,7 +120,7 @@ class CheckoutSessionController extends Controller
             'deleted_at' => null,
         ]);
 
-        $checkoutSession->load(['lineItems.offerItem', 'offer.theme', 'lineItems.price.integration', 'lineItems.price.product']);
+        $checkoutSession->load(['lineItems.offerItem.offerPrices', 'offer.theme', 'lineItems.price.integration', 'lineItems.price.product']);
         return new CheckoutSessionResource($checkoutSession);
     }
 
@@ -132,7 +132,7 @@ class CheckoutSessionController extends Controller
             'properties' => array_merge($checkoutSession->properties ?? [], $properties),
         ]);
 
-        $checkoutSession->load(['lineItems.offerItem', 'offer.theme', 'lineItems.price.integration', 'lineItems.price.product']);
+        $checkoutSession->load(['lineItems.offerItem.offerPrices', 'offer.theme', 'lineItems.price.integration', 'lineItems.price.product']);
         return new CheckoutSessionResource($checkoutSession);
     }
 
@@ -176,7 +176,7 @@ class CheckoutSessionController extends Controller
                 'discounts' => array_merge($existingDiscounts ?? [], [$discount]),
             ]);
 
-            $checkoutSession->load(['lineItems.offerItem', 'offer.theme', 'lineItems.price.integration', 'lineItems.price.product']);
+            $checkoutSession->load(['lineItems.offerItem.offerPrices', 'offer.theme', 'lineItems.price.integration', 'lineItems.price.product']);
             return new CheckoutSessionResource($checkoutSession);
         } catch (InvalidRequestException $e) {
             return response()->json([
@@ -193,7 +193,7 @@ class CheckoutSessionController extends Controller
             'discounts' => Arr::where($checkoutSession->discounts, fn($d) => $d['id'] !== $discount),
         ]);
 
-        $checkoutSession->load(['lineItems.offerItem', 'offer.theme', 'lineItems.price.integration', 'lineItems.price.product']);
+        $checkoutSession->load(['lineItems.offerItem.offerPrices', 'offer.theme', 'lineItems.price.integration', 'lineItems.price.product']);
         return new CheckoutSessionResource($checkoutSession);
     }
 }

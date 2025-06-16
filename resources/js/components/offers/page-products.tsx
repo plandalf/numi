@@ -1,5 +1,5 @@
 import { Button } from '@/components/ui/button';
-import { CircleAlert, CirclePlus, PlusIcon, Pencil } from 'lucide-react';
+import { CircleAlert, CirclePlus, PlusIcon, Pencil, Info, Edit3 } from 'lucide-react';
 import { useForm, usePage } from '@inertiajs/react';
 import { EditProps } from '@/pages/offers/edit';
 import { OfferItem, OfferItemType, Price, Product } from '@/types/offer';
@@ -16,6 +16,8 @@ import AddNewProductWithPriceDialog from './dialogs/AddNewProductWithPriceDialog
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
+import { EditableLabel } from '../ui/editable-label';
 
 
 const NewProductAndPricesOfferItem = ({ open, setOpen, offerItemsCount, type, offerId }: { offerId: number, offerItemsCount: number, type: OfferItemType, open: boolean, setOpen: (open: boolean) => void }) => {
@@ -77,13 +79,13 @@ export const PageProducts = () => {
     setSelectedOfferItemType(OfferItemType.STANDARD);
   }
 
-  const handleRenameClick = (item: OfferItem) => {
+  const handleRenameOfferItemClick = (item: OfferItem) => {
     setRenameValue(item.name);
     setRenameItemId(item.id);
     setIsRenameDialogOpen(true);
   };
 
-  const handleRenameSubmit = async (e: React.FormEvent) => {
+  const handleRenameOfferItemSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!renameItemId) return;
     setRenameLoading(true);
@@ -125,11 +127,11 @@ export const PageProducts = () => {
       });
     }
 
-    const handleToggleRequired = (item: OfferItem, checked: boolean) => {
+    const handleToggle = (key: 'is_required' | 'is_highlighted', item: OfferItem, checked: boolean) => {
       const toastId = toast.loading(`Updating product...`);
 
       router.put(route("offers.items.update", { offer: offer.id, item: item.id }), {
-        is_required: checked
+        [key]: checked
       }, {
         preserveScroll: true,
         onSuccess: () => {
@@ -145,18 +147,20 @@ export const PageProducts = () => {
       <div className="flex flex-col gap-3.5">
         {offerItems.map((item, key) => (
           <div key={item.id}>
-            <div className="flex justify-between">
-              <div className="flex items-center gap-1 text-sm">
-                {key + 1}. {item.name}
+            <div className="flex justify-between gap-2">
+              <div className="flex gap-1 text-sm break-word">
+                <span
+                  className="self-center"
+                >{key + 1}. {item.name}</span>
                 <Button
                   type="button"
                   variant="ghost"
                   size="icon"
-                  onClick={() => handleRenameClick(item)}
-                  className="ml-1"
+                  onClick={() => handleRenameOfferItemClick(item)}
+                  className="ml-1 !h-8 !w-8"
                   tooltip="Rename"
                 >
-                  <Pencil className="w-4 h-4 text-muted-foreground" />
+                  <Pencil className="size-3 leading-none text-muted-foreground" />
                 </Button>
               </div>
               <Kebab items={[{
@@ -170,7 +174,28 @@ export const PageProducts = () => {
             <div className="flex gap-3 mt-2 rounded-md p-2 items-center justify-between flex-col border bg-[#F7F9FF]">
               <div className="flex bg-white border rounded-md px-4 py-2 items-center justify-between w-full">
                 <div>Required</div>
-                <Switch defaultChecked={item.is_required} onCheckedChange={(checked) => handleToggleRequired(item, checked)} />
+                <Switch defaultChecked={item.is_required} onCheckedChange={(checked) => handleToggle('is_required', item, checked)} />
+              </div>
+              <div className="flex bg-white border rounded-md px-4 py-2 items-center justify-between w-full">
+                <div className="flex items-center gap-2">
+                  Highlighted
+                  <TooltipProvider delayDuration={1500}>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Info className="size-3.5 cursor-help text-gray-500 hover:text-gray-700 hover:scale-110 transition-all duration-300 ease-in-out" />
+                        </TooltipTrigger>
+                        <TooltipContent
+                          side="right"
+                          align="center"
+                          className="max-w-[300px]"
+                        >
+                          Highlights the product in the checkout summary. <br/>
+                          This uses the H3 styling from themes.
+                        </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
+                <Switch defaultChecked={item.is_highlighted} onCheckedChange={(checked) => handleToggle('is_highlighted', item, checked)} />
               </div>
               <Prices prices={item.prices ?? []} offerItem={item} />
               <Button variant="outline" className="w-full" onClick={() => handleEdit(item)}>
@@ -206,14 +231,42 @@ export const PageProducts = () => {
       });
     }
 
+
+    const savePriceName = (value: string, priceId: number) => {
+      router.put(route("offers.items.prices.update", { 
+          offer: offer.id,
+          item: offerItem.id,
+          price: priceId
+        }), {
+        name: value
+      }, {
+        preserveScroll: true,
+        onSuccess: () => {
+          toast.success(`Item updated successfully`);
+        },
+      });
+    };
+
+
     return (
       <>
         {prices.map((price) => (
-          <div className="flex bg-white border rounded-md px-4 py-2 items-center justify-between w-full">
-            <div className="flex flex-col gap-1">
-              <div className="text-sm font-bold">{price.product?.name || price.name}</div>
-              <div className="text-xs">{price.name} {price.currency.toUpperCase()} ${price.amount / 100}</div>
-              {price.lookup_key && <div className="text-xs">{price.lookup_key}</div>}
+          <div className="flex bg-white border rounded-md gap-2 px-4 py-2 justify-between w-full">
+            <div className="flex flex-col gap-1.5 self-center">
+              <div className="text-xs underline break-all px-1 ">{price.product?.name}</div>
+              <EditableLabel
+                value={price.name ?? ''}
+                onSave={(value) => savePriceName(value, price.id)}
+              >
+                <div
+                  className="min-h-[28px] w-[210px] break-all flex items-center gap-2 cursor-pointer hover:bg-gray-100 rounded px-1 py-0.5 transition-colors group text-sm font-bold break-word"
+                >
+                  {price.name}
+                  <Edit3 className="size-4 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+                </div>
+              </EditableLabel>
+              <div className="text-xs px-1">{price.currency.toUpperCase()} ${price.amount / 100}</div>
+              {price.lookup_key && <div className="text-xs px-1">{price.lookup_key}</div>}
 
               {price.id === offerItem.default_price_id && (
                 <Badge variant="secondary">Default</Badge>
@@ -377,7 +430,7 @@ export const PageProducts = () => {
             <DialogTitle>Rename product</DialogTitle>
             <DialogDescription>Give this product a new name.</DialogDescription>
           </DialogHeader>
-          <form onSubmit={handleRenameSubmit} className="space-y-4">
+          <form onSubmit={handleRenameOfferItemSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="rename-product-name">Name</Label>
               <Input

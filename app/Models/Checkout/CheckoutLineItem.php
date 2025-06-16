@@ -53,6 +53,6 @@ class CheckoutLineItem extends Model
 
     public function getSubtotalAttribute()
     {
-        return $this->price->calculateAmount($this->quantity)->getAmount();
+        return $this->price->calculateAmount(1)->getAmount();
     }
 }

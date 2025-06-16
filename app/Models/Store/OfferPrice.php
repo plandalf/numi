@@ -23,6 +23,7 @@ class OfferPrice extends Model
     protected $fillable = [
         'offer_item_id',
         'price_id',
+        'name',
         'deleted_at',
     ];
 
