@@ -206,9 +206,9 @@ function RadioListBlock() {
     updateSessionProperties(blockContext.blockId, value);
   }, [executeCallbacks, updateSessionProperties, blockContext.blockId]);
 
-  useEffect(() => {
-    executeCallbacks(Event.onClick, selectedTab);
-  }, []);
+  // useEffect(() => {
+  //   executeCallbacks(Event.onClick, selectedTab);
+  // }, []);
 
   const prevItemsRef = useRef(items);
 
