@@ -10,7 +10,7 @@ import { MarkdownText } from "../ui/markdown-text";
 function CheckboxBlockComponent({ context }: { context: BlockContextType }) {
 
   const { updateSessionProperties } = Numi.useCheckout({});
-  const [isInitialExecuteCallbackRun, setIsInitialExecuteCallbackRun] = useState(false);
+  // const [isInitialExecuteCallbackRun, setIsInitialExecuteCallbackRun] = useState(false);
   const theme = Numi.useTheme();
 
   const [id] = Numi.useStateString({
@@ -194,17 +194,17 @@ function CheckboxBlockComponent({ context }: { context: BlockContextType }) {
     label && <MarkdownText text={label} theme={theme} style={checkboxLabelStyles} />
   );
 
-  useEffect(() => {
-    if (checkedSessionValue === null) {
-      updateSessionProperties(context.blockId, isDefaultChecked);
-      setChecked(isDefaultChecked);
-    } else {
-      if (!isInitialExecuteCallbackRun) {
-        executeCallbacks(checked ? Event.onSelect : Event.onUnSelect);
-        setIsInitialExecuteCallbackRun(true);
-      }
-    }
-  }, [isDefaultChecked, checkedSessionValue, isInitialExecuteCallbackRun]);
+  // useEffect(() => {
+  //   if (checkedSessionValue === null) {
+  //     updateSessionProperties(context.blockId, isDefaultChecked);
+  //     setChecked(isDefaultChecked);
+  //   } else {
+  //     if (!isInitialExecuteCallbackRun) {
+  //       executeCallbacks(checked ? Event.onSelect : Event.onUnSelect);
+  //       setIsInitialExecuteCallbackRun(true);
+  //     }
+  //   }
+  // }, [isDefaultChecked, checkedSessionValue, isInitialExecuteCallbackRun]);
 
 
   return (

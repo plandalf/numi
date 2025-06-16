@@ -229,9 +229,9 @@ function OptionSelectorComponent({ context }: { context: BlockContextType }) {
     updateSessionProperties(context.blockId, value);
   }, [executeCallbacks, updateSessionProperties, context.blockId, selectedTab]);
 
-  useEffect(() => {
-    executeCallbacks(Event.onClick, selectedTab);
-  }, []);
+  // useEffect(() => {
+  //   executeCallbacks(Event.onClick, selectedTab);
+  // }, []);
 
   const prevItemsRef = useRef(items);
 
