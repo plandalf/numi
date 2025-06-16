@@ -90,22 +90,28 @@ class CheckoutSession extends Model
 
     public function getTotalAttribute()
     {
-        $subtotal = $this->lineItems->sum('total');
+        $taxes = $this->taxes;
+        $subtotal = $this->lineItems->sum('total') + $taxes;
 
-        if (empty($this->discounts)) {
-            return $subtotal;
-        }
-
-        $discountAmount = 0;
-        foreach ($this->discounts as $discount) {
-            if (isset($discount['percent_off'])) {
-                $discountAmount += ($subtotal * ($discount['percent_off'] / 100));
-            } elseif (isset($discount['amount_off'])) {
-                $discountAmount += $discount['amount_off'];
+        if (!empty($this->discounts)) {
+            $discountAmount = 0;
+            foreach ($this->discounts as $discount) {
+                if (isset($discount['percent_off'])) {
+                    $discountAmount += ($subtotal * ($discount['percent_off'] / 100));
+                } elseif (isset($discount['amount_off'])) {
+                    $discountAmount += $discount['amount_off'];
+                }
             }
+    
+            return max(0, $subtotal - $discountAmount);
         }
 
-        return max(0, $subtotal - $discountAmount);
+        return $subtotal;
+    }
+
+    public function getTaxesAttribute()
+    {
+        return $this->lineItems->sum('taxes');
     }
 
     public function getSubtotalAttribute()

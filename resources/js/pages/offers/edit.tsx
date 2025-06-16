@@ -41,6 +41,7 @@ import { blockTypes } from '@/components/blocks';
 import { Font } from '@/types';
 import WebFont from 'webfontloader';
 import { PageIframePreview } from '@/components/offers/page-iframe-preview';
+import { computeTaxes } from '@/utils/editor-session';
 
 export interface EditProps extends PageProps {
     offer: Offer;
@@ -131,15 +132,19 @@ function EditApp({ publishableKey }: { publishableKey: string | undefined }) {
 
   const lineItems = useMemo(() => offer.items.filter(item => item.is_required).map(item => {
     const defaultPrice = item.prices.find(price => price.id === item.default_price_id);
-    console.log(defaultPrice);
+
+    const taxes = computeTaxes(item, 1, defaultPrice);
+
     return {
       id: item.id,
       name: defaultPrice?.name || defaultPrice?.product?.name || item.name,
       is_highlighted: item.is_highlighted,
+      is_tax_inclusive: item.is_tax_inclusive,
+      tax_rate: item.tax_rate,
       currency: 'USD',
-      quantity: 1,
+      quantity: item.quantity,
       subtotal: defaultPrice?.amount ?? 0,
-      taxes: 0,
+      taxes: taxes,
       shipping: 0,
       discount: 0,
       total: defaultPrice?.amount ?? 0,
@@ -154,15 +159,15 @@ function EditApp({ publishableKey }: { publishableKey: string | undefined }) {
     currency: 'USD',
     subtotal: lineItems.reduce((acc, item) => Number(acc) + Number(item.subtotal), 0),
     discount: 0,
-    total: lineItems.reduce((acc, item) => Number(acc) + Number(item.total), 0),
+    total: lineItems.reduce((acc, item) => Number(acc) + Number(item.total), 0) + lineItems.reduce((acc, item) => Number(acc) + Number(item.taxes), 0),
     metadata: {},
     integration_client: IntegrationClient.STRIPE,
     status: 'open',
-    taxes: 10,
-    shipping: 5,
+    taxes: lineItems.reduce((acc, item) => Number(acc) + Number(item.taxes), 0),
     publishable_key: publishableKey,
     properties: {},
   }), [lineItems, publishableKey]);
+  
 
   const [prototype, setPrototype] = useState<null | { sectionId: string; index: number; block: Block }>();
   const [activeItem, setActiveItem] = useState<ActiveDndItem | null>(null);

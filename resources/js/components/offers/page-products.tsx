@@ -1,5 +1,5 @@
 import { Button } from '@/components/ui/button';
-import { CircleAlert, CirclePlus, PlusIcon, Pencil, Info, Edit3 } from 'lucide-react';
+import { CircleAlert, CirclePlus, PlusIcon, Pencil, Info, Edit3, CheckCircle, XCircle } from 'lucide-react';
 import { useForm, usePage } from '@inertiajs/react';
 import { EditProps } from '@/pages/offers/edit';
 import { OfferItem, OfferItemType, Price, Product } from '@/types/offer';
@@ -18,6 +18,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
 import { EditableLabel } from '../ui/editable-label';
+import { cn } from '@/lib/utils';
 
 
 const NewProductAndPricesOfferItem = ({ open, setOpen, offerItemsCount, type, offerId }: { offerId: number, offerItemsCount: number, type: OfferItemType, open: boolean, setOpen: (open: boolean) => void }) => {
@@ -71,6 +72,10 @@ export const PageProducts = () => {
   const [renameValue, setRenameValue] = useState<string>('');
   const [renameLoading, setRenameLoading] = useState(false);
   const [renameItemId, setRenameItemId] = useState<number | null>(null);
+  const [isTaxModalOpen, setIsTaxModalOpen] = useState(false);
+  const [taxRate, setTaxRate] = useState<string>('');
+  const [isTaxInclusive, setIsTaxInclusive] = useState(false);
+  const [taxRateError, setTaxRateError] = useState<string | null>(null);
 
   const handleExistingProductOnClose = () => {
     setAddExistingProductDialogProps({ open: false, tab: 'product' });
@@ -103,6 +108,74 @@ export const PageProducts = () => {
       onFinish: () => setRenameLoading(false),
     });
   };
+
+  const handleTaxEdit = (offerItem: OfferItem) => {
+    setSelectedOfferItem(offerItem);
+    setTaxRate(offerItem.tax_rate?.toString() || '');
+    setIsTaxInclusive(offerItem.is_tax_inclusive || false);
+    setIsTaxModalOpen(true);
+  };
+
+  const handleTaxSave = () => {
+    if (!selectedOfferItem) return;
+
+    const toastId = toast.loading('Updating tax settings...');
+
+    router.put(route("offers.items.update", { offer: offer.id, item: selectedOfferItem.id }), {
+      tax_rate: parseFloat(taxRate) || 0,
+      is_tax_inclusive: isTaxInclusive
+    }, {
+      preserveScroll: true,
+      onSuccess: () => {
+        toast.success('Tax settings updated successfully', { id: toastId });
+        setIsTaxModalOpen(false);
+      },
+      onError: (errors) => {
+        toast.error(`Failed to update tax settings: ${Object.values(errors).flat().join(", ")}`, { id: toastId });
+      },
+    });
+  };
+
+  const getTaxRateError = (value: string) => {
+    if (isTaxInclusive) {
+      return null;
+    }
+
+    const numValue = parseFloat(value);
+    if (isNaN(numValue)) {
+      return 'Tax rate must be a number';
+    }
+    if (numValue < 0) {
+      return 'Tax rate cannot be negative';
+    }
+    if (numValue > 100) {
+      return 'Tax rate cannot exceed 100%';
+    }
+    return null;
+  };
+
+  const handleTaxRateBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+    setTaxRateError(getTaxRateError(e.target.value));
+  };
+
+  const handleTaxRateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setTaxRate(e.target.value);
+    if (taxRateError) {
+      setTaxRateError(null);
+    }
+  };
+
+  const handleTaxInclusiveChange = (checked: boolean) => {
+    setIsTaxInclusive(checked);
+    setTaxRateError(getTaxRateError(taxRate));
+  };
+
+  const isTaxFormValid = useMemo(() => {
+    if (isTaxInclusive) {
+      return true;
+    }
+    return getTaxRateError(taxRate) === null;
+  }, [isTaxInclusive, taxRate]);
 
   const OfferItems = ({ offerItems }: { offerItems: OfferItem[] }) => {
     const handleEdit = (offerItem: OfferItem) => {
@@ -173,11 +246,11 @@ export const PageProducts = () => {
             </div>
             <div className="flex gap-3 mt-2 rounded-md p-2 items-center justify-between flex-col border bg-[#F7F9FF]">
               <div className="flex bg-white border rounded-md px-4 py-2 items-center justify-between w-full">
-                <div>Required</div>
+                <div className="text-sm">Required</div>
                 <Switch defaultChecked={item.is_required} onCheckedChange={(checked) => handleToggle('is_required', item, checked)} />
               </div>
               <div className="flex bg-white border rounded-md px-4 py-2 items-center justify-between w-full">
-                <div className="flex items-center gap-2">
+                <div className="flex text-sm items-center gap-2">
                   Highlighted
                   <TooltipProvider delayDuration={1500}>
                     <Tooltip>
@@ -196,6 +269,24 @@ export const PageProducts = () => {
                   </TooltipProvider>
                 </div>
                 <Switch defaultChecked={item.is_highlighted} onCheckedChange={(checked) => handleToggle('is_highlighted', item, checked)} />
+              </div>
+              <div 
+                onClick={() => handleTaxEdit(item)}
+                className="cursor-pointer flex bg-white border rounded-md px-4 py-2 items-center justify-between w-full hover:bg-gray-100 transition-all duration-300 ease-in-out"
+              >
+                <div className="flex text-sm items-center gap-2 w-full justify-between">
+                  <span className="flex items-center gap-2">
+                    <Badge variant="outline" className="text-xs">
+                      {item.is_tax_inclusive ? 'Tax Inclusive' : 'Tax Exclusive'}
+                    </Badge>
+                    {!item.is_tax_inclusive && item.tax_rate && (
+                      <Badge variant="default" className="text-xs font-bold">
+                        {item.tax_rate}%
+                      </Badge>
+                    )}
+                  </span>
+                  <Edit3 className="size-4 text-gray-400" />
+                </div>
               </div>
               <Prices prices={item.prices ?? []} offerItem={item} />
               <Button variant="outline" className="w-full" onClick={() => handleEdit(item)}>
@@ -251,15 +342,23 @@ export const PageProducts = () => {
     return (
       <>
         {prices.map((price) => (
-          <div className="flex bg-white border rounded-md gap-2 px-4 py-2 justify-between w-full">
-            <div className="flex flex-col gap-1.5 self-center">
-              <div className="text-xs underline break-all px-1 ">{price.product?.name}</div>
+          <div className="flex flex-col bg-white border rounded-md gap-2 px-4 gap-2 py-2 justify-between w-full">
+              <div className="flex w-full items-center justify-between text-sm underline break-all px-1 ">
+                {price.product?.name}
+                <Kebab items={[{
+                  label: 'Make default',
+                  onClick: () => handleMakeDefault(price)
+                }, {
+                  label: 'Edit',
+                  onClick: () => handleEdit(price)
+                }]} />
+              </div>
               <EditableLabel
                 value={price.name ?? ''}
                 onSave={(value) => savePriceName(value, price.id)}
               >
                 <div
-                  className="min-h-[28px] w-[210px] break-all flex items-center gap-2 cursor-pointer hover:bg-gray-100 rounded px-1 py-0.5 transition-colors group text-sm font-bold break-word"
+                  className="min-h-[28px] w-full break-all flex items-center gap-2 cursor-pointer hover:bg-gray-100 rounded px-1 py-0.5 transition-colors group text-sm font-bold break-word"
                 >
                   {price.name}
                   <Edit3 className="size-4 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -267,19 +366,12 @@ export const PageProducts = () => {
               </EditableLabel>
               <div className="text-xs px-1">{price.currency.toUpperCase()} ${price.amount / 100}</div>
               {price.lookup_key && <div className="text-xs px-1">{price.lookup_key}</div>}
-
-              {price.id === offerItem.default_price_id && (
-                <Badge variant="secondary">Default</Badge>
-              )}
+              <div className="flex gap-2">
+                {price.id === offerItem.default_price_id && (
+                  <Badge variant="secondary">Default</Badge>
+                )}
+              </div>
             </div>
-            <Kebab items={[{
-              label: 'Make default',
-              onClick: () => handleMakeDefault(price)
-            }, {
-              label: 'Edit',
-              onClick: () => handleEdit(price)
-            }]} />
-          </div>
         ))}
       </>
     )
@@ -449,6 +541,78 @@ export const PageProducts = () => {
               </Button>
             </div>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isTaxModalOpen} onOpenChange={setIsTaxModalOpen}>
+        <DialogContent className="!max-w-[300px]">
+          <DialogHeader>
+            <DialogTitle>Edit Tax Settings</DialogTitle>
+            <DialogDescription>
+              Configure tax settings for this price
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2 flex flex-col gap-2">
+            <div className="flex items-center space-x-2">
+              <Label htmlFor="tax-inclusive" className='min-w-28 flex flex-row gap-1.5'>
+                Tax Inclusive
+                <TooltipProvider delayDuration={1500}>
+                  <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Info className="size-3.5 cursor-help text-gray-500 hover:text-gray-700 hover:scale-110 transition-all duration-300 ease-in-out" />
+                      </TooltipTrigger>
+                      <TooltipContent
+                        side="top"
+                        align="center"
+                        className="max-w-[310px]"
+                      >
+                        If enabled, the tax is already included in the price. <br/>
+                        If disabled, the tax will be added on top of the price.
+                      </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </Label>
+              <Switch
+                id="tax-inclusive"
+                checked={isTaxInclusive}
+                onCheckedChange={handleTaxInclusiveChange}
+              />
+            </div>
+
+            {!isTaxInclusive && (
+              <>
+              <div className="flex items-center space-x-2">
+                <Label htmlFor="tax-rate" className="min-w-28">Tax Rate (%)</Label>
+                <div className="flex flex-col w-full">
+                  <Input
+                    id="tax-rate"
+                    type="number"
+                    min="0"
+                    max="100"
+                    step="0.01"
+                    value={taxRate}
+                    onChange={handleTaxRateChange}
+                    onBlur={handleTaxRateBlur}
+                    placeholder="Enter tax rate"
+                    className={cn(taxRateError && "border-destructive")}
+                    disabled={isTaxInclusive}
+                  />
+                </div>
+              </div>
+              {taxRateError && (
+                <span className="text-center text-xs text-destructive">{taxRateError}</span>
+              )}
+            </>
+            )}
+            <Button 
+              variant="default"
+              className="h-8"
+              onClick={handleTaxSave}
+              disabled={!isTaxFormValid}
+            >
+              Save Changes
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

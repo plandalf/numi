@@ -23,6 +23,8 @@ export type CheckoutItem = {
   total: number;
   product?: Product;
   is_highlighted?: boolean;
+  is_tax_inclusive?: boolean;
+  tax_rate?: number;
   price?: Price;
 };
 

@@ -4,12 +4,13 @@ namespace App\Models\Checkout;
 
 use App\Models\Catalog\Price;
 use App\Models\Store\OfferItem;
+use App\Traits\ComputesPrice;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class CheckoutLineItem extends Model
 {
-    use HasFactory;
+    use HasFactory, ComputesPrice;
 
     protected $table = 'checkout_line_items';
 
@@ -44,15 +45,5 @@ class CheckoutLineItem extends Model
     public function offerItem()
     {
         return $this->belongsTo(OfferItem::class, 'offer_item_id');
-    }
-
-    public function getTotalAttribute()
-    {
-        return $this->price->calculateAmount($this->quantity)->getAmount();
-    }
-
-    public function getSubtotalAttribute()
-    {
-        return $this->price->calculateAmount(1)->getAmount();
     }
 }

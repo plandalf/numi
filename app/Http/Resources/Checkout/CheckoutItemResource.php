@@ -19,7 +19,9 @@ class CheckoutItemResource extends JsonResource
             'subtotal' => $this->subtotal,
             'currency' => $this->currency,
             'is_highlighted' => $this->offerItem?->is_highlighted,
-            // 'taxes' => $this->price->calculateTaxes()->getAmount(),
+            'is_tax_inclusive' => $this->offerItem?->is_tax_inclusive,
+            'tax_rate' => $this->offerItem?->tax_rate,
+            'taxes' => $this->taxes,
             'total' => $this->total,
             'product' => $this->when(
                 $this->resource->relationLoaded('price') && $this->price->relationLoaded('product'),

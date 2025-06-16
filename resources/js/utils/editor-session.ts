@@ -33,24 +33,43 @@ export const updateSessionLineItems = ({
   return {
     ...checkoutSession,
     subtotal: lineItems.reduce((acc, item) => Number(acc) + Number(item.subtotal), 0),
-    total: lineItems.reduce((acc, item) => Number(acc) + Number(item.total), 0),
+    total: lineItems.reduce((acc, item) => Number(acc) + Number(item.total), 0) + lineItems.reduce((acc, item) => Number(acc) + Number(item.taxes), 0) + (checkoutSession.shipping ?? 0),
+    taxes: lineItems.reduce((acc, item) => Number(acc) + Number(item.taxes), 0),
     line_items: lineItems
   }
 }
 
 const createLineItem = (item: OfferItem, quantity: number, defaultPrice?: Price) => {
+
+  const taxes = computeTaxes(item, quantity, defaultPrice);
   return {
     id: item.id,
     name: defaultPrice?.product?.name || item.name,
     currency: 'USD',
     quantity: quantity,
-    subtotal: defaultPrice?.amount ?? 0,
-    taxes: 0,
+    subtotal: (defaultPrice?.amount ?? 0) * quantity,
+    taxes: taxes,
     shipping: 0,
     discount: 0,
-    total: defaultPrice?.amount ?? 0,
+    total: (defaultPrice?.amount ?? 0) * quantity,
     product: defaultPrice?.product,
     is_highlighted: item.is_highlighted ?? false,
+    is_tax_inclusive: item.is_tax_inclusive ?? false,
+    tax_rate: item.tax_rate ?? 0,
     price: defaultPrice,
   }
+}
+
+export const computeTaxes = (item: OfferItem, quantity: number, defaultPrice?: Price): number => {
+  const taxes = !item.is_tax_inclusive && item?.tax_rate && item.tax_rate > 0
+    ? (parseFloat(defaultPrice?.amount ?? '0') * quantity) * (item.tax_rate / 100)
+    : 0;
+
+  return taxes;
+}
+
+export const computeTotal = (item: OfferItem, quantity: number, defaultPrice?: Price): number => {
+  const taxes = computeTaxes(item, quantity, defaultPrice);
+  const amount = (parseFloat(defaultPrice?.amount?.toString() ?? '0') * quantity);
+  return !item.is_tax_inclusive && item?.tax_rate && item.tax_rate > 0 ? amount + taxes  : amount;
 }
