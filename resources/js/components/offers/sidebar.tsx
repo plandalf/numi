@@ -318,13 +318,10 @@ export function Sidebar() {
                       className="w-[235px]"
                       value={findBlockInPage(data.view.pages[selectedPage], selectedBlockId)?.name ?? selectedBlockId}
                       onSave={saveBlockId}
-                      onStartEditing={startEditingBlockId}
-                      onCancelEditing={cancelEditingBlockId}
                       onChange={handleBlockIdChange}
                     >
                       <div
                         className="w-[235px] justify-between flex items-center gap-1 cursor-pointer hover:bg-gray-100 rounded px-1 py-0.5 transition-colors group"
-                        onClick={startEditingBlockId}
                       >
 
                         <h2 className="text-sm font-bold truncate leading-6">
