@@ -39,8 +39,7 @@ class StoreRequest extends FormRequest
                 'string',
                 'max:255',
                 Rule::unique('catalog_prices')->where(function ($query) use ($organizationId, $product) {
-                    return $query->where('organization_id', $organizationId)
-                        ->where('product_id', $product->id);
+                    return $query->where('organization_id', $organizationId);
                 }),
             ],
             'scope' => ['required', Rule::in(['list', 'custom'])],

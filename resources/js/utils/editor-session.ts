@@ -42,7 +42,7 @@ const createLineItem = (item: OfferItem, quantity: number, defaultPrice?: Price)
   return {
     id: item.id,
     name: defaultPrice?.product?.name || item.name,
-    currency: 'USD',
+    currency: defaultPrice?.currency || 'USD',
     quantity: quantity,
     subtotal: defaultPrice?.amount ?? 0,
     taxes: 0,
