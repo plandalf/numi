@@ -174,7 +174,7 @@ export const PageLayers: React.FC<PageLayersProps> = ({ onAddNewElementClick }) 
                   <div className="flex flex-col gap-2 mb-2">
                     <div
                       className={cn(
-                        "px-4 py-2 transition-all group cursor-pointer flex flex-row items-center gap-x-2 w-fit",
+                        "pt-2 pb-1 pl-2 transition-all group cursor-pointer flex flex-row items-center gap-x-2 w-full",
                         selectedSectionId === section.id && 'ring-2 ring-primary bg-primary/10',
                         section.hidden && 'opacity-50'
                       )}
@@ -193,7 +193,7 @@ export const PageLayers: React.FC<PageLayersProps> = ({ onAddNewElementClick }) 
                       <ChevronRight className="w-4 h-4 text-black/90 group-hover:ml-1 transition-all" />
                     </div>
                     {section.blocks.length > 0 && (
-                      <div className="flex flex-col gap-2">
+                      <div className="flex flex-col gap-2 pl-4">
                         {section.blocks.map((block) => {
                           const blockTypeTitle = getBlockTypeTitle(block.type);
                           return (
