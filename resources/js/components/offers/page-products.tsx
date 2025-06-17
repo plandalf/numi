@@ -357,12 +357,24 @@ export const PageProducts = () => {
                 value={price.name ?? ''}
                 onSave={(value) => savePriceName(value, price.id)}
               >
-                <div
-                  className="min-h-[28px] w-full break-all flex items-center gap-2 cursor-pointer hover:bg-gray-100 rounded px-1 py-0.5 transition-colors group text-sm font-bold break-word"
-                >
-                  {price.name}
-                  <Edit3 className="size-4 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" />
-                </div>
+                <TooltipProvider delayDuration={1500}>
+                  <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div
+                          className="min-h-[28px] w-full break-all flex items-center justify-between gap-2 cursor-pointer hover:bg-gray-100 rounded px-1 py-0.5 transition-colors group text-sm font-bold break-word"
+                        >
+                          {price.name}
+                          <Edit3 className="mr-2 size-4 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+                        </div></TooltipTrigger>
+                      <TooltipContent
+                        side="right"
+                        align="center"
+                        className="max-w-[310px]"
+                      >
+                        Edit display name
+                      </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               </EditableLabel>
               <div className="text-xs px-1">{price.currency.toUpperCase()} ${price.amount / 100}</div>
               {price.lookup_key && <div className="text-xs px-1">{price.lookup_key}</div>}
