@@ -126,7 +126,7 @@ const StyleItemValuePreview = ({
                 className="size-5 border border-gray-200 rounded p-0.5"
                 style={{
                   color: matchedColorThemeValue ? themeColors?.[matchedColorThemeValue]?.value : fontValue?.color ?? '#000000',
-                }} 
+                }}
               />
               <span
                 className="flex-1 text-xs line-clamp-2"
@@ -151,13 +151,13 @@ const StyleItemValuePreview = ({
       );
     case 'borderPicker':
       const borderValue = value as BorderValue;
-      const borderValueAsTitle = 
-        borderValue.width && borderValue.style 
-          ? `${borderValue.width}, ${borderValue.style}` 
-          : borderValue.width 
-            ? `${borderValue.width}` 
-            : borderValue.style 
-              ? `${borderValue.style}` 
+      const borderValueAsTitle =
+        borderValue.width && borderValue.style
+          ? `${borderValue.width}, ${borderValue.style}`
+          : borderValue.width
+            ? `${borderValue.width}`
+            : borderValue.style
+              ? `${borderValue.style}`
               :'Select';
 
       return (
@@ -378,11 +378,11 @@ export const StyleEditor: React.FC<StyleEditorProps> = ({
               </Tooltip>
             </TooltipProvider>
           )}
-          <Label className={cn(item.tooltip && '!w-26', "text-sm w-32")}>{item.label}</Label>
+          <Label className={cn(item.tooltip && '!w-26', "text-sm w-32 text-xs")}>{item.label}</Label>
           <Separator orientation="vertical" className="!h-5" />
           <div className="flex-1 flex flex-row gap-2 items-center justify-between">
             <StyleItemValuePreview item={item} onChange={onChange} themeColors={themeColors} fonts={fonts} />
-            {onDelete && 
+            {onDelete &&
               <Kebab
                 items={[
                     {

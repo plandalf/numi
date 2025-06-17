@@ -70,7 +70,9 @@ export const AppearanceSection = ({ globalState, block, onUpdate }: { globalStat
 const StyleSection = ({ globalState, block, onUpdate }: { globalState: GlobalState | null, block: Block, onUpdate: (block: Block) => void }) => {
 
   const { fonts } = usePage<EditProps>().props;
-  const { theme } = useEditor();
+  const { theme, setActiveTab,
+    setSelectedBlockId,
+    setSelectedSectionId} = useEditor();
   const themeColors = getThemeColors(theme);
 
   if (!globalState) return null;
@@ -102,9 +104,16 @@ const StyleSection = ({ globalState, block, onUpdate }: { globalState: GlobalSta
     });
   };
 
+  function handleNavToTheme() {
+    setActiveTab('themes');
+    setSelectedBlockId(null);
+    setSelectedSectionId(null);
+  }
+
   return (
-    <div className="flex flex-col gap-3 mb-6">
-      <h3 className="font-semibold">Style</h3>
+    <div className="flex flex-col mb-6">
+      <h3 className="font-semibold mb-1">Styles</h3>
+      <div className="text-xs text-gray-600 mb-3">Styles will override your <span className="text-blue-800 underline cursor-pointer" onClick={handleNavToTheme}>default theme settings</span> </div>
       <StyleEditor
         items={styleItems}
         onChange={onStyleChange}

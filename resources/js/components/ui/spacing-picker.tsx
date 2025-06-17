@@ -51,9 +51,9 @@ export const SpacingPicker = ({
     // Check if each value matches the unit format
     const areAllValuesValid = values.every(val => validUnitFormat.test(val));
     if (!areAllValuesValid) {
-      return { 
-        isValid: false, 
-        error: 'Each value must be in format: {number}px or {number}rem' 
+      return {
+        isValid: false,
+        error: 'Each value must be in format: {number}px or {number}rem'
       };
     }
 
@@ -67,18 +67,18 @@ export const SpacingPicker = ({
 
     // For multi format, check number of values
     if (format === 'multi' && ![1, 2, 3, 4].includes(values.length)) {
-      return { 
-        isValid: false, 
-        error: 'Must have 1, 2, 3, or 4 values' 
+      return {
+        isValid: false,
+        error: 'Must have 1, 2, 3, or 4 values'
       };
     }
 
     // Check if all numbers are non-negative
     const numbers = values.map(val => parseFloat(val));
     if (numbers.some(num => num < 0)) {
-      return { 
-        isValid: false, 
-        error: 'All values must be non-negative' 
+      return {
+        isValid: false,
+        error: 'All values must be non-negative'
       };
     }
 
@@ -112,7 +112,7 @@ export const SpacingPicker = ({
   const handleCustomInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value;
     setCustomInputValue(newValue);
-    
+
     if (!newValue.trim()) {
       setValidationError(null);
     }
@@ -132,7 +132,7 @@ export const SpacingPicker = ({
     const formattedValues = values.map(val => {
       // If value already has valid unit, keep it as is
       if (validUnitFormat.test(val)) return val;
-      
+
       // If value is just a number, add px as default unit
       const numericValue = val.replace(/[^0-9.-]/g, '');
       return numericValue ? `${numericValue}px` : '';
@@ -148,7 +148,7 @@ export const SpacingPicker = ({
     // Validate the final value
     const { isValid, error } = validateSpacingValues(finalValue);
     setValidationError(error);
-    
+
     if (isValid) {
       onChangeProperty(finalValue);
     }
@@ -185,9 +185,9 @@ export const SpacingPicker = ({
           />
         ) : !hideTabs ? (
           <Tabs value={currentTabState} onValueChange={handleTabChange} className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="normal">Normal</TabsTrigger>
-              <TabsTrigger value="none">None</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-2 h-auto">
+              <TabsTrigger size="sm" value="normal">Normal</TabsTrigger>
+              <TabsTrigger size="sm" value="none">None</TabsTrigger>
             </TabsList>
           </Tabs>
         ) : null }

@@ -10,7 +10,7 @@ export interface SpacingEditorProps {
   config?: SpacingPickerConfig;
 }
 
-export function SpacingEditor({ 
+export function SpacingEditor({
   label,
   value,
   defaultValue,
@@ -19,16 +19,20 @@ export function SpacingEditor({
   config
 }: SpacingEditorProps) {
   return (
-    <div className="flex flex-col gap-1.5">
-      <Label htmlFor={`${label}-input`} className="mb-1 block text-sm capitalize">{label}</Label>
-      <SpacingPicker
-        id={`${label}-input`}
-        value={value}
-        defaultValue={defaultValue ?? ''}
-        defaultThemeKey={defaultThemeKey}
-        onChangeProperty={onChangeProperty}
-        config={config}
-      />
+    <div className="flex items-center gap-1.5">
+      <div className="w-24">
+        <Label htmlFor={`${label}-input`} className="mb-1 block text-sm capitalize">{label}</Label>
+      </div>
+      <div className="flex-grow">
+        <SpacingPicker
+          id={`${label}-input`}
+          value={value}
+          defaultValue={defaultValue ?? ''}
+          defaultThemeKey={defaultThemeKey}
+          onChangeProperty={onChangeProperty}
+          config={config}
+        />
+      </div>
     </div>
   );
 }

@@ -34,6 +34,7 @@ class TakeOfferScreenshotJob extends QueueableJob
 //                        'scale' => 0.5
 //                    ],
                 ],
+                'hideScrollBars' => true,
                 'viewport' => [
                     'width' => 1280,
                     'height' => 720,
