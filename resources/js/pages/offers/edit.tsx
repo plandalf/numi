@@ -127,16 +127,13 @@ function EditApp({ publishableKey }: { publishableKey: string | undefined }) {
     handlePageNameClick
   } = useEditor();
 
-  console.log(offer);
-
   const lineItems = useMemo(() => offer.items.filter(item => item.is_required).map(item => {
     const defaultPrice = item.prices.find(price => price.id === item.default_price_id);
-    console.log(defaultPrice);
     return {
       id: item.id,
       name: defaultPrice?.name || defaultPrice?.product?.name || item.name,
       is_highlighted: item.is_highlighted,
-      currency: 'USD',
+      currency: defaultPrice?.currency || 'USD',
       quantity: 1,
       subtotal: defaultPrice?.amount ?? 0,
       taxes: 0,
@@ -151,7 +148,7 @@ function EditApp({ publishableKey }: { publishableKey: string | undefined }) {
   const session: CheckoutSession = useMemo(() => ({
     id: '123',
     line_items: lineItems,
-    currency: 'USD',
+    currency: lineItems[0]?.currency || 'USD',
     subtotal: lineItems.reduce((acc, item) => Number(acc) + Number(item.subtotal), 0),
     discount: 0,
     total: lineItems.reduce((acc, item) => Number(acc) + Number(item.total), 0),
