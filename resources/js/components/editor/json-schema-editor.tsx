@@ -1,12 +1,28 @@
 import { AccordionSection } from "../ui/accordion-section";
 import type { JsonSchema, JsonSchemaProperty, JsonSchemaType } from "@/types/blocks";
 import { FileEditor } from "./file-editor";
-import { EnumerationEditor } from "./enumeration-editor";
 import { StringEditor } from "./string-editor";
 import { BooleanEditor } from "./boolean-editor";
 import { ColorPickerEditor } from "./color-picker-editor";
-import { useEffect } from "react";
 import { IconPickerEditor } from "./icon-picker-editor";
+import { useState } from "react";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+  DragStartEvent,
+  DragOverEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
 
 export function JSONSchemaEditor({
   schema,
@@ -19,14 +35,23 @@ export function JSONSchemaEditor({
 }: {
   schema: JsonSchema | JsonSchemaProperty;
   path?: string;
-  value: any;
-  onChange: (newValue: any) => void;
+  value: unknown;
+  onChange: (newValue: unknown) => void;
   rootSchema?: JsonSchema;
   isRootArray?: boolean;
   themeColors?: Record<string, string>;
 }) {
-  const schemaToUse = rootSchema || schema;
 
+  const [activeId, setActiveId] = useState<string | number | null>(null);
+  const [overId, setOverId] = useState<string | number | null>(null);
+
+  // Sensors for drag and drop
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
 
   // Handle $ref references
   if ('$ref' in schema && schema.$ref) {
@@ -48,8 +73,9 @@ export function JSONSchemaEditor({
   // Handle arrays
   if (schema.type === 'array' && schema.items) {
     const items = Array.isArray(value) ? value : [];
+    
     const handleAddItem = () => {
-      let newItem: any;
+      let newItem: unknown;
       if (schema.items && 'type' in schema.items) {
         if (schema.items.type === 'object' && schema.items.properties) {
           newItem = {};
@@ -57,7 +83,7 @@ export function JSONSchemaEditor({
             schema.items.required.forEach((propName: string) => {
               if (schema.items && 'properties' in schema.items && schema.items.properties) {
                 const propSchema = schema.items.properties[propName];
-                newItem[propName] = getDefaultForAttribute(propName, items.length) ?? getDefaultForType(propSchema.type as JsonSchemaType);
+                (newItem as Record<string, unknown>)[propName] = getDefaultForAttribute(propName, items.length) ?? getDefaultForType(propSchema.type as JsonSchemaType);
               }
             });
           }
@@ -78,44 +104,94 @@ export function JSONSchemaEditor({
       const newItems = [...items, newItem];
       onChange(newItems);
     };
-    const handleItemChange = (index: number, newItemValue: any) => {
+    
+    const handleItemChange = (index: number, newItemValue: unknown) => {
       const newItems = [...items];
       newItems[index] = newItemValue;
       onChange(newItems);
     };
+    
     const handleDeleteItem = (index: number) => {
       const newItems = [...items];
       newItems.splice(index, 1);
       onChange(newItems);
     };
+
+    const handleDragStart = (event: DragStartEvent) => {
+      setActiveId(event.active.id);
+    };
+
+    const handleDragOver = (event: DragOverEvent) => {
+      setOverId(event.over?.id || null);
+    };
+
+    const handleDragEnd = (event: DragEndEvent) => {
+      const { active, over } = event;
+
+      if (over && active.id !== over.id) {
+        const oldIndex = parseInt(active.id.toString());
+        const newIndex = parseInt(over.id.toString());
+
+        const newItems = arrayMove(items, oldIndex, newIndex);
+        onChange(newItems);
+      }
+
+      // Reset drag state
+      setActiveId(null);
+      setOverId(null);
+    };
+
+    // Ensure items have unique identifiers for drag and drop
+    const itemsWithIds = items.map((item, index) => ({
+      id: index.toString(),
+      data: item,
+      index
+    }));
+
     return (
-      <AccordionSection
-        items={items}
-        onAdd={isRootArray ? handleAddItem : undefined}
-        onDelete={isRootArray ? handleDeleteItem : undefined}
-        renderSection={(item, index) => (
-          <JSONSchemaEditor
-            schema={schema.items as JsonSchemaProperty}
-            path={`${path}[${index}]`}
-            value={item}
-            onChange={(newValue) => handleItemChange(index, newValue)}
-            rootSchema={rootSchema}
-            isRootArray={false}
-            themeColors={themeColors}
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragStart={handleDragStart}
+        onDragOver={handleDragOver}
+        onDragEnd={handleDragEnd}
+      >
+        <SortableContext
+          items={itemsWithIds.map(item => item.id)}
+          strategy={verticalListSortingStrategy}
+        >
+          <AccordionSection
+            items={items}
+            onAdd={isRootArray ? handleAddItem : undefined}
+            onDelete={isRootArray ? handleDeleteItem : undefined}
+            renderSection={(item, index) => (
+              <JSONSchemaEditor
+                schema={schema.items as JsonSchemaProperty}
+                path={`${path}[${index}]`}
+                value={item}
+                onChange={(newValue) => handleItemChange(index, newValue)}
+                rootSchema={rootSchema}
+                isRootArray={false}
+                themeColors={themeColors}
+              />
+            )}
+            getSectionTitle={(item, i) => (item as { label?: string })?.label ?? `Section ${i + 1}`}
+            addLabel={isRootArray ? "Add another section" : undefined}
+            enableDragAndDrop={isRootArray}
+            activeId={activeId}
+            overId={overId}
           />
-        )}
-        getSectionTitle={(item, i) => item?.label ?? `Section ${i + 1}`}
-        addLabel={isRootArray ? "Add another section" : undefined}
-      />
+        </SortableContext>
+      </DndContext>
     );
   }
 
   // Handle objects
   if (schema.type === 'object' && schema.properties) {
     const obj = typeof value === 'object' && value !== null ? value : {};
-    const handlePropertyChange = (propName: string, propValue: any) => {
+    const handlePropertyChange = (propName: string, propValue: unknown) => {
       onChange({
-        ...obj,
+        ...(obj as Record<string, unknown>),
         [propName]: propValue
       });
     };
@@ -125,9 +201,10 @@ export function JSONSchemaEditor({
           if (propSchema.meta?.editor === 'hidden') return null;
           return (
             <JSONSchemaEditor
+              key={propName}
               schema={propSchema}
               path={path ? `${path}.${propName}` : propName}
-              value={obj[propName]}
+              value={(obj as Record<string, unknown>)[propName]}
               onChange={(newValue) => handlePropertyChange(propName, newValue)}
               rootSchema={rootSchema}
               isRootArray={isRootArray}
@@ -144,7 +221,7 @@ export function JSONSchemaEditor({
     return (
       <FileEditor
         label={schema.title || path.split('.').pop() || 'File'}
-        value={value}
+        value={value as string}
         onChange={onChange}
         preview={typeof value === 'string' ? value : undefined}
       />
@@ -156,7 +233,7 @@ export function JSONSchemaEditor({
     return (
       <IconPickerEditor
         label={schema.title || 'Icon'}
-        value={value || ''}
+        value={(value as { icon?: string; emoji?: string; url?: string }) || { icon: null, emoji: null, url: null }}
         onChange={onChange}
       />
     );
@@ -167,10 +244,9 @@ export function JSONSchemaEditor({
     return (
       <ColorPickerEditor
         label={schema.title || path.split('.').pop() || 'Color'}
-        value={value || '#FFFFFF'}
+        value={(value as string) || '#FFFFFF'}
         onChange={onChange}
         type='advanced'
-        themeColors={themeColors}
       />
     );
   }
@@ -181,7 +257,7 @@ export function JSONSchemaEditor({
     return (
       <StringEditor
         label={schema.title || path.split('.').pop() || 'Text'}
-        value={value || ''}
+        value={(value as string) || ''}
         onChange={onChange}
         multiline={schema.meta?.editor === 'markdown'}
       />
@@ -193,7 +269,7 @@ export function JSONSchemaEditor({
     return (
       <BooleanEditor
         label={schema.title || path.split('.').pop() || 'Boolean'}
-        value={!!value}
+        value={!!(value as boolean)}
         onChange={onChange}
       />
     );
@@ -207,14 +283,15 @@ export function JSONSchemaEditor({
   );
 }
 
-function getDefaultForAttribute(attribute: string, itemCount: number): any {
+function getDefaultForAttribute(attribute: string, itemCount: number): unknown {
   switch (attribute) {
     case 'label': return `Section ${itemCount + 1}`;
     case 'key': return `section-${itemCount + 1}`;
     default: return null;
   }
 }
-function getDefaultForType(type: JsonSchemaType): any {
+
+function getDefaultForType(type: JsonSchemaType): unknown {
   switch (type) {
     case 'string': return '';
     case 'number': return 0;
@@ -224,12 +301,4 @@ function getDefaultForType(type: JsonSchemaType): any {
     case 'null': return null;
     default: return null;
   }
-}
-
-function isJsonSchemaProperty(schema: JsonSchema | JsonSchemaProperty): schema is JsonSchemaProperty {
-  return (
-    typeof schema === 'object' &&
-    'type' in schema &&
-    (Array.isArray(schema.type) ? schema.type.includes('string') : typeof schema.type === 'string')
-  );
 }
