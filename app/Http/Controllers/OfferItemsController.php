@@ -49,6 +49,8 @@ class OfferItemsController extends Controller {
         $name = $validated['name'] ?? null;
         $isRequired = $validated['is_required'] ?? null;
         $isHighlighted = $validated['is_highlighted'] ?? null;
+        // $isTaxInclusive = $validated['is_tax_inclusive'] ?? null;
+        // $taxRate = $validated['tax_rate'] ?? null;
         $defaultPriceId = $validated['default_price_id'] ?? null;
 
         if($name) {
@@ -62,6 +64,11 @@ class OfferItemsController extends Controller {
         if($isHighlighted !== null) {
             $item->is_highlighted = $isHighlighted;
         }
+
+        // if ($isTaxInclusive !== null && $taxRate !== null) {
+        //     $item->tax_rate = $taxRate;
+        //     $item->is_tax_inclusive = $isTaxInclusive;
+        // }
 
         if ($prices) {
             $item->offerPrices()->delete();

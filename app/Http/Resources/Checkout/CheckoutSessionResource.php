@@ -23,7 +23,9 @@ class CheckoutSessionResource extends JsonResource
             }),
             'current_page' => data_get($this->metadata, 'current_page_id'),
             'discounts' => $this->discounts,
-            // 'taxes' => $this->taxes,
+            'taxes' => $this->taxes,
+            // 'exclusive_taxes' => $this->exclusive_taxes,
+            'inclusive_taxes' => $this->inclusive_taxes,
             // 'discount' => $this->discount,
         ];
     }

@@ -18,11 +18,15 @@ export type CheckoutItem = {
 
   subtotal: number;
   taxes: number;
+  // exclusive_taxes?: number;
+  inclusive_taxes?: number;
   shipping: number;
   discount: number;
   total: number;
   product?: Product;
   is_highlighted?: boolean;
+  // is_tax_inclusive?: boolean;
+  // tax_rate?: number;
   price?: Price;
 };
 
@@ -38,6 +42,8 @@ export interface CheckoutSession {
   currency: string;
   subtotal: number;
   taxes: number;
+  // exclusive_taxes: number;
+  inclusive_taxes: number;
   shipping: number;
   discount: number;
   total: number;

@@ -54,6 +54,12 @@ export interface OfferItem {
     default_price_id: number | null;
     is_required: boolean;
     is_highlighted: boolean;
+    // is_tax_inclusive?: boolean;
+    // tax_rate?: number;
+    taxes?: number;
+    // exclusive_taxes?: number;
+    inclusive_taxes?: number;
+    total?: number;
     sort_order: number;
     default_price: Price | null;
     created_at: string;

@@ -4,6 +4,7 @@ namespace App\Models\Store;
 
 use App\Models\Catalog\Price;
 use App\Models\Store\OfferItem;
+use App\Traits\ComputesPrice;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -11,7 +12,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class OfferPrice extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory, SoftDeletes, ComputesPrice;
 
     protected $table = 'store_offer_prices';
 
