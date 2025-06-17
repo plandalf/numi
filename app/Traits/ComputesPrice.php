@@ -11,7 +11,7 @@ trait ComputesPrice
      */
     public function getSubtotalAttribute(): float
     {
-        return $this->price->calculateAmount(1)->getAmount();
+        return $this->price->calculateAmount($this->quantity)->getAmount();
     }
 
     /**
