@@ -19,6 +19,7 @@ enum FontElement: string
     case NOTO_SANS = 'Noto Sans';
     case UBUNTU = 'Ubuntu';
     case PLAYFAIR_DISPLAY = 'Playfair Display';
+    case CONCORMANT_GARAMOND = 'Concormant Garamond';
 
     public function getFontWeights(): array
     {
@@ -143,6 +144,13 @@ enum FontElement: string
                 WeightElement::BOLD->value,
                 WeightElement::EXTRA_BOLD->value,
                 WeightElement::BLACK->value,
+            ],
+            self::CONCORMANT_GARAMOND => [
+                WeightElement::LIGHT->value,
+                WeightElement::REGULAR->value,
+                WeightElement::MEDIUM->value,
+                WeightElement::SEMI_BOLD->value,
+                WeightElement::BOLD->value,
             ],
         };
     }
