@@ -48,8 +48,8 @@ class OfferItemStoreRequest extends FormRequest
             'sort_order' => ['integer', 'min:0'],
             'is_required' => ['boolean'],
             'is_highlighted' => ['boolean'],
-            'is_tax_inclusive' => ['boolean'],
-            'tax_rate' => ['numeric', 'min:0', 'max:100'],
+            // 'is_tax_inclusive' => ['boolean'],
+            // 'tax_rate' => ['numeric', 'min:0', 'max:100'],
             'prices' => ['array'],
             'prices.*' => ['integer', Rule::exists('catalog_prices', 'id')->where(function ($query) use ($organizationId) {
                 return $query->where('organization_id', $organizationId)
@@ -77,11 +77,11 @@ class OfferItemStoreRequest extends FormRequest
             ]);
         }
 
-        if ($this->has('is_tax_inclusive')) {
-            $this->merge([
-                'is_tax_inclusive' => filter_var($this->input('is_tax_inclusive'), FILTER_VALIDATE_BOOLEAN),
-            ]);
-        }
+        // if ($this->has('is_tax_inclusive')) {
+        //     $this->merge([
+        //         'is_tax_inclusive' => filter_var($this->input('is_tax_inclusive'), FILTER_VALIDATE_BOOLEAN),
+        //     ]);
+        // }
 
         // Ensure sort_order is integer
         if ($this->has('sort_order')) {

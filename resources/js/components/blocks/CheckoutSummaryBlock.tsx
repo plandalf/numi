@@ -504,10 +504,13 @@ function CheckoutSummaryComponent({ context }: { context: BlockContextType }) {
           )}
 
 
-          {showTaxes && session.taxes > 0 && (
+          {showTaxes && (session.inclusive_taxes) > 0 && (
             <div className="flex justify-between">
               <span style={summaryTextStyle}>{taxesLabel}</span>
-              <span style={summaryTextStyle}>{formatMoney(session.taxes, currency)}</span>
+              <span style={summaryTextStyle}>
+                {formatMoney(session.inclusive_taxes, currency)}
+                {/* {session.exclusive_taxes > 0 && ` + ${formatMoney(session.exclusive_taxes, currency)}`} */}
+              </span>
             </div>
           )}
 

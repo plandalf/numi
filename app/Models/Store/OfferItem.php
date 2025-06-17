@@ -25,8 +25,8 @@ class OfferItem extends Model
         'default_price_id',
         'is_required',
         'is_highlighted',
-        'is_tax_inclusive',
-        'tax_rate',
+        // 'is_tax_inclusive',
+        // 'tax_rate',
         'sort_order',
         'type',
     ];
@@ -34,8 +34,8 @@ class OfferItem extends Model
     protected $casts = [
         'is_required' => 'boolean',
         'is_highlighted' => 'boolean',
-        'is_tax_inclusive' => 'boolean',
-        'tax_rate' => 'float',
+        // 'is_tax_inclusive' => 'boolean',
+        // 'tax_rate' => 'float',
         'sort_order' => 'integer',
         'type' => OfferItemType::class,
     ];

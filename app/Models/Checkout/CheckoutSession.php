@@ -90,8 +90,7 @@ class CheckoutSession extends Model
 
     public function getTotalAttribute()
     {
-        $taxes = $this->taxes;
-        $subtotal = $this->lineItems->sum('total') + $taxes;
+        $subtotal = $this->lineItems->sum('total');
 
         if (!empty($this->discounts)) {
             $discountAmount = 0;
@@ -112,6 +111,16 @@ class CheckoutSession extends Model
     public function getTaxesAttribute()
     {
         return $this->lineItems->sum('taxes');
+    }
+
+    // public function getExclusiveTaxesAttribute()
+    // {
+    //     return $this->lineItems->sum('exclusive_taxes');
+    // }
+
+    public function getInclusiveTaxesAttribute()
+    {
+        return $this->lineItems->sum('inclusive_taxes');
     }
 
     public function getSubtotalAttribute()

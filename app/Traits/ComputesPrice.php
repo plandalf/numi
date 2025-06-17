@@ -21,32 +21,40 @@ trait ComputesPrice
      */
     public function getTotalAttribute(): float
     {
-        $total = $this->getTotalAmount();
-
-        if ($this->offerItem->is_tax_inclusive && $this->taxes > 0) {
-            $total += $this->taxes;
-        }
-
-        return $total;
+        return $this->getTotalAmount();
     }
-    /**
-     * Get the tax amount for this item.
-     *
-     * @return float
-     */
-    public function getTaxesAttribute(): float
+
+    // /**
+    //  * Get the tax amount for this item.
+    //  *
+    //  * @return float
+    //  */
+    // public function getTaxesAttribute(): float
+    // {
+    //     $inclusiveTaxes = $this->getInclusiveTaxesAttribute();
+
+    //     if(!$this->offerItem->is_tax_inclusive) {
+    //         return $inclusiveTaxes + $taxAmount;
+    //     }
+
+    //     return $inclusiveTaxes;
+    // }
+
+    // public function getExclusiveTaxesAttribute(): float
+    // {
+    //     $taxRate = $this->offerItem->tax_rate ?? 0;
+    //     return $this->calculateTaxAmount(
+    //         $this->getTotalAmount(),
+    //         $taxRate
+    //     );
+    // }
+
+    public function getInclusiveTaxesAttribute(): float
     {
-        if ($this->offerItem->is_tax_inclusive) {
-            return 0;
+        switch($this->currency) {
+            default:
+                return round($this->getTotalAmount()-$this->getTotalAmount()/1.1);;
         }
-
-        $taxRate = $this->offerItem->tax_rate ?? 0;
-        $taxAmount = $this->calculateTaxAmount(
-            $this->getTotalAmount(),
-            $taxRate
-        );
-
-        return $taxAmount;
     }
 
     /**
@@ -59,16 +67,16 @@ trait ComputesPrice
         return $this->price->calculateAmount($this->quantity)->getAmount();
     }
 
-    /**
-     * Calculate the tax amount based on subtotal and tax rate.
-     *
-     * @param float $subtotal
-     * @param float $taxRate
-     * @return float
-     */
-    private function calculateTaxAmount(float $subtotal, float $taxRate): float
-    {
-        $taxAmount = $subtotal * ($taxRate / 100);
-        return $taxAmount;
-    }
+    // /**
+    //  * Calculate the tax amount based on subtotal and tax rate.
+    //  *
+    //  * @param float $subtotal
+    //  * @param float $taxRate
+    //  * @return float
+    //  */
+    // private function calculateTaxAmount(float $subtotal, float $taxRate): float
+    // {
+    //     $taxAmount = $subtotal * ($taxRate / 100);
+    //     return $taxAmount;
+    // }
 } 

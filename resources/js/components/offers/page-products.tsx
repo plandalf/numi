@@ -109,32 +109,32 @@ export const PageProducts = () => {
     });
   };
 
-  const handleTaxEdit = (offerItem: OfferItem) => {
-    setSelectedOfferItem(offerItem);
-    setTaxRate(offerItem.tax_rate?.toString() || '');
-    setIsTaxInclusive(offerItem.is_tax_inclusive || false);
-    setIsTaxModalOpen(true);
-  };
+  // const handleTaxEdit = (offerItem: OfferItem) => {
+  //   setSelectedOfferItem(offerItem);
+  //   setTaxRate(offerItem.tax_rate?.toString() || '');
+  //   setIsTaxInclusive(offerItem.is_tax_inclusive || false);
+  //   setIsTaxModalOpen(true);
+  // };
 
-  const handleTaxSave = () => {
-    if (!selectedOfferItem) return;
+  // const handleTaxSave = () => {
+  //   if (!selectedOfferItem) return;
 
-    const toastId = toast.loading('Updating tax settings...');
+  //   const toastId = toast.loading('Updating tax settings...');
 
-    router.put(route("offers.items.update", { offer: offer.id, item: selectedOfferItem.id }), {
-      tax_rate: parseFloat(taxRate) || 0,
-      is_tax_inclusive: isTaxInclusive
-    }, {
-      preserveScroll: true,
-      onSuccess: () => {
-        toast.success('Tax settings updated successfully', { id: toastId });
-        setIsTaxModalOpen(false);
-      },
-      onError: (errors) => {
-        toast.error(`Failed to update tax settings: ${Object.values(errors).flat().join(", ")}`, { id: toastId });
-      },
-    });
-  };
+  //   router.put(route("offers.items.update", { offer: offer.id, item: selectedOfferItem.id }), {
+  //     tax_rate: parseFloat(taxRate) || 0,
+  //     is_tax_inclusive: isTaxInclusive
+  //   }, {
+  //     preserveScroll: true,
+  //     onSuccess: () => {
+  //       toast.success('Tax settings updated successfully', { id: toastId });
+  //       setIsTaxModalOpen(false);
+  //     },
+  //     onError: (errors) => {
+  //       toast.error(`Failed to update tax settings: ${Object.values(errors).flat().join(", ")}`, { id: toastId });
+  //     },
+  //   });
+  // };
 
   const getTaxRateError = (value: string) => {
     if (isTaxInclusive) {
@@ -270,12 +270,15 @@ export const PageProducts = () => {
                 </div>
                 <Switch defaultChecked={item.is_highlighted} onCheckedChange={(checked) => handleToggle('is_highlighted', item, checked)} />
               </div>
-              <div 
+              {/* <div 
                 onClick={() => handleTaxEdit(item)}
                 className="cursor-pointer flex bg-white border rounded-md px-4 py-2 items-center justify-between w-full hover:bg-gray-100 transition-all duration-300 ease-in-out"
               >
                 <div className="flex text-sm items-center gap-2 w-full justify-between">
                   <span className="flex items-center gap-2">
+                    <Badge variant="outline" className="text-xs">
+                      Tax Inclusive
+                    </Badge>
                     <Badge variant="outline" className="text-xs">
                       {item.is_tax_inclusive ? 'Tax Inclusive' : 'Tax Exclusive'}
                     </Badge>
@@ -287,7 +290,7 @@ export const PageProducts = () => {
                   </span>
                   <Edit3 className="size-4 text-gray-400" />
                 </div>
-              </div>
+              </div> */}
               <Prices prices={item.prices ?? []} offerItem={item} />
               <Button variant="outline" className="w-full" onClick={() => handleEdit(item)}>
                 <PlusIcon className="w-4 h-4" /> Add a price
@@ -382,6 +385,9 @@ export const PageProducts = () => {
                 {price.id === offerItem.default_price_id && (
                   <Badge variant="secondary">Default</Badge>
                 )}
+                <Badge variant="outline" className="text-xs">
+                  Tax Inclusive
+                </Badge>
               </div>
             </div>
         ))}
@@ -556,7 +562,7 @@ export const PageProducts = () => {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={isTaxModalOpen} onOpenChange={setIsTaxModalOpen}>
+      {/* <Dialog open={isTaxModalOpen} onOpenChange={setIsTaxModalOpen}>
         <DialogContent className="!max-w-[300px]">
           <DialogHeader>
             <DialogTitle>Edit Tax Settings</DialogTitle>
@@ -626,7 +632,7 @@ export const PageProducts = () => {
             </Button>
           </div>
         </DialogContent>
-      </Dialog>
+      </Dialog> */}
     </div>
   );
 };

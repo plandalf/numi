@@ -58,8 +58,8 @@ class OfferItemUpdateRequest extends FormRequest
             'sort_order' => ['sometimes', 'integer', 'min:0'],
             'is_required' => ['sometimes', 'boolean'],
             'is_highlighted' => ['sometimes', 'boolean'],
-            'is_tax_inclusive' => ['sometimes', 'boolean'],
-            'tax_rate' => ['sometimes', 'numeric', 'min:0', 'max:100'],
+            // 'is_tax_inclusive' => ['sometimes', 'boolean'],
+            // 'tax_rate' => ['sometimes', 'numeric', 'min:0', 'max:100'],
             'default_price_id' => [
                 'nullable',
                 'integer',
