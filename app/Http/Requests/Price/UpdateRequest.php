@@ -49,8 +49,7 @@ class UpdateRequest extends FormRequest
                 'string',
                 'max:255',
                 Rule::unique('catalog_prices')->where(function ($query) use ($organizationId, $product) {
-                    return $query->where('organization_id', $organizationId)
-                        ->where('product_id', $product->id);
+                    return $query->where('organization_id', $organizationId);
                 })->ignore($price->id),
             ],
             // Immutable fields: scope, type, currency? Typically shouldn't change after creation.

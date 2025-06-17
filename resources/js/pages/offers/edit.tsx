@@ -128,8 +128,6 @@ function EditApp({ publishableKey }: { publishableKey: string | undefined }) {
     handlePageNameClick
   } = useEditor();
 
-  console.log(offer);
-
   const lineItems = useMemo(() => offer.items.filter(item => item.is_required).map(item => {
     const defaultPrice = item.prices.find(price => price.id === item.default_price_id);
 
@@ -142,8 +140,8 @@ function EditApp({ publishableKey }: { publishableKey: string | undefined }) {
       is_highlighted: item.is_highlighted,
       // is_tax_inclusive: item.is_tax_inclusive,
       // tax_rate: item.tax_rate,
-      currency: 'USD',
-      quantity: item.quantity,
+      currency: defaultPrice?.currency || 'USD',
+      quantity: 1,
       subtotal: defaultPrice?.amount ?? 0,
       taxes: 0,
       // exclusive_taxes: 0,
@@ -159,7 +157,7 @@ function EditApp({ publishableKey }: { publishableKey: string | undefined }) {
   const session: CheckoutSession = useMemo(() => ({
     id: '123',
     line_items: lineItems,
-    currency: 'USD',
+    currency: lineItems[0]?.currency || 'USD',
     subtotal: lineItems.reduce((acc, item) => Number(acc) + Number(item.subtotal), 0),
     discount: 0,
     total: lineItems.reduce((acc, item) => Number(acc) + Number(item.total), 0),

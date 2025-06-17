@@ -33,7 +33,7 @@ export default function SetItemAction({ value = {}, onChange, action }: SetItemA
 
   const priceOptions = useMemo(() => {
     return prices.map(p => ({
-      value: p.lookup_key!,
+      value: p.id.toString(),
       label: `${p.name || p.lookup_key || p.id} (${p.currency.toUpperCase()} ${p.amount / 100})`,
     }));
   }, [prices]);

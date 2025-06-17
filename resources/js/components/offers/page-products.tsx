@@ -327,7 +327,7 @@ export const PageProducts = () => {
 
 
     const savePriceName = (value: string, priceId: number) => {
-      router.put(route("offers.items.prices.update", { 
+      router.put(route("offers.items.prices.update", {
           offer: offer.id,
           item: offerItem.id,
           price: priceId
@@ -457,18 +457,15 @@ export const PageProducts = () => {
   const validations = useMemo(() => {
     const allPrices = offerItems.flatMap(item => item.prices ?? []);
     const currencies = new Set(allPrices.map(price => price.currency));
-    const gatewayProviders = new Set(allPrices.map(price => price.gateway_provider));
 
     return {
       hasMultipleCurrencies: currencies.size > 1,
-      hasMultipleGatewayProviders: gatewayProviders.size > 1,
       currencies: Array.from(currencies),
-      gatewayProviders: Array.from(gatewayProviders),
     };
   }, [offerItems]);
 
   const Warning = () => {
-    if (validations.hasMultipleCurrencies || validations.hasMultipleGatewayProviders) {
+    if (validations.hasMultipleCurrencies) {
       return (
         <div className="flex flex-col gap-3 border border-destructive text-destructive rounded-md p-4 mt-3.5">
           <div className="flex items-center gap-2">
@@ -482,11 +479,6 @@ export const PageProducts = () => {
               {validations.hasMultipleCurrencies && (
                 <li>
                   All products must use the same currency. Found currencies: {validations.currencies.join(', ')}
-                </li>
-              )}
-              {validations.hasMultipleGatewayProviders && (
-                <li>
-                  All products must use the same gateway provider. Found gateway providers: {validations.gatewayProviders.join(', ')}
                 </li>
               )}
             </ul>

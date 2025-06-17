@@ -383,24 +383,28 @@ function CheckoutSummaryComponent({ context }: { context: BlockContextType }) {
 
   const LineItem = ({ item }: { item: CheckoutItem }) => {
     return (<div className="flex-grow overflow-hidden">
-      <div className="flex justify-between gap-4">
-          {item?.is_highlighted ? 
-            // Use H3 styling for highlighted items
-            <MarkdownText
-              theme={theme}
-              text={`### ${item.price?.name}`}
-              className="font-medium break-all"
-            />
-          : 
-            <div
-              className="font-medium break-all"
-              style={itemStyle}
-            >
-              {item.price?.name}
-            </div>
-          }
+      <div className="flex justify-between items-center gap-4">
+        <div
+          className="font-medium break-all"
+          style={itemStyle}
+        >
+          {item.price?.name}
+        </div>
         {showItemPrices && item.total !== undefined && (
-          <div className="text-gray-700" style={itemPriceStyle}>{formatMoney(item.total, currency)}</div>
+          <>
+            {item?.is_highlighted ? 
+              // Use H3 styling for highlighted items
+              <MarkdownText
+                theme={theme}
+                text={`### ${formatMoney(item.total, currency)}`}
+                className="font-medium break-all"
+              />
+            : 
+            <div className="text-gray-700" style={itemPriceStyle}>
+              {formatMoney(item.total, currency)}
+            </div>
+            }
+          </>
         )}
       </div>
       {showQuantity && item.price?.type === 'one_time' && <div className="text-sm text-gray-500" style={itemQuantityStyle}>
