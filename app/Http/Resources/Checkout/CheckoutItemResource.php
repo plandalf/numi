@@ -19,6 +19,7 @@ class CheckoutItemResource extends JsonResource
             'subtotal' => $this->subtotal,
             'currency' => $this->currency,
             'is_highlighted' => $this->offerItem?->is_highlighted,
+            'type' => $this->offerItem?->type,
             // 'is_tax_inclusive' => $this->offerItem?->is_tax_inclusive,
             // 'tax_rate' => $this->offerItem?->tax_rate,
             // 'taxes' => $this->taxes,
