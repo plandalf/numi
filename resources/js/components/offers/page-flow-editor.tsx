@@ -25,17 +25,10 @@ import { type Page, type OfferView, type PageType } from '@/types/offer';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import PageTypeDialog from './page-type-dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogHeader,
-    DialogTitle
-} from '@/components/ui/dialog';
 import 'react-querybuilder/dist/query-builder.css';
+import { PageConditionEditor } from '../editor/page-condition-editor';
+import { GlobalStateContext } from '@/pages/checkout-main';
+import { RuleGroup } from '../editor/page-condition-editor';
 
 interface PageFlowEditorProps {
     view: OfferView;
@@ -130,6 +123,7 @@ function PageNode({ data, id }: { data: { page: Page; isStart?: boolean; isOrpha
     const { page, isStart, isOrphan } = data;
     const { setEditingBranch, onUpdateBranches, onDeletePage } = useContext(PageFlowContext);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    const context = useContext(GlobalStateContext);
 
     const handleAddBranch = useCallback(() => {
         console.log('Adding branch for page:', id);
@@ -137,7 +131,11 @@ function PageNode({ data, id }: { data: { page: Page; isStart?: boolean; isOrpha
         // Create a new branch with empty condition
         const newBranch = {
             next_page: null,
-            condition: { field: '', operator: '', value: '' }
+            condition: {
+                combinator: 'and',
+                rules: [],
+                action: 'show'
+            } as RuleGroup
         };
 
         // Update the branch collection
@@ -157,7 +155,7 @@ function PageNode({ data, id }: { data: { page: Page; isStart?: boolean; isOrpha
         });
     };
 
-    const hasDefaultConnection = !!page.next_page.default_next_page;
+    const hasDefaultConnection = !!page.next_page?.default_next_page;
 
     // Determine icon and border style based on page type
     let typeIcon = null;
@@ -260,7 +258,7 @@ function PageNode({ data, id }: { data: { page: Page; isStart?: boolean; isOrpha
 
 
                     {/* Branch List with inline handles */}
-                    {page.next_page.branches && page.next_page.branches.length > 0 && (
+                    {page.next_page?.branches && page.next_page.branches.length > 0 && (
                         <div className="mt-4 space-y-2">
                             <h4 className="text-sm font-medium">Branches</h4>
                             <div className="space-y-1">
@@ -269,16 +267,28 @@ function PageNode({ data, id }: { data: { page: Page; isStart?: boolean; isOrpha
                                         key={index}
                                         className="text-xs p-2 bg-muted rounded-sm flex items-center justify-between h-8 relative group"
                                     >
-                                        <span className="text-muted-foreground">
-                                            {getBranchLabel(branch.condition)}
-                                        </span>
                                         <div className="flex items-center gap-2">
-                                            <button
+                                        <PageConditionEditor
+                                            value={branch.condition || {
+                                                combinator: 'and',
+                                                rules: [],
+                                                action: 'show'
+                                            }}
+                                            onChange={(newCondition) => {
+                                                const updatedBranches = [...page.next_page.branches];
+                                                updatedBranches[index] = {
+                                                    ...branch,
+                                                    condition: newCondition
+                                                };
+                                                onUpdateBranches(id, updatedBranches);
+                                            }}
+                                        />
+                                            {/* <button
                                                 onClick={() => handleEditBranch(index)}
                                                 className="text-primary hover:text-primary/80"
                                             >
                                                 Edit
-                                            </button>
+                                            </button> */}
                                             {/* Inline branch handle */}
                                             <div className="absolute right-0 translate-x-[150%]">
                                                 <Handle
@@ -311,7 +321,7 @@ function PageNode({ data, id }: { data: { page: Page; isStart?: boolean; isOrpha
                     )}
 
                     {/* Add Branch button - only show if there are existing branches */}
-                    {page.type !== 'ending' && page.next_page.branches && page.next_page.branches.length > 0 && (
+                    {page.type !== 'ending' && page.next_page?.branches && page.next_page.branches.length > 0 && (
                         <Button
                             variant="outline"
                             size="sm"
@@ -324,7 +334,7 @@ function PageNode({ data, id }: { data: { page: Page; isStart?: boolean; isOrpha
                     )}
 
                     {/* Initial Add Branch button - only show if no branches exist */}
-                    {page.type !== 'ending' && (!page.next_page.branches || page.next_page.branches.length === 0) && (
+                    {page.type !== 'ending' && (!page.next_page?.branches || page.next_page.branches.length === 0) && (
                         <Button
                             variant="outline"
                             size="sm"
@@ -355,19 +365,15 @@ function PageNode({ data, id }: { data: { page: Page; isStart?: boolean; isOrpha
     );
 }
 
-interface BranchCondition {
-    field: string;
-    operator: string;
-    value: string;
-}
-
 // Helper function to get branch label
-const getBranchLabel = (condition?: BranchCondition) => {
-    if (!condition) return 'No condition';
-    if (!condition.field && !condition.operator && !condition.value) {
+const getBranchLabel = (condition?: RuleGroup) => {
+    if (!condition || !condition.rules || condition.rules.length === 0) {
         return 'No condition';
     }
-    return `${condition.field || 'field'} ${condition.operator || '='} ${condition.value || 'value'}`;
+
+    // For simplicity, just show the number of rules
+    const ruleCount = condition.rules.length;
+    return `${ruleCount} condition${ruleCount > 1 ? 's' : ''}`;
 };
 
 // Define custom edge component with delete button
@@ -490,7 +496,6 @@ export default function PageFlowEditor({ view, onUpdateFlow }: PageFlowEditorPro
         sourceId: string;
         branchIndex: number;
     } | null>(null);
-    const [branchCondition, setBranchCondition] = useState<BranchCondition | null>(null);
     const [dragPreviewPosition, setDragPreviewPosition] = useState<XYPosition | null>(null);
     const [dragStartPosition, setDragStartPosition] = useState<XYPosition | null>(null);
     const { fitView } = useReactFlow();
@@ -536,7 +541,11 @@ export default function PageFlowEditor({ view, onUpdateFlow }: PageFlowEditorPro
                 updatedBranches[branchIndex] = {
                     ...updatedBranches[branchIndex],
                     next_page: targetId,
-                    condition: updatedBranches[branchIndex].condition || { field: '', operator: '', value: '' }
+                    condition: {
+                        combinator: 'and',
+                        rules: [],
+                        action: 'show'
+                    } as RuleGroup
                 };
 
                 console.log('Updated branch:', updatedBranches[branchIndex]);
@@ -631,10 +640,10 @@ export default function PageFlowEditor({ view, onUpdateFlow }: PageFlowEditorPro
 
         for (const pageId in view.pages) {
             const page = view.pages[pageId];
-            if (page.next_page.default_next_page && view.pages[page.next_page.default_next_page]) {
+            if (page.next_page?.default_next_page && view.pages[page.next_page.default_next_page]) {
                 incomingConnections[page.next_page.default_next_page]++;
             }
-            page.next_page.branches?.forEach(branch => {
+            page.next_page?.branches?.forEach(branch => {
                 if (branch.next_page && view.pages[branch.next_page]) {
                     incomingConnections[branch.next_page]++;
                 }
@@ -689,7 +698,7 @@ export default function PageFlowEditor({ view, onUpdateFlow }: PageFlowEditorPro
         // Create edges for each page's connections
         Object.entries(view.pages).forEach(([pageId, page]) => {
             // Add default next page edge
-            if (page.next_page.default_next_page) {
+            if (page.next_page?.default_next_page) {
                 edges.push({
                     id: `${pageId}-${page.next_page.default_next_page}`,
                     source: pageId,
@@ -702,7 +711,7 @@ export default function PageFlowEditor({ view, onUpdateFlow }: PageFlowEditorPro
             }
 
             // Add branch edges
-            page.next_page.branches?.forEach((branch, index) => {
+            page.next_page?.branches?.forEach((branch, index) => {
                 if (branch.next_page) {
                     edges.push({
                         id: `${pageId}-${branch.next_page}-branch-${index}`,
@@ -772,7 +781,11 @@ export default function PageFlowEditor({ view, onUpdateFlow }: PageFlowEditorPro
                     updatedBranches[branchIndex] = {
                         ...updatedBranches[branchIndex],
                         next_page: id,
-                        condition: updatedBranches[branchIndex]?.condition || { field: '', operator: '', value: '' }
+                        condition: {
+                            combinator: 'and',
+                            rules: [],
+                            action: 'show'
+                        } as RuleGroup
                     };
                     updatedPages[pendingConnection.source] = {
                         ...sourcePage,
@@ -830,7 +843,7 @@ export default function PageFlowEditor({ view, onUpdateFlow }: PageFlowEditorPro
                 let isConnectable = true;
                 if (node) {
                     const page = node.data.page as Page;
-                    if (params.handleId === 'default' && page.next_page.default_next_page) {
+                    if (params.handleId === 'default' && page.next_page?.default_next_page) {
                         isConnectable = false;
                     }
                 }
@@ -1078,19 +1091,17 @@ export default function PageFlowEditor({ view, onUpdateFlow }: PageFlowEditorPro
                 branch
             });
 
-            setBranchCondition(branch.condition || { field: '', operator: '', value: '' });
             setShowBranchDialog(true);
         }
     }, [editingBranch, view.pages]);
 
     // Handle saving branch condition
     const handleSaveBranchCondition = useCallback(() => {
-        if (!editingBranch || !branchCondition) return;
+        if (!editingBranch) return;
 
         console.log('Saving branch condition:', {
             sourceId: editingBranch.sourceId,
-            branchIndex: editingBranch.branchIndex,
-            condition: branchCondition
+            branchIndex: editingBranch.branchIndex
         });
 
         // Get the source page
@@ -1099,10 +1110,7 @@ export default function PageFlowEditor({ view, onUpdateFlow }: PageFlowEditorPro
 
         // Update branches
         const updatedBranches = [...sourcePage.next_page.branches];
-        updatedBranches[editingBranch.branchIndex] = {
-            ...updatedBranches[editingBranch.branchIndex],
-            condition: branchCondition
-        };
+        // No need to update condition here since it's handled by PageVisibilityConditionEditor's onChange
 
         // Update pages
         const updatedPages = {
@@ -1128,8 +1136,7 @@ export default function PageFlowEditor({ view, onUpdateFlow }: PageFlowEditorPro
         // Reset state
         setShowBranchDialog(false);
         setEditingBranch(null);
-        setBranchCondition(null);
-    }, [editingBranch, branchCondition, view.pages, view.first_page, onUpdateFlow]);
+    }, [editingBranch, view.pages, view.first_page, onUpdateFlow]);
 
     // Function to update branches for a specific page
     const handleUpdateBranches = useCallback((pageId: string, branches: any[]) => {
@@ -1227,7 +1234,7 @@ export default function PageFlowEditor({ view, onUpdateFlow }: PageFlowEditorPro
             let pageModified = false;
 
             // Check default next page
-            if (page.next_page.default_next_page === pageIdToDelete) {
+            if (page.next_page?.default_next_page === pageIdToDelete) {
                 updatedPages[pageId] = {
                     ...page,
                     next_page: { ...page.next_page, default_next_page: null }
@@ -1366,93 +1373,6 @@ export default function PageFlowEditor({ view, onUpdateFlow }: PageFlowEditorPro
                   }}
                   onSelect={handleCreatePage}
                 />
-
-                {/* Branch Condition Dialog */}
-                <Dialog open={showBranchDialog} onOpenChange={(open) => {
-                    if (!open) {
-                        console.log('BranchDialog TRACE: Closing', { // Removed mention of pendingConnection here as it does not directly interact
-                             // currentPendingConnSource: pendingConnection?.source,
-                             // currentPendingConnHandleId: pendingConnection?.sourceHandleId
-                       });
-                        setShowBranchDialog(false);
-                        setEditingBranch(null);
-                        setBranchCondition(null);
-                    }
-                }}>
-                    <DialogContent>
-                        <DialogHeader>
-                            <DialogTitle>Branch Condition</DialogTitle>
-                            <DialogDescription>
-                                Define the logic for this branch
-                            </DialogDescription>
-                        </DialogHeader>
-                        <div className="mt-4 space-y-4">
-                            <div className="space-y-2">
-                                <Label htmlFor="field">Field</Label>
-                                <Input
-                                    id="field"
-                                    value={branchCondition?.field || ''}
-                                    onChange={(e) => setBranchCondition(prev => ({
-                                        ...(prev || { field: '', operator: '', value: '' }),
-                                        field: e.target.value
-                                    }))}
-                                    placeholder="e.g., email, name, age"
-                                />
-                            </div>
-
-                            <div className="space-y-2">
-                                <Label htmlFor="operator">Operator</Label>
-                                <Select
-                                    value={branchCondition?.operator || ''}
-                                    onValueChange={(value) => setBranchCondition(prev => ({
-                                        ...(prev || { field: '', operator: '', value: '' }),
-                                        operator: value
-                                    }))}
-                                >
-                                    <SelectTrigger id="operator">
-                                        <SelectValue placeholder="Select operator" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="=">Equal to (=)</SelectItem>
-                                        <SelectItem value="!=">Not equal to (!=)</SelectItem>
-                                        <SelectItem value="gt">Greater than (&gt;)</SelectItem>
-                                        <SelectItem value="gte">Greater than or equal to (&gt;=)</SelectItem>
-                                        <SelectItem value="lt">Less than (&lt;)</SelectItem>
-                                        <SelectItem value="lte">Less than or equal to (&lt;=)</SelectItem>
-                                        <SelectItem value="contains">Contains</SelectItem>
-                                        <SelectItem value="not_contains">Does not contain</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-
-                            <div className="space-y-2">
-                                <Label htmlFor="value">Value</Label>
-                                <Input
-                                    id="value"
-                                    value={branchCondition?.value || ''}
-                                    onChange={(e) => setBranchCondition(prev => ({
-                                        ...(prev || { field: '', operator: '', value: '' }),
-                                        value: e.target.value
-                                    }))}
-                                    placeholder="Comparison value"
-                                />
-                            </div>
-
-                            <div className="flex justify-end space-x-2 pt-4">
-                                <Button variant="outline" onClick={() => {
-                                    setShowBranchDialog(false);
-                                    setEditingBranch(null);
-                                    setBranchCondition(null);
-                                }}>
-                                    Cancel
-                                </Button>
-                                <Button onClick={handleSaveBranchCondition}>
-                                    Save Condition
-                                </Button>
-                            </div>
-                        </div>
-                    </DialogContent>
-                </Dialog>
             </div>
         </PageFlowContext.Provider>
     );
