@@ -1,5 +1,5 @@
 import { type Page, type Block } from '@/types/offer';
-import { isBlockVisible } from '@/lib/blocks';
+import { isEvaluatedVisible } from '@/lib/blocks';
 import { cn } from '@/lib/utils';
 import React, { CSSProperties, useMemo, useCallback, useEffect } from 'react';
 import { CSS } from '@dnd-kit/utilities';
@@ -422,7 +422,7 @@ const BlockRendererComponent = ({ block, children, onBlockSelect }: {
   const isVisible = useMemo(() => {
     if (!globalStateContext) return true; // Or handle error appropriately
     const visibility = block.appearance?.visibility;
-    return isBlockVisible({ fields: globalStateContext.fields }, visibility);
+    return isEvaluatedVisible({ fields: globalStateContext.fields }, visibility);
   }, [block, globalStateContext]);
 
   const hasVisibilityCondition = useMemo(() => hasVisibilityConditionFn(block.appearance?.visibility), [block.appearance?.visibility]);
@@ -473,7 +473,7 @@ const SectionComponent = ({ section, sectionName: id, style, onBlockSelect, chil
   const { setNodeRef, isOver, active } = useDroppable({
     id: `section:${id}`,
   });
-  
+
   const { setHoveredBlockId, setHoveredSectionId } = useEditor();
 
   const blocksToRender = useMemo(() => {

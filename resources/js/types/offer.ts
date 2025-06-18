@@ -2,6 +2,7 @@ import { RuleGroup } from "@/components/editor/condition-visibility-editor";
 import { Theme } from "./theme";
 import { EventAction } from "@/components/editor/interaction-event-editor";
 import { HostedPage } from ".";
+import { RuleGroup as PageConditionRuleGroup } from '@/components/editor/page-condition-editor';
 
 export interface Offer {
     id: number;
@@ -336,7 +337,7 @@ export interface Page {
     next_page: {
         branches: {
             next_page: string | null;
-            condition: BranchCondition;
+            condition: RuleGroup;
         }[];
         default_next_page: string | null;
     };

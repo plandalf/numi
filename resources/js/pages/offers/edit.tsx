@@ -2,17 +2,17 @@ import AppOfferLayout from '@/layouts/app/app-offer-layout';
 import { Block, Offer, Product, ViewSection, type PageType } from '@/types/offer';
 import { Head } from '@inertiajs/react';
 import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogHeader,
-    DialogTitle,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
 } from '@/components/ui/dialog';
 import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from '@/components/ui/input';
 import { useState, useRef, useMemo } from 'react';
@@ -44,23 +44,23 @@ import { PageIframePreview } from '@/components/offers/page-iframe-preview';
 import { computeInclusiveTaxes } from '@/utils/editor-session';
 
 export interface EditProps extends PageProps {
-    offer: Offer;
-    theme: Theme;
-    fonts: Font[];
-    weights: string[];
-    organizationThemes: Theme[];
-    organizationTemplates: Template[];
-    globalThemes: Theme[];
-    showNameDialog?: boolean;
-    products: Product[];
-    publishableKey?: string;
+  offer: Offer;
+  theme: Theme;
+  fonts: Font[];
+  weights: string[];
+  organizationThemes: Theme[];
+  organizationTemplates: Template[];
+  globalThemes: Theme[];
+  showNameDialog?: boolean;
+  products: Product[];
+  publishableKey?: string;
 }
 
 const PAGE_TYPE_ICONS: Record<PageType, React.ReactNode> = {
-    entry: <ArrowRightToLine className="w-4 h-4" />,
-    page: <FileText className="w-4 h-4" />,
-    ending: <CheckSquare className="w-4 h-4" />,
-    payment: <CreditCard className="w-4 h-4" />
+  entry: <ArrowRightToLine className="w-4 h-4" />,
+  page: <FileText className="w-4 h-4" />,
+  ending: <CheckSquare className="w-4 h-4" />,
+  payment: <CreditCard className="w-4 h-4" />
 };
 
 interface ActiveDndItem {
@@ -170,7 +170,7 @@ function EditApp({ publishableKey }: { publishableKey: string | undefined }) {
     publishable_key: publishableKey,
     properties: {},
   }), [lineItems, publishableKey]);
-  
+
 
   const [prototype, setPrototype] = useState<null | { sectionId: string; index: number; block: Block }>();
   const [activeItem, setActiveItem] = useState<ActiveDndItem | null>(null);
@@ -279,8 +279,8 @@ function EditApp({ publishableKey }: { publishableKey: string | undefined }) {
           if (prototype) {
             const oldProtoSection = modifiedSections[prototype.sectionId];
             if (oldProtoSection?.blocks &&
-                prototype.index < oldProtoSection.blocks.length &&
-                oldProtoSection.blocks[prototype.index]?.id === prototype.block.id) {
+              prototype.index < oldProtoSection.blocks.length &&
+              oldProtoSection.blocks[prototype.index]?.id === prototype.block.id) {
               modifiedSections = update(modifiedSections, {
                 [prototype.sectionId]: {
                   blocks: { $splice: [[prototype.index, 1]] }
@@ -313,22 +313,22 @@ function EditApp({ publishableKey }: { publishableKey: string | undefined }) {
                 appearance: {},
               };
               modifiedSections = update(modifiedSections, {
-                  [targetSectionId]: {
-                      blocks: { $splice: [[insertIdx, 0, protoBlock]] }
-                  }
+                [targetSectionId]: {
+                  blocks: { $splice: [[insertIdx, 0, protoBlock]] }
+                }
               });
               newPrototypeState = { sectionId: targetSectionId, index: insertIdx, block: protoBlock };
             }
           }
 
           if (prototype?.block.id !== newPrototypeState?.block.id ||
-              prototype?.index !== newPrototypeState?.index ||
-              prototype?.sectionId !== newPrototypeState?.sectionId ||
-              (!prototype && newPrototypeState) ||
-              (prototype && !newPrototypeState)
-             ) {
-              setPrototype(newPrototypeState); // This is a React state setter, it's fine.
-              prototypeActuallyChangedOrMoved = true;
+            prototype?.index !== newPrototypeState?.index ||
+            prototype?.sectionId !== newPrototypeState?.sectionId ||
+            (!prototype && newPrototypeState) ||
+            (prototype && !newPrototypeState)
+          ) {
+            setPrototype(newPrototypeState); // This is a React state setter, it's fine.
+            prototypeActuallyChangedOrMoved = true;
           }
 
           if (prototypeActuallyChangedOrMoved) {
@@ -352,12 +352,12 @@ function EditApp({ publishableKey }: { publishableKey: string | undefined }) {
 
   function handleDragEnd(event: DragEndEvent) {
     if (dragOverRafRef.current) {
-        cancelAnimationFrame(dragOverRafRef.current);
-        dragOverRafRef.current = null;
+      cancelAnimationFrame(dragOverRafRef.current);
+      dragOverRafRef.current = null;
     }
     if (!activeItem) {
-        setPrototype(null);
-        return;
+      setPrototype(null);
+      return;
     }
 
     if (activeItem.type !== 'template' && !event.over) {
@@ -368,9 +368,9 @@ function EditApp({ publishableKey }: { publishableKey: string | undefined }) {
           const oldProtoSection = currentSections[prototype.sectionId];
           if (oldProtoSection?.blocks && prototype.index < oldProtoSection.blocks.length && oldProtoSection.blocks[prototype.index]?.id === prototype.block.id) {
             return update(currentSections, {
-                [prototype.sectionId]: {
-                  blocks: { $splice: [[prototype.index, 1]] }
-                }
+              [prototype.sectionId]: {
+                blocks: { $splice: [[prototype.index, 1]] }
+              }
             });
           }
           return currentSections;
@@ -441,9 +441,9 @@ function EditApp({ publishableKey }: { publishableKey: string | undefined }) {
           const oldProtoSection = currentSections[prototype.sectionId];
           if (oldProtoSection?.blocks && prototype.index < oldProtoSection.blocks.length && oldProtoSection.blocks[prototype.index]?.id === prototype.block.id) {
             return update(currentSections, {
-                [prototype.sectionId]: {
-                  blocks: { $splice: [[prototype.index, 1]] }
-                }
+              [prototype.sectionId]: {
+                blocks: { $splice: [[prototype.index, 1]] }
+              }
             });
           }
           return currentSections;
@@ -457,8 +457,8 @@ function EditApp({ publishableKey }: { publishableKey: string | undefined }) {
     // --- EXISTING BLOCK DROP --- (Requires event.over to be valid)
     // This part also needs to be use the setData callback form if it modifies data
     if (!event.over) {
-        setActiveItem(null);
-        return;
+      setActiveItem(null);
+      return;
     }
 
     if (activeTypeCalculated === 'block' && activeBlockId && event.over) { // Ensure event.over is present for this logic
@@ -494,8 +494,8 @@ function EditApp({ publishableKey }: { publishableKey: string | undefined }) {
 
         const blockToMove = sectionsForCurrentPage[fromSectionId].blocks[fromBlockIndex];
         if (!blockToMove) {
-            // console.warn(`DragEnd: Block to move is undefined at index ${fromBlockIndex} in section ${fromSectionId}.`);
-            return currentEditorData;
+          // console.warn(`DragEnd: Block to move is undefined at index ${fromBlockIndex} in section ${fromSectionId}.`);
+          return currentEditorData;
         }
 
         let targetSectionId: string | null = null;
@@ -509,17 +509,17 @@ function EditApp({ publishableKey }: { publishableKey: string | undefined }) {
           }
 
           if (targetSectionId && sectionsForCurrentPage[targetSectionId]) {
-             const overBlockIdx = getOverBlockIndex(sectionsForCurrentPage[targetSectionId], overElementIdLocal); // overElementIdLocal is the block being hovered
-             if (activeBlockId === overElementIdLocal) { // Dropping on itself
-               // If targetSectionId is different from fromSectionId, this implies moving to another list on itself (unlikely)
-               // For now, assume if activeBlockId === overElementIdLocal, it's a no-op within the same list.
-               // The splice logic handles this naturally if fromSectionId === targetSectionId.
-               targetBlockIndex = overBlockIdx; // or fromBlockIndex, effectively the same if same section.
-             } else {
-               targetBlockIndex = overBlockIdx;
-             }
-             // If overBlockIdx is -1 (e.g., something went wrong with getOverBlockIndex or ID parsing)
-             // this will be caught by targetBlockIndex !== -1 check later.
+            const overBlockIdx = getOverBlockIndex(sectionsForCurrentPage[targetSectionId], overElementIdLocal); // overElementIdLocal is the block being hovered
+            if (activeBlockId === overElementIdLocal) { // Dropping on itself
+              // If targetSectionId is different from fromSectionId, this implies moving to another list on itself (unlikely)
+              // For now, assume if activeBlockId === overElementIdLocal, it's a no-op within the same list.
+              // The splice logic handles this naturally if fromSectionId === targetSectionId.
+              targetBlockIndex = overBlockIdx; // or fromBlockIndex, effectively the same if same section.
+            } else {
+              targetBlockIndex = overBlockIdx;
+            }
+            // If overBlockIdx is -1 (e.g., something went wrong with getOverBlockIndex or ID parsing)
+            // this will be caught by targetBlockIndex !== -1 check later.
           }
         } else if (overTypeLocal === 'section') {
           targetSectionId = overElementIdLocal; // Here, overElementIdLocal is the section ID
@@ -534,8 +534,8 @@ function EditApp({ publishableKey }: { publishableKey: string | undefined }) {
         }
 
         if (!sectionsForCurrentPage[targetSectionId]) {
-            // console.warn(`DragEnd: Target section ${targetSectionId} does not exist in current page view.`);
-            return currentEditorData;
+          // console.warn(`DragEnd: Target section ${targetSectionId} does not exist in current page view.`);
+          return currentEditorData;
         }
 
         let newEditorData = currentEditorData;
@@ -555,17 +555,17 @@ function EditApp({ publishableKey }: { publishableKey: string | undefined }) {
 
         let adjustedTargetBlockIndex = targetBlockIndex;
         if (fromSectionId === targetSectionId && fromBlockIndex < targetBlockIndex) {
-            adjustedTargetBlockIndex--;
+          adjustedTargetBlockIndex--;
         }
 
         // After removing, the blocks in the target section (if same as fromSection) might have shifted.
         // Re-evaluate target section blocks from the intermediate newEditorData.
         const targetSectionBlocksAfterRemoval = newEditorData.view.pages[selectedPage].view[targetSectionId]?.blocks || [];
         if (adjustedTargetBlockIndex > targetSectionBlocksAfterRemoval.length) {
-            adjustedTargetBlockIndex = targetSectionBlocksAfterRemoval.length;
+          adjustedTargetBlockIndex = targetSectionBlocksAfterRemoval.length;
         }
         if (adjustedTargetBlockIndex < 0) { // Should not happen with valid logic but as a safeguard.
-            adjustedTargetBlockIndex = 0;
+          adjustedTargetBlockIndex = 0;
         }
 
 
@@ -620,7 +620,7 @@ function EditApp({ publishableKey }: { publishableKey: string | undefined }) {
           >
             <DragOverlay dropAnimation={null}>
               {activeItem && (
-                <DragOverlayPreview item={activeItem}/>
+                <DragOverlayPreview item={activeItem} />
               )}
             </DragOverlay>
             <div className="flex flex-grow h-[calc(100vh-60px)]">
@@ -629,10 +629,9 @@ function EditApp({ publishableKey }: { publishableKey: string | undefined }) {
             </div>
           </DndContext>
         </NavigationProvider>
-      </GlobalStateProvider>
+        <PageLogicDialog />
 
-      {/* Page Logic Dialog */}
-      <PageLogicDialog />
+      </GlobalStateProvider>
 
       <PageTypeDialog />
 
@@ -656,9 +655,9 @@ function DragOverlayPreview({ item }: { item: ActiveDndItem | null }) {
         )}
       >
         <div className="flex items-center justify-center bg-slate-800 rounded-md w-full h-14 mb-2">
-        <span className="text-white">
-          <CustomElementIcon type={item.id as keyof typeof blockTypes} />
-        </span>
+          <span className="text-white">
+            <CustomElementIcon type={item.id as keyof typeof blockTypes} />
+          </span>
         </div>
         <span className="text-sm text-black">{elementTypeMeta?.title || item.id}</span>
       </div>
@@ -690,7 +689,7 @@ function MainContent() {
         "absolute inset-0 overflow-hidden",
         !isPreviewMode ? "bottom-[68px]" : "bottom-0"
       )}>
-      <div className="h-full bg-[#F7F9FF]">
+        <div className="h-full bg-[#F7F9FF]">
           {isShareMode ? (
             <PageShare />
           ) : isPreviewMode ? (
@@ -735,7 +734,7 @@ function Toolbar() {
     handlePageNameClick(pageId, name)
     goToPage(pageId);
 
-    if(pageId != selectedPage) {
+    if (pageId != selectedPage) {
       setSelectedBlockId(null);
       setSelectedSectionId(null);
       setActiveTab('layers');
@@ -842,16 +841,16 @@ function Toolbar() {
                 <span className="text-sm font-medium">{data.view.pages[data.view.pages[selectedPage].next_page.default_next_page]?.name}</span>
               </div>
             )}
-          {/*  if none, we need to configure one!*/}
-          {/*  if its ending, we need to configure that! */}
+            {/*  if none, we need to configure one!*/}
+            {/*  if its ending, we need to configure that! */}
 
           </div>
-            <button
-              onClick={() => setShowPageLogic(true)}
-              className="flex items-center gap-2 px-3 py-1.5 text-sm hover:bg-secondary/90 bg-secondary rounded-md"
-            >
-              Page Logic
-            </button>
+          <button
+            onClick={() => setShowPageLogic(true)}
+            className="flex items-center gap-2 px-3 py-1.5 text-sm hover:bg-secondary/90 bg-secondary rounded-md"
+          >
+            Page Logic
+          </button>
         </div>
       </div>
     </div>
@@ -860,7 +859,7 @@ function Toolbar() {
 
 function PageLogicDialog() {
 
-    const { showPageLogic, setShowPageLogic, data, setData, handleSave } = useEditor();
+  const { showPageLogic, setShowPageLogic, data, setData, handleSave } = useEditor();
 
   return (
     <Dialog open={showPageLogic} onOpenChange={setShowPageLogic}>
@@ -879,7 +878,7 @@ function PageLogicDialog() {
               view={data.view}
               onUpdateFlow={(changes) => {
                 console.log('Flow editor changes:', changes);
-                setData(update(data, { view: { $set: changes }}));
+                setData(update(data, { view: { $set: changes } }));
 
                 // Submit the update to backend
                 console.log('Submitting update to backend...');
@@ -894,83 +893,83 @@ function PageLogicDialog() {
 }
 
 function PageTypeDialog() {
-    const {
-        showPageTypeDialog,
-        setShowPageTypeDialog,
-        handleAddPage,
-        handlePageTypeChange,
-        editingPageId,
-        data
-    } = useEditor();
+  const {
+    showPageTypeDialog,
+    setShowPageTypeDialog,
+    handleAddPage,
+    handlePageTypeChange,
+    editingPageId,
+    data
+  } = useEditor();
 
-    const isEditing = Boolean(editingPageId);
-    const currentPage = editingPageId ? data.view.pages[editingPageId] : null;
+  const isEditing = Boolean(editingPageId);
+  const currentPage = editingPageId ? data.view.pages[editingPageId] : null;
 
-    const handleTypeSelection = (type: PageType) => {
-        if (isEditing && editingPageId) {
-            handlePageTypeChange(editingPageId, type);
-        } else {
-            handleAddPage(type);
-        }
-    };
+  const handleTypeSelection = (type: PageType) => {
+    if (isEditing && editingPageId) {
+      handlePageTypeChange(editingPageId, type);
+    } else {
+      handleAddPage(type);
+    }
+  };
 
-    return (
-        <Dialog open={showPageTypeDialog} onOpenChange={setShowPageTypeDialog}>
-            <DialogContent className="w-full sm:max-w-2xl">
-                <DialogHeader>
-                    <DialogTitle>{isEditing ? 'Change Page Type' : 'Add New Page'}</DialogTitle>
-                    <DialogDescription>
-                        {isEditing
-                            ? 'Select a new type for this page'
-                            : 'Choose the type of page you want to add'
-                        }
-                    </DialogDescription>
-                </DialogHeader>
-                <div className="grid grid-cols-4 gap-4 py-4">
-                    <button
-                        onClick={() => handleTypeSelection('entry')}
-                        className={cn(
-                            "flex flex-col items-center gap-2 p-4 rounded-lg border border-border hover:bg-secondary/50",
-                            currentPage?.type === 'entry' && "bg-secondary"
-                        )}
-                    >
-                        <ArrowRightToLine className="w-6 h-6" />
-                        <span className="text-sm font-medium">Entry Page</span>
-                    </button>
-                    <button
-                        onClick={() => handleTypeSelection('page')}
-                        className={cn(
-                            "flex flex-col items-center gap-2 p-4 rounded-lg border border-border hover:bg-secondary/50",
-                            currentPage?.type === 'page' && "bg-secondary"
-                        )}
-                    >
-                        <FileText className="w-6 h-6" />
-                        <span className="text-sm font-medium">Content Page</span>
-                    </button>
-                    <button
-                        onClick={() => handleTypeSelection('payment')}
-                        className={cn(
-                            "flex flex-col items-center gap-2 p-4 rounded-lg border border-border hover:bg-secondary/50",
-                            currentPage?.type === 'payment' && "bg-secondary"
-                        )}
-                    >
-                        <CreditCard className="w-6 h-6" />
-                        <span className="text-sm font-medium">Payment Page</span>
-                    </button>
-                    <button
-                        onClick={() => handleTypeSelection('ending')}
-                        className={cn(
-                            "flex flex-col items-center gap-2 p-4 rounded-lg border border-border hover:bg-secondary/50",
-                            currentPage?.type === 'ending' && "bg-secondary"
-                        )}
-                    >
-                        <CheckSquare className="w-6 h-6" />
-                        <span className="text-sm font-medium">Ending Page</span>
-                    </button>
-                </div>
-            </DialogContent>
-        </Dialog>
-    )
+  return (
+    <Dialog open={showPageTypeDialog} onOpenChange={setShowPageTypeDialog}>
+      <DialogContent className="w-full sm:max-w-2xl">
+        <DialogHeader>
+          <DialogTitle>{isEditing ? 'Change Page Type' : 'Add New Page'}</DialogTitle>
+          <DialogDescription>
+            {isEditing
+              ? 'Select a new type for this page'
+              : 'Choose the type of page you want to add'
+            }
+          </DialogDescription>
+        </DialogHeader>
+        <div className="grid grid-cols-4 gap-4 py-4">
+          <button
+            onClick={() => handleTypeSelection('entry')}
+            className={cn(
+              "flex flex-col items-center gap-2 p-4 rounded-lg border border-border hover:bg-secondary/50",
+              currentPage?.type === 'entry' && "bg-secondary"
+            )}
+          >
+            <ArrowRightToLine className="w-6 h-6" />
+            <span className="text-sm font-medium">Entry Page</span>
+          </button>
+          <button
+            onClick={() => handleTypeSelection('page')}
+            className={cn(
+              "flex flex-col items-center gap-2 p-4 rounded-lg border border-border hover:bg-secondary/50",
+              currentPage?.type === 'page' && "bg-secondary"
+            )}
+          >
+            <FileText className="w-6 h-6" />
+            <span className="text-sm font-medium">Content Page</span>
+          </button>
+          <button
+            onClick={() => handleTypeSelection('payment')}
+            className={cn(
+              "flex flex-col items-center gap-2 p-4 rounded-lg border border-border hover:bg-secondary/50",
+              currentPage?.type === 'payment' && "bg-secondary"
+            )}
+          >
+            <CreditCard className="w-6 h-6" />
+            <span className="text-sm font-medium">Payment Page</span>
+          </button>
+          <button
+            onClick={() => handleTypeSelection('ending')}
+            className={cn(
+              "flex flex-col items-center gap-2 p-4 rounded-lg border border-border hover:bg-secondary/50",
+              currentPage?.type === 'ending' && "bg-secondary"
+            )}
+          >
+            <CheckSquare className="w-6 h-6" />
+            <span className="text-sm font-medium">Ending Page</span>
+          </button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  )
 }
 
 export default Edit;
