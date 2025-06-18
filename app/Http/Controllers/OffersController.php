@@ -25,6 +25,7 @@ use App\Models\Theme;
 use App\Services\TemplateService;
 use App\Services\ThemeService;
 use App\Services\HostedPageService;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -42,7 +43,9 @@ class OffersController extends Controller
     public function index(): Response
     {
         return Inertia::render('offers/index', [
-            'offers' => OfferResource::collection(Offer::with([])->paginate()),
+            'offers' => OfferResource::collection(Offer::with([
+                'organization',
+            ])->paginate()),
         ]);
     }
 
@@ -282,6 +285,43 @@ class OffersController extends Controller
 
         return back()->with('success', 'Offer has been published successfully.');
     }
+
+    public function duplicate(Offer $offer): \Illuminate\Http\RedirectResponse
+    {
+        $themeId = $offer->theme_id;
+        
+        // No need to duplicate if it's a global theme
+        if($offer->theme->organization_id) {
+            $newTheme = $offer->theme->replicate();
+            $newTheme->name = (
+                $offer->name 
+                ? $offer->name . ' (Copy)'
+                : ($offer->theme->name 
+                    ? $offer->theme->name . ' (Copy)'
+                    : null
+                    )
+                );
+            $newTheme->updated_at = Carbon::now();
+            $newTheme->created_at = Carbon::now();
+            $newTheme->save();
+
+            $themeId = $newTheme->id;
+        }
+
+        // Duplicate the offer
+        $newOffer = $offer->replicate();
+        $newOffer->uuid = null;
+        $newOffer->name = $offer->name ? $offer->name . ' (Copy)' : null;
+        $newOffer->theme_id = $themeId;
+        $newOffer->updated_at = Carbon::now();
+        $newOffer->created_at = Carbon::now();
+        $newOffer->save();
+
+        return redirect()
+            ->route('offers.edit', $newOffer);
+    }
+
+    
 
     private function authorizeOrganizationAccess(Offer $offer): void
     {

@@ -24,7 +24,7 @@ class DashboardController extends Controller
         $offers = $request->user()
             ->currentOrganization
             ->offers()
-            ->with(['theme', 'screenshot'])
+            ->with(['theme', 'organization', 'screenshot', 'hostedPage', 'offerItems', 'productImage'])
             ->get();
 
         return Inertia::render('dashboard', [

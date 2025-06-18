@@ -197,7 +197,7 @@ export const FontPicker: React.FC<FontPickerProps> = ({
       </div>
       <div className="flex flex-row gap-2 w-full">
         {!hideLineHeight && (
-          <div title='Line Height' className="flex flex-row gap-2 bg-gray-200/50 rounded-md py-2 px-3 items-center">
+          <div title='Line Height' className="w-full flex flex-row gap-2 bg-gray-200/50 rounded-md py-2 px-3 items-center">
             <svg width="20" height="15" viewBox="0 0 12 15" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 15H0V14H12V15Z" fill="black"/><path fill-rule="evenodd" clip-rule="evenodd" d="M9 11H8.11328L7.41113 9.01758H4.58887L3.88672 11H3L5.56348 4H6.43652L9 11ZM4.85449 8.26562H7.14551L6.02734 5.10742H5.97266L4.85449 8.26562Z" fill="black"/><path d="M12 1H0V0H12V1Z" fill="black"/></svg>
             <Input
               type='number'
@@ -215,7 +215,7 @@ export const FontPicker: React.FC<FontPickerProps> = ({
           </div>
         )}
         {!hideLetterSpacing && (
-          <div title='Letter Spacing' className="flex flex-row gap-2 bg-gray-200/50 rounded-md py-2 px-3 items-center">
+          <div title='Letter Spacing' className="w-full flex flex-row gap-2 bg-gray-200/50 rounded-md py-2 px-3 items-center">
             <svg width="20" height="12" viewBox="0 0 14 12" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1 12H0V0H1V12Z" fill="black"/><path d="M14 12H13V0H14V12Z" fill="black"/><path fill-rule="evenodd" clip-rule="evenodd" d="M10 9H9.11328L8.41113 7.01758H5.58887L4.88672 9H4L6.56348 2H7.43652L10 9ZM5.85449 6.26562H8.14551L7.02734 3.10742H6.97266L5.85449 6.26562Z" fill="black"/></svg>
             <Input
               className="border-none shadow-none focus:!ring-0 focus:border-none h-5"

@@ -1,31 +1,41 @@
 import { PageView } from '@/types/offer';
 import { Theme } from '@/types/theme';
 
+// Helper to safely extract font name from a style object
+export const getFontsFromStyle = (style?: Record<string, any>): string[] => {
+  if (!style) return [];
+
+  const fonts: string[] = [];
+  
+  // Look through all style properties that end with 'Font'
+  Object.entries(style).forEach(([key, value]) => {
+    if ((key.endsWith('Font') || key.endsWith('font')) && value?.font) {
+      fonts.push(value.font);
+    }
+  });
+
+  return fonts;
+};
+
 export function findUniqueFontsFromView(view: PageView): string[] {
   const fonts = new Set<string>();
-
-  // Helper to safely extract font name from a style object
-  const getFontFromStyle = (style?: Record<string, any>) => {
-    if (!style) return;
-    
-    // Look through all style properties that end with 'Font'
-    Object.entries(style).forEach(([key, value]) => {
-      if ((key.endsWith('Font') || key.endsWith('font')) && value?.font) {
-        fonts.add(value.font);
-      }
-    });
-  };
 
   // Process each page
   Object.values(view?.pages || {}).forEach(page => {
     // Process each section in the page
     Object.values(page?.view || {}).forEach(section => {
       // Check section style
-      getFontFromStyle(section?.style);
+      const sectionFonts = getFontsFromStyle(section?.style);
+      if (sectionFonts) {
+        sectionFonts.forEach(font => fonts.add(font));
+      }
 
       // Check each block's style
       section?.blocks?.forEach(block => {
-        getFontFromStyle(block.style);
+        const blockFonts = getFontsFromStyle(block.style);
+        if (blockFonts) {
+          blockFonts.forEach(font => fonts.add(font));
+        }
       });
     });
   });
@@ -70,6 +80,20 @@ export function findUniqueFontsFromTheme(theme: Theme): string[] {
   });
 
   return Array.from(fonts).sort();
+}
+
+/**
+ * Construct a Google Fonts URL string.
+ * fonts: [{ name: 'Roboto', weights: [400,700] }, ...]
+ * display: 'swap' | 'auto' | 'fallback' | 'optional'
+ */
+export function buildGoogleFontsUrl(fonts: { name: string; weights?: string[] }[], display = 'swap') {
+  const families = fonts.map(f => {
+    const name = f.name.replace(/ /g, '+');
+    const weightPart = f.weights ? `:wght@${f.weights.join(';')}` : '';
+    return `family=${name}${weightPart}`;
+  }).join('&');
+  return `https://fonts.googleapis.com/css2?${families}&display=${display}`;
 }
 
 

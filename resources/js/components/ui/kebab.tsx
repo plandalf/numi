@@ -11,8 +11,8 @@ import { cn } from "@/lib/utils";
 
 interface KebabProps extends React.HTMLAttributes<HTMLDivElement> {
   items: {
-    label: string;
-    onClick: () => void;
+    label: React.ReactNode;
+    onClick: (e?: React.MouseEvent) => void;
     className?: string;
     disabled?: boolean;
   }[];

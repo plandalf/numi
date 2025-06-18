@@ -220,6 +220,7 @@ export const Style = {
       "backgroundColor"
       | "dividerColor"
       | "iconColor"
+      | "paymentFormBackgroundColor"
       | "imageBackgroundColor"
       | "badgeBackgroundColor"
       | "errorBackgroundColor"

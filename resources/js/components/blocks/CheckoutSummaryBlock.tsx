@@ -413,7 +413,7 @@ function CheckoutSummaryComponent({ context }: { context: BlockContextType }) {
               <MarkdownText
                 theme={theme}
                 text={`### ${formatMoney(item.total, currency)}`}
-                className="font-medium break-all"
+                className="text-gray-700"
               />
             :
             <div className="text-gray-700" style={itemPriceStyle}>
