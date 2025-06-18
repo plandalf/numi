@@ -92,7 +92,7 @@ class CheckoutSessionController extends Controller
         }
 
         if ($request->has('price_id')) {
-            $price = Price::where('lookup_key', $priceId)->firstOrFail();
+            $price = Price::where('id', $priceId)->firstOrFail();
             $args['price_id'] = $price->id;
         } else {
             $offerItem = OfferItem::where('id', $request->input('offer_item_id'))->firstOrFail();

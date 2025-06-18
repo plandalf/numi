@@ -5,7 +5,7 @@ type UpdateSessionArgs = {
   checkoutSession: CheckoutSession;
   offerItems: OfferItem[];
   item?: number;
-  price?: string;
+  price?: number;
   required?: boolean;
   quantity?: number;
 };
@@ -23,7 +23,7 @@ export const updateSessionLineItems = ({
       return checkoutSession.line_items.find(li => li.id == i.id);
     };
 
-    const defaultPrice = i.prices.find(p => p.lookup_key == price);
+    const defaultPrice = i.prices.find(p => p.id == price);
 
     if(!price || !defaultPrice || required === false) return null;
 
