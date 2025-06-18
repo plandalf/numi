@@ -151,6 +151,8 @@ function EditApp({ publishableKey }: { publishableKey: string | undefined }) {
       total: defaultPrice?.amount ?? 0,
       product: defaultPrice?.product,
       price: defaultPrice,
+      type: item.type,
+
     }
   }), [offer.items]);
 
@@ -169,8 +171,10 @@ function EditApp({ publishableKey }: { publishableKey: string | undefined }) {
     // exclusive_taxes: lineItems.reduce((acc, item) => Number(acc) + Number(item.exclusive_taxes ?? 0), 0),
     publishable_key: publishableKey,
     properties: {},
+    taxes: 0,
+    shipping: 0,
   }), [lineItems, publishableKey]);
-  
+
 
   const [prototype, setPrototype] = useState<null | { sectionId: string; index: number; block: Block }>();
   const [activeItem, setActiveItem] = useState<ActiveDndItem | null>(null);

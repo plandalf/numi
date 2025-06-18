@@ -61,6 +61,7 @@ const createLineItem = (item: OfferItem, quantity: number, defaultPrice?: Price)
     // is_tax_inclusive: item.is_tax_inclusive ?? false,
     // tax_rate: item.tax_rate ?? 0,
     price: defaultPrice,
+    type: item.type,
   }
 }
 
