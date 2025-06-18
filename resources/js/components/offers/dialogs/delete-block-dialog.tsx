@@ -42,7 +42,7 @@ export function DeleteBlockDialog({ onDelete, trigger, className }: DeleteBlockD
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel>Cancel</AlertDialogCancel>
-          <AlertDialogAction onClick={onDelete} className="bg-red-500 hover:bg-red-600">
+          <AlertDialogAction onClick={onDelete} variant="destructive">
             Delete
           </AlertDialogAction>
         </AlertDialogFooter>

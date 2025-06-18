@@ -49,16 +49,7 @@ function TextInputBlockComponent({ context }: { context: BlockContextType }) {
 
   const style = Numi.useStyle([
     Style.alignment('alignment', 'Alignment', {}, 'left'),
-    Style.font( 'labelFont', 'Label Font & Color',
-      fontConfig,
-      {
-        font: 'Inter',
-        weight: '400',
-        size: '16px',
-        lineHeight: '1.5',
-        letterSpacing: '0px',
-      },
-    ),
+    Style.font( 'labelFont', 'Label Font & Color', fontConfig, theme?.label_typography as FontValue),
     Style.backgroundColor('inputBackgroundColor', 'Input Background Color', {}, '#FFFFFF'),
     Style.font('inputFont', 'Input Font & Color',
       fontConfig,
