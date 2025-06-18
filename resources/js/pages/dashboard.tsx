@@ -3,13 +3,15 @@ import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, router } from '@inertiajs/react';
 import { Button } from '@/components/ui/button';
-import { Plus } from 'lucide-react';
+import { Copy, CopyPlus, ExternalLink, Plus } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { TemplateSelectorModal } from '@/components/templates/template-selector-modal';
 import { useState } from 'react';
 import { Template } from '@/types/template';
 import { Offer } from '@/types/offer';
 import { Separator } from '@/components/ui/separator';
+import { Kebab } from '@/components/ui/kebab';
+import { toast } from 'sonner';
 
 interface Props {
     offers: Offer[];
@@ -42,6 +44,19 @@ export default function Dashboard({ offers, globalTemplates, organizationTemplat
             // If templates available, show template selector
             setIsSelectorOpen(true);
         }
+    };
+
+    const onCopyOfferLinkClick = (offer: Offer) => {
+      navigator.clipboard.writeText(offer.public_url);
+      toast.success('Offer link copied to clipboard');
+    };
+
+    const onDuplicateOfferClick = (offer: Offer) => {
+      router.put(route('offers.duplicate', offer.id), {}, {
+        onSuccess: () => {
+          toast.success('Offer duplicated');
+        }
+      });
     };
 
     return (
@@ -79,11 +94,47 @@ export default function Dashboard({ offers, globalTemplates, organizationTemplat
                       className="cursor-pointer !bg-[#d1dafb1a] !hover:bg-[#d1dafb40] hover:scale-101 transition-all duration-200 active:scale-100"
                       onClick={() => router.get(route('offers.edit', offer.id))}
                     >
-                      <CardHeader>
-                        <CardTitle>{offer.name || 'Untitled Offer'}</CardTitle>
-                        <CardDescription>
-                          Created {new Date(offer.created_at).toLocaleDateString()}
-                        </CardDescription>
+                      <CardHeader className="flex flex-row justify-between items-center">
+                        <div className="flex flex-col items-start">
+                          <CardTitle>{offer.name || 'Untitled Offer'}</CardTitle>
+                          <CardDescription>
+                            Created {new Date(offer.created_at).toLocaleDateString()}
+                          </CardDescription>
+                        </div>
+                        <Kebab items={[{
+                          label: (
+                            <div className="flex flex-row gap-2 items-center">
+                              <ExternalLink className="h-4 w-4" />
+                              View
+                            </div>
+                          ),
+                          onClick: (e: React.MouseEvent<HTMLButtonElement>) => {
+                            e.stopPropagation();
+                            window.open(offer.public_url, '_blank', 'noopener,noreferrer');
+                          }
+                        }, {
+                          label: (
+                            <div className="flex flex-row gap-2 items-center">
+                              <Copy className="h-4 w-4" />
+                              Copy offer link
+                            </div>
+                          ),
+                          onClick: (e: React.MouseEvent<HTMLButtonElement>) => {
+                            e.stopPropagation();
+                            onCopyOfferLinkClick(offer)
+                          }
+                        },  {
+                          label: (
+                            <div className="flex flex-row gap-2 items-center">
+                              <CopyPlus className="h-4 w-4" />
+                              Duplicate
+                            </div>
+                          ),
+                          onClick: (e: React.MouseEvent<HTMLButtonElement>) => {
+                            e.stopPropagation();
+                            onDuplicateOfferClick(offer);
+                          }
+                        }]} />
                       </CardHeader>
                       <CardContent>
                         {offer.screenshot && (
