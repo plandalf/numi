@@ -7,7 +7,7 @@ import { Input } from "../ui/input";
 
 export type SetItemActionValue = {
   item?: number;
-  price?: string;
+  price?: number;
   required?: boolean;
   quantity?: number;
 };
