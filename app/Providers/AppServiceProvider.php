@@ -2,7 +2,15 @@
 
 namespace App\Providers;
 
+use App\Enums\OnboardingStep;
+use App\Enums\OnboardingInfo;
+use App\Models\Integration;
 use App\Models\Organization;
+use App\Models\Store\Offer;
+use App\Models\Theme;
+use App\Observers\IntegrationObserver;
+use App\Observers\OfferObserver;
+use App\Observers\ThemeObserver;
 use App\Models\Subscription;
 use App\Models\SubscriptionItem;
 use Carbon\CarbonImmutable;
@@ -17,6 +25,7 @@ use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\Vite;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
+use Inertia\Inertia;
 use Laravel\Cashier\Cashier;
 
 class AppServiceProvider extends ServiceProvider
@@ -45,6 +54,8 @@ class AppServiceProvider extends ServiceProvider
         Cashier::useSubscriptionItemModel(SubscriptionItem::class);
 
         $this->bootModelRules();
+        $this->bootInertiaSharing();
+        $this->bootObservers();
 
         Vite::useAggressivePrefetching();
         URL::forceHttps(app()->isProduction());
@@ -76,5 +87,45 @@ class AppServiceProvider extends ServiceProvider
                 ]);
             });
         }
+    }
+
+    private function bootInertiaSharing(): void
+    {
+        Inertia::share([
+            'onboarding' => function (Request $request) {
+                if (!$request->user() || !$request->user()->currentOrganization) {
+                    return null;
+                }
+
+                $organization = $request->user()->currentOrganization;
+                
+                $steps = collect(OnboardingStep::cases())->map(function ($step) use ($organization) {
+                    return [
+                        'key' => $step->key(),
+                        'label' => $step->label(),
+                        'description' => $step->description(),
+                        'completed' => $organization->isOnboardingStepCompleted($step),
+                        'value' => $step->value,
+                    ];
+                });
+
+                return [
+                    'steps' => $steps,
+                    'completion_percentage' => $organization->getOnboardingCompletionPercentage(),
+                    'is_complete' => $organization->isOnboardingComplete(),
+                    'completed_steps' => $organization->getCompletedOnboardingSteps(),
+                    'incomplete_steps' => $organization->getIncompleteOnboardingSteps(),
+                    'user_info_seen' => $request->user()->getSeenOnboardingInfo(),
+                    'user_info_unseen' => $request->user()->getUnseenOnboardingInfo(),
+                ];
+            },
+        ]);
+    }
+
+    private function bootObservers(): void
+    {
+        Offer::observe(OfferObserver::class);
+        Integration::observe(IntegrationObserver::class);
+        Theme::observe(ThemeObserver::class);
     }
 }

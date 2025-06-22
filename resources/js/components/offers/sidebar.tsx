@@ -6,15 +6,15 @@ import { SectionInspector } from '@/components/offers/page-section-inspector';
 import { useEditor } from '@/contexts/offer/editor-context';
 import {
   DiamondPlus,
-  LayoutPanelLeft,
   Paintbrush,
   Settings2,
   Package,
   ChevronLeft,
   Edit3,
+  LayersIcon,
+  FlameIcon,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import PageTheme from './page-theme';
 import { ScrollArea } from '../ui/scroll-area';
 import { PageLayers } from './page-layers';
@@ -35,13 +35,11 @@ type IconButton = {
 };
 
 const iconButtons: IconButton[] = [
-  { icon: <DiamondPlus className="size-5" />, tab: 'elements', label: 'Elements' },
-  { icon: <LayoutPanelLeft className="size-5" />, tab: 'layers', label: 'Layers' },
-  { icon: <Package className="size-5" />, tab: 'products', label: 'Products' },
-  { icon: <Paintbrush className="size-5" />, tab: 'themes', label: 'Themes' },
-  { icon: <Settings2 className="size-5" />, tab: 'settings', label: 'Settings' },
-  // { icon: <Unplug className="size-5" />, tab: 'integration', label: 'Integrations' },
-  // { icon: <Bell className="size-5" />, tab: 'inspector', label: 'Notifications' },
+  { icon: <FlameIcon className="size-6" />, tab: 'elements', label: 'Elements' },
+  { icon: <LayersIcon className="size-6" />, tab: 'layers', label: 'Layers' },
+  { icon: <Package className="size-6" />, tab: 'products', label: 'Products' },
+  { icon: <Paintbrush className="size-6" />, tab: 'themes', label: 'Themes' },
+  { icon: <Settings2 className="size-6" />, tab: 'settings', label: 'Settings' },
 ];
 
 
@@ -157,8 +155,6 @@ export function Sidebar() {
       }
     }
 
-    setIsEditingBlockId(false);
-    setEditBlockIdValue('');
     setBlockIdError(null);
   };
 
@@ -243,44 +239,31 @@ export function Sidebar() {
       !isEditorMode ? "w-14" : "w-[400px]"
     )}>
       {/* Left column: Icon & Buttons */}
-      <div className="flex flex-col border-r border-border w-14">
-        {/* Upper left: Main Icon */}
-        <div className="h-14 flex items-center justify-center border-b border-border">
-          <Button
-            variant="outline"
-            size="icon"
-            className={cn("h-10 w-10",
-              activeTab === 'elements' ? "bg-primary text-white hover:bg-gray-900 hover:text-white" : "bg-default text-white border-default hover:bg-primary hover:opacity-80 hover:border-gray-900 hover:text-white"
-            )}
-            onClick={() => onTabClick('elements')}
-            tooltip="Elements"
-            tooltipSide='right'
-          >
-            <DiamondPlus className="size-5" />
-          </Button>
-        </div>
-
+      <div className="flex flex-col border-r border-border w-15">
         {/* Lower left: Navigation Icons */}
-        <div className="flex flex-col flex-grow w-[56px] p-2 gap-2">
+        <div className="flex flex-col flex-grow w-15 gap-1.5">
           {iconButtons
-            .filter(button => button.tab !== 'elements')
             .map((button) => (
-            <Button
-                variant="outline-transparent"
+            <button
                 key={button.tab}
                 onClick={() => onTabClick(button.tab as SidebarTab)}
-                tooltip={button.label}
-                tooltipSide='right'
                 className={cn(
-                    "h-10 border-none shadow-none flex items-center justify-center transition-colors text-primary",
-                    activeTab === button.tab
-                    ? "bg-gray-900 text-white hover:bg-gray-900 hover:text-white"
-                    : "hover:bg-gray-500 hover:text-white"
+                    "group h-14 w-15 flex items-center justify-center transition-colors text-primary bg-transparent border-none cursor-pointer outline-none focus:outline-none",
+                    "",
+                    activeTab === button.tab ? "font-bold " : "font-medium"
                 )}
                 title={button.label}
                 >
-                {button.icon}
-            </Button>
+                <div className="flex flex-col items-center justify-center gap-1">
+                  <div className={cn(
+                    "size-8 p-1.5 rounded-md transition-colors flex items-center justify-center",
+                    activeTab === button.tab
+                      ? "bg-default text-white"
+                      : "group-hover:bg-gray-800 group-hover:text-white"
+                  )}>{button.icon}</div>
+                  <div className="text-[10px] leading-none">{button.label}</div>
+                </div>
+            </button>
           ))}
         </div>
       </div>

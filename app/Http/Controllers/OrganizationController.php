@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\OnboardingStep;
 use App\Http\Resources\OrganizationResource;
 use App\Models\Organization;
 use App\Models\Theme;
@@ -63,6 +64,9 @@ class OrganizationController extends Controller
         $organization->users()->attach($request->user());
         $request->user()->switchOrganization($organization);
 
+        // Mark profile setup as completed since they've created an organization with settings
+        $organization->markOnboardingStepCompleted(OnboardingStep::PROFILE_SETUP);
+
         return redirect()->route('dashboard');
     }
 
@@ -90,6 +94,11 @@ class OrganizationController extends Controller
         $validated = $request->validated();
 
         $organization->update($validated);
+
+        // Mark profile setup as completed since they've updated their organization settings
+        if (!$organization->isOnboardingStepCompleted(OnboardingStep::PROFILE_SETUP)) {
+            $organization->markOnboardingStepCompleted(OnboardingStep::PROFILE_SETUP);
+        }
 
         return redirect()->back()->with('success', 'Organization updated successfully.');
     }

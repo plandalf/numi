@@ -16,21 +16,13 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import {
-  SidebarGroup,
-  SidebarGroupLabel,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem
-} from '@/components/ui/sidebar';
 import { useOrganizationSwitcher } from '@/hooks/use-organization-switcher';
-import { type SharedData } from '@/types';
 import { usePage } from '@inertiajs/react';
 import { Building2, ChevronDown, Plus } from 'lucide-react';
 import { useState } from 'react';
 
 export function OrganizationSwitcher() {
-    const { auth } = usePage<SharedData>().props;
+    const { auth } = usePage<{ auth: { user: { current_organization?: { name: string }; organizations: Array<{ id: number; name: string }> } } }>().props;
     const [isOpen, setIsOpen] = useState(false);
     const [name, setName] = useState('');
 
@@ -45,15 +37,19 @@ export function OrganizationSwitcher() {
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <div className="flex items-center gap-1 border border-gray-800">
-              <span className="flex-1 text-left">{auth.user.current_organization?.name ?? 'Select Organization'}</span>
-              <ChevronDown className="ml-auto size-4" />
-            </div>
+            <Button variant="ghost" className="w-full justify-between px-2 py-2 h-auto">
+              <div className="flex items-center gap-2">
+                <Building2 className="size-4" />
+                <span className="text-sm font-medium truncate">{auth.user.current_organization?.name ?? 'Select Organization'}</span>
+              </div>
+              <ChevronDown className="size-4 opacity-50" />
+            </Button>
           </DropdownMenuTrigger>
 
-          <DropdownMenuContent className="w-56">
+          <DropdownMenuContent className="w-56" align="start">
             {auth.user.organizations.map((org) => (
               <DropdownMenuItem key={org.id} onClick={() => onSwitch?.(org.id)}>
+                <Building2 className="mr-2 size-4" />
                 {org.name}
               </DropdownMenuItem>
             ))}

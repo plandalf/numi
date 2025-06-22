@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Enums\IntegrationType;
+use App\Enums\OnboardingStep;
 use App\Enums\Theme\FontElement;
 use App\Enums\Theme\WeightElement;
 use App\Http\Requests\Offer\OfferThemeUpdateRequest;
@@ -61,6 +62,11 @@ class OffersController extends Controller
             'hostedPage.logoImage',
             'hostedPage.backgroundImage',
         ]);
+
+        // Mark the "first offer" onboarding step as completed
+        if (!$organization->isOnboardingStepCompleted(OnboardingStep::FIRST_OFFER)) {
+            $organization->markOnboardingStepCompleted(OnboardingStep::FIRST_OFFER);
+        }
 
         return redirect()
             ->route('offers.edit', $offer)

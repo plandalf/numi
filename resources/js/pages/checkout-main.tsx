@@ -299,7 +299,7 @@ export function GlobalStateProvider({ offer, offerItems, session: defaultSession
         return fieldStates[field]?.value;
       });
 
-      let params: Record<string, any> = {
+      const params: Record<string, any> = {
         action,
         metadata: {
           fields: fieldStates,

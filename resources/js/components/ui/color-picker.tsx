@@ -16,7 +16,7 @@ export interface ColorPickerProps {
 
 // Utility: parse hex to {rgb, alpha}
 export function parseHexAlpha(hex: string) {
-  let rgb = hex.slice(0, 7);
+  const rgb = hex.slice(0, 7);
   let alpha = 255;
   if (hex.length === 9) {
     alpha = parseInt(hex.slice(7, 9), 16);

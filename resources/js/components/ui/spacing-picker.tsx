@@ -139,7 +139,7 @@ export const SpacingPicker = ({
     }).filter(Boolean);
 
     // For single format, only keep the first valid value
-    let finalValue = format === 'single' && formattedValues.length > 0
+    const finalValue = format === 'single' && formattedValues.length > 0
       ? formattedValues[0]
       : formattedValues.join(' ');
 
