@@ -38,6 +38,11 @@ export interface User {
     email: string;
     current_organization?: Organization;
     organizations: Organization[];
+    onboarding_info?: {
+        has_seen_products_tutorial: boolean;
+        has_seen_orders_tutorial: boolean;
+        has_seen_integrations_tutorial: boolean;
+    };
 }
 
 export interface HostedPage {

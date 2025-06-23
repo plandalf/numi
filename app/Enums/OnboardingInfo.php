@@ -10,6 +10,8 @@ enum OnboardingInfo: int
     case ANALYTICS_TOUR = 8;       // 2^3 = 8 - Analytics and reporting tour
     case BILLING_INTRO = 16;       // 2^4 = 16 - Billing and subscription intro
     case PRODUCTS_TUTORIAL = 32;   // 2^5 = 32 - Products tutorial
+    case ORDERS_TUTORIAL = 64;     // 2^6 = 64 - Orders tutorial
+    case INTEGRATIONS_TUTORIAL = 128; // 2^7 = 128 - Integrations tutorial
 
     /**
      * Get all informational onboarding items as an array
@@ -23,6 +25,8 @@ enum OnboardingInfo: int
             'analytics_tour' => self::ANALYTICS_TOUR,
             'billing_intro' => self::BILLING_INTRO,
             'products_tutorial' => self::PRODUCTS_TUTORIAL,
+            'orders_tutorial' => self::ORDERS_TUTORIAL,
+            'integrations_tutorial' => self::INTEGRATIONS_TUTORIAL,
         ];
     }
 
@@ -38,6 +42,8 @@ enum OnboardingInfo: int
             self::ANALYTICS_TOUR => 'Analytics Tour',
             self::BILLING_INTRO => 'Billing Introduction',
             self::PRODUCTS_TUTORIAL => 'Products Tutorial',
+            self::ORDERS_TUTORIAL => 'Orders Tutorial',
+            self::INTEGRATIONS_TUTORIAL => 'Integrations Tutorial',
         };
     }
 
@@ -53,6 +59,8 @@ enum OnboardingInfo: int
             self::ANALYTICS_TOUR => 'Understand your performance metrics and reports',
             self::BILLING_INTRO => 'Learn about pricing, billing, and subscription management',
             self::PRODUCTS_TUTORIAL => 'Learn how to create and manage products',
+            self::ORDERS_TUTORIAL => 'Learn how to track and manage customer orders',
+            self::INTEGRATIONS_TUTORIAL => 'Learn how to connect payment processors and third-party services',
         };
     }
 
@@ -68,6 +76,8 @@ enum OnboardingInfo: int
             self::ANALYTICS_TOUR => 'analytics_tour',
             self::BILLING_INTRO => 'billing_intro',
             self::PRODUCTS_TUTORIAL => 'products_tutorial',
+            self::ORDERS_TUTORIAL => 'orders_tutorial',
+            self::INTEGRATIONS_TUTORIAL => 'integrations_tutorial',
         };
     }
 
@@ -83,6 +93,8 @@ enum OnboardingInfo: int
             'analytics_tour' => self::ANALYTICS_TOUR,
             'billing_intro' => self::BILLING_INTRO,
             'products_tutorial' => self::PRODUCTS_TUTORIAL,
+            'orders_tutorial' => self::ORDERS_TUTORIAL,
+            'integrations_tutorial' => self::INTEGRATIONS_TUTORIAL,
             default => null,
         };
     }

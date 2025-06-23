@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Enums\OnboardingInfo;
 use App\Http\Resources\OrganizationResource;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Http\Request;
@@ -51,6 +52,11 @@ class HandleInertiaRequests extends Middleware
                     'email' => $user->email,
                     'current_organization' => $user->currentOrganization ? new OrganizationResource($user->currentOrganization) : null,
                     'organizations' => OrganizationResource::collection($user->organizations),
+                    'onboarding_info' => [
+                        'has_seen_products_tutorial' => $user->hasSeenOnboardingInfo(OnboardingInfo::PRODUCTS_TUTORIAL),
+                        'has_seen_orders_tutorial' => $user->hasSeenOnboardingInfo(OnboardingInfo::ORDERS_TUTORIAL),
+                        'has_seen_integrations_tutorial' => $user->hasSeenOnboardingInfo(OnboardingInfo::INTEGRATIONS_TUTORIAL),
+                    ],
                 ] : null,
             ],
             'ziggy' => fn (): array => [

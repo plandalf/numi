@@ -86,6 +86,25 @@ const navGroups = [
 
 export function AppSidebar() {
     const { auth } = usePage().props as unknown as SharedData;
+    
+    // Hide notifications if user has seen the respective tutorials
+    const showProductsNotification = !auth.user?.onboarding_info?.has_seen_products_tutorial;
+    const showOrdersNotification = !auth.user?.onboarding_info?.has_seen_orders_tutorial;
+    const showIntegrationsNotification = !auth.user?.onboarding_info?.has_seen_integrations_tutorial;
+    console.log('info', auth.user?.onboarding_info);
+
+    // Update navGroups to conditionally show notifications
+    const dynamicNavGroups = navGroups.map(group => ({
+        ...group,
+        items: group.items.map(item => ({
+            ...item,
+            hasNotification: 
+                item.title === 'Products' ? showProductsNotification :
+                item.title === 'Orders' ? showOrdersNotification :
+                item.title === 'Integrations' ? showIntegrationsNotification :
+                item.hasNotification
+        }))
+    }));
 
     return (
         <Sidebar collapsible="icon" variant="sidebar">
@@ -95,7 +114,7 @@ export function AppSidebar() {
             
             <SidebarContent>
                 <NavMain 
-                groups={navGroups} 
+                groups={dynamicNavGroups} 
                 />
             </SidebarContent>
 

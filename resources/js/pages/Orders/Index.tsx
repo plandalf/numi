@@ -2,7 +2,7 @@ import { Link, Head, router } from '@inertiajs/react';
 import AppLayout from "@/layouts/app-layout";
 import cx from "classnames";
 import { formatDate, formatMoney } from '@/lib/utils';
-import { Search } from 'lucide-react';
+import { Search, ExternalLink, FileText } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { useDebounce } from '@/hooks/use-debounce';
 import { useEffect, useState } from 'react';
@@ -16,6 +16,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Pagination } from "@/components/pagination/Pagination";
+import { TutorialCard } from '@/components/onboarding/TutorialCard';
 
 type User = { id: number; name: string; email: string; };
 
@@ -76,9 +77,10 @@ interface OrdersIndexProps extends PageProps {
   filters: {
     search: string;
   };
+  showOrdersTutorial: boolean;
 }
 
-export default function Index({ auth, orders, filters }: OrdersIndexProps) {
+export default function Index({ auth, orders, filters, showOrdersTutorial }: OrdersIndexProps) {
   const [search, setSearch] = useState(filters.search || '');
   const debouncedSearch = useDebounce(search, 300);
 
@@ -115,6 +117,32 @@ export default function Index({ auth, orders, filters }: OrdersIndexProps) {
             />
           </div>
         </header>
+
+        {/* Orders Tutorial */}
+        <TutorialCard
+          title="Getting Started with Orders"
+          description="Orders are customer purchases that flow through your offers. Track payment status, view customer details, and manage fulfillment. <b>Monitor your revenue</b> and analyze purchasing patterns to optimize your business."
+          actions={[
+            {
+              label: 'View Analytics',
+              onClick: () => router.get('/analytics'),
+              icon: FileText
+            },
+            {
+              label: 'Learn More',
+              onClick: () => window.open('https://www.plandalf.dev/docs/orders', '_blank'),
+              variant: 'outline' as const,
+              icon: ExternalLink
+            }
+          ]}
+          onboardingKey="orders_tutorial"
+          show={showOrdersTutorial}
+          backgroundColor="bg-orange-50"
+          borderColor="border-orange-200"
+          textColor="text-amber-700 dark:text-amber-300"
+          accentColor="bg-orange-600"
+          accentHoverColor="hover:bg-orange-700"
+        />
 
         {!orders.data || orders.data.length === 0 ? (
           <div className="flex flex-col items-center justify-center bg-[#F7F9FF] rounded-md p-8">

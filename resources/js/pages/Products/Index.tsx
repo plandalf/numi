@@ -175,11 +175,11 @@ export default function Index({ auth, products, filters, integrations, prices, s
           ]}
           onboardingKey="products_tutorial"
           show={showProductsTutorial}
-          backgroundColor="bg-blue-50"
-          borderColor="border-blue-200"
-          textColor="text-blue-700 dark:text-blue-300"
-          accentColor="bg-blue-600"
-          accentHoverColor="hover:bg-blue-700"
+          backgroundColor="bg-orange-50"
+          borderColor="border-orange-200"
+          textColor="text-amber-700 dark:text-amber-300"
+          accentColor="bg-orange-600"
+          accentHoverColor="hover:bg-orange-700"
         />
 
         {products.data.length === 0 ? (

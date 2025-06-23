@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Enums\IntegrationType;
+use App\Enums\OnboardingInfo;
 use App\Models\Catalog\Product;
 use App\Models\Integration;
 use App\Models\Catalog\Price;
@@ -25,6 +26,7 @@ class IntegrationsController extends Controller
 
         return Inertia::render('integrations/index', [
             'integrations' => $integrations,
+            'showIntegrationsTutorial' => !$user->hasSeenOnboardingInfo(OnboardingInfo::INTEGRATIONS_TUTORIAL),
         ]);
     }
 

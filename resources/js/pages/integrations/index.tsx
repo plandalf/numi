@@ -1,8 +1,9 @@
 import AppLayout from '@/layouts/app-layout';
 import { Head, Link } from '@inertiajs/react';
 import { Button } from '@/components/ui/button';
-import { Plus, CheckCircle, XCircle } from 'lucide-react';
+import { Plus, ExternalLink, PlugZap } from 'lucide-react';
 import { PageProps } from '@/types';
+import { TutorialCard } from '@/components/onboarding/TutorialCard';
 
 interface Integration {
   id: number;
@@ -20,9 +21,10 @@ interface Integration {
 
 interface IntegrationsPageProps extends PageProps {
   integrations: Integration[];
+  showIntegrationsTutorial: boolean;
 }
 
-export default function Integrate({ integrations }: IntegrationsPageProps) {
+export default function Integrate({ integrations, showIntegrationsTutorial }: IntegrationsPageProps) {
   return (
     <AppLayout>
       <Head title="Integrations" />
@@ -40,6 +42,32 @@ export default function Integrate({ integrations }: IntegrationsPageProps) {
             </Link>
           </div>
         </header>
+
+        {/* Integrations Tutorial */}
+        <TutorialCard
+          title="Getting Started with Integrations"
+          description="Integrations connect your offers to payment processors like Stripe and other third-party services. <b>Automate payments</b>, sync product catalogs, and streamline your business operations with powerful integrations."
+          actions={[
+            {
+              label: 'Connect Stripe',
+              onClick: () => window.location.href = '/integrations/stripe/authorizations',
+              icon: PlugZap
+            },
+            {
+              label: 'Learn More',
+              onClick: () => window.open('https://www.plandalf.dev/docs/integrations', '_blank'),
+              variant: 'outline' as const,
+              icon: ExternalLink
+            }
+          ]}
+          onboardingKey="integrations_tutorial"
+          show={showIntegrationsTutorial}
+          backgroundColor="bg-orange-50"
+          borderColor="border-orange-200"
+          textColor="text-amber-700 dark:text-amber-300"
+          accentColor="bg-orange-600"
+          accentHoverColor="hover:bg-orange-700"
+        />
 
         {/* Integrations List */}
         <div className="bg-white dark:bg-gray-800 shadow overflow-hidden sm:rounded-md">

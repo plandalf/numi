@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\OnboardingInfo;
 use App\Http\Resources\OrderResource;
 use App\Models\Order\Order;
 use Illuminate\Support\Facades\Auth;
@@ -46,6 +47,7 @@ class OrdersController extends Controller
             'filters' => [
                 'search' => $search,
             ],
+            'showOrdersTutorial' => !Auth::user()->hasSeenOnboardingInfo(OnboardingInfo::ORDERS_TUTORIAL),
         ]);
     }
 
