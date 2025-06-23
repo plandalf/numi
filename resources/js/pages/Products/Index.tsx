@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { useDebounce } from '@/hooks/use-debounce';
 import { useEffect, useState } from 'react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { TutorialCard } from '@/components/onboarding/TutorialCard';
 
 type User = { id: number; name: string; email: string; /* ... other user fields */ };
 
@@ -32,7 +33,7 @@ interface PaginatedResponse<T> {
 
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Plus } from 'lucide-react';
+import { Plus, ExternalLink } from 'lucide-react';
 // Trying capitalized path based on linter error context
 import ProductForm from '@/components/Products/ProductForm';
 import { Integration } from '@/types/integration';
@@ -62,9 +63,10 @@ interface ProductsIndexProps extends PageProps {
   };
   integrations: Integration[];
   prices: PaginatedResponse<Price>;
+  showProductsTutorial: boolean;
 }
 
-export default function Index({ auth, products, filters, integrations, prices }: ProductsIndexProps) {
+export default function Index({ auth, products, filters, integrations, prices, showProductsTutorial }: ProductsIndexProps) {
   const [isProductFormOpen, setIsProductFormOpen] = useState(false);
   const [isAddNewProductDialogOpen, setIsAddNewProductDialogOpen] = useState(false);
   const [isAddExistingStripeProductDialogOpen, setIsAddExistingStripeProductDialogOpen] = useState(false);
@@ -154,7 +156,31 @@ export default function Index({ auth, products, filters, integrations, prices }:
           </div>
         </header>
 
-        <br/>
+        {/* Products Tutorial */}
+        <TutorialCard
+          title="Getting Started with Products"
+          description="Products are the foundation of your offers. Create digital or physical products, set pricing, and manage inventory. <b>Connect to Stripe</b> to import existing products or create new ones from scratch."
+          actions={[
+            {
+              label: 'Create Product',
+              onClick: () => setIsAddNewProductDialogOpen(true),
+              icon: Plus
+            },
+            {
+              label: 'Learn More',
+              onClick: () => window.open('https://www.plandalf.dev/docs/products', '_blank'),
+              variant: 'outline' as const,
+              icon: ExternalLink
+            }
+          ]}
+          onboardingKey="products_tutorial"
+          show={showProductsTutorial}
+          backgroundColor="bg-blue-50"
+          borderColor="border-blue-200"
+          textColor="text-blue-700 dark:text-blue-300"
+          accentColor="bg-blue-600"
+          accentHoverColor="hover:bg-blue-700"
+        />
 
         {products.data.length === 0 ? (
           <div className="flex flex-col items-center gap-8 sm:gap-12 py-6 sm:py-8 justify-center bg-[#F7F9FF] rounded-md p-4">

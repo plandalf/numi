@@ -77,7 +77,7 @@ class User extends Authenticatable
     public function switchToAvailableOrganization(): void
     {
         $availableOrganization = $this->organizations()->first();
-        $this->current_organization_id = $availableOrganization?->id ?? null;
+        $this->current_organization_id = $availableOrganization ? $availableOrganization->id : null;
         $this->save();
     }
 

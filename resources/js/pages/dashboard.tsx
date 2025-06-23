@@ -3,18 +3,20 @@ import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, router } from '@inertiajs/react';
 import { Button } from '@/components/ui/button';
-import { ExternalLink, Plus, X } from 'lucide-react';
+import { ExternalLink, Plus } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { TemplateSelectorModal } from '@/components/templates/template-selector-modal';
 import { useState } from 'react';
 import { Template } from '@/types/template';
 import { Offer } from '@/types/offer';
+import { TutorialCard } from '@/components/onboarding/TutorialCard';
 
 interface Props {
     offers: Offer[];
     globalTemplates: Template[];
     organizationTemplates: Template[];
     categories: string[];
+    showOffersTutorial: boolean;
 }
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -24,9 +26,8 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
-export default function Dashboard({ offers, globalTemplates, organizationTemplates, categories }: Props) {
+export default function Dashboard({ offers, globalTemplates, organizationTemplates, categories, showOffersTutorial }: Props) {
     const [isSelectorOpen, setIsSelectorOpen] = useState(false);
-    const [showOnboarding, setShowOnboarding] = useState(true);
 
     const templates = [...organizationTemplates, ...globalTemplates];
 
@@ -43,6 +44,20 @@ export default function Dashboard({ offers, globalTemplates, organizationTemplat
             setIsSelectorOpen(true);
         }
     };
+
+    const tutorialActions = [
+        {
+            label: 'Create Offer',
+            onClick: handleCreateOffer,
+            icon: Plus
+        },
+        {
+            label: 'Documentation',
+            onClick: () => window.open('https://www.plandalf.dev/docs/offers', '_blank'),
+            variant: 'outline' as const,
+            icon: ExternalLink
+        }
+    ];
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -69,65 +84,22 @@ export default function Dashboard({ offers, globalTemplates, organizationTemplat
               </div>
             </header>
 
-            {/* Onboarding Block */}
-            {showOnboarding && (
-              <div className="mb-8">
-                <Card className="!bg-orange-50 border-orange-200 relative">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="absolute right-2 top-2 h-8 w-8 p-0 bg-orange-600 text-white border-none hover:bg-orange-700"
-                      onClick={() => setShowOnboarding(false)}
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  
-                  <CardContent>
-                  <CardTitle className="pb-4">
-                        <h1 className="text-xl">Getting Started with Offers</h1>
-                      </CardTitle>
-                    <div className="grid md:grid-cols-5 gap-6">
-                      
-                      {/* Video Section */}
-                      <div className="md:col-span-2 space-y-3">
-                        <div className="relative aspect-video rounded-md bg-white dark:bg-gray-900 border-2 border-amber-200 dark:border-amber-800 overflow-hidden shadow-sm">
-                          <iframe
-                            className="absolute inset-0 w-full h-full"
-                            src="https://www.youtube.com/embed/dQw4w9WgXcQ"
-                            title="How to Create Your First Offer"
-                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                            allowFullScreen
-                          />
-                        </div>
-                        <p className="text-sm text-amber-700 dark:text-amber-300 text-center font-medium">
-                          Quick tutorial (3 minutes)
-                        </p>
-                      </div>
-
-                      {/* Info Section */}
-                      <div className="md:col-span-3 space-y-5 flex items-center">
-                        <div className="flex flex-col gap-4 pb-8">
-                          <p className="leading-normal text-lg ">
-                            Offers are <b>customizable checkout pages</b> that help convert visitors into customers. 
-                            Use templates, add your branding, and track performance to optimize conversions.
-                          </p>
-                        <div className="flex gap-3">
-                          <Button onClick={handleCreateOffer}>
-                            <Plus className="mr-2 h-4 w-4" />
-                            Create Offer
-                          </Button>
-                          <Button variant="outline" asChild>
-                            <a href="https://www.plandalf.dev/docs/offers" target="_blank">Documentation <ExternalLink className="ml-2 h-4 w-4" /></a>
-                          </Button>
-                        </div>
-                        </div>
-
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-            )}
+            {/* Onboarding Tutorial */}
+            <TutorialCard
+                title="Getting Started with Offers"
+                description="Offers are <b>customizable checkout pages</b> that help convert visitors into customers. Use templates, add your branding, and track performance to optimize conversions."
+                videoUrl="https://www.youtube.com/embed/dQw4w9WgXcQ"
+                videoTitle="How to Create Your First Offer"
+                videoDuration="Quick tutorial (3 minutes)"
+                actions={tutorialActions}
+                onboardingKey="offers_tutorial"
+                show={showOffersTutorial}
+                backgroundColor="bg-orange-50"
+                borderColor="border-orange-200"
+                textColor="text-amber-700 dark:text-amber-300"
+                accentColor="bg-orange-600"
+                accentHoverColor="hover:bg-orange-700"
+            />
 
             <div className="grid auto-rows-min gap-4 md:grid-cols-3">
               {offers.length > 0 ? (

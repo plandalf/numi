@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\OnboardingInfo;
 use App\Http\Resources\OfferResource;
 use App\Http\Resources\TemplateResource;
 use App\Services\TemplateService;
@@ -10,9 +11,11 @@ use Inertia\Inertia;
 
 class DashboardController extends Controller
 {
-    public function __construct(
-        protected TemplateService $templateService
-    ) {
+    protected TemplateService $templateService;
+
+    public function __construct(TemplateService $templateService)
+    {
+        $this->templateService = $templateService;
     }
 
     public function index(Request $request)
@@ -32,6 +35,7 @@ class DashboardController extends Controller
             'organizationTemplates' => TemplateResource::collection($organizationTemplates),
             'categories' => $categories,
             'offers' => OfferResource::collection($offers),
+            'showOffersTutorial' => !$request->user()->hasSeenOnboardingInfo(OnboardingInfo::OFFERS_TUTORIAL),
         ]);
     }
 }

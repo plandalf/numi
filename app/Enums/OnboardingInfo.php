@@ -9,6 +9,7 @@ enum OnboardingInfo: int
     case TEMPLATES_INTRO = 4;      // 2^2 = 4 - Introduction to templates
     case ANALYTICS_TOUR = 8;       // 2^3 = 8 - Analytics and reporting tour
     case BILLING_INTRO = 16;       // 2^4 = 16 - Billing and subscription intro
+    case PRODUCTS_TUTORIAL = 32;   // 2^5 = 32 - Products tutorial
 
     /**
      * Get all informational onboarding items as an array
@@ -21,6 +22,7 @@ enum OnboardingInfo: int
             'templates_intro' => self::TEMPLATES_INTRO,
             'analytics_tour' => self::ANALYTICS_TOUR,
             'billing_intro' => self::BILLING_INTRO,
+            'products_tutorial' => self::PRODUCTS_TUTORIAL,
         ];
     }
 
@@ -35,6 +37,7 @@ enum OnboardingInfo: int
             self::TEMPLATES_INTRO => 'Templates Introduction', 
             self::ANALYTICS_TOUR => 'Analytics Tour',
             self::BILLING_INTRO => 'Billing Introduction',
+            self::PRODUCTS_TUTORIAL => 'Products Tutorial',
         };
     }
 
@@ -49,6 +52,7 @@ enum OnboardingInfo: int
             self::TEMPLATES_INTRO => 'Discover how to use and customize templates',
             self::ANALYTICS_TOUR => 'Understand your performance metrics and reports',
             self::BILLING_INTRO => 'Learn about pricing, billing, and subscription management',
+            self::PRODUCTS_TUTORIAL => 'Learn how to create and manage products',
         };
     }
 
@@ -63,6 +67,7 @@ enum OnboardingInfo: int
             self::TEMPLATES_INTRO => 'templates_intro',
             self::ANALYTICS_TOUR => 'analytics_tour',
             self::BILLING_INTRO => 'billing_intro',
+            self::PRODUCTS_TUTORIAL => 'products_tutorial',
         };
     }
 
@@ -77,6 +82,7 @@ enum OnboardingInfo: int
             'templates_intro' => self::TEMPLATES_INTRO,
             'analytics_tour' => self::ANALYTICS_TOUR,
             'billing_intro' => self::BILLING_INTRO,
+            'products_tutorial' => self::PRODUCTS_TUTORIAL,
             default => null,
         };
     }

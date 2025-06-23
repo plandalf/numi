@@ -26,6 +26,7 @@ use App\Http\Controllers\OrdersController;
 use App\Http\Controllers\FeedbackController;
 use App\Http\Controllers\OfferItemPriceController;
 use App\Http\Controllers\OnboardingController;
+use App\Http\Controllers\OnboardingInfoController;
 
 Route::redirect('/', '/dashboard')->name('home');
 
