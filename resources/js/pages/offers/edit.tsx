@@ -15,6 +15,14 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { getAllLayouts } from '@/config/layouts';
 import { useState, useRef, useMemo } from 'react';
 import { cn } from '@/lib/utils';
 import { MoreVertical, ArrowRightToLine, FileText, CheckSquare, Plus } from 'lucide-react';
@@ -564,7 +572,7 @@ function EditApp({ publishableKey }: { publishableKey: string | undefined }) {
 
         // After removing, the blocks in the target section (if same as fromSection) might have shifted.
         // Re-evaluate target section blocks from the intermediate newEditorData.
-        const targetSectionBlocksAfterRemoval = newEditorData.view.pages[selectedPage].view[targetSectionId]?.blocks || [];
+        const targetSectionBlocksAfterRemoval = newEditorData.view.pages[selectedPage]?.view[targetSectionId]?.blocks || [];
         if (adjustedTargetBlockIndex > targetSectionBlocksAfterRemoval.length) {
           adjustedTargetBlockIndex = targetSectionBlocksAfterRemoval.length;
         }
@@ -640,7 +648,7 @@ function EditApp({ publishableKey }: { publishableKey: string | undefined }) {
       <PageTypeDialog />
 
       {/* <div className="text-xs absolute bottom-0 w-[500px] right-0 border-t border-border bg-white h-full overflow-scroll">
-        <pre>{JSON.stringify(data.view.pages[selectedPage], null, 2)}</pre>
+        <pre>{JSON.stringify(data.view.pages[selectedPage] || {}, null, 2)}</pre>
       </div> */}
     </AppOfferLayout>
   );
@@ -699,10 +707,19 @@ function MainContent() {
           ) : isPreviewMode ? (
             <PageIframePreview />
           ) : (
-            <PagePreview
-              page={data.view.pages[selectedPage]}
-              onUpdatePage={handlePageUpdate}
-            />
+            data.view.pages[selectedPage] ? (
+              <PagePreview
+                page={data.view.pages[selectedPage]}
+                onUpdatePage={handlePageUpdate}
+              />
+            ) : (
+              <div className="flex items-center justify-center h-full">
+                <div className="text-center">
+                  <p className="text-muted-foreground">Page not found</p>
+                  <p className="text-sm text-muted-foreground">The selected page may have been deleted</p>
+                </div>
+              </div>
+            )
           )}
         </div>
       </div>
@@ -760,7 +777,8 @@ function Toolbar() {
               <Plus className="w-4 h-4" />
               Add Page
             </button>
-            {getOrderedPages(data.view).map(([pageId, page]) => (
+
+            {getOrderedPages(data.view).filter(([pageId]) => data.view.pages[pageId]).map(([pageId, page]) => (
               <div
                 key={pageId}
                 className={cn(
@@ -834,20 +852,12 @@ function Toolbar() {
           </div>
 
           <div className="flex items-center gap-4">
-            {/*<div className="flex items-center gap-2">*/}
-            {/*  <span className="text-sm text-muted-foreground">Layout:</span>*/}
-            {/*  <span className="text-sm font-medium">{data.view.pages[selectedPage].layout.sm}</span>*/}
-            {/*</div>*/}
-
-            {data.view.pages[selectedPage].next_page?.default_next_page && (
+            {data.view.pages[selectedPage]?.next_page?.default_next_page && (
               <div className="flex items-center gap-2">
                 <span className="text-sm text-muted-foreground">Next:</span>
-                <span className="text-sm font-medium">{data.view.pages[data.view.pages[selectedPage].next_page.default_next_page]?.name}</span>
+                <span className="text-sm font-medium">{data.view.pages[data.view.pages[selectedPage]?.next_page?.default_next_page]?.name}</span>
               </div>
             )}
-            {/*  if none, we need to configure one!*/}
-            {/*  if its ending, we need to configure that! */}
-
           </div>
           <button
             onClick={() => setShowPageLogic(true)}
@@ -906,16 +916,34 @@ function PageTypeDialog() {
     data
   } = useEditor();
 
+  const [selectedType, setSelectedType] = useState<PageType | null>(null);
+  const [selectedLayout, setSelectedLayout] = useState<string>('promo');
+  const [pageName, setPageName] = useState<string>('');
+
   const isEditing = Boolean(editingPageId);
   const currentPage = editingPageId ? data.view.pages[editingPageId] : null;
 
-  const handleTypeSelection = (type: PageType) => {
+  const availableLayouts = getAllLayouts();
+
+  const handleSubmit = () => {
+    if (!selectedType) return;
+    
     if (isEditing && editingPageId) {
-      handlePageTypeChange(editingPageId, type);
+      handlePageTypeChange(editingPageId, selectedType);
     } else {
-      handleAddPage(type);
+      handleAddPage(selectedType, selectedLayout, pageName);
     }
+    setShowPageTypeDialog(false);
   };
+
+  // Reset state when dialog opens/closes
+  React.useEffect(() => {
+    if (showPageTypeDialog) {
+      setSelectedType(currentPage?.type || null);
+      setSelectedLayout('promo');
+      setPageName(currentPage?.name || '');
+    }
+  }, [showPageTypeDialog, currentPage?.type, currentPage?.name]);
 
   return (
     <Dialog open={showPageTypeDialog} onOpenChange={setShowPageTypeDialog}>
@@ -925,51 +953,111 @@ function PageTypeDialog() {
           <DialogDescription>
             {isEditing
               ? 'Select a new type for this page'
-              : 'Choose the type of page you want to add'
+              : 'Choose the type of page you want to add and select a layout'
             }
           </DialogDescription>
         </DialogHeader>
-        <div className="grid grid-cols-4 gap-4 py-4">
-          <button
-            onClick={() => handleTypeSelection('entry')}
-            className={cn(
-              "flex flex-col items-center gap-2 p-4 rounded-lg border border-border hover:bg-secondary/50",
-              currentPage?.type === 'entry' && "bg-secondary"
-            )}
-          >
-            <ArrowRightToLine className="w-6 h-6" />
-            <span className="text-sm font-medium">Entry Page</span>
-          </button>
-          <button
-            onClick={() => handleTypeSelection('page')}
-            className={cn(
-              "flex flex-col items-center gap-2 p-4 rounded-lg border border-border hover:bg-secondary/50",
-              currentPage?.type === 'page' && "bg-secondary"
-            )}
-          >
-            <FileText className="w-6 h-6" />
-            <span className="text-sm font-medium">Content Page</span>
-          </button>
-          <button
-            onClick={() => handleTypeSelection('payment')}
-            className={cn(
-              "flex flex-col items-center gap-2 p-4 rounded-lg border border-border hover:bg-secondary/50",
-              currentPage?.type === 'payment' && "bg-secondary"
-            )}
-          >
-            <CreditCard className="w-6 h-6" />
-            <span className="text-sm font-medium">Payment Page</span>
-          </button>
-          <button
-            onClick={() => handleTypeSelection('ending')}
-            className={cn(
-              "flex flex-col items-center gap-2 p-4 rounded-lg border border-border hover:bg-secondary/50",
-              currentPage?.type === 'ending' && "bg-secondary"
-            )}
-          >
-            <CheckSquare className="w-6 h-6" />
-            <span className="text-sm font-medium">Ending Page</span>
-          </button>
+        <div className="space-y-6 py-4">
+          <div>
+            <label className="text-sm font-medium mb-3 block">Page Type</label>
+            <div className="grid grid-cols-4 gap-4">
+              <button
+                onClick={() => setSelectedType('entry')}
+                className={cn(
+                  "flex flex-col items-center gap-2 p-4 rounded-lg border border-border hover:bg-secondary/50",
+                  selectedType === 'entry' && "bg-secondary border-primary"
+                )}
+              >
+                <ArrowRightToLine className="w-6 h-6" />
+                <span className="text-sm font-medium">Entry Page</span>
+              </button>
+              <button
+                onClick={() => setSelectedType('page')}
+                className={cn(
+                  "flex flex-col items-center gap-2 p-4 rounded-lg border border-border hover:bg-secondary/50",
+                  selectedType === 'page' && "bg-secondary border-primary"
+                )}
+              >
+                <FileText className="w-6 h-6" />
+                <span className="text-sm font-medium">Content Page</span>
+              </button>
+              <button
+                onClick={() => setSelectedType('payment')}
+                className={cn(
+                  "flex flex-col items-center gap-2 p-4 rounded-lg border border-border hover:bg-secondary/50",
+                  selectedType === 'payment' && "bg-secondary border-primary"
+                )}
+              >
+                <CreditCard className="w-6 h-6" />
+                <span className="text-sm font-medium">Payment Page</span>
+              </button>
+              <button
+                onClick={() => setSelectedType('ending')}
+                className={cn(
+                  "flex flex-col items-center gap-2 p-4 rounded-lg border border-border hover:bg-secondary/50",
+                  selectedType === 'ending' && "bg-secondary border-primary"
+                )}
+              >
+                <CheckSquare className="w-6 h-6" />
+                <span className="text-sm font-medium">Ending Page</span>
+              </button>
+            </div>
+          </div>
+
+          {!isEditing && (
+            <>
+              <div>
+                <label className="text-sm font-medium mb-3 block">Page Name</label>
+                <Input
+                  value={pageName}
+                  onChange={(e) => setPageName(e.target.value)}
+                  placeholder="Enter page name..."
+                  className="w-full"
+                />
+              </div>
+              
+              <div>
+                <label className="text-sm font-medium mb-3 block">Layout</label>
+                <Select value={selectedLayout} onValueChange={setSelectedLayout}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select a layout" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableLayouts.map((layout) => {
+                      const IconComponent = layout.icon;
+                      return (
+                        <SelectItem key={layout.id} value={layout.id}>
+                          <div className="flex items-center gap-2">
+                            <IconComponent className="w-4 h-4" />
+                            <div>
+                              <div className="font-medium">{layout.name}</div>
+                              <div className="text-xs text-muted-foreground">{layout.description}</div>
+                            </div>
+                          </div>
+                        </SelectItem>
+                      );
+                    })}
+                  </SelectContent>
+                </Select>
+              </div>
+            </>
+          )}
+
+          <div className="flex justify-end gap-3">
+            <button
+              onClick={() => setShowPageTypeDialog(false)}
+              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleSubmit}
+              disabled={!selectedType}
+              className="px-4 py-2 text-sm font-medium text-white bg-primary rounded-md hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isEditing ? 'Update Page' : 'Create Page'}
+            </button>
+          </div>
         </div>
       </DialogContent>
     </Dialog>

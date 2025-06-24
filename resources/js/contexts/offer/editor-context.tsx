@@ -96,7 +96,7 @@ interface EditorContextType {
   handlePageAction: (pageId: string, action: 'rename' | 'duplicate' | 'changeType' | 'delete') => void;
   handlePageUpdate: (updatedPage: Page) => void;
   getOrderedPages: (view: EditFormData['view']) => [string, Page][];
-  handleAddPage: (type: PageType) => void;
+  handleAddPage: (type: PageType, layout?: string, name?: string) => void;
   handlePageTypeChange: (pageId: string, type: PageType) => void;
   offer: Offer;
   updateBlock: (block: Block) => void;
@@ -319,8 +319,38 @@ export function EditorProvider({ offer, organizationThemes, organizationTemplate
         setShowPageTypeDialog(true);
         break;
       case 'delete':
+        // CRITICAL: Select a different page BEFORE deleting if we're deleting the active page
+        if (selectedPage === pageId) {
+          const remainingPageIds = Object.keys(data.view.pages).filter(id => id !== pageId);
+          if (remainingPageIds.length > 0) {
+            // Find the best page to select
+            const orderedPages = getOrderedPages(data.view);
+            const currentPageIndex = orderedPages.findIndex(([id]) => id === pageId);
+            
+            let newSelectedPageId: string;
+            if (currentPageIndex > 0) {
+              // Select the previous page in the ordered list
+              newSelectedPageId = orderedPages[currentPageIndex - 1][0];
+            } else if (currentPageIndex < orderedPages.length - 1) {
+              // If this is the first page, select the next one
+              newSelectedPageId = orderedPages[currentPageIndex + 1][0];
+            } else {
+              // Fallback to first remaining page
+              const firstPageId = data.view.first_page;
+              newSelectedPageId = (firstPageId && firstPageId !== pageId)
+                ? firstPageId
+                : remainingPageIds[0];
+            }
+            
+            console.log(`Switching from page "${pageId}" to page "${newSelectedPageId}" before deletion`);
+            setSelectedPage(newSelectedPageId);
+          }
+        }
+
         const pagesToUpdate = { ...data.view.pages };
         delete pagesToUpdate[pageId];
+        
+        // Remove connections pointing to the deleted page
         Object.keys(pagesToUpdate).forEach(pageKey => {
           const page = pagesToUpdate[pageKey];
           if (page.next_page.default_next_page === pageId) {
@@ -358,19 +388,24 @@ export function EditorProvider({ offer, organizationThemes, organizationTemplate
           }));
           setSelectedPage(defaultView.first_page);
         } else {
-          const sortedPages = sortPages(pagesToUpdate);
-          setData(update(data, { view: { pages: { $set: sortedPages } }}));
-          if (selectedPage === pageId) {
-            const remainingPageIds = Object.keys(sortedPages);
-            if (remainingPageIds.length > 0) {
-              const firstPageId = data.view.first_page;
-              const newSelectedPageId = (firstPageId && sortedPages[firstPageId])
-                ? firstPageId
-                : remainingPageIds[0];
-              setSelectedPage(newSelectedPageId);
-            }
+          // Update first_page if needed
+          let newFirstPage = data.view.first_page;
+          if (data.view.first_page === pageId) {
+            const remainingPageIds = Object.keys(pagesToUpdate);
+            // Try to find another 'entry' page, otherwise just pick the first available
+            const newFirstEntry = remainingPageIds.find(id => pagesToUpdate[id].type === 'entry');
+            newFirstPage = newFirstEntry || remainingPageIds[0];
           }
+          
+          const sortedPages = sortPages(pagesToUpdate);
+          setData(update(data, { 
+            view: { 
+              pages: { $set: sortedPages },
+              first_page: { $set: newFirstPage }
+            }
+          }));
         }
+        
         setTimeout(() => { handleSave(); }, 0);
         break;
     }
@@ -437,12 +472,14 @@ export function EditorProvider({ offer, organizationThemes, organizationTemplate
     return orderedPages;
   };
 
-  const handleAddPage = (type: PageType) => {
+  const handleAddPage = (type: PageType, layout?: string, name?: string) => {
     const id = `page_${Math.random().toString(36).substr(2, 9)}`;
 
+    const defaultName = name || (type === 'entry' ? 'Entry Page' : type === 'ending' ? 'Ending Page' : 'New Page');
+
     const newPage = {
-      ...generateDefaultPage({ id, type, position: { x: 0, y: 0 }, pageNumber: Object.keys(data.view.pages).length + 1 }),
-      name: type === 'entry' ? 'Entry Page' : type === 'ending' ? 'Ending Page' : 'New Page',
+      ...generateDefaultPage({ id, type, position: { x: 0, y: 0 }, pageNumber: Object.keys(data.view.pages).length + 1, layout }),
+      name: defaultName,
     };
 
     const updatedPages = sortPages({

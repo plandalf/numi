@@ -43,72 +43,316 @@ const NODE_HEIGHT = 150;
 const GRID_SPACING = 20;
 
 export function generateDefaultPage({
-    id, type, position, pageNumber
+    id, type, position, pageNumber, layout
 }: {
     id?: string;
     type: PageType;
     position: XYPosition;
     pageNumber: number;
+    layout?: string;
 }): Page {
     if (!id) {
         id = `page_${Math.random().toString(36).substr(2, 9)}`;
     }
 
-    console.log('Creating new page:', { id, type, position, pageNumber });
+    console.log('Creating new page:', { id, type, position, pageNumber, layout });
 
-    // todo: abstract this out to layout generator
-  // with defaults!
-  // templates should contain their own layouts!
+    // Generate view structure based on layout
+    let viewStructure;
+    
+    switch (layout) {
+      case 'left-sidebar':
+        viewStructure = {
+          // Container sections
+          'left-sidebar-grid': {
+            asContainer: true,
+            appearance: { backgroundColor: 'transparent' },
+            blocks: []
+          },
+          'sidebar-box': {
+            asContainer: true,
+            appearance: { backgroundColor: '#f9fafb', borderRight: '1px solid #e5e7eb' },
+            blocks: []
+          },
+          'sidebar-flex': {
+            asContainer: true,
+            appearance: { backgroundColor: 'transparent' },
+            blocks: []
+          },
+          'main-content-box': {
+            asContainer: true,
+            appearance: { backgroundColor: 'transparent' },
+            blocks: []
+          },
+          'main-content-flex': {
+            asContainer: true,
+            appearance: { backgroundColor: 'transparent' },
+            blocks: []
+          },
+          'main-header': {
+            asContainer: true,
+            appearance: { backgroundColor: 'transparent' },
+            blocks: []
+          },
+          // Content sections
+          title: {
+            appearance: { padding: '24px' },
+            blocks: []
+          },
+          content: {
+            appearance: { padding: '24px', spacing: '4px', flexGrow: '1' },
+            blocks: []
+          },
+          action: {
+            appearance: { padding: '24px', flexShrink: '0' },
+            blocks: []
+          },
+          promo_header: {
+            appearance: { padding: '24px' },
+            blocks: []
+          },
+          promo_content: {
+            appearance: { padding: '24px', spacing: '4px', flexGrow: '1' },
+            blocks: []
+          },
+          promo_action: {
+            appearance: { padding: '24px', flexShrink: '0' },
+            blocks: []
+          },
+        };
+        break;
+      case 'right-sidebar':
+        viewStructure = {
+          // Container sections
+          'right-sidebar-grid': {
+            asContainer: true,
+            appearance: { backgroundColor: 'transparent' },
+            blocks: []
+          },
+          'sidebar-box': {
+            asContainer: true,
+            appearance: { backgroundColor: '#f9fafb', borderLeft: '1px solid #e5e7eb' },
+            blocks: []
+          },
+          'sidebar-flex': {
+            asContainer: true,
+            appearance: { backgroundColor: 'transparent' },
+            blocks: []
+          },
+          'main-content-box': {
+            asContainer: true,
+            appearance: { backgroundColor: 'transparent' },
+            blocks: []
+          },
+          'main-content-flex': {
+            asContainer: true,
+            appearance: { backgroundColor: 'transparent' },
+            blocks: []
+          },
+          'main-header': {
+            asContainer: true,
+            appearance: { backgroundColor: 'transparent' },
+            blocks: []
+          },
+          // Content sections
+          title: {
+            appearance: { padding: '24px' },
+            blocks: []
+          },
+          content: {
+            appearance: { padding: '24px', spacing: '4px', flexGrow: '1' },
+            blocks: []
+          },
+          action: {
+            appearance: { padding: '24px', flexShrink: '0' },
+            blocks: []
+          },
+          promo_header: {
+            appearance: { padding: '24px' },
+            blocks: []
+          },
+          promo_content: {
+            appearance: { padding: '24px', spacing: '4px', flexGrow: '1' },
+            blocks: []
+          },
+          promo_action: {
+            appearance: { padding: '24px', flexShrink: '0' },
+            blocks: []
+          },
+        };
+        break;
 
-    // sections: [], one is asContainer?
+      case 'promo':
+        viewStructure = {
+          // Container sections
+          '1x2-grid': {
+            asContainer: true,
+            appearance: { backgroundColor: 'transparent' },
+            blocks: []
+          },
+          'core-box': {
+            asContainer: true,
+            appearance: { backgroundColor: 'transparent' },
+            blocks: []
+          },
+          'core-flex': {
+            asContainer: true,
+            appearance: { backgroundColor: 'transparent' },
+            blocks: []
+          },
+          'header': {
+            asContainer: true,
+            appearance: { backgroundColor: 'transparent' },
+            blocks: []
+          },
+          'promo_box': {
+            asContainer: true,
+            appearance: { backgroundColor: '#EFF6FF' },
+            blocks: []
+          },
+          // Content sections
+          title: {
+            appearance: { padding: '24px' },
+            blocks: []
+          },
+          content: {
+            appearance: { padding: '24px', spacing: '4px', flexGrow: '1' },
+            blocks: []
+          },
+          action: {
+            appearance: { padding: '24px', flexShrink: '0' },
+            blocks: []
+          },
+          promo_header: {
+            appearance: { padding: '24px' },
+            blocks: []
+          },
+          promo_content: {
+            appearance: { padding: '24px' },
+            blocks: []
+          },
+        };
+        break;
+
+      case 'hamburger-split':
+        viewStructure = {
+          // Container sections
+          'hamburger-container': {
+            asContainer: true,
+            appearance: { backgroundColor: 'transparent' },
+            blocks: []
+          },
+          'middle-grid': {
+            asContainer: true,
+            appearance: { backgroundColor: 'transparent' },
+            blocks: []
+          },
+          'left-content': {
+            asContainer: true,
+            appearance: { backgroundColor: 'transparent', borderRight: '1px solid #e5e7eb' },
+            blocks: []
+          },
+          'right-content': {
+            asContainer: true,
+            appearance: { backgroundColor: 'transparent' },
+            blocks: []
+          },
+          // Content sections
+          header: {
+            appearance: { padding: '16px' },
+            blocks: []
+          },
+          title: {
+            appearance: { padding: '24px' },
+            blocks: []
+          },
+          content: {
+            appearance: { padding: '24px', spacing: '4px', flexGrow: '1' },
+            blocks: []
+          },
+          promo_content: {
+            appearance: { padding: '24px', spacing: '4px', flexGrow: '1' },
+            blocks: []
+          },
+          footer: {
+            appearance: { padding: '16px' },
+            blocks: []
+          },
+          action: {
+            appearance: { padding: '16px', flexShrink: '0' },
+            blocks: []
+          },
+        };
+        break;
+        
+      case 'full-width':
+        viewStructure = {
+          // Container sections
+          'full-width-container': {
+            asContainer: true,
+            appearance: { backgroundColor: 'transparent' },
+            blocks: []
+          },
+          // Content sections
+          header: {
+            appearance: { padding: '32px' },
+            blocks: []
+          },
+          content: {
+            appearance: { padding: '24px', spacing: '8px', flexGrow: '1' },
+            blocks: []
+          },
+          footer: {
+            appearance: { padding: '24px' },
+            blocks: []
+          },
+        };
+        break;
+        
+      default: // fallback to promo
+        viewStructure = {
+          title: {
+            appearance: { padding: '24px' },
+            blocks: []
+          },
+          content: {
+            appearance: { padding: '24px', spacing: '4px' },
+            blocks: []
+          },
+          action: {
+            appearance: { padding: '24px' },
+            blocks: []
+          },
+          promo_box: {
+            asContainer: true,
+            style: { backgroundColor: '#EFF6FF' },
+            blocks: []
+          },
+          promo_header: {
+            appearance: { padding: '24px' },
+            blocks: []
+          },
+          promo_content: {
+            appearance: { padding: '24px' },
+            blocks: []
+          },
+        };
+        break;
+    }
 
     return {
       id,
       name: `Page ${pageNumber}`,
       type,
       position,
-      view: {
-        title: {
-          appearance: {
-            padding: '24px'
-          },
-          blocks: []
-        },
-        content: {
-          appearance: {
-            padding: '24px',
-            spacing: '4px'
-          },
-          blocks: []
-        },
-        action: {
-          appearance: {
-            padding: '24px',
-          },
-          blocks: []
-        },
-        promo_box: {
-          asContainer: true,
-          style: {
-              backgroundColor: '#EFF6FF'
-          },
-          blocks: []
-        },
-        promo_header: {
-          appearance: {
-            padding: '24px',
-          },
-          blocks: []
-        },
-        promo_content: {
-          appearance: {
-            padding: '24px',
-          },
-          blocks: []
-        },
-      },
+      view: viewStructure,
       layout: {
-        sm: 'split-checkout@v1'
+        sm: layout === 'promo' ? 'promo@v1' : 
+            layout === 'left-sidebar' ? 'left-sidebar@v1' :
+            layout === 'right-sidebar' ? 'right-sidebar@v1' :
+            layout === 'hamburger-split' ? 'hamburger-split@v1' :
+            layout === 'full-width' ? 'full-width@v1' :
+            'promo@v1' // default
       },
       provides: [],
       next_page: {
