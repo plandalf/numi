@@ -128,7 +128,7 @@ export default function Index({ auth, products, filters, integrations, prices, s
       <Head title="Products" />
 
       <div className="container max-w-[100vw] mx-auto py-4 sm:py-8 px-4 sm:px-6 lg:px-8">
-        <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
           <div>
             <h1 className="text-xl sm:text-2xl font-semibold text-gray-900 dark:text-white">
               Your products
@@ -183,7 +183,7 @@ export default function Index({ auth, products, filters, integrations, prices, s
         />
 
         {products.data.length === 0 ? (
-          <div className="flex flex-col items-center gap-8 sm:gap-12 py-6 sm:py-8 justify-center bg-[#F7F9FF] rounded-md p-4">
+          <div className="flex flex-col items-center gap-8 sm:gap-12 mb-8 justify-center bg-[#F7F9FF] rounded-md p-4">
             <div className="text-center">
               <h3 className="text-xl sm:text-2xl font-semibold text-gray-900 dark:text-white">You don't have any products yet</h3>
               <p className="mt-1 text-sm text-muted-foreground">
