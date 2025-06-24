@@ -90,17 +90,6 @@ export default function Login({ status, canResetPassword, organization }: LoginP
                         <InputError message={errors.password} />
                     </div>
 
-                    {/*<div className="flex items-center space-x-3">*/}
-                    {/*    <Checkbox*/}
-                    {/*        id="remember"*/}
-                    {/*        name="remember"*/}
-                    {/*        checked={data.remember}*/}
-                    {/*        onClick={() => setData('remember', !data.remember)}*/}
-                    {/*        tabIndex={3}*/}
-                    {/*    />*/}
-                    {/*    <Label htmlFor="remember">Remember me</Label>*/}
-                    {/*</div>*/}
-
                     <Button type="submit" className="mt-4 w-full" tabIndex={4} disabled={processing}>
                         {processing && <LoaderCircle className="h-4 w-4 animate-spin" />}
                         {organization ? 'Log in and join team' : 'Log in'}
@@ -109,7 +98,7 @@ export default function Login({ status, canResetPassword, organization }: LoginP
 
                 <div className="text-muted-foreground text-center text-sm">
                     Don't have an account?{' '}
-                    <TextLink href={route('register')} tabIndex={5}>
+                    <TextLink href={route('signup')} tabIndex={5}>
                         Sign up
                     </TextLink>
                 </div>

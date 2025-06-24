@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\Route;
 Route::middleware('guest')->group(function () {
     Route::get('/signup', function () {
         return \Inertia\Inertia::render('auth/signup');
-    });
+    })->name('signup');
 
     Route::get('register', [RegisteredUserController::class, 'create'])
         ->name('register');

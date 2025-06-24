@@ -150,74 +150,7 @@ export default function Dashboard({ offers, globalTemplates, organizationTemplat
               )}
             </div>
 
-              <div className="grid auto-rows-min gap-4 md:grid-cols-3">
-                {offers.length > 0 ? (
-                  offers.map((offer) => (
-                    <Card
-                      key={offer.id}
-                      className="cursor-pointer !bg-[#d1dafb1a] !hover:bg-[#d1dafb40] hover:scale-101 transition-all duration-200 active:scale-100"
-                      onClick={() => router.get(route('offers.edit', offer.id))}
-                    >
-                      <CardHeader className="flex flex-row justify-between items-center">
-                        <div className="flex flex-col items-start">
-                          <CardTitle>{offer.name || 'Untitled Offer'}</CardTitle>
-                          <CardDescription>
-                            Created {new Date(offer.created_at).toLocaleDateString()}
-                          </CardDescription>
-                        </div>
-                        <Kebab items={[{
-                          label: (
-                            <div className="flex flex-row gap-2 items-center">
-                              <ExternalLink className="h-4 w-4" />
-                              View
-                            </div>
-                          ),
-                          onClick: (e: React.MouseEvent<HTMLButtonElement>) => {
-                            e.stopPropagation();
-                            window.open(offer.public_url, '_blank', 'noopener,noreferrer');
-                          }
-                        }, {
-                          label: (
-                            <div className="flex flex-row gap-2 items-center">
-                              <Copy className="h-4 w-4" />
-                              Copy offer link
-                            </div>
-                          ),
-                          onClick: (e: React.MouseEvent<HTMLButtonElement>) => {
-                            e.stopPropagation();
-                            onCopyOfferLinkClick(offer)
-                          }
-                        },  {
-                          label: (
-                            <div className="flex flex-row gap-2 items-center">
-                              <CopyPlus className="h-4 w-4" />
-                              Duplicate
-                            </div>
-                          ),
-                          onClick: (e: React.MouseEvent<HTMLButtonElement>) => {
-                            e.stopPropagation();
-                            onDuplicateOfferClick(offer);
-                          }
-                        }]} />
-                      </CardHeader>
-                      <CardContent>
-                        {offer.screenshot && (
-                          <img src={offer.screenshot.url} alt="" />
-                        )}
-                        {!offer.screenshot && (
-                          <PlaceholderPattern
-                            className="h-32 w-full stroke-neutral-900/20 dark:stroke-neutral-100/20" />
-                        )}
-                      </CardContent>
-                    </Card>
-                  ))
-                ) : (
-                  <div
-                    className="col-span-3 flex flex-col items-center justify-center gap-4 rounded-xl border border-dashed p-8 text-center">
-                    <p className="text-muted-foreground">No offers yet. Create your first offer to get started!</p>
-                  </div>
-                )}
-              </div>
+
           </div>
 
           {/* Template Selector Modal */}
