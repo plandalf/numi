@@ -38,6 +38,11 @@ export interface User {
     email: string;
     current_organization?: Organization;
     organizations: Organization[];
+    onboarding_info?: {
+        has_seen_products_tutorial: boolean;
+        has_seen_orders_tutorial: boolean;
+        has_seen_integrations_tutorial: boolean;
+    };
 }
 
 export interface HostedPage {
@@ -52,14 +57,16 @@ export interface HostedPage {
         id: number;
         url: string;
     };
-    style: Record<string, any>;
-    appearance: Record<string, any>;
+    style: Record<string, unknown>;
+    appearance: Record<string, unknown>;
 }
 
 export interface NavItem {
     title: string;
     href: string;
+    route: string;
     icon: LucideIcon;
+    hasNotification?: boolean;
 }
 
 export interface BreadcrumbItem {
@@ -72,12 +79,14 @@ export interface SharedData {
         user: User;
     };
     modules: Record<Modules, boolean>;
+    onboarding: OnboardingData | null;
 }
 
 export interface PageProps {
     auth: {
         user: User;
     };
+    onboarding: OnboardingData | null;
 }
 
 export enum Modules {
@@ -88,4 +97,22 @@ export interface Font {
     name: string;
     weights: string[];
     css_font_family?: string
+}
+
+export interface OnboardingStep {
+    key: string;
+    label: string;
+    description: string;
+    completed: boolean;
+    value: number;
+}
+
+export interface OnboardingData {
+    steps: OnboardingStep[];
+    completion_percentage: number;
+    is_complete: boolean;
+    completed_steps: string[];
+    incomplete_steps: string[];
+    user_info_seen: string[];
+    user_info_unseen: string[];
 }

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\OnboardingStep;
 use App\Models\Store\Offer;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -35,6 +36,7 @@ class Organization extends Model
         'checkout_success_url',
         'checkout_cancel_url',
         'subdomain',
+        'onboarding_mask',
     ];
 
     protected $appends = [
@@ -155,5 +157,78 @@ class Organization extends Model
         $subdomain = $this->subdomain ?? self::DEFAULT_SUBDOMAIN;
 
         return Str::lower($subdomain . '.' . $baseDomain);
+    }
+
+    /**
+     * Check if a specific onboarding step is completed
+     */
+    public function isOnboardingStepCompleted(OnboardingStep $step): bool
+    {
+        return ($this->onboarding_mask & $step->value) === $step->value;
+    }
+
+    /**
+     * Mark an onboarding step as completed
+     */
+    public function markOnboardingStepCompleted(OnboardingStep $step): void
+    {
+        $this->onboarding_mask |= $step->value;
+        $this->save();
+    }
+
+    /**
+     * Mark an onboarding step as incomplete
+     */
+    public function markOnboardingStepIncomplete(OnboardingStep $step): void
+    {
+        $this->onboarding_mask &= ~$step->value;
+        $this->save();
+    }
+
+    /**
+     * Get all completed onboarding steps
+     */
+    public function getCompletedOnboardingSteps(): array
+    {
+        $completed = [];
+        foreach (OnboardingStep::cases() as $step) {
+            if ($this->isOnboardingStepCompleted($step)) {
+                $completed[] = $step->key();
+            }
+        }
+        return $completed;
+    }
+
+    /**
+     * Get all incomplete onboarding steps
+     */
+    public function getIncompleteOnboardingSteps(): array
+    {
+        $incomplete = [];
+        foreach (OnboardingStep::cases() as $step) {
+            if (!$this->isOnboardingStepCompleted($step)) {
+                $incomplete[] = $step->key();
+            }
+        }
+        return $incomplete;
+    }
+
+    /**
+     * Get onboarding completion percentage
+     */
+    public function getOnboardingCompletionPercentage(): float
+    {
+        $totalSteps = count(OnboardingStep::cases());
+        $completedSteps = count($this->getCompletedOnboardingSteps());
+        
+        return $totalSteps > 0 ? round(($completedSteps / $totalSteps) * 100, 2) : 0;
+    }
+
+    /**
+     * Check if all onboarding steps are completed
+     */
+    public function isOnboardingComplete(): bool
+    {
+        return count($this->getIncompleteOnboardingSteps()) === 0;
     }
 }

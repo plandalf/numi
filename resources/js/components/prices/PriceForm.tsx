@@ -363,7 +363,7 @@ export default function PriceForm({
     // Cursor position adjustment
     if (currentCursor !== null) {
         // Calculate how many formatting chars (commas) are in the new display string *before* the equivalent raw input position
-        let newNonDigitCharsBeforeCursor = 0;
+        const newNonDigitCharsBeforeCursor = 0;
         const strippedNewDisplay = stripCommas(newDisplayValue);
 
         // Determine the length of the "prefix" of the new display value that corresponds to the original input's prefix

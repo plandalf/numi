@@ -1,26 +1,24 @@
 import { SidebarProvider } from '@/components/ui/sidebar';
 import React, { useState } from 'react';
 import AppLogo from '@/components/app-logo';
-import { Link, usePage } from '@inertiajs/react';
-import { UserInfo } from '@/components/user-info';
-import { AlertCircleIcon, ChevronsUpDown } from 'lucide-react';
-import { OrganizationSwitcher } from '@/components/organization-switcher';
+import { Link } from '@inertiajs/react';
+import { AlertCircleIcon } from 'lucide-react';
 import { useCurrentOrganization } from '@/hooks/use-current-organization';
 import { MessageCircle } from 'lucide-react';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import axios from '@/lib/axios';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { UserMenuContent } from '@/components/user-menu-content';
 import { ImageUpload } from './ui/image-upload';
+import { OnboardingProgress } from '@/components/onboarding-progress';
+
 
 interface AppShellProps {
     children: React.ReactNode;
 }
 
 export function AppShell({ children }: AppShellProps) {
-  const { auth } = usePage<Record<string, any>>().props;
+  
 
   const organization = useCurrentOrganization();
 
@@ -60,21 +58,20 @@ export function AppShell({ children }: AppShellProps) {
 
   return (
       <div>
-        <div className="h-14 bg-gray-900 text-white flex justify-between items-center px-3">
+        <div className="fixed top-0 left-0 right-0 z-50 h-14 bg-gray-900 text-white flex justify-between items-center px-3">
           <div className="flex items-center gap-4">
             <Link href="/dashboard" prefetch>
               <AppLogo />
             </Link>
-
-            <OrganizationSwitcher />
           </div>
 
           <div className="flex items-center gap-6">
             <div className="flex items-center gap-6">
+              <OnboardingProgress />
               {
                 organization?.on_trial && (
                   <Link href="/organizations/settings/billing" className="bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded-full text-sm font-medium hover:bg-yellow-200 font-semibold flex items-center gap-1">
-                    <AlertCircleIcon className="size-4" /> {organization?.trial_days_left} day{organization?.trial_days_left === 1 ? '' : 's'} trial left
+                    <AlertCircleIcon className="size-4" /> {organization?.trial_days_left} day{Number(organization?.trial_days_left) === 1 ? '' : 's'} trial left
                   </Link>
                 )
               }
@@ -137,26 +134,14 @@ export function AppShell({ children }: AppShellProps) {
               </Popover>
             </div>
 
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                  <div className="flex items-center gap-1 cursor-pointer">
-                    <UserInfo user={auth.user} />
-                    <ChevronsUpDown className="ml-auto size-4" />
-                  </div>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent
-                className="w-(--radix-dropdown-menu-trigger-width) min-w-56 rounded-lg"
-                align="end"
-                side={'bottom'}
-              >
-                <UserMenuContent user={auth.user} />
-              </DropdownMenuContent>
-            </DropdownMenu>
+
           </div>
         </div>
-        <SidebarProvider defaultOpen={true} open={true} >
-          {children}
-        </SidebarProvider>
+        <div className="pt-14">
+          <SidebarProvider defaultOpen={true} open={true} >
+            {children}
+          </SidebarProvider>
+        </div>
       </div>
     );
 }

@@ -25,6 +25,8 @@ use Workflow\WorkflowStub;
 use App\Http\Controllers\OrdersController;
 use App\Http\Controllers\FeedbackController;
 use App\Http\Controllers\OfferItemPriceController;
+use App\Http\Controllers\OnboardingController;
+use App\Http\Controllers\OnboardingInfoController;
 
 Route::redirect('/', '/dashboard')->name('home');
 
@@ -192,6 +194,19 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/integrations/{integration}/products', [IntegrationsController::class, 'products'])->name('integrations.products');
         Route::get('/integrations/{integration}/products/{gatewayProductId}/prices', [IntegrationsController::class, 'prices'])->name('integrations.prices');
         Route::resource('integrations', IntegrationsController::class);
+
+        // Onboarding routes
+        Route::prefix('onboarding')->name('onboarding.')->group(function () {
+            Route::get('/', [OnboardingController::class, 'index'])->name('index');
+            Route::patch('/steps/{stepKey}', [OnboardingController::class, 'updateStep'])->name('steps.update');
+            Route::post('/steps/{stepKey}/complete', [OnboardingController::class, 'completeStep'])->name('steps.complete');
+            Route::patch('/bulk-update', [OnboardingController::class, 'bulkUpdate'])->name('bulk-update');
+            Route::post('/reset', [OnboardingController::class, 'reset'])->name('reset');
+            
+            // Informational onboarding routes
+            Route::get('/info', [OnboardingController::class, 'getInfoStatus'])->name('info.index');
+            Route::post('/info/{infoKey}/seen', [OnboardingController::class, 'markInfoSeen'])->name('info.seen');
+        });
 
         // Offers routes
         Route::resource('offers', OffersController::class)->except(['show', 'create']);

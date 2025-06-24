@@ -3,6 +3,7 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Enums\OnboardingInfo;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -23,6 +24,7 @@ class User extends Authenticatable
         'email',
         'password',
         'current_organization_id',
+        'onboarding_info_mask',
     ];
 
     /**
@@ -75,7 +77,61 @@ class User extends Authenticatable
     public function switchToAvailableOrganization(): void
     {
         $availableOrganization = $this->organizations()->first();
-        $this->current_organization_id = $availableOrganization?->id ?? null;
+        $this->current_organization_id = $availableOrganization ? $availableOrganization->id : null;
         $this->save();
+    }
+
+    /**
+     * Check if a specific informational onboarding item has been seen
+     */
+    public function hasSeenOnboardingInfo(OnboardingInfo $item): bool
+    {
+        return ($this->onboarding_info_mask & $item->value) === $item->value;
+    }
+
+    /**
+     * Mark an informational onboarding item as seen
+     */
+    public function markOnboardingInfoSeen(OnboardingInfo $item): void
+    {
+        $this->onboarding_info_mask |= $item->value;
+        $this->save();
+    }
+
+    /**
+     * Mark an informational onboarding item as unseen
+     */
+    public function markOnboardingInfoUnseen(OnboardingInfo $item): void
+    {
+        $this->onboarding_info_mask &= ~$item->value;
+        $this->save();
+    }
+
+    /**
+     * Get all seen informational onboarding items
+     */
+    public function getSeenOnboardingInfo(): array
+    {
+        $seen = [];
+        foreach (OnboardingInfo::cases() as $item) {
+            if ($this->hasSeenOnboardingInfo($item)) {
+                $seen[] = $item->key();
+            }
+        }
+        return $seen;
+    }
+
+    /**
+     * Get all unseen informational onboarding items
+     */
+    public function getUnseenOnboardingInfo(): array
+    {
+        $unseen = [];
+        foreach (OnboardingInfo::cases() as $item) {
+            if (!$this->hasSeenOnboardingInfo($item)) {
+                $unseen[] = $item->key();
+            }
+        }
+        return $unseen;
     }
 }

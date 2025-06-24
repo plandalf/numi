@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Actions\Product\CreateProductAction;
 use App\Actions\Product\DestroyProduct;
 use App\Actions\Product\UpdateProduct;
+use App\Enums\OnboardingInfo;
 use App\Http\Requests\Product\ProductStoreRequest;
 use App\Http\Requests\Product\ProductUpdateRequest;
 use App\Http\Resources\PriceResource;
@@ -123,6 +124,7 @@ class ProductsController extends Controller
                 'tab' => $tab,
             ],
             'integrations' => $integrations,
+            'showProductsTutorial' => !Auth::user()->hasSeenOnboardingInfo(OnboardingInfo::PRODUCTS_TUTORIAL),
         ]);
     }
 

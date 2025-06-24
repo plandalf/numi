@@ -9,6 +9,7 @@ import { TemplateSelectorModal } from '@/components/templates/template-selector-
 import { useState } from 'react';
 import { Template } from '@/types/template';
 import { Offer } from '@/types/offer';
+import { TutorialCard } from '@/components/onboarding/TutorialCard';
 import { Separator } from '@/components/ui/separator';
 import { Kebab } from '@/components/ui/kebab';
 import { toast } from 'sonner';
@@ -18,6 +19,7 @@ interface Props {
     globalTemplates: Template[];
     organizationTemplates: Template[];
     categories: string[];
+    showOffersTutorial: boolean;
 }
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -27,7 +29,7 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
-export default function Dashboard({ offers, globalTemplates, organizationTemplates, categories }: Props) {
+export default function Dashboard({ offers, globalTemplates, organizationTemplates, categories, showOffersTutorial }: Props) {
     const [isSelectorOpen, setIsSelectorOpen] = useState(false);
 
     const templates = [...organizationTemplates, ...globalTemplates];
@@ -46,6 +48,20 @@ export default function Dashboard({ offers, globalTemplates, organizationTemplat
         }
     };
 
+    const tutorialActions = [
+        {
+            label: 'Create Offer',
+            onClick: handleCreateOffer,
+            icon: Plus
+        },
+        {
+            label: 'Documentation',
+            onClick: () => window.open('https://www.plandalf.dev/docs/offers', '_blank'),
+            variant: 'outline' as const,
+            icon: ExternalLink
+        }
+    ];
+
     const onCopyOfferLinkClick = (offer: Offer) => {
       navigator.clipboard.writeText(offer.public_url);
       toast.success('Offer link copied to clipboard');
@@ -62,9 +78,9 @@ export default function Dashboard({ offers, globalTemplates, organizationTemplat
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Dashboard" />
-          <div className="flex h-full flex-1 flex-col rounded-xl p-8">
+          <div className="flex flex-1 flex-col rounded-xl p-8">
 
-            <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
               <div>
                 <h1 className="text-xl sm:text-2xl font-semibold text-gray-900 dark:text-white">
                   Offers
@@ -84,7 +100,55 @@ export default function Dashboard({ offers, globalTemplates, organizationTemplat
               </div>
             </header>
 
-            <br/>
+            {/* Onboarding Tutorial */}
+            <TutorialCard
+                title="Getting Started with Offers"
+                description="Offers are <b>customizable checkout pages</b> that help convert visitors into customers. Use templates, add your branding, and track performance to optimize conversions."
+                videoUrl="https://www.youtube.com/embed/dQw4w9WgXcQ"
+                videoTitle="How to Create Your First Offer"
+                videoDuration="Quick tutorial (3 minutes)"
+                actions={tutorialActions}
+                onboardingKey="offers_tutorial"
+                show={showOffersTutorial}
+                backgroundColor="bg-orange-50"
+                borderColor="border-orange-200"
+                textColor="text-amber-700 dark:text-amber-300"
+                accentColor="bg-orange-600"
+                accentHoverColor="hover:bg-orange-700"
+            />
+
+            <div className="grid auto-rows-min gap-4 md:grid-cols-3">
+              {offers.length > 0 ? (
+                offers.map((offer) => (
+                  <Card
+                    key={offer.id}
+                    className="cursor-pointer !bg-[#d1dafb1a] !hover:bg-[#d1dafb40] hover:scale-101 transition-all duration-200 active:scale-100"
+                    onClick={() => router.get(route('offers.edit', offer.id))}
+                  >
+                    <CardHeader>
+                      <CardTitle>{offer.name || 'Untitled Offer'}</CardTitle>
+                      <CardDescription>
+                        Created {new Date(offer.created_at).toLocaleDateString()}
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      {offer.screenshot && (
+                        <img src={offer.screenshot.url} alt="" />
+                      )}
+                      {!offer.screenshot && (
+                        <PlaceholderPattern
+                          className="h-32 w-full stroke-neutral-900/20 dark:stroke-neutral-100/20" />
+                      )}
+                    </CardContent>
+                  </Card>
+                ))
+              ) : (
+                <div
+                  className="col-span-3 flex flex-col items-center justify-center gap-4 rounded-xl border border-dashed p-8 text-center">
+                  <p className="text-muted-foreground">No offers yet. Create your first offer to get started!</p>
+                </div>
+              )}
+            </div>
 
               <div className="grid auto-rows-min gap-4 md:grid-cols-3">
                 {offers.length > 0 ? (

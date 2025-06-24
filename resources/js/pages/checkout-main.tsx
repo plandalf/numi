@@ -307,7 +307,7 @@ export function GlobalStateProvider({ offer, offerItems, session: defaultSession
       const action = currentPage.type === 'payment' ? 'commit' : 'setFields';
       const nextPageId = handleNavigationLogic(currentPage, fields);
 
-      let params: Record<string, any> = {
+      const params: Record<string, any> = {
         action,
         metadata: {
           fields: fieldStates,

@@ -2,6 +2,7 @@
 
 namespace App\Observers;
 
+use App\Enums\OnboardingStep;
 use App\Jobs\TakeOfferScreenshotJob;
 use App\Models\Store\Offer;
 
@@ -12,6 +13,11 @@ class OfferObserver
      */
     public function created(Offer $offer): void
     {
+        // Mark the "first offer" onboarding step as completed
+        $organization = $offer->organization;
+        if ($organization && !$organization->isOnboardingStepCompleted(OnboardingStep::FIRST_OFFER)) {
+            $organization->markOnboardingStepCompleted(OnboardingStep::FIRST_OFFER);
+        }
     }
 
     /**

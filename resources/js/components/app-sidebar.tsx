@@ -1,72 +1,139 @@
-import { NavFooter } from '@/components/nav-footer';
+
 import { NavMain } from '@/components/nav-main';
-import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
-import { type NavItem } from '@/types';
+import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader } from '@/components/ui/sidebar';
+import { OrganizationSwitcher } from '@/components/organization-switcher';
+import { UserInfo } from '@/components/user-info';
+import { UserMenuContent } from '@/components/user-menu-content';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { usePage } from '@inertiajs/react';
+import { type SharedData } from '@/types';
 import {
-  HomeIcon,
   PackageSearchIcon,
-  OrigamiIcon,
   BlocksIcon,
-  ToyBrickIcon,
   StoreIcon,
-  BrushIcon,
-ShoppingCartIcon,
-  PlugZapIcon, DatabaseZapIcon, BotIcon
+  PlugZapIcon,
+  BotIcon,
+  ChevronsUpDown,
+  CreditCardIcon,
+  ComponentIcon,
+  PaletteIcon
 } from 'lucide-react';
-import AppLogo from './app-logo';
 
-const mainNavItems: NavItem[] = [
+const navGroups = [
     {
-        title: 'Offers',
-        href: '/dashboard',
-        icon: StoreIcon,
+        items: [
+            {
+                title: 'Offers',
+                href: '/dashboard',
+                route: 'dashboard',
+                icon: StoreIcon,
+            },
+            {
+                title: 'Orders',
+                href: '/orders',
+                route: 'orders.*',
+                icon: CreditCardIcon,
+                hasNotification: true,
+            },
+            {
+                title: 'Products',
+                href: '/products',
+                route: 'products.*',
+                icon: PackageSearchIcon,
+                hasNotification: true,
+            },
+            {
+                title: 'Templates',
+                href: '/templates',
+                route: 'templates.*',
+                icon: ComponentIcon,
+            },
+            {
+                title: 'Automation',
+                href: '/sequences',
+                route: 'sequences.*',
+                icon: BotIcon,
+            },
+        ]
     },
     {
-        title: 'Products',
-        href: '/products',
-        icon: PackageSearchIcon,
-    },
-    {
-      title: 'Orders',
-      href: '/orders',
-      icon: ShoppingCartIcon,
-  },
-    {
-        title: 'Templates',
-        href: '/templates',
-        icon: BrushIcon,
-    },
-    {
-        title: 'Integrations',
-        href: '/integrations',
-        icon: PlugZapIcon,
-    },
-  {
-        title: 'Sequences',
-        href: '/sequences',
-        icon: BotIcon,
-    },
-  {
-    title: 'Organization',
-    href: '/organizations/settings',
-    icon: BlocksIcon,
-  }
+        label: 'Settings',
+        items: [
+            {
+                title: 'Themes',
+                href: '/organizations/themes',
+                route: 'organizations.themes.*',
+                icon: PaletteIcon,
+            },
+            {
+                title: 'Integrations',
+                href: '/integrations',
+                route: 'integrations.*',
+                icon: PlugZapIcon,
+                hasNotification: true,
+            },
+            {
+                title: 'General',
+                href: '/organizations/settings',
+                route: 'organizations.settings.*',
+                icon: BlocksIcon,
+            }
+        ]
+    }
 ];
 
-const footerNavItems: NavItem[] = [
 
-];
 
 export function AppSidebar() {
+    const { auth } = usePage().props as unknown as SharedData;
+    
+    // Hide notifications if user has seen the respective tutorials
+    const showProductsNotification = !auth.user?.onboarding_info?.has_seen_products_tutorial;
+    const showOrdersNotification = !auth.user?.onboarding_info?.has_seen_orders_tutorial;
+    const showIntegrationsNotification = !auth.user?.onboarding_info?.has_seen_integrations_tutorial;
+    console.log('info', auth.user?.onboarding_info);
+
+    // Update navGroups to conditionally show notifications
+    const dynamicNavGroups = navGroups.map(group => ({
+        ...group,
+        items: group.items.map(item => ({
+            ...item,
+            hasNotification: 
+                item.title === 'Products' ? showProductsNotification :
+                item.title === 'Orders' ? showOrdersNotification :
+                item.title === 'Integrations' ? showIntegrationsNotification :
+                item.hasNotification
+        }))
+    }));
+
     return (
         <Sidebar collapsible="icon" variant="sidebar">
+            <SidebarHeader className="p-3">
+                <OrganizationSwitcher />
+            </SidebarHeader>
+            
             <SidebarContent>
-                <NavMain items={mainNavItems} />
+                <NavMain 
+                groups={dynamicNavGroups} 
+                />
             </SidebarContent>
 
-            <SidebarFooter>
-                <NavFooter items={footerNavItems} className="mt-auto" />
-
+            <SidebarFooter className="p-3">
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <div className="flex items-center gap-1 cursor-pointer w-full">
+                            <UserInfo user={auth.user} />
+                            <ChevronsUpDown className="ml-auto size-4" />
+                        </div>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent
+                        className="w-(--radix-dropdown-menu-trigger-width) min-w-56 rounded-lg"
+                        align="end"
+                        side={'top'}
+                    >
+                        <UserMenuContent user={auth.user} />
+                    </DropdownMenuContent>
+                </DropdownMenu>
             </SidebarFooter>
         </Sidebar>
     );

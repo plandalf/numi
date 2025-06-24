@@ -4,11 +4,19 @@ import { Card, CardDescription, CardFooter, CardHeader, CardTitle } from '@/comp
 import { Plus } from 'lucide-react';
 import { Theme } from '@/types/theme';
 import ThemePreviewCard from '@/components/offers/theme-preview-card';
-import SettingsLayout from '@/layouts/settings-layout';
+import AppLayout from '@/layouts/app-layout';
+import { type BreadcrumbItem } from '@/types';
 
 interface Props {
     themes: Theme[];
 }
+
+const breadcrumbs: BreadcrumbItem[] = [
+    {
+        title: 'Themes',
+        href: '/organizations/themes',
+    },
+];
 
 export default function Themes({ themes }: Props) {
     const handleCreateTheme = () => {
@@ -16,10 +24,10 @@ export default function Themes({ themes }: Props) {
     };
 
     return (
-      <SettingsLayout>
+      <AppLayout breadcrumbs={breadcrumbs}>
         <Head title="Themes" />
 
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between p-8">
           <div>
             <h2 className="text-2xl font-bold tracking-tight">Themes</h2>
             <p className="text-muted-foreground">
@@ -32,7 +40,7 @@ export default function Themes({ themes }: Props) {
           </Button>
         </div>
 
-        <div className="grid gap-4 grid-cols-2">
+        <div className="grid gap-4 grid-cols-2 px-8 pb-12">
           {themes.map((theme) => (
             <ThemePreviewCard
               key={theme.id}
@@ -58,6 +66,6 @@ export default function Themes({ themes }: Props) {
             </Card>
           )}
         </div>
-      </SettingsLayout>
+      </AppLayout>
     );
 }

@@ -22,29 +22,29 @@ import { Separator } from '../ui/separator';
 
 export const colorFields = [
   {
-    label: 'Core theme colors',
+    label: 'Main theme colors',
     items: [
       {
         name: 'primary_color',
-        label: 'Primary',
+        label: 'Primary Color',
         inspector: 'colorPicker',
         tooltip: 'Main brand/action color',
       },
       {
         name: 'primary_contrast_color',
-        label: 'Primary Contrast',
+        label: 'Primary Text',
         inspector: 'colorPicker',
         tooltip: 'Text/icon color on primary',
       },
       {
         name: 'secondary_color',
-        label: 'Secondary',
+        label: 'Secondary Color',
         inspector: 'colorPicker',
         tooltip: 'Supporting color',
       },
       {
         name: 'secondary_contrast_color',
-        label: 'Secondary Contrast',  
+        label: 'Secondary Text',  
         inspector: 'colorPicker',
         tooltip: 'Text/icon color on secondary',
       },
@@ -55,19 +55,19 @@ export const colorFields = [
     items: [
       {
         name: 'canvas_color',
-        label: 'Canvas',
+        label: 'Content Background',
         inspector: 'colorPicker',
         tooltip: 'Section background',
       },
       {
         name: 'primary_surface_color',
-        label: 'Primary Surface',
+        label: 'Primary Surfaces',
         inspector: 'colorPicker',
         tooltip: 'Containers, cards, tables',
       },
       {
         name: 'secondary_surface_color',
-        label: 'Secondary Surface',
+        label: 'Secondary Surfaces',
         inspector: 'colorPicker',
         tooltip: 'Input fields',
       },
@@ -139,7 +139,7 @@ export const fontFields = [
 
 export const typographyFields = [
   {
-    label: 'Font',
+    label: 'Base Fonts',
     items: [
       {
         name: 'main_font',
@@ -152,7 +152,7 @@ export const typographyFields = [
         }
       },
       { name: 'mono_font',
-        label: 'Mono Font',
+        label: 'Monospace Font',
         inspector: 'fontFamilyPicker',
         tooltip: 'Mono spaced font for code blocks etc',
         config: {
@@ -163,7 +163,7 @@ export const typographyFields = [
     ]
   },
   {
-    label: 'Parent typography',
+    label: 'Content typography',
     items: [
       {
         name: 'label_typography',
@@ -268,7 +268,7 @@ export const componentFields = [
     ]
   },
   {
-    label: 'Others',
+    label: 'Spacing',
     items: [
       {
         name: 'padding',
@@ -360,8 +360,8 @@ export const PageTheme: React.FC = () => {
   };
 
   const fields = {
-    'Colors': colorFields,
     'Typography': typographyFields,
+    'Colors': colorFields,
     'Components': componentFields,
   }
 
@@ -398,7 +398,7 @@ export const PageTheme: React.FC = () => {
                     key={f.label}
                     className="flex flex-col gap-2"
                   >
-                    <span className="text-base">{f.label}</span>
+                    <span className="text-sm font-semibold">{f.label}</span>
                     <StyleEditor
                       items={
                         f.items.map(i => ({

@@ -320,7 +320,7 @@ export default function Edit({ theme, fonts, weights }: Props) {
                     </div>
                 </div>
 
-                <Card className="border-0 shadow-none">
+                <div className="">
                     <CardContent className="p-0">
                         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
                             <TabsList className="grid w-full grid-cols-3 mb-4">
@@ -342,7 +342,7 @@ export default function Edit({ theme, fonts, weights }: Props) {
                             </TabsContent>
                         </Tabs>
                     </CardContent>
-                </Card>
+                </div>
             </div>
         </AppLayout>
     );
