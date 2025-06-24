@@ -104,9 +104,9 @@ export default function Dashboard({ offers, globalTemplates, organizationTemplat
             <TutorialCard
                 title="Getting Started with Offers"
                 description="Offers are <b>customizable checkout pages</b> that help convert visitors into customers. Use templates, add your branding, and track performance to optimize conversions."
-                videoUrl="https://www.youtube.com/embed/dQw4w9WgXcQ"
-                videoTitle="How to Create Your First Offer"
-                videoDuration="Quick tutorial (3 minutes)"
+                // videoUrl="https://www.youtube.com/embed/dQw4w9WgXcQ"
+                // videoTitle="How to Create Your First Offer"
+                // videoDuration="Quick tutorial (3 minutes)"
                 actions={tutorialActions}
                 onboardingKey="offers_tutorial"
                 show={showOffersTutorial}

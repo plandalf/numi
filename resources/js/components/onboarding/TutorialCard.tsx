@@ -85,12 +85,12 @@ export function TutorialCard({
                 >
                     <X className="h-3.5 w-3.5" />
                 </Button>
-                
+
                 <div className="pr-10">
                     <h2 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white">
                         {title}
                     </h2>
-                    
+
                     <div className="grid md:grid-cols-5 gap-6">
                         {/* Video Section */}
                         {videoUrl && (
@@ -114,13 +114,13 @@ export function TutorialCard({
 
                         {/* Info Section */}
                         <div className={`${videoUrl ? 'md:col-span-3' : 'md:col-span-5'} flex items-center`}>
-                            <div className="space-y-4">
+                            <div className="flex flex-col gap-4">
                                 <p className="text-gray-700 dark:text-gray-300 leading-relaxed" dangerouslySetInnerHTML={{ __html: description }} />
                                 <div className="flex flex-wrap gap-3">
                                     {actions.map((action, index) => {
                                         const IconComponent = action.icon;
                                         return (
-                                            <Button 
+                                            <Button
                                                 key={index}
                                                 variant={action.variant || 'default'}
                                                 onClick={() => handleActionClick(action)}
@@ -139,4 +139,4 @@ export function TutorialCard({
             </div>
         </div>
     );
-} 
+}
