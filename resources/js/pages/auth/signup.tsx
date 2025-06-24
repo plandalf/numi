@@ -12,14 +12,14 @@ interface SignupProps {
 
 export default function Signup({ organization }: SignupProps) {
     return (
-        <AuthLayout 
+        <AuthLayout
             title={organization
                 ? <div className="flex flex-row justify-center items-center gap-4">
                     <Building2 className="h-6 w-6 text-primary" />
                     Join {organization.name}
                 </div>
                 : "Get started with us"
-            } 
+            }
             description="Watch our introduction video and create your account"
         >
             <Head title="Sign Up" />
@@ -28,7 +28,7 @@ export default function Signup({ organization }: SignupProps) {
                 <div className="relative w-full aspect-video rounded-lg overflow-hidden bg-muted">
                     <iframe
                         className="absolute inset-0 w-full h-full"
-                        src="https://www.youtube.com/embed/dQw4w9WgXcQ"
+                        src="https://www.youtube.com/embed/QgQwuw_qk3s"
                         title="Introduction Video"
                         frameBorder="0"
                         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
@@ -38,7 +38,7 @@ export default function Signup({ organization }: SignupProps) {
 
                 {/* Call to Action Button */}
                 <div className="grid gap-4">
-                    <Button 
+                    <Button
                         className="w-full"
                         onClick={() => window.location.href = route('register')}
                     >
