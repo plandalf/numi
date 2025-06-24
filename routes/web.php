@@ -229,6 +229,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::get('settings/notifications', [OffersController::class, 'settingsNotifications'])->name('settings.notifications');
             Route::get('settings/access', [OffersController::class, 'settingsAccess'])->name('settings.access');
             Route::post('publish', [OffersController::class, 'publish'])->name('publish');
+            Route::put('duplicate', [OffersController::class, 'duplicate'])->name('duplicate');
         });
 
         Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');

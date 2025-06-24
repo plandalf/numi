@@ -1,4 +1,4 @@
-import type { OfferConfiguration, Page, Price, Product } from '@/types/offer';
+import type { OfferConfiguration, OfferItemType, Page, Price, Product } from '@/types/offer';
 import React from 'react';
 import { Font, HostedPage } from '.';
 import { Discount } from './product';
@@ -28,6 +28,7 @@ export type CheckoutItem = {
   // is_tax_inclusive?: boolean;
   // tax_rate?: number;
   price?: Price;
+  type: OfferItemType;
 };
 
 export interface CheckoutSession {

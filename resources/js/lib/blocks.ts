@@ -11,7 +11,7 @@ export const hasVisibilityCondition = (visibility?: boolean | { conditional: Rul
   return typeof visibility === 'object' && 'conditional' in visibility && visibility.conditional.rules.length > 0;
 };
 
-export const isBlockVisible = (
+export const isEvaluatedVisible = (
   context: Record<string, unknown>,
   visibility?: boolean | { conditional: RuleGroup }
 ) => {

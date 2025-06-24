@@ -8,6 +8,7 @@ import { Separator } from './separator';
 import SearchBar from '../offers/search-bar';
 import { Theme } from '@/types/theme';
 import { getMatchedThemeValue } from '@/lib/theme';
+import { useDebounce } from '@/hooks/use-debounce';
 
 interface AdvancedColorPickerProps extends Omit<ColorPickerProps, 'type'> {
   trigger?: React.ReactNode;
@@ -27,6 +28,7 @@ export const AdvancedColorPicker: React.FC<AdvancedColorPickerProps> = ({
   const [search, setSearch] = useState('');
   const [hexInput, setHexInput] = useState('');
   const [opacityInput, setOpacityInput] = useState('');
+  const [localColor, setLocalColor] = useState(typeof initialValue === 'string' ? initialValue : '#000000');
 
   const matchedThemeValue = getMatchedThemeValue(initialValue);
   const value = useMemo(() => {
@@ -75,6 +77,17 @@ export const AdvancedColorPicker: React.FC<AdvancedColorPickerProps> = ({
 
   const hasThemeColors = Object.keys(themeColors).length > 0;
   const defaultTabValue = matchedThemeValue ? 'theme' : 'custom';
+  const debouncedColor = useDebounce(localColor, 100);
+
+  // Effect for debounced size updates
+  useEffect(() => {
+    if (debouncedColor && debouncedColor !== value) {
+      onChange(debouncedColor);
+    }
+  }, [debouncedColor]);
+
+
+  // const debouncedOnChange = useCallback(useDebounce((value: string) => onChange(value), 1000), [onChange]);
 
   const tabComponent = (
     <Tabs defaultValue={defaultTabValue} className="w-full">
@@ -87,8 +100,8 @@ export const AdvancedColorPicker: React.FC<AdvancedColorPickerProps> = ({
       <TabsContent value="custom" className="numi-color-picker space-y-2">
         {hasThemeColors && <Separator className="my-4" />}
         <HexAlphaColorPicker
-          color={value}
-          onChange={onChange}
+          color={localColor}
+          onChange={(color) => setLocalColor(color)}
         />
         <div className="flex items-center gap-2 border border-gray-300/50 rounded-md px-2 py-1 h-8">
           <input

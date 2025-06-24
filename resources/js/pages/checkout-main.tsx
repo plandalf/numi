@@ -1,6 +1,6 @@
 import { Head } from '@inertiajs/react';
 import { useState, createContext, useContext, useMemo, useEffect, useRef } from 'react';
-import { type Block, type Page as OfferPage, type OfferConfiguration, OfferItem, } from '@/types/offer';
+import { type Block, type Page as OfferPage, type OfferConfiguration, OfferItem, Page, } from '@/types/offer';
 import { cn } from '@/lib/utils';
 
 import { BlockConfig, FieldState, HookUsage } from '@/types/blocks';
@@ -15,6 +15,7 @@ import { sendMessage } from '@/utils/sendMessage';
 import { CheckoutSuccess } from '@/events/CheckoutSuccess';
 import { CheckoutResized } from '@/events/CheckoutResized';
 import { updateSessionLineItems } from '@/utils/editor-session';
+import { isEvaluatedVisible } from '@/lib/blocks';
 // Form and validation context
 
 type FormData = Record<string, any>;
@@ -74,6 +75,15 @@ export function GlobalStateProvider({ offer, offerItems, session: defaultSession
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [isSubmitting, setSubmitting] = useState<boolean>(false);
   const previousItemsRef = useRef<OfferItem[]|undefined>(undefined);
+
+  const fields = useMemo(() => {
+    return Object.values(fieldStates)
+      .filter(field => field.fieldName === 'value')
+      .reduce((acc, field) => {
+        acc[field.blockId] = field;
+        return acc;
+      }, {} as Record<string, FieldState>);
+  }, [fieldStates]);
 
   const updatedItems = useMemo(() => {
     // Find which items were updated
@@ -295,9 +305,7 @@ export function GlobalStateProvider({ offer, offerItems, session: defaultSession
       // Determine the action based on the page type
       const currentPage = offer.view.pages[pageId];
       const action = currentPage.type === 'payment' ? 'commit' : 'setFields';
-      const nextPageId = handleNavigationLogic(currentPage, (field) => {
-        return fieldStates[field]?.value;
-      });
+      const nextPageId = handleNavigationLogic(currentPage, fields);
 
       const params: Record<string, any> = {
         action,
@@ -448,15 +456,6 @@ export function GlobalStateProvider({ offer, offerItems, session: defaultSession
       return {};
     }
   };
-
-  const fields = useMemo(() => {
-    return Object.values(fieldStates)
-      .filter(field => field.fieldName === 'value')
-      .reduce((acc, field) => {
-        acc[field.blockId] = field;
-        return acc;
-      }, {} as Record<string, FieldState>);
-  }, [fieldStates]);
 
   // Create context value
   const value: GlobalState = {
@@ -674,41 +673,14 @@ interface NavigationContextType {
 export const NavigationContext = createContext<NavigationContextType | null>(null);
 
 // Navigation logic
-export const handleNavigationLogic = (page: Page, getFieldValue: (field: string) => any): string | null => {
+export const handleNavigationLogic = (page: Page, fields: Record<string, FieldState>): string | null => {
   // Get branches
   const branches = page.next_page.branches || [];
 
   if (branches.length > 0) {
     // Find first matching branch
     const matchingBranch = branches.find(branch => {
-      if (!branch.condition) {
-        return true; // Default branch
-      }
-
-      const { field, operator, value } = branch.condition;
-      const fieldValue = getFieldValue(field);
-
-      // Compare based on operator
-      switch (operator) {
-        case 'eq':
-          return fieldValue === value;
-        case 'ne':
-          return fieldValue !== value;
-        case 'gt':
-          return Number(fieldValue) > Number(value);
-        case 'lt':
-          return Number(fieldValue) < Number(value);
-        case 'gte':
-          return Number(fieldValue) >= Number(value);
-        case 'lte':
-          return Number(fieldValue) <= Number(value);
-        case 'contains':
-          return String(fieldValue).includes(String(value));
-        case 'not_contains':
-          return !String(fieldValue).includes(String(value));
-        default:
-          return false;
-      }
+      return isEvaluatedVisible({ fields }, { conditional: branch.condition });
     });
 
     if (matchingBranch && matchingBranch.next_page) {
@@ -727,7 +699,7 @@ interface NavigationProviderProps {
 
 export const NavigationProvider = ({ children, onPageChange }: NavigationProviderProps) => {
   const { offer } = useCheckoutState();
-  const { fieldStates } = useCheckoutState();
+  const { fieldStates, fields } = useCheckoutState();
 
   const pages = useMemo(() => {
     return offer.view.pages;
@@ -757,9 +729,7 @@ export const NavigationProvider = ({ children, onPageChange }: NavigationProvide
     // Can't go forward from ending pages
     if (currentPage.type === 'ending') return false;
 
-    const nextPage = handleNavigationLogic(currentPage, (field) => {
-      return fieldStates[field]?.value;
-    });
+    const nextPage = handleNavigationLogic(currentPage, fields);
     return !!nextPage;
   };
 
@@ -824,9 +794,7 @@ export const NavigationProvider = ({ children, onPageChange }: NavigationProvide
       return;
     }
 
-    const nextPageId = handleNavigationLogic(currentPage, (field) => {
-      return fieldStates[field]?.value;
-    });
+    const nextPageId = handleNavigationLogic(currentPage, fields);
 
     if (!nextPageId) {
       return;

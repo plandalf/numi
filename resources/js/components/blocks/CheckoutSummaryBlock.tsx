@@ -9,6 +9,7 @@ import { CircleAlert, Loader2, XIcon } from "lucide-react";
 import { CheckoutItem } from "@/types/checkout";
 import { Separator } from "../ui/separator";
 import { MarkdownText } from "../ui/markdown-text";
+import { OfferItemType } from "@/types/offer";
 
 function CheckoutSummaryComponent({ context }: { context: BlockContextType }) {
   const theme = Numi.useTheme();
@@ -381,6 +382,21 @@ function CheckoutSummaryComponent({ context }: { context: BlockContextType }) {
     return undefined;
   }, [session.currency, showCurrency]);
 
+  const lineItems = useMemo(() => {
+    return session.line_items
+      .sort((a: CheckoutItem, b: CheckoutItem) => {
+        // Sort by type: 'standard' first, 'optional' last
+        if (a.type === OfferItemType.STANDARD && b.type === OfferItemType.OPTIONAL) return -1;
+        if (a.type === OfferItemType.OPTIONAL && b.type === OfferItemType.STANDARD) return 1;
+        return 0;
+      })
+      .map((item: CheckoutItem) => {
+        return {
+          ...item,
+        }
+      });
+  }, [session.line_items]);
+
   const LineItem = ({ item }: { item: CheckoutItem }) => {
     return (<div className="flex-grow overflow-hidden">
       <div className="flex justify-between items-center gap-4">
@@ -392,14 +408,14 @@ function CheckoutSummaryComponent({ context }: { context: BlockContextType }) {
         </div>
         {showItemPrices && item.total !== undefined && (
           <>
-            {item?.is_highlighted ? 
+            {item?.is_highlighted ?
               // Use H3 styling for highlighted items
               <MarkdownText
                 theme={theme}
                 text={`### ${formatMoney(item.total, currency)}`}
-                className="font-medium break-all"
+                className="text-gray-700"
               />
-            : 
+            :
             <div className="text-gray-700" style={itemPriceStyle}>
               {formatMoney(item.total, currency)}
             </div>
@@ -426,13 +442,13 @@ function CheckoutSummaryComponent({ context }: { context: BlockContextType }) {
       {title && <h3 className="font-medium text-lg" style={titleStyle}>{title}</h3>}
       {/* Order Items */}
       <div className="space-y-3 overflow-y-auto h-auto max-h-[300px]">
-        {session.line_items.length === 0 && (
+        {lineItems.length === 0 && (
           <div className="flex gap-3 border border-destructive text-destructive rounded-md p-4 mt-3.5">
             <CircleAlert className="w-5 h-5 mt-0.5" />
             No items to checkout
           </div>
         )}
-        {session.line_items.map((item: CheckoutItem) => (
+        {lineItems.map((item: CheckoutItem) => (
           <div key={item.id} className="flex items-center gap-3">
             {showImages && item.product?.image && (
               <div className="w-12 h-12 border rounded flex-shrink-0">
