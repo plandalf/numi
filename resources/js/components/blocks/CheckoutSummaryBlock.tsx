@@ -509,7 +509,11 @@ function CheckoutSummaryComponent({ context }: { context: BlockContextType }) {
       )}
 
       {/* Order Summary Calculations */}
-      {(showSubtotal || showShipping || showTaxes || (session.discounts && session.discounts.length > 0)) && (
+      {(showSubtotal || 
+        (showShipping && session.shipping > 0) || 
+        (showTaxes && session.inclusive_taxes > 0) || 
+        (session.discounts && session.discounts.length > 0)
+      ) && (
         <div className="space-y-2 text-sm flex flex-col" style={summaryContainerStyle}>
           {showSubtotal && <div className="flex justify-between">
             <span style={summaryTextStyle}>Subtotal</span>
