@@ -118,7 +118,7 @@ Unlike other platforms that require heavy integration or force you into their ec
 Other platforms require heavy integration or lock you into their ecosystem. We are lightweight, modular, and open, so you can integrate and evolve without friction.
 
 ---
-
+ww
 # E: Elastic Pricing, Products, Slots
 
 ### What

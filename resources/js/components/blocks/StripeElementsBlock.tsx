@@ -74,11 +74,11 @@ function StripeElementsComponent({ context }: { context: BlockContextType }) {
         letterSpacing: '0px',
       },
     ),
-    
+
     Style.border('inputBorder', 'Input Border', {}, { width: '1px', style: 'solid' }),
     Style.borderRadius('inputBorderRadius', 'Input Border Radius', {}, theme?.border_radius),
     Style.borderColor('inputBorderColor', 'Input Border Color', {}, theme?.primary_border_color),
-    
+
     Style.font( 'paymentFormLabelFont', 'Payment Form Label Font & Color', {
       ...fontConfig,
       config: {
@@ -99,7 +99,7 @@ function StripeElementsComponent({ context }: { context: BlockContextType }) {
         expand: 'expand',
       },
     }, 'expand'),
-  
+
     Style.font('termsTextFont', 'Terms Text Font & Color',fontConfig, theme?.body_typography as FontValue),
 
     // Error panel
@@ -318,7 +318,7 @@ function StripeElementsComponent({ context }: { context: BlockContextType }) {
           fontSize: inputLabelFont?.size,
           lineHeight: inputLabelFont?.lineHeight,
           letterSpacing: inputLabelFont?.letterSpacing,
-          
+
         },
         '.TermsText': {
           color: termsTextFont?.color,
@@ -376,7 +376,7 @@ function StripeElementsComponent({ context }: { context: BlockContextType }) {
   }), [session, stripeElementAppearance, googleFontsUrl]);
 
   return (
-    <div className="flex flex-col p-4 gap-4" style={containerStyle}>
+    <div className="flex flex-col gap-4" style={containerStyle}>
       {title && (
         <MarkdownText theme={theme} text={title} style={titleStyle} />
       )}
