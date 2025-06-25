@@ -159,7 +159,7 @@ export function ImageUpload({
                     <img
                         src={previewUrl}
                         alt="Preview"
-                        className=" w-auto h-[250px]"
+                        className=" w-auto h-auto min-h-[55px] max-h-[250px]"
                     />
                     <Button
                         type="button"
