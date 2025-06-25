@@ -621,7 +621,7 @@ const Numi = {
     group?: string;
   }): [any, (newValue: any) => void, (hook: Partial<HookUsage>) => void] {
     const blockContext = useContext(BlockContext);
-    const { session } = Numi.useCheckout();
+    const { session, isEditor } = Numi.useCheckout();
 
     // If use as state, prioritize getting the field value from the global state
     const defaultValue = props.asState
@@ -629,6 +629,13 @@ const Numi = {
       : get(blockContext.blockConfig, `content.${props.name}`) ?? props.initialValue;
 
     const [value, setValue] = useState(defaultValue);
+
+    // Update the value if the block config is changed (On the builder)
+    useEffect(() => {
+      if(isEditor && blockContext.blockConfig.content[props.name]){
+        setValue(blockContext.blockConfig.content[props.name]);
+      }
+    }, [blockContext.blockConfig.content[props.name]]);
 
     const [hook, setHook] = useState<HookUsage>({
       name: props.name,
