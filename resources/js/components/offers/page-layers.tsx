@@ -215,7 +215,7 @@ export const PageLayers: React.FC<PageLayersProps> = ({ onAddNewElementClick }) 
                               <div className="flex items-center justify-between w-full">
                                 <div className="flex items-center gap-2">
                                   <span className="font-semibold text-sm text-left text-black group-hover:text-black transition-colors">
-                                    {block.id}
+                                    {block.name ?? block.id}
                                   </span>
                                   <span className="text-xs text-gray-500">
                                     {blockTypeTitle}

@@ -44,7 +44,7 @@ export function BlockRenderer({ block, children }: {
 
   return (
     <BlockContext.Provider value={blockContext}>
-      <div className={cn({
+      <div className={cn('m-0 p-0', {
         '!hidden': !isVisible,
       })}>{children(blockContext)}</div>
     </BlockContext.Provider>
