@@ -125,11 +125,47 @@ export default function Dashboard({ offers, globalTemplates, organizationTemplat
                     className="cursor-pointer !bg-[#d1dafb1a] !hover:bg-[#d1dafb40] hover:scale-101 transition-all duration-200 active:scale-100"
                     onClick={() => router.get(route('offers.edit', offer.id))}
                   >
-                    <CardHeader>
-                      <CardTitle>{offer.name || 'Untitled Offer'}</CardTitle>
-                      <CardDescription>
-                        Created {new Date(offer.created_at).toLocaleDateString()}
-                      </CardDescription>
+                    <CardHeader className="flex flex-row justify-between items-center">
+                      <div className="flex flex-col items-start">
+                        <CardTitle>{offer.name || 'Untitled Offer'}</CardTitle>
+                        <CardDescription>
+                          Created {new Date(offer.created_at).toLocaleDateString()}
+                        </CardDescription>
+                      </div>
+                      <Kebab items={[{
+                        label: (
+                          <div className="flex flex-row gap-2 items-center">
+                            <ExternalLink className="h-4 w-4" />
+                            View
+                          </div>
+                        ),
+                        onClick: (e: React.MouseEvent<HTMLButtonElement>) => {
+                          e.stopPropagation();
+                          window.open(offer.public_url, '_blank', 'noopener,noreferrer');
+                        }
+                      }, {
+                        label: (
+                          <div className="flex flex-row gap-2 items-center">
+                            <Copy className="h-4 w-4" />
+                            Copy offer link
+                          </div>
+                        ),
+                        onClick: (e: React.MouseEvent<HTMLButtonElement>) => {
+                          e.stopPropagation();
+                          onCopyOfferLinkClick(offer)
+                        }
+                      },  {
+                        label: (
+                          <div className="flex flex-row gap-2 items-center">
+                            <CopyPlus className="h-4 w-4" />
+                            Duplicate
+                          </div>
+                        ),
+                        onClick: (e: React.MouseEvent<HTMLButtonElement>) => {
+                          e.stopPropagation();
+                          onDuplicateOfferClick(offer);
+                        }
+                      }]} />
                     </CardHeader>
                     <CardContent>
                       {offer.screenshot && (
