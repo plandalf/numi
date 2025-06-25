@@ -253,8 +253,8 @@ function AddOnBlockComponent({ context }: { context: BlockContextType }) {
     <div className="flex flex-col gap-3" style={innerContainerStyles}>
       {(title || description) && (
         <div className="flex flex-col gap-2" style={headerStyles}>
-          <MarkdownText theme={theme} text={title} style={titleStyles} />
-          <MarkdownText theme={theme} text={description} style={descriptionStyles} />
+          {title && <MarkdownText theme={theme} text={title} style={titleStyles} />}
+          {description && <MarkdownText theme={theme} text={description} style={descriptionStyles} />}
         </div>
       )}
       {checkboxStyle === 'checkbox' && (
