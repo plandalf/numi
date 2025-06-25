@@ -461,7 +461,7 @@ function PaymentForm({ style }: { style?: CSSProperties}) {
   }, [stripe, elements]);
 
   return (
-    <div className="flex flex-col p-4 space-y-4" style={style}>
+    <div className="flex flex-col space-y-4" style={style}>
       <PaymentElement
         options={{
           defaultValues: {
