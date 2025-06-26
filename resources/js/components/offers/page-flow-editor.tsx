@@ -29,6 +29,7 @@ import 'react-querybuilder/dist/query-builder.css';
 import { PageConditionEditor } from '../editor/page-condition-editor';
 import { GlobalStateContext } from '@/pages/checkout-main';
 import { RuleGroup } from '../editor/page-condition-editor';
+import { getLayoutConfig } from '@/config/layouts';
 
 interface PageFlowEditorProps {
     view: OfferView;
@@ -43,72 +44,29 @@ const NODE_HEIGHT = 150;
 const GRID_SPACING = 20;
 
 export function generateDefaultPage({
-    id, type, position, pageNumber
+    id, type, position, pageNumber, layout = 'promo'
 }: {
     id?: string;
     type: PageType;
     position: XYPosition;
     pageNumber: number;
+    layout?: string;
 }): Page {
     if (!id) {
         id = `page_${Math.random().toString(36).substr(2, 9)}`;
     }
 
-    console.log('Creating new page:', { id, type, position, pageNumber });
-
-    // todo: abstract this out to layout generator
-  // with defaults!
-  // templates should contain their own layouts!
-
-    // sections: [], one is asContainer?
+    console.log('Creating new page:', { id, type, position, pageNumber, layout });
+    const layoutConfig = getLayoutConfig(layout);
 
     return {
       id,
       name: `Page ${pageNumber}`,
       type,
       position,
-      view: {
-        title: {
-          appearance: {
-            padding: '24px'
-          },
-          blocks: []
-        },
-        content: {
-          appearance: {
-            padding: '24px',
-            spacing: '4px'
-          },
-          blocks: []
-        },
-        action: {
-          appearance: {
-            padding: '24px',
-          },
-          blocks: []
-        },
-        promo_box: {
-          asContainer: true,
-          style: {
-              backgroundColor: '#EFF6FF'
-          },
-          blocks: []
-        },
-        promo_header: {
-          appearance: {
-            padding: '24px',
-          },
-          blocks: []
-        },
-        promo_content: {
-          appearance: {
-            padding: '24px',
-          },
-          blocks: []
-        },
-      },
+      view: layoutConfig?.sections || {},
       layout: {
-        sm: 'split-checkout@v1'
+        sm: layoutConfig?.layoutIdentifier || 'promo@v1'
       },
       provides: [],
       next_page: {

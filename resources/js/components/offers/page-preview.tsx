@@ -133,6 +133,7 @@ return (
         <LayoutPreview
           page={livePreviewPage}
           theme={theme}
+          layoutId={page.layout?.sm?.split('@')[0] || 'promo'}
           selectedBlockId={selectedBlockId}
           hoveredBlockId={hoveredBlockId}
           hoveredSectionId={hoveredSectionId}

@@ -19,6 +19,7 @@ import { Theme } from '@/types/theme';
 import { resolveThemeValue } from '@/lib/theme';
 import { NavigationBar } from '@/pages/checkout';
 import { EyeIcon, EyeOffIcon } from 'lucide-react';
+import { getLayoutJSONConfig } from '@/config/layouts';
 
 // Local interfaces that match the actual structure
 interface LocalPageView {
@@ -48,6 +49,7 @@ export const DRAG_TYPES = {
 interface LayoutPreviewProps {
     page: LocalPage;
     theme: Theme;
+    layoutId?: string;
     selectedBlockId?: string | null;
     hoveredBlockId?: string | null;
     hoveredSectionId?: string | null;
@@ -82,89 +84,7 @@ interface TailwindLayoutRendererProps {
   onSectionSelect?: (sectionId: string) => void;
 }
 
-const layoutConfig: TailwindLayoutConfig = {
-  "name": "SplitCheckout@v1.1",
-  "template": {
-    "type": "grid",
-    "id": "1x2-grid",
-    "props": {
-      "className": "grid grid-cols-1 md:grid-cols-2 h-full w-full"
-    },
-    "children": [
-      {
-        "type": "box",
-        "id": "core-box",
-        "props": {
-          "className": "h-full min-h-[inherit] overflow-y-auto"
-        },
-        "children": [
-          {
-            "type": "flex",
-            "id": "core-flex",
-            "props": {
-              "className": "flex flex-col h-full"
-            },
-            "children": [
-              {
-                "type": "flex",
-                "id": "header",
-                "props": {
-                  "className": "flex flex-col flex-grow overflow-y-auto"
-                },
-                "children": [
-                  {
-                    "id": "title",
-                    "type": "NavigationBar",
-                    "props": {
-                      "className": "space-y-1 p-6"
-                    }
-                  },
-                  {
-                    "id": "content",
-                    "type": "flex",
-                    "props": {
-                      "className": "flex flex-col flex-grow space-y-2 p-6"
-                    }
-                  }
-                ]
-              },
-              {
-                "id": "action",
-                "type": "box",
-                "props": {
-                  "className": "p-6"
-                }
-              }
-            ]
-          }
-        ]
-      },
-      {
-        "type": "box",
-        "id": "promo_box",
-        "props": {
-          "className": "hidden md:flex h-full overflow-y-auto flex-col"
-        },
-        "children": [
-          {
-            "id": "promo_header",
-            "type": "box",
-            "props": {
-              "className": "h-auto p-6"
-            }
-          },
-          {
-            "id": "promo_content",
-            "type": "box",
-            "props": {
-              "className": "h-full flex flex-col flex-grow space-y-2 p-6 min-h-max"
-            }
-          }
-        ]
-      }
-    ]
-  }
-}
+
 
 type ComponentProps = React.HTMLAttributes<HTMLElement> & {
   className?: string;
@@ -513,17 +433,8 @@ const SectionComponent = ({ section, sectionName: id, style, onBlockSelect, chil
     setHoveredSectionId(null);
   }
 
-  const component = (
-    <div
-     className={cx({
-        "flex flex-col min-h-full w-full h-full" : true,
-        'outline outline-dotted outline-gray-200 !min-h-4': blocksToRender.length === 0,
-        'outline outline-dashed outline-blue-100 !min-h-4': active,
-        'outline outline-dashed outline-blue-400': isOverDroppable,
-      })}
-      ref={isDraggable ? setNodeRef : undefined}
-      style={style}
-    >
+  const blocksComponent = (
+    <>
       {blocksToRender.length > 0 ? blocksToRender.map((block: Block) => {
         return (
           <MemoizedBlockRenderer
@@ -544,8 +455,26 @@ const SectionComponent = ({ section, sectionName: id, style, onBlockSelect, chil
           </MemoizedBlockRenderer>
         )
       }) : children}
+    </>
+  );
+
+  const containedComponent = (
+    <div
+      className={cx({
+        "flex flex-col min-h-full w-full h-full" : true,
+        'outline outline-dotted outline-gray-200 !min-h-4': blocksToRender.length === 0,
+        'outline outline-dashed outline-blue-100 !min-h-4': active,
+        'outline outline-dashed outline-blue-400': isOverDroppable,
+      })}
+      ref={isDraggable ? setNodeRef : undefined}
+      style={style}
+    >
+      {blocksComponent}
     </div>
   );
+
+  // If section is not draggable, we render a containerless component.
+  const component = !isDraggable ? blocksComponent : containedComponent;
 
   return (
     isDraggable ? (
@@ -561,8 +490,11 @@ const SectionComponent = ({ section, sectionName: id, style, onBlockSelect, chil
 };
 const Section = React.memo(SectionComponent);
 
-export default function LayoutPreview({ page, selectedBlockId, hoveredBlockId, hoveredSectionId, onSelectBlock, theme }: LayoutPreviewProps) {
+export default function LayoutPreview({ page, selectedBlockId, layoutId = 'promo', onSelectBlock, theme }: LayoutPreviewProps) {
   const { setSelectedBlockId: setContextSelectedBlockId } = useEditor(); // Get setSelectedBlockId from context
+
+  // Get the dynamic layout configuration
+  const layoutConfig = useMemo(() => getLayoutJSONConfig(layoutId), [layoutId]);
 
   // Sync selectedBlockId prop with context
   useEffect(() => {
