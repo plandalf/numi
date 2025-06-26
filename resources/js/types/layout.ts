@@ -1,14 +1,12 @@
+import { PageSection } from "./offer";
+
 export interface LayoutConfig {
   id: string;
   name: string;
   description: string;
   icon: React.ComponentType<{ className?: string }>;
-  sections: Record<string, {
-    appearance?: Record<string, string | number>;
-    style?: Record<string, string | number>;
-    asContainer?: boolean;
-    blocks?: unknown[];
-  }>;
+  exposed?: string[]; // The sections that are exposed to the user.
+  sections: Record<string, PageSection>;
   layoutIdentifier: string; // Used for the page.layout.sm field
   layoutConfig: unknown; // The actual JSON layout configuration
 }

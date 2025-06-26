@@ -29,6 +29,7 @@ import 'react-querybuilder/dist/query-builder.css';
 import { PageConditionEditor } from '../editor/page-condition-editor';
 import { GlobalStateContext } from '@/pages/checkout-main';
 import { RuleGroup } from '../editor/page-condition-editor';
+import { getLayoutConfig } from '@/config/layouts';
 
 interface PageFlowEditorProps {
     view: OfferView;
@@ -43,7 +44,7 @@ const NODE_HEIGHT = 150;
 const GRID_SPACING = 20;
 
 export function generateDefaultPage({
-    id, type, position, pageNumber, layout
+    id, type, position, pageNumber, layout = 'promo'
 }: {
     id?: string;
     type: PageType;
@@ -56,303 +57,16 @@ export function generateDefaultPage({
     }
 
     console.log('Creating new page:', { id, type, position, pageNumber, layout });
-
-    // Generate view structure based on layout
-    let viewStructure;
-    
-    switch (layout) {
-      case 'left-sidebar':
-        viewStructure = {
-          // Container sections
-          'left-sidebar-grid': {
-            asContainer: true,
-            appearance: { backgroundColor: 'transparent' },
-            blocks: []
-          },
-          'sidebar-box': {
-            asContainer: true,
-            appearance: { backgroundColor: '#f9fafb', borderRight: '1px solid #e5e7eb' },
-            blocks: []
-          },
-          'sidebar-flex': {
-            asContainer: true,
-            appearance: { backgroundColor: 'transparent' },
-            blocks: []
-          },
-          'main-content-box': {
-            asContainer: true,
-            appearance: { backgroundColor: 'transparent' },
-            blocks: []
-          },
-          'main-content-flex': {
-            asContainer: true,
-            appearance: { backgroundColor: 'transparent' },
-            blocks: []
-          },
-          'main-header': {
-            asContainer: true,
-            appearance: { backgroundColor: 'transparent' },
-            blocks: []
-          },
-          // Content sections
-          title: {
-            appearance: { padding: '24px' },
-            blocks: []
-          },
-          content: {
-            appearance: { padding: '24px', spacing: '4px', flexGrow: '1' },
-            blocks: []
-          },
-          action: {
-            appearance: { padding: '24px', flexShrink: '0' },
-            blocks: []
-          },
-          promo_header: {
-            appearance: { padding: '24px' },
-            blocks: []
-          },
-          promo_content: {
-            appearance: { padding: '24px', spacing: '4px', flexGrow: '1' },
-            blocks: []
-          },
-          promo_action: {
-            appearance: { padding: '24px', flexShrink: '0' },
-            blocks: []
-          },
-        };
-        break;
-      case 'right-sidebar':
-        viewStructure = {
-          // Container sections
-          'right-sidebar-grid': {
-            asContainer: true,
-            appearance: { backgroundColor: 'transparent' },
-            blocks: []
-          },
-          'sidebar-box': {
-            asContainer: true,
-            appearance: { backgroundColor: '#f9fafb', borderLeft: '1px solid #e5e7eb' },
-            blocks: []
-          },
-          'sidebar-flex': {
-            asContainer: true,
-            appearance: { backgroundColor: 'transparent' },
-            blocks: []
-          },
-          'main-content-box': {
-            asContainer: true,
-            appearance: { backgroundColor: 'transparent' },
-            blocks: []
-          },
-          'main-content-flex': {
-            asContainer: true,
-            appearance: { backgroundColor: 'transparent' },
-            blocks: []
-          },
-          'main-header': {
-            asContainer: true,
-            appearance: { backgroundColor: 'transparent' },
-            blocks: []
-          },
-          // Content sections
-          title: {
-            appearance: { padding: '24px' },
-            blocks: []
-          },
-          content: {
-            appearance: { padding: '24px', spacing: '4px', flexGrow: '1' },
-            blocks: []
-          },
-          action: {
-            appearance: { padding: '24px', flexShrink: '0' },
-            blocks: []
-          },
-          promo_header: {
-            appearance: { padding: '24px' },
-            blocks: []
-          },
-          promo_content: {
-            appearance: { padding: '24px', spacing: '4px', flexGrow: '1' },
-            blocks: []
-          },
-          promo_action: {
-            appearance: { padding: '24px', flexShrink: '0' },
-            blocks: []
-          },
-        };
-        break;
-
-      case 'promo':
-        viewStructure = {
-          // Container sections
-          '1x2-grid': {
-            asContainer: true,
-            appearance: { backgroundColor: 'transparent' },
-            blocks: []
-          },
-          'core-box': {
-            asContainer: true,
-            appearance: { backgroundColor: 'transparent' },
-            blocks: []
-          },
-          'core-flex': {
-            asContainer: true,
-            appearance: { backgroundColor: 'transparent' },
-            blocks: []
-          },
-          'header': {
-            asContainer: true,
-            appearance: { backgroundColor: 'transparent' },
-            blocks: []
-          },
-          'promo_box': {
-            asContainer: true,
-            appearance: { backgroundColor: '#EFF6FF' },
-            blocks: []
-          },
-          // Content sections
-          title: {
-            appearance: { padding: '24px' },
-            blocks: []
-          },
-          content: {
-            appearance: { padding: '24px', spacing: '4px', flexGrow: '1' },
-            blocks: []
-          },
-          action: {
-            appearance: { padding: '24px', flexShrink: '0' },
-            blocks: []
-          },
-          promo_header: {
-            appearance: { padding: '24px' },
-            blocks: []
-          },
-          promo_content: {
-            appearance: { padding: '24px' },
-            blocks: []
-          },
-        };
-        break;
-
-      case 'hamburger-split':
-        viewStructure = {
-          // Container sections
-          'hamburger-container': {
-            asContainer: true,
-            appearance: { backgroundColor: 'transparent' },
-            blocks: []
-          },
-          'middle-grid': {
-            asContainer: true,
-            appearance: { backgroundColor: 'transparent' },
-            blocks: []
-          },
-          'left-content': {
-            asContainer: true,
-            appearance: { backgroundColor: 'transparent', borderRight: '1px solid #e5e7eb' },
-            blocks: []
-          },
-          'right-content': {
-            asContainer: true,
-            appearance: { backgroundColor: 'transparent' },
-            blocks: []
-          },
-          // Content sections
-          header: {
-            appearance: { padding: '16px' },
-            blocks: []
-          },
-          title: {
-            appearance: { padding: '24px' },
-            blocks: []
-          },
-          content: {
-            appearance: { padding: '24px', spacing: '4px', flexGrow: '1' },
-            blocks: []
-          },
-          promo_content: {
-            appearance: { padding: '24px', spacing: '4px', flexGrow: '1' },
-            blocks: []
-          },
-          footer: {
-            appearance: { padding: '16px' },
-            blocks: []
-          },
-          action: {
-            appearance: { padding: '16px', flexShrink: '0' },
-            blocks: []
-          },
-        };
-        break;
-        
-      case 'full-width':
-        viewStructure = {
-          // Container sections
-          'full-width-container': {
-            asContainer: true,
-            appearance: { backgroundColor: 'transparent' },
-            blocks: []
-          },
-          // Content sections
-          header: {
-            appearance: { padding: '32px' },
-            blocks: []
-          },
-          content: {
-            appearance: { padding: '24px', spacing: '8px', flexGrow: '1' },
-            blocks: []
-          },
-          footer: {
-            appearance: { padding: '24px' },
-            blocks: []
-          },
-        };
-        break;
-        
-      default: // fallback to promo
-        viewStructure = {
-          title: {
-            appearance: { padding: '24px' },
-            blocks: []
-          },
-          content: {
-            appearance: { padding: '24px', spacing: '4px' },
-            blocks: []
-          },
-          action: {
-            appearance: { padding: '24px' },
-            blocks: []
-          },
-          promo_box: {
-            asContainer: true,
-            style: { backgroundColor: '#EFF6FF' },
-            blocks: []
-          },
-          promo_header: {
-            appearance: { padding: '24px' },
-            blocks: []
-          },
-          promo_content: {
-            appearance: { padding: '24px' },
-            blocks: []
-          },
-        };
-        break;
-    }
+    const layoutConfig = getLayoutConfig(layout);
 
     return {
       id,
       name: `Page ${pageNumber}`,
       type,
       position,
-      view: viewStructure,
+      view: layoutConfig?.sections || {},
       layout: {
-        sm: layout === 'promo' ? 'promo@v1' : 
-            layout === 'left-sidebar' ? 'left-sidebar@v1' :
-            layout === 'right-sidebar' ? 'right-sidebar@v1' :
-            layout === 'hamburger-split' ? 'hamburger-split@v1' :
-            layout === 'full-width' ? 'full-width@v1' :
-            'promo@v1' // default
+        sm: layoutConfig?.layoutIdentifier || 'promo@v1'
       },
       provides: [],
       next_page: {

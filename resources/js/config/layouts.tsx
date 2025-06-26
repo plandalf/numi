@@ -9,28 +9,28 @@ const LAYOUT_CONFIGS = {
       "type": "grid",
       "id": "left-sidebar-grid",
       "props": {
-        "className": "grid grid-cols-1 lg:grid-cols-[400px_1fr] h-full w-full"
+        "className": "min-h-[inherit] max-h-[inherit] grid grid-cols-1 md:grid-cols-[400px_1fr] h-full w-full bg-transparent"
       },
       "children": [
         {
           "type": "box",
-          "id": "sidebar-box",
+          "id": "sidebar_box",
           "props": {
-            "className": "h-full min-h-[inherit] overflow-y-auto bg-gray-50 border-r"
+            "className": "max-h-[inherit] h-full overflow-y-auto bg-gray-50 border-r"
           },
           "children": [
             {
               "type": "flex",
               "id": "sidebar-flex",
               "props": {
-                "className": "flex flex-col h-full"
+                "className": "flex flex-col h-full bg-transparent"
               },
               "children": [
                 {
                   "id": "title",
                   "type": "box",
                   "props": {
-                    "className": "p-6"
+                    "className": "flex flex-col p-6"
                   }
                 },
                 {
@@ -44,7 +44,7 @@ const LAYOUT_CONFIGS = {
                   "id": "action",
                   "type": "box",
                   "props": {
-                    "className": "p-6 mt-auto"
+                    "className": "flex flex-col p-6 mt-auto"
                   }
                 }
               ]
@@ -53,37 +53,37 @@ const LAYOUT_CONFIGS = {
         },
         {
           "type": "box",
-          "id": "main-content-box",
+          "id": "promo_box",
           "props": {
-            "className": "h-full min-h-[inherit] overflow-y-auto"
+            "className": "max-h-[inherit] h-full overflow-y-auto bg-transparent"
           },
           "children": [
             {
               "type": "flex",
               "id": "main-content-flex",
               "props": {
-                "className": "flex flex-col h-full"
+                "className": "flex flex-col h-full bg-transparent"
               },
               "children": [
                 {
                   "type": "flex",
                   "id": "main-header",
                   "props": {
-                    "className": "flex flex-col flex-grow overflow-y-auto"
+                    "className": "flex flex-col flex-grow overflow-y-auto bg-transparent"
                   },
                   "children": [
                     {
                       "id": "promo_header",
                       "type": "box",
                       "props": {
-                        "className": "space-y-1 p-6"
+                        "className": "flex flex-col space-y-1 p-6"
                       }
                     },
                     {
                       "id": "promo_content",
                       "type": "flex",
                       "props": {
-                        "className": "flex flex-col flex-grow space-y-2 p-6"
+                        "className": "flex flex-col flex-grow space-y-2 p-6 grow"
                       }
                     }
                   ]
@@ -92,7 +92,7 @@ const LAYOUT_CONFIGS = {
                   "id": "promo_action",
                   "type": "box",
                   "props": {
-                    "className": "p-6"
+                    "className": "flex flex-col p-6 shrink"
                   }
                 }
               ]
@@ -109,42 +109,42 @@ const LAYOUT_CONFIGS = {
       "type": "grid",
       "id": "right-sidebar-grid",
       "props": {
-        "className": "grid grid-cols-1 lg:grid-cols-[1fr_400px] h-full w-full"
+        "className": "min-h-[inherit] max-h-[inherit] grid grid-cols-1 md:grid-cols-[1fr_400px] h-full w-full bg-transparent"
       },
       "children": [
         {
           "type": "box",
-          "id": "main-content-box",
+          "id": "promo_box",
           "props": {
-            "className": "h-full min-h-[inherit] overflow-y-auto"
+            "className": "max-h-[inherit] h-full overflow-y-auto bg-transparent"
           },
           "children": [
             {
               "type": "flex",
               "id": "main-content-flex",
               "props": {
-                "className": "flex flex-col h-full"
+                "className": "flex flex-col h-full bg-transparent"
               },
               "children": [
                 {
                   "type": "flex",
                   "id": "main-header",
                   "props": {
-                    "className": "flex flex-col flex-grow overflow-y-auto"
+                    "className": "flex flex-col flex-grow overflow-y-auto bg-transparent"
                   },
                   "children": [
                     {
                       "id": "promo_header",
                       "type": "box",
                       "props": {
-                        "className": "space-y-1 p-6"
+                        "className": "flex flex-col space-y-1 p-6"
                       }
                     },
                     {
                       "id": "promo_content",
                       "type": "flex",
                       "props": {
-                        "className": "flex flex-col flex-grow space-y-2 p-6"
+                        "className": "flex flex-col flex-grow space-y-2 p-6 grow"
                       }
                     }
                   ]
@@ -153,7 +153,7 @@ const LAYOUT_CONFIGS = {
                   "id": "promo_action",
                   "type": "box",
                   "props": {
-                    "className": "p-6"
+                    "className": "flex flex-col p-6 shrink"
                   }
                 }
               ]
@@ -162,9 +162,9 @@ const LAYOUT_CONFIGS = {
         },
         {
           "type": "box",
-          "id": "sidebar-box",
+          "id": "sidebar_box",
           "props": {
-            "className": "h-full min-h-[inherit] overflow-y-auto bg-gray-50 border-l"
+            "className": "max-h-[inherit] h-full overflow-y-auto bg-gray-50 border-l"
           },
           "children": [
             {
@@ -178,7 +178,7 @@ const LAYOUT_CONFIGS = {
                   "id": "title",
                   "type": "box",
                   "props": {
-                    "className": "p-6"
+                    "className": "flex flex-col p-6"
                   }
                 },
                 {
@@ -192,7 +192,7 @@ const LAYOUT_CONFIGS = {
                   "id": "action",
                   "type": "box",
                   "props": {
-                    "className": "p-6 mt-auto"
+                    "className": "flex flex-col p-6 mt-auto"
                   }
                 }
               ]
@@ -209,19 +209,19 @@ const LAYOUT_CONFIGS = {
       "type": "grid",
       "id": "1x2-grid",
       "props": {
-        "className": "grid grid-cols-1 md:grid-cols-2 h-full w-full"
+        "className": "min-h-[inherit] max-h-[inherit] grid grid-cols-1 md:grid-cols-2 h-full w-full bg-transparent"
       },
       "children": [
         {
           "type": "box",
           "id": "core-box",
           "props": {
-            "className": "h-full min-h-[inherit] overflow-y-auto"
+            "className": "max-h-[inherit] h-full overflow-y-auto bg-transparent"
           },
           "children": [
             {
               "type": "flex",
-              "id": "core-flex",
+              "id": "main_box",
               "props": {
                 "className": "flex flex-col h-full"
               },
@@ -230,21 +230,21 @@ const LAYOUT_CONFIGS = {
                   "type": "flex",
                   "id": "header",
                   "props": {
-                    "className": "flex flex-col flex-grow overflow-y-auto"
+                    "className": "flex flex-col flex-grow overflow-y-auto bg-transparent"
                   },
                   "children": [
                     {
                       "id": "title",
                       "type": "box",
                       "props": {
-                        "className": "space-y-1 p-6"
+                        "className": "flex flex-col space-y-1 p-6"
                       }
                     },
                     {
                       "id": "content",
                       "type": "flex",
                       "props": {
-                        "className": "flex flex-col flex-grow space-y-2 p-6"
+                        "className": "flex flex-col flex-grow space-y-2 p-6 grow"
                       }
                     }
                   ]
@@ -253,7 +253,7 @@ const LAYOUT_CONFIGS = {
                   "id": "action",
                   "type": "box",
                   "props": {
-                    "className": "p-6"
+                    "className": "flex flex-col p-6 shrink"
                   }
                 }
               ]
@@ -264,21 +264,21 @@ const LAYOUT_CONFIGS = {
           "type": "box",
           "id": "promo_box",
           "props": {
-            "className": "hidden md:flex h-full overflow-y-auto flex-col"
+            "className": "max-h-[inherit] hidden md:flex h-full overflow-y-auto flex-col"
           },
           "children": [
             {
               "id": "promo_header",
               "type": "box",
               "props": {
-                "className": "h-auto p-6"
+                "className": "flex flex-col h-auto p-6"
               }
             },
             {
               "id": "promo_content",
               "type": "box",
               "props": {
-                "className": "h-full flex flex-col flex-grow space-y-2 p-6 min-h-max"
+                "className": "flex flex-col h-full flex flex-col flex-grow space-y-2 p-6 min-h-max"
               }
             }
           ]
@@ -293,42 +293,42 @@ const LAYOUT_CONFIGS = {
       "type": "flex",
       "id": "hamburger-container",
       "props": {
-        "className": "flex flex-col h-full w-full"
+        "className": "min-h-[inherit] max-h-[inherit] flex flex-col h-full w-full bg-transparent"
       },
       "children": [
         {
           "id": "header",
           "type": "box",
           "props": {
-            "className": "w-full bg-white border-b p-4"
+            "className": "flex flex-col w-full bg-white border-b p-4 bg-transparent"
           }
         },
         {
           "type": "grid",
           "id": "middle-grid",
           "props": {
-            "className": "grid grid-cols-1 md:grid-cols-2 flex-grow h-full"
+            "className": "max-h-[inherit] overflow-y-auto grid grid-cols-1 md:grid-cols-2 flex-grow h-full bg-transparent"
           },
           "children": [
             {
               "type": "box",
-              "id": "left-content",
+              "id": "main_box",
               "props": {
-                "className": "h-full overflow-y-auto border-r"
+                "className": "flex flex-col h-full overflow-y-auto border-r bg-transparent"
               },
               "children": [
                 {
                   "id": "title",
                   "type": "box",
                   "props": {
-                    "className": "p-6"
+                    "className": "flex flex-col p-6"
                   }
                 },
                 {
                   "id": "content",
                   "type": "flex",
                   "props": {
-                    "className": "flex flex-col space-y-2 p-6"
+                    "className": "flex flex-col flex-grow space-y-2 p-6 grow"
                   }
                 }
               ]
@@ -337,14 +337,14 @@ const LAYOUT_CONFIGS = {
               "type": "box",
               "id": "right-content", 
               "props": {
-                "className": "h-full overflow-y-auto"
+                "className": "h-full flex flex-col overflow-y-auto bg-transparent"
               },
               "children": [
                 {
                   "id": "promo_content",
                   "type": "flex",
                   "props": {
-                    "className": "flex flex-col space-y-2 p-6"
+                    "className": "flex flex-col space-y-2 p-6 grow"
                   }
                 }
               ]
@@ -355,17 +355,9 @@ const LAYOUT_CONFIGS = {
           "id": "footer",
           "type": "box",
           "props": {
-            "className": "w-full bg-white border-t"
-          },
-          "children": [
-            {
-              "id": "action",
-              "type": "box",
-              "props": {
-                "className": "p-4"
-              }
-            }
-          ]
+            "className": "flex flex-col w-full bg-white border-t p-4 shrink"
+          }
+          
         }
       ]
     }
@@ -375,30 +367,30 @@ const LAYOUT_CONFIGS = {
     "name": "FullWidth@v1",
     "template": {
       "type": "flex",
-      "id": "full-width-container",
+      "id": "main_box",
       "props": {
-        "className": "flex flex-col h-full w-full max-w-4xl mx-auto"
+        "className": "min-h-[inherit] max-h-[inherit] flex flex-col h-full w-full bg-transparent"
       },
       "children": [
         {
           "id": "header",
           "type": "box",
           "props": {
-            "className": "w-full p-8"
+            "className": "flex flex-col w-full p-8 bg-transparent"
           }
         },
         {
           "id": "content",
           "type": "flex",
           "props": {
-            "className": "flex flex-col flex-grow space-y-4 px-8"
+            "className": "flex flex-col flex flex-col flex-grow  overflow-y-auto space-y-4 px-8 grow"
           }
         },
         {
           "id": "footer",
           "type": "box",
           "props": {
-            "className": "w-full p-8 mt-auto"
+            "className": "flex flex-col w-full p-8 mt-auto"
           }
         }
       ]
@@ -414,49 +406,43 @@ export const AVAILABLE_LAYOUTS: Record<string, LayoutConfig> = {
     icon: PanelLeft,
     layoutIdentifier: 'left-sidebar@v1',
     layoutConfig: LAYOUT_CONFIGS['left-sidebar'],
+    exposed: [
+      'sidebar_box',
+      'title',
+      'content',
+      'action',
+      'promo_box',
+      'promo_header',
+      'promo_content',
+      'promo_action'
+    ],
     sections: {
       // Container sections (presentation-only)
       'left-sidebar-grid': {
         asContainer: true,
-        appearance: {
-          backgroundColor: 'transparent'
-        },
         blocks: []
       },
-      'sidebar-box': {
+      'sidebar_box': {
         asContainer: true,
-        appearance: {
+        style: {
           backgroundColor: '#f9fafb',
-          borderRight: '1px solid #e5e7eb'
         },
         blocks: []
       },
       'sidebar-flex': {
         asContainer: true,
-        appearance: {
-          backgroundColor: 'transparent'
-        },
         blocks: []
       },
-      'main-content-box': {
+      'promo_box': {
         asContainer: true,
-        appearance: {
-          backgroundColor: 'transparent'
-        },
         blocks: []
       },
       'main-content-flex': {
         asContainer: true,
-        appearance: {
-          backgroundColor: 'transparent'  
-        },
         blocks: []
       },
       'main-header': {
         asContainer: true,
-        appearance: {
-          backgroundColor: 'transparent'
-        },
         blocks: []
       },
       // Content sections (block-droppable)
@@ -470,14 +456,12 @@ export const AVAILABLE_LAYOUTS: Record<string, LayoutConfig> = {
         appearance: {
           padding: '24px',
           spacing: '4px',
-          flexGrow: '1'
         },
         blocks: []
       },
       action: {
         appearance: {
           padding: '24px',
-          flexShrink: '0'
         },
         blocks: []
       },
@@ -491,14 +475,12 @@ export const AVAILABLE_LAYOUTS: Record<string, LayoutConfig> = {
         appearance: {
           padding: '24px',
           spacing: '4px',
-          flexGrow: '1'
         },
         blocks: []
       },
       promo_action: {
         appearance: {
           padding: '24px',
-          flexShrink: '0'
         },
         blocks: []
       },
@@ -511,49 +493,43 @@ export const AVAILABLE_LAYOUTS: Record<string, LayoutConfig> = {
     icon: PanelRight,
     layoutIdentifier: 'right-sidebar@v1',
     layoutConfig: LAYOUT_CONFIGS['right-sidebar'],
+    exposed: [
+      'promo_box',
+      'promo_header',
+      'promo_content',
+      'promo_action',
+      'sidebar_box',
+      'title',
+      'content',
+      'action'
+    ],
     sections: {
       // Container sections (presentation-only)
       'right-sidebar-grid': {
         asContainer: true,
-        appearance: {
-          backgroundColor: 'transparent'
-        },
         blocks: []
       },
-      'sidebar-box': {
+      'sidebar_box': {
         asContainer: true,
-        appearance: {
+        style: {
           backgroundColor: '#f9fafb',
-          borderLeft: '1px solid #e5e7eb'
         },
         blocks: []
       },
       'sidebar-flex': {
         asContainer: true,
-        appearance: {
-          backgroundColor: 'transparent'
-        },
         blocks: []
       },
-      'main-content-box': {
+      'promo_box': {
         asContainer: true,
-        appearance: {
-          backgroundColor: 'transparent'
-        },
         blocks: []
       },
       'main-content-flex': {
         asContainer: true,
-        appearance: {
-          backgroundColor: 'transparent'  
-        },
         blocks: []
       },
       'main-header': {
         asContainer: true,
-        appearance: {
-          backgroundColor: 'transparent'
-        },
         blocks: []
       },
       // Content sections (block-droppable)
@@ -567,14 +543,12 @@ export const AVAILABLE_LAYOUTS: Record<string, LayoutConfig> = {
         appearance: {
           padding: '24px',
           spacing: '4px',
-          flexGrow: '1'
         },
         blocks: []
       },
       action: {
         appearance: {
           padding: '24px',
-          flexShrink: '0'
         },
         blocks: []
       },
@@ -588,14 +562,12 @@ export const AVAILABLE_LAYOUTS: Record<string, LayoutConfig> = {
         appearance: {
           padding: '24px',
           spacing: '4px',
-          flexGrow: '1'
         },
         blocks: []
       },
       promo_action: {
         appearance: {
           padding: '24px',
-          flexShrink: '0'
         },
         blocks: []
       },
@@ -608,39 +580,39 @@ export const AVAILABLE_LAYOUTS: Record<string, LayoutConfig> = {
     icon: Megaphone,
     layoutIdentifier: 'promo@v1',
     layoutConfig: LAYOUT_CONFIGS['promo'],
+    exposed: [
+      'main_box',
+      'title',
+      'content',
+      'action',
+      'promo_box',
+      'promo_header',
+      'promo_content'
+    ],
     sections: {
       // Container sections (presentation-only)
       '1x2-grid': {
         asContainer: true,
-        appearance: {
-          backgroundColor: 'transparent'
-        },
         blocks: []
       },
       'core-box': {
         asContainer: true,
-        appearance: {
-          backgroundColor: 'transparent'
-        },
         blocks: []
       },
-      'core-flex': {
+      'main_box': {
         asContainer: true,
-        appearance: {
-          backgroundColor: 'transparent'
+        style: {
+          backgroundColor: '#FFFFFF'
         },
         blocks: []
       },
       'header': {
         asContainer: true,
-        appearance: {
-          backgroundColor: 'transparent'
-        },
         blocks: []
       },
       'promo_box': {
         asContainer: true,
-        appearance: {
+        style: {
           backgroundColor: '#EFF6FF'
         },
         blocks: []
@@ -656,14 +628,12 @@ export const AVAILABLE_LAYOUTS: Record<string, LayoutConfig> = {
         appearance: {
           padding: '24px',
           spacing: '4px',
-          flexGrow: '1'
         },
         blocks: []
       },
       action: {
         appearance: {
           padding: '24px',
-          flexShrink: '0'
         },
         blocks: []
       },
@@ -688,35 +658,30 @@ export const AVAILABLE_LAYOUTS: Record<string, LayoutConfig> = {
     icon: Menu,
     layoutIdentifier: 'hamburger-split@v1',
     layoutConfig: LAYOUT_CONFIGS['hamburger-split'],
+    exposed: [
+      'header',
+      'main_box',
+      'title',
+      'content',
+      'promo_content',
+      'footer'
+    ],
     sections: {
       // Container sections (presentation-only)
       'hamburger-container': {
         asContainer: true,
-        appearance: {
-          backgroundColor: 'transparent'
-        },
         blocks: []
       },
       'middle-grid': {
         asContainer: true,
-        appearance: {
-          backgroundColor: 'transparent'
-        },
         blocks: []
       },
-      'left-content': {
+      'main_box': {
         asContainer: true,
-        appearance: {
-          backgroundColor: 'transparent',
-          borderRight: '1px solid #e5e7eb'
-        },
         blocks: []
       },
       'right-content': {
         asContainer: true,
-        appearance: {
-          backgroundColor: 'transparent'
-        },
         blocks: []
       },
       // Content sections (block-droppable)
@@ -736,7 +701,6 @@ export const AVAILABLE_LAYOUTS: Record<string, LayoutConfig> = {
         appearance: {
           padding: '24px',
           spacing: '4px',
-          flexGrow: '1'
         },
         blocks: []
       },
@@ -744,20 +708,12 @@ export const AVAILABLE_LAYOUTS: Record<string, LayoutConfig> = {
         appearance: {
           padding: '24px',
           spacing: '4px',
-          flexGrow: '1'
         },
         blocks: []
       },
       footer: {
         appearance: {
           padding: '16px',
-        },
-        blocks: []
-      },
-      action: {
-        appearance: {
-          padding: '16px',
-          flexShrink: '0'
         },
         blocks: []
       },
@@ -770,13 +726,16 @@ export const AVAILABLE_LAYOUTS: Record<string, LayoutConfig> = {
     icon: LayoutGrid,
     layoutIdentifier: 'full-width@v1',
     layoutConfig: LAYOUT_CONFIGS['full-width'],
+    exposed: [
+      'main_box',
+      'header',
+      'content',
+      'footer'
+    ],
     sections: {
       // Container sections (presentation-only)
-      'full-width-container': {
+      'main_box': {
         asContainer: true,
-        appearance: {
-          backgroundColor: 'transparent'
-        },
         blocks: []
       },
       // Content sections (block-droppable)
@@ -790,7 +749,6 @@ export const AVAILABLE_LAYOUTS: Record<string, LayoutConfig> = {
         appearance: {
           padding: '24px',
           spacing: '8px',
-          flexGrow: '1'
         },
         blocks: []
       },

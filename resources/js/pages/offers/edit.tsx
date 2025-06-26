@@ -1019,7 +1019,7 @@ function PageTypeDialog() {
               <div>
                 <label className="text-sm font-medium mb-3 block">Layout</label>
                 <Select value={selectedLayout} onValueChange={setSelectedLayout}>
-                  <SelectTrigger className="w-full">
+                  <SelectTrigger className="w-full h-12">
                     <SelectValue placeholder="Select a layout" />
                   </SelectTrigger>
                   <SelectContent>
@@ -1027,9 +1027,9 @@ function PageTypeDialog() {
                       const IconComponent = layout.icon;
                       return (
                         <SelectItem key={layout.id} value={layout.id}>
-                          <div className="flex items-center gap-2">
+                          <div className="h-10 flex items-center gap-4">
                             <IconComponent className="w-4 h-4" />
-                            <div>
+                            <div className="items-start flex flex-col">
                               <div className="font-medium">{layout.name}</div>
                               <div className="text-xs text-muted-foreground">{layout.description}</div>
                             </div>

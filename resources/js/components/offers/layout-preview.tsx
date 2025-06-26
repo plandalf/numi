@@ -433,17 +433,8 @@ const SectionComponent = ({ section, sectionName: id, style, onBlockSelect, chil
     setHoveredSectionId(null);
   }
 
-  const component = (
-    <div
-     className={cx({
-        "flex flex-col min-h-full w-full h-full" : true,
-        'outline outline-dotted outline-gray-200 !min-h-4': blocksToRender.length === 0,
-        'outline outline-dashed outline-blue-100 !min-h-4': active,
-        'outline outline-dashed outline-blue-400': isOverDroppable,
-      })}
-      ref={isDraggable ? setNodeRef : undefined}
-      style={style}
-    >
+  const blocksComponent = (
+    <>
       {blocksToRender.length > 0 ? blocksToRender.map((block: Block) => {
         return (
           <MemoizedBlockRenderer
@@ -464,8 +455,26 @@ const SectionComponent = ({ section, sectionName: id, style, onBlockSelect, chil
           </MemoizedBlockRenderer>
         )
       }) : children}
+    </>
+  );
+
+  const containedComponent = (
+    <div
+      className={cx({
+        "flex flex-col min-h-full w-full h-full" : true,
+        'outline outline-dotted outline-gray-200 !min-h-4': blocksToRender.length === 0,
+        'outline outline-dashed outline-blue-100 !min-h-4': active,
+        'outline outline-dashed outline-blue-400': isOverDroppable,
+      })}
+      ref={isDraggable ? setNodeRef : undefined}
+      style={style}
+    >
+      {blocksComponent}
     </div>
   );
+
+  // If section is not draggable, we render a containerless component.
+  const component = !isDraggable ? blocksComponent : containedComponent;
 
   return (
     isDraggable ? (

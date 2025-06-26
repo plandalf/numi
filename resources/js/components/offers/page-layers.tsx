@@ -15,6 +15,7 @@ import { EnumerationEditor } from "../editor/enumeration-editor";
 import { useState } from "react";
 import { router } from "@inertiajs/react";
 import { Separator } from "../ui/separator";
+import { getLayoutConfig } from "@/config/layouts";
 
 export interface PageLayersProps {
   onAddNewElementClick: () => void;
@@ -52,9 +53,12 @@ export const PageLayers: React.FC<PageLayersProps> = ({ onAddNewElementClick }) 
   const page = data.view.pages[selectedPage];
   const sections: { id: string; name: string; blocks: Block[]; hidden?: boolean }[] = [];
 
+  const layoutId = page.layout?.sm?.split('@')[0] || 'promo';
+  const layoutConfig = getLayoutConfig(layoutId);
+
   if (page && page.view) {
     Object.entries(page.view as PageView).forEach(([sectionId, section]) => {
-      if (section && Array.isArray(section.blocks)) {
+      if (section && Array.isArray(section.blocks) && layoutConfig?.exposed?.includes(sectionId)) {
         sections.push({
           id: sectionId,
           name: section?.label ?? sectionId.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
@@ -67,7 +71,7 @@ export const PageLayers: React.FC<PageLayersProps> = ({ onAddNewElementClick }) 
 
   // Sort sections in chronological order
   const sortedSections = sections.sort((a, b) => {
-    const order = ['title', 'content', 'action', 'promo_box', 'promo_header', 'promo_content'];
+    const order = layoutConfig?.exposed || [];
 
     // Get index from order array, return -1 if not found
     const getOrderIndex = (id: string): number => {

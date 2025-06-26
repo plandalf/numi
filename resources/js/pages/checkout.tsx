@@ -21,6 +21,7 @@ import { OnInit } from '@/events/OnInit';
 import { useEffect } from 'react';
 import { PageChanged } from '@/events/PageChanged';
 import { PaymentInitialized } from '@/events/PaymentInitialized';
+import { getLayoutJSONConfig } from '@/config/layouts';
 
 
 export const NavigationBar = ({ barStyle, children, className, ...props }: NavigationBarProps) => {
@@ -116,10 +117,12 @@ const renderElement = (
       const backgroundColor = isContained ? section.style?.backgroundColor : resolveThemeValue(section.style?.backgroundColor, theme, 'canvas_color') as string;
       const padding = section?.appearance?.padding;
       const margin = section?.appearance?.margin;
+      const spacing = section?.appearance?.spacing;
       const backgroundImage = section?.style?.backgroundImage;
       const hidden = section?.style?.hidden;
       const borderRadius = section?.style?.borderRadius;
 
+      console.log('spacing', spacing);
       if (!element) return null;
 
       // Render the section with its blocks
@@ -140,7 +143,7 @@ const renderElement = (
               backgroundRepeat: 'no-repeat',
             } : {}),
             ...(hidden ? {display: 'none'} : {}),
-            gap: (section as PageSection)?.appearance?.spacing
+            gap: spacing
           },
           id,
         },
@@ -246,7 +249,7 @@ const CheckoutController = ({ offer, session }: { offer: OfferConfiguration, ses
       return {
         minHeight: style?.maxHeight?.height ?? "764px",
         maxHeight: style?.maxHeight?.height ?? "764px",
-        minWidth: style?.maxWidth?.width ?? "1024px",
+        // minWidth: style?.maxWidth?.width ?? "1024px",
         maxWidth: style?.maxWidth?.width ?? "1024px",
         ...(style?.shadow ? {
           boxShadow: style.shadow,
@@ -281,6 +284,10 @@ const CheckoutController = ({ offer, session }: { offer: OfferConfiguration, ses
 
     sendMessage(new PageChanged(currentPage.id));
   }, [currentPage]);
+
+
+  // Get the dynamic layout configuration
+  const layoutConfig = useMemo(() => getLayoutJSONConfig(currentPage?.layout?.sm?.split('@')[0] ?? 'promo'), [currentPage?.layout?.sm]);
 
   if (!currentPage) {
     console.error('No page found');
