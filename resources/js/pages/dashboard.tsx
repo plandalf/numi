@@ -10,9 +10,10 @@ import { useState } from 'react';
 import { Template } from '@/types/template';
 import { Offer } from '@/types/offer';
 import { TutorialCard } from '@/components/onboarding/TutorialCard';
-import { Separator } from '@/components/ui/separator';
 import { Kebab } from '@/components/ui/kebab';
 import { toast } from 'sonner';
+import { PageEditorDialog, PageEditorDialogPayload } from '@/components/offers/dialogs/page-editor-dialog';
+import { generateDefaultPage } from '@/components/offers/page-flow-editor';
 
 interface Props {
     offers: Offer[];
@@ -31,17 +32,40 @@ const breadcrumbs: BreadcrumbItem[] = [
 
 export default function Dashboard({ offers, globalTemplates, organizationTemplates, categories, showOffersTutorial }: Props) {
     const [isSelectorOpen, setIsSelectorOpen] = useState(false);
+    const [isPageEditorDialogOpen, setIsPageEditorDialogOpen] = useState(false);
 
     const templates = [...organizationTemplates, ...globalTemplates];
 
-    const createNewOffer = () => {
-        router.post(route('offers.store'), {});
+    const openPageEditorDialog = () => setIsPageEditorDialogOpen(true);
+
+    const createNewOffer = ({
+      pageName,
+      layout,
+      type
+    }: PageEditorDialogPayload) => {
+
+      const id = `page_${Math.random().toString(36).substr(2, 9)}`;
+
+      const defaultName = pageName || (type === 'entry' ? 'Entry Page' : type === 'ending' ? 'Ending Page' : 'New Page');
+  
+      const updatedView = {
+        pages: {
+          [id]: {
+            ...generateDefaultPage({ id, type, position: { x: 0, y: 0 }, pageNumber: 1, layout }),
+            name: defaultName,
+          }
+        },
+        first_page: id
+      };
+      router.post(route('offers.store'), {
+        view: JSON.stringify(updatedView)
+      });
     };
 
     const handleCreateOffer = () => {
         if (templates.length === 0) {
-            // If no templates available, create offer directly
-            createNewOffer();
+            // If no templates available, open the Page Editor dialog
+            openPageEditorDialog();
         } else {
             // If templates available, show template selector
             setIsSelectorOpen(true);
@@ -195,7 +219,22 @@ export default function Dashboard({ offers, globalTemplates, organizationTemplat
             onOpenChange={setIsSelectorOpen}
             templates={templates}
             categories={categories}
-            onCreateNew={createNewOffer}
+            onCreateNew={openPageEditorDialog}
+          />
+          <PageEditorDialog
+            open={isPageEditorDialogOpen}
+            onOpenChange={setIsPageEditorDialogOpen}
+            onSubmit={createNewOffer}
+            copy={{ 
+              title: 'Add your first page',
+              description: 'Select a specific layout for your first page'
+            }}
+            values={{
+              type: 'entry'
+            }}
+            config={{
+              disabledTypes: ['page', 'payment', 'ending']
+            }}
           />
         </AppLayout>
 );

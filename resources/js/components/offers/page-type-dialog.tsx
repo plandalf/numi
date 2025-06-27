@@ -7,7 +7,7 @@ import {
     DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { ArrowRightToLine, FileText, CheckSquare } from 'lucide-react';
+import { ArrowRightToLine, FileText, CheckSquare, CreditCard } from 'lucide-react';
 
 interface PageTypeDialogProps {
     open: boolean;
@@ -15,23 +15,29 @@ interface PageTypeDialogProps {
     onSelect: (type: PageType) => void;
 }
 
-const PAGE_TYPES: { type: PageType; label: string; icon: React.ReactNode; description: string }[] = [
+export const PAGE_TYPES: { type: PageType; label: string; icon: React.ReactNode; description: string }[] = [
     {
         type: 'entry',
         label: 'Entry Page',
-        icon: <ArrowRightToLine className="w-4 h-4" />,
+        icon: <ArrowRightToLine className="w-6 h-6" />,
         description: 'The first page users see when entering your offer'
     },
     {
         type: 'page',
-        label: 'Standard Page',
-        icon: <FileText className="w-4 h-4" />,
+        label: 'Content Page',
+        icon: <FileText className="w-6 h-6" />,
         description: 'A regular page in your offer flow'
+    },
+    {
+        type: 'payment',
+        label: 'Payment Page',
+        icon: <CreditCard className="w-6 h-6" />,
+        description: 'The payment page in your offer flow'
     },
     {
         type: 'ending',
         label: 'Ending Page',
-        icon: <CheckSquare className="w-4 h-4" />,
+        icon: <CheckSquare className="w-6 h-6" />,
         description: 'The final page in a flow branch'
     }
 ];
