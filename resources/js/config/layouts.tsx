@@ -762,8 +762,10 @@ export const AVAILABLE_LAYOUTS: Record<string, LayoutConfig> = {
   }
 };
 
+const DEFAULT_LAYOUT = AVAILABLE_LAYOUTS['promo'];
+
 export const getLayoutConfig = (layoutId: string): LayoutConfig | null => {
-  return AVAILABLE_LAYOUTS[layoutId] || null;
+  return AVAILABLE_LAYOUTS[layoutId] || DEFAULT_LAYOUT;
 };
 
 export const getAllLayouts = (): LayoutConfig[] => {
