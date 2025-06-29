@@ -25,12 +25,12 @@ function ButtonBlockComponent({ context }: { context: BlockContextType }) {
     initialValue: 'submit',
     options: ['submit', 'button', 'reset'],
     labels: {
-      submit: 'Submit',
-      button: 'Button',
-      reset: 'Reset',
+      submit: 'Proceed to Next Page',
+      button: 'Do Nothing',
+      reset: 'Reset Form',
     },
     inspector: 'select',
-    label: 'Type',
+    label: 'Action',
   });
 
   const [icon] = Numi.useStateJsonSchema({

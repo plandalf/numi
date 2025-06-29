@@ -2,6 +2,9 @@ import { cn, isValidUrl } from '@/lib/utils';
 import { Label } from '../ui/label';
 import { Textarea } from '../ui/textarea';
 import React, { useEffect, useMemo, useState } from 'react';
+import { MarkdownIcon } from '../blocks/MarkdownIcon';
+import { Tooltip, TooltipTrigger, TooltipContent } from '../ui/tooltip';
+import { ExternalLinkIcon } from 'lucide-react';
 
 interface StringEditorProps {
   label?: string;
@@ -51,7 +54,23 @@ export const StringEditor: React.FC<StringEditorProps> = ({ label, placeholder, 
 
   return (
     <div className="flex flex-col gap-2">
-      {label && <Label className="text-sm capitalize">{label}</Label>}
+      {label && <Label className="text-sm capitalize flex items-center justify-between">
+        {label}
+        {multiline && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span><MarkdownIcon className="w-5 h-5 text-gray-500 cursor-help" /></span>
+            </TooltipTrigger>
+            <TooltipContent side="right" align="center" className="max-w-xs">
+              <div>
+                <strong>Supports Markdown formatting.</strong>
+                <hr/>
+                <a href='https://www.plandalf.dev/docs/markdown-blocks' className='text-blue-300 underline' target='_blank' rel='noopener noreferrer'>Read about markdown blocks <ExternalLinkIcon className="w-4 h-4 inline-block" /></a>
+              </div>
+            </TooltipContent>
+          </Tooltip>
+        )}
+      </Label>}
       {multiline ? (
       <Textarea
         className="!min-h-16 bg-white"
