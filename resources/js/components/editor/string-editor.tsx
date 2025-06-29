@@ -64,7 +64,7 @@ export const StringEditor: React.FC<StringEditorProps> = ({ label, placeholder, 
             <TooltipContent side="right" align="center" className="max-w-xs">
               <div>
                 <strong>Supports Markdown formatting.</strong>
-                <hr/>
+                <br/><br/>
                 <a href='https://www.plandalf.dev/docs/markdown-blocks' className='text-blue-300 underline' target='_blank' rel='noopener noreferrer'>Read about markdown blocks <ExternalLinkIcon className="w-4 h-4 inline-block" /></a>
               </div>
             </TooltipContent>
