@@ -23,7 +23,6 @@ class OfferItemStoreRequest extends FormRequest
         return $offer instanceof Offer
             && $offer->organization_id === Auth::user()->currentOrganization->id;
     }
-
     /**
      * Get the validation rules that apply to the request.
      *
@@ -40,9 +39,11 @@ class OfferItemStoreRequest extends FormRequest
                 'required',
                 'string',
                 'max:255',
-                Rule::unique('store_offer_items')->where(function ($query) use ($offer) {
-                    return $query->where('offer_id', $offer->id)->whereNull('deleted_at');
-                }),
+                Rule::unique('store_offer_items')
+                    ->where(function ($query) use ($offer) {
+                        return $query->where('offer_id', $offer->id)
+                            ->whereNull('deleted_at');
+                    }),
                 'regex:/^[a-z0-9_]+$/', // Ensure key is snake_case and alphanumeric
             ],
             'sort_order' => ['integer', 'min:0'],
@@ -51,10 +52,15 @@ class OfferItemStoreRequest extends FormRequest
             // 'is_tax_inclusive' => ['boolean'],
             // 'tax_rate' => ['numeric', 'min:0', 'max:100'],
             'prices' => ['array'],
-            'prices.*' => ['integer', Rule::exists('catalog_prices', 'id')->where(function ($query) use ($organizationId) {
-                return $query->where('organization_id', $organizationId)
-                    ->where('is_active', true);
-            })],
+            'prices.*' => [
+                'integer',
+                Rule::exists('catalog_prices', 'id')
+                    ->where(function ($query) use ($organizationId) {
+                        return $query
+                            ->where('organization_id', $organizationId)
+                            ->where('is_active', true);
+                    })
+            ],
             'type' => ['required', Rule::enum(OfferItemType::class)],
         ];
     }
@@ -64,6 +70,23 @@ class OfferItemStoreRequest extends FormRequest
      */
     protected function prepareForValidation(): void
     {
+        $offer = $this->route('offer');
+        $originalKey = $this->input('key');
+        $key = $originalKey;
+        $suffix = 1;
+
+        // Find a unique key by incrementing -1, -2, etc.
+        while (
+            $offer && $offer->offerItems()->where('key', $key)->exists()
+        ) {
+            $key = $originalKey . '-' . $suffix;
+            $suffix++;
+        }
+
+        if ($key !== $originalKey) {
+            $this->merge(['key' => $key]);
+        }
+
         // Ensure boolean value for is_required
         if ($this->has('is_required')) {
             $this->merge([
@@ -76,12 +99,6 @@ class OfferItemStoreRequest extends FormRequest
                 'is_highlighted' => filter_var($this->input('is_highlighted'), FILTER_VALIDATE_BOOLEAN),
             ]);
         }
-
-        // if ($this->has('is_tax_inclusive')) {
-        //     $this->merge([
-        //         'is_tax_inclusive' => filter_var($this->input('is_tax_inclusive'), FILTER_VALIDATE_BOOLEAN),
-        //     ]);
-        // }
 
         // Ensure sort_order is integer
         if ($this->has('sort_order')) {

@@ -472,9 +472,9 @@ export default function PriceForm({
       if (isEditing && initialData) {
         put(route('products.prices.update', { product: product.id, price: initialData.id }), {
           onSuccess: () => {
-            if (!hideSuccessToast) {
-              toast.success(`Price ${priceName} updated successfully`, { id: toastId });
-            }
+            // if (!hideSuccessToast) {
+            //   toast.success(`Price ${priceName} updated successfully`, { id: toastId });
+            // }
             onOpenChange(false);
           },
           onError: () => {
