@@ -114,7 +114,7 @@ const renderElement = (
   if (id && page.view[id]) {
     const section = page.view[id] as PageSection;
     if (section && section.blocks) {
-      const backgroundColor = isContained ? section.style?.backgroundColor : resolveThemeValue(section.style?.backgroundColor, theme, 'canvas_color') as string;
+      const backgroundColor = isContained ? section.style?.backgroundColor : section.style?.backgroundColor;
       const padding = section?.appearance?.padding;
       const margin = section?.appearance?.margin;
       const spacing = section?.appearance?.spacing;

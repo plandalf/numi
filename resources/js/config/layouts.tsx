@@ -1,5 +1,5 @@
 import { LayoutConfig } from '@/types/layout';
-import { LayoutGrid, Megaphone, PanelLeft, PanelRight, Menu } from 'lucide-react';
+import { LayoutGrid, Megaphone, PanelLeft, PanelRight, Menu, Columns2Icon } from 'lucide-react';
 
 // Layout JSON configurations
 const LAYOUT_CONFIGS = {
@@ -395,6 +395,97 @@ const LAYOUT_CONFIGS = {
         }
       ]
     }
+  },
+  
+  'stripe-checkout': {
+    "name": "StripeCheckout@v1",
+    "template": {
+      "type": "flex",
+      "id": "stripe-checkout-outer",
+      "props": {
+        "className": "min-h-[inherit] max-h-[inherit] flex flex-col items-center justify-center h-full w-full bg-transparent"
+      },
+      "children": [
+        {
+          "type": "flex",
+          "id": "stripe-bg-row",
+          "props": {
+            "className": "relative flex w-full min-h-full h-full"
+          },
+          "children": [
+            {
+              "type": "box",
+              "id": "stripe_left",
+              "props": {
+                "className": "hidden md:block absolute left-0 top-0 h-full w-1/2  z-0"
+              }
+            },
+            {
+              "type": "box",
+              "id": "stripe_right",
+              "props": {
+                "className": "hidden md:block absolute right-0 top-0 h-full w-1/2  z-0 border-l border-gray-200"
+              }
+            },
+            {
+              "type": "grid",
+              "id": "stripe-checkout-grid",
+              "props": {
+                "className": "relative w-full max-w-[1280px] mx-auto grid grid-cols-1 md:grid-cols-2 h-full min-h-full bg-transparent z-10"
+              },
+              "children": [
+                {
+                  "type": "box",
+                  "id": "stripe_left_inner",
+                  "props": {
+                    "className": "relative flex flex-col h-full min-h-full bg-transparent px-8 py-12"
+                  },
+                  "children": [
+                    {
+                      "id": "stripe_left_header",
+                      "type": "box",
+                      "props": {
+                        "className": "flex flex-col w-full mb-8"
+                      }
+                    },
+                    {
+                      "id": "stripe_left_content",
+                      "type": "flex",
+                      "props": {
+                        "className": "flex flex-col flex-grow w-full"
+                      }
+                    },
+                    {
+                      "id": "stripe_left_action",
+                      "type": "box",
+                      "props": {
+                        "className": "sticky bottom-0 left-0 w-full flex flex-col mt-8 pt-8 bg-inherit"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "box",
+                  "id": "stripe_right_inner",
+                  "props": {
+                    "className": "relative flex flex-col h-full min-h-full bg-transparent px-8 py-12"
+                  },
+                  "children": [
+                    {
+                      "id": "stripe_right_content",
+                      "type": "flex",
+                      "props": {
+                        "className": "flex flex-col flex-grow w-full"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
   }
 };
 
@@ -758,6 +849,94 @@ export const AVAILABLE_LAYOUTS: Record<string, LayoutConfig> = {
         },
         blocks: []
       },
+    }
+  },
+  'stripe-checkout': {
+    id: 'stripe-checkout',
+    name: 'Stripe Checkout Layout',
+    description: 'Stripe-style checkout with two centered columns, vertical divider, and full-bleed backgrounds',
+    icon: Columns2Icon,
+    layoutIdentifier: 'stripe-checkout@v1',
+    layoutConfig: LAYOUT_CONFIGS['stripe-checkout'],
+    exposed: [
+      'stripe_left',
+      'stripe_right',
+      'stripe_left_inner',
+      'stripe_left_header',
+      'stripe_left_content',
+      'stripe_left_action',
+      'stripe_right_inner',
+      'stripe_right_content'
+    ],
+    sections: {
+      // Container sections
+      'stripe-checkout-outer': {
+        asContainer: true,
+        blocks: []
+      },
+      'stripe-bg-row': {
+        asContainer: true,
+        blocks: []
+      },
+      'stripe_left': {
+        asContainer: true,
+        style: {
+          backgroundColor: '#fafafa'
+        },
+        blocks: []
+      },
+      'stripe_right': {
+        asContainer: true,
+        style: {
+          backgroundColor: '#ffffff'
+        },
+        blocks: []
+      },
+      'stripe-checkout-grid': {
+        asContainer: true,
+        style: {
+          backgroundColor: 'transparent'
+        },
+        blocks: []
+      },
+      'stripe_left_inner': {
+        asContainer: true,
+        style: {
+          backgroundColor: 'transparent'
+        },
+        blocks: []
+      },
+      'stripe_right_inner': {
+        asContainer: true,
+        blocks: []
+      },
+      // Content sections
+      stripe_left_header: {
+        appearance: {
+          padding: '32px',
+        },
+        blocks: []
+      },
+      stripe_left_content: {
+        appearance: {
+          padding: '24px',
+          spacing: '8px',
+        },
+        blocks: []
+      },
+      stripe_left_action: {
+        appearance: {
+          padding: '24px',
+        },
+        blocks: []
+      },
+      stripe_right_content: {
+        appearance: {
+          padding: '32px',
+          spacing: '8px',
+        },
+        blocks: []
+      }
     }
   }
 };
