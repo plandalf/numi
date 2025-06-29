@@ -113,11 +113,12 @@ function SortableAccordionItem({
             'flex items-center justify-between w-full px-4 py-3',
             'rounded-lg transition-colors group cursor-pointer',
             'no-underline hover:no-underline bg-gray-200 text-muted-foreground',
+            'max-w-[290px] truncate overflow-hidden',
             isOpen && 'bg-teal-600 text-white',
             isBeingDraggedOver && 'ring-2 ring-blue-300 ring-opacity-50'
           )}
         >
-          <div className="flex items-center flex-1">
+          <div className="flex items-center flex-1 truncate">
             {enableDragAndDrop && !isOpen && ( // Only show drag handle when section is closed
               <div
                 {...attributes}
