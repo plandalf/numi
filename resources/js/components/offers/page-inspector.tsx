@@ -34,7 +34,7 @@ export const AppearanceSection = ({ globalState, block, onUpdate }: { globalStat
   }
 
   return (
-    <div className="flex flex-col gap-3 mb-6">
+    <div className="flex flex-col gap-2 mb-6">
       <h3 className="font-semibold">Appearance</h3>
       {appearanceHooks.map((hook) => {
         return (
@@ -282,7 +282,7 @@ export const Inspector = ({
               return (
                 <div key={group} className="space-y-2">
                   <div className="text-sm font-semibold">{group === 'ungrouped' ? '' : startCase(group)}</div>
-                  <div className="flex flex-col gap-2 h-full rounded-md p-2 border bg-[#F7F9FF]">
+                  <div className="flex flex-col gap-2 h-full rounded-md xp-2 pr-2 bordxer xbg-[#F7F9FF]">
                     {filteredHooks.map((hook: HookUsage) => (
                       <div key={hook.name}>
                         {hook.type === 'string' && hook.inspector === 'file' ? (

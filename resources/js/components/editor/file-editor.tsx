@@ -10,7 +10,7 @@ interface FileEditorProps {
 }
 
 export const FileEditor: React.FC<FileEditorProps> = ({ label, value, onChange, preview }) => (
-  <div className="flex flex-col gap-3">
+  <div className="flex flex-col gap-2">
     <Label className="text-sm capitalize">{label}</Label>
     <ImageUpload value={value} onChange={(data) => onChange(data?.url)} preview={preview} />
   </div>

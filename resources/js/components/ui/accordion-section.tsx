@@ -106,14 +106,14 @@ function SortableAccordionItem({
         style={style}
         key={index}
         value={`section-${index}`}
-        className="rounded-lg border-none shadow-none space-y-4"
+        className="rounded-lg border-none shadow-none space-y-2"
       >
         <AccordionTrigger
           className={cn(
-            'flex items-center justify-between w-full px-4 py-3',
+            'flex items-center justify-between w-full pl-2 pr-3 py-2',
             'rounded-lg transition-colors group cursor-pointer',
             'no-underline hover:no-underline bg-gray-200 text-muted-foreground',
-            'max-w-[290px] truncate overflow-hidden',
+            'max-w-[300px] truncate overflow-hidden',
             isOpen && 'bg-teal-600 text-white',
             isBeingDraggedOver && 'ring-2 ring-blue-300 ring-opacity-50'
           )}

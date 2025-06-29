@@ -7,7 +7,7 @@ interface ColorPickerEditorProps extends ColorPickerProps {
 }
 
 export const ColorPickerEditor: React.FC<ColorPickerEditorProps> = ({ label, value, onChange, type, themeColors }) => (
-  <div className="flex flex-col gap-3">
+  <div className="flex flex-col gap-2">
     <Label className="text-sm capitalize">{label}</Label>
     <ColorPicker value={value} onChange={onChange} type={type} themeColors={themeColors} />
   </div>

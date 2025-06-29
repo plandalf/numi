@@ -52,7 +52,7 @@ export const IconPickerEditor: React.FC<IconPickerEditorProps> = ({ label, value
   }, [previewValue]);
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-2">
       <Label className="text-sm capitalize">{label}</Label>
       <div className="flex flex-row gap-2">
         <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>

@@ -15,7 +15,7 @@ interface EnumerationEditorProps {
 }
 
 export const EnumerationEditor: React.FC<EnumerationEditorProps> = ({ label, placeholder = 'Select an option', value, onChange, options, icons, labels, inspector }) => (
-  <div className="flex flex-col gap-3">
+  <div className="flex flex-col gap-2">
     {label && <Label className="text-sm">{label}</Label>}
     {inspector && inspector === 'card' ? (
       <CardIconPanel

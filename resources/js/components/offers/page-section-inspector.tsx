@@ -89,7 +89,7 @@ export function SectionInspector({ sectionId /*, onClose */ }: SectionInspectorP
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex flex-col gap-3 mb-6 overflow-y-auto p-4">
+      <div className="flex flex-col gap-2 mb-6 overflow-y-auto p-4">
         <h3 className="font-semibold">Appearance</h3>
           {appearanceItems.map((item) => (
             (item.inspector === 'spacingPicker' ?(

@@ -196,7 +196,7 @@ export function JSONSchemaEditor({
       });
     };
     return (
-      <div className="space-y-4">
+      <div className="space-y-4 rounded-md p-2  border bg-[#F7F9FF]">
         {Object.entries(schema.properties).map(([propName, propSchema]) => {
           if (propSchema.meta?.editor === 'hidden') return null;
           return (
