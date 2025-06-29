@@ -156,7 +156,8 @@ function DetailListBlockComponent({ context }: { context: BlockContextType }) {
   const iconStyle = useMemo(() => ({
     alignSelf: style.iconAlignment ?? 'start',
     color: resolveThemeValue(style.iconColor, theme, 'primary_color'),
-    size: style.iconSize?.height ?? '15px',
+    height: style.iconSize?.height ?? '15px',
+    width: 'auto',
   }), [style]);
 
   const textContainerStyle = useMemo(() => ({
@@ -183,6 +184,7 @@ function DetailListBlockComponent({ context }: { context: BlockContextType }) {
         <IconRenderer icon={item.icon} style={iconStyle} defaultIcon={
           <span className="text-gray-500" style={iconStyle}>●</span>
         }/>
+        <div>{iconStyle.width} {iconStyle.height}</div>
 
         {/* Main content */}
         <div
