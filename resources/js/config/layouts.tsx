@@ -438,14 +438,14 @@ const LAYOUT_CONFIGS = {
                   "type": "box",
                   "id": "stripe_left_inner",
                   "props": {
-                    "className": "relative flex flex-col h-full min-h-full bg-transparent px-8 py-12"
+                    "className": "relative flex flex-col h-full min-h-full bg-transparent"
                   },
                   "children": [
                     {
                       "id": "stripe_left_header",
                       "type": "box",
                       "props": {
-                        "className": "flex flex-col w-full mb-8"
+                        "className": "flex flex-col w-full"
                       }
                     },
                     {
@@ -459,7 +459,7 @@ const LAYOUT_CONFIGS = {
                       "id": "stripe_left_action",
                       "type": "box",
                       "props": {
-                        "className": "sticky bottom-0 left-0 w-full flex flex-col mt-8 pt-8 bg-inherit"
+                        "className": "sticky bottom-0 left-0 w-full flex flex-col bg-inherit"
                       }
                     }
                   ]
@@ -468,7 +468,7 @@ const LAYOUT_CONFIGS = {
                   "type": "box",
                   "id": "stripe_right_inner",
                   "props": {
-                    "className": "relative flex flex-col h-full min-h-full bg-transparent px-8 py-12"
+                    "className": "relative flex flex-col h-full min-h-full bg-transparent"
                   },
                   "children": [
                     {
