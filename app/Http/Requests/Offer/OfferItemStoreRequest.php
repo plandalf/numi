@@ -79,7 +79,7 @@ class OfferItemStoreRequest extends FormRequest
         while (
             $offer && $offer->offerItems()->where('key', $key)->exists()
         ) {
-            $key = $originalKey . '-' . $suffix;
+            $key = $originalKey . '_' . $suffix;
             $suffix++;
         }
 
