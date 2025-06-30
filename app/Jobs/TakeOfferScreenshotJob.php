@@ -27,6 +27,11 @@ class TakeOfferScreenshotJob extends QueueableJob
             ->acceptJson()
             ->post('/browser-rendering/screenshot', [
                 'url' => route('offers.show', [$this->offer, 'test']),
+                'addStyleTag' => [
+                    [
+                        'content' => ' * { scrollbar-width: none; -ms-overflow-style: none; } *::-webkit-scrollbar { display: none; }',
+                    ],
+                ],
                 'screenshotOptions' => [
                     'type' => 'jpeg',
                     'optimizeForSpeed' => true,
