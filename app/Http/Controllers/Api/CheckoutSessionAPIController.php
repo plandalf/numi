@@ -36,7 +36,10 @@ class CheckoutSessionAPIController
      */
     public function show(CheckoutSession $session)
     {
-        Gate::authorize('view', $session);
+//        Gate::authorize('view', $session);
+        $session->loadMissing([
+            'lineItems'
+        ]);
 
         return new CheckoutSessionApiResponse($session);
     }

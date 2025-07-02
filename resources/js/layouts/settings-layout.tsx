@@ -1,7 +1,5 @@
-import { cn } from '@/lib/utils';
-import { type BreadcrumbItem } from '@/types';
 import { Link } from '@inertiajs/react';
-import { Building2, CreditCard, PaintbrushIcon, Users } from 'lucide-react';
+import { Building2, CreditCard, PaintbrushIcon, Users, Key } from 'lucide-react';
 import {
     Sidebar,
     SidebarContent,
@@ -30,6 +28,11 @@ export default function SettingsLayout({ children }: SettingsLayoutProps) {
             title: 'Team',
             href: route('organizations.settings.team'),
             icon: Users,
+        },
+        {
+            title: 'API Keys',
+            href: route('organizations.settings.api-keys.index'),
+            icon: Key,
         },
       {
         title: 'Theme',

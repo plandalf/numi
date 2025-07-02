@@ -108,6 +108,11 @@ class Organization extends Model
         return $this->hasMany(Integration::class);
     }
 
+    public function apiKeys(): HasMany
+    {
+        return $this->hasMany(ApiKey::class);
+    }
+
     public function getTrialDaysLeftAttribute()
     {
         if (! config('cashier.enable_billing')) {

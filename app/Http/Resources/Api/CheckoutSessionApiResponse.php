@@ -13,6 +13,8 @@ use Dedoc\Scramble\Attributes\SchemaName;
 #[SchemaName('CheckoutSession')]
 class CheckoutSessionApiResponse extends JsonResource
 {
+
+
     public function toArray(Request $request)
     {
         return [
@@ -55,7 +57,7 @@ class CheckoutSessionApiResponse extends JsonResource
              * @example {"fieldId": "field-value"}
              */
             'properties' => $this->properties,
-            'line_items' => CheckoutLineItemApiResource::collection($this->line_items),
+            'line_items' => CheckoutLineItemApiResource::collection($this->lineItems),
             /**
              * Total Order Amount
              * @var int
