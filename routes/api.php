@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\CheckoutSessionAPIController;
 use App\Http\Controllers\OfferItemsController;
 use Illuminate\Support\Facades\Route;
 
@@ -15,6 +16,10 @@ Route::group([
 // hosted-page
 
 // different for different shares?
+
+
+Route::resource('checkout_sessions', CheckoutSessionAPIController::class);
+Route::resource('customers', \App\Http\Controllers\Api\CustomerAPIController::class);
 
 Route::group([
     'as' => 'api.',

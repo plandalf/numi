@@ -10,6 +10,8 @@ use App\Models\Order\Order;
 use App\Models\Organization;
 use App\Models\Store\Offer;
 use App\Modules\Integrations\AbstractIntegration;
+use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -17,6 +19,12 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Arr;
 
+/**
+ * @property array<string, string> $properties
+ * @property Carbon $expires_at
+ * @property Collection<CheckoutLineItem> $line_items
+ * @property Customer $customer
+ */
 class CheckoutSession extends Model
 {
     use HasFactory, UuidRouteKey;
@@ -101,7 +109,7 @@ class CheckoutSession extends Model
                     $discountAmount += $discount['amount_off'];
                 }
             }
-    
+
             return max(0, $subtotal - $discountAmount);
         }
 
