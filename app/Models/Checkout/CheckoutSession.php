@@ -135,11 +135,49 @@ class CheckoutSession extends Model
 
     public function getPublishableKeyAttribute()
     {
-        if (! $this->lineItems->first()) {
-            return null;
+        // Always return the publishable key if we have an integration
+        // Don't require line items for getting the publishable key
+        return Arr::get($this->integration?->config, 'access_token.stripe_publishable_key');
+    }
+
+    public function getEnabledPaymentMethodsAttribute()
+    {
+        if (!$this->integration) {
+            return [];
         }
 
-        return Arr::get($this->integration?->config, 'access_token.stripe_publishable_key');
+        // Get all enabled payment methods from integration
+        $enabledMethods = $this->integration->getEnabledPaymentMethods();
+        
+        // Get all available methods for this currency to check which ones are valid
+        $currency = strtolower($this->currency ?? 'usd');
+        $availableForCurrency = array_merge(
+            array_keys($this->integration->getAvailablePaymentMethods($currency)),
+            array_keys($this->integration->getPaymentOnlyMethods($currency))
+        );
+
+        // Filter enabled methods to only include those available for this currency
+        return array_values(array_intersect($enabledMethods, $availableForCurrency));
+    }
+
+    public function getIntentModeAttribute()
+    {
+        // Load line items with their prices if not already loaded
+        if (!$this->relationLoaded('lineItems')) {
+            $this->load('lineItems.price');
+        }
+
+        // Check if any line item has a recurring price (subscription)
+        $hasSubscriptionItems = $this->lineItems->some(function (CheckoutLineItem $lineItem) {
+            $price = $lineItem->price;
+            return $price && 
+                   in_array($price->type?->value, ['graduated', 'volume', 'package', 'recurring']) &&
+                   !empty($price->renew_interval);
+        });
+
+        // If has subscription items, use setup mode to save payment method
+        // Otherwise, use payment mode for direct one-time payments
+        return $hasSubscriptionItems ? 'setup' : 'payment';
     }
 
     public function integrationClient(): ?AbstractIntegration

@@ -1,10 +1,10 @@
-import { useEffect, useContext } from 'react';
+import { useEffect, useContext, useState } from 'react';
 import { GlobalState, GlobalStateContext } from '@/pages/checkout-main';
 import { JSONSchemaEditor } from '@/components/editor/json-schema-editor';
 import { Block } from '@/types/offer';
 import { Label } from '../ui/label';
-import { Checkbox } from '../ui/checkbox';;
-import type { HookUsage, HookTypeSection } from '@/types/blocks';
+import { Checkbox } from '../ui/checkbox';
+import type { HookUsage } from '@/types/blocks';
 import { StringEditor } from '@/components/editor/string-editor';
 import { BooleanEditor } from '@/components/editor/boolean-editor';
 import { EnumerationEditor } from '@/components/editor/enumeration-editor';
@@ -20,6 +20,153 @@ import { EditProps } from '@/pages/offers/edit';
 import { SpacingEditor } from '../editor/spacing-editor';
 import { startCase } from 'lodash';
 import { NumberEditor } from '../editor/number-editor';
+import { Button } from '../ui/button';
+import { Input } from '../ui/input';
+import { Textarea } from '../ui/textarea';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import { BookmarkIcon } from 'lucide-react';
+import axios from '@/lib/axios';
+
+interface SaveBlockDialogProps {
+  block: Block;
+  onSave: (data: { name: string; description?: string; category?: string; tags?: string[] }) => Promise<void>;
+  trigger: React.ReactNode;
+}
+
+const SaveBlockDialog: React.FC<SaveBlockDialogProps> = ({ block, onSave, trigger }) => {
+  const [open, setOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [name, setName] = useState('');
+  const [description, setDescription] = useState('');
+  const [category, setCategory] = useState('');
+  const [tags, setTags] = useState('');
+  const [categories, setCategories] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (open) {
+      // Load existing categories when dialog opens
+      axios.get('/block-library/categories')
+        .then(response => setCategories(response.data.categories || []))
+        .catch(console.error);
+      
+      // Set default name based on block type
+      const blockTypeName = block.type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+      setName(`${blockTypeName} Block`);
+    }
+  }, [open, block.type]);
+
+  const handleSave = async () => {
+    if (!name.trim()) return;
+
+    setSaving(true);
+    try {
+      await onSave({
+        name: name.trim(),
+        description: description.trim() || undefined,
+        category: category || undefined,
+        tags: tags.split(',').map(t => t.trim()).filter(t => t.length > 0),
+      });
+      setOpen(false);
+      setName('');
+      setDescription('');
+      setCategory('');
+      setTags('');
+    } catch (error) {
+      console.error('Failed to save block:', error);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        {trigger}
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Save Block to Library</DialogTitle>
+          <DialogDescription>
+            Save this configured block to your library for reuse across projects.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4">
+          <div>
+            <Label htmlFor="block-name">Name *</Label>
+            <Input
+              id="block-name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Enter block name"
+              className="mt-1"
+            />
+          </div>
+          
+          <div>
+            <Label htmlFor="block-description">Description</Label>
+            <Textarea
+              id="block-description"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Describe what this block does"
+              rows={3}
+              className="mt-1"
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="block-category">Category</Label>
+            <Select value={category} onValueChange={setCategory}>
+              <SelectTrigger className="mt-1">
+                <SelectValue placeholder="Select or create category" />
+              </SelectTrigger>
+              <SelectContent>
+                {categories.map((cat) => (
+                  <SelectItem key={cat} value={cat}>
+                    {cat}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Input
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              placeholder="Or enter new category"
+              className="mt-2"
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="block-tags">Tags</Label>
+            <Input
+              id="block-tags"
+              value={tags}
+              onChange={(e) => setTags(e.target.value)}
+              placeholder="tag1, tag2, tag3"
+              className="mt-1"
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              Separate tags with commas
+            </p>
+          </div>
+
+          <div className="flex justify-end gap-2 pt-4">
+            <Button variant="outline" onClick={() => setOpen(false)}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleSave} 
+              disabled={!name.trim() || saving}
+            >
+              {saving ? 'Saving...' : 'Save to Library'}
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+};
 
 export const AppearanceSection = ({ globalState, block, onUpdate }: { globalState: GlobalState | null, block: Block, onUpdate: (block: Block) => void }) => {
   if (!globalState) return null;
@@ -264,11 +411,40 @@ export const Inspector = ({
     { type: 'conditions', label: 'Conditions' },
   ];
 
+  const handleSaveToLibrary = async (data: { name: string; description?: string; category?: string; tags?: string[] }) => {
+    try {
+      await axios.post('/block-library', {
+        name: data.name,
+        description: data.description,
+        block_type: block.type,
+        category: data.category,
+        configuration: block,
+        tags: data.tags,
+      });
+      // You could add a success notification here
+    } catch (error) {
+      // You could add an error notification here
+      throw error;
+    }
+  };
+
   return (
     <div className="p-4">
       {block && globalState?.hookUsage?.[block.id] && (
         <div>
-          <h3 className="font-semibold">Content</h3>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-semibold">Content</h3>
+            <SaveBlockDialog
+              block={block}
+              onSave={handleSaveToLibrary}
+              trigger={
+                <Button variant="outline" size="sm" className="gap-2">
+                  <BookmarkIcon className="w-4 h-4" />
+                  Save to Library
+                </Button>
+              }
+            />
+          </div>
 
           <div className="space-y-4">
             {Object.entries(groupedHooksByGroup).map(([group, hooks]) => {

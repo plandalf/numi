@@ -58,6 +58,8 @@ export interface CheckoutSession {
   discount_code?: string;
   publishable_key?: string;
   discounts?: Discount[];
+  enabled_payment_methods?: string[];
+  intent_mode?: 'setup' | 'payment';
 }
 
 export interface CheckoutPageProps {

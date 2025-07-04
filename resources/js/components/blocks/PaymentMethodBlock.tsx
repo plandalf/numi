@@ -12,12 +12,11 @@ function PaymentMethodBlock({ context }: { context: BlockContextType }) {
       <StripeElementsComponent context={context} />
     );
   }
-
-  return (
-    <div>
-      <h1>Other payment methods. e.g Plandalf</h1>
-    </div>
-  );
+      return (
+      <div>
+        <h1>Other payment methods. e.g Plandalf</h1>
+      </div>
+    );
 }
 
 export default PaymentMethodBlock;

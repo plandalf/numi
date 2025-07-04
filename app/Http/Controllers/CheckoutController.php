@@ -86,7 +86,8 @@ class CheckoutController extends Controller
             'offer.hostedPage.logoImage',
             'offer.hostedPage.backgroundImage',
             'lineItems.price.integration',
-            'lineItems.price.product'
+            'lineItems.price.product',
+            'integration' // Add this to load the integration relationship
         ]);
 
         $offer = $checkout->offer;

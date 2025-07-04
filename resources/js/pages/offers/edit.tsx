@@ -25,7 +25,7 @@ import {
 import { getAllLayouts } from '@/config/layouts';
 import { useState, useRef, useMemo } from 'react';
 import { cn } from '@/lib/utils';
-import { MoreVertical, ArrowRightToLine, FileText, CheckSquare, Plus } from 'lucide-react';
+import { MoreVertical, ArrowRightToLine, FileText, CheckSquare, Plus, BookmarkIcon } from 'lucide-react';
 import PagePreview from '@/components/offers/page-preview';
 import PageFlowEditor from '@/components/offers/page-flow-editor';
 import { ReactFlowProvider } from '@xyflow/react';
@@ -47,6 +47,7 @@ import { PageProps } from '@inertiajs/core';
 import { allElementTypes, CustomElementIcon } from '@/components/offers/page-elements';
 import { blockTypes } from '@/components/blocks';
 import { Font } from '@/types';
+import axios from '@/lib/axios';
 import WebFont from 'webfontloader';
 import { PageIframePreview } from '@/components/offers/page-iframe-preview';
 import { computeInclusiveTaxes } from '@/utils/editor-session';
@@ -252,8 +253,8 @@ function EditApp({ publishableKey }: { publishableKey: string | undefined }) {
     const { type, id } = parseDndId(String(event.active.id));
     if (type && id) {
       setActiveItem({ type, id });
-      if (type === 'template') {
-        setPrototype(null); // Clear prototype when a new template drag starts
+      if (type === 'template' || type === 'library') {
+        setPrototype(null); // Clear prototype when a new template or library drag starts
       }
     } else {
       setActiveItem(null);
@@ -268,7 +269,7 @@ function EditApp({ publishableKey }: { publishableKey: string | undefined }) {
 
     if (!activeId || !activeType) return;
 
-    if (activeType === 'template') {
+    if (activeType === 'template' || activeType === 'library') {
       if (dragOverRafRef.current) {
         cancelAnimationFrame(dragOverRafRef.current);
       }
@@ -372,8 +373,8 @@ function EditApp({ publishableKey }: { publishableKey: string | undefined }) {
       return;
     }
 
-    if (activeItem.type !== 'template' && !event.over) {
-      if (activeItem.type === 'template' && prototype) {
+    if (activeItem.type !== 'template' && activeItem.type !== 'library' && !event.over) {
+      if ((activeItem.type === 'template' || activeItem.type === 'library') && prototype) {
         // If template drag ended nowhere, remove prototype (using callback form of setSections)
         setSections(currentSections => {
           if (!prototype || !currentSections[prototype.sectionId]) return currentSections;
@@ -450,6 +451,97 @@ function EditApp({ publishableKey }: { publishableKey: string | undefined }) {
         setSections(currentSections => {
           if (!prototype || !currentSections[prototype.sectionId]) return currentSections;
           // ... (similar cleanup as above for !event.over) ...
+          const oldProtoSection = currentSections[prototype.sectionId];
+          if (oldProtoSection?.blocks && prototype.index < oldProtoSection.blocks.length && oldProtoSection.blocks[prototype.index]?.id === prototype.block.id) {
+            return update(currentSections, {
+              [prototype.sectionId]: {
+                blocks: { $splice: [[prototype.index, 1]] }
+              }
+            });
+          }
+          return currentSections;
+        });
+      }
+      setPrototype(null);
+      setActiveItem(null);
+      return;
+    }
+
+    // --- LIBRARY DROP (SAVED BLOCK) ---
+    if (activeTypeCalculated === 'library') {
+      if (prototype && prototype.sectionId) {
+        // Fetch the saved block configuration and create new block
+        const fetchAndCreateLibraryBlock = async () => {
+          try {
+            const response = await axios.post(`/block-library/${activeBlockId}/use`);
+            const libraryBlock = response.data.configuration;
+            
+            const newBlockToAdd: Block = {
+              ...libraryBlock,
+              id: generateIdForBlockType(libraryBlock.type),
+            };
+
+            // Use setData callback form to ensure we're working with the latest state
+            setData(currentEditorData => {
+              const sectionsForCurrentPage = currentEditorData.view.pages[selectedPage]?.view;
+              if (!sectionsForCurrentPage || !prototype || !sectionsForCurrentPage[prototype.sectionId!]) {
+                return currentEditorData;
+              }
+
+              let targetIndex = prototype.index;
+              const currentBlocksInTargetSection = sectionsForCurrentPage[prototype.sectionId!]?.blocks || [];
+
+              // Clamp targetIndex to be within valid bounds for splice
+              if (targetIndex > currentBlocksInTargetSection.length) {
+                targetIndex = currentBlocksInTargetSection.length;
+              }
+
+              let operation;
+              // Check if the prototype is actually at the targetIndex in the current data state
+              if (targetIndex < currentBlocksInTargetSection.length && currentBlocksInTargetSection[targetIndex]?.id === prototype.block.id) {
+                operation = { $splice: [[targetIndex, 1, newBlockToAdd]] }; // Replace prototype
+              } else {
+                operation = { $splice: [[targetIndex, 0, newBlockToAdd]] }; // Insert new block
+              }
+
+              return update(currentEditorData, {
+                view: {
+                  pages: {
+                    [selectedPage]: {
+                      view: {
+                        [prototype.sectionId!]: {
+                          blocks: operation
+                        }
+                      }
+                    }
+                  }
+                }
+              } as any);
+            });
+            setSelectedBlockId(newBlockToAdd.id);
+          } catch (error) {
+            console.error('Failed to load library block:', error);
+            // Clean up prototype on error
+            setSections(currentSections => {
+              if (!prototype || !currentSections[prototype.sectionId]) return currentSections;
+              const oldProtoSection = currentSections[prototype.sectionId];
+              if (oldProtoSection?.blocks && prototype.index < oldProtoSection.blocks.length && oldProtoSection.blocks[prototype.index]?.id === prototype.block.id) {
+                return update(currentSections, {
+                  [prototype.sectionId]: {
+                    blocks: { $splice: [[prototype.index, 1]] }
+                  }
+                });
+              }
+              return currentSections;
+            });
+          }
+        };
+
+        fetchAndCreateLibraryBlock();
+      } else if (prototype) {
+        // Prototype exists but sectionId is invalid. Clean up.
+        setSections(currentSections => {
+          if (!prototype || !currentSections[prototype.sectionId]) return currentSections;
           const oldProtoSection = currentSections[prototype.sectionId];
           if (oldProtoSection?.blocks && prototype.index < oldProtoSection.blocks.length && oldProtoSection.blocks[prototype.index]?.id === prototype.block.id) {
             return update(currentSections, {
@@ -672,6 +764,23 @@ function DragOverlayPreview({ item }: { item: ActiveDndItem | null }) {
           </span>
         </div>
         <span className="text-sm text-black">{elementTypeMeta?.title || item.id}</span>
+      </div>
+    )
+  }
+
+  if (item.type === 'library') {
+    return (
+      <div
+        className={cn(
+          'flex flex-col items-center justify-center rounded-md cursor-move transition-all min-h-20 w-full bg-white border border-gray-200 shadow-lg'
+        )}
+      >
+        <div className="flex items-center justify-center bg-indigo-600 rounded-md w-full h-14 mb-2">
+          <span className="text-white">
+            <BookmarkIcon className="w-6 h-6" />
+          </span>
+        </div>
+        <span className="text-sm text-black font-medium">Library Block</span>
       </div>
     )
   }

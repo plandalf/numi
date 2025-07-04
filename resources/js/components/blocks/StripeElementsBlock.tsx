@@ -16,13 +16,37 @@ interface CheckoutState {
   setPageSubmissionProps: (props: (() => Promise<any>) | null) => void;
 }
 
-// This should be loaded from your environment variables
+// Payment method display names for simple text display
+const paymentMethodNames: Record<string, string> = {
+  card: 'Credit/Debit Cards',
+  apple_pay: 'Apple Pay',
+  google_pay: 'Google Pay',
+  link: 'Link',
+  us_bank_account: 'Bank Account',
+  sepa_debit: 'SEPA Direct Debit',
+  ideal: 'iDEAL',
+  sofort: 'Sofort',
+  bancontact: 'Bancontact',
+  giropay: 'Giropay',
+  eps: 'EPS',
+  p24: 'Przelewy24',
+  alipay: 'Alipay',
+  wechat_pay: 'WeChat Pay',
+  klarna: 'Klarna',
+  afterpay_clearpay: 'Afterpay/Clearpay',
+  affirm: 'Affirm',
+  paypal: 'PayPal',
+};
+
 function StripeElementsComponent({ context }: { context: BlockContextType }) {
   const { session, isEditor } = Numi.useCheckout({});
-  const { fonts } = usePage().props as { fonts: Font[] };
+  const pageProps = usePage().props as any;
+  const fonts = pageProps.fonts as Font[] || [];
 
   const theme = Numi.useTheme();
   const [stripePromise, setStripePromise] = useState<Stripe | null>(null);
+
+  // Stripe component initialized
 
   const [title] = Numi.useStateString({
     label: 'Title',
@@ -224,6 +248,7 @@ function StripeElementsComponent({ context }: { context: BlockContextType }) {
   const [error, setError] = useState<string | null>(null);
   const initializationAttempted = useRef(false);
   const [stripeError, setStripeError] = useState(null);
+  const [debugInfo, setDebugInfo] = useState<any>(null);
 
   useEffect(() => {
     async function initializeStripe() {
@@ -245,6 +270,17 @@ function StripeElementsComponent({ context }: { context: BlockContextType }) {
       }
 
       setIsLoading(false)
+      
+      // Set debug info
+      setDebugInfo({
+        timestamp: new Date().toISOString(),
+        protocol: window.location.protocol,
+        userAgent: navigator.userAgent,
+        applePay: !!(window as any).ApplePaySession,
+        paymentRequest: !!window.PaymentRequest,
+        stripeKey: session.publishable_key ? 'Present' : 'Missing',
+        currency: session.currency,
+      });
     }
 
     initializeStripe();
@@ -282,51 +318,61 @@ function StripeElementsComponent({ context }: { context: BlockContextType }) {
 
     return {
       variables: {
-        'spacingUnit': appearance.spacing,
-        'colorPrimary': paymentFormLabelFont?.color,
-        'fontFamily': paymentFormLabelFont?.font,
-        'fontSizeBase': paymentFormLabelFont?.size,
-        'fontWeightLight': style.paymentFormLabelFont?.weight,
-        'fontWeightNormal': style.paymentFormLabelFont?.weight,
-        'fontWeightMedium': style.paymentFormLabelFont?.weight,
-        'fontWeightBold': style.paymentFormLabelFont?.weight,
-        'fontLineHeight': style.paymentFormLabelFont?.lineHeight,
-        'letterSpacing': style.paymentFormLabelFont?.letterSpacing,
-        'iconChevronDownColor': style?.iconColor,
-        'iconCardCvcColor': style?.iconColor,
+        // appearance.spacing is 48?
+        // 'spacingUnit': appearance.spacing || '16px',
+        'colorPrimary': paymentFormLabelFont?.color || '#000000',
+        'fontFamily': paymentFormLabelFont?.font || 'Inter',
+        'fontSizeBase': paymentFormLabelFont?.size || '14px',
+        'fontWeightLight': style.paymentFormLabelFont?.weight || '300',
+        'fontWeightNormal': style.paymentFormLabelFont?.weight || '400',
+        'fontWeightMedium': style.paymentFormLabelFont?.weight || '500',
+        'fontWeightBold': style.paymentFormLabelFont?.weight || '600',
+        'fontLineHeight': style.paymentFormLabelFont?.lineHeight || '1.5',
+        'letterSpacing': style.paymentFormLabelFont?.letterSpacing || '0px',
+        'iconChevronDownColor': style?.iconColor || '#000000',
+        'iconCardCvcColor': style?.iconColor || '#000000',
       },
       rules: {
         '.Text': {
           color: 'red'
         },
         '.TabIcon': {
-          color: style?.iconColor,
+          color: style?.iconColor || '#000000',
         },
         '.AccordionItem': {
           boxShadow: 'none',
+<<<<<<< Updated upstream
           borderRadius: paymentFormStyle.borderRadius,
           backgroundColor: paymentFormStyle.backgroundColor,
           borderWidth: '0px',
           borderStyle: 'none',
           margin: '0px',
           padding: '2px',
+=======
+          borderRadius: (paymentFormStyle.borderRadius as string) || '4px',
+          backgroundColor: (paymentFormStyle.backgroundColor as string) || '#ffffff',
+          borderWidth: '0px',
+          borderStyle: 'none',
+          margin: '0px',
+          padding: '8px',
+>>>>>>> Stashed changes
         },
         '.Label': {
-          color: inputLabelFont?.color,
-          fontFamily: inputLabelFont?.font,
-          fontWeight: inputLabelFont?.weight,
-          fontSize: inputLabelFont?.size,
-          lineHeight: inputLabelFont?.lineHeight,
-          letterSpacing: inputLabelFont?.letterSpacing,
+          color: inputLabelFont?.color || '#000000',
+          fontFamily: inputLabelFont?.font || 'Inter',
+          fontWeight: inputLabelFont?.weight || '400',
+          fontSize: inputLabelFont?.size || '14px',
+          lineHeight: inputLabelFont?.lineHeight || '1.5',
+          letterSpacing: inputLabelFont?.letterSpacing || '0px',
 
         },
         '.TermsText': {
-          color: termsTextFont?.color,
-          fontFamily: termsTextFont?.font,
-          fontWeight: termsTextFont?.weight,
-          fontSize: termsTextFont?.size,
-          lineHeight: termsTextFont?.lineHeight,
-          letterSpacing: termsTextFont?.letterSpacing,
+          color: termsTextFont?.color || '#666666',
+          fontFamily: termsTextFont?.font || 'Inter',
+          fontWeight: termsTextFont?.weight || '400',
+          fontSize: termsTextFont?.size || '12px',
+          lineHeight: termsTextFont?.lineHeight || '1.5',
+          letterSpacing: termsTextFont?.letterSpacing || '0px',
         },
         '.Input': {
           padding: appearance.inputPadding != '' ? appearance.inputPadding : '0.5rem',
@@ -362,18 +408,91 @@ function StripeElementsComponent({ context }: { context: BlockContextType }) {
           borderColor: resolveThemeValue(style.inputBorderColor, theme),
           boxShadow:  `0 0 0 3px ${resolveThemeValue(style.inputBorderColor, theme)}20`,
         },
+        '.PaymentMethodSelector': {
+          borderRadius: style.inputBorderRadius,
+        },
+        '.PaymentMethodSelectorTab': {
+          borderRadius: style.inputBorderRadius,
+          borderColor: resolveThemeValue(style.inputBorderColor, theme),
+          color: resolveThemeValue(style.inputTextFont?.color, theme),
+          backgroundColor: resolveThemeValue(style.inputBackgroundColor, theme),
+        },
+        '.PaymentMethodSelectorTab--selected': {
+          borderColor: resolveThemeValue(style.inputBorderColor, theme),
+          backgroundColor: resolveThemeValue(style.paymentFormBackgroundColor, theme),
+        },
+        '.WalletButton': {
+          borderRadius: style.inputBorderRadius,
+          height: '48px',
+        },
       }
     }
   }, [style, appearance,theme, containerStyle, errorPanelStyle]);
 
-  const stripeOptions = useMemo(() => ({
-    mode: 'setup',
-    currency: session.currency.toLocaleLowerCase(),
-    appearance: stripeElementAppearance,
-    fonts: [{
-      cssSrc: googleFontsUrl,
-    }],
-  }), [session, stripeElementAppearance, googleFontsUrl]);
+  const stripeOptions = useMemo(() => {
+    // Don't initialize if session is not properly loaded
+    if (!session || !session.currency || session.total === undefined) {
+      return null;
+    }
+
+    // Get enabled payment methods from session, fallback to default
+    const enabledPaymentMethods = session.enabled_payment_methods || ['card'];
+    
+    // Separate payment method types and wallets
+    const paymentMethodTypes = enabledPaymentMethods.filter(method => 
+      !['apple_pay', 'google_pay'].includes(method)
+    );
+    
+    const wallets = {
+      applePay: enabledPaymentMethods.includes('apple_pay') ? 'auto' as const : 'never' as const,
+      googlePay: enabledPaymentMethods.includes('google_pay') ? 'auto' as const : 'never' as const,
+    };
+
+    const intentMode = (session.intent_mode || 'setup') as 'setup' | 'payment';
+    
+    // Log for debugging currency filtering
+    console.log('Stripe Elements Payment Methods:', {
+      currency: session.currency,
+      allEnabledMethods: enabledPaymentMethods,
+      paymentMethodTypes,
+      intentMode
+    });
+    
+    const options: any = {
+      mode: intentMode,
+      currency: session.currency.toLocaleLowerCase(),
+      appearance: stripeElementAppearance,
+      fonts: [{
+        cssSrc: googleFontsUrl,
+      }],
+      paymentMethodTypes: paymentMethodTypes.length > 0 ? paymentMethodTypes : ['card'],
+      wallets,
+    };
+
+    // Add amount when in payment mode (required by Stripe)
+    if (intentMode === 'payment') {
+      // Convert total to cents (Stripe expects amount in smallest currency unit)
+      const total = session.total || 0;
+      const amountInCents = Math.round(total * 100);
+      
+      // Stripe requires amount > 0 for payment mode
+      if (amountInCents <= 0) {
+        console.warn('Stripe Elements: Invalid amount for payment mode', {
+          sessionTotal: session.total,
+          amountInCents,
+          intentMode
+        });
+        // Fallback to setup mode if amount is 0 or negative
+        options.mode = 'setup';
+      } else {
+        options.amount = amountInCents;
+      }
+    }
+    
+    // Stripe options configured successfully
+    
+    return options as any; // Type assertion to work around Stripe's strict typing
+  }, [session, stripeElementAppearance, googleFontsUrl]);
 
   return (
     <div className="flex flex-col gap-4" style={containerStyle}>
@@ -383,6 +502,7 @@ function StripeElementsComponent({ context }: { context: BlockContextType }) {
       {description && (
         <MarkdownText theme={theme} text={description} style={descriptionStyle} />
       )}
+
       {isLoading ? (
         <div className="flex justify-center items-center py-8">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
@@ -391,10 +511,56 @@ function StripeElementsComponent({ context }: { context: BlockContextType }) {
         <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded" style={errorPanelStyle}>
           {error}
         </div>
-      ) : stripePromise ? (
+      ) : stripePromise && stripeOptions ? (
         <Elements
           stripe={stripePromise}
           options={stripeOptions}>
+          {/* Simple payment methods display */}
+          {session.enabled_payment_methods && session.enabled_payment_methods.length > 0 && (
+            <div style={{
+              marginBottom: '16px',
+              fontSize: '14px',
+              color: resolveThemeValue(style?.descriptionTextFont?.color, theme) || '#666666',
+              fontFamily: style?.descriptionTextFont?.font || 'Inter'
+            }}>
+              <div style={{ marginBottom: '8px', fontWeight: '500' }}>Payment methods:</div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                {session.enabled_payment_methods.map((method: string) => (
+                  <span 
+                    key={method} 
+                    style={{
+                      fontSize: '12px',
+                      padding: '4px 8px',
+                      backgroundColor: '#f3f4f6',
+                      borderRadius: '4px',
+                      color: '#374151'
+                    }}
+                  >
+                    {paymentMethodNames[method] || method}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+          {/* Debug Info */}
+          <div style={{
+            marginBottom: '16px',
+            padding: '12px',
+            backgroundColor: '#f8f9fa',
+            border: '1px solid #dee2e6',
+            borderRadius: '4px',
+            fontSize: '12px',
+            fontFamily: 'monospace'
+          }}>
+            <div><strong>Debug Info:</strong></div>
+            <div>Intent Mode: {session.intent_mode || 'setup'}</div>
+            <div>Currency: {session.currency}</div>
+            <div>Total: {session.total}</div>
+            <div>Amount (cents): {session.intent_mode === 'payment' ? Math.round((session.total || 0) * 100) : 'N/A'}</div>
+            <div>Enabled Methods: {session.enabled_payment_methods?.join(', ') || 'none'}</div>
+            <div>Stripe Options Mode: {stripeOptions?.mode || 'unknown'}</div>
+            <div>Stripe Options Amount: {stripeOptions?.amount || 'N/A'}</div>
+          </div>
           <PaymentForm style={paymentFormStyle} />
         </Elements>
       ) : (
@@ -411,6 +577,9 @@ function PaymentForm({ style }: { style?: CSSProperties}) {
   const stripe = useStripe();
   const elements = useElements();
   const { setPageSubmissionProps } = useCheckoutState() as CheckoutState;
+  const { session } = Numi.useCheckout();
+
+  // PaymentForm component initialized
 
   useEffect(() => {
     setPageSubmissionProps(async () => {
@@ -460,6 +629,13 @@ function PaymentForm({ style }: { style?: CSSProperties}) {
     });
   }, [stripe, elements]);
 
+  // Get enabled payment methods from session
+  const enabledPaymentMethods = session.enabled_payment_methods || ['card'];
+  const wallets = {
+    applePay: enabledPaymentMethods.includes('apple_pay') ? 'auto' as const : 'never' as const,
+    googlePay: enabledPaymentMethods.includes('google_pay') ? 'auto' as const : 'never' as const,
+  };
+
   return (
     <div className="flex flex-col space-y-4" style={style}>
       <PaymentElement
@@ -470,6 +646,11 @@ function PaymentForm({ style }: { style?: CSSProperties}) {
               email: '',
             },
           },
+          layout: {
+            type: 'tabs',
+            defaultCollapsed: false,
+          },
+          wallets,
         }}
       />
       <AddressElement

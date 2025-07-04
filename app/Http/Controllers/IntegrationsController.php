@@ -15,6 +15,7 @@ use App\Modules\Integrations\Stripe\StripeAuth;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
+use Illuminate\Support\Facades\Gate;
 
 class IntegrationsController extends Controller
 {
@@ -32,9 +33,41 @@ class IntegrationsController extends Controller
 
     public function show(Integration $integration)
     {
+        // Ensure the integration belongs to the user's organization
+        Gate::authorize('view', $integration);
+
+        // Get the organization's default currency for payment method filtering
+        $currency = strtolower($integration->organization->default_currency ?? 'usd');
+
         return Inertia::render('integrations/show', [
-            'integration' => $integration,
+            'integration' => [
+                ...$integration->toArray(),
+                'available_payment_methods' => $integration->getAvailablePaymentMethods($currency),
+                'payment_only_methods' => $integration->getPaymentOnlyMethods($currency),
+                'enabled_payment_methods' => $integration->getEnabledPaymentMethods(),
+            ],
         ]);
+    }
+
+    public function updatePaymentMethods(Integration $integration, Request $request)
+    {
+        // Ensure the integration belongs to the user's organization
+        Gate::authorize('update', $integration);
+
+        // Get the organization's default currency for validation
+        $currency = strtolower($integration->organization->default_currency ?? 'usd');
+        
+        // Get all available payment methods (both setup and payment-only)
+        $allAvailablePaymentMethods = array_keys($integration->getAllPaymentMethods($currency));
+
+        $request->validate([
+            'payment_methods' => 'required|array',
+            'payment_methods.*' => 'string|in:' . implode(',', $allAvailablePaymentMethods),
+        ]);
+
+        $integration->setEnabledPaymentMethods($request->input('payment_methods'));
+
+        return redirect()->back()->with('success', 'Payment methods updated successfully.');
     }
 
     public function products(Integration $integration, Request $request)
@@ -122,7 +155,7 @@ class IntegrationsController extends Controller
         return response()->json([]);
     }
 
-    public function authorize(string $integrationType, Request $request)
+    public function authorizeIntegration(string $integrationType, Request $request)
     {
         $integrationClass = $this->getIntegrationAuthClass(IntegrationType::from($integrationType));
 

@@ -6,6 +6,7 @@ use App\Database\Traits\UuidRouteKey;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Support\Facades\Storage;
 
@@ -26,6 +27,8 @@ class Media extends Model
         'status',
         'uuid',
         'meta',
+        'user_id',
+        'organization_id',
     ];
 
     protected $casts = [
@@ -48,6 +51,22 @@ class Media extends Model
     public function mediable(): MorphTo
     {
         return $this->morphTo();
+    }
+
+    /**
+     * Get the user that uploaded this media
+     */
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    /**
+     * Get the organization this media belongs to
+     */
+    public function organization(): BelongsTo
+    {
+        return $this->belongsTo(Organization::class);
     }
 
     /**
@@ -75,5 +94,13 @@ class Media extends Model
     public function scopeReady($query)
     {
         return $query->where('status', self::STATUS_READY);
+    }
+
+    /**
+     * Scope a query to only include media for a specific organization
+     */
+    public function scopeForOrganization($query, $organizationId)
+    {
+        return $query->where('organization_id', $organizationId);
     }
 }

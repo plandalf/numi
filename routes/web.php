@@ -27,9 +27,37 @@ use App\Http\Controllers\FeedbackController;
 use App\Http\Controllers\OfferItemPriceController;
 use App\Http\Controllers\OnboardingController;
 use App\Http\Controllers\OnboardingInfoController;
+<<<<<<< Updated upstream
 
 Route::redirect('/', '/dashboard')->name('home');
 
+=======
+use App\Http\Controllers\ApiKeysController;
+use App\Http\Controllers\BlockLibraryController;
+
+Route::redirect('/', '/dashboard')->name('home');
+
+
+//Route::get('test', [TestController::class, 'videoThumbnailTest']);
+Route::get('test', function () {
+
+    $uuid = Str::uuid()->toString();
+    $secret = 'super_secret_key_123';
+
+    $apiKey = generateApiKeyFromUuid($uuid, $secret);
+
+    $decoded = decodeApiKeyToUuid($apiKey, $secret);
+
+    dump(
+        "Generated API Key: $apiKey",
+        "Decoded UUID: $decoded",
+        $decoded === $uuid
+    );
+});
+
+
+
+>>>>>>> Stashed changes
 Route::get('/workflow-test', function () {
 
     $order = new \App\Models\Order\Order;
@@ -190,9 +218,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::resource('products.prices', PriceController::class);
 
         Route::get('/integrations/{integrationType}/callback', [IntegrationsController::class, 'callback']);
-        Route::post('/integrations/{integrationType}/authorizations', [IntegrationsController::class, 'authorize']);
+        Route::post('/integrations/{integrationType}/authorizations', [IntegrationsController::class, 'authorizeIntegration']);
         Route::get('/integrations/{integration}/products', [IntegrationsController::class, 'products'])->name('integrations.products');
         Route::get('/integrations/{integration}/products/{gatewayProductId}/prices', [IntegrationsController::class, 'prices'])->name('integrations.prices');
+        Route::put('/integrations/{integration}/payment-methods', [IntegrationsController::class, 'updatePaymentMethods'])->name('integrations.payment-methods.update');
         Route::resource('integrations', IntegrationsController::class);
 
         // Onboarding routes
@@ -242,6 +271,19 @@ Route::middleware(['auth', 'verified'])->group(function () {
         // Media Upload Route
         Route::post('media', [MediaController::class, 'store'])->name('media.store');
 
+        // Block Library routes
+        Route::prefix('block-library')->name('block-library.')->group(function () {
+            Route::get('/', [BlockLibraryController::class, 'index'])->name('index');
+            Route::post('/', [BlockLibraryController::class, 'store'])->name('store');
+            Route::get('/categories', [BlockLibraryController::class, 'categories'])->name('categories');
+            Route::get('/block-types', [BlockLibraryController::class, 'blockTypes'])->name('block-types');
+            Route::get('/{blockLibrary}', [BlockLibraryController::class, 'show'])->name('show');
+            Route::put('/{blockLibrary}', [BlockLibraryController::class, 'update'])->name('update');
+            Route::delete('/{blockLibrary}', [BlockLibraryController::class, 'destroy'])->name('destroy');
+            Route::post('/{blockLibrary}/duplicate', [BlockLibraryController::class, 'duplicate'])->name('duplicate');
+            Route::post('/{blockLibrary}/use', [BlockLibraryController::class, 'use'])->name('use');
+        });
+
         // Profile Routes
         Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
         Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
@@ -259,6 +301,7 @@ Route::middleware(['auth', 'organization'])->group(function () {
 
 // Media routes
 Route::middleware(['auth'])->group(function () {
+    Route::get('/medias', [MediaController::class, 'index'])->name('medias.index');
     Route::post('/medias/upload-url', [MediaController::class, 'generateUploadUrl'])->name('medias.upload-url');
     Route::put('/medias/{media}/upload', [MediaController::class, 'upload'])->name('medias.upload');
     Route::post('/medias/{media}/finalize', [MediaController::class, 'finalizeUpload'])->name('medias.finalize');

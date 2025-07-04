@@ -1,14 +1,9 @@
 import React, { useState } from 'react';
 import { blockTypes } from '@/components/blocks';
 import {
-  SquareStack,
   CreditCard,
   LayoutPanelLeft,
-  MessageSquare,
-  AlignLeft,
-  ArrowLeft,
   SquareCheck,
-  FormInput,
   ImageIcon,
   ShoppingCartIcon,
   SquareMousePointer,
@@ -19,12 +14,15 @@ import {
   LinkIcon,
   PlusIcon,
   HeadingIcon, SquareChartGanttIcon,
-  RadioIcon,
   ListIcon,
-  Minus
+  Minus,
+  FlameIcon,
+  BookmarkIcon
 } from 'lucide-react';
 import { useDraggable } from '@dnd-kit/core';
 import SearchBar from './search-bar';
+import { BlockLibraryGrid } from './block-library-grid';
+import { Button } from '@/components/ui/button';
 import cx from 'classnames';
 
 interface CustomElementIconProps {
@@ -165,6 +163,7 @@ const ElementCategory = ({ title, children }: ElementCategoryProps) => {
 
 export const PageElements: React.FC = () => {
   const [elementSearchQuery, setElementSearchQuery] = useState('');
+  const [activeTab, setActiveTab] = useState<'templates' | 'library'>('templates');
 
   // Filter elements based on search query
   const filteredBaseElements = baseElements.filter(element =>
@@ -187,7 +186,7 @@ export const PageElements: React.FC = () => {
   const hasInteractiveElements = filteredInteractiveElements.length > 0;
   const hasPaymentElements = filteredPaymentElements.length > 0;
 
-  return (
+  const renderTemplates = () => (
     <div className="p-4 space-y-6 overflow-y-auto">
       <SearchBar
         placeholder="Search for elements"
@@ -240,6 +239,37 @@ export const PageElements: React.FC = () => {
         )}
         </>
       )}
+    </div>
+  );
+
+  return (
+    <div className="flex flex-col h-full">
+      {/* Tabs */}
+      <div className="flex border-b border-border px-4 pt-4">
+        <Button
+          variant={activeTab === 'templates' ? 'default' : 'ghost'}
+          size="sm"
+          onClick={() => setActiveTab('templates')}
+          className="rounded-b-none h-8 px-3"
+        >
+          <FlameIcon className="w-4 h-4 mr-2" />
+          Templates
+        </Button>
+        <Button
+          variant={activeTab === 'library' ? 'default' : 'ghost'}
+          size="sm"
+          onClick={() => setActiveTab('library')}
+          className="rounded-b-none h-8 px-3"
+        >
+          <BookmarkIcon className="w-4 h-4 mr-2" />
+          Library
+        </Button>
+      </div>
+
+      {/* Tab Content */}
+      <div className="flex-1 overflow-hidden">
+        {activeTab === 'templates' ? renderTemplates() : <BlockLibraryGrid />}
+      </div>
     </div>
   );
 }
