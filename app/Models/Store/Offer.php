@@ -155,4 +155,19 @@ class Offer extends Model
 
         return route('offers.show', $this);
     }
+
+    public function getTestCheckoutUrl(): string
+    {
+        $organization = $this->organization;
+        $subdomain = $organization->getSubdomainHost();
+
+        if ($subdomain) {
+            $uri = Uri::route('offers.show', ['offer' => $this, 'environment' => 'test'])
+                ->withHost($subdomain);
+
+            return $uri->__toString();
+        }
+
+        return route('offers.show', ['offer' => $this, 'environment' => 'test']);
+    }
 }

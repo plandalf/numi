@@ -13,7 +13,13 @@ use App\Observers\OfferObserver;
 use App\Observers\ThemeObserver;
 use App\Models\Subscription;
 use App\Models\SubscriptionItem;
+use App\Models\Order\Order;
+use App\Policies\OrderPolicy;
 use Carbon\CarbonImmutable;
+use Dedoc\Scramble\Scramble;
+use Dedoc\Scramble\Support\Generator\OpenApi;
+use Dedoc\Scramble\Support\Generator\Operation;
+use Dedoc\Scramble\Support\Generator\SecurityScheme;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -27,6 +33,10 @@ use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
 use Inertia\Inertia;
 use Laravel\Cashier\Cashier;
+use Dedoc\Scramble\Support\Generator\Parameter;
+use Dedoc\Scramble\Support\Generator\Schema;
+use Dedoc\Scramble\Support\Generator\Types\StringType;
+use Illuminate\Support\Facades\Gate;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -47,7 +57,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        JsonResource::$wrap = false;
+        JsonResource::$wrap = null;
 
         Cashier::useCustomerModel(Organization::class);
         Cashier::useSubscriptionModel(Subscription::class);
@@ -56,6 +66,7 @@ class AppServiceProvider extends ServiceProvider
         $this->bootModelRules();
         $this->bootInertiaSharing();
         $this->bootObservers();
+        $this->bootPolicies();
 
         Vite::useAggressivePrefetching();
         URL::forceHttps(app()->isProduction());
@@ -63,6 +74,25 @@ class AppServiceProvider extends ServiceProvider
         Date::use(CarbonImmutable::class);
         DB::prohibitDestructiveCommands(app()->isProduction());
         Password::defaults(fn (): ?Password => app()->isProduction() ? Password::min(8)->max(255)->uncompromised() : null);
+
+        Scramble::configure()
+            ->withDocumentTransformers(function (OpenApi $openApi) {
+
+                $openApi->secure(SecurityScheme::http('bearer'),);
+            })
+            ->afterOpenApiGenerated(function ($a) {
+//                dd($a);
+            });
+//
+//        Scramble::configure()
+//            ->withOperationTransformers(function (Operation $operation) {
+//                $authHeader = (new Parameter('Authorization', 'header'))
+//                    ->description('Provide your bearer token in the Authorization header. Example: Bearer YOUR_CUSTOM_TOKEN')
+//                    ->setSchema(Schema::fromType(new StringType));
+//
+//                $operation->parameters[] = $authHeader;
+//            });
+
     }
 
     private function bootModelRules(): void
@@ -98,7 +128,7 @@ class AppServiceProvider extends ServiceProvider
                 }
 
                 $organization = $request->user()->currentOrganization;
-                
+
                 $steps = collect(OnboardingStep::cases())->map(function ($step) use ($organization) {
                     return [
                         'key' => $step->key(),
@@ -127,5 +157,10 @@ class AppServiceProvider extends ServiceProvider
         Offer::observe(OfferObserver::class);
         Integration::observe(IntegrationObserver::class);
         Theme::observe(ThemeObserver::class);
+    }
+
+    private function bootPolicies(): void
+    {
+        Gate::policy(Order::class, OrderPolicy::class);
     }
 }

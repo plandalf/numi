@@ -27,8 +27,82 @@ use App\Http\Controllers\FeedbackController;
 use App\Http\Controllers\OfferItemPriceController;
 use App\Http\Controllers\OnboardingController;
 use App\Http\Controllers\OnboardingInfoController;
+use App\Http\Controllers\ApiKeysController;
 
 Route::redirect('/', '/dashboard')->name('home');
+
+
+function base62_encode(string $data): string
+{
+    $chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
+    $num = gmp_import($data);
+    $str = '';
+
+    while (gmp_cmp($num, 0) > 0) {
+        [$num, $rem] = [gmp_div_q($num, 62), gmp_mod($num, 62)];
+        $str .= $chars[gmp_intval($rem)];
+    }
+
+    return strrev($str);
+}
+
+function base62_decode(string $str): string
+{
+    $chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
+    $num = gmp_init(0);
+
+    foreach (str_split($str) as $char) {
+        $num = gmp_add(gmp_mul($num, 62), strpos($chars, $char));
+    }
+
+    return gmp_export($num);
+}
+
+function generateApiKeyFromUuid(string $uuid, string $secret, string $prefix = 'live_'): string
+{
+    $raw = hex2bin(str_replace('-', '', $uuid));
+    $key = substr(hash('sha256', $secret, true), 0, 16); // AES-128 key
+
+    $encrypted = openssl_encrypt($raw, 'aes-128-ecb', $key, OPENSSL_RAW_DATA);
+    $encoded = base62_encode($encrypted); // ~22 chars
+
+    return $prefix . str_pad($encoded, 32, 'A'); // pad to 32 chars
+}
+
+function decodeApiKeyToUuid(string $apiKey, string $secret): string
+{
+    $encoded = rtrim(substr($apiKey, strpos($apiKey, '_') + 1), 'A');
+    $key = substr(hash('sha256', $secret, true), 0, 16);
+
+    $encrypted = base62_decode($encoded);
+    $decrypted = openssl_decrypt($encrypted, 'aes-128-ecb', $key, OPENSSL_RAW_DATA);
+
+    if ($decrypted === false) {
+        throw new \RuntimeException('Decryption failed');
+    }
+
+    $hex = bin2hex($decrypted);
+    return vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split($hex, 4));
+}
+
+//Route::get('test', [TestController::class, 'videoThumbnailTest']);
+Route::get('test', function () {
+
+    $uuid = Str::uuid()->toString();
+    $secret = 'super_secret_key_123';
+
+    $apiKey = generateApiKeyFromUuid($uuid, $secret);
+
+    $decoded = decodeApiKeyToUuid($apiKey, $secret);
+
+    dump(
+        "Generated API Key: $apiKey",
+        "Decoded UUID: $decoded",
+        $decoded === $uuid
+    );
+});
+
+
 
 Route::get('/workflow-test', function () {
 
@@ -165,10 +239,24 @@ Route::middleware(['auth', 'verified'])->group(function () {
                         Route::get('/team', [OrganizationController::class, 'team'])->name('team');
                         Route::delete('/team/{user}', [OrganizationController::class, 'removeTeamMember'])->name('team.remove');
 
+                        // API Keys routes
+                        Route::prefix('api-keys')->name('api-keys.')->group(function () {
+                            Route::get('/', [ApiKeysController::class, 'index'])->name('index');
+                            Route::post('/', [ApiKeysController::class, 'store'])->name('store');
+                            Route::put('/{apiKey}', [ApiKeysController::class, 'update'])->name('update');
+                            Route::post('/{apiKey}/archive', [ApiKeysController::class, 'archive'])->name('archive');
+                            Route::post('/{apiKey}/activate', [ApiKeysController::class, 'activate'])->name('activate');
+                            Route::delete('/{apiKey}', [ApiKeysController::class, 'destroy'])->name('destroy');
+                            Route::post('/{apiKey}/reveal', [ApiKeysController::class, 'reveal'])->name('reveal');
+                        });
+
                         Route::prefix('billing')->name('billing.')->group(function () {
                             Route::get('/', [BillingCheckoutController::class, 'billing'])->name('index');
                             Route::get('/portal', [BillingCheckoutController::class, 'portal'])->name('portal');
                         });
+
+                        Route::get('/fulfillment', [OrganizationController::class, 'fulfillment'])->name('fulfillment');
+                        Route::put('/fulfillment', [OrganizationController::class, 'updateFulfillment'])->name('fulfillment.update');
                     });
                 });
 
@@ -202,7 +290,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::post('/steps/{stepKey}/complete', [OnboardingController::class, 'completeStep'])->name('steps.complete');
             Route::patch('/bulk-update', [OnboardingController::class, 'bulkUpdate'])->name('bulk-update');
             Route::post('/reset', [OnboardingController::class, 'reset'])->name('reset');
-            
+
             // Informational onboarding routes
             Route::get('/info', [OnboardingController::class, 'getInfoStatus'])->name('info.index');
             Route::post('/info/{infoKey}/seen', [OnboardingController::class, 'markInfoSeen'])->name('info.seen');
@@ -224,6 +312,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
             Route::get('integrate', [OffersController::class, 'integrate'])->name('integrate');
             Route::get('sharing', [OffersController::class, 'sharing'])->name('sharing');
+            Route::get('test-checkout', [OffersController::class, 'testCheckout'])->name('test-checkout');
             Route::get('settings', [OffersController::class, 'settings'])->name('settings');
             Route::get('settings/customization', [OffersController::class, 'settingsCustomization'])->name('settings.customization');
             Route::get('settings/notifications', [OffersController::class, 'settingsNotifications'])->name('settings.notifications');
@@ -247,8 +336,16 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
         Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
-        Route::get('/orders', [OrdersController::class, 'index'])->name('orders.index');
-        Route::get('/orders/{order:uuid}', [OrdersController::class, 'show'])->name('orders.show');
+        // Orders
+        Route::prefix('orders')->name('orders.')->group(function () {
+            Route::get('/', [OrdersController::class, 'index'])->name('index');
+            Route::get('/{order}', [OrdersController::class, 'show'])->name('show');
+            
+            // Fulfillment routes
+            Route::get('/{order}/fulfillment', [OrdersController::class, 'fulfillment'])->name('fulfillment');
+            Route::post('/{order}/items/{orderItem}/fulfillment', [OrdersController::class, 'updateFulfillment'])->name('fulfillment.item.update');
+            Route::post('/{order}/items/{orderItem}/unprovisionable', [OrdersController::class, 'markUnprovisionable'])->name('fulfillment.item.unprovisionable');
+        });
     });
 });
 

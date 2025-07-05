@@ -7,6 +7,7 @@ import { Theme } from './theme';
 export enum IntegrationClient {
   STRIPE = 'stripe',
   Plandalf = 'plandalf',
+  STRIPE_TEST = 'stripe_test',
 }
 
 export type CheckoutItem = {
