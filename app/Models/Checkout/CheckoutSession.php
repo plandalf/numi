@@ -42,6 +42,7 @@ class CheckoutSession extends Model
         'deleted_at',
         'discounts',
         'properties',
+        'test_mode',
         // 'customer_id',
     ];
 
@@ -52,6 +53,7 @@ class CheckoutSession extends Model
         'metadata' => 'array',
         'discounts' => 'array',
         'properties' => 'array',
+        'test_mode' => 'boolean',
     ];
 
     protected $attributes = [
@@ -164,12 +166,24 @@ class CheckoutSession extends Model
         return $this->belongsTo(Customer::class, 'customer_id');
     }
 
-    public function integration()
+    public function getIntegrationAttribute()
     {
         /**
          * Right now, we have two integrations, Stripe and Plandalf.
          * Plandalf has no payment integration yet, so by default, we use Stripe.
+         * If test_mode is true, we use STRIPE_TEST, otherwise STRIPE.
          */
+        $integrationType = $this->test_mode ? IntegrationType::STRIPE_TEST : IntegrationType::STRIPE;
+        
+        return $this->organization->integrations()
+            ->where('type', $integrationType)
+            ->first();
+    }
+
+    public function integration()
+    {
+        // Keep the old method for backward compatibility with eager loading
+        // but it will use the live integration by default
         return $this->hasOneThrough(
             \App\Models\Integration::class,
             Organization::class,

@@ -254,6 +254,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
                             Route::get('/', [BillingCheckoutController::class, 'billing'])->name('index');
                             Route::get('/portal', [BillingCheckoutController::class, 'portal'])->name('portal');
                         });
+
+                        Route::get('/fulfillment', [OrganizationController::class, 'fulfillment'])->name('fulfillment');
+                        Route::put('/fulfillment', [OrganizationController::class, 'updateFulfillment'])->name('fulfillment.update');
                     });
                 });
 
@@ -309,6 +312,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
             Route::get('integrate', [OffersController::class, 'integrate'])->name('integrate');
             Route::get('sharing', [OffersController::class, 'sharing'])->name('sharing');
+            Route::get('test-checkout', [OffersController::class, 'testCheckout'])->name('test-checkout');
             Route::get('settings', [OffersController::class, 'settings'])->name('settings');
             Route::get('settings/customization', [OffersController::class, 'settingsCustomization'])->name('settings.customization');
             Route::get('settings/notifications', [OffersController::class, 'settingsNotifications'])->name('settings.notifications');
@@ -332,8 +336,16 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
         Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
-        Route::get('/orders', [OrdersController::class, 'index'])->name('orders.index');
-        Route::get('/orders/{order:uuid}', [OrdersController::class, 'show'])->name('orders.show');
+        // Orders
+        Route::prefix('orders')->name('orders.')->group(function () {
+            Route::get('/', [OrdersController::class, 'index'])->name('index');
+            Route::get('/{order}', [OrdersController::class, 'show'])->name('show');
+            
+            // Fulfillment routes
+            Route::get('/{order}/fulfillment', [OrdersController::class, 'fulfillment'])->name('fulfillment');
+            Route::post('/{order}/items/{orderItem}/fulfillment', [OrdersController::class, 'updateFulfillment'])->name('fulfillment.item.update');
+            Route::post('/{order}/items/{orderItem}/unprovisionable', [OrdersController::class, 'markUnprovisionable'])->name('fulfillment.item.unprovisionable');
+        });
     });
 });
 

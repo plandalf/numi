@@ -51,6 +51,9 @@ class OfferResource extends JsonResource
             'public_url' => $this->whenLoaded('organization', function () {
                 return $this->public_url;
             }),
+            'test_checkout_url' => $this->whenLoaded('organization', function () {
+                return $this->getTestCheckoutUrl();
+            }),
             'items' => OfferItemResource::collection($this->whenLoaded('offerItems')),
             'theme' => new ThemeResource($this?->theme ?? new Theme),
             'hosted_page' => $this->whenLoaded('hostedPage', function () {

@@ -21,6 +21,16 @@ Route::middleware(['force-json'])->group(function () {
 
 
 
+    // Webhook routes (no authentication required)
+    // Route::prefix('webhooks')->name('webhooks.')->group(function () {
+    //     Route::post('/organizations/{organization}/shopify', [\App\Http\Controllers\Api\WebhookController::class, 'shopify'])->name('shopify');
+    //     Route::post('/organizations/{organization}/etsy', [\App\Http\Controllers\Api\WebhookController::class, 'etsy'])->name('etsy');
+    //     Route::post('/organizations/{organization}/clickfunnels', [\App\Http\Controllers\Api\WebhookController::class, 'clickfunnels'])->name('clickfunnels');
+    //     Route::post('/organizations/{organization}/woocommerce', [\App\Http\Controllers\Api\WebhookController::class, 'woocommerce'])->name('woocommerce');
+    //     Route::post('/organizations/{organization}/amazon', [\App\Http\Controllers\Api\WebhookController::class, 'amazon'])->name('amazon');
+    //     Route::post('/organizations/{organization}/custom', [\App\Http\Controllers\Api\WebhookController::class, 'custom'])->name('custom');
+    // });
+
     // Protected API routes (require API key authentication)
     Route::middleware(['api-key'])->group(function () {
     Route::resource('checkout_sessions', CheckoutSessionAPIController::class);
@@ -44,6 +54,23 @@ Route::middleware(['force-json'])->group(function () {
                 'order_id' => $order,
             ]);
         })->name('orders.show');
+
+        // Fulfillment API endpoints
+        Route::prefix('fulfillment')->name('fulfillment.')->group(function () {
+            // Route::get('/', [\App\Http\Controllers\Api\FulfillmentController::class, 'index'])->name('index');
+            // Route::get('/statistics', [\App\Http\Controllers\Api\FulfillmentController::class, 'statistics'])->name('statistics');
+            // Route::get('/orders/{order}', [\App\Http\Controllers\Api\FulfillmentController::class, 'show'])->name('orders.show');
+            
+            Route::post('/orders/{order}/resend-notification', [\App\Http\Controllers\Api\FulfillmentController::class, 'resendNotification'])->name('orders.resend-notification');
+            
+            // Comprehensive fulfillment update (matches UI form)
+            Route::post('/order-items/{orderItem}/update', [\App\Http\Controllers\Api\FulfillmentController::class, 'provisionItem'])->name('order-items.update');
+            
+            // Legacy endpoints (keeping for backward compatibility)
+            Route::post('/order-items/{orderItem}/provision', [\App\Http\Controllers\Api\FulfillmentController::class, 'provisionItem'])->name('order-items.provision');
+            Route::post('/order-items/{orderItem}/mark-unprovisionable', [\App\Http\Controllers\Api\FulfillmentController::class, 'markUnprovisionable'])->name('order-items.mark-unprovisionable');
+            Route::patch('/order-items/{orderItem}/tracking', [\App\Http\Controllers\Api\FulfillmentController::class, 'updateTracking'])->name('order-items.update-tracking');
+        });
 
         // Add more protected API endpoints here
         Route::get('organization', function () {

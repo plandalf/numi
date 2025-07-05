@@ -13,6 +13,8 @@ use App\Observers\OfferObserver;
 use App\Observers\ThemeObserver;
 use App\Models\Subscription;
 use App\Models\SubscriptionItem;
+use App\Models\Order\Order;
+use App\Policies\OrderPolicy;
 use Carbon\CarbonImmutable;
 use Dedoc\Scramble\Scramble;
 use Dedoc\Scramble\Support\Generator\OpenApi;
@@ -34,6 +36,7 @@ use Laravel\Cashier\Cashier;
 use Dedoc\Scramble\Support\Generator\Parameter;
 use Dedoc\Scramble\Support\Generator\Schema;
 use Dedoc\Scramble\Support\Generator\Types\StringType;
+use Illuminate\Support\Facades\Gate;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -63,6 +66,7 @@ class AppServiceProvider extends ServiceProvider
         $this->bootModelRules();
         $this->bootInertiaSharing();
         $this->bootObservers();
+        $this->bootPolicies();
 
         Vite::useAggressivePrefetching();
         URL::forceHttps(app()->isProduction());
@@ -153,5 +157,10 @@ class AppServiceProvider extends ServiceProvider
         Offer::observe(OfferObserver::class);
         Integration::observe(IntegrationObserver::class);
         Theme::observe(ThemeObserver::class);
+    }
+
+    private function bootPolicies(): void
+    {
+        Gate::policy(Order::class, OrderPolicy::class);
     }
 }

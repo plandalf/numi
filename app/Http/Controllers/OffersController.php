@@ -225,8 +225,40 @@ class OffersController extends Controller
 
     public function sharing(Offer $offer): Response
     {
+        $hasLiveIntegration = Integration::where('organization_id', $offer->organization_id)
+            ->where('type', IntegrationType::STRIPE)
+            ->exists();
+        
+        $hasTestIntegration = Integration::where('organization_id', $offer->organization_id)
+            ->where('type', IntegrationType::STRIPE_TEST)
+            ->exists();
+
         return Inertia::render('offers/sharing', [
             'offer' => new OfferResource($offer->load('offerItems')),
+            'hasLiveIntegration' => $hasLiveIntegration,
+            'hasTestIntegration' => $hasTestIntegration,
+        ]);
+    }
+
+    public function testCheckout(Offer $offer): Response
+    {
+        $hasLiveIntegration = Integration::where('organization_id', $offer->organization_id)
+            ->where('type', IntegrationType::STRIPE)
+            ->exists();
+        
+        $hasTestIntegration = Integration::where('organization_id', $offer->organization_id)
+            ->where('type', IntegrationType::STRIPE_TEST)
+            ->exists();
+
+        $liveCheckoutUrl = route('offers.show', ['offer' => $offer, 'environment' => 'live']);
+        $testCheckoutUrl = route('offers.show', ['offer' => $offer, 'environment' => 'test']);
+
+        return Inertia::render('offers/test-checkout', [
+            'offer' => new OfferResource($offer->load('offerItems')),
+            'hasLiveIntegration' => $hasLiveIntegration,
+            'hasTestIntegration' => $hasTestIntegration,
+            'liveCheckoutUrl' => $liveCheckoutUrl,
+            'testCheckoutUrl' => $testCheckoutUrl,
         ]);
     }
 

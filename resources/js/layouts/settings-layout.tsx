@@ -1,5 +1,5 @@
 import { Link } from '@inertiajs/react';
-import { Building2, CreditCard, PaintbrushIcon, Users, Key } from 'lucide-react';
+import { Building2, CreditCard, PaintbrushIcon, Users, Key, Package } from 'lucide-react';
 import {
     Sidebar,
     SidebarContent,
@@ -34,11 +34,16 @@ export default function SettingsLayout({ children }: SettingsLayoutProps) {
             href: route('organizations.settings.api-keys.index'),
             icon: Key,
         },
-      {
-        title: 'Theme',
-        href: route('organizations.themes.index'),
-        icon: PaintbrushIcon,
-      },
+        {
+            title: 'Fulfillment',
+            href: route('organizations.settings.fulfillment'),
+            icon: Package,
+        },
+        {
+            title: 'Theme',
+            href: route('organizations.themes.index'),
+            icon: PaintbrushIcon,
+        },
         ...(modules.billing ? [
             {
                 title: 'Billing',

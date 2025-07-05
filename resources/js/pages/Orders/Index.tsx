@@ -2,7 +2,7 @@ import { Link, Head, router } from '@inertiajs/react';
 import AppLayout from "@/layouts/app-layout";
 import cx from "classnames";
 import { formatDate, formatMoney } from '@/lib/utils';
-import { Search, ExternalLink, FileText } from 'lucide-react';
+import { Search, ExternalLink, FileText, Package, AlertTriangle } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { useDebounce } from '@/hooks/use-debounce';
 import { useEffect, useState } from 'react';
@@ -55,7 +55,10 @@ interface OrderItem {
 interface Order {
   id: number;
   uuid: string;
-  status: string;
+  status: {
+    value: string;
+    label: string;
+  };
   currency: string;
   total_amount: number;
   completed_at: string | null;
@@ -70,6 +73,12 @@ interface Order {
     id: number;
     status: string;
   } | null;
+  fulfillment_summary: {
+    total_items: number;
+    fulfilled_items: number;
+    pending_items: number;
+    unprovisionable_items: number;
+  };
 }
 
 interface OrdersIndexProps extends PageProps {
@@ -80,7 +89,7 @@ interface OrdersIndexProps extends PageProps {
   showOrdersTutorial: boolean;
 }
 
-export default function Index({ auth, orders, filters, showOrdersTutorial }: OrdersIndexProps) {
+export default function Index({ orders, filters, showOrdersTutorial }: OrdersIndexProps) {
   const [search, setSearch] = useState(filters.search || '');
   const debouncedSearch = useDebounce(search, 300);
 
@@ -91,6 +100,21 @@ export default function Index({ auth, orders, filters, showOrdersTutorial }: Ord
       { preserveState: true, preserveScroll: true }
     );
   }, [debouncedSearch]);
+
+  const getFulfillmentStatus = (order: Order) => {
+    const { total_items, fulfilled_items, unprovisionable_items } = order.fulfillment_summary;
+    
+    if (total_items === 0) return { status: 'no-items', label: 'No Items', color: 'bg-gray-100 text-gray-700' };
+    if (fulfilled_items === total_items) return { status: 'fulfilled', label: 'Fulfilled', color: 'bg-green-100 text-green-700' };
+    if (unprovisionable_items === total_items) return { status: 'unprovisionable', label: 'Unprovisionable', color: 'bg-red-100 text-red-700' };
+    if (fulfilled_items > 0) return { status: 'partial', label: 'Partially Fulfilled', color: 'bg-yellow-100 text-yellow-700' };
+    return { status: 'pending', label: 'Pending Fulfillment', color: 'bg-blue-100 text-blue-700' };
+  };
+
+  const requiresFulfillment = (order: Order) => {
+    const { total_items, fulfilled_items, unprovisionable_items } = order.fulfillment_summary;
+    return total_items > 0 && fulfilled_items < total_items && unprovisionable_items < total_items;
+  };
 
   return (
     <AppLayout>
@@ -162,50 +186,88 @@ export default function Index({ auth, orders, filters, showOrdersTutorial }: Ord
                     <TableHead className="min-w-[100px]">Status</TableHead>
                     <TableHead className="min-w-[120px]">Date</TableHead>
                     <TableHead className="min-w-[100px]">Items</TableHead>
+                    <TableHead className="min-w-[140px]">Fulfillment</TableHead>
                     <TableHead className="min-w-[100px] text-right">Total</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {orders.data.map((order: Order) => (
-                    <TableRow key={order.id}>
-                      <TableCell className="font-medium">
-                        <Link
-                          href={route('orders.show', order.uuid)}
-                          className="hover:underline"
-                        >
-                          {order.uuid}
-                        </Link>
-                      </TableCell>
-                      <TableCell>
-                        {order.customer ? (
-                          <div>
-                            <div className="font-medium">{order.customer.name}</div>
-                            <div className="text-sm text-gray-500">{order.customer.email}</div>
+                  {orders.data.map((order: Order) => {
+                    const fulfillmentStatus = getFulfillmentStatus(order);
+                    const needsFulfillment = requiresFulfillment(order);
+                    
+                    return (
+                      <TableRow 
+                        key={order.id}
+                        className={cx({
+                          'bg-yellow-50 border-l-4 border-l-yellow-400': needsFulfillment,
+                        })}
+                      >
+                        <TableCell className="font-medium">
+                          <Link
+                            href={route('orders.show', order.uuid)}
+                            className="hover:underline"
+                          >
+                            {order.uuid}
+                          </Link>
+                          {needsFulfillment && (
+                            <div className="flex items-center gap-1 mt-1">
+                              <AlertTriangle className="h-3 w-3 text-yellow-600" />
+                              <span className="text-xs text-yellow-600 font-medium">Needs Fulfillment</span>
+                            </div>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {order.customer ? (
+                            <div>
+                              <div className="font-medium">{order.customer.name}</div>
+                              <div className="text-sm text-gray-500">{order.customer.email}</div>
+                            </div>
+                          ) : (
+                            <span className="text-gray-500">Guest</span>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <Badge className={cx('text-white whitespace-nowrap', {
+                            'bg-[#7EB500]': order.status.value === 'completed',
+                            'bg-[#808ABF]': order.status.value === 'pending',
+                            'bg-red-400': order.status.value === 'cancelled',
+                          })}>
+                            {order.status.label}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="whitespace-nowrap">
+                          {formatDate(order.created_at)}
+                        </TableCell>
+                        <TableCell>
+                          {order.items?.length || 0} {order.items?.length === 1 ? 'item' : 'items'}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <Badge className={cx('whitespace-nowrap', fulfillmentStatus.color)}>
+                              {fulfillmentStatus.label}
+                            </Badge>
+                            {order.fulfillment_summary.total_items > 0 && (
+                              <span className="text-xs text-gray-500">
+                                {order.fulfillment_summary.fulfilled_items}/{order.fulfillment_summary.total_items}
+                              </span>
+                            )}
                           </div>
-                        ) : (
-                          <span className="text-gray-500">Guest</span>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <Badge className={cx('text-white whitespace-nowrap', {
-                          'bg-[#7EB500]': order.status === 'completed',
-                          'bg-[#808ABF]': order.status === 'pending',
-                          'bg-red-400': order.status === 'cancelled',
-                        })}>
-                          {order.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="whitespace-nowrap">
-                        {formatDate(order.created_at)}
-                      </TableCell>
-                      <TableCell>
-                        {order.items?.length || 0} {order.items?.length === 1 ? 'item' : 'items'}
-                      </TableCell>
-                      <TableCell className="text-right font-medium">
-                        {formatMoney(order.total_amount, order.currency)}
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                          {needsFulfillment && (
+                            <Link
+                              href={route('orders.fulfillment', order.uuid)}
+                              className="inline-flex items-center gap-1 mt-1 text-xs text-blue-600 hover:text-blue-800 font-medium"
+                            >
+                              <Package className="h-3 w-3" />
+                              Manage Fulfillment
+                            </Link>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-right font-medium">
+                          {formatMoney(order.total_amount, order.currency)}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
             </div>

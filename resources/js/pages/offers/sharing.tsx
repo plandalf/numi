@@ -1,5 +1,4 @@
 import AppOfferLayout from '@/layouts/app/app-offer-layout';
-import { type BreadcrumbItem } from '@/types';
 import { Head, router } from '@inertiajs/react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,18 +12,10 @@ import { Offer } from '@/types/offer';
 
 interface Props {
     offer: Offer;
+    hasTestIntegration: boolean;
 }
 
-const breadcrumbs: BreadcrumbItem[] = [
-    {
-        title: 'Dashboard',
-        href: '/dashboard',
-    },
-    {
-        title: 'Offers',
-        href: '/offers',
-    },
-];
+
 
 const embedTypes = [
     { id: 'standard', name: 'Standard', description: 'Hosted link that opens in a new tab' },
@@ -33,7 +24,7 @@ const embedTypes = [
     { id: 'slider', name: 'Slider', description: 'Slides in from the side' },
 ];
 
-export default function Sharing({ offer }: Props) {
+export default function Sharing({ offer, hasTestIntegration }: Props) {
     const [showQrCode, setShowQrCode] = useState(false);
     const [showEmbedInfo, setShowEmbedInfo] = useState(false);
     const [selectedEmbedType, setSelectedEmbedType] = useState('standard');
@@ -124,6 +115,43 @@ export default function Sharing({ offer }: Props) {
                                 </div>
                             </CardContent>
                         </Card>
+
+                        {hasTestIntegration && (
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle>Test Checkout</CardTitle>
+                                    <CardDescription>Test your offer with Stripe test mode (no real charges)</CardDescription>
+                                </CardHeader>
+                                <CardContent className="space-y-4">
+                                    <div className="relative">
+                                        <Input
+                                            readOnly
+                                            value={offer.test_checkout_url}
+                                            className="pr-24"
+                                        />
+                                        <div className="absolute right-2 top-1/2 -translate-y-1/2 flex gap-2">
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() => copyToClipboard(offer.test_checkout_url)}
+                                            >
+                                                <Copy className="h-4 w-4" />
+                                            </Button>
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() => window.open(offer.test_checkout_url, '_blank')}
+                                            >
+                                                <ExternalLink className="h-4 w-4" />
+                                            </Button>
+                                        </div>
+                                    </div>
+                                    <div className="text-sm text-orange-600 bg-orange-50 p-3 rounded-md">
+                                        <strong>Note:</strong> This is a test checkout that uses Stripe test mode. No real payments will be processed.
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        )}
 
                         <Card>
                             <CardHeader>
