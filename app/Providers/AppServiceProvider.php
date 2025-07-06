@@ -3,7 +3,6 @@
 namespace App\Providers;
 
 use App\Enums\OnboardingStep;
-use App\Enums\OnboardingInfo;
 use App\Models\Integration;
 use App\Models\Organization;
 use App\Models\Store\Offer;
@@ -18,14 +17,12 @@ use App\Policies\OrderPolicy;
 use Carbon\CarbonImmutable;
 use Dedoc\Scramble\Scramble;
 use Dedoc\Scramble\Support\Generator\OpenApi;
-use Dedoc\Scramble\Support\Generator\Operation;
 use Dedoc\Scramble\Support\Generator\SecurityScheme;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\Vite;
@@ -33,9 +30,6 @@ use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
 use Inertia\Inertia;
 use Laravel\Cashier\Cashier;
-use Dedoc\Scramble\Support\Generator\Parameter;
-use Dedoc\Scramble\Support\Generator\Schema;
-use Dedoc\Scramble\Support\Generator\Types\StringType;
 use Illuminate\Support\Facades\Gate;
 
 class AppServiceProvider extends ServiceProvider
@@ -77,22 +71,8 @@ class AppServiceProvider extends ServiceProvider
 
         Scramble::configure()
             ->withDocumentTransformers(function (OpenApi $openApi) {
-
                 $openApi->secure(SecurityScheme::http('bearer'),);
-            })
-            ->afterOpenApiGenerated(function ($a) {
-//                dd($a);
             });
-//
-//        Scramble::configure()
-//            ->withOperationTransformers(function (Operation $operation) {
-//                $authHeader = (new Parameter('Authorization', 'header'))
-//                    ->description('Provide your bearer token in the Authorization header. Example: Bearer YOUR_CUSTOM_TOKEN')
-//                    ->setSchema(Schema::fromType(new StringType));
-//
-//                $operation->parameters[] = $authHeader;
-//            });
-
     }
 
     private function bootModelRules(): void
