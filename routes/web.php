@@ -16,192 +16,16 @@ use App\Http\Controllers\SequencesController;
 use App\Http\Controllers\Settings\ProfileController;
 use App\Http\Controllers\ThemeController;
 use App\Http\Controllers\TemplateController;
-use App\Models\ResourceEvent;
-use App\Models\Store\Offer;
-use App\Workflows\RunSequenceWorkflow;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
-use Workflow\WorkflowStub;
 use App\Http\Controllers\OrdersController;
 use App\Http\Controllers\FeedbackController;
 use App\Http\Controllers\OfferItemPriceController;
 use App\Http\Controllers\OnboardingController;
-use App\Http\Controllers\OnboardingInfoController;
 use App\Http\Controllers\ApiKeysController;
 
 Route::redirect('/', '/dashboard')->name('home');
 
-
-function base62_encode(string $data): string
-{
-    $chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
-    $num = gmp_import($data);
-    $str = '';
-
-    while (gmp_cmp($num, 0) > 0) {
-        [$num, $rem] = [gmp_div_q($num, 62), gmp_mod($num, 62)];
-        $str .= $chars[gmp_intval($rem)];
-    }
-
-    return strrev($str);
-}
-
-function base62_decode(string $str): string
-{
-    $chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
-    $num = gmp_init(0);
-
-    foreach (str_split($str) as $char) {
-        $num = gmp_add(gmp_mul($num, 62), strpos($chars, $char));
-    }
-
-    return gmp_export($num);
-}
-
-function generateApiKeyFromUuid(string $uuid, string $secret, string $prefix = 'live_'): string
-{
-    $raw = hex2bin(str_replace('-', '', $uuid));
-    $key = substr(hash('sha256', $secret, true), 0, 16); // AES-128 key
-
-    $encrypted = openssl_encrypt($raw, 'aes-128-ecb', $key, OPENSSL_RAW_DATA);
-    $encoded = base62_encode($encrypted); // ~22 chars
-
-    return $prefix . str_pad($encoded, 32, 'A'); // pad to 32 chars
-}
-
-function decodeApiKeyToUuid(string $apiKey, string $secret): string
-{
-    $encoded = rtrim(substr($apiKey, strpos($apiKey, '_') + 1), 'A');
-    $key = substr(hash('sha256', $secret, true), 0, 16);
-
-    $encrypted = base62_decode($encoded);
-    $decrypted = openssl_decrypt($encrypted, 'aes-128-ecb', $key, OPENSSL_RAW_DATA);
-
-    if ($decrypted === false) {
-        throw new \RuntimeException('Decryption failed');
-    }
-
-    $hex = bin2hex($decrypted);
-    return vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split($hex, 4));
-}
-
-//Route::get('test', [TestController::class, 'videoThumbnailTest']);
-Route::get('test', function () {
-
-    $uuid = Str::uuid()->toString();
-    $secret = 'super_secret_key_123';
-
-    $apiKey = generateApiKeyFromUuid($uuid, $secret);
-
-    $decoded = decodeApiKeyToUuid($apiKey, $secret);
-
-    dump(
-        "Generated API Key: $apiKey",
-        "Decoded UUID: $decoded",
-        $decoded === $uuid
-    );
-});
-
-
-
-Route::get('/workflow-test', function () {
-
-    $order = new \App\Models\Order\Order;
-    $order->organization_id = 1;
-    $order->checkout_session_id = 1;
-    $order->status = \App\Enums\OrderStatus::COMPLETED;
-    $order->save();
-
-
-    $order = \App\Models\Order\Order::find($order->id);
-
-    dd($order->toArray());
-
-
-    $event = new ResourceEvent;
-    $event->action = 'c';
-    $event->organization_id = 1;
-    $event->subject()->associate($order);
-    $event->snapshot = [
-        'customer' => [
-            'email' => 'mitch@flindev.com',
-        ],
-    ];
-    $event->save();
-
-    // triggers = event + model ?
-    $sequence = \App\Models\Automation\Sequence::query()
-        ->firstOrCreate([
-            'name' => '',
-            'organization_id' => 1,
-        ]);
-
-    $email = \App\Models\Automation\Node::query()
-        ->create([
-            'sequence_id' => $sequence->id,
-            'type' => 'email',
-            'arguments' => [
-                'subject' => 'what is going on?',
-                'recipients' => [
-                    ['email' => '{{trigger.customer.email}}'],
-                ],
-                'body' => 'Hi {{trigger.customer.name}}\nThanks for buying',
-            ],
-        ]);
-
-    $trigger = \App\Models\Automation\Trigger::query()
-        ->create([
-            'sequence_id' => $sequence->id,
-            'event_name' => 'order.created',
-            'target_type' => 'offer',
-            'target_id' => 3,
-            'next_node_id' => $email->id,
-        ]);
-
-    $webhookAction = \App\Models\Automation\Node::query()
-        ->create([
-            'sequence_id' => $sequence->id,
-            'type' => 'webhook',
-            'arguments' => [
-                'url' => 'https://webhook.site/545ae49e-d183-4ea1-8855-ddf9b227e55e',
-                'type' => 'advanced',
-                'method' => 'POST',
-                'query' => [
-                    'key' => 'value',
-                ],
-                'headers' => [
-                    'accept' => 'application/json',
-                ],
-                'body' => [
-                    'hello' => 'there 👋',
-                ],
-            ],
-        ]);
-
-    $node = \App\Models\Automation\Edge::query()
-        ->firstOrCreate([
-            'from_node_id' => $email->id,
-            'to_node_id' => $webhookAction->id,
-            'sequence_id' => $sequence->id,
-        ]);
-    $stored = \App\Models\Automation\StoredWorkflow::query()
-        ->create([
-            'class' => RunSequenceWorkflow::class,
-            'organization_id' => 1,
-        ]);
-
-    $wf = WorkflowStub::fromStoredWorkflow($stored);
-
-    dd(
-        $wf->start($trigger, $event),
-        $wf->id(),
-    );
-
-})->name('workflow-test');
-
-
-// get offer controller
-// redirect to
 Route::middleware(['frame-embed'])->group(function () {
     Route::get('/o/{offer}/{environment?}', [CheckoutController::class, 'initialize'])
         ->name('offers.show')
@@ -302,8 +126,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::prefix('offers/{offer}')->name('offers.')->group(function () {
             Route::get('pricing', [OffersController::class, 'pricing'])->name('pricing');
 
-            Route::get('settings/theme', [OffersController::class, 'settingsTheme'])->name('settings.theme');
-
             Route::put('theme', [OffersController::class, 'updateTheme'])->name('update.theme');
 
             // Add offerItem routes
@@ -311,12 +133,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::put('items/{item}/prices/{price}', [OfferItemPriceController::class, 'update'])->name('items.prices.update');
 
             Route::get('integrate', [OffersController::class, 'integrate'])->name('integrate');
-            Route::get('sharing', [OffersController::class, 'sharing'])->name('sharing');
-            Route::get('test-checkout', [OffersController::class, 'testCheckout'])->name('test-checkout');
-            Route::get('settings', [OffersController::class, 'settings'])->name('settings');
-            Route::get('settings/customization', [OffersController::class, 'settingsCustomization'])->name('settings.customization');
-            Route::get('settings/notifications', [OffersController::class, 'settingsNotifications'])->name('settings.notifications');
-            Route::get('settings/access', [OffersController::class, 'settingsAccess'])->name('settings.access');
             Route::post('publish', [OffersController::class, 'publish'])->name('publish');
             Route::put('duplicate', [OffersController::class, 'duplicate'])->name('duplicate');
         });
@@ -340,7 +156,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::prefix('orders')->name('orders.')->group(function () {
             Route::get('/', [OrdersController::class, 'index'])->name('index');
             Route::get('/{order}', [OrdersController::class, 'show'])->name('show');
-            
+
             // Fulfillment routes
             Route::get('/{order}/fulfillment', [OrdersController::class, 'fulfillment'])->name('fulfillment');
             Route::post('/{order}/items/{orderItem}/fulfillment', [OrdersController::class, 'updateFulfillment'])->name('fulfillment.item.update');

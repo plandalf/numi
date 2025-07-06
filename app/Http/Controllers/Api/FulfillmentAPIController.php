@@ -19,11 +19,11 @@ use Illuminate\Validation\ValidationException;
 
 /**
  * @group Fulfillment Management
- * 
+ *
  * APIs for managing order fulfillment status, tracking information, and delivery assets.
  * All endpoints require API key authentication.
  */
-class FulfillmentController extends Controller
+class FulfillmentAPIController extends Controller
 {
     public function __construct(
         private ProvisionOrderItemAction $provisionOrderItemAction,
@@ -34,13 +34,13 @@ class FulfillmentController extends Controller
 
     /**
      * Get fulfillment overview for organization.
-     * 
+     *
      * @group Fulfillment Overview
-     * 
+     *
      * @queryParam status string Filter orders by fulfillment status. Example: pending
      * @queryParam fulfillment_method string Filter by fulfillment method. Example: manual
      * @queryParam page integer Page number for pagination. Example: 1
-     * 
+     *
      * @response 200 {
      *   "data": [
      *     {
@@ -71,7 +71,7 @@ class FulfillmentController extends Controller
      *     "last_page": 3
      *   }
      * }
-     * 
+     *
      * @response 401 {
      *   "error": "Unauthorized",
      *   "message": "Invalid API key"
@@ -80,7 +80,7 @@ class FulfillmentController extends Controller
     public function index(Request $request): JsonResponse
     {
         $organization = $request->user()->currentOrganization;
-        
+
         $orders = Order::where('organization_id', $organization->id)
             ->with(['items.fulfilledBy', 'items.price', 'items.offerItem', 'customer'])
             ->when($request->status, function ($query, $status) {
@@ -107,11 +107,11 @@ class FulfillmentController extends Controller
 
     /**
      * Get fulfillment details for a specific order.
-     * 
+     *
      * @group Order Details
-     * 
+     *
      * @urlParam order string required The order UUID. Example: order-uuid-123
-     * 
+     *
      * @response 200 {
      *   "data": {
      *     "id": 123,
@@ -155,12 +155,12 @@ class FulfillmentController extends Controller
      *     ]
      *   }
      * }
-     * 
+     *
      * @response 403 {
      *   "error": "Unauthorized",
      *   "message": "You are not authorized to view this order"
      * }
-     * 
+     *
      * @response 404 {
      *   "error": "Not Found",
      *   "message": "Order not found"
@@ -169,9 +169,9 @@ class FulfillmentController extends Controller
     public function show(Order $order): JsonResponse
     {
         Gate::authorize('view', $order);
-        
+
         $order->load(['items.fulfilledBy', 'items.price', 'items.offerItem', 'customer', 'organization']);
-        
+
         return response()->json([
             'data' => new OrderResource($order),
         ]);
@@ -179,11 +179,11 @@ class FulfillmentController extends Controller
 
     /**
      * Update order item fulfillment status and details.
-     * 
+     *
      * @group Order Item Management
-     * 
+     *
      * @urlParam orderItem integer required The order item ID. Example: 789
-     * 
+     *
      * @bodyParam fulfillment_status string required The fulfillment status. Must be one of: pending, partially_fulfilled, fulfilled, unprovisionable. Example: partially_fulfilled
      * @bodyParam quantity_fulfilled integer required Number of items fulfilled. Must be between 0 and the total order item quantity. Example: 2
      * @bodyParam notes string optional Fulfillment notes. Max 1000 characters. Example: Shipped via express delivery
@@ -194,7 +194,7 @@ class FulfillmentController extends Controller
      * @bodyParam delivery_assets array optional Array of delivery assets. Example: [{"name": "Digital Download", "url": "https://example.com/download/file.pdf"}]
      * @bodyParam delivery_assets.*.name string required Asset name. Required if delivery_assets provided. Max 255 characters. Example: Digital Download
      * @bodyParam delivery_assets.*.url string required Asset URL. Required if delivery_assets provided. Must be a valid URL. Max 500 characters. Example: https://example.com/download/file.pdf
-     * 
+     *
      * @response 200 {
      *   "data": {
      *     "id": 789,
@@ -219,7 +219,7 @@ class FulfillmentController extends Controller
      *   },
      *   "message": "Order item fulfillment updated successfully"
      * }
-     * 
+     *
      * @response 422 {
      *   "message": "The given data was invalid.",
      *   "errors": {
@@ -227,12 +227,12 @@ class FulfillmentController extends Controller
      *     "quantity_fulfilled": ["The quantity fulfilled must be at least 0."]
      *   }
      * }
-     * 
+     *
      * @response 403 {
      *   "error": "Unauthorized",
      *   "message": "You are not authorized to update this order"
      * }
-     * 
+     *
      * @response 500 {
      *   "error": "Failed to update order item fulfillment",
      *   "message": "An error occurred while processing the request"
@@ -241,7 +241,7 @@ class FulfillmentController extends Controller
     public function provisionItem(OrderItem $orderItem, Request $request): JsonResponse
     {
         Gate::authorize('update', $orderItem->order);
-        
+
         $validated = $request->validate([
             'fulfillment_status' => 'required|in:pending,partially_fulfilled,fulfilled,unprovisionable',
             'quantity_fulfilled' => 'required|integer|min:0|max:' . $orderItem->quantity,
@@ -260,27 +260,27 @@ class FulfillmentController extends Controller
             $orderItem->fulfillment_status = $validated['fulfillment_status'];
             $orderItem->quantity_fulfilled = $validated['quantity_fulfilled'];
             $orderItem->quantity_remaining = $orderItem->quantity - $validated['quantity_fulfilled'];
-            
+
             if ($validated['notes']) {
                 $orderItem->fulfillment_notes = $validated['notes'];
             }
-            
+
             if ($validated['metadata']) {
                 $orderItem->fulfillment_data = array_merge($orderItem->fulfillment_data ?? [], $validated['metadata']);
             }
-            
+
             if ($validated['tracking_number']) {
                 $orderItem->tracking_number = $validated['tracking_number'];
             }
-            
+
             if ($validated['tracking_url']) {
                 $orderItem->tracking_url = $validated['tracking_url'];
             }
-            
+
             if ($validated['unprovisionable_reason']) {
                 $orderItem->unprovisionable_reason = $validated['unprovisionable_reason'];
             }
-            
+
             if ($validated['delivery_assets']) {
                 $orderItem->delivery_assets = $validated['delivery_assets'];
             }
@@ -310,18 +310,18 @@ class FulfillmentController extends Controller
                     'metadata' => $validated['metadata'] ?? null,
                 ]
             );
-            
+
             return response()->json([
                 'data' => new OrderItemResource($orderItem),
                 'message' => 'Order item fulfillment updated successfully',
             ]);
-            
+
         } catch (\Exception $e) {
             Log::error('Failed to update order item fulfillment', [
                 'order_item_id' => $orderItem->id,
                 'error' => $e->getMessage(),
             ]);
-            
+
             return response()->json([
                 'error' => 'Failed to update order item fulfillment',
                 'message' => 'An error occurred while processing the request',
@@ -331,14 +331,14 @@ class FulfillmentController extends Controller
 
     /**
      * Mark an order item as unprovisionable.
-     * 
+     *
      * @group Order Item Management
-     * 
+     *
      * @urlParam orderItem integer required The order item ID. Example: 789
-     * 
+     *
      * @bodyParam unprovisionable_reason string required Reason why item cannot be fulfilled. Max 1000 characters. Example: Product discontinued by manufacturer
      * @bodyParam notes string optional Additional notes. Max 1000 characters. Example: Customer will be contacted for alternative options
-     * 
+     *
      * @response 200 {
      *   "data": {
      *     "id": 789,
@@ -354,19 +354,19 @@ class FulfillmentController extends Controller
      *   },
      *   "message": "Order item marked as unprovisionable"
      * }
-     * 
+     *
      * @response 422 {
      *   "message": "The given data was invalid.",
      *   "errors": {
      *     "unprovisionable_reason": ["The unprovisionable reason field is required."]
      *   }
      * }
-     * 
+     *
      * @response 403 {
      *   "error": "Unauthorized",
      *   "message": "You are not authorized to update this order"
      * }
-     * 
+     *
      * @response 500 {
      *   "error": "Failed to mark order item as unprovisionable",
      *   "message": "An error occurred while processing the request"
@@ -375,7 +375,7 @@ class FulfillmentController extends Controller
     public function markUnprovisionable(OrderItem $orderItem, Request $request): JsonResponse
     {
         Gate::authorize('update', $orderItem->order);
-        
+
         $validated = $request->validate([
             'unprovisionable_reason' => 'required|string|max:1000',
             'notes' => 'nullable|string|max:1000',
@@ -383,7 +383,7 @@ class FulfillmentController extends Controller
 
         try {
             $orderItem->markAsUnprovisionable($validated['unprovisionable_reason']);
-            
+
             if ($validated['notes']) {
                 $orderItem->fulfillment_notes = $validated['notes'];
                 $orderItem->save();
@@ -401,18 +401,18 @@ class FulfillmentController extends Controller
                     'notes' => $validated['notes'] ?? null,
                 ]
             );
-            
+
             return response()->json([
                 'data' => new OrderItemResource($orderItem),
                 'message' => 'Order item marked as unprovisionable',
             ]);
-            
+
         } catch (\Exception $e) {
             Log::error('Failed to mark order item as unprovisionable', [
                 'order_item_id' => $orderItem->id,
                 'error' => $e->getMessage(),
             ]);
-            
+
             return response()->json([
                 'error' => 'Failed to mark order item as unprovisionable',
                 'message' => 'An error occurred while processing the request',
@@ -422,17 +422,17 @@ class FulfillmentController extends Controller
 
     /**
      * Update tracking information for an order item.
-     * 
+     *
      * @group Order Item Management
-     * 
+     *
      * @urlParam orderItem integer required The order item ID. Example: 789
-     * 
+     *
      * @bodyParam tracking_number string optional Shipping tracking number. Max 255 characters. Example: 1234567890
      * @bodyParam tracking_url string optional Tracking URL. Must be a valid URL. Max 500 characters. Example: https://fedex.com/track?trknbr=1234567890
      * @bodyParam expected_delivery_date string optional Expected delivery date. Must be a valid date. Example: 2024-01-20
      * @bodyParam delivered_at string optional Actual delivery date. Must be a valid date. Example: 2024-01-18
      * @bodyParam notes string optional Additional notes. Max 1000 characters. Example: Package delivered to front door
-     * 
+     *
      * @response 200 {
      *   "data": {
      *     "id": 789,
@@ -444,19 +444,19 @@ class FulfillmentController extends Controller
      *   },
      *   "message": "Tracking information updated successfully"
      * }
-     * 
+     *
      * @response 422 {
      *   "message": "The given data was invalid.",
      *   "errors": {
      *     "tracking_url": ["The tracking url must be a valid URL."]
      *   }
      * }
-     * 
+     *
      * @response 403 {
      *   "error": "Unauthorized",
      *   "message": "You are not authorized to update this order"
      * }
-     * 
+     *
      * @response 500 {
      *   "error": "Failed to update tracking information",
      *   "message": "An error occurred while processing the request"
@@ -465,7 +465,7 @@ class FulfillmentController extends Controller
     public function updateTracking(OrderItem $orderItem, Request $request): JsonResponse
     {
         Gate::authorize('update', $orderItem->order);
-        
+
         $validated = $request->validate([
             'tracking_number' => 'sometimes|string|max:255',
             'tracking_url' => 'sometimes|url|max:500',
@@ -476,18 +476,18 @@ class FulfillmentController extends Controller
 
         try {
             $updatedOrderItem = $this->updateTrackingAction->execute($orderItem, $validated);
-            
+
             return response()->json([
                 'data' => new OrderItemResource($updatedOrderItem),
                 'message' => 'Tracking information updated successfully',
             ]);
-            
+
         } catch (\Exception $e) {
             Log::error('Failed to update tracking information', [
                 'order_item_id' => $orderItem->id,
                 'error' => $e->getMessage(),
             ]);
-            
+
             return response()->json([
                 'error' => 'Failed to update tracking information',
                 'message' => 'An error occurred while processing the request',
@@ -497,20 +497,20 @@ class FulfillmentController extends Controller
 
     /**
      * Resend order notification email.
-     * 
+     *
      * @group Notifications
-     * 
+     *
      * @urlParam order string required The order UUID. Example: order-uuid-123
-     * 
+     *
      * @response 200 {
      *   "message": "Order notification sent successfully"
      * }
-     * 
+     *
      * @response 403 {
      *   "error": "Unauthorized",
      *   "message": "You are not authorized to update this order"
      * }
-     * 
+     *
      * @response 500 {
      *   "error": "Failed to send order notification",
      *   "message": "An error occurred while sending the notification"
@@ -519,26 +519,26 @@ class FulfillmentController extends Controller
     public function resendNotification(Order $order): JsonResponse
     {
         Gate::authorize('update', $order);
-        
+
         try {
             // Reset notification status
             $order->fulfillment_notified = false;
             $order->fulfillment_notified_at = null;
             $order->save();
-            
+
             // Send notification
             $this->sendOrderNotificationAction->execute($order);
-            
+
             return response()->json([
                 'message' => 'Order notification sent successfully',
             ]);
-            
+
         } catch (\Exception $e) {
             Log::error('Failed to send order notification', [
                 'order_id' => $order->id,
                 'error' => $e->getMessage(),
             ]);
-            
+
             return response()->json([
                 'error' => 'Failed to send order notification',
                 'message' => 'An error occurred while sending the notification',
@@ -548,9 +548,9 @@ class FulfillmentController extends Controller
 
     /**
      * Get fulfillment statistics for organization.
-     * 
+     *
      * @group Statistics
-     * 
+     *
      * @response 200 {
      *   "data": {
      *     "total_orders": 150,
@@ -559,7 +559,7 @@ class FulfillmentController extends Controller
      *     "unprovisionable_items": 5
      *   }
      * }
-     * 
+     *
      * @response 401 {
      *   "error": "Unauthorized",
      *   "message": "Invalid API key"
@@ -568,7 +568,7 @@ class FulfillmentController extends Controller
     public function statistics(Request $request): JsonResponse
     {
         $organization = $request->user()->currentOrganization;
-        
+
         $stats = [
             'total_orders' => Order::where('organization_id', $organization->id)->count(),
             'pending_fulfillment' => OrderItem::whereHas('order', function ($query) use ($organization) {
@@ -581,9 +581,9 @@ class FulfillmentController extends Controller
                 $query->where('organization_id', $organization->id);
             })->where('fulfillment_status', 'unprovisionable')->count(),
         ];
-        
+
         return response()->json([
             'data' => $stats,
         ]);
     }
-} 
+}

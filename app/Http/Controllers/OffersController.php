@@ -9,8 +9,6 @@ use App\Enums\OnboardingStep;
 use App\Enums\Theme\FontElement;
 use App\Enums\Theme\WeightElement;
 use App\Http\Requests\Offer\OfferThemeUpdateRequest;
-use App\Http\Requests\StoreOfferVariantRequest;
-use App\Http\Requests\UpdateOfferVariantRequest;
 use App\Http\Requests\Offer\OfferUpdateRequest;
 use App\Http\Resources\FontResource;
 use App\Http\Resources\OfferResource;
@@ -175,133 +173,10 @@ class OffersController extends Controller
         ]);
     }
 
-    public function storeVariant(StoreOfferVariantRequest $request, Offer $offer): \Illuminate\Http\RedirectResponse
-    {
-        $validated = $request->validated();
-        $priceIds = $validated['price_ids'];
-        unset($validated['price_ids']);
-
-        $validated['offer_id'] = $offer->id;
-
-        $variant = DB::transaction(function () use ($validated, $priceIds) {
-            /* @var OfferVariant $newVariant */
-            $newVariant = OfferVariant::create($validated);
-            $newVariant->prices()->sync($priceIds);
-
-            return $newVariant;
-        });
-
-        return back()->with('success', "Variant '{$variant->name}' created successfully");
-    }
-
-    public function updateVariant(UpdateOfferVariantRequest $request, Offer $offer, OfferVariant $variant): \Illuminate\Http\RedirectResponse
-    {
-        $validated = $request->validated();
-        $priceIds = $validated['price_ids'];
-        unset($validated['price_ids']);
-
-        DB::transaction(function () use ($variant, $validated, $priceIds) {
-            $variant->update($validated);
-            $variant->prices()->sync($priceIds);
-        });
-
-        return back()->with('success', "Variant '{$variant->name}' updated successfully");
-    }
-
-    public function destroyVariant(Offer $offer, OfferVariant $variant): \Illuminate\Http\RedirectResponse
-    {
-        $name = $variant->name;
-        $variant->delete();
-
-        return back()->with('success', "Variant '{$name}' deleted successfully");
-    }
-
     public function integrate(Offer $offer): Response
     {
         return Inertia::render('offers/integrate', [
             'offer' => new OfferResource($offer->load('offerItems')),
-        ]);
-    }
-
-    public function sharing(Offer $offer): Response
-    {
-        $hasLiveIntegration = Integration::where('organization_id', $offer->organization_id)
-            ->where('type', IntegrationType::STRIPE)
-            ->exists();
-        
-        $hasTestIntegration = Integration::where('organization_id', $offer->organization_id)
-            ->where('type', IntegrationType::STRIPE_TEST)
-            ->exists();
-
-        return Inertia::render('offers/sharing', [
-            'offer' => new OfferResource($offer->load('offerItems')),
-            'hasLiveIntegration' => $hasLiveIntegration,
-            'hasTestIntegration' => $hasTestIntegration,
-        ]);
-    }
-
-    public function testCheckout(Offer $offer): Response
-    {
-        $hasLiveIntegration = Integration::where('organization_id', $offer->organization_id)
-            ->where('type', IntegrationType::STRIPE)
-            ->exists();
-        
-        $hasTestIntegration = Integration::where('organization_id', $offer->organization_id)
-            ->where('type', IntegrationType::STRIPE_TEST)
-            ->exists();
-
-        $liveCheckoutUrl = route('offers.show', ['offer' => $offer, 'environment' => 'live']);
-        $testCheckoutUrl = route('offers.show', ['offer' => $offer, 'environment' => 'test']);
-
-        return Inertia::render('offers/test-checkout', [
-            'offer' => new OfferResource($offer->load('offerItems')),
-            'hasLiveIntegration' => $hasLiveIntegration,
-            'hasTestIntegration' => $hasTestIntegration,
-            'liveCheckoutUrl' => $liveCheckoutUrl,
-            'testCheckoutUrl' => $testCheckoutUrl,
-        ]);
-    }
-
-    public function settings(Offer $offer): Response
-    {
-        return Inertia::render('offers/settings', [
-            'offer' => new OfferResource($offer->load('offerItems')),
-        ]);
-    }
-
-    public function settingsCustomization(Offer $offer): Response
-    {
-        return Inertia::render('offers/settings/customization', [
-            'offer' => new OfferResource($offer->load('offerItems')),
-        ]);
-    }
-
-    public function settingsNotifications(Offer $offer): Response
-    {
-        return Inertia::render('offers/settings/notifications', [
-            'offer' => new OfferResource($offer->load('offerItems')),
-        ]);
-    }
-
-    public function settingsAccess(Offer $offer): Response
-    {
-        return Inertia::render('offers/settings/access', [
-            'offer' => new OfferResource($offer->load('offerItems')),
-        ]);
-    }
-
-    public function settingsTheme(Offer $offer): Response
-    {
-        $themes = Theme::query()
-            ->where('organization_id', $offer->organization_id)
-            ->get();
-
-        $currentTheme = $offer->theme_id ? $offer->theme : null;
-
-        return Inertia::render('offers/settings/theme', [
-            'offer' => new OfferResource($offer),
-            'themes' => ThemeResource::collection($themes),
-            'currentTheme' => $currentTheme ? new ThemeResource($currentTheme) : null,
         ]);
     }
 
@@ -313,7 +188,6 @@ class OffersController extends Controller
 
         return back()->with('success', 'Theme updated successfully.');
     }
-
 
     public function publish(Offer $offer): \Illuminate\Http\RedirectResponse
     {
@@ -327,14 +201,14 @@ class OffersController extends Controller
     public function duplicate(Offer $offer): \Illuminate\Http\RedirectResponse
     {
         $themeId = $offer->theme_id;
-        
+
         // No need to duplicate if it's a global theme
         if($offer->theme->organization_id) {
             $newTheme = $offer->theme->replicate();
             $newTheme->name = (
-                $offer->name 
+                $offer->name
                 ? $offer->name . ' (Copy)'
-                : ($offer->theme->name 
+                : ($offer->theme->name
                     ? $offer->theme->name . ' (Copy)'
                     : null
                     )
@@ -359,7 +233,7 @@ class OffersController extends Controller
             ->route('offers.edit', $newOffer);
     }
 
-    
+
 
     private function authorizeOrganizationAccess(Offer $offer): void
     {
