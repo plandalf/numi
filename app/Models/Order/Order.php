@@ -8,6 +8,7 @@ use App\Enums\FulfillmentMethod;
 use App\Models\Checkout\CheckoutSession;
 use App\Models\Customer;
 use App\Models\OrderEvent;
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Collection as DBCollection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -16,6 +17,10 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * @property DBCollection<OrderItem> $items
+ * @property string $fulfillment_method
+ * @property array  $fulfillment_config
+ * @property Carbon $fulfillment_notified
+ * @property Carbon $fulfillment_notified_at
  */
 class Order extends Model
 {
