@@ -27,12 +27,12 @@ use App\Http\Controllers\FeedbackController;
 use App\Http\Controllers\OfferItemPriceController;
 use App\Http\Controllers\OnboardingController;
 use App\Http\Controllers\OnboardingInfoController;
-<<<<<<< Updated upstream
+//<<<<<<< Updated upstream
 
 Route::redirect('/', '/dashboard')->name('home');
 
-=======
-use App\Http\Controllers\ApiKeysController;
+//=======
+//use App\Http\Controllers\ApiKeysController;
 use App\Http\Controllers\BlockLibraryController;
 
 Route::redirect('/', '/dashboard')->name('home');
@@ -57,7 +57,7 @@ Route::get('test', function () {
 
 
 
->>>>>>> Stashed changes
+//>>>>>>> Stashed changes
 Route::get('/workflow-test', function () {
 
     $order = new \App\Models\Order\Order;
@@ -231,7 +231,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::post('/steps/{stepKey}/complete', [OnboardingController::class, 'completeStep'])->name('steps.complete');
             Route::patch('/bulk-update', [OnboardingController::class, 'bulkUpdate'])->name('bulk-update');
             Route::post('/reset', [OnboardingController::class, 'reset'])->name('reset');
-            
+
             // Informational onboarding routes
             Route::get('/info', [OnboardingController::class, 'getInfoStatus'])->name('info.index');
             Route::post('/info/{infoKey}/seen', [OnboardingController::class, 'markInfoSeen'])->name('info.seen');

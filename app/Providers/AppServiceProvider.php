@@ -47,7 +47,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        JsonResource::$wrap = false;
+        JsonResource::$wrap = null;
 
         Cashier::useCustomerModel(Organization::class);
         Cashier::useSubscriptionModel(Subscription::class);
@@ -98,7 +98,7 @@ class AppServiceProvider extends ServiceProvider
                 }
 
                 $organization = $request->user()->currentOrganization;
-                
+
                 $steps = collect(OnboardingStep::cases())->map(function ($step) use ($organization) {
                     return [
                         'key' => $step->key(),

@@ -270,7 +270,7 @@ function StripeElementsComponent({ context }: { context: BlockContextType }) {
       }
 
       setIsLoading(false)
-      
+
       // Set debug info
       setDebugInfo({
         timestamp: new Date().toISOString(),
@@ -341,21 +341,21 @@ function StripeElementsComponent({ context }: { context: BlockContextType }) {
         },
         '.AccordionItem': {
           boxShadow: 'none',
-<<<<<<< Updated upstream
+// <<<<<<< Updated upstream
           borderRadius: paymentFormStyle.borderRadius,
           backgroundColor: paymentFormStyle.backgroundColor,
           borderWidth: '0px',
           borderStyle: 'none',
           margin: '0px',
           padding: '2px',
-=======
-          borderRadius: (paymentFormStyle.borderRadius as string) || '4px',
-          backgroundColor: (paymentFormStyle.backgroundColor as string) || '#ffffff',
-          borderWidth: '0px',
-          borderStyle: 'none',
-          margin: '0px',
-          padding: '8px',
->>>>>>> Stashed changes
+// =======
+//           borderRadius: (paymentFormStyle.borderRadius as string) || '4px',
+//           backgroundColor: (paymentFormStyle.backgroundColor as string) || '#ffffff',
+//           borderWidth: '0px',
+//           borderStyle: 'none',
+//           margin: '0px',
+//           padding: '8px',
+// >>>>>>> Stashed changes
         },
         '.Label': {
           color: inputLabelFont?.color || '#000000',
@@ -437,19 +437,19 @@ function StripeElementsComponent({ context }: { context: BlockContextType }) {
 
     // Get enabled payment methods from session, fallback to default
     const enabledPaymentMethods = session.enabled_payment_methods || ['card'];
-    
+
     // Separate payment method types and wallets
-    const paymentMethodTypes = enabledPaymentMethods.filter(method => 
+    const paymentMethodTypes = enabledPaymentMethods.filter(method =>
       !['apple_pay', 'google_pay'].includes(method)
     );
-    
+
     const wallets = {
       applePay: enabledPaymentMethods.includes('apple_pay') ? 'auto' as const : 'never' as const,
       googlePay: enabledPaymentMethods.includes('google_pay') ? 'auto' as const : 'never' as const,
     };
 
     const intentMode = (session.intent_mode || 'setup') as 'setup' | 'payment';
-    
+
     // Log for debugging currency filtering
     console.log('Stripe Elements Payment Methods:', {
       currency: session.currency,
@@ -457,7 +457,7 @@ function StripeElementsComponent({ context }: { context: BlockContextType }) {
       paymentMethodTypes,
       intentMode
     });
-    
+
     const options: any = {
       mode: intentMode,
       currency: session.currency.toLocaleLowerCase(),
@@ -474,7 +474,7 @@ function StripeElementsComponent({ context }: { context: BlockContextType }) {
       // Convert total to cents (Stripe expects amount in smallest currency unit)
       const total = session.total || 0;
       const amountInCents = Math.round(total * 100);
-      
+
       // Stripe requires amount > 0 for payment mode
       if (amountInCents <= 0) {
         console.warn('Stripe Elements: Invalid amount for payment mode', {
@@ -488,9 +488,9 @@ function StripeElementsComponent({ context }: { context: BlockContextType }) {
         options.amount = amountInCents;
       }
     }
-    
+
     // Stripe options configured successfully
-    
+
     return options as any; // Type assertion to work around Stripe's strict typing
   }, [session, stripeElementAppearance, googleFontsUrl]);
 
@@ -526,8 +526,8 @@ function StripeElementsComponent({ context }: { context: BlockContextType }) {
               <div style={{ marginBottom: '8px', fontWeight: '500' }}>Payment methods:</div>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
                 {session.enabled_payment_methods.map((method: string) => (
-                  <span 
-                    key={method} 
+                  <span
+                    key={method}
                     style={{
                       fontSize: '12px',
                       padding: '4px 8px',
