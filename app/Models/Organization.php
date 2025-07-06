@@ -126,11 +126,6 @@ class Organization extends Model
         return $this->hasMany(ApiKey::class);
     }
 
-    public function externalFulfillments(): HasMany
-    {
-        return $this->hasMany(ExternalFulfillment::class);
-    }
-
     public function getTrialDaysLeftAttribute()
     {
         if (! config('cashier.enable_billing')) {
@@ -243,7 +238,7 @@ class Organization extends Model
     {
         $totalSteps = count(OnboardingStep::cases());
         $completedSteps = count($this->getCompletedOnboardingSteps());
-        
+
         return $totalSteps > 0 ? round(($completedSteps / $totalSteps) * 100, 2) : 0;
     }
 

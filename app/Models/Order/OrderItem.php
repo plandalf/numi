@@ -8,29 +8,36 @@ use App\Enums\DeliveryMethod;
 use App\Models\Catalog\Price;
 use App\Models\Store\OfferItem;
 use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
  * @property Price $price
+ *
+ * @property string $fulfillment_status
+ * @property string $delivery_method
+ * @property int $quantity_fulfilled
+ * @property int $quantity_remaining
+ * @property array $fulfillment_data
+ * @property array $delivery_assets
+ * @property string $tracking_number
+ * @property string $tracking_url
+ * @property Carbon|null $expected_delivery_date
+ * @property Carbon|null $delivered_at
+ * @property Carbon|null $fulfilled_at
+ * @property int $fulfilled_by_user_id
+ * @property string $fulfillment_notes
+ * @property string $unprovisionable_reason
+ * @property array $external_platform_data
  */
 class OrderItem extends Model
 {
     use HasFactory;
 
-    /**
-     * The table associated with the model.
-     *
-     * @var string
-     */
     protected $table = 'order_items';
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var array<int, string>
-     */
     protected $fillable = [
         'order_id',
         'price_id',
@@ -60,11 +67,6 @@ class OrderItem extends Model
         'delivery_method' => DeliveryMethod::MANUAL_PROVISION,
     ];
 
-    /**
-     * The attributes that should be cast.
-     *
-     * @var array<string, string>
-     */
     protected $casts = [
         'quantity' => 'integer',
         'metadata' => 'array',
@@ -150,23 +152,23 @@ class OrderItem extends Model
     public function markAsFulfilled(int $quantity = null, array $fulfillmentData = [], string $notes = null): void
     {
         $quantityToFulfill = $quantity ?? $this->quantity;
-        
+
         $this->quantity_fulfilled = min($quantityToFulfill, $this->quantity);
         $this->quantity_remaining = $this->quantity - $this->quantity_fulfilled;
         $this->fulfillment_status = $this->isFullyFulfilled() ? FulfillmentStatus::FULFILLED : FulfillmentStatus::PARTIALLY_FULFILLED;
         $this->fulfilled_at = now();
         $this->fulfilled_by_user_id = auth()->id();
-        
+
         if ($notes) {
             $this->fulfillment_notes = $notes;
         }
-        
+
         if (!empty($fulfillmentData)) {
             $this->fulfillment_data = array_merge($this->fulfillment_data ?? [], $fulfillmentData);
         }
-        
+
         $this->save();
-        
+
         // Update overall order fulfillment status
         $this->order->updateFulfillmentStatus();
     }
@@ -180,7 +182,7 @@ class OrderItem extends Model
         $this->unprovisionable_reason = $reason;
         $this->fulfilled_by_user_id = auth()->id();
         $this->save();
-        
+
         // Update overall order fulfillment status
         $this->order->updateFulfillmentStatus();
     }
@@ -193,7 +195,7 @@ class OrderItem extends Model
         if ($this->quantity === 0) {
             return 0;
         }
-        
+
         return round(($this->quantity_fulfilled / $this->quantity) * 100);
     }
 }
