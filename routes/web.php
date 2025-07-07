@@ -16,118 +16,15 @@ use App\Http\Controllers\SequencesController;
 use App\Http\Controllers\Settings\ProfileController;
 use App\Http\Controllers\ThemeController;
 use App\Http\Controllers\TemplateController;
-use App\Models\ResourceEvent;
-use App\Models\Store\Offer;
-use App\Workflows\RunSequenceWorkflow;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
-use Workflow\WorkflowStub;
 use App\Http\Controllers\OrdersController;
 use App\Http\Controllers\FeedbackController;
 use App\Http\Controllers\OfferItemPriceController;
 use App\Http\Controllers\OnboardingController;
-use App\Http\Controllers\OnboardingInfoController;
 
 Route::redirect('/', '/dashboard')->name('home');
 
-Route::get('/workflow-test', function () {
-
-    $order = new \App\Models\Order\Order;
-    $order->organization_id = 1;
-    $order->checkout_session_id = 1;
-    $order->status = \App\Enums\OrderStatus::COMPLETED;
-    $order->save();
-
-
-    $order = \App\Models\Order\Order::find($order->id);
-
-    dd($order->toArray());
-
-
-    $event = new ResourceEvent;
-    $event->action = 'c';
-    $event->organization_id = 1;
-    $event->subject()->associate($order);
-    $event->snapshot = [
-        'customer' => [
-            'email' => 'mitch@flindev.com',
-        ],
-    ];
-    $event->save();
-
-    // triggers = event + model ?
-    $sequence = \App\Models\Automation\Sequence::query()
-        ->firstOrCreate([
-            'name' => '',
-            'organization_id' => 1,
-        ]);
-
-    $email = \App\Models\Automation\Node::query()
-        ->create([
-            'sequence_id' => $sequence->id,
-            'type' => 'email',
-            'arguments' => [
-                'subject' => 'what is going on?',
-                'recipients' => [
-                    ['email' => '{{trigger.customer.email}}'],
-                ],
-                'body' => 'Hi {{trigger.customer.name}}\nThanks for buying',
-            ],
-        ]);
-
-    $trigger = \App\Models\Automation\Trigger::query()
-        ->create([
-            'sequence_id' => $sequence->id,
-            'event_name' => 'order.created',
-            'target_type' => 'offer',
-            'target_id' => 3,
-            'next_node_id' => $email->id,
-        ]);
-
-    $webhookAction = \App\Models\Automation\Node::query()
-        ->create([
-            'sequence_id' => $sequence->id,
-            'type' => 'webhook',
-            'arguments' => [
-                'url' => 'https://webhook.site/545ae49e-d183-4ea1-8855-ddf9b227e55e',
-                'type' => 'advanced',
-                'method' => 'POST',
-                'query' => [
-                    'key' => 'value',
-                ],
-                'headers' => [
-                    'accept' => 'application/json',
-                ],
-                'body' => [
-                    'hello' => 'there 👋',
-                ],
-            ],
-        ]);
-
-    $node = \App\Models\Automation\Edge::query()
-        ->firstOrCreate([
-            'from_node_id' => $email->id,
-            'to_node_id' => $webhookAction->id,
-            'sequence_id' => $sequence->id,
-        ]);
-    $stored = \App\Models\Automation\StoredWorkflow::query()
-        ->create([
-            'class' => RunSequenceWorkflow::class,
-            'organization_id' => 1,
-        ]);
-
-    $wf = WorkflowStub::fromStoredWorkflow($stored);
-
-    dd(
-        $wf->start($trigger, $event),
-        $wf->id(),
-    );
-
-})->name('workflow-test');
-
-
-// get offer controller
-// redirect to
 Route::middleware(['frame-embed'])->group(function () {
     Route::get('/o/{offer}/{environment?}', [CheckoutController::class, 'initialize'])
         ->name('offers.show')
@@ -202,7 +99,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::post('/steps/{stepKey}/complete', [OnboardingController::class, 'completeStep'])->name('steps.complete');
             Route::patch('/bulk-update', [OnboardingController::class, 'bulkUpdate'])->name('bulk-update');
             Route::post('/reset', [OnboardingController::class, 'reset'])->name('reset');
-            
+
             // Informational onboarding routes
             Route::get('/info', [OnboardingController::class, 'getInfoStatus'])->name('info.index');
             Route::post('/info/{infoKey}/seen', [OnboardingController::class, 'markInfoSeen'])->name('info.seen');
@@ -272,5 +169,3 @@ Route::post('/feedback', [FeedbackController::class, 'submit'])->name('feedback.
 
 require __DIR__.'/settings.php';
 require __DIR__.'/auth.php';
-
-//
