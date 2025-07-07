@@ -18,9 +18,7 @@ class CheckoutSessionResource extends JsonResource
             'total' => $this->total,
             'subtotal' => $this->subtotal,
             'publishable_key' => $this->publishable_key,
-            'integration_client' => $this->whenLoaded('integration', function () {
-                return $this->integration->type;
-            }),
+            'integration_client' => $this->integration?->type?->value,
             'current_page' => data_get($this->metadata, 'current_page_id'),
             'discounts' => $this->discounts,
             'taxes' => $this->taxes,

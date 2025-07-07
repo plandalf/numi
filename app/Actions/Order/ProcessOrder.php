@@ -2,6 +2,8 @@
 
 namespace App\Actions\Order;
 
+use App\Actions\Fulfillment\AutoFulfillOrderAction;
+use App\Actions\Fulfillment\SendOrderNotificationAction;
 use App\Enums\ChargeType;
 use App\Enums\RenewInterval;
 use App\Exceptions\Payment\PaymentException;
@@ -19,10 +21,17 @@ use Illuminate\Support\Facades\Log;
 class ProcessOrder
 {
     protected PaymentValidationService $paymentValidationService;
+    protected AutoFulfillOrderAction $autoFulfillOrderAction;
+    protected SendOrderNotificationAction $sendOrderNotificationAction;
 
-    public function __construct(PaymentValidationService $paymentValidationService)
-    {
+    public function __construct(
+        PaymentValidationService $paymentValidationService,
+        AutoFulfillOrderAction $autoFulfillOrderAction,
+        SendOrderNotificationAction $sendOrderNotificationAction
+    ) {
         $this->paymentValidationService = $paymentValidationService;
+        $this->autoFulfillOrderAction = $autoFulfillOrderAction;
+        $this->sendOrderNotificationAction = $sendOrderNotificationAction;
     }
 
     public function __invoke(Order $order, CheckoutSession $checkoutSession, ?string $confirmationToken = null): Order
@@ -156,6 +165,9 @@ class ProcessOrder
             $order->markAsCompleted();
             $order->save();
 
+            // Handle fulfillment after successful payment
+            $this->handleOrderFulfillment($order);
+
             return $order;
         } catch (PaymentException $e) {
             Log::error('Payment processing failed', [
@@ -201,5 +213,27 @@ class ProcessOrder
         }
 
         return null;
+    }
+
+    /**
+     * Handle order fulfillment after successful payment.
+     */
+    protected function handleOrderFulfillment(Order $order): void
+    {
+        try {
+            // Send order notification email
+            $this->sendOrderNotificationAction->execute($order);
+
+            // Auto-fulfill order if configured
+            $this->autoFulfillOrderAction->execute($order);
+
+        } catch (\Exception $e) {
+            // Log fulfillment errors but don't fail the order
+            Log::error('Order fulfillment processing failed', [
+                'order_id' => $order->id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+        }
     }
 }

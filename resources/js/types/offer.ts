@@ -40,6 +40,7 @@ export interface Offer {
     created_at: string;
     updated_at: string;
     public_url: string;
+    test_checkout_url: string;
 
 }
 

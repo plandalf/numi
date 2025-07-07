@@ -1,7 +1,7 @@
 import AppLayout from '@/layouts/app-layout';
 import { Head, Link } from '@inertiajs/react';
 import { Button } from '@/components/ui/button';
-import { Plus, ExternalLink, PlugZap } from 'lucide-react';
+import { Plus, ExternalLink, PlugZap, TestTube } from 'lucide-react';
 import { PageProps } from '@/types';
 import { TutorialCard } from '@/components/onboarding/TutorialCard';
 
@@ -12,7 +12,7 @@ interface Integration {
   organization_id: number;
   name: string;
   secret: string | null;
-  config: Record<string, any> | null;
+  config: Record<string, unknown> | null;
   current_state: string;
   environment: 'live' | 'test';
   created_at: string;
@@ -38,6 +38,12 @@ export default function Integrate({ integrations, showIntegrationsTutorial }: In
               <Button>
                 <Plus className="w-4 h-4 mr-2" />
                 Create Stripe Live Integration
+              </Button>
+            </Link>
+            <Link href="/integrations/stripe_test/authorizations" method="post" as="button">
+              <Button variant="outline">
+                <TestTube className="w-4 h-4 mr-2" />
+                Create Stripe Test Integration
               </Button>
             </Link>
           </div>

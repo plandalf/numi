@@ -10,6 +10,8 @@ use App\Models\Order\Order;
 use App\Models\Organization;
 use App\Models\Store\Offer;
 use App\Modules\Integrations\AbstractIntegration;
+use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -17,6 +19,12 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Arr;
 
+/**
+ * @property array<string, string> $properties
+ * @property Carbon $expires_at
+ * @property Collection<CheckoutLineItem> $line_items
+ * @property Customer $customer
+ */
 class CheckoutSession extends Model
 {
     use HasFactory, UuidRouteKey;
@@ -34,6 +42,7 @@ class CheckoutSession extends Model
         'deleted_at',
         'discounts',
         'properties',
+        'test_mode',
         // 'customer_id',
     ];
 
@@ -44,6 +53,7 @@ class CheckoutSession extends Model
         'metadata' => 'array',
         'discounts' => 'array',
         'properties' => 'array',
+        'test_mode' => 'boolean',
     ];
 
     protected $attributes = [
@@ -101,7 +111,7 @@ class CheckoutSession extends Model
                     $discountAmount += $discount['amount_off'];
                 }
             }
-    
+
             return max(0, $subtotal - $discountAmount);
         }
 
@@ -156,12 +166,24 @@ class CheckoutSession extends Model
         return $this->belongsTo(Customer::class, 'customer_id');
     }
 
-    public function integration()
+    public function getIntegrationAttribute()
     {
         /**
          * Right now, we have two integrations, Stripe and Plandalf.
          * Plandalf has no payment integration yet, so by default, we use Stripe.
+         * If test_mode is true, we use STRIPE_TEST, otherwise STRIPE.
          */
+        $integrationType = $this->test_mode ? IntegrationType::STRIPE_TEST : IntegrationType::STRIPE;
+        
+        return $this->organization->integrations()
+            ->where('type', $integrationType)
+            ->first();
+    }
+
+    public function integration()
+    {
+        // Keep the old method for backward compatibility with eager loading
+        // but it will use the live integration by default
         return $this->hasOneThrough(
             \App\Models\Integration::class,
             Organization::class,

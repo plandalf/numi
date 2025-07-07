@@ -27,7 +27,7 @@ class CheckoutController extends Controller
         private readonly CreateCheckoutSessionAction $createCheckoutSessionAction
     ) {}
 
-    public function initialize(string $offerId, Request $request)
+    public function initialize(string $offerId, Request $request, string $environment = 'live')
     {
         $offer = Offer::retrieve($offerId);
         $checkoutItems = $request->get('items', []);
@@ -56,7 +56,8 @@ class CheckoutController extends Controller
             }
         }
 
-        $checkoutSession = $this->createCheckoutSessionAction->execute($offer, $checkoutItems);
+        $testMode = $environment === 'test';
+        $checkoutSession = $this->createCheckoutSessionAction->execute($offer, $checkoutItems, $testMode);
 
         $this->handleInvalidDomain($request, $checkoutSession);
 
@@ -86,7 +87,8 @@ class CheckoutController extends Controller
             'offer.hostedPage.logoImage',
             'offer.hostedPage.backgroundImage',
             'lineItems.price.integration',
-            'lineItems.price.product'
+            'lineItems.price.product',
+            'organization.integrations'
         ]);
 
         $offer = $checkout->offer;

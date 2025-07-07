@@ -58,6 +58,7 @@ export function PageShare() {
   };
 
   const isPublished = offer.status === 'published';
+  const hasTestIntegration = offer.test_checkout_url && offer.test_checkout_url.length > 0;
 
   return (
     <div className="max-w-2xl mx-auto space-y-8 py-12">
@@ -142,6 +143,45 @@ export function PageShare() {
               </ToggleGroup>
           </CardContent>
       </Card>
+
+      {hasTestIntegration && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Test Checkout</CardTitle>
+            <CardDescription>Test your offer with Stripe test mode (no real charges)</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="relative">
+              <Input
+                readOnly
+                value={offer.test_checkout_url}
+                className="pr-24"
+              />
+              <div className="absolute right-2 top-1/2 -translate-y-1/2 flex gap-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => copyToClipboard(offer.test_checkout_url)}
+                >
+                  <Copy className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => window.open(offer.test_checkout_url, '_blank')}
+                >
+                  <ExternalLink className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+            <div className="text-sm text-orange-600 bg-orange-50 p-3 rounded-md">
+              <strong>Note:</strong> This is a test checkout that uses Stripe test mode. No real payments will be processed.
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+
       <Dialog open={showQrCode} onOpenChange={setShowQrCode}>
           <DialogContent className="sm:max-w-md">
               <DialogHeader>

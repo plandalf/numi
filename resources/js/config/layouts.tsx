@@ -102,7 +102,7 @@ const LAYOUT_CONFIGS = {
       ]
     }
   },
-  
+
   'right-sidebar': {
     "name": "RightSidebar@v1",
     "template": {
@@ -202,7 +202,7 @@ const LAYOUT_CONFIGS = {
       ]
     }
   },
-  
+
   'promo': {
     "name": "SplitCheckout@v1.1",
     "template": {
@@ -235,7 +235,7 @@ const LAYOUT_CONFIGS = {
                   "children": [
                     {
                       "id": "title",
-                      "type": "box",
+                      "type": "NavigationBar",
                       "props": {
                         "className": "flex flex-col space-y-1 p-6"
                       }
@@ -286,7 +286,7 @@ const LAYOUT_CONFIGS = {
       ]
     }
   },
-  
+
   'hamburger-split': {
     "name": "HamburgerSplit@v1",
     "template": {
@@ -335,7 +335,7 @@ const LAYOUT_CONFIGS = {
             },
             {
               "type": "box",
-              "id": "right-content", 
+              "id": "right-content",
               "props": {
                 "className": "h-full flex flex-col overflow-y-auto bg-transparent"
               },
@@ -357,12 +357,12 @@ const LAYOUT_CONFIGS = {
           "props": {
             "className": "flex flex-col w-full bg-white border-t p-4 shrink"
           }
-          
+
         }
       ]
     }
   },
-  
+
   'full-width': {
     "name": "FullWidth@v1",
     "template": {
@@ -396,7 +396,7 @@ const LAYOUT_CONFIGS = {
       ]
     }
   },
-  
+
   'stripe-checkout': {
     "name": "StripeCheckout@v1",
     "template": {
@@ -953,4 +953,4 @@ export const getAllLayouts = (): LayoutConfig[] => {
 
 export const getLayoutJSONConfig = (layoutId: string) => {
   return LAYOUT_CONFIGS[layoutId as keyof typeof LAYOUT_CONFIGS] || LAYOUT_CONFIGS['promo'];
-}; 
+};

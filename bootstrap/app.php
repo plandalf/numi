@@ -1,10 +1,12 @@
 <?php
 
 use App\Http\Middleware\FrameEmbedMiddleware;
+use App\Http\Middleware\ForceJsonResponse;
 use App\Http\Middleware\HandleAppearance;
 use App\Http\Middleware\HandleInertiaRequests;
 use App\Http\Middleware\RequireOrganization;
 use App\Http\Middleware\RequiresSubscription;
+use App\Http\Middleware\ApiKeyAuthenticate;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -35,6 +37,8 @@ return Application::configure(basePath: dirname(__DIR__))
             'organization' => RequireOrganization::class,
             'subscription' => RequiresSubscription::class,
             'frame-embed' => FrameEmbedMiddleware::class,
+            'api-key' => ApiKeyAuthenticate::class,
+            'force-json' => ForceJsonResponse::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
