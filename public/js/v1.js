@@ -565,6 +565,7 @@ ${spinAnimationStyles}
             window.addEventListener('message', receiveMessage, false);
         }
         iframe.src = iframeSrc.toString();
+        console.log('embedding plandalf iframe', iframeSrc.toString());
         iframe.allow = 'microphone; camera; geolocation';
         iframe.style.border = '0px';
         iframe.title = `${offerPublicIdentifier}`;

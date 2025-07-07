@@ -7,7 +7,7 @@ namespace App\Http\Requests\Offer;
 use App\Http\Requests\CreateUpdateThemeRequest;
 use Illuminate\Foundation\Http\FormRequest;
 
-class OfferUpdateRequest extends FormRequest
+class OfferCreateRequest extends FormRequest
 {
 
     /**

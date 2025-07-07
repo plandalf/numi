@@ -44,7 +44,8 @@ class OfferResource extends JsonResource
             'checkout_cancel_url' => $this->checkout_cancel_url ?? $this->whenLoaded('organization', function () {
                 return $this->organization->checkout_cancel_url;
             }, null),
-            'is_hosted' => $this->is_hosted,
+
+            'is_hosted' => $request->filled('numi-embed-type') ? false : $this->is_hosted,
 
             'created_at' => $this->created_at?->toISOString(),
             'updated_at' => $this->updated_at?->toISOString(),

@@ -61,9 +61,9 @@ class CheckoutController extends Controller
 
         $this->handleInvalidDomain($request, $checkoutSession);
 
-        $params = [
+        $params = array_filter(array_merge([
             'checkout' => $checkoutSession->getRouteKey(),
-        ];
+        ], $request->only(['numi-embed-id', 'numi-embed-type'])));
 
         if ($request->has('redirect_url')) {
             $params['redirect_url'] = $request->get('redirect_url');
@@ -92,8 +92,6 @@ class CheckoutController extends Controller
         ]);
 
         $offer = $checkout->offer;
-
-//        $json = json_decode(file_get_contents(base_path('resources/view-example.json')), true);
         $json = $offer->view;
 
         /**

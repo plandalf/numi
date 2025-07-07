@@ -139,7 +139,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
         Route::get('/templates', [TemplateController::class, 'index'])->name('templates.index');
-        Route::post('/=98   `templates', [TemplateController::class, 'store'])->name('templates.store');
+        Route::post('/templates', [TemplateController::class, 'store'])->name('templates.store');
         Route::put('/templates/{template}', [TemplateController::class, 'update'])->name('templates.update');
         Route::post('/templates/{template}/use', [TemplateController::class, 'useTemplate'])->name('templates.use');
         Route::post('/templates/request', [TemplateController::class, 'requestTemplate'])->name('templates.request');
@@ -185,5 +185,3 @@ Route::post('/feedback', [FeedbackController::class, 'submit'])->name('feedback.
 
 require __DIR__.'/settings.php';
 require __DIR__.'/auth.php';
-
-//

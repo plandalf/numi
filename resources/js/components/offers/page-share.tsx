@@ -44,14 +44,14 @@ export function PageShare() {
           case 'standard':
               return `<a href="${offerUrl}" target="_blank">Open Offer</a>`;
           case 'popup':
-              return `<script src="${window.location.origin}/js/v1.js"></script>
-<button data-numi-offer="${offer.id}" data-numi-embed-type="popup">Open Offer</button>`;
+              return `<button data-numi-offer="${offer.id}" data-numi-embed-type="popup">Open Offer</button>
+<script src="${window.location.origin}/js/v1.js"></script>`;
           case 'fullscreen':
-              return `<script src="${window.location.origin}/js/v1.js"></script>
-<div data-numi-offer="${offer.id}" data-numi-embed-type="fullscreen">Open Offer</div>`;
+              return `<div data-numi-offer="${offer.id}" data-numi-embed-type="fullscreen">Open Offer</div>
+<script src="${window.location.origin}/js/v1.js"></script>`;
           case 'slider':
-              return `<script src="${window.location.origin}/js/v1.js"></script>
-<button data-numi-offer="${offer.id}" data-numi-embed-type="slider">Open Offer</button>`;
+              return `<button data-numi-offer="${offer.id}" data-numi-embed-type="slider">Open Offer</button>
+<script src="${window.location.origin}/js/v1.js"></script>`;
           default:
               return '';
       }
@@ -63,9 +63,6 @@ export function PageShare() {
   return (
     <div className="max-w-2xl mx-auto space-y-8 py-12">
       <Card>
-          {/*<CardHeader>*/}
-          {/*  <PublishStatusCard isPublished={isPublished} />*/}
-          {/*</CardHeader>*/}
           <CardContent className="space-y-2">
               <CardTitle>Experience link</CardTitle>
               <CardDescription>

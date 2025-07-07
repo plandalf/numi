@@ -370,6 +370,7 @@ function StripeElementsComponent({ context }: { context: BlockContextType }) {
     mode: 'setup',
     currency: session.currency.toLocaleLowerCase(),
     appearance: stripeElementAppearance,
+
     fonts: [{
       cssSrc: googleFontsUrl,
     }],
@@ -475,6 +476,7 @@ function PaymentForm({ style }: { style?: CSSProperties}) {
       <AddressElement
         options={{
           mode: 'billing',
+
         }}
       />
     </div>

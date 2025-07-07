@@ -9,7 +9,7 @@ use App\Enums\OnboardingStep;
 use App\Enums\Theme\FontElement;
 use App\Enums\Theme\WeightElement;
 use App\Http\Requests\Offer\OfferThemeUpdateRequest;
-use App\Http\Requests\Offer\OfferUpdateRequest;
+use App\Http\Requests\Offer\OfferCreateRequest;
 use App\Http\Resources\FontResource;
 use App\Http\Resources\OfferResource;
 use App\Http\Resources\ProductResource;
@@ -48,7 +48,7 @@ class OffersController extends Controller
         ]);
     }
 
-    public function store(Request $request, Organization $organization)
+    public function store(OfferCreateRequest $request, Organization $organization)
     {
         $offer = Offer::query()->create([
             'name' => null,
@@ -56,7 +56,8 @@ class OffersController extends Controller
             'organization_id' => $organization->id,
             'hosted_page_id' => $organization?->hostedPage
                 ? $organization->hostedPage->id
-                : HostedPage::getDefaultForOrganization($organization),
+                : HostedPage::getDefaultForOrganization($organization)->id,
+            'view' => $request->view
         ]);
 
         $offer->load([
@@ -126,7 +127,7 @@ class OffersController extends Controller
         ]);
     }
 
-    public function update(OfferUpdateRequest $request, Offer $offer)
+    public function update(OfferCreateRequest $request, Offer $offer)
     {
         $validated = $request->validated();
 

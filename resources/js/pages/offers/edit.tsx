@@ -50,6 +50,7 @@ import { Font } from '@/types';
 import WebFont from 'webfontloader';
 import { PageIframePreview } from '@/components/offers/page-iframe-preview';
 import { computeInclusiveTaxes } from '@/utils/editor-session';
+import { PageEditorDialog, PageEditorDialogPayload } from '@/components/offers/dialogs/page-editor-dialog';
 
 export interface EditProps extends PageProps {
   offer: Offer;
@@ -133,7 +134,12 @@ function EditApp({ publishableKey }: { publishableKey: string | undefined }) {
     selectedPage,
     offer,
     setSelectedBlockId,
-    handlePageNameClick
+    handlePageNameClick,
+    showPageTypeDialog,
+    setShowPageTypeDialog,
+    handleAddPage,
+    handlePageTypeChange,
+    editingPageId,
   } = useEditor();
 
   const lineItems = useMemo(() => offer.items.filter(item => item.is_required).map(item => {
@@ -612,6 +618,20 @@ function EditApp({ publishableKey }: { publishableKey: string | undefined }) {
     })
   )
 
+  const onPageEditSubmit = ({
+    type,
+    pageName,
+    layout
+  }: PageEditorDialogPayload) => {
+    if (!type) return;
+
+    if (editingPageId && data.view.pages[editingPageId] != undefined) {
+      handlePageTypeChange(editingPageId, type);
+    } else {
+      handleAddPage(type, layout, pageName);
+    }
+  }
+
   if (!data.view) {
     return <div>Loading...</div>;
   }
@@ -645,7 +665,12 @@ function EditApp({ publishableKey }: { publishableKey: string | undefined }) {
 
       </GlobalStateProvider>
 
-      <PageTypeDialog />
+      <PageEditorDialog
+        open={showPageTypeDialog}
+        onOpenChange={setShowPageTypeDialog}
+        currentPage={editingPageId ? data.view.pages[editingPageId] : undefined}
+        onSubmit={onPageEditSubmit}
+      />
 
       {/* <div className="text-xs absolute bottom-0 w-[500px] right-0 border-t border-border bg-white h-full overflow-scroll">
         <pre>{JSON.stringify(data.view.pages[selectedPage] || {}, null, 2)}</pre>
@@ -900,164 +925,6 @@ function PageLogicDialog() {
               }}
             />
           </ReactFlowProvider>
-        </div>
-      </DialogContent>
-    </Dialog>
-  )
-}
-
-function PageTypeDialog() {
-  const {
-    showPageTypeDialog,
-    setShowPageTypeDialog,
-    handleAddPage,
-    handlePageTypeChange,
-    editingPageId,
-    data
-  } = useEditor();
-
-  const [selectedType, setSelectedType] = useState<PageType | null>(null);
-  const [selectedLayout, setSelectedLayout] = useState<string>('promo');
-  const [pageName, setPageName] = useState<string>('');
-
-  const isEditing = Boolean(editingPageId);
-  const currentPage = editingPageId ? data.view.pages[editingPageId] : null;
-
-  const availableLayouts = getAllLayouts();
-
-  const handleSubmit = () => {
-    if (!selectedType) return;
-    
-    if (isEditing && editingPageId) {
-      handlePageTypeChange(editingPageId, selectedType);
-    } else {
-      handleAddPage(selectedType, selectedLayout, pageName);
-    }
-    setShowPageTypeDialog(false);
-  };
-
-  // Reset state when dialog opens/closes
-  React.useEffect(() => {
-    if (showPageTypeDialog) {
-      setSelectedType(currentPage?.type || null);
-      setSelectedLayout('promo');
-      setPageName(currentPage?.name || '');
-    }
-  }, [showPageTypeDialog, currentPage?.type, currentPage?.name]);
-
-  return (
-    <Dialog open={showPageTypeDialog} onOpenChange={setShowPageTypeDialog}>
-      <DialogContent className="w-full sm:max-w-2xl">
-        <DialogHeader>
-          <DialogTitle>{isEditing ? 'Change Page Type' : 'Add New Page'}</DialogTitle>
-          <DialogDescription>
-            {isEditing
-              ? 'Select a new type for this page'
-              : 'Choose the type of page you want to add and select a layout'
-            }
-          </DialogDescription>
-        </DialogHeader>
-        <div className="space-y-6 py-4">
-          <div>
-            <label className="text-sm font-medium mb-3 block">Page Type</label>
-            <div className="grid grid-cols-4 gap-4">
-              <button
-                onClick={() => setSelectedType('entry')}
-                className={cn(
-                  "flex flex-col items-center gap-2 p-4 rounded-lg border border-border hover:bg-secondary/50",
-                  selectedType === 'entry' && "bg-secondary border-primary"
-                )}
-              >
-                <ArrowRightToLine className="w-6 h-6" />
-                <span className="text-sm font-medium">Entry Page</span>
-              </button>
-              <button
-                onClick={() => setSelectedType('page')}
-                className={cn(
-                  "flex flex-col items-center gap-2 p-4 rounded-lg border border-border hover:bg-secondary/50",
-                  selectedType === 'page' && "bg-secondary border-primary"
-                )}
-              >
-                <FileText className="w-6 h-6" />
-                <span className="text-sm font-medium">Content Page</span>
-              </button>
-              <button
-                onClick={() => setSelectedType('payment')}
-                className={cn(
-                  "flex flex-col items-center gap-2 p-4 rounded-lg border border-border hover:bg-secondary/50",
-                  selectedType === 'payment' && "bg-secondary border-primary"
-                )}
-              >
-                <CreditCard className="w-6 h-6" />
-                <span className="text-sm font-medium">Payment Page</span>
-              </button>
-              <button
-                onClick={() => setSelectedType('ending')}
-                className={cn(
-                  "flex flex-col items-center gap-2 p-4 rounded-lg border border-border hover:bg-secondary/50",
-                  selectedType === 'ending' && "bg-secondary border-primary"
-                )}
-              >
-                <CheckSquare className="w-6 h-6" />
-                <span className="text-sm font-medium">Ending Page</span>
-              </button>
-            </div>
-          </div>
-
-          {!isEditing && (
-            <>
-              <div>
-                <label className="text-sm font-medium mb-3 block">Page Name</label>
-                <Input
-                  value={pageName}
-                  onChange={(e) => setPageName(e.target.value)}
-                  placeholder="Enter page name..."
-                  className="w-full"
-                />
-              </div>
-              
-              <div>
-                <label className="text-sm font-medium mb-3 block">Layout</label>
-                <Select value={selectedLayout} onValueChange={setSelectedLayout}>
-                  <SelectTrigger className="w-full h-12">
-                    <SelectValue placeholder="Select a layout" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {availableLayouts.map((layout) => {
-                      const IconComponent = layout.icon;
-                      return (
-                        <SelectItem key={layout.id} value={layout.id}>
-                          <div className="h-10 flex items-center gap-4">
-                            <IconComponent className="w-4 h-4" />
-                            <div className="items-start flex flex-col">
-                              <div className="font-medium">{layout.name}</div>
-                              <div className="text-xs text-muted-foreground">{layout.description}</div>
-                            </div>
-                          </div>
-                        </SelectItem>
-                      );
-                    })}
-                  </SelectContent>
-                </Select>
-              </div>
-            </>
-          )}
-
-          <div className="flex justify-end gap-3">
-            <button
-              onClick={() => setShowPageTypeDialog(false)}
-              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={handleSubmit}
-              disabled={!selectedType}
-              className="px-4 py-2 text-sm font-medium text-white bg-primary rounded-md hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isEditing ? 'Update Page' : 'Create Page'}
-            </button>
-          </div>
         </div>
       </DialogContent>
     </Dialog>
