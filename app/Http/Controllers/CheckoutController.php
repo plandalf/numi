@@ -61,7 +61,7 @@ class CheckoutController extends Controller
         $this->handleInvalidDomain($request, $checkoutSession);
 
         $params = array_filter(array_merge([
-            'checkout' => $checkoutSession->getRouteKey(),
+            ['checkout' => $checkoutSession->getRouteKey()],
             $request->only(['numi-embed-id', 'numi-embed-type'])
         ]));
 
