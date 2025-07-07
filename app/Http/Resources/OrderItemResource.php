@@ -2,16 +2,13 @@
 
 namespace App\Http\Resources;
 
+use App\Models\Order\OrderItem;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
-use App\Enums\FulfillmentStatus;
-use App\Enums\DeliveryMethod;
-use App\Enums\FulfillmentMethod;
-use App\Enums\ExternalPlatform;
 
-// userresource
-use App\Http\Resources\UserResource;
-
+/**
+ * @mixin OrderItem
+ */
 class OrderItemResource extends JsonResource
 {
     /**
@@ -29,7 +26,7 @@ class OrderItemResource extends JsonResource
             'quantity' => $this->quantity,
             'total_amount' => $this->total_amount,
             'metadata' => $this->metadata,
-            
+
             // Fulfillment data
             'fulfillment_status' => $this->fulfillment_status,
             'delivery_method' => $this->delivery_method,
@@ -46,19 +43,19 @@ class OrderItemResource extends JsonResource
             'fulfillment_notes' => $this->fulfillment_notes,
             'unprovisionable_reason' => $this->unprovisionable_reason,
             'external_platform_data' => $this->external_platform_data,
-            
+
             // Helper flags
             'is_fully_fulfilled' => $this->isFullyFulfilled(),
             'is_partially_fulfilled' => $this->isPartiallyFulfilled(),
             'is_unfulfilled' => $this->isUnfulfilled(),
-            
+
             // Relationships
             'price' => $this->whenLoaded('price'),
             'offer_item' => $this->whenLoaded('offerItem'),
             'fulfilled_by' => $this->whenLoaded('fulfilledBy', function () {
                 return new UserResource($this->fulfilledBy);
             }),
-            
+
             // Timestamps
             'created_at' => $this->created_at?->toISOString(),
             'updated_at' => $this->updated_at?->toISOString(),

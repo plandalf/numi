@@ -15,6 +15,16 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
  * @property Price $price
+ * @property int $id
+ * @property int $order_id
+ * @property int $price_id
+ * @property int $offer_item_id
+ * @property int $quantity
+ * @property int $total_amount
+ * @property array $metadata
+ * @property User|null $fulfilledBy
+ * @property Carbon $created_at
+ * @property Carbon $updated_at
  *
  * @property string $fulfillment_status
  * @property string $delivery_method

@@ -5,10 +5,8 @@ namespace App\Http\Controllers\Api;
 use App\Http\Resources\Api\CheckoutSessionApiResponse;
 use App\Models\Checkout\CheckoutSession;
 use Dedoc\Scramble\Attributes\Group;
-use Dedoc\Scramble\Attributes\QueryParameter;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\CursorPaginator;
-use Illuminate\Support\Facades\Gate;
 
 #[Group('Checkout Sessions')]
 class CheckoutSessionAPIController
@@ -19,7 +17,6 @@ class CheckoutSessionAPIController
      * @param Request $request
      * @return CursorPaginator<CheckoutSessionApiResponse>
      */
-//    #[QueryParameter('Shit')]
     public function index(Request $request)
     {
         $sessions = CheckoutSession::query()
@@ -36,7 +33,6 @@ class CheckoutSessionAPIController
      */
     public function show(CheckoutSession $session)
     {
-//        Gate::authorize('view', $session);
         $session->loadMissing([
             'lineItems'
         ]);
