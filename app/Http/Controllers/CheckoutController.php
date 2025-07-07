@@ -61,9 +61,8 @@ class CheckoutController extends Controller
         $this->handleInvalidDomain($request, $checkoutSession);
 
         $params = array_filter(array_merge([
-            ['checkout' => $checkoutSession->getRouteKey()],
-            $request->only(['numi-embed-id', 'numi-embed-type'])
-        ]));
+            'checkout' => $checkoutSession->getRouteKey(),
+        ], $request->only(['numi-embed-id', 'numi-embed-type'])));
 
         if ($request->has('redirect_url')) {
             $params['redirect_url'] = $request->get('redirect_url');
