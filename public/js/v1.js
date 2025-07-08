@@ -610,11 +610,12 @@ ${spinAnimationStyles}
                         : window.innerWidth < 900
                             ? '60vw'
                             : '560px';
+                iframeContainer.style.height = 'calc(100% - 80px)';
             }
             else {
                 iframeContainer.style.width = 'calc(100% - 160px)';
+                iframeContainer.style.height = 'calc(100% - 80px)';
             }
-            iframeContainer.style.height = 'calc(100% - 80px)';
         }
         else if (embedType === 'slider') {
             // later on will offer different sizing for this too maybe
