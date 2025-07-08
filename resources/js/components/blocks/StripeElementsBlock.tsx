@@ -80,7 +80,7 @@ function StripeElementsComponent({ context }: { context: BlockContextType }) {
         expand: 'expand',
       },
     }, 'expand'),
-    Style.backgroundColor('backgroundColor', 'Background Color', {}, theme?.primary_surface_color),
+    Style.backgroundColor('backgroundColor', 'Background Color', {}, 'transparent'),
     Style.font('titleTextFont', 'Title Font && Color',fontConfig, {}),
     Style.font('descriptionTextFont', 'Description Font & Color', fontConfig, {}),
 
@@ -440,12 +440,14 @@ function StripeElementsComponent({ context }: { context: BlockContextType }) {
 
     const intentMode = (session.intent_mode || 'setup') as 'setup' | 'payment';
 
-    // Log for debugging currency filtering
+    // Log for debugging payment method filtering
     console.log('Stripe Elements Payment Methods:', {
       currency: session.currency,
+      total: session.total,
       allEnabledMethods: enabledPaymentMethods,
       paymentMethodTypes,
-      intentMode
+      intentMode,
+      filteredByAmount: intentMode === 'payment' && enabledPaymentMethods.length > 0
     });
 
     const options: any = {
@@ -552,12 +554,113 @@ function StripeElementsComponent({ context }: { context: BlockContextType }) {
             <div>Stripe Options Amount: {stripeOptions?.amount || 'N/A'}</div>
           </div> */}
           <PaymentForm style={paymentFormStyle} />
+          
+          {/* Show payment method filtering info */}
+          {/* {session.intent_mode === 'payment' && session.total > 0 && (
+            <PaymentMethodFilteringInfo 
+              session={session}
+              style={{
+                fontSize: '12px',
+                color: resolveThemeValue(style?.descriptionTextFont?.color, theme) || '#666666',
+                fontFamily: style?.descriptionTextFont?.font || 'Inter',
+                marginTop: '8px',
+                padding: '8px 12px',
+                backgroundColor: addAlphaToColor(resolveThemeValue(style?.warningBackgroundColor, theme) || '#fef3c7', 0.3) as string,
+                borderRadius: '4px',
+                border: '1px solid',
+                borderColor: addAlphaToColor(resolveThemeValue(style?.warningBorderColor, theme) || '#f59e0b', 0.3) as string,
+              }}
+            />
+          )} */}
         </Elements>
       ) : (
         <div className="bg-yellow-50 border border-yellow-200 text-yellow-700 px-4 py-3 rounded" style={warningPanelStyle}>
           Unable to initialize payment. Please try again later.
         </div>
       )}
+    </div>
+  );
+}
+
+// Component to show payment method filtering information
+function PaymentMethodFilteringInfo({ session, style }: { session: any, style?: CSSProperties }) {
+  // Payment methods that commonly have amount limits
+  const limitedPaymentMethods = ['afterpay_clearpay', 'affirm', 'klarna', 'zip'];
+  
+  // Check if any limited payment methods are enabled but not available
+  const enabledMethods = session.enabled_payment_methods || [];
+  const hasLimitedMethods = limitedPaymentMethods.some(method => enabledMethods.includes(method));
+  
+  if (!hasLimitedMethods) {
+    return null;
+  }
+
+  const formatCurrency = (amount: number, currency: string) => {
+    const formatter = new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: currency.toUpperCase(),
+    });
+    return formatter.format(amount / 100); // Convert from cents
+  };
+
+  const getLimitMessages = () => {
+    const messages: string[] = [];
+    const currency = session.currency?.toLowerCase();
+    const totalInCents = session.total || 0;
+
+    if (enabledMethods.includes('afterpay_clearpay')) {
+      const limits: Record<string, number> = {
+        'usd': 200000, 'cad': 250000, 'aud': 300000, 'nzd': 300000, 'gbp': 150000, 'eur': 180000
+      };
+      const limit = limits[currency || 'usd'];
+      if (limit && totalInCents > limit) {
+        messages.push(`Afterpay/Clearpay (max ${formatCurrency(limit, currency || 'usd')})`);
+      }
+    }
+
+    if (enabledMethods.includes('affirm')) {
+      const limits: Record<string, number> = { 'usd': 175000, 'cad': 200000 };
+      const limit = limits[currency || 'usd'];
+      if (limit && totalInCents > limit) {
+        messages.push(`Affirm (max ${formatCurrency(limit, currency || 'usd')})`);
+      }
+    }
+
+    if (enabledMethods.includes('klarna')) {
+      const limits: Record<string, number> = {
+        'usd': 100000, 'eur': 100000, 'gbp': 80000, 'aud': 150000, 'cad': 120000
+      };
+      const limit = limits[currency || 'usd'];
+      if (limit && totalInCents > limit) {
+        messages.push(`Klarna (max ${formatCurrency(limit, currency || 'usd')})`);
+      }
+    }
+
+    if (enabledMethods.includes('zip')) {
+      const limits: Record<string, number> = { 'usd': 100000, 'aud': 150000 };
+      const limit = limits[currency || 'usd'];
+      if (limit && totalInCents > limit) {
+        messages.push(`Zip (max ${formatCurrency(limit, currency || 'usd')})`);
+      }
+    }
+
+    return messages;
+  };
+
+  const limitMessages = getLimitMessages();
+
+  if (limitMessages.length === 0) {
+    return null;
+  }
+
+  return (
+    <div style={style}>
+      <div style={{ fontWeight: '500', marginBottom: '4px' }}>
+        Some payment methods are not available for this amount:
+      </div>
+      <div style={{ fontSize: '11px', lineHeight: '1.4' }}>
+        {limitMessages.join(', ')}
+      </div>
     </div>
   );
 }

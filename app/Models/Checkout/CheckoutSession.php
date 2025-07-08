@@ -167,7 +167,33 @@ class CheckoutSession extends Model
         );
 
         // Filter enabled methods to only include those available for this currency
-        return array_values(array_intersect($enabledMethods, $availableForCurrency));
+        $currencyFilteredMethods = array_values(array_intersect($enabledMethods, $availableForCurrency));
+
+        // Filter by amount limits if this is a payment (not setup) session
+        if ($this->intent_mode === 'payment') {
+            $amountLimitService = app(\App\Services\PaymentMethodAmountLimitService::class);
+            $totalInCents = (int) ($this->total * 100); // Convert to cents
+            
+            $currencyFilteredMethods = $amountLimitService->filterPaymentMethodsByAmount(
+                $currencyFilteredMethods, 
+                $totalInCents, 
+                $currency
+            );
+
+            // Log filtered methods for debugging
+            if (count($currencyFilteredMethods) !== count(array_intersect($enabledMethods, $availableForCurrency))) {
+                logger()->debug('Payment methods filtered by amount limits', [
+                    'checkout_session_id' => $this->id,
+                    'total_amount' => $this->total,
+                    'total_in_cents' => $totalInCents,
+                    'currency' => $currency,
+                    'original_methods' => array_values(array_intersect($enabledMethods, $availableForCurrency)),
+                    'filtered_methods' => $currencyFilteredMethods,
+                ]);
+            }
+        }
+
+        return $currencyFilteredMethods;
     }
 
     public function getIntentModeAttribute()
