@@ -18,7 +18,8 @@ class OrderNotificationEmail extends Mailable implements ShouldQueue
      * Create a new message instance.
      */
     public function __construct(
-        public Order $order
+        public Order $order,
+        public bool $isTest = false
     ) {}
 
     /**
@@ -26,13 +27,18 @@ class OrderNotificationEmail extends Mailable implements ShouldQueue
      */
     public function envelope(): Envelope
     {
+        $subject = $this->isTest 
+            ? "TEST: New Order #{$this->order->id} - Fulfillment Required" 
+            : "New Order #{$this->order->id} - Fulfillment Required";
+
         return new Envelope(
-            subject: "New Order #{$this->order->id} - Fulfillment Required",
-            tags: ['order', 'fulfillment'],
+            subject: $subject,
+            tags: $this->isTest ? ['order', 'fulfillment', 'test'] : ['order', 'fulfillment'],
             metadata: [
                 'order_id' => $this->order->id,
                 'organization_id' => $this->order->organization_id,
                 'fulfillment_method' => $this->order->fulfillment_method?->value,
+                'is_test' => $this->isTest,
             ],
         );
     }
@@ -50,6 +56,7 @@ class OrderNotificationEmail extends Mailable implements ShouldQueue
                 'items' => $this->order->items,
                 'customer' => $this->order->customer,
                 'dashboardUrl' => route('orders.show', $this->order),
+                'isTest' => $this->isTest,
             ],
         );
     }

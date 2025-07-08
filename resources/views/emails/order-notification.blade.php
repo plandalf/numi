@@ -1,7 +1,15 @@
 <x-mail::message>
+@if(isset($isTest) && $isTest)
+# 🧪 TEST EMAIL - New Order Received - Fulfillment Required
+
+**This is a test email to verify your fulfillment notification settings.**
+
+Hello {{ $organization->name }} Team,
+@else
 # New Order Received - Fulfillment Required
 
 Hello {{ $organization->name }} Team,
+@endif
 
 A new order has been placed and requires fulfillment attention.
 

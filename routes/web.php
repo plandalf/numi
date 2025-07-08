@@ -90,6 +90,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
                         Route::get('/fulfillment', [OrganizationController::class, 'fulfillment'])->name('fulfillment');
                         Route::put('/fulfillment', [OrganizationController::class, 'updateFulfillment'])->name('fulfillment.update');
+                        Route::post('/fulfillment/test-email', [OrganizationController::class, 'sendTestFulfillmentEmail'])->name('fulfillment.test-email');
                     });
                 });
 

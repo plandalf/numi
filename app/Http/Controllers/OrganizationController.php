@@ -4,6 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Enums\OnboardingStep;
 use App\Http\Resources\OrganizationResource;
+use App\Mail\OrderNotificationEmail;
+use App\Models\Customer;
+use App\Models\Order\Order;
+use App\Models\Order\OrderItem;
 use App\Models\Organization;
 use App\Models\Theme;
 use App\Models\User;
@@ -12,6 +16,7 @@ use App\Http\Requests\Organization\StoreOrganizationRequest;
 use App\Http\Requests\Organization\UpdateOrganizationRequest;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Session;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -292,5 +297,72 @@ class OrganizationController extends Controller
         $organization->update($validated);
 
         return redirect()->back()->with('success', 'Fulfillment settings updated successfully.');
+    }
+
+    /**
+     * Send a test fulfillment notification email.
+     */
+    public function sendTestFulfillmentEmail(Request $request): RedirectResponse
+    {
+        $organization = request()->user()->currentOrganization;
+
+        // Log the request data for debugging
+        \Log::info('Test email request data', [
+            'all_data' => $request->all(),
+            'email' => $request->input('email'),
+            'fulfillment_notification_email' => $request->input('fulfillment_notification_email'),
+        ]);
+
+        // Try to get email from either the 'email' field or 'fulfillment_notification_email' field
+        $email = $request->input('email') ?? $request->input('fulfillment_notification_email');
+        
+        if (!$email) {
+            return redirect()->back()->with('error', 'Email address is required for test emails.');
+        }
+
+        $validated = ['email' => $email];
+        
+        // Validate the email format
+        $request->validate([
+            'email' => 'email',
+        ], [
+            'email' => 'Please provide a valid email address.',
+        ]);
+
+        try {
+            // Try to find the latest order from this organization, or create a test order
+            $testOrder = $this->getTestOrder($organization);
+            
+            // Send the test email
+            Mail::to($validated['email'])->send(new OrderNotificationEmail($testOrder, true));
+
+            return redirect()->back()->with('success', 'Test fulfillment email sent successfully to ' . $validated['email']);
+        } catch (\Exception $e) {
+            \Log::error('Test email error', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return redirect()->back()->with('error', 'Failed to send test email: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Get a test order for fulfillment email testing.
+     */
+    private function getTestOrder(Organization $organization): Order
+    {
+        // First, try to find the latest order from this organization
+        $latestOrder = Order::where('organization_id', $organization->id)
+            ->with(['items.price', 'items.offerItem', 'customer'])
+            ->latest()
+            ->first();
+
+        if ($latestOrder) {
+            // Use the latest order but mark it as a test
+            return $latestOrder;
+        }
+
+        // If no orders exist, throw an exception with a helpful message
+        throw new \Exception('No orders found in this organization. Please create at least one order to test fulfillment emails.');
     }
 }

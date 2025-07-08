@@ -13,7 +13,7 @@ import {
 import SettingsLayout from '@/layouts/settings-layout';
 import { type Organization } from '@/types';
 import { Head, useForm } from '@inertiajs/react';
-import { Loader2 } from "lucide-react";
+import { Loader2, Mail } from "lucide-react";
 
 interface Props {
     organization: Organization;
@@ -51,6 +51,22 @@ export default function Fulfillment({ organization }: Props) {
         form.put(route('organizations.settings.fulfillment.update'));
     };
 
+    const testEmailForm = useForm({
+        email: form.data.fulfillment_notification_email || '',
+    });
+
+    const handleTestEmail = (e: React.FormEvent) => {
+        e.preventDefault();
+        // Ensure we have the latest email value
+        const currentEmail = form.data.fulfillment_notification_email;
+        if (!currentEmail) {
+            return; // Don't submit if no email
+        }
+        
+        testEmailForm.setData('email', currentEmail);
+        testEmailForm.post(route('organizations.settings.fulfillment.test-email'));
+    };
+
     return (
         <SettingsLayout>
             <Head title="Fulfillment Settings" />
@@ -77,9 +93,8 @@ export default function Fulfillment({ organization }: Props) {
                             <SelectContent>
                               {Object.entries(FULFILLMENT_METHODS).map(([value, { label, description }]) => (
                                 <SelectItem key={value} value={value}>
-                                  <div className="flex flex-col">
-                                    <span className="font-medium">{label}</span>
-                                    <span className="text-sm text-gray-500">{description}</span>
+                                  <div className="">
+                                    <span className="font-medium">{label}</span>&nbsp;
                                   </div>
                                 </SelectItem>
                               ))}
@@ -103,9 +118,8 @@ export default function Fulfillment({ organization }: Props) {
                             <SelectContent>
                               {Object.entries(DELIVERY_METHODS).map(([value, { label, description }]) => (
                                 <SelectItem key={value} value={value}>
-                                  <div className="flex flex-col">
-                                    <span className="font-medium">{label}</span>
-                                    <span className="text-sm text-gray-500">{description}</span>
+                                  <div className="">
+                                    <span className="font-medium">{label}</span>&nbsp;
                                   </div>
                                 </SelectItem>
                               ))}
@@ -119,18 +133,40 @@ export default function Fulfillment({ organization }: Props) {
                         {/* Notification Email */}
                         <div className="space-y-2">
                           <Label htmlFor="fulfillment_notification_email">Fulfillment Notification Email</Label>
-                          <Input
-                            id="fulfillment_notification_email"
-                            type="email"
-                            value={form.data.fulfillment_notification_email}
-                            onChange={(e) => form.setData('fulfillment_notification_email', e.target.value)}
-                            placeholder="admin@example.com"
-                          />
+                          <div className="flex space-x-2">
+                            <Input
+                              id="fulfillment_notification_email"
+                              type="email"
+                              value={form.data.fulfillment_notification_email}
+                              onChange={(e) => form.setData('fulfillment_notification_email', e.target.value)}
+                              placeholder="admin@example.com"
+                              className="flex-1"
+                            />
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={handleTestEmail}
+                              disabled={testEmailForm.processing || !form.data.fulfillment_notification_email}
+                              title={!form.data.fulfillment_notification_email ? "Please enter an email address first" : "Send a test fulfillment email"}
+                            >
+                              {testEmailForm.processing ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <Mail className="h-4 w-4" />
+                              )}
+                              Test
+                            </Button>
+                          </div>
                           <p className="text-sm text-gray-500">
-                            Email address to receive fulfillment notifications
+                            Email address to receive fulfillment notifications. 
+                            <span className="text-orange-600 font-medium"> Note: You need at least one order in your organization to test emails.</span>
                           </p>
                           {form.errors.fulfillment_notification_email && (
                             <p className="text-red-500 text-sm">{form.errors.fulfillment_notification_email}</p>
+                          )}
+                          {testEmailForm.errors.email && (
+                            <p className="text-red-500 text-sm">{testEmailForm.errors.email}</p>
                           )}
                         </div>
 
