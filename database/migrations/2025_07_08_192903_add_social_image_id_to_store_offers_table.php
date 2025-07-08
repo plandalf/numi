@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('store_offers', function (Blueprint $table) {
-            $table->foreignUuid('social_image_id')->nullable()->after('product_image_id')->constrained('medias')->onDelete('set null');
+            $table->foreignId('social_image_id')->nullable()->after('product_image_id')->constrained('medias')->onDelete('set null');
         });
     }
 
