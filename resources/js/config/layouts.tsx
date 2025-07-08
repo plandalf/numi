@@ -216,7 +216,7 @@ const LAYOUT_CONFIGS = {
           "type": "box",
           "id": "core-box",
           "props": {
-            "className": "max-h-[inherit] h-full overflow-y-auto bg-transparent"
+            "className": "order-2 md:order-1 max-h-[inherit] h-full overflow-y-auto bg-transparent"
           },
           "children": [
             {
@@ -264,7 +264,7 @@ const LAYOUT_CONFIGS = {
           "type": "box",
           "id": "promo_box",
           "props": {
-            "className": "max-h-[inherit] hidden md:flex h-full overflow-y-auto flex-col"
+            "className": "order-1 md:order-2 max-h-[inherit] h-auto md:h-full flex overflow-y-auto flex-col"
           },
           "children": [
             {
