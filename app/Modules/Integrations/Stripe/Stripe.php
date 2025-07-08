@@ -809,21 +809,11 @@ class Stripe extends AbstractIntegration implements CanCreateSubscription, CanSe
                 
                 // Check currency restriction
                 if (isset($restriction['currencies']) && !in_array($currency, $restriction['currencies'])) {
-                    logger()->debug("Payment method {$method} filtered out due to currency restriction", [
-                        'method' => $method,
-                        'currency' => $currency,
-                        'allowed_currencies' => $restriction['currencies']
-                    ]);
                     continue;
                 }
                 
                 // Check country restriction
                 if (isset($restriction['countries']) && !in_array($country, $restriction['countries'])) {
-                    logger()->debug("Payment method {$method} filtered out due to country restriction", [
-                        'method' => $method,
-                        'country' => $country,
-                        'allowed_countries' => $restriction['countries']
-                    ]);
                     continue;
                 }
             }
