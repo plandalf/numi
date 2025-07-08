@@ -53,6 +53,7 @@ class Offer extends Model
         'description',
         'product_image_id',
         'hosted_page_id',
+        'social_image_id',
         'status',
         'view',
         'properties',
@@ -116,6 +117,11 @@ class Offer extends Model
         return $this->belongsTo(HostedPage::class, 'hosted_page_id');
     }
 
+    public function socialImage(): BelongsTo
+    {
+        return $this->belongsTo(Media::class, 'social_image_id');
+    }
+
     public function scopePublished($query)
     {
         return $query->where('status', self::STATUS_PUBLISHED);
@@ -169,5 +175,29 @@ class Offer extends Model
         }
 
         return route('offers.show', ['offer' => $this, 'environment' => 'test']);
+    }
+
+    /**
+     * Get a signed URL for the social image
+     */
+    public function getSocialImageUrl(int $expirationMinutes = 5): string
+    {
+        return \App\Http\Controllers\SocialImageController::generateSignedUrl($this, $expirationMinutes);
+    }
+
+    /**
+     * Trigger a social image screenshot job
+     */
+    public function takeSocialImageScreenshot(): void
+    {
+        dispatch(new \App\Jobs\TakeSocialImageScreenshotJob($this));
+    }
+
+    /**
+     * Check if the offer has a social image screenshot
+     */
+    public function hasSocialImageScreenshot(): bool
+    {
+        return $this->socialImage !== null;
     }
 }

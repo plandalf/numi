@@ -53,6 +53,10 @@ export interface Offer {
         id: number;
         url: string;
     } | null;
+    social_image?: {
+        id: string;
+        url: string;
+    } | null;
     checkout_success_url?: string | null;
     checkout_cancel_url?: string | null;
     is_hosted?: boolean | null;

@@ -37,6 +37,11 @@ Route::middleware(['frame-embed'])->group(function () {
         ->name('checkouts.show');
 });
 
+// Social image generation route (signed URL required)
+Route::get('/social-image/{offer}', [\App\Http\Controllers\SocialImageController::class, 'generate'])
+    ->name('social-image.generate');
+    // ->middleware(['signed']);
+
 Route::post('/checkouts/{checkoutSession}/mutations', [CheckoutSessionController::class, 'storeMutation'])
     ->name('checkouts.mutations.store');
 
