@@ -85,6 +85,7 @@ class CheckoutController extends Controller
             'lineItems.offerItem.offerPrices',
             'offer.theme',
             'offer.organization.logoMedia',
+            'offer.socialImage',
             'offer.organization.faviconMedia',
             'offer.hostedPage.logoImage',
             'offer.hostedPage.backgroundImage',
