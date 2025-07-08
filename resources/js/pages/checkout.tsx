@@ -84,9 +84,10 @@ export const NavigationBar = ({ children, className, ...props }: NavigationBarPr
   function onBack() {
     goToPrevPage();
   }
+  console.log('navbar', { className   });
 
   return (
-    <div className={`${className} flex items-center justify-between`} {...props}>
+    <div className={`${className} flex flex-row items-center`} {...props}>
       {canGoBack() && (
         <button
           onClick={onBack}
@@ -96,7 +97,7 @@ export const NavigationBar = ({ children, className, ...props }: NavigationBarPr
           <ChevronLeftIcon strokeWidth={4} className="size-6 absolute -left-1 top-1/2 -translate-y-1/2" />
         </button>
       )}
-      <div className="flex-grow">
+      <div className="flex-grow flex-col">
       {children}
       </div>
     </div>
