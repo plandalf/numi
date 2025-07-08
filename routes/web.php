@@ -16,16 +16,13 @@ use App\Http\Controllers\SequencesController;
 use App\Http\Controllers\Settings\ProfileController;
 use App\Http\Controllers\ThemeController;
 use App\Http\Controllers\TemplateController;
-use App\Models\ResourceEvent;
-use App\Models\Store\Offer;
-use App\Workflows\RunSequenceWorkflow;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
-use Workflow\WorkflowStub;
 use App\Http\Controllers\OrdersController;
 use App\Http\Controllers\FeedbackController;
 use App\Http\Controllers\OfferItemPriceController;
 use App\Http\Controllers\OnboardingController;
+use App\Http\Controllers\ApiKeysController;
 use App\Http\Controllers\OnboardingInfoController;
 use App\Http\Controllers\BlockLibraryController;
 
@@ -70,10 +67,24 @@ Route::middleware(['auth', 'verified'])->group(function () {
                         Route::get('/seo', [OrganizationController::class, 'seoSettings'])->name('seo');
                         Route::put('/seo', [OrganizationController::class, 'updateSeoSettings'])->name('seo.update');
 
+                        // API Keys routes
+                        Route::prefix('api-keys')->name('api-keys.')->group(function () {
+                            Route::get('/', [ApiKeysController::class, 'index'])->name('index');
+                            Route::post('/', [ApiKeysController::class, 'store'])->name('store');
+                            Route::put('/{apiKey}', [ApiKeysController::class, 'update'])->name('update');
+                            Route::post('/{apiKey}/archive', [ApiKeysController::class, 'archive'])->name('archive');
+                            Route::post('/{apiKey}/activate', [ApiKeysController::class, 'activate'])->name('activate');
+                            Route::delete('/{apiKey}', [ApiKeysController::class, 'destroy'])->name('destroy');
+                            Route::post('/{apiKey}/reveal', [ApiKeysController::class, 'reveal'])->name('reveal');
+                        });
+
                         Route::prefix('billing')->name('billing.')->group(function () {
                             Route::get('/', [BillingCheckoutController::class, 'billing'])->name('index');
                             Route::get('/portal', [BillingCheckoutController::class, 'portal'])->name('portal');
                         });
+
+                        Route::get('/fulfillment', [OrganizationController::class, 'fulfillment'])->name('fulfillment');
+                        Route::put('/fulfillment', [OrganizationController::class, 'updateFulfillment'])->name('fulfillment.update');
                     });
                 });
 
@@ -120,8 +131,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::prefix('offers/{offer}')->name('offers.')->group(function () {
             Route::get('pricing', [OffersController::class, 'pricing'])->name('pricing');
 
-            Route::get('settings/theme', [OffersController::class, 'settingsTheme'])->name('settings.theme');
-
             Route::put('theme', [OffersController::class, 'updateTheme'])->name('update.theme');
 
             // Add offerItem routes
@@ -129,11 +138,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::put('items/{item}/prices/{price}', [OfferItemPriceController::class, 'update'])->name('items.prices.update');
 
             Route::get('integrate', [OffersController::class, 'integrate'])->name('integrate');
-            Route::get('sharing', [OffersController::class, 'sharing'])->name('sharing');
-            Route::get('settings', [OffersController::class, 'settings'])->name('settings');
-            Route::get('settings/customization', [OffersController::class, 'settingsCustomization'])->name('settings.customization');
-            Route::get('settings/notifications', [OffersController::class, 'settingsNotifications'])->name('settings.notifications');
-            Route::get('settings/access', [OffersController::class, 'settingsAccess'])->name('settings.access');
             Route::post('publish', [OffersController::class, 'publish'])->name('publish');
             Route::put('duplicate', [OffersController::class, 'duplicate'])->name('duplicate');
         });
@@ -161,8 +165,16 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
         Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
-        Route::get('/orders', [OrdersController::class, 'index'])->name('orders.index');
-        Route::get('/orders/{order:uuid}', [OrdersController::class, 'show'])->name('orders.show');
+        // Orders
+        Route::prefix('orders')->name('orders.')->group(function () {
+            Route::get('/', [OrdersController::class, 'index'])->name('index');
+            Route::get('/{order}', [OrdersController::class, 'show'])->name('show');
+
+            // Fulfillment routes
+            Route::get('/{order}/fulfillment', [OrdersController::class, 'fulfillment'])->name('fulfillment');
+            Route::post('/{order}/items/{orderItem}/fulfillment', [OrdersController::class, 'updateFulfillment'])->name('fulfillment.item.update');
+            Route::post('/{order}/items/{orderItem}/unprovisionable', [OrdersController::class, 'markUnprovisionable'])->name('fulfillment.item.unprovisionable');
+        });
     });
 });
 
@@ -187,5 +199,3 @@ Route::post('/feedback', [FeedbackController::class, 'submit'])->name('feedback.
 
 require __DIR__.'/settings.php';
 require __DIR__.'/auth.php';
-
-//

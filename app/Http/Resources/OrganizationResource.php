@@ -48,6 +48,12 @@ class OrganizationResource extends JsonResource
             'trial_period_expired' => $this->trial_period_expired,
             'checkout_success_url' => $this->checkout_success_url,
             'checkout_cancel_url' => $this->checkout_cancel_url,
+            'fulfillment_method' => $this->fulfillment_method?->value,
+            'default_delivery_method' => $this->default_delivery_method?->value,
+            'fulfillment_notification_email' => $this->fulfillment_notification_email,
+            'auto_fulfill_orders' => $this->auto_fulfill_orders,
+            'fulfillment_config' => $this->fulfillment_config,
+            'external_platform_config' => $this->external_platform_config,
 
             $this->when(
                 $this->resource->relationLoaded('subscriptions'),

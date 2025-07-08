@@ -318,61 +318,51 @@ function StripeElementsComponent({ context }: { context: BlockContextType }) {
 
     return {
       variables: {
-        // appearance.spacing is 48?
-        // 'spacingUnit': appearance.spacing || '16px',
-        'colorPrimary': paymentFormLabelFont?.color || '#000000',
-        'fontFamily': paymentFormLabelFont?.font || 'Inter',
-        'fontSizeBase': paymentFormLabelFont?.size || '14px',
-        'fontWeightLight': style.paymentFormLabelFont?.weight || '300',
-        'fontWeightNormal': style.paymentFormLabelFont?.weight || '400',
-        'fontWeightMedium': style.paymentFormLabelFont?.weight || '500',
-        'fontWeightBold': style.paymentFormLabelFont?.weight || '600',
-        'fontLineHeight': style.paymentFormLabelFont?.lineHeight || '1.5',
-        'letterSpacing': style.paymentFormLabelFont?.letterSpacing || '0px',
-        'iconChevronDownColor': style?.iconColor || '#000000',
-        'iconCardCvcColor': style?.iconColor || '#000000',
+        'spacingUnit': appearance.spacing,
+        'colorPrimary': paymentFormLabelFont?.color,
+        'fontFamily': paymentFormLabelFont?.font,
+        'fontSizeBase': paymentFormLabelFont?.size,
+        'fontWeightLight': style.paymentFormLabelFont?.weight,
+        'fontWeightNormal': style.paymentFormLabelFont?.weight,
+        'fontWeightMedium': style.paymentFormLabelFont?.weight,
+        'fontWeightBold': style.paymentFormLabelFont?.weight,
+        'fontLineHeight': style.paymentFormLabelFont?.lineHeight,
+        'letterSpacing': style.paymentFormLabelFont?.letterSpacing,
+        'iconChevronDownColor': style?.iconColor,
+        'iconCardCvcColor': style?.iconColor,
       },
       rules: {
         '.Text': {
           color: 'red'
         },
         '.TabIcon': {
-          color: style?.iconColor || '#000000',
+          color: style?.iconColor,
         },
         '.AccordionItem': {
-          boxShadow: 'none',
-// <<<<<<< Updated upstream
-          borderRadius: paymentFormStyle.borderRadius,
-          backgroundColor: paymentFormStyle.backgroundColor,
-          borderWidth: '0px',
-          borderStyle: 'none',
-          margin: '0px',
-          padding: '2px',
-// =======
-//           borderRadius: (paymentFormStyle.borderRadius as string) || '4px',
-//           backgroundColor: (paymentFormStyle.backgroundColor as string) || '#ffffff',
-//           borderWidth: '0px',
-//           borderStyle: 'none',
-//           margin: '0px',
-//           padding: '8px',
-// >>>>>>> Stashed changes
+          // boxShadow: 'none',
+          // borderRadius: paymentFormStyle.borderRadius,
+          // backgroundColor: paymentFormStyle.backgroundColor,
+          // borderWidth: '0px',
+          // borderStyle: 'none',
+          // margin: '0px',
+          // padding: '2px',
         },
         '.Label': {
-          color: inputLabelFont?.color || '#000000',
-          fontFamily: inputLabelFont?.font || 'Inter',
-          fontWeight: inputLabelFont?.weight || '400',
-          fontSize: inputLabelFont?.size || '14px',
-          lineHeight: inputLabelFont?.lineHeight || '1.5',
-          letterSpacing: inputLabelFont?.letterSpacing || '0px',
+          color: inputLabelFont?.color,
+          fontFamily: inputLabelFont?.font,
+          fontWeight: inputLabelFont?.weight,
+          fontSize: inputLabelFont?.size,
+          lineHeight: inputLabelFont?.lineHeight,
+          letterSpacing: inputLabelFont?.letterSpacing,
 
         },
         '.TermsText': {
-          color: termsTextFont?.color || '#666666',
-          fontFamily: termsTextFont?.font || 'Inter',
-          fontWeight: termsTextFont?.weight || '400',
-          fontSize: termsTextFont?.size || '12px',
-          lineHeight: termsTextFont?.lineHeight || '1.5',
-          letterSpacing: termsTextFont?.letterSpacing || '0px',
+          color: termsTextFont?.color,
+          fontFamily: termsTextFont?.font,
+          fontWeight: termsTextFont?.weight,
+          fontSize: termsTextFont?.size,
+          lineHeight: termsTextFont?.lineHeight,
+          letterSpacing: termsTextFont?.letterSpacing,
         },
         '.Input': {
           padding: appearance.inputPadding != '' ? appearance.inputPadding : '0.5rem',
@@ -656,6 +646,7 @@ function PaymentForm({ style }: { style?: CSSProperties}) {
       <AddressElement
         options={{
           mode: 'billing',
+
         }}
       />
     </div>

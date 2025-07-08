@@ -11,11 +11,12 @@ class CreateCheckoutSessionAction
         private readonly CreateCheckoutLineItemAction $createCheckoutLineItemAction
     ) {}
 
-    public function execute(Offer $offer, array $checkoutItems): CheckoutSession
+    public function execute(Offer $offer, array $checkoutItems, bool $testMode = false): CheckoutSession
     {
         $checkoutSession = CheckoutSession::create([
             'organization_id' => $offer->organization_id,
             'offer_id' => $offer->id,
+            'test_mode' => $testMode,
         ]);
 
         foreach ($offer->offerItems as $offerItem) {

@@ -3,6 +3,8 @@
 namespace App\Models;
 
 use App\Enums\OnboardingStep;
+use App\Enums\FulfillmentMethod;
+use App\Enums\DeliveryMethod;
 use App\Models\Store\Offer;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -44,6 +46,12 @@ class Organization extends Model
         'checkout_cancel_url',
         'subdomain',
         'onboarding_mask',
+        'fulfillment_method',
+        'default_delivery_method',
+        'fulfillment_config',
+        'fulfillment_notification_email',
+        'auto_fulfill_orders',
+        'external_platform_config',
     ];
 
     protected $appends = [
@@ -57,6 +65,11 @@ class Organization extends Model
     protected $casts = [
         'trial_ends_at' => 'datetime',
         'social_media' => 'array',
+        'fulfillment_method' => FulfillmentMethod::class,
+        'default_delivery_method' => DeliveryMethod::class,
+        'fulfillment_config' => 'array',
+        'auto_fulfill_orders' => 'boolean',
+        'external_platform_config' => 'array',
     ];
 
     public const AVAILABLE_CURRENCIES = [
@@ -124,6 +137,11 @@ class Organization extends Model
     public function integrations(): HasMany
     {
         return $this->hasMany(Integration::class);
+    }
+
+    public function apiKeys(): HasMany
+    {
+        return $this->hasMany(ApiKey::class);
     }
 
     public function getTrialDaysLeftAttribute()
@@ -238,7 +256,7 @@ class Organization extends Model
     {
         $totalSteps = count(OnboardingStep::cases());
         $completedSteps = count($this->getCompletedOnboardingSteps());
-        
+
         return $totalSteps > 0 ? round(($completedSteps / $totalSteps) * 100, 2) : 0;
     }
 

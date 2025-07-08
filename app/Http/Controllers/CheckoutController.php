@@ -27,7 +27,7 @@ class CheckoutController extends Controller
         private readonly CreateCheckoutSessionAction $createCheckoutSessionAction
     ) {}
 
-    public function initialize(string $offerId, Request $request)
+    public function initialize(string $offerId, Request $request, string $environment = 'live')
     {
         $offer = Offer::retrieve($offerId);
         $checkoutItems = $request->get('items', []);
@@ -56,13 +56,14 @@ class CheckoutController extends Controller
             }
         }
 
-        $checkoutSession = $this->createCheckoutSessionAction->execute($offer, $checkoutItems);
+        $testMode = $environment === 'test';
+        $checkoutSession = $this->createCheckoutSessionAction->execute($offer, $checkoutItems, $testMode);
 
         $this->handleInvalidDomain($request, $checkoutSession);
 
-        $params = [
+        $params = array_filter(array_merge([
             'checkout' => $checkoutSession->getRouteKey(),
-        ];
+        ], $request->only(['numi-embed-id', 'numi-embed-type'])));
 
         if ($request->has('redirect_url')) {
             $params['redirect_url'] = $request->get('redirect_url');
@@ -89,12 +90,10 @@ class CheckoutController extends Controller
             'offer.hostedPage.backgroundImage',
             'lineItems.price.integration',
             'lineItems.price.product',
-            'integration' // Add this to load the integration relationship
+            'organization.integrations'
         ]);
 
         $offer = $checkout->offer;
-
-//        $json = json_decode(file_get_contents(base_path('resources/view-example.json')), true);
         $json = $offer->view;
 
         /**

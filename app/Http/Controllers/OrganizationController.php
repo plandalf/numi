@@ -260,4 +260,37 @@ class OrganizationController extends Controller
 
         return redirect()->back()->with('success', 'SEO & Branding settings updated successfully.');
     }
+
+    /**
+     * Show the fulfillment settings page.
+     */
+    public function fulfillment(): Response
+    {
+        $organization = request()->user()->currentOrganization;
+
+        return Inertia::render('organizations/settings/fulfillment', [
+            'organization' => new OrganizationResource($organization),
+        ]);
+    }
+
+    /**
+     * Update the fulfillment settings.
+     */
+    public function updateFulfillment(Request $request): RedirectResponse
+    {
+        $organization = request()->user()->currentOrganization;
+
+        $validated = $request->validate([
+            'fulfillment_method' => 'required|in:automation,api,manual,external_webhook,hybrid',
+            'default_delivery_method' => 'required|in:physical_shipping,digital_download,email_delivery,api_provisioning,manual_provision,virtual_delivery,instant_access,external_platform',
+            'fulfillment_notification_email' => 'nullable|email',
+            'auto_fulfill_orders' => 'boolean',
+            'fulfillment_config' => 'nullable|array',
+            'external_platform_config' => 'nullable|array',
+        ]);
+
+        $organization->update($validated);
+
+        return redirect()->back()->with('success', 'Fulfillment settings updated successfully.');
+    }
 }

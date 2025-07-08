@@ -3,7 +3,6 @@
 namespace App\Providers;
 
 use App\Enums\OnboardingStep;
-use App\Enums\OnboardingInfo;
 use App\Models\Integration;
 use App\Models\Organization;
 use App\Models\Store\Offer;
@@ -13,13 +12,17 @@ use App\Observers\OfferObserver;
 use App\Observers\ThemeObserver;
 use App\Models\Subscription;
 use App\Models\SubscriptionItem;
+use App\Models\Order\Order;
+use App\Policies\OrderPolicy;
 use Carbon\CarbonImmutable;
+use Dedoc\Scramble\Scramble;
+use Dedoc\Scramble\Support\Generator\OpenApi;
+use Dedoc\Scramble\Support\Generator\SecurityScheme;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\Vite;
@@ -27,6 +30,7 @@ use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
 use Inertia\Inertia;
 use Laravel\Cashier\Cashier;
+use Illuminate\Support\Facades\Gate;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -56,6 +60,7 @@ class AppServiceProvider extends ServiceProvider
         $this->bootModelRules();
         $this->bootInertiaSharing();
         $this->bootObservers();
+        $this->bootPolicies();
 
         Vite::useAggressivePrefetching();
         URL::forceHttps(app()->isProduction());
@@ -63,6 +68,11 @@ class AppServiceProvider extends ServiceProvider
         Date::use(CarbonImmutable::class);
         DB::prohibitDestructiveCommands(app()->isProduction());
         Password::defaults(fn (): ?Password => app()->isProduction() ? Password::min(8)->max(255)->uncompromised() : null);
+
+        Scramble::configure()
+            ->withDocumentTransformers(function (OpenApi $openApi) {
+                $openApi->secure(SecurityScheme::http('bearer'),);
+            });
     }
 
     private function bootModelRules(): void
@@ -127,5 +137,10 @@ class AppServiceProvider extends ServiceProvider
         Offer::observe(OfferObserver::class);
         Integration::observe(IntegrationObserver::class);
         Theme::observe(ThemeObserver::class);
+    }
+
+    private function bootPolicies(): void
+    {
+        Gate::policy(Order::class, OrderPolicy::class);
     }
 }

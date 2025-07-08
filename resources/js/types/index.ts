@@ -33,6 +33,12 @@ export interface Organization {
     trial_days_left: string;
     checkout_success_url?: string;
     checkout_cancel_url?: string;
+    fulfillment_method?: string;
+    default_delivery_method?: string;
+    fulfillment_notification_email?: string;
+    auto_fulfill_orders?: boolean;
+    fulfillment_config?: Record<string, unknown>;
+    external_platform_config?: Record<string, unknown>;
     subscriptions?: Subscription[];
 }
 

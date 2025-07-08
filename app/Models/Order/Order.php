@@ -4,8 +4,11 @@ namespace App\Models\Order;
 
 use App\Database\Traits\UuidRouteKey;
 use App\Enums\OrderStatus;
+use App\Enums\FulfillmentMethod;
 use App\Models\Checkout\CheckoutSession;
 use App\Models\Customer;
+use App\Models\OrderEvent;
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Collection as DBCollection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -14,6 +17,10 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * @property DBCollection<OrderItem> $items
+ * @property string $fulfillment_method
+ * @property array  $fulfillment_config
+ * @property Carbon $fulfillment_notified
+ * @property Carbon $fulfillment_notified_at
  */
 class Order extends Model
 {
@@ -34,6 +41,10 @@ class Order extends Model
         'redirect_url',
         'completed_at',
         'organization_id',
+        'fulfillment_method',
+        'fulfillment_config',
+        'fulfillment_notified',
+        'fulfillment_notified_at',
     ];
 
     /**
@@ -44,6 +55,10 @@ class Order extends Model
     protected $casts = [
         'completed_at' => 'datetime',
         'status' => OrderStatus::class,
+        'fulfillment_method' => FulfillmentMethod::class,
+        'fulfillment_config' => 'array',
+        'fulfillment_notified' => 'boolean',
+        'fulfillment_notified_at' => 'datetime',
     ];
 
     /**
@@ -60,6 +75,14 @@ class Order extends Model
     public function items(): HasMany
     {
         return $this->hasMany(OrderItem::class);
+    }
+
+    /**
+     * Get the events for the order.
+     */
+    public function events(): HasMany
+    {
+        return $this->hasMany(OrderEvent::class)->orderBy('created_at', 'desc');
     }
 
     /**
@@ -125,5 +148,43 @@ class Order extends Model
     public function customer(): BelongsTo
     {
         return $this->belongsTo(Customer::class);
+    }
+
+    /**
+     * Update the overall order fulfillment status based on items.
+     */
+    public function updateFulfillmentStatus(): void
+    {
+        $totalItems = $this->items->count();
+        $fulfilledItems = $this->items->where('fulfillment_status', 'fulfilled')->count();
+        $partiallyFulfilledItems = $this->items->where('fulfillment_status', 'partially_fulfilled')->count();
+        $unprovisionableItems = $this->items->where('fulfillment_status', 'unprovisionable')->count();
+
+        if ($fulfilledItems === $totalItems) {
+            $this->status = OrderStatus::COMPLETED;
+        } else {
+            $this->status = OrderStatus::PENDING;
+        }
+
+        $this->save();
+    }
+
+    /**
+     * Get the fulfillment summary data.
+     */
+    public function getFulfillmentSummaryAttribute(): array
+    {
+        $totalItems = $this->items->count();
+        $fulfilledItems = $this->items->where('fulfillment_status', 'fulfilled')->count();
+        $pendingItems = $this->items->where('fulfillment_status', 'pending')->count();
+        $partiallyFulfilledItems = $this->items->where('fulfillment_status', 'partially_fulfilled')->count();
+        $unprovisionableItems = $this->items->where('fulfillment_status', 'unprovisionable')->count();
+
+        return [
+            'total_items' => $totalItems,
+            'fulfilled_items' => $fulfilledItems,
+            'pending_items' => $pendingItems + $partiallyFulfilledItems,
+            'unprovisionable_items' => $unprovisionableItems,
+        ];
     }
 }
