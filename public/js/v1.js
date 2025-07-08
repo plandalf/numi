@@ -597,6 +597,7 @@ ${spinAnimationStyles}
                     // 80vw of 1200 ~ 960px (we get progressively smaller with some padding
                     // on the RHS)
                     window.innerWidth < 1200 ? '80vw' : '900px';
+                iframeContainer.style.height = '700px';
             }
             else if (popupSize === 'small') {
                 // roughly inline with others we've seen, and smaller than this seems
