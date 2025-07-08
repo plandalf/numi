@@ -72,7 +72,6 @@ class TakeSocialImageScreenshotJob extends QueueableJob
             // Update the existing media record
             $existingSocialImage->update([
                 'size' => $res->getBody()->getSize(),
-                'updated_at' => now(),
             ]);
             
             // Replace the file content
