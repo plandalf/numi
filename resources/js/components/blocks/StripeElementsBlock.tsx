@@ -463,7 +463,7 @@ function StripeElementsComponent({ context }: { context: BlockContextType }) {
     if (intentMode === 'payment') {
       // Convert total to cents (Stripe expects amount in smallest currency unit)
       const total = session.total || 0;
-      const amountInCents = Math.round(total * 100);
+      const amountInCents = total;
 
       // Stripe requires amount > 0 for payment mode
       if (amountInCents <= 0) {
