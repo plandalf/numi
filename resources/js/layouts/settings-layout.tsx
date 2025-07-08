@@ -1,5 +1,7 @@
+import { cn } from '@/lib/utils';
+import { type BreadcrumbItem } from '@/types';
 import { Link } from '@inertiajs/react';
-import { Building2, CreditCard, PaintbrushIcon, Users, Key, Package } from 'lucide-react';
+import { Building2, CreditCard, PaintbrushIcon, Users, Key, Package, Globe, Palette } from 'lucide-react';
 import {
     Sidebar,
     SidebarContent,
@@ -40,9 +42,9 @@ export default function SettingsLayout({ children }: SettingsLayoutProps) {
             icon: Package,
         },
         {
-            title: 'Theme',
-            href: route('organizations.themes.index'),
-            icon: PaintbrushIcon,
+             title: 'SEO & Branding',
+             href: route('organizations.settings.seo'),
+             icon: Globe,
         },
         ...(modules.billing ? [
             {

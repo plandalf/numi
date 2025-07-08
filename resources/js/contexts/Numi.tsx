@@ -240,6 +240,10 @@ export const Style = {
     options: args.options,
     defaultValue,
     inspector: args.inspector ?? 'colorPicker',
+    config: {
+      ...args.config,
+      supportsGradients: true, // Enable gradient support
+    }
   }),
   textColor: (
     type: string = 'textColor',

@@ -84,6 +84,8 @@ class CheckoutController extends Controller
         $checkout->load([
             'lineItems.offerItem.offerPrices',
             'offer.theme',
+            'offer.organization.logoMedia',
+            'offer.organization.faviconMedia',
             'offer.hostedPage.logoImage',
             'offer.hostedPage.backgroundImage',
             'lineItems.price.integration',

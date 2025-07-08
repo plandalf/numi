@@ -226,6 +226,42 @@ class OrganizationController extends Controller
     }
 
     /**
+     * Display the SEO settings page.
+     */
+    public function seoSettings(): Response
+    {
+        $organization = request()->user()->currentOrganization;
+        $organization->load(['logoMedia', 'faviconMedia']);
+
+        return Inertia::render('organizations/settings/seo', [
+            'organization' => new OrganizationResource($organization),
+        ]);
+    }
+
+    /**
+     * Update the SEO settings.
+     */
+    public function updateSeoSettings(Request $request, Organization $organization): RedirectResponse
+    {
+        $validated = $request->validate([
+            'description' => 'nullable|string|max:1000',
+            'website_url' => 'nullable|url|max:255',
+            'logo_media_id' => 'nullable|integer|exists:medias,id',
+            'favicon_media_id' => 'nullable|integer|exists:medias,id',
+            'primary_color' => 'nullable|string|regex:/^#[0-9A-F]{6}$/i',
+            'social_media' => 'nullable|array',
+            'social_media.facebook' => 'nullable|url|max:255',
+            'social_media.twitter' => 'nullable|url|max:255',
+            'social_media.instagram' => 'nullable|url|max:255',
+            'social_media.linkedin' => 'nullable|url|max:255',
+        ]);
+
+        $organization->update($validated);
+
+        return redirect()->back()->with('success', 'SEO & Branding settings updated successfully.');
+    }
+
+    /**
      * Show the fulfillment settings page.
      */
     public function fulfillment(): Response

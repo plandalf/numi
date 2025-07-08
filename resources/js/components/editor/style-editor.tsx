@@ -73,12 +73,17 @@ const StyleItemValuePreview = ({
 
   const value = item.value || item.defaultValue;
   switch (item.inspector) {
-    case 'colorPicker':
-      const { rgb } = parseHexAlpha(value as string);
+    case 'colorPicker': {
+      // Check if the value is a gradient
+      const isGradient = typeof value === 'string' && 
+        (value.includes('linear-gradient') || value.includes('radial-gradient'));
+      
+      const { rgb } = isGradient ? { rgb: '#000000' } : parseHexAlpha(value as string);
       const matchedThemeValue = getMatchedThemeValue(value as string);
 
       const colorValue = matchedThemeValue ? themeColors?.[matchedThemeValue]?.value : rgb;
-      const colorLabel = matchedThemeValue ? themeColors?.[matchedThemeValue]?.label : rgb;
+      const colorLabel = matchedThemeValue ? themeColors?.[matchedThemeValue]?.label : (isGradient ? 'Gradient' : rgb);
+      
       return (
         <ColorPicker
           type="advanced"
@@ -86,13 +91,20 @@ const StyleItemValuePreview = ({
           onChange={(value) => onChange(item.name, value)}
           trigger={
             <div className="flex-1 flex flex-row gap-2 items-center cursor-pointer">
-               {colorValue && <div className="w-5 h-5 rounded cursor-pointer" style={{ backgroundColor: colorValue as string }} />}
+               <div 
+                 className="w-5 h-5 rounded cursor-pointer" 
+                 style={{ 
+                   background: isGradient ? (value as string) : (colorValue as string) 
+                 }} 
+               />
                <span className="text-xs">{colorLabel != '' ? colorLabel : 'Select'}</span>
             </div>
           }
           themeColors={themeColors}
+          supportsGradients={item.config?.supportsGradients}
         />
       );
+    }
     case 'alignmentPicker':
       return (
         <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>

@@ -53,16 +53,31 @@ class Stripe extends AbstractIntegration implements CanCreateSubscription, CanSe
         $order->customer_id = $customer->id;
         $order->save();
 
-        $setupIntent = $this->stripeClient->setupIntents->create([
+        // Get the currency from the order to filter payment methods properly
+        $currency = $order->checkout_session->currency ?? 'usd';
+        
+        // Get enabled payment methods that are compatible with this currency
+        $enabledPaymentMethods = $order->checkout_session->enabled_payment_methods;
+        
+        // Prepare setup intent data
+        $setupIntentData = [
             'customer' => $customer->reference_id,
-            'automatic_payment_methods' => [
-                'enabled' => true,
-                'allow_redirects' => 'never',
-            ],
             'confirm' => true,
             'confirmation_token' => $confirmationToken,
             'usage' => 'off_session',
-        ]);
+        ];
+
+        // Use specific payment method types if we have filtered methods, otherwise use automatic
+        if (!empty($enabledPaymentMethods)) {
+            $setupIntentData['payment_method_types'] = $enabledPaymentMethods;
+        } else {
+            $setupIntentData['automatic_payment_methods'] = [
+                'enabled' => true,
+                'allow_redirects' => 'never',
+            ];
+        }
+
+        $setupIntent = $this->stripeClient->setupIntents->create($setupIntentData);
 
         // After successful setup, attach the payment method to the customer and set as default
         if ($setupIntent->status === 'succeeded' && $setupIntent->payment_method) {
@@ -374,8 +389,455 @@ class Stripe extends AbstractIntegration implements CanCreateSubscription, CanSe
         return $paymentIntent;
     }
 
+    /**
+     * Create a direct payment intent using a confirmation token
+     * This is used for one-time payments that don't require saving payment methods
+     */
+    public function createDirectPaymentIntent(array $data = [])
+    {
+        $order = $data['order'] ?? null;
+        $items = $data['items'] ?? [];
+        $discounts = $data['discounts'] ?? [];
+        $confirmationToken = $data['confirmation_token'] ?? null;
+
+        if (!$order || empty($items) || !$confirmationToken) {
+            throw new \InvalidArgumentException('Order, items, and confirmation token are required to create a direct payment intent');
+        }
+
+        // Get the customer from the order
+        $customer = $order->customer;
+
+        if (!$customer) {
+            throw new \InvalidArgumentException('Customer is required to create a direct payment intent');
+        }
+
+        // Calculate the total amount
+        $amount = 0;
+        $currency = null;
+
+        foreach ($items as $item) {
+            $price = $item['price'];
+            $quantity = $item['quantity'] ?? 1;
+
+            if (!$currency) {
+                $currency = $price['currency'];
+            } elseif ($currency !== $price['currency']) {
+                throw new \InvalidArgumentException('All items must have the same currency');
+            }
+
+            $amount += $price['amount']->getAmount() * $quantity;
+        }
+
+        // Apply discounts if any
+        if (!empty($discounts)) {
+            $discountAmount = 0;
+            foreach ($discounts as $discount) {
+                try {
+                    // Try to get the promotion code for this discount
+                    $promotionCode = $this->stripeClient->promotionCodes->all([
+                        'code' => $discount['id'],
+                        'active' => true,
+                        'limit' => 1
+                    ])->data[0] ?? null;
+
+                    if ($promotionCode) {
+                        // Apply promotion code discount
+                        if ($promotionCode->coupon->percent_off) {
+                            $discountAmount += $amount * ($promotionCode->coupon->percent_off / 100);
+                        } else {
+                            $discountAmount += $promotionCode->coupon->amount_off;
+                        }
+                    } else {
+                        // Fallback to direct coupon calculation
+                        if (isset($discount['percent_off'])) {
+                            $discountAmount += $amount * ($discount['percent_off'] / 100);
+                        } elseif (isset($discount['amount_off'])) {
+                            $discountAmount += $discount['amount_off'];
+                        }
+                    }
+                } catch (\Exception $e) {
+                    logger()->warning('Failed to apply discount to direct payment intent', [
+                        'discount_id' => $discount['id'],
+                        'error' => $e->getMessage()
+                    ]);
+                }
+            }
+            $amount = max(0, $amount - $discountAmount);
+        }
+
+        // Get enabled payment methods that are compatible with this currency
+        $enabledPaymentMethods = $order->checkout_session->enabled_payment_methods;
+        
+        // Prepare payment intent data
+        $paymentIntentData = [
+            'amount' => (int) $amount,
+            'currency' => strtolower($currency),
+            'customer' => $customer->reference_id,
+            'confirmation_token' => $confirmationToken,
+            'confirm' => true,
+            'return_url' => config('app.url') . '/checkout/complete', // Add a return URL for 3D Secure flows
+            'metadata' => [
+                'order_id' => $order->id,
+                'payment_type' => 'direct_one_time',
+            ],
+        ];
+
+        // Use specific payment method types if we have filtered methods, otherwise use automatic
+        if (!empty($enabledPaymentMethods)) {
+            $paymentIntentData['payment_method_types'] = $enabledPaymentMethods;
+        } else {
+            $paymentIntentData['automatic_payment_methods'] = [
+                'enabled' => true,
+                'allow_redirects' => 'never',
+            ];
+        }
+
+        // Create the payment intent with the confirmation token
+        $paymentIntent = $this->stripeClient->paymentIntents->create($paymentIntentData);
+
+        return $paymentIntent;
+    }
+
     public function getDiscount(string $code)
     {
         return $this->stripeClient->coupons->retrieve($code);
+    }
+
+    /**
+     * Get available payment methods from Stripe's API
+     * This fetches real payment method capabilities for the account
+     */
+    public function getAvailablePaymentMethods(string $currency = 'usd'): array
+    {
+        try {
+            // Get account details to determine capabilities
+            $account = $this->stripeClient->accounts->retrieve();
+            
+            // Get country-specific payment method support
+            $country = $account->country ?? 'US';
+            
+            // Map of Stripe API payment method types to display names
+            // Only including payment methods that support SetupIntent
+            $paymentMethodMap = [
+                'card' => 'Credit/Debit Cards',
+                'apple_pay' => 'Apple Pay',
+                'google_pay' => 'Google Pay',
+                'link' => 'Link',
+                'us_bank_account' => 'US Bank Account (ACH)',
+                'sepa_debit' => 'SEPA Direct Debit',
+                'bacs_debit' => 'Bacs Direct Debit',
+                'au_becs_debit' => 'BECS Direct Debit',
+                'acss_debit' => 'Canadian PADs',
+                'cashapp' => 'Cash App Pay',
+                'amazon_pay' => 'Amazon Pay',
+                'revolut_pay' => 'Revolut Pay',
+                'paypal' => 'PayPal',
+            ];
+
+            // Filter payment methods based on currency and country
+            $availablePaymentMethods = $this->filterPaymentMethodsByCurrencyAndCountry(
+                array_keys($paymentMethodMap), 
+                $currency, 
+                $country
+            );
+
+            // Return only the available ones with their display names
+            $result = [];
+            foreach ($availablePaymentMethods as $method) {
+                if (isset($paymentMethodMap[$method])) {
+                    $result[$method] = $paymentMethodMap[$method];
+                }
+            }
+
+            return $result;
+            
+        } catch (\Exception $e) {
+            // Fallback to default payment methods if API call fails
+            logger()->error('Failed to fetch payment methods from Stripe', [
+                'error' => $e->getMessage(),
+                'integration_id' => $this->integration->id
+            ]);
+            
+            return [
+                'card' => 'Credit/Debit Cards',
+                'apple_pay' => 'Apple Pay',
+                'google_pay' => 'Google Pay',
+            ];
+        }
+    }
+
+    /**
+     * Get payment methods that only support PaymentIntent (not SetupIntent)
+     * These are typically "pay now" only methods like BNPL
+     */
+    public function getPaymentOnlyMethods(string $currency = 'usd'): array
+    {
+        try {
+            // Get account details to determine capabilities
+            $account = $this->stripeClient->accounts->retrieve();
+            
+            // Get country-specific payment method support
+            $country = $account->country ?? 'US';
+            
+            // Payment methods that only support PaymentIntent (immediate payments)
+            $paymentOnlyMethodMap = [
+                'ideal' => 'iDEAL',
+                'sofort' => 'Sofort',
+                'bancontact' => 'Bancontact',
+                'giropay' => 'Giropay',
+                'eps' => 'EPS',
+                'p24' => 'Przelewy24',
+                'alipay' => 'Alipay',
+                'wechat_pay' => 'WeChat Pay',
+                'klarna' => 'Klarna',
+                'afterpay_clearpay' => 'Afterpay/Clearpay',
+                'affirm' => 'Affirm',
+                'fpx' => 'FPX',
+                'grabpay' => 'GrabPay',
+                'oxxo' => 'OXXO',
+                'boleto' => 'Boleto',
+                'konbini' => 'Konbini',
+                'paynow' => 'PayNow',
+                'promptpay' => 'PromptPay',
+                'zip' => 'Zip',
+                'swish' => 'Swish',
+                'twint' => 'TWINT',
+                'mb_way' => 'MB WAY',
+                'multibanco' => 'Multibanco',
+                'blik' => 'BLIK',
+                'mobilepay' => 'MobilePay',
+                'vipps' => 'Vipps',
+                'satispay' => 'Satispay',
+            ];
+
+            // Filter payment methods based on currency and country
+            $availablePaymentMethods = $this->filterPaymentMethodsByCurrencyAndCountry(
+                array_keys($paymentOnlyMethodMap), 
+                $currency, 
+                $country
+            );
+
+            // Return only the available ones with their display names
+            $result = [];
+            foreach ($availablePaymentMethods as $method) {
+                if (isset($paymentOnlyMethodMap[$method])) {
+                    $result[$method] = $paymentOnlyMethodMap[$method];
+                }
+            }
+
+            return $result;
+            
+        } catch (\Exception $e) {
+            logger()->error('Failed to fetch payment-only methods from Stripe', [
+                'error' => $e->getMessage(),
+                'integration_id' => $this->integration->id
+            ]);
+            
+            return [];
+        }
+    }
+
+    /**
+     * Filter payment methods based on currency and country restrictions
+     * Based on Stripe's documentation for payment method support
+     */
+    private function filterPaymentMethodsByCurrencyAndCountry(array $paymentMethods, string $currency, string $country): array
+    {
+        $currency = strtolower($currency);
+        $country = strtoupper($country);
+        
+        // Currency and country restrictions based on Stripe's documentation
+        $restrictions = [
+            'us_bank_account' => [
+                'currencies' => ['usd'],
+                'countries' => ['US']
+            ],
+            'sepa_debit' => [
+                'currencies' => ['eur'],
+                'countries' => ['AT', 'BE', 'BG', 'HR', 'CY', 'CZ', 'DK', 'EE', 'FI', 'FR', 'DE', 'GR', 'HU', 'IE', 'IT', 'LV', 'LT', 'LU', 'MT', 'NL', 'PL', 'PT', 'RO', 'SK', 'SI', 'ES', 'SE']
+            ],
+            'ideal' => [
+                'currencies' => ['eur'],
+                'countries' => ['AU', 'CA', 'AT', 'BE', 'BG', 'HR', 'CY', 'CZ', 'DK', 'EE', 'FI', 'FR', 'DE', 'GR', 'HU', 'IE', 'IT', 'LV', 'LT', 'LU', 'MT', 'NL', 'PL', 'PT', 'RO', 'SK', 'SI', 'ES', 'SE', 'HK', 'JP', 'MX', 'NZ', 'SG', 'US']
+            ],
+            'sofort' => [
+                'currencies' => ['eur'],
+                'countries' => ['AU', 'CA', 'AT', 'BE', 'BG', 'HR', 'CY', 'CZ', 'DK', 'EE', 'FI', 'FR', 'DE', 'GR', 'HU', 'IE', 'IT', 'LV', 'LT', 'LU', 'MT', 'NL', 'PL', 'PT', 'RO', 'SK', 'SI', 'ES', 'SE', 'HK', 'JP', 'MX', 'NZ', 'SG', 'US']
+            ],
+            'bancontact' => [
+                'currencies' => ['eur'],
+                'countries' => ['AU', 'CA', 'AT', 'BE', 'BG', 'HR', 'CY', 'CZ', 'DK', 'EE', 'FI', 'FR', 'DE', 'GR', 'HU', 'IE', 'IT', 'LV', 'LT', 'LU', 'MT', 'NL', 'PL', 'PT', 'RO', 'SK', 'SI', 'ES', 'SE', 'HK', 'JP', 'MX', 'NZ', 'SG', 'US']
+            ],
+            'giropay' => [
+                'currencies' => ['eur'],
+                'countries' => ['AU', 'CA', 'AT', 'BE', 'BG', 'HR', 'CY', 'CZ', 'DK', 'EE', 'FI', 'FR', 'DE', 'GR', 'HU', 'IE', 'IT', 'LV', 'LT', 'LU', 'MT', 'NL', 'PL', 'PT', 'RO', 'SK', 'SI', 'ES', 'SE', 'HK', 'JP', 'MX', 'NZ', 'SG', 'US']
+            ],
+            'eps' => [
+                'currencies' => ['eur'],
+                'countries' => ['AU', 'AT', 'CA', 'AT', 'BE', 'BG', 'HR', 'CY', 'CZ', 'DK', 'EE', 'FI', 'FR', 'DE', 'GR', 'HU', 'IE', 'IT', 'LV', 'LT', 'LU', 'MT', 'NL', 'PL', 'PT', 'RO', 'SK', 'SI', 'ES', 'SE', 'HK', 'JP', 'MX', 'NZ', 'SG', 'US']
+            ],
+            'p24' => [
+                'currencies' => ['eur', 'pln'],
+                'countries' => ['AU', 'CA', 'AT', 'BE', 'BG', 'HR', 'CY', 'CZ', 'DK', 'EE', 'FI', 'FR', 'DE', 'GR', 'HU', 'IE', 'IT', 'LV', 'LT', 'LU', 'MT', 'NL', 'PL', 'PT', 'RO', 'SK', 'SI', 'ES', 'SE', 'HK', 'JP', 'MX', 'NZ', 'SG', 'US']
+            ],
+            'alipay' => [
+                'currencies' => ['aud', 'cad', 'cny', 'eur', 'gbp', 'hkd', 'jpy', 'myr', 'nzd', 'sgd', 'usd'],
+                'countries' => ['AU', 'CA', 'AT', 'BE', 'BG', 'HR', 'CY', 'CZ', 'DK', 'EE', 'FI', 'FR', 'DE', 'GR', 'HU', 'IE', 'IT', 'LV', 'LT', 'LU', 'MT', 'NL', 'PL', 'PT', 'RO', 'SK', 'SI', 'ES', 'SE', 'HK', 'JP', 'NZ', 'SG', 'US']
+            ],
+            'wechat_pay' => [
+                'currencies' => ['aud', 'cad', 'chf', 'cny', 'dkk', 'eur', 'gbp', 'hkd', 'jpy', 'nok', 'sek', 'sgd', 'usd'],
+                'countries' => ['AU', 'CA', 'AT', 'BE', 'BG', 'HR', 'CY', 'CZ', 'DK', 'EE', 'FI', 'FR', 'DE', 'GR', 'HU', 'IE', 'IT', 'LV', 'LT', 'LU', 'MT', 'NL', 'PL', 'PT', 'RO', 'SK', 'SI', 'ES', 'SE', 'HK', 'JP', 'SG', 'GB', 'US']
+            ],
+            'klarna' => [
+                'currencies' => ['aud', 'cad', 'chf', 'czk', 'dkk', 'eur', 'gbp', 'nok', 'nzd', 'pln', 'ron', 'sek', 'usd'],
+                'countries' => ['AU', 'AT', 'BE', 'CA', 'HR', 'CY', 'DK', 'EE', 'FI', 'FR', 'DE', 'GR', 'IE', 'IT', 'LV', 'LT', 'LU', 'MT', 'NL', 'NZ', 'NO', 'PL', 'PT', 'RO', 'SK', 'SI', 'ES', 'SE', 'CH', 'GB', 'US']
+            ],
+            'afterpay_clearpay' => [
+                'currencies' => ['aud', 'cad', 'eur', 'nzd', 'gbp', 'usd'],
+                'countries' => ['AU', 'CA', 'NZ', 'GB', 'US']
+            ],
+            'affirm' => [
+                'currencies' => ['cad', 'usd'],
+                'countries' => ['CA', 'US']
+            ],
+            'paypal' => [
+                'currencies' => ['aud', 'cad', 'chf', 'czk', 'dkk', 'eur', 'gbp', 'hkd', 'nok', 'nzd', 'pln', 'sek', 'sgd', 'usd'],
+                'countries' => ['AT', 'BE', 'BG', 'HR', 'CY', 'CZ', 'DK', 'EE', 'FI', 'FR', 'DE', 'GR', 'IE', 'IT', 'LV', 'LT', 'LU', 'MT', 'NL', 'NO', 'PL', 'PT', 'RO', 'SK', 'SI', 'ES', 'SE', 'CH', 'GB']
+            ],
+            'bacs_debit' => [
+                'currencies' => ['gbp'],
+                'countries' => ['GB']
+            ],
+            'au_becs_debit' => [
+                'currencies' => ['aud'],
+                'countries' => ['AU']
+            ],
+            'acss_debit' => [
+                'currencies' => ['cad', 'usd'],
+                'countries' => ['CA', 'US']
+            ],
+            'fpx' => [
+                'currencies' => ['myr'],
+                'countries' => ['MY']
+            ],
+            'grabpay' => [
+                'currencies' => ['myr', 'sgd'],
+                'countries' => ['MY', 'SG']
+            ],
+            'oxxo' => [
+                'currencies' => ['mxn'],
+                'countries' => ['MX']
+            ],
+            'boleto' => [
+                'currencies' => ['brl'],
+                'countries' => ['BR']
+            ],
+            'konbini' => [
+                'currencies' => ['jpy'],
+                'countries' => ['JP']
+            ],
+            'paynow' => [
+                'currencies' => ['sgd'],
+                'countries' => ['SG']
+            ],
+            'promptpay' => [
+                'currencies' => ['thb'],
+                'countries' => ['TH']
+            ],
+            'cashapp' => [
+                'currencies' => ['usd'],
+                'countries' => ['US']
+            ],
+            'amazon_pay' => [
+                'currencies' => ['usd'],
+                'countries' => ['AT', 'BE', 'CY', 'DK', 'FR', 'DE', 'HU', 'IE', 'IT', 'LU', 'NL', 'PT', 'ES', 'SE', 'CH', 'GB', 'US']
+            ],
+            'revolut_pay' => [
+                'currencies' => ['eur', 'gbp', 'usd'],
+                'countries' => ['AT', 'BE', 'BG', 'HR', 'CY', 'CZ', 'DK', 'EE', 'FI', 'FR', 'DE', 'GR', 'HU', 'IE', 'IT', 'LV', 'LT', 'LU', 'MT', 'NL', 'PL', 'PT', 'RO', 'SK', 'SI', 'ES', 'SE', 'GB']
+            ],
+            'zip' => [
+                'currencies' => ['aud'],
+                'countries' => ['AU']
+            ],
+            'swish' => [
+                'currencies' => ['sek'],
+                'countries' => ['AT', 'BE', 'BG', 'HR', 'CY', 'CZ', 'DK', 'EE', 'FI', 'FR', 'DE', 'GR', 'IE', 'IS', 'IT', 'LV', 'LT', 'LU', 'NL', 'NO', 'PL', 'RO', 'SK', 'SI', 'ES', 'SE']
+            ],
+            'twint' => [
+                'currencies' => ['chf'],
+                'countries' => ['AT', 'BE', 'BG', 'HR', 'CY', 'CZ', 'DK', 'EE', 'FI', 'FR', 'DE', 'GI', 'GR', 'HU', 'IE', 'IS', 'IT', 'LV', 'LT', 'LU', 'MT', 'MC', 'NL', 'NO', 'PL', 'PT', 'RO', 'SM', 'SK', 'SI', 'SE', 'ES', 'CH', 'GB']
+            ],
+            'mb_way' => [
+                'currencies' => ['eur'],
+                'countries' => ['AU', 'AT', 'BE', 'BG', 'CA', 'HR', 'CY', 'CZ', 'DK', 'EE', 'FI', 'FR', 'DE', 'GI', 'GR', 'HK', 'HU', 'IE', 'IT', 'JP', 'LV', 'LT', 'LU', 'MT', 'MX', 'NL', 'NZ', 'NO', 'PL', 'PT', 'RO', 'SG', 'SK', 'SI', 'ES', 'SE', 'CH', 'GB', 'US']
+            ],
+            'multibanco' => [
+                'currencies' => ['eur'],
+                'countries' => ['AT', 'BE', 'BG', 'HR', 'CY', 'CZ', 'DK', 'EE', 'FI', 'FR', 'DE', 'GI', 'GR', 'HU', 'IE', 'IT', 'LT', 'LU', 'LV', 'MT', 'NL', 'NO', 'PL', 'PT', 'RO', 'SK', 'SI', 'ES', 'SE', 'CH', 'GB', 'US']
+            ],
+            'blik' => [
+                'currencies' => ['pln'],
+                'countries' => ['AT', 'BE', 'BG', 'HR', 'CY', 'CZ', 'DK', 'EE', 'FI', 'FR', 'DE', 'GR', 'HU', 'IS', 'IE', 'IT', 'LV', 'LT', 'LU', 'MT', 'NL', 'NO', 'PL', 'PT', 'RO', 'SK', 'SI', 'ES', 'SE']
+            ],
+            'mobilepay' => [
+                'currencies' => ['dkk', 'eur', 'nok', 'sek'],
+                'countries' => ['AT', 'BE', 'BG', 'HR', 'CY', 'CZ', 'DK', 'EE', 'FI', 'FR', 'DE', 'GR', 'HU', 'IE', 'IT', 'LV', 'LT', 'LU', 'MT', 'NL', 'NO', 'PL', 'PT', 'RO', 'SK', 'SI', 'ES', 'SE']
+            ],
+            'vipps' => [
+                'currencies' => ['nok'],
+                'countries' => ['NO']
+            ],
+            'satispay' => [
+                'currencies' => ['eur'],
+                'countries' => ['IT']
+            ],
+        ];
+
+        // Filter payment methods based on restrictions
+        $filtered = [];
+        foreach ($paymentMethods as $method) {
+            // Always include basic payment methods
+            if (in_array($method, ['card', 'apple_pay', 'google_pay', 'link'])) {
+                $filtered[] = $method;
+                continue;
+            }
+
+            // Check if method has restrictions
+            if (isset($restrictions[$method])) {
+                $restriction = $restrictions[$method];
+                
+                // Check currency restriction
+                if (isset($restriction['currencies']) && !in_array($currency, $restriction['currencies'])) {
+                    logger()->debug("Payment method {$method} filtered out due to currency restriction", [
+                        'method' => $method,
+                        'currency' => $currency,
+                        'allowed_currencies' => $restriction['currencies']
+                    ]);
+                    continue;
+                }
+                
+                // Check country restriction
+                if (isset($restriction['countries']) && !in_array($country, $restriction['countries'])) {
+                    logger()->debug("Payment method {$method} filtered out due to country restriction", [
+                        'method' => $method,
+                        'country' => $country,
+                        'allowed_countries' => $restriction['countries']
+                    ]);
+                    continue;
+                }
+            }
+
+            $filtered[] = $method;
+        }
+
+        logger()->debug('Payment methods filtered', [
+            'currency' => $currency,
+            'country' => $country,
+            'input_methods' => $paymentMethods,
+            'filtered_methods' => $filtered
+        ]);
+
+        return $filtered;
     }
 }

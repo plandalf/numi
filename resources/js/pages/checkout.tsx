@@ -23,8 +23,62 @@ import { PageChanged } from '@/events/PageChanged';
 import { PaymentInitialized } from '@/events/PaymentInitialized';
 import { getLayoutJSONConfig } from '@/config/layouts';
 
+// Helper function to generate meta tags
+const generateMetaTags = (offer: OfferConfiguration) => {
+  const title = offer.name || 'Complete Your Purchase';
+  const description = offer.description || `Secure checkout for ${offer.name}`;
+  const imageUrl = offer.image?.url;
+  const themeColor = offer.theme?.primary_color || offer.organization?.primary_color || '#3B82F6';
+  const currentUrl = typeof window !== 'undefined' ? window.location.href : '';
+  
+  // Use organization info if available, fallback to Numi
+  const organizationName = offer.organization?.name || 'Plandalf';
+  const organizationDescription = offer.organization?.description || 'Secure checkout platform';
+  const organizationUrl = offer.organization?.website_url || 'https://plandalf.dev';
+  const organizationLogo = offer.organization?.logo_media?.url || offer.hosted_page?.logo_image?.url;
+  const organizationFavicon = offer.organization?.favicon_media?.url;
 
-export const NavigationBar = ({ barStyle, children, className, ...props }: NavigationBarProps) => {
+  return {
+    title: `Checkout: ${offer.name ?? 'Untitled Offer'}`,
+    description,
+    imageUrl,
+    themeColor,
+    currentUrl,
+    organizationName,
+    organizationDescription,
+    organizationUrl,
+    organizationLogo,
+    organizationFavicon,
+    structuredData: {
+      "@context": "https://schema.org",
+      "@type": "WebPage",
+      "name": title,
+      "description": description,
+      "url": currentUrl,
+      "publisher": {
+        "@type": "Organization",
+        "name": organizationName,
+        "description": organizationDescription,
+        "url": organizationUrl,
+        ...(organizationLogo && { "logo": { "@type": "ImageObject", "url": organizationLogo } })
+      },
+      "mainEntity": {
+        "@type": "Offer",
+        "name": offer.name,
+        "description": offer.description,
+        "price": offer.items?.[0]?.price?.amount,
+        "priceCurrency": offer.items?.[0]?.price?.currency || "USD",
+        "seller": {
+          "@type": "Organization",
+          "name": organizationName,
+          "url": organizationUrl
+        }
+      }
+    }
+  };
+};
+
+export const NavigationBar = ({ children, className, ...props }: NavigationBarProps) => {
   const { goToPrevPage, canGoBack, canGoForward } = useNavigation();
 
   function onBack() {
@@ -396,9 +450,86 @@ export default function CheckoutPage({ offer, fonts, error, checkoutSession }: C
     sendMessage(new OnInit(checkoutSession));
   }, []);
 
+  const metaTags = generateMetaTags(offer);
+
   return (
     <>
-      <Head title={`Checkout: ${offer.name ?? 'Untitled Offer'}`} />
+      <Head>
+        <title>{metaTags.title}</title>
+        
+        {/* Basic Meta Tags */}
+        <meta name="description" content={metaTags.description} />
+        <meta name="keywords" content="checkout, payment, purchase, secure" />
+        <meta name="author" content={metaTags.organizationName} />
+        <meta name="robots" content="noindex, nofollow" />
+        
+        {/* Favicon */}
+        {metaTags.organizationFavicon && <link rel="icon" href={metaTags.organizationFavicon} />}
+        
+        {/* Open Graph Meta Tags for Social Media */}
+        <meta property="og:title" content={metaTags.title} />
+        <meta property="og:description" content={metaTags.description} />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content={metaTags.currentUrl} />
+        <meta property="og:site_name" content={`${metaTags.organizationName} Checkout`} />
+        
+        {/* Open Graph Image */}
+        {metaTags.imageUrl && (
+          <>
+            <meta property="og:image" content={metaTags.imageUrl} />
+            <meta property="og:image:width" content="1200" />
+            <meta property="og:image:height" content="630" />
+            <meta property="og:image:alt" content={offer.name || 'Offer Image'} />
+          </>
+        )}
+        {metaTags.organizationLogo && (
+          <meta property="og:image" content={metaTags.organizationLogo} />
+        )}
+        
+        {/* Twitter Card Meta Tags */}
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content={metaTags.title} />
+        <meta name="twitter:description" content={metaTags.description} />
+        {metaTags.imageUrl && (
+          <>
+            <meta name="twitter:image" content={metaTags.imageUrl} />
+            <meta name="twitter:image:alt" content={offer.name || 'Offer Image'} />
+          </>
+        )}
+        {metaTags.organizationLogo && (
+          <meta name="twitter:image" content={metaTags.organizationLogo} />
+        )}
+        
+        {/* Security and Privacy Meta Tags */}
+        <meta name="referrer" content="strict-origin-when-cross-origin" />
+        <meta httpEquiv="X-Content-Type-Options" content="nosniff" />
+        <meta httpEquiv="X-Frame-Options" content="DENY" />
+        <meta httpEquiv="X-XSS-Protection" content="1; mode=block" />
+        
+        {/* Viewport and Mobile Meta Tags */}
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
+        <meta name="mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+        <meta name="apple-mobile-web-app-title" content={`${metaTags.organizationName} Checkout`} />
+        
+        {/* Theme and Color Meta Tags */}
+        <meta name="theme-color" content={metaTags.themeColor} />
+        <meta name="msapplication-TileColor" content={metaTags.themeColor} />
+        <meta name="msapplication-config" content="/browserconfig.xml" />
+        
+        {/* Canonical URL */}
+        <link rel="canonical" href={metaTags.currentUrl} />
+        
+        {/* Preconnect to external domains for performance */}
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        
+        {/* Structured Data for SEO */}
+        <script type="application/ld+json">
+          {JSON.stringify(metaTags.structuredData)}
+        </script>
+      </Head>
       <GlobalStateProvider offer={offer} session={checkoutSession} offerItems={offer.items}>
         <NavigationProvider>
           <div className="min-h-screen bg-gray-50 flex flex-col gap-4 justify-center items-center" style={containerStyle}>

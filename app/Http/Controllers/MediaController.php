@@ -12,6 +12,34 @@ use Illuminate\Validation\ValidationException;
 class MediaController extends Controller
 {
     /**
+     * Get existing media for the current organization
+     */
+    public function index(Request $request)
+    {
+        $query = Media::ready()
+            ->forOrganization($request->user()->current_organization_id)
+            ->orderBy('created_at', 'desc');
+
+        // Filter by search query if provided
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('original_filename', 'like', "%{$search}%")
+                  ->orWhere('filename', 'like', "%{$search}%");
+            });
+        }
+
+        // Filter by mime type if provided
+        if ($request->filled('mime_type')) {
+            $query->where('mime_type', 'like', $request->mime_type . '%');
+        }
+
+        $media = $query->paginate(20);
+
+        return MediaResource::collection($media);
+    }
+
+    /**
      * Generate a signed upload URL for direct S3 upload
      */
     public function generateUploadUrl(Request $request)
@@ -45,6 +73,8 @@ class MediaController extends Controller
             'path' => $key,
             'uuid' => $uuid,
             'status' => Media::STATUS_PENDING,
+            'user_id' => $request->user()->id,
+            'organization_id' => $request->user()->current_organization_id,
             'meta' => [
                 'upload_started_at' => now(),
             ],

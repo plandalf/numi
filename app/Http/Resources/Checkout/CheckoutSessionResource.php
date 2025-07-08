@@ -25,6 +25,8 @@ class CheckoutSessionResource extends JsonResource
             // 'exclusive_taxes' => $this->exclusive_taxes,
             'inclusive_taxes' => $this->inclusive_taxes,
             // 'discount' => $this->discount,
+            'enabled_payment_methods' => $this->enabled_payment_methods,
+            'intent_mode' => $this->intent_mode,
         ];
     }
 }

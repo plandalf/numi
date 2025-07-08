@@ -22,7 +22,10 @@ class FrameEmbedMiddleware
         $response->headers->set('X-XSS-Protection', '1; mode=block');
         $response->headers->set('Referrer-Policy', 'strict-origin-when-cross-origin');
         $response->headers->set('Content-Security-Policy', "frame-ancestors *");
-        $response->headers->set('Permissions-Policy', "payment=(self)");
+        
+        // Allow payment permissions for self and Stripe domains
+        // This is required for Stripe Elements to work properly in iframes
+        $response->headers->set('Permissions-Policy', "payment=(self \"https://js.stripe.com\" \"https://api.stripe.com\" \"https://*.stripe.com\")");
 
         return $response;
     }

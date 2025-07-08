@@ -1,35 +1,16 @@
 import { useState, useRef } from 'react';
-import { router } from '@inertiajs/react';
 import { Button } from '@/components/ui/button';
-import { ImageIcon, Loader2, Upload, X } from 'lucide-react';
+import { ImageIcon, Loader2, Upload, X, FolderOpen } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Page } from '@inertiajs/core';
 import axios from 'axios';
 import { Label } from './label';
-
-interface Media {
-    id: number;
-    url: string;
-    filename?: string;
-    mime_type?: string;
-    size?: number;
-}
-
-interface UploadUrlResponse {
-    media_id: number;
-    upload_url: string;
-}
-
-interface PageProps {
-    media: UploadUrlResponse;
-}
+import { MediaPicker } from './media-picker';
 
 interface Props {
     label?: string;
     logo?: React.ReactNode;
     buttonClassName?: string;
     className?: string;
-    value?: number | null;
     onChange?: (media: { id: number, url: string } | null) => void;
     onError?: (error: string) => void;
     maxSize?: number; // in bytes
@@ -43,7 +24,6 @@ export function ImageUpload({
     logo,
     buttonClassName,
     className,
-    value,
     onChange,
     onError,
     maxSize = 10 * 1024 * 1024, // 10MB default
@@ -54,6 +34,7 @@ export function ImageUpload({
     const [isUploading, setIsUploading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [previewUrl, setPreviewUrl] = useState<string | null>(preview || null);
+    const [showMediaPicker, setShowMediaPicker] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -90,11 +71,11 @@ export function ImageUpload({
                 ...data.headers
               },
               withCredentials: false,
-              onUploadProgress: (progressEvent) => {
+              onUploadProgress: (progressEvent: { loaded: number; total?: number }) => {
                 const progress = Math.round(
                   (progressEvent.loaded * 100) / (progressEvent.total || file.size)
                 );
-                console.log('progress: ', progressEvent);
+                console.log('progress: ', progress);
                 // updateProgress(item.id, progress, 'uploading');
               },
             };
@@ -142,6 +123,11 @@ export function ImageUpload({
         }
     };
 
+    const handleMediaSelect = (media: { id: number; url: string }) => {
+        setPreviewUrl(media.url);
+        onChange?.(media);
+    };
+
     return (
         <div className={cn('relative', className)}>
             <input
@@ -186,32 +172,52 @@ export function ImageUpload({
                     </div>
                 )
             ) : (
-                <Button
-                    type="button"
-                    variant="outline"
-                    className={cn(
-                        'group relative aspect-square w-full overflow-hidden rounded-lg border-2 border-dashed',
-                        isUploading && 'cursor-not-allowed opacity-50',
-                        error && 'border-destructive',
-                        buttonClassName
-                    )}
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={disabled || isUploading}
-                >
-                    {isUploading ? (
-                        <Loader2 className="h-6 w-6 animate-spin" />
-                    ) : (
-                        <>
-                            {logo ? logo : <Upload className='h-6 w-6 transition-transform group-hover:scale-110 cursor-pointer' />}
-                            {label && <Label className='text-sm cursor-pointer'>{label}</Label>}
-                        </>
-                    )}
-                </Button>
+                <div className="flex gap-2">
+                    <Button
+                        type="button"
+                        variant="outline"
+                        className={cn(
+                            'group relative aspect-square w-full overflow-hidden rounded-lg border-2 border-dashed flex-1',
+                            isUploading && 'cursor-not-allowed opacity-50',
+                            error && 'border-destructive',
+                            buttonClassName
+                        )}
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={disabled || isUploading}
+                    >
+                        {isUploading ? (
+                            <Loader2 className="h-6 w-6 animate-spin" />
+                        ) : (
+                            <>
+                                {logo ? logo : <Upload className='h-6 w-6 transition-transform group-hover:scale-110 cursor-pointer' />}
+                                {label && <Label className='text-sm cursor-pointer'>{label}</Label>}
+                            </>
+                        )}
+                    </Button>
+                    
+                    <Button
+                        type="button"
+                        variant="outline"
+                        className="aspect-square h-auto"
+                        onClick={() => setShowMediaPicker(true)}
+                        disabled={disabled || isUploading}
+                        title="Browse existing media"
+                    >
+                        <FolderOpen className="h-6 w-6" />
+                    </Button>
+                </div>
             )}
 
             {error && (
                 <p className="mt-2 text-sm text-destructive">{error}</p>
             )}
+
+            <MediaPicker
+                open={showMediaPicker}
+                onClose={() => setShowMediaPicker(false)}
+                onSelect={handleMediaSelect}
+                selectedUrl={previewUrl ?? undefined}
+            />
         </div>
     );
 }

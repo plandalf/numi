@@ -23,6 +23,8 @@ use App\Http\Controllers\FeedbackController;
 use App\Http\Controllers\OfferItemPriceController;
 use App\Http\Controllers\OnboardingController;
 use App\Http\Controllers\ApiKeysController;
+use App\Http\Controllers\OnboardingInfoController;
+use App\Http\Controllers\BlockLibraryController;
 
 Route::redirect('/', '/dashboard')->name('home');
 
@@ -62,6 +64,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
                         Route::get('/', [OrganizationController::class, 'settings'])->name('general');
                         Route::get('/team', [OrganizationController::class, 'team'])->name('team');
                         Route::delete('/team/{user}', [OrganizationController::class, 'removeTeamMember'])->name('team.remove');
+                        Route::get('/seo', [OrganizationController::class, 'seoSettings'])->name('seo');
+                        Route::put('/seo', [OrganizationController::class, 'updateSeoSettings'])->name('seo.update');
 
                         // API Keys routes
                         Route::prefix('api-keys')->name('api-keys.')->group(function () {
@@ -102,9 +106,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::resource('products.prices', PriceController::class);
 
         Route::get('/integrations/{integrationType}/callback', [IntegrationsController::class, 'callback']);
-        Route::post('/integrations/{integrationType}/authorizations', [IntegrationsController::class, 'authorize']);
+        Route::post('/integrations/{integrationType}/authorizations', [IntegrationsController::class, 'authorizeIntegration']);
         Route::get('/integrations/{integration}/products', [IntegrationsController::class, 'products'])->name('integrations.products');
         Route::get('/integrations/{integration}/products/{gatewayProductId}/prices', [IntegrationsController::class, 'prices'])->name('integrations.prices');
+        Route::put('/integrations/{integration}/payment-methods', [IntegrationsController::class, 'updatePaymentMethods'])->name('integrations.payment-methods.update');
         Route::resource('integrations', IntegrationsController::class);
 
         // Onboarding routes
@@ -147,6 +152,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
         // Media Upload Route
         Route::post('media', [MediaController::class, 'store'])->name('media.store');
 
+        // Reusable Blocks routes (replacing block-library routes)
+        Route::prefix('reusable-blocks')->name('reusable-blocks.')->group(function () {
+            Route::get('/', [\App\Http\Controllers\ReusableBlockController::class, 'index'])->name('index');
+            Route::post('/', [\App\Http\Controllers\ReusableBlockController::class, 'store'])->name('store');
+            Route::delete('/{reusableBlock}', [\App\Http\Controllers\ReusableBlockController::class, 'destroy'])->name('destroy');
+            Route::post('/{reusableBlock}/use', [\App\Http\Controllers\ReusableBlockController::class, 'use'])->name('use');
+        });
+
         // Profile Routes
         Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
         Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
@@ -172,6 +185,7 @@ Route::middleware(['auth', 'organization'])->group(function () {
 
 // Media routes
 Route::middleware(['auth'])->group(function () {
+    Route::get('/medias', [MediaController::class, 'index'])->name('medias.index');
     Route::post('/medias/upload-url', [MediaController::class, 'generateUploadUrl'])->name('medias.upload-url');
     Route::put('/medias/{media}/upload', [MediaController::class, 'upload'])->name('medias.upload');
     Route::post('/medias/{media}/finalize', [MediaController::class, 'finalizeUpload'])->name('medias.finalize');

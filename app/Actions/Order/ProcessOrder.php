@@ -38,8 +38,15 @@ class ProcessOrder
     {
         try {
             $integrationClient = $checkoutSession->integrationClient();
+            $order->loadMissing('items.price.integration');
+            $orderItems = $order->items;
 
-            if ($integrationClient instanceof CanSetupIntent && $confirmationToken) {
+            // Determine if we need setup intent (for subscriptions) or direct payment intent
+            $hasSubscriptionItems = $this->hasSubscriptionItems($orderItems);
+            $hasOnlyOneTimeItems = $this->hasOnlyOneTimeItems($orderItems);
+
+            // Handle setup intent flow for subscriptions
+            if ($hasSubscriptionItems && $integrationClient instanceof CanSetupIntent && $confirmationToken) {
                 $setupIntent = $integrationClient->createSetupIntent($order, $confirmationToken);
 
                 // Check if the setup intent was successful
@@ -128,11 +135,23 @@ class ProcessOrder
                 // Handle one-time payment items
                 elseif ($type === ChargeType::ONE_TIME->value) {
                     /** @var Stripe $integrationClient */
-                    $paymentIntent = $integrationClient->createPaymentIntent([
-                        'order' => $order,
-                        'items' => $items->toArray(),
-                        'discounts' => $discounts,
-                    ]);
+                    
+                    // If we have only one-time items and a confirmation token, use direct payment intent
+                    if ($hasOnlyOneTimeItems && $confirmationToken) {
+                        $paymentIntent = $integrationClient->createDirectPaymentIntent([
+                            'order' => $order,
+                            'items' => $items->toArray(),
+                            'discounts' => $discounts,
+                            'confirmation_token' => $confirmationToken,
+                        ]);
+                    } else {
+                        // Use existing flow (requires saved payment method from setup intent)
+                        $paymentIntent = $integrationClient->createPaymentIntent([
+                            'order' => $order,
+                            'items' => $items->toArray(),
+                            'discounts' => $discounts,
+                        ]);
+                    }
 
                     // Validate the one-time payment
                     $validationResult = $this->paymentValidationService->validateOneTimePayment($paymentIntent);
@@ -213,6 +232,31 @@ class ProcessOrder
         }
 
         return null;
+    }
+
+    /**
+     * Check if order contains subscription items (recurring charges)
+     */
+    private function hasSubscriptionItems(Collection $orderItems): bool
+    {
+        return $orderItems->some(function (OrderItem $item) {
+            return in_array($item->price->type->value, [
+                ChargeType::GRADUATED->value,
+                ChargeType::VOLUME->value,
+                ChargeType::PACKAGE->value,
+                ChargeType::RECURRING->value
+            ]) && !empty($item->price->renew_interval);
+        });
+    }
+
+    /**
+     * Check if order contains only one-time payment items
+     */
+    private function hasOnlyOneTimeItems(Collection $orderItems): bool
+    {
+        return $orderItems->every(function (OrderItem $item) {
+            return $item->price->type->value === ChargeType::ONE_TIME->value;
+        });
     }
 
     /**

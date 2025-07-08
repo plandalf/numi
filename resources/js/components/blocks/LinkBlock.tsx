@@ -1,4 +1,4 @@
-import Numi, { Appearance, BorderValue, FontValue, IconValue, Style } from '@/contexts/Numi';
+import Numi, { Appearance, BorderValue, IconValue, Style } from '@/contexts/Numi';
 import cx from "classnames";
 import { cn } from "@/lib/utils";
 import { useMemo } from "react";
@@ -50,10 +50,17 @@ function LinkBlockComponent() {
     },
   });
 
-  const [openInNewTab] = Numi.useStateBoolean({
-    label: 'Open in new tab',
-    name: 'openInNewTab',
-    defaultValue: false,
+  const [openBehavior] = Numi.useStateEnumeration({
+    name: 'openBehavior',
+    initialValue: 'same',
+    options: ['same', 'new', 'popup'],
+    labels: {
+      same: 'Open in this window',
+      new: 'Open in new tab',
+      popup: 'Open in popup window',
+    } as Record<string, string>,
+    inspector: 'select',
+    label: 'Open Behavior',
   });
 
   const style = Numi.useStyle([
@@ -96,7 +103,6 @@ function LinkBlockComponent() {
 
   const linkFont = style.linkFont;
 
-
   const border = style?.border as BorderValue;
   const borderRadius = style?.borderRadius;
   const shadow = style?.shadow as string;
@@ -106,7 +112,7 @@ function LinkBlockComponent() {
       style?.linkFont?.color,
       theme,
       linkStyle === 'button' ? 'primary_contrast_color' : undefined
-    ),
+    ) as string,
     fontFamily: linkFont?.font,
     fontWeight: linkFont?.weight,
     fontSize: linkFont?.size,
@@ -118,7 +124,7 @@ function LinkBlockComponent() {
   }), [style, linkFont, border, borderRadius, shadow, appearance]);
 
   const linkStyles = useMemo(() => ({
-    borderColor: resolveThemeValue(style.borderColor, theme),
+    borderColor: resolveThemeValue(style.borderColor, theme) as string,
     borderWidth: border?.width,
     borderStyle: border?.style,
     borderRadius : borderRadius ?? '3px',
@@ -127,7 +133,7 @@ function LinkBlockComponent() {
       style.backgroundColor,
       theme,
       linkStyle === 'button' ? 'primary_color' : undefined
-    ),
+    ) as string,
     padding: !appearance.padding && linkStyle === 'button' ? resolveThemeValue(appearance.padding, theme, 'padding') : appearance.padding,
     gap: appearance.spacing,
   }), [appearance]);
@@ -165,8 +171,36 @@ function LinkBlockComponent() {
       style?.iconColor,
       theme,
       linkStyle === 'button' ? 'primary_contrast_color' : undefined
-    ),
+    ) as string,
   }), [style]);
+
+  const handleClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    if (isEditor) {
+      e.preventDefault();
+      return;
+    }
+
+    if (openBehavior === 'popup') {
+      e.preventDefault();
+      window.open(
+        url,
+        '_blank',
+        'width=800,height=600,scrollbars=yes,resizable=yes,toolbar=no,menubar=no,location=no'
+      );
+    }
+  };
+
+  const getTarget = () => {
+    switch (openBehavior) {
+      case 'new':
+        return '_blank';
+      case 'popup':
+        return '_self'; // Handled by click event
+      case 'same':
+      default:
+        return '_self';
+    }
+  };
 
   if (style.hidden) {
     return null;
@@ -178,13 +212,8 @@ function LinkBlockComponent() {
         href={url}
         className={linkClasses}
         style={linkStyles}
-        onClick={(e) => {
-          if (isEditor) {
-            e.preventDefault();
-            return;
-          }
-        }}
-        target={openInNewTab ? '_blank' : '_self'}
+        onClick={handleClick}
+        target={getTarget()}
       >
         <IconRenderer icon={icon} style={iconStyles} defaultIcon={''}/>
         <MarkdownText text={text} theme={theme} style={markdownStyles} />
