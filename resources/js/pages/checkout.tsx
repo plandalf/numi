@@ -27,7 +27,7 @@ import { getLayoutJSONConfig } from '@/config/layouts';
 const generateMetaTags = (offer: OfferConfiguration) => {
   const title = offer.name || 'Complete Your Purchase';
   const description = offer.description || `Secure checkout for ${offer.name}`;
-  const imageUrl = offer.image?.url;
+  const imageUrl = offer.product_image?.url;
   const themeColor = offer.theme?.primary_color || offer.organization?.primary_color || '#3B82F6';
   const currentUrl = typeof window !== 'undefined' ? window.location.href : '';
   
@@ -66,8 +66,8 @@ const generateMetaTags = (offer: OfferConfiguration) => {
         "@type": "Offer",
         "name": offer.name,
         "description": offer.description,
-        "price": offer.items?.[0]?.price?.amount,
-        "priceCurrency": offer.items?.[0]?.price?.currency || "USD",
+        "price": offer.items?.[0]?.prices?.[0]?.amount,
+        "priceCurrency": offer.items?.[0]?.prices?.[0]?.currency || "USD",
         "seller": {
           "@type": "Organization",
           "name": organizationName,
@@ -474,31 +474,41 @@ export default function CheckoutPage({ offer, fonts, error, checkoutSession }: C
         <meta property="og:site_name" content={`${metaTags.organizationName} Checkout`} />
         
         {/* Open Graph Image */}
-        {metaTags.imageUrl && (
+        {offer.social_image?.url ? (
+          <>
+            <meta property="og:image" content={offer.social_image.url} />
+            <meta property="og:image:width" content="1200" />
+            <meta property="og:image:height" content="630" />
+            <meta property="og:image:alt" content={offer.name || 'Offer Image'} />
+          </>
+        ) : metaTags.imageUrl ? (
           <>
             <meta property="og:image" content={metaTags.imageUrl} />
             <meta property="og:image:width" content="1200" />
             <meta property="og:image:height" content="630" />
             <meta property="og:image:alt" content={offer.name || 'Offer Image'} />
           </>
-        )}
-        {metaTags.organizationLogo && (
+        ) : metaTags.organizationLogo ? (
           <meta property="og:image" content={metaTags.organizationLogo} />
-        )}
+        ) : null}
         
         {/* Twitter Card Meta Tags */}
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content={metaTags.title} />
         <meta name="twitter:description" content={metaTags.description} />
-        {metaTags.imageUrl && (
+        {offer.social_image?.url ? (
+          <>
+            <meta name="twitter:image" content={offer.social_image.url} />
+            <meta name="twitter:image:alt" content={offer.name || 'Offer Image'} />
+          </>
+        ) : metaTags.imageUrl ? (
           <>
             <meta name="twitter:image" content={metaTags.imageUrl} />
             <meta name="twitter:image:alt" content={offer.name || 'Offer Image'} />
           </>
-        )}
-        {metaTags.organizationLogo && (
+        ) : metaTags.organizationLogo ? (
           <meta name="twitter:image" content={metaTags.organizationLogo} />
-        )}
+        ) : null}
         
         {/* Security and Privacy Meta Tags */}
         <meta name="referrer" content="strict-origin-when-cross-origin" />

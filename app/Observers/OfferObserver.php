@@ -4,6 +4,7 @@ namespace App\Observers;
 
 use App\Enums\OnboardingStep;
 use App\Jobs\TakeOfferScreenshotJob;
+use App\Jobs\TakeSocialImageScreenshotJob;
 use App\Models\Store\Offer;
 
 class OfferObserver
@@ -28,6 +29,17 @@ class OfferObserver
         logger()->info(logname(), ['offer' => $offer->id]);
 
         dispatch(new TakeOfferScreenshotJob($offer));
+        
+        // Check if name or theme changed to trigger social image screenshot
+        if ($offer->wasChanged(['name', 'theme_id'])) {
+            logger()->info('social-image-screenshot: name-or-theme-changed', [
+                'offer_id' => $offer->id,
+                'name_changed' => $offer->wasChanged('name'),
+                'theme_changed' => $offer->wasChanged('theme_id'),
+            ]);
+            
+            dispatch(new TakeSocialImageScreenshotJob($offer));
+        }
     }
 
     /**
