@@ -51,6 +51,29 @@ class OfferResource extends JsonResource
             'public_url' => $this->whenLoaded('organization', function () {
                 return $this->public_url;
             }),
+            'organization' => $this->whenLoaded('organization', function () {
+                return [
+                    'id' => $this->organization->id,
+                    'name' => $this->organization->name,
+                    'description' => $this->organization->description,
+                    'website_url' => $this->organization->website_url,
+                    'logo_media_id' => $this->organization->logo_media_id,
+                    'logo_media' => $this->organization->logoMedia ? [
+                        'id' => $this->organization->logo_media_id,
+                        'url' => $this->organization->logoMedia->getSignedUrl(),
+                        'signed_url' => $this->organization->logoMedia->getSignedUrl(),
+                    ] : null,
+                    'favicon_media_id' => $this->organization->favicon_media_id,
+                    'favicon_media' => $this->organization->faviconMedia ? [
+                        'id' => $this->organization->favicon_media_id,
+                        'url' => $this->organization->faviconMedia->getSignedUrl(),
+                        'signed_url' => $this->organization->faviconMedia->getSignedUrl(),
+                    ] : null,
+                    'primary_color' => $this->organization->primary_color,
+                    'social_media' => $this->organization->social_media,
+                    'subdomain' => $this->organization->subdomain,
+                ];
+            }),
             'items' => OfferItemResource::collection($this->whenLoaded('offerItems')),
             'theme' => new ThemeResource($this?->theme ?? new Theme),
             'hosted_page' => $this->whenLoaded('hostedPage', function () {

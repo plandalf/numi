@@ -253,7 +253,7 @@ function EditApp({ publishableKey }: { publishableKey: string | undefined }) {
     const { type, id } = parseDndId(String(event.active.id));
     if (type && id) {
       setActiveItem({ type, id });
-      if (type === 'template' || type === 'library') {
+      if (type === 'template' || type === 'reusable') {
         setPrototype(null); // Clear prototype when a new template or library drag starts
       }
     } else {
@@ -269,7 +269,7 @@ function EditApp({ publishableKey }: { publishableKey: string | undefined }) {
 
     if (!activeId || !activeType) return;
 
-    if (activeType === 'template' || activeType === 'library') {
+    if (activeType === 'template' || activeType === 'reusable') {
       if (dragOverRafRef.current) {
         cancelAnimationFrame(dragOverRafRef.current);
       }
@@ -373,8 +373,8 @@ function EditApp({ publishableKey }: { publishableKey: string | undefined }) {
       return;
     }
 
-    if (activeItem.type !== 'template' && activeItem.type !== 'library' && !event.over) {
-      if ((activeItem.type === 'template' || activeItem.type === 'library') && prototype) {
+    if (activeItem.type !== 'template' && activeItem.type !== 'reusable' && !event.over) {
+      if ((activeItem.type === 'template' || activeItem.type === 'reusable') && prototype) {
         // If template drag ended nowhere, remove prototype (using callback form of setSections)
         setSections(currentSections => {
           if (!prototype || !currentSections[prototype.sectionId]) return currentSections;
@@ -467,18 +467,18 @@ function EditApp({ publishableKey }: { publishableKey: string | undefined }) {
       return;
     }
 
-    // --- LIBRARY DROP (SAVED BLOCK) ---
-    if (activeTypeCalculated === 'library') {
+    // --- REUSABLE BLOCK DROP (SAVED BLOCK) ---
+    if (activeTypeCalculated === 'reusable') {
       if (prototype && prototype.sectionId) {
         // Fetch the saved block configuration and create new block
-        const fetchAndCreateLibraryBlock = async () => {
+        const fetchAndCreateReusableBlock = async () => {
           try {
-            const response = await axios.post(`/block-library/${activeBlockId}/use`);
-            const libraryBlock = response.data.configuration;
+            const response = await axios.post(`/reusable-blocks/${activeBlockId}/use`);
+            const reusableBlock = response.data.configuration;
             
             const newBlockToAdd: Block = {
-              ...libraryBlock,
-              id: generateIdForBlockType(libraryBlock.type),
+              ...reusableBlock,
+              id: generateIdForBlockType(reusableBlock.type),
             };
 
             // Use setData callback form to ensure we're working with the latest state
@@ -520,7 +520,7 @@ function EditApp({ publishableKey }: { publishableKey: string | undefined }) {
             });
             setSelectedBlockId(newBlockToAdd.id);
           } catch (error) {
-            console.error('Failed to load library block:', error);
+            console.error('Failed to load reusable block:', error);
             // Clean up prototype on error
             setSections(currentSections => {
               if (!prototype || !currentSections[prototype.sectionId]) return currentSections;
@@ -537,7 +537,7 @@ function EditApp({ publishableKey }: { publishableKey: string | undefined }) {
           }
         };
 
-        fetchAndCreateLibraryBlock();
+        fetchAndCreateReusableBlock();
       } else if (prototype) {
         // Prototype exists but sectionId is invalid. Clean up.
         setSections(currentSections => {
@@ -768,7 +768,7 @@ function DragOverlayPreview({ item }: { item: ActiveDndItem | null }) {
     )
   }
 
-  if (item.type === 'library') {
+  if (item.type === 'reusable') {
     return (
       <div
         className={cn(
@@ -780,7 +780,7 @@ function DragOverlayPreview({ item }: { item: ActiveDndItem | null }) {
             <BookmarkIcon className="w-6 h-6" />
           </span>
         </div>
-        <span className="text-sm text-black font-medium">Library Block</span>
+        <span className="text-sm text-black font-medium">Reusable Block</span>
       </div>
     )
   }

@@ -192,6 +192,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
                         Route::get('/', [OrganizationController::class, 'settings'])->name('general');
                         Route::get('/team', [OrganizationController::class, 'team'])->name('team');
                         Route::delete('/team/{user}', [OrganizationController::class, 'removeTeamMember'])->name('team.remove');
+                        Route::get('/seo', [OrganizationController::class, 'seoSettings'])->name('seo');
+                        Route::put('/seo', [OrganizationController::class, 'updateSeoSettings'])->name('seo.update');
 
                         Route::prefix('billing')->name('billing.')->group(function () {
                             Route::get('/', [BillingCheckoutController::class, 'billing'])->name('index');
@@ -271,17 +273,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
         // Media Upload Route
         Route::post('media', [MediaController::class, 'store'])->name('media.store');
 
-        // Block Library routes
-        Route::prefix('block-library')->name('block-library.')->group(function () {
-            Route::get('/', [BlockLibraryController::class, 'index'])->name('index');
-            Route::post('/', [BlockLibraryController::class, 'store'])->name('store');
-            Route::get('/categories', [BlockLibraryController::class, 'categories'])->name('categories');
-            Route::get('/block-types', [BlockLibraryController::class, 'blockTypes'])->name('block-types');
-            Route::get('/{blockLibrary}', [BlockLibraryController::class, 'show'])->name('show');
-            Route::put('/{blockLibrary}', [BlockLibraryController::class, 'update'])->name('update');
-            Route::delete('/{blockLibrary}', [BlockLibraryController::class, 'destroy'])->name('destroy');
-            Route::post('/{blockLibrary}/duplicate', [BlockLibraryController::class, 'duplicate'])->name('duplicate');
-            Route::post('/{blockLibrary}/use', [BlockLibraryController::class, 'use'])->name('use');
+        // Reusable Blocks routes (replacing block-library routes)
+        Route::prefix('reusable-blocks')->name('reusable-blocks.')->group(function () {
+            Route::get('/', [\App\Http\Controllers\ReusableBlockController::class, 'index'])->name('index');
+            Route::post('/', [\App\Http\Controllers\ReusableBlockController::class, 'store'])->name('store');
+            Route::delete('/{reusableBlock}', [\App\Http\Controllers\ReusableBlockController::class, 'destroy'])->name('destroy');
+            Route::post('/{reusableBlock}/use', [\App\Http\Controllers\ReusableBlockController::class, 'use'])->name('use');
         });
 
         // Profile Routes

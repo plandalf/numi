@@ -6,6 +6,7 @@ use App\Enums\OnboardingStep;
 use App\Models\Store\Offer;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
@@ -26,6 +27,12 @@ class Organization extends Model
 
     protected $fillable = [
         'name',
+        'description',
+        'website_url',
+        'logo_media_id',
+        'favicon_media_id',
+        'primary_color',
+        'social_media',
         'ulid',
         'default_currency',
         'join_token',
@@ -49,6 +56,7 @@ class Organization extends Model
 
     protected $casts = [
         'trial_ends_at' => 'datetime',
+        'social_media' => 'array',
     ];
 
     public const AVAILABLE_CURRENCIES = [
@@ -96,6 +104,16 @@ class Organization extends Model
     public function hostedPage(): HasOne
     {
         return $this->hasOne(HostedPage::class);
+    }
+
+    public function logoMedia(): BelongsTo
+    {
+        return $this->belongsTo(Media::class, 'logo_media_id');
+    }
+
+    public function faviconMedia(): BelongsTo
+    {
+        return $this->belongsTo(Media::class, 'favicon_media_id');
     }
 
     public function getInviteLinkAttribute(): string

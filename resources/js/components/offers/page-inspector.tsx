@@ -22,15 +22,13 @@ import { startCase } from 'lodash';
 import { NumberEditor } from '../editor/number-editor';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
-import { Textarea } from '../ui/textarea';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { BookmarkIcon } from 'lucide-react';
 import axios from '@/lib/axios';
 
 interface SaveBlockDialogProps {
   block: Block;
-  onSave: (data: { name: string; description?: string; category?: string; tags?: string[] }) => Promise<void>;
+  onSave: (data: { name: string }) => Promise<void>;
   trigger: React.ReactNode;
 }
 
@@ -38,18 +36,9 @@ const SaveBlockDialog: React.FC<SaveBlockDialogProps> = ({ block, onSave, trigge
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [name, setName] = useState('');
-  const [description, setDescription] = useState('');
-  const [category, setCategory] = useState('');
-  const [tags, setTags] = useState('');
-  const [categories, setCategories] = useState<string[]>([]);
 
   useEffect(() => {
     if (open) {
-      // Load existing categories when dialog opens
-      axios.get('/block-library/categories')
-        .then(response => setCategories(response.data.categories || []))
-        .catch(console.error);
-      
       // Set default name based on block type
       const blockTypeName = block.type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
       setName(`${blockTypeName} Block`);
@@ -63,15 +52,9 @@ const SaveBlockDialog: React.FC<SaveBlockDialogProps> = ({ block, onSave, trigge
     try {
       await onSave({
         name: name.trim(),
-        description: description.trim() || undefined,
-        category: category || undefined,
-        tags: tags.split(',').map(t => t.trim()).filter(t => t.length > 0),
       });
       setOpen(false);
       setName('');
-      setDescription('');
-      setCategory('');
-      setTags('');
     } catch (error) {
       console.error('Failed to save block:', error);
     } finally {
@@ -86,9 +69,9 @@ const SaveBlockDialog: React.FC<SaveBlockDialogProps> = ({ block, onSave, trigge
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Save Block to Library</DialogTitle>
+          <DialogTitle>Save as Reusable Block</DialogTitle>
           <DialogDescription>
-            Save this configured block to your library for reuse across projects.
+            Save this configured block for reuse across your offers.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
@@ -102,54 +85,6 @@ const SaveBlockDialog: React.FC<SaveBlockDialogProps> = ({ block, onSave, trigge
               className="mt-1"
             />
           </div>
-          
-          <div>
-            <Label htmlFor="block-description">Description</Label>
-            <Textarea
-              id="block-description"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Describe what this block does"
-              rows={3}
-              className="mt-1"
-            />
-          </div>
-
-          <div>
-            <Label htmlFor="block-category">Category</Label>
-            <Select value={category} onValueChange={setCategory}>
-              <SelectTrigger className="mt-1">
-                <SelectValue placeholder="Select or create category" />
-              </SelectTrigger>
-              <SelectContent>
-                {categories.map((cat) => (
-                  <SelectItem key={cat} value={cat}>
-                    {cat}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Input
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-              placeholder="Or enter new category"
-              className="mt-2"
-            />
-          </div>
-
-          <div>
-            <Label htmlFor="block-tags">Tags</Label>
-            <Input
-              id="block-tags"
-              value={tags}
-              onChange={(e) => setTags(e.target.value)}
-              placeholder="tag1, tag2, tag3"
-              className="mt-1"
-            />
-            <p className="text-xs text-gray-500 mt-1">
-              Separate tags with commas
-            </p>
-          </div>
 
           <div className="flex justify-end gap-2 pt-4">
             <Button variant="outline" onClick={() => setOpen(false)}>
@@ -159,7 +94,7 @@ const SaveBlockDialog: React.FC<SaveBlockDialogProps> = ({ block, onSave, trigge
               onClick={handleSave} 
               disabled={!name.trim() || saving}
             >
-              {saving ? 'Saving...' : 'Save to Library'}
+              {saving ? 'Saving...' : 'Save as Reusable Block'}
             </Button>
           </div>
         </div>
@@ -411,15 +346,12 @@ export const Inspector = ({
     { type: 'conditions', label: 'Conditions' },
   ];
 
-  const handleSaveToLibrary = async (data: { name: string; description?: string; category?: string; tags?: string[] }) => {
+  const handleSaveToLibrary = async (data: { name: string }) => {
     try {
-      await axios.post('/block-library', {
+      await axios.post('/reusable-blocks', {
         name: data.name,
-        description: data.description,
         block_type: block.type,
-        category: data.category,
         configuration: block,
-        tags: data.tags,
       });
       // You could add a success notification here
     } catch (error) {

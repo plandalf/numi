@@ -21,7 +21,7 @@ import {
 } from 'lucide-react';
 import { useDraggable } from '@dnd-kit/core';
 import SearchBar from './search-bar';
-import { BlockLibraryGrid } from './block-library-grid';
+import { ReusableBlocksGrid } from './reusable-blocks-grid';
 import { Button } from '@/components/ui/button';
 import cx from 'classnames';
 
@@ -163,7 +163,7 @@ const ElementCategory = ({ title, children }: ElementCategoryProps) => {
 
 export const PageElements: React.FC = () => {
   const [elementSearchQuery, setElementSearchQuery] = useState('');
-  const [activeTab, setActiveTab] = useState<'templates' | 'library'>('templates');
+  const [activeTab, setActiveTab] = useState<'templates' | 'reusable'>('templates');
 
   // Filter elements based on search query
   const filteredBaseElements = baseElements.filter(element =>
@@ -256,19 +256,19 @@ export const PageElements: React.FC = () => {
           Templates
         </Button>
         <Button
-          variant={activeTab === 'library' ? 'default' : 'ghost'}
+          variant={activeTab === 'reusable' ? 'default' : 'ghost'}
           size="sm"
-          onClick={() => setActiveTab('library')}
+          onClick={() => setActiveTab('reusable')}
           className="rounded-b-none h-8 px-3"
         >
           <BookmarkIcon className="w-4 h-4 mr-2" />
-          Library
+          Reusable Blocks
         </Button>
       </div>
 
       {/* Tab Content */}
       <div className="flex-1 overflow-hidden">
-        {activeTab === 'templates' ? renderTemplates() : <BlockLibraryGrid />}
+        {activeTab === 'templates' ? renderTemplates() : <ReusableBlocksGrid />}
       </div>
     </div>
   );

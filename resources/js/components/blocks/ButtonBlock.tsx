@@ -52,7 +52,9 @@ function ButtonBlockComponent({ context }: { context: BlockContextType }) {
       }
     }, {height: '16px'}),
     Style.backgroundColor('iconColor', 'Icon Color', {}, theme?.primary_contrast_color),
-    Style.backgroundColor('backgroundColor', 'Button Color', {}, theme?.primary_color),
+    Style.backgroundColor('backgroundColor', 'Button Color', {
+      supportsGradients: true,
+    }, theme?.primary_color),
     Style.font('font', 'Button Font & Color',
       {
         config: {
@@ -84,8 +86,6 @@ function ButtonBlockComponent({ context }: { context: BlockContextType }) {
   } as FontValue;
 
   const border = style?.border as BorderValue;
-  const borderRadius = resolveThemeValue(style?.borderRadius, theme, 'border_radius');
-  const shadow = resolveThemeValue(style?.shadow, theme, 'shadow') as string;
 
   const { executeCallbacks } = Numi.useEventCallback({
     name: 'click',
@@ -105,37 +105,53 @@ function ButtonBlockComponent({ context }: { context: BlockContextType }) {
     margin: appearance.margin,
   }), [appearance, theme]);
 
+  const resolvedBackgroundColor = resolveThemeValue(style.backgroundColor, theme, 'primary_color') as string;
+  const resolvedColor = resolveThemeValue(font.color, theme, 'primary_contrast_color') as string;
+  const resolvedBorderColor = resolveThemeValue(style.borderColor, theme) as string;
+  const resolvedBorderRadius = resolveThemeValue(style?.borderRadius, theme, 'border_radius') as string;
+  const resolvedShadow = resolveThemeValue(style?.shadow, theme, 'shadow') as string;
+  
+  // Check if the background is a gradient
+  const isGradient = typeof resolvedBackgroundColor === 'string' && 
+    (resolvedBackgroundColor.includes('linear-gradient') || resolvedBackgroundColor.includes('radial-gradient'));
+
   const buttonStyles = useMemo(() => ({
-    backgroundColor: resolveThemeValue(style.backgroundColor, theme, 'primary_color'),
-    color: resolveThemeValue(font.color, theme, 'primary_contrast_color'),
+    // Use 'background' for gradients, 'backgroundColor' for solid colors
+    ...(isGradient ? { background: resolvedBackgroundColor } : { backgroundColor: resolvedBackgroundColor }),
+    color: resolvedColor,
     fontFamily: font?.font,
     fontWeight: font?.weight,
     fontSize: font?.size,
     lineHeight: font?.lineHeight,
     letterSpacing: font?.letterSpacing,
-    borderColor: resolveThemeValue(style.borderColor, theme),
+    borderColor: resolvedBorderColor,
     borderWidth: border?.width,
     borderStyle: border?.style,
-    borderRadius : borderRadius,
-    boxShadow: shadow,
+    borderRadius: resolvedBorderRadius,
+    boxShadow: resolvedShadow,
     padding: appearance.padding,
     gap: appearance.spacing,
-  }), [style, font, border, borderRadius, shadow, appearance]);
+  }), [resolvedBackgroundColor, resolvedColor, resolvedBorderColor, resolvedBorderRadius, resolvedShadow, font, border, appearance, isGradient]);
 
   const buttonClasses = useMemo(() => cx({
     "flex flex-row gap-x-2 items-center text-center": true,
-    "border border-gray-300 rounded-md p-2": true,
-    "hover:cursor-pointer hover:brightness-90 active:brightness-85": !isSubmitting,
+    // Remove border class for gradients to avoid interference
+    "border border-gray-300 rounded-md p-2": !isGradient,
+    "rounded-md p-2": isGradient, // Keep padding and border radius for gradients
+    "hover:cursor-pointer": !isSubmitting,
+    // Use different hover effects for gradients vs solid colors
+    "hover:brightness-90 active:brightness-85": !isSubmitting && !isGradient,
+    "hover:opacity-90 active:opacity-80": !isSubmitting && isGradient,
     "w-full justify-center": style.alignment === 'expand',
     "w-fit": style.alignment !== 'expand',
     "opacity-50 cursor-not-allowed": isSubmitting,
     "border-none": style.border === 'none',
-    "border-[1px]": style.border === 'xs',
-    "border-[4px]": style.border === 'sm',
-    "border-[8px]": style.border === 'md',
-    "border-[12px]": style.border === 'lg',
-    "border-[16px]": style.border === 'xl',
-  }), [style.alignment, style.fontWeight, style.border, isSubmitting]);
+    "border-[1px]": style.border === 'xs' && !isGradient,
+    "border-[4px]": style.border === 'sm' && !isGradient,
+    "border-[8px]": style.border === 'md' && !isGradient,
+    "border-[12px]": style.border === 'lg' && !isGradient,
+    "border-[16px]": style.border === 'xl' && !isGradient,
+  }), [style.alignment, style.fontWeight, style.border, isSubmitting, isGradient]);
 
   const containerClasses = useMemo(() => cn("space-y-2 flex flex-col", {
     "items-start": style.alignment === 'left',
@@ -146,7 +162,7 @@ function ButtonBlockComponent({ context }: { context: BlockContextType }) {
 
   const iconStyles = useMemo(() => ({
     size: style?.iconSize?.height,
-    color: resolveThemeValue(style.iconColor, theme, 'primary_contrast_color'),
+    color: resolveThemeValue(style.iconColor, theme, 'primary_contrast_color') as string,
   }), [style]);
 
   if (style.hidden) {

@@ -3,6 +3,22 @@ import { type LucideIcon } from 'lucide-react';
 export interface Organization {
     id: number;
     name: string;
+    description?: string | null;
+    website_url?: string | null;
+    logo_media_id?: number | null;
+    logo_media?: {
+        id: number;
+        url: string;
+        signed_url: string;
+    } | null;
+    favicon_media_id?: number | null;
+    favicon_media?: {
+        id: number;
+        url: string;
+        signed_url: string;
+    } | null;
+    primary_color?: string | null;
+    social_media?: Record<string, string> | null;
     ulid: string;
     invite_link: string;
     join_token: string;
@@ -15,9 +31,9 @@ export interface Organization {
     })[];
     on_trial: boolean;
     trial_days_left: string;
-  checkout_success_url?: string;
-  checkout_cancel_url?: string;
-  subscriptions?: Subscription[];
+    checkout_success_url?: string;
+    checkout_cancel_url?: string;
+    subscriptions?: Subscription[];
 }
 
 export interface Subscription {

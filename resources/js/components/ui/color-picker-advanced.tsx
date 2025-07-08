@@ -9,11 +9,79 @@ import SearchBar from '../offers/search-bar';
 import { Theme } from '@/types/theme';
 import { getMatchedThemeValue } from '@/lib/theme';
 import { useDebounce } from '@/hooks/use-debounce';
+import { GradientPicker, GradientValue } from './gradient-picker';
+
+// Function to parse gradient CSS string into GradientValue object
+const parseGradientCSS = (css: string): GradientValue | null => {
+  if (!css.includes('gradient')) return null;
+  
+  try {
+    if (css.includes('linear-gradient')) {
+      const match = css.match(/linear-gradient\(([^)]+)\)/);
+      if (match) {
+        const parts = match[1].split(',');
+        const direction = parts[0].trim();
+        const stops = parts.slice(1).map((stop, index) => {
+          const stopMatch = stop.trim().match(/(#[0-9A-Fa-f]{6}|#[0-9A-Fa-f]{8})\s*(\d+)%/);
+          if (stopMatch) {
+            return {
+              id: `stop-${index}`,
+              color: stopMatch[1],
+              position: parseInt(stopMatch[2])
+            };
+          }
+          return {
+            id: `stop-${index}`,
+            color: '#000000',
+            position: index * 50
+          };
+        });
+        
+        return {
+          type: 'linear',
+          direction,
+          stops
+        };
+      }
+    } else if (css.includes('radial-gradient')) {
+      const match = css.match(/radial-gradient\([^,]+,\s*([^)]+)\)/);
+      if (match) {
+        const parts = match[1].split(',');
+        const stops = parts.map((stop, index) => {
+          const stopMatch = stop.trim().match(/(#[0-9A-Fa-f]{6}|#[0-9A-Fa-f]{8})\s*(\d+)%/);
+          if (stopMatch) {
+            return {
+              id: `stop-${index}`,
+              color: stopMatch[1],
+              position: parseInt(stopMatch[2])
+            };
+          }
+          return {
+            id: `stop-${index}`,
+            color: '#000000',
+            position: index * 50
+          };
+        });
+        
+        return {
+          type: 'radial',
+          center: 'center',
+          stops
+        };
+      }
+    }
+  } catch (error) {
+    console.error('Error parsing gradient CSS:', error);
+  }
+  
+  return null;
+};
 
 interface AdvancedColorPickerProps extends Omit<ColorPickerProps, 'type'> {
   trigger?: React.ReactNode;
   themeColors?: Record<string, { value: string, label: string }>;
   asChild?: boolean;
+  supportsGradients?: boolean; // New prop to enable gradient support
 }
 
 export const AdvancedColorPicker: React.FC<AdvancedColorPickerProps> = ({
@@ -22,7 +90,8 @@ export const AdvancedColorPicker: React.FC<AdvancedColorPickerProps> = ({
   onChange,
   themeColors = [],
   className,
-  asChild
+  asChild,
+  supportsGradients = false
 }) => {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
@@ -30,15 +99,20 @@ export const AdvancedColorPicker: React.FC<AdvancedColorPickerProps> = ({
   const [opacityInput, setOpacityInput] = useState('');
   const [localColor, setLocalColor] = useState(typeof initialValue === 'string' ? initialValue : '#000000');
 
+  // Check if the value is a gradient
+  const isGradient = typeof initialValue === 'string' && 
+    (initialValue.includes('linear-gradient') || initialValue.includes('radial-gradient'));
+  
   const matchedThemeValue = getMatchedThemeValue(initialValue);
   const value = useMemo(() => {
-    if (matchedThemeValue) {
+    if (matchedThemeValue && !isGradient) {
       return themeColors?.[matchedThemeValue]?.value ?? initialValue;
     }
     return initialValue;
-  }, [initialValue, matchedThemeValue]);
+  }, [initialValue, matchedThemeValue, themeColors, isGradient]);
 
-  const { rgb, alpha } = parseHexAlpha(value);
+  // Only parse hex alpha for solid colors, not gradients
+  const { rgb, alpha } = isGradient ? { rgb: '#000000', alpha: 255 } : parseHexAlpha(value);
   const percent = Math.round((alpha / 255) * 100);
 
   useEffect(() => {
@@ -91,12 +165,11 @@ export const AdvancedColorPicker: React.FC<AdvancedColorPickerProps> = ({
 
   const tabComponent = (
     <Tabs defaultValue={defaultTabValue} className="w-full">
-      {hasThemeColors && (
-        <TabsList className="flex w-full border-b">
-          <TabsTrigger value="custom" className="flex-1">Custom</TabsTrigger>
-          <TabsTrigger value="theme" className="flex-1">Theme</TabsTrigger>
-        </TabsList>
-      )}
+      <TabsList className="flex w-full border-b">
+        <TabsTrigger value="custom" className="flex-1">Custom</TabsTrigger>
+        {hasThemeColors && <TabsTrigger value="theme" className="flex-1">Theme</TabsTrigger>}
+        {supportsGradients && <TabsTrigger value="gradient" className="flex-1">Gradient</TabsTrigger>}
+      </TabsList>
       <TabsContent value="custom" className="numi-color-picker space-y-2">
         {hasThemeColors && <Separator className="my-4" />}
         <HexAlphaColorPicker
@@ -122,42 +195,72 @@ export const AdvancedColorPicker: React.FC<AdvancedColorPickerProps> = ({
           <span className="text-xs text-gray-500">%</span>
         </div>
       </TabsContent>
-      <TabsContent value="theme">
-        <Separator className="mt-4"/>
-        <SearchBar
-          value={search}
-          onChange={setSearch}
-          placeholder="Search"
-          className="mb-0"
-          inputClassName="w-full border-none !ring-0 focus:!ring-0 shadow-none"
-        />
-        <Separator className="mb-3"/>
-        <div className="flex flex-col gap-2 max-h-[300px] overflow-y-auto">
-          {filteredThemeColors.map(([key, color]) => (
-            <button
-              key={key}
-              className={cn(
-                'flex items-center gap-2 px-2 py-1 rounded hover:bg-gray-100 cursor-pointer',
-                matchedThemeValue && matchedThemeValue.toLowerCase() === key.toLowerCase() && 'bg-gray-300/50'
-              )}
-              onClick={() => {
-                onChange(`{{theme.${key}}}`);
-                setOpen(false);
-              }}
-            >
-              <span
-                className="w-5 h-5 rounded-sm border"
-                style={{ background: color?.value }}
-              />
-              <span className="text-xs flex-1 text-left">{color?.label}</span>
-              <span className="text-xs text-gray-500">{color?.value.toUpperCase()}</span>
-            </button>
-          ))}
-          {filteredThemeColors.length === 0 && (
-            <span className="text-xs text-gray-400 px-2 py-4">No colors found.</span>
-          )}
-        </div>
-      </TabsContent>
+      {hasThemeColors && (
+        <TabsContent value="theme">
+          <Separator className="mt-4"/>
+          <SearchBar
+            value={search}
+            onChange={setSearch}
+            placeholder="Search"
+            className="mb-0"
+            inputClassName="w-full border-none !ring-0 focus:!ring-0 shadow-none"
+          />
+          <Separator className="mb-3"/>
+          <div className="flex flex-col gap-2 max-h-[300px] overflow-y-auto">
+            {filteredThemeColors.map(([key, color]) => (
+              <button
+                key={key}
+                className={cn(
+                  'flex items-center gap-2 px-2 py-1 rounded hover:bg-gray-100 cursor-pointer',
+                  matchedThemeValue && matchedThemeValue.toLowerCase() === key.toLowerCase() && 'bg-gray-300/50'
+                )}
+                onClick={() => {
+                  onChange(`{{theme.${key}}}`);
+                  setOpen(false);
+                }}
+              >
+                <span
+                  className="w-5 h-5 rounded-sm border"
+                  style={{ background: color?.value }}
+                />
+                <span className="text-xs flex-1 text-left">{color?.label}</span>
+                <span className="text-xs text-gray-500">{color?.value.toUpperCase()}</span>
+              </button>
+            ))}
+            {filteredThemeColors.length === 0 && (
+              <span className="text-xs text-gray-400 px-2 py-4">No colors found.</span>
+            )}
+          </div>
+        </TabsContent>
+      )}
+      {supportsGradients && (
+        <TabsContent value="gradient" className="space-y-4">
+          <GradientPicker
+            value={parseGradientCSS(initialValue) || {
+              type: 'linear',
+              direction: 'to right',
+              stops: [
+                { id: '1', color: '#FF6B6B', position: 0 },
+                { id: '2', color: '#4ECDC4', position: 100 }
+              ]
+            }}
+            onChange={(gradient) => {
+              // Convert gradient to CSS string
+              const stops = gradient.stops
+                .sort((a, b) => a.position - b.position)
+                .map(stop => `${stop.color} ${stop.position}%`)
+                .join(', ');
+              
+              const css = gradient.type === 'linear' 
+                ? `linear-gradient(${gradient.direction || 'to right'}, ${stops})`
+                : `radial-gradient(circle at ${gradient.center || 'center'}, ${stops})`;
+              
+              onChange(css);
+            }}
+            themeColors={themeColors}
+          />
+        </TabsContent>
+      )}
     </Tabs>
   );
 
@@ -181,13 +284,15 @@ export const AdvancedColorPicker: React.FC<AdvancedColorPickerProps> = ({
                 style={{ background: value }}
               />
               <span className="text-xs">
-                {matchedThemeValue ? themeColors?.[matchedThemeValue]?.label : rgb.toUpperCase()}
+                {isGradient ? 'Gradient' : matchedThemeValue ? themeColors?.[matchedThemeValue]?.label : rgb.toUpperCase()}
               </span>
             </div>
-            <div className='flex items-center gap-2'>
-              <Separator orientation="vertical" className="bg-gray-300/50 !h-4" />
-              <span className="text-xs text-end">{opacityInput} %</span>
-            </div>
+            {!isGradient && (
+              <div className='flex items-center gap-2'>
+                <Separator orientation="vertical" className="bg-gray-300/50 !h-4" />
+                <span className="text-xs text-end">{opacityInput} %</span>
+              </div>
+            )}
           </button>
         )}
       </DropdownMenuTrigger>

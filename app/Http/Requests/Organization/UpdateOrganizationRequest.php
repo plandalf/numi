@@ -24,6 +24,16 @@ class UpdateOrganizationRequest extends FormRequest
     {
         return [
             'name' => ['required', 'string', 'max:255'],
+            'description' => ['nullable', 'string', 'max:1000'],
+            'website_url' => ['nullable', 'string', 'url', 'max:255'],
+            'logo_media_id' => ['nullable', 'integer', 'exists:medias,id'],
+            'favicon_media_id' => ['nullable', 'integer', 'exists:medias,id'],
+            'primary_color' => ['nullable', 'string', 'regex:/^#[0-9A-F]{6}$/i'],
+            'social_media' => ['nullable', 'array'],
+            'social_media.facebook' => ['nullable', 'url', 'max:255'],
+            'social_media.twitter' => ['nullable', 'url', 'max:255'],
+            'social_media.instagram' => ['nullable', 'url', 'max:255'],
+            'social_media.linkedin' => ['nullable', 'url', 'max:255'],
             'default_currency' => [
                 Rule::in(['USD', 'GBP', 'AUD', 'NZD', 'JPY', 'EUR'])
             ],

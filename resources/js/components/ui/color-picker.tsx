@@ -12,6 +12,7 @@ export interface ColorPickerProps {
   type?: 'simple' | 'advanced';
   themeColors?: Record<string, { value: string, label: string }>;
   trigger?: React.ReactNode;
+  supportsGradients?: boolean; // Enable gradient support
 }
 
 // Utility: parse hex to {rgb, alpha}

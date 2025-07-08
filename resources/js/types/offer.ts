@@ -18,6 +18,27 @@ export interface Offer {
     is_subscription_enabled: boolean;
     is_one_time_enabled: boolean;
     organization_id: number;
+    organization?: {
+        id: number;
+        name: string;
+        description?: string | null;
+        website_url?: string | null;
+        logo_media_id?: number | null;
+        logo_media?: {
+            id: number;
+            url: string;
+            signed_url: string;
+        } | null;
+        favicon_media_id?: number | null;
+        favicon_media?: {
+            id: number;
+            url: string;
+            signed_url: string;
+        } | null;
+        primary_color?: string | null;
+        social_media?: Record<string, string> | null;
+        subdomain: string;
+    };
     view: {
         first_page: string;
         page_history: string[];

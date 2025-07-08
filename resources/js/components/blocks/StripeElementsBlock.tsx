@@ -516,7 +516,7 @@ function StripeElementsComponent({ context }: { context: BlockContextType }) {
           stripe={stripePromise}
           options={stripeOptions}>
           {/* Simple payment methods display */}
-          {session.enabled_payment_methods && session.enabled_payment_methods.length > 0 && (
+          {/* {session.enabled_payment_methods && session.enabled_payment_methods.length > 0 && (
             <div style={{
               marginBottom: '16px',
               fontSize: '14px',
@@ -541,9 +541,9 @@ function StripeElementsComponent({ context }: { context: BlockContextType }) {
                 ))}
               </div>
             </div>
-          )}
+          )} */}
           {/* Debug Info */}
-          <div style={{
+          {/* <div style={{
             marginBottom: '16px',
             padding: '12px',
             backgroundColor: '#f8f9fa',
@@ -560,7 +560,7 @@ function StripeElementsComponent({ context }: { context: BlockContextType }) {
             <div>Enabled Methods: {session.enabled_payment_methods?.join(', ') || 'none'}</div>
             <div>Stripe Options Mode: {stripeOptions?.mode || 'unknown'}</div>
             <div>Stripe Options Amount: {stripeOptions?.amount || 'N/A'}</div>
-          </div>
+          </div> */}
           <PaymentForm style={paymentFormStyle} />
         </Elements>
       ) : (
