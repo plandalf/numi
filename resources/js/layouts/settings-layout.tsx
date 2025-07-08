@@ -46,11 +46,6 @@ export default function SettingsLayout({ children }: SettingsLayoutProps) {
              href: route('organizations.settings.seo'),
              icon: Globe,
         },
-        {
-            title: 'Theme',
-            href: route('organizations.themes.index'),
-            icon: PaintbrushIcon,
-        },
         ...(modules.billing ? [
             {
                 title: 'Billing',
