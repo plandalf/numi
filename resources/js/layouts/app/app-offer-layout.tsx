@@ -130,7 +130,8 @@ function OfferHeader({ offer, isNameDialogOpen, setIsNameDialogOpen }: AppHeader
                         {offer.name || 'Untitled Offer'}
                     </span>
                     <Button
-                        variant="link"
+                        // variant="link"
+                        variant="dark-outline"
                         size="icon"
                         onClick={() => setIsNameDialogOpen(true)}
                         className="text-sm font-medium text-white flex-shrink-0"
@@ -213,6 +214,7 @@ function OfferHeader({ offer, isNameDialogOpen, setIsNameDialogOpen }: AppHeader
 
                 <Button
                     variant="outline"
+                    size="sm"
                     tooltip="Preview the design of the Offer."
                     onClick={() => setViewMode('preview')}
                     className={cn(
@@ -227,7 +229,8 @@ function OfferHeader({ offer, isNameDialogOpen, setIsNameDialogOpen }: AppHeader
                   <DropdownMenuTrigger asChild>
                     <Button
                       className="flex flex-row gap-x-2"
-                      variant="outline-transparent"
+                      variant="dark-outline"
+                      size="sm"
                       tooltip="Publish the Offer"
                       onClick={handlePublish}
                     >
@@ -265,7 +268,8 @@ function OfferHeader({ offer, isNameDialogOpen, setIsNameDialogOpen }: AppHeader
 
                 <Button
                   asChild
-                  variant="outline-transparent"
+                  variant="dark-outline"
+                  size="sm"
                   tooltip="Go to your checkout"
                 >
                   <a href={route('offers.show', offer.id)} target="_blank">
@@ -275,8 +279,10 @@ function OfferHeader({ offer, isNameDialogOpen, setIsNameDialogOpen }: AppHeader
                 </Button>
 
                 <Button
-                    variant="outline-transparent"
+                    // variant="outline-transparent"
+                    variant="dark-outline"
                     tooltip="Share to other platforms"
+                    size="sm"
                     onClick={() => setViewMode('share')}
                 >
                     {isMobile && <Share className="size-4" />}
@@ -284,7 +290,9 @@ function OfferHeader({ offer, isNameDialogOpen, setIsNameDialogOpen }: AppHeader
                 </Button>
                 <Button
                     className="flex flex-row gap-x-2"
-                    variant="outline-transparent"
+                    // variant="outline-transparent"
+                    variant="dark-outline"
+                    size="sm"
                     tooltip="Save the current changes"
                     onClick={handleSave}
                 >
