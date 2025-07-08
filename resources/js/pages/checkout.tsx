@@ -485,7 +485,7 @@ export default function CheckoutPage({ offer, fonts, error, checkoutSession }: C
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content={metaTags.title} />
         <meta name="twitter:description" content={metaTags.description} />
-        {offer.social_image?.url ? (
+        {/* {offer.social_image?.url ? (
           <>
             <meta name="twitter:image" content={offer.social_image.url} />
             <meta name="twitter:image:alt" content={offer.name || 'Offer Image'} />
@@ -497,7 +497,7 @@ export default function CheckoutPage({ offer, fonts, error, checkoutSession }: C
           </>
         ) : metaTags.organizationLogo ? (
           <meta name="twitter:image" content={metaTags.organizationLogo} />
-        ) : null}
+        ) : null} */}
         
         {/* Security and Privacy Meta Tags */}
         <meta name="referrer" content="strict-origin-when-cross-origin" />
