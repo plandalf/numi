@@ -450,6 +450,8 @@ export default function CheckoutPage({ offer, fonts, error, checkoutSession }: C
     sendMessage(new OnInit(checkoutSession));
   }, []);
 
+  console.log('offer', offer);
+
   const metaTags = generateMetaTags(offer);
 
   return (
@@ -474,9 +476,9 @@ export default function CheckoutPage({ offer, fonts, error, checkoutSession }: C
         <meta property="og:site_name" content={`${metaTags.organizationName} Checkout`} />
         
         {/* Open Graph Image */}
-        {/* {offer.social_image?.url && (
+        {offer.social_image?.url && (
           <meta property="og:image" content={offer.social_image?.url} />
-        )} */}
+        )}
         <meta property="og:image:width" content="1200" />
         <meta property="og:image:height" content="630" />
         <meta property="og:image:alt" content={offer.name || 'Offer Image'} />
