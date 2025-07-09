@@ -67,7 +67,11 @@ const Container = styled.div<{
 `;
 
 const preserveAllLineBreaks = (text: string) => {
-  return (text || '').split('\n').map(line => {
+  if (typeof text !== 'string') {
+    return `${text}`;
+  }
+  
+  return (text || '')?.split('\n').map(line => {
     // If line is empty, return a non-breaking space
     return line.trim() === '' ? '&nbsp;' : line;
   }).join('\n');

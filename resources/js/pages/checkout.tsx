@@ -1,5 +1,6 @@
 import { Head } from '@inertiajs/react';
 import {
+  DebugPanel,
   GlobalStateProvider, layoutConfig,
   LoadingError,
   NavigationProvider, PageNotFound, Section,
@@ -22,6 +23,7 @@ import { useEffect } from 'react';
 import { PageChanged } from '@/events/PageChanged';
 import { PaymentInitialized } from '@/events/PaymentInitialized';
 import { getLayoutJSONConfig } from '@/config/layouts';
+
 
 // Helper function to generate meta tags
 const generateMetaTags = (offer: OfferConfiguration) => {
@@ -243,6 +245,12 @@ const createElement = (
 
 
 const CheckoutController = ({ offer, session }: { offer: OfferConfiguration, session: CheckoutSession }) => {
+  // Redirect to order status page if checkout is completed
+  useEffect(() => {
+    if (session.status === 'closed' && session.order_status_url) {
+      window.location.href = session.order_status_url;
+    }
+  }, [session.status, session.order_status_url]);
   const {
     isSubmitting,
     submitError,
@@ -254,7 +262,7 @@ const CheckoutController = ({ offer, session }: { offer: OfferConfiguration, ses
 
   const isMobile = useIsMobile();
 
-  const { validateAllFields } = useValidateFields();
+  const { validatePage } = useCheckoutState();
   const { currentPage, goToNextPage } = useNavigation();
 
   const handleSubmit = async (evt: React.FormEvent) => {
@@ -264,9 +272,19 @@ const CheckoutController = ({ offer, session }: { offer: OfferConfiguration, ses
 
     try {
       setSubmitting(true);
-      const errors = await validateAllFields();
+      
+      // Get all blocks from the current page
+      const pageBlocks: any[] = [];
+      Object.values(currentPage.view).forEach((section: any) => {
+        if (Array.isArray(section.blocks)) {
+          pageBlocks.push(...section.blocks);
+        }
+      });
 
-      if (Object.keys(errors).length > 0) {
+      // Validate all fields on the current page
+      const isValid = validatePage(pageBlocks);
+
+      if (!isValid) {
         setSubmitError('Please fix the errors before continuing');
         return;
       }
@@ -278,9 +296,20 @@ const CheckoutController = ({ offer, session }: { offer: OfferConfiguration, ses
       }
 
       // If all successful, proceed to next page
-      await goToNextPage(errors);
+      await goToNextPage({});
     } catch (error) {
-      setSubmitError(error instanceof Error ? error.message : 'An unexpected error occurred');
+      console.error('Checkout submit error details:', {
+        error,
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : 'No stack trace',
+        currentPage: currentPage?.id,
+        sessionId: session.id,
+        isSubmitting,
+        submitError
+      });
+      
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      setSubmitError(`An unexpected error occurred: ${errorMessage}`);
     } finally {
       setSubmitting(false);
     }
@@ -544,6 +573,7 @@ export default function CheckoutPage({ offer, fonts, error, checkoutSession }: C
             ) : (
                 <CheckoutController offer={offer} session={checkoutSession} />
             )}
+            <DebugPanel />
           </div>
         </NavigationProvider>
       </GlobalStateProvider>

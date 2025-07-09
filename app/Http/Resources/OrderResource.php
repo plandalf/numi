@@ -60,11 +60,38 @@ class OrderResource extends JsonResource
             }),
             'items' => OrderItemResource::collection($this->whenLoaded('items')),
             'checkout_session' => $this->when($this->checkoutSession, function () {
-                return [
-                    'id' => $this->checkoutSession->id,
-                    'status' => $this->checkoutSession->status,
-                    'discounts' => $this->checkoutSession->discounts,
-                ];
+                try {
+                    \Log::info('Accessing checkout session in OrderResource', [
+                        'order_id' => $this->id,
+                        'has_checkout_session_relationship' => $this->relationLoaded('checkoutSession') ? 'yes' : 'no',
+                        'checkout_session_id' => $this->checkout_session_id ?? 'none'
+                    ]);
+                    $session = $this->checkoutSession;
+                    $paymentMethod = $session->paymentMethod;
+                    return [
+                        'id' => $session->id,
+                        'status' => $session->status,
+                        'discounts' => $session->discounts,
+                        'properties' => $session->properties,
+                        'payment_method' => $paymentMethod ? [
+                            'type' => $paymentMethod->type,
+                            'brand' => $paymentMethod->brand,
+                            'last4' => $paymentMethod->last4,
+                            'exp_month' => $paymentMethod->exp_month,
+                            'exp_year' => $paymentMethod->exp_year,
+                        ] : null,
+                    ];
+                } catch (\Exception $e) {
+                    // Log the error and return null to prevent crashes
+                    \Log::error('Failed to access checkout session in OrderResource', [
+                        'order_id' => $this->id,
+                        'checkout_session_id' => $this->checkout_session_id,
+                        'has_checkout_session_relationship' => $this->relationLoaded('checkoutSession') ? 'yes' : 'no',
+                        'error' => $e->getMessage(),
+                        'stack_trace' => $e->getTraceAsString()
+                    ]);
+                    return null;
+                }
             }),
             'events' => $this->whenLoaded('events', function () {
                 return $this->events->map(function ($event) {

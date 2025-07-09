@@ -81,6 +81,11 @@ class CheckoutController extends Controller
 
         $this->handleInvalidDomain($request, $checkout);
 
+        // If checkout is completed, redirect to order status page
+        if ($checkout->status === \App\Enums\CheckoutSessionStatus::CLOSED && $checkout->order) {
+            return redirect()->to(URL::signedRoute('order-status.show', ['order' => $checkout->order], now()->addDays(30)));
+        }
+
         $checkout->load([
             'lineItems.offerItem.offerPrices',
             'offer.theme',

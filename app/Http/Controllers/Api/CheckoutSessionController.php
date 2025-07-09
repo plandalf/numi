@@ -14,13 +14,14 @@ use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 use Stripe\Exception\InvalidRequestException;
 
 class CheckoutSessionController extends Controller
 {
     public function __construct(
-        private readonly CreateCheckoutSessionAction $createCheckoutSessionAction,
+//        private readonly CreateCheckoutSessionAction $createCheckoutSessionAction,
         private readonly CommitCheckoutAction $commitCheckoutAction
     ) {}
 
@@ -56,6 +57,13 @@ class CheckoutSessionController extends Controller
     private function commit(CheckoutSession $checkoutSession, Request $request): JsonResponse
     {
         try {
+            Log::info(logname('start'), [
+                'checkout_session_id' => $checkoutSession->id,
+                'status' => $checkoutSession->status,
+                'has_order' => $checkoutSession->order ? 'yes' : 'no',
+                'order_id' => $checkoutSession->order?->id ?? 'none'
+            ]);
+
             $token = $request->input('confirmation_token');
 
             if (empty($token)) {
@@ -64,15 +72,47 @@ class CheckoutSessionController extends Controller
                 ]);
             }
 
-            $this->commitCheckoutAction->execute($checkoutSession, $token);
+            Log::info('Executing commit checkout action');
+            $order = $this->commitCheckoutAction->execute($checkoutSession, $token);
+
+            Log::info('Commit checkout action completed', [
+                'order_id' => $order->id,
+                'order_has_checkout_session' => $order->relationLoaded('checkoutSession') ? 'yes' : 'no',
+                'order_checkout_session_id' => $order->checkout_session_id ?? 'none'
+            ]);
+
+            // Reload the checkout session with necessary relationships to ensure enabled_payment_methods works
+            Log::info('Reloading checkout session relationships');
+            $checkoutSession->load(['lineItems.offerItem.offerPrices', 'offer.theme', 'lineItems.price.integration', 'lineItems.price.product', 'lineItems.price', 'integration', 'order', 'customer']);
+
+            Log::info('Checkout session reloaded', [
+                'has_order_relationship' => $checkoutSession->relationLoaded('order') ? 'yes' : 'no',
+                'order_id' => $checkoutSession->order?->id ?? 'none'
+            ]);
+
+            $resource = new CheckoutSessionResource($checkoutSession);
 
             return response()->json([
                 'message' => 'Commit successful',
-                'checkout_session' => new CheckoutSessionResource($checkoutSession),
+                'checkout_session' => $resource->toArray($request),
             ]);
         } catch (Exception $e) {
+            Log::error('Commit mutation failed', [
+                'checkout_session_id' => $checkoutSession->id,
+                'error_message' => $e->getMessage(),
+                'error_file' => $e->getFile(),
+                'error_line' => $e->getLine(),
+                'stack_trace' => $e->getTraceAsString()
+            ]);
+
             return response()->json([
                 'message' => $e->getMessage(),
+                'debug_info' => [
+                    'file' => $e->getFile(),
+                    'line' => $e->getLine(),
+                    'checkout_session_id' => $checkoutSession->id,
+                    'checkout_session_status' => $checkoutSession->status,
+                ]
             ], 400);
         }
     }

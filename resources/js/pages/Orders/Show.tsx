@@ -124,6 +124,7 @@ interface Order {
     id: number;
     status: string;
     discounts: Discount[];
+    properties: Record<string, unknown>;
   } | null;
   events: OrderEvent[];
 }
@@ -763,6 +764,48 @@ export default function Show({ order, errors, flash }: OrdersShowProps) {
                                                 </span>
                                             </div>
                                         ))}
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        )}
+
+                        {/* Form Fields */}
+                        {order.checkout_session?.properties && Object.keys(order.checkout_session.properties).length > 0 && (
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle>Form Fields</CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                    <div className="space-y-4">
+                                        {Object.entries(order.checkout_session.properties).map(([blockId, blockData]) => {
+                                            // Handle both old format (direct value) and new format (object with field names)
+                                            const fields = typeof blockData === 'object' && blockData !== null && !Array.isArray(blockData)
+                                                ? blockData as Record<string, unknown>
+                                                : { value: blockData };
+
+                                            return (
+                                                <div key={blockId} className="border rounded-lg p-4">
+                                                    <h4 className="font-medium text-sm text-gray-700 mb-3">Block: {blockId}</h4>
+                                                    <div className="space-y-2">
+                                                        {Object.entries(fields).map(([fieldName, fieldValue]) => (
+                                                            <div key={fieldName} className="flex justify-between items-start">
+                                                                <span className="text-sm font-medium text-gray-600 capitalize">
+                                                                    {fieldName.replace(/_/g, ' ')}:
+                                                                </span>
+                                                                <span className="text-sm text-gray-900 max-w-xs break-words">
+                                                                    {fieldValue === null || fieldValue === undefined
+                                                                        ? 'Not provided'
+                                                                        : typeof fieldValue === 'boolean'
+                                                                        ? fieldValue ? 'Yes' : 'No'
+                                                                        : String(fieldValue)
+                                                                    }
+                                                                </span>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
                                     </div>
                                 </CardContent>
                             </Card>

@@ -1,7 +1,7 @@
 import Numi, { Appearance, FontValue, Style } from "@/contexts/Numi";
 import { BlockContextType } from "@/types/blocks";
 import { useState, useEffect, useRef, useMemo, CSSProperties } from "react";
-import { Elements, PaymentElement, useStripe, useElements, AddressElement } from '@stripe/react-stripe-js';
+import { Elements } from '@stripe/react-stripe-js';
 import { loadStripe, Stripe } from '@stripe/stripe-js';
 import { useCheckoutState } from "@/pages/checkout-main";
 import { resolveThemeValue } from "@/lib/theme";
@@ -10,6 +10,7 @@ import { MarkdownText } from "../ui/markdown-text";
 import { buildGoogleFontsUrl, getFontsFromStyle } from "@/utils/font-finder";
 import { usePage } from "@inertiajs/react";
 import { Font } from "@/types";
+import { PaymentMethodSelector } from './PaymentMethodSelector';
 
 // Define the type for the checkout state
 interface CheckoutState {
@@ -426,28 +427,67 @@ function StripeElementsComponent({ context }: { context: BlockContextType }) {
     }
 
     // Get enabled payment methods from session, fallback to default
-    const enabledPaymentMethods = session.enabled_payment_methods || ['card'];
+            const enabledPaymentMethods = session.frontend_payment_methods || session.enabled_payment_methods || ['card'];
 
-    // Separate payment method types and wallets
-    const paymentMethodTypes = enabledPaymentMethods.filter(method =>
+    // Payment methods that are NOT supported in setup mode (only work with PaymentIntents)
+    const paymentOnlyMethods = [
+      'zip', 
+      'afterpay_clearpay', 
+      'affirm', 
+      'klarna',
+      'alipay',
+      'wechat_pay',
+      'sofort',
+      'giropay',
+      'eps',
+      'p24',
+      'bancontact',
+      'ideal',
+      'paypal'
+    ];
+
+    const intentMode = (session.intent_mode || 'setup') as 'setup' | 'payment';
+
+    // Filter out payment methods based on intent mode
+    let filteredPaymentMethods = enabledPaymentMethods.filter(method =>
       !['apple_pay', 'google_pay'].includes(method)
     );
+
+    // If in setup mode, remove payment-only methods
+    if (intentMode === 'setup') {
+      const originalCount = filteredPaymentMethods.length;
+      filteredPaymentMethods = filteredPaymentMethods.filter(method => 
+        !paymentOnlyMethods.includes(method)
+      );
+      
+      // Log if any methods were filtered out
+      if (originalCount !== filteredPaymentMethods.length) {
+        const removedMethods = enabledPaymentMethods.filter(method => 
+          paymentOnlyMethods.includes(method)
+        );
+        console.warn('Stripe Elements: Filtered out setup-incompatible payment methods:', {
+          intentMode,
+          removedMethods,
+          remaining: filteredPaymentMethods
+        });
+      }
+    }
+
+    const paymentMethodTypes = filteredPaymentMethods;
 
     const wallets = {
       applePay: enabledPaymentMethods.includes('apple_pay') ? 'auto' as const : 'never' as const,
       googlePay: enabledPaymentMethods.includes('google_pay') ? 'auto' as const : 'never' as const,
     };
 
-    const intentMode = (session.intent_mode || 'setup') as 'setup' | 'payment';
-
     // Log for debugging payment method filtering
     console.log('Stripe Elements Payment Methods:', {
       currency: session.currency,
       total: session.total,
       allEnabledMethods: enabledPaymentMethods,
-      paymentMethodTypes,
+      filteredPaymentMethods: paymentMethodTypes,
       intentMode,
-      filteredByAmount: intentMode === 'payment' && enabledPaymentMethods.length > 0
+      setupModeFiltering: intentMode === 'setup'
     });
 
     const options: any = {
@@ -457,7 +497,8 @@ function StripeElementsComponent({ context }: { context: BlockContextType }) {
       fonts: [{
         cssSrc: googleFontsUrl,
       }],
-      paymentMethodTypes: paymentMethodTypes.length > 0 ? paymentMethodTypes : ['card'],
+      // paymentMethodTypes: paymentMethodTypes.length > 0 ? paymentMethodTypes : ['card'],
+      paymentMethodTypes: ['card'],
       wallets,
     };
 
@@ -476,12 +517,21 @@ function StripeElementsComponent({ context }: { context: BlockContextType }) {
         });
         // Fallback to setup mode if amount is 0 or negative
         options.mode = 'setup';
+        // Re-filter payment methods for setup mode
+        options.paymentMethodTypes = filteredPaymentMethods.filter(method => 
+          !paymentOnlyMethods.includes(method)
+        );
       } else {
         options.amount = amountInCents;
       }
     }
 
-    // Stripe options configured successfully
+    console.log('Final Stripe Options:', {
+      mode: options.mode,
+      paymentMethodTypes: options.paymentMethodTypes,
+      amount: options.amount,
+      currency: options.currency
+    });
 
     return options as any; // Type assertion to work around Stripe's strict typing
   }, [session, stripeElementAppearance, googleFontsUrl]);
@@ -534,8 +584,8 @@ function StripeElementsComponent({ context }: { context: BlockContextType }) {
               </div>
             </div>
           )} */}
-          {/* Debug Info */}
-          {/* <div style={{
+          {/* Debug Info - Stripe Elements Payment Method Filtering */}
+          <div style={{
             marginBottom: '16px',
             padding: '12px',
             backgroundColor: '#f8f9fa',
@@ -544,15 +594,19 @@ function StripeElementsComponent({ context }: { context: BlockContextType }) {
             fontSize: '12px',
             fontFamily: 'monospace'
           }}>
-            <div><strong>Debug Info:</strong></div>
+            <div><strong>Stripe Elements Debug:</strong></div>
             <div>Intent Mode: {session.intent_mode || 'setup'}</div>
             <div>Currency: {session.currency}</div>
             <div>Total: {session.total}</div>
             <div>Amount (cents): {session.intent_mode === 'payment' ? Math.round((session.total || 0) * 100) : 'N/A'}</div>
             <div>Enabled Methods: {session.enabled_payment_methods?.join(', ') || 'none'}</div>
+            <div>Filtered Methods: {stripeOptions?.paymentMethodTypes?.join(', ') || 'none'}</div>
             <div>Stripe Options Mode: {stripeOptions?.mode || 'unknown'}</div>
             <div>Stripe Options Amount: {stripeOptions?.amount || 'N/A'}</div>
-          </div> */}
+            <div style={{ color: session.intent_mode === 'setup' ? '#d97706' : '#059669' }}>
+              Mode Status: {session.intent_mode === 'setup' ? 'SETUP (filtering payment-only methods)' : 'PAYMENT (all methods allowed)'}
+            </div>
+          </div>
           <PaymentForm style={paymentFormStyle} />
           
           {/* Show payment method filtering info */}
@@ -667,93 +721,7 @@ function PaymentMethodFilteringInfo({ session, style }: { session: any, style?: 
 
 // Separate component for the payment form to use Stripe hooks
 function PaymentForm({ style }: { style?: CSSProperties}) {
-  const stripe = useStripe();
-  const elements = useElements();
-  const { setPageSubmissionProps } = useCheckoutState() as CheckoutState;
-  const { session } = Numi.useCheckout();
-
-  // PaymentForm component initialized
-
-  useEffect(() => {
-    setPageSubmissionProps(async () => {
-      if (!stripe || !elements) {
-        return {
-          error: 'Stripe has not been initialized',
-          type: 'validation_error',
-          code: 'stripe_not_initialized',
-        };
-      }
-
-      try {
-        // Submit the form to validate the payment method
-        const { error: submitError } = await elements.submit();
-        if (submitError) {
-          return {
-            error: submitError.message,
-            type: submitError.type,
-            code: submitError.code,
-          };
-        }
-
-        // Create a confirmation token
-        const confirmationTokenResult = await stripe.createConfirmationToken({
-          elements,
-          params: {}
-        });
-
-        if (confirmationTokenResult.error) {
-          return {
-            error: confirmationTokenResult.error.message,
-            type: confirmationTokenResult.error.type,
-            code: confirmationTokenResult.error.code,
-          };
-        }
-
-        return {
-          confirmation_token: confirmationTokenResult.confirmationToken?.id
-        };
-      } catch (error: any) {
-        return {
-          error: error.message,
-          type: 'api_error',
-          code: 'unexpected_error',
-        };
-      }
-    });
-  }, [stripe, elements]);
-
-  // Get enabled payment methods from session
-  const enabledPaymentMethods = session.enabled_payment_methods || ['card'];
-  const wallets = {
-    applePay: enabledPaymentMethods.includes('apple_pay') ? 'auto' as const : 'never' as const,
-    googlePay: enabledPaymentMethods.includes('google_pay') ? 'auto' as const : 'never' as const,
-  };
-
-  return (
-    <div className="flex flex-col space-y-4" style={style}>
-      <PaymentElement
-        options={{
-          defaultValues: {
-            billingDetails: {
-              name: '',
-              email: '',
-            },
-          },
-          layout: {
-            type: 'tabs',
-            defaultCollapsed: false,
-          },
-          wallets,
-        }}
-      />
-      <AddressElement
-        options={{
-          mode: 'billing',
-
-        }}
-      />
-    </div>
-  );
+  return <PaymentMethodSelector style={style} />;
 }
 
 export default StripeElementsComponent;

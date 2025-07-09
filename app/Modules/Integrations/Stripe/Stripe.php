@@ -16,6 +16,7 @@ use App\Modules\Integrations\Contracts\HasPrices;
 use App\Modules\Integrations\Contracts\HasProducts;
 use App\Modules\Integrations\Stripe\Actions\ImportStripePriceAction;
 use App\Modules\Integrations\Stripe\Actions\ImportStripeProductAction;
+use Illuminate\Support\Facades\Log;
 use Stripe\StripeClient;
 
 class Stripe extends AbstractIntegration implements CanCreateSubscription, CanSetupIntent, HasPrices, HasProducts, AcceptsDiscount
@@ -36,29 +37,35 @@ class Stripe extends AbstractIntegration implements CanCreateSubscription, CanSe
             ->confirmationTokens
             ->retrieve($confirmationToken);
 
-        $billingDetails = $confirmationToken->payment_method_preview->billing_details;
-        $stripeCustomer = $this->createCustomer([
+        $billingDetails = $confirmationToken->payment_method_preview
+            ->billing_details;
+
+        // Use the customer payment service to handle customer creation/association
+        $customerPaymentService = app(\App\Services\CustomerPaymentService::class);
+        $customer = $customerPaymentService->getCustomerForCheckout($order->checkoutSession, [
             'email' => $billingDetails->email,
             'name' => $billingDetails->name,
         ]);
 
-        $customer = Customer::create([
-            'organization_id' => $order->organization_id,
-            'integration_id' => $this->integration->id,
-            'reference_id' => $stripeCustomer->id,
-            'email' => $billingDetails->email,
-            'name' => $billingDetails->name,
-        ]);
+        // Create Stripe customer if we don't have a reference_id
+        if (!$customer->reference_id) {
+            $stripeCustomer = $this->createCustomer([
+                'email' => $billingDetails->email,
+                'name' => $billingDetails->name,
+            ]);
+
+            $customer->update(['reference_id' => $stripeCustomer->id]);
+        }
 
         $order->customer_id = $customer->id;
         $order->save();
 
         // Get the currency from the order to filter payment methods properly
-        $currency = $order->checkout_session->currency ?? 'usd';
-        
+        $currency = $order->checkout_session?->currency ?? 'usd';
+
         // Get enabled payment methods that are compatible with this currency
-        $enabledPaymentMethods = $order->checkout_session->enabled_payment_methods;
-        
+        $enabledPaymentMethods = $order->checkout_session?->enabled_payment_methods ?? [];
+
         // Prepare setup intent data
         $setupIntentData = [
             'customer' => $customer->reference_id,
@@ -67,17 +74,22 @@ class Stripe extends AbstractIntegration implements CanCreateSubscription, CanSe
             'usage' => 'off_session',
         ];
 
-        // Use specific payment method types if we have filtered methods, otherwise use automatic
-        if (!empty($enabledPaymentMethods)) {
-            $setupIntentData['payment_method_types'] = $enabledPaymentMethods;
-        } else {
-            $setupIntentData['automatic_payment_methods'] = [
-                'enabled' => true,
-                'allow_redirects' => 'never',
-            ];
-        }
+        // TODO: this is stupid!
+        // Always use specific payment method types to match what was used to collect the payment method
+        // If no specific methods are configured, default to card to avoid automatic_payment_methods mismatch
+        $setupIntentData['payment_method_types'] = !empty($enabledPaymentMethods)
+            ? $enabledPaymentMethods
+            : ['card'];
 
-        $setupIntent = $this->stripeClient->setupIntents->create($setupIntentData);
+        Log::info('Creating setup intent with payment methods', [
+            'order_id' => $order->id,
+            'checkout_session_id' => $order->checkoutSession->id,
+            'payment_method_types' => $setupIntentData['payment_method_types'],
+            'enabled_payment_methods' => $enabledPaymentMethods,
+        ]);
+
+        $setupIntent = $this->stripeClient->setupIntents
+            ->create($setupIntentData);
 
         // After successful setup, attach the payment method to the customer and set as default
         if ($setupIntent->status === 'succeeded' && $setupIntent->payment_method) {
@@ -90,6 +102,19 @@ class Stripe extends AbstractIntegration implements CanCreateSubscription, CanSe
                 $customer->reference_id,
                 ['invoice_settings' => ['default_payment_method' => $setupIntent->payment_method]]
             );
+
+            // Store the payment method in our database for future use
+            $customerPaymentService = app(\App\Services\CustomerPaymentService::class);
+            $paymentMethod = $this->stripeClient->paymentMethods->retrieve($setupIntent->payment_method);
+
+            $paymentMethodDetails = [
+                'type' => $paymentMethod->type,
+                'card' => $paymentMethod->card ?? null,
+                'bank_account' => $paymentMethod->bank_account ?? null,
+                'sepa_debit' => $paymentMethod->sepa_debit ?? null,
+            ];
+
+            $customerPaymentService->storePaymentMethod($customer, $paymentMethod, $paymentMethodDetails);
         }
 
         return $setupIntent;
@@ -411,6 +436,25 @@ class Stripe extends AbstractIntegration implements CanCreateSubscription, CanSe
             throw new \InvalidArgumentException('Customer is required to create a direct payment intent');
         }
 
+        // Store the payment method for future use after successful payment
+        $customerPaymentService = app(\App\Services\CustomerPaymentService::class);
+
+        // Get payment method details from the confirmation token
+        $confirmationToken = $this->stripeClient->confirmationTokens->retrieve($confirmationToken);
+        $paymentMethodPreview = $confirmationToken->payment_method_preview;
+
+        if ($paymentMethodPreview && $paymentMethodPreview->payment_method) {
+            $paymentMethodDetails = [
+                'type' => $paymentMethodPreview->payment_method->type,
+                'card' => $paymentMethodPreview->payment_method->card ?? null,
+                'bank_account' => $paymentMethodPreview->payment_method->bank_account ?? null,
+                'sepa_debit' => $paymentMethodPreview->payment_method->sepa_debit ?? null,
+            ];
+
+            // Store the payment method for future use
+            $customerPaymentService->storePaymentMethod($customer, $paymentMethodPreview->payment_method, $paymentMethodDetails);
+        }
+
         // Calculate the total amount
         $amount = 0;
         $currency = null;
@@ -466,8 +510,8 @@ class Stripe extends AbstractIntegration implements CanCreateSubscription, CanSe
         }
 
         // Get enabled payment methods that are compatible with this currency
-        $enabledPaymentMethods = $order->checkout_session->enabled_payment_methods;
-        
+        $enabledPaymentMethods = $order->checkout_session?->enabled_payment_methods ?? [];
+
         // Prepare payment intent data
         $paymentIntentData = [
             'amount' => (int) $amount,
@@ -482,15 +526,16 @@ class Stripe extends AbstractIntegration implements CanCreateSubscription, CanSe
             ],
         ];
 
-        // Use specific payment method types if we have filtered methods, otherwise use automatic
-        if (!empty($enabledPaymentMethods)) {
-            $paymentIntentData['payment_method_types'] = $enabledPaymentMethods;
-        } else {
-            $paymentIntentData['automatic_payment_methods'] = [
-                'enabled' => true,
-                'allow_redirects' => 'never',
-            ];
-        }
+        // Always use specific payment method types to match what was used to collect the payment method
+        // If no specific methods are configured, default to card to avoid automatic_payment_methods mismatch
+        $paymentIntentData['payment_method_types'] = !empty($enabledPaymentMethods) ? $enabledPaymentMethods : ['card'];
+
+        \Log::info('Creating payment intent with payment methods', [
+            'order_id' => $order->id,
+            'checkout_session_id' => $order->checkoutSession->id,
+            'payment_method_types' => $paymentIntentData['payment_method_types'],
+            'enabled_payment_methods' => $enabledPaymentMethods,
+        ]);
 
         // Create the payment intent with the confirmation token
         $paymentIntent = $this->stripeClient->paymentIntents->create($paymentIntentData);
@@ -512,10 +557,10 @@ class Stripe extends AbstractIntegration implements CanCreateSubscription, CanSe
         try {
             // Get account details to determine capabilities
             $account = $this->stripeClient->accounts->retrieve();
-            
+
             // Get country-specific payment method support
             $country = $account->country ?? 'US';
-            
+
             // Map of Stripe API payment method types to display names
             // Only including payment methods that support SetupIntent
             $paymentMethodMap = [
@@ -536,8 +581,8 @@ class Stripe extends AbstractIntegration implements CanCreateSubscription, CanSe
 
             // Filter payment methods based on currency and country
             $availablePaymentMethods = $this->filterPaymentMethodsByCurrencyAndCountry(
-                array_keys($paymentMethodMap), 
-                $currency, 
+                array_keys($paymentMethodMap),
+                $currency,
                 $country
             );
 
@@ -550,14 +595,14 @@ class Stripe extends AbstractIntegration implements CanCreateSubscription, CanSe
             }
 
             return $result;
-            
+
         } catch (\Exception $e) {
             // Fallback to default payment methods if API call fails
             logger()->error('Failed to fetch payment methods from Stripe', [
                 'error' => $e->getMessage(),
                 'integration_id' => $this->integration->id
             ]);
-            
+
             return [
                 'card' => 'Credit/Debit Cards',
                 'apple_pay' => 'Apple Pay',
@@ -575,10 +620,10 @@ class Stripe extends AbstractIntegration implements CanCreateSubscription, CanSe
         try {
             // Get account details to determine capabilities
             $account = $this->stripeClient->accounts->retrieve();
-            
+
             // Get country-specific payment method support
             $country = $account->country ?? 'US';
-            
+
             // Payment methods that only support PaymentIntent (immediate payments)
             $paymentOnlyMethodMap = [
                 'ideal' => 'iDEAL',
@@ -612,8 +657,8 @@ class Stripe extends AbstractIntegration implements CanCreateSubscription, CanSe
 
             // Filter payment methods based on currency and country
             $availablePaymentMethods = $this->filterPaymentMethodsByCurrencyAndCountry(
-                array_keys($paymentOnlyMethodMap), 
-                $currency, 
+                array_keys($paymentOnlyMethodMap),
+                $currency,
                 $country
             );
 
@@ -626,13 +671,13 @@ class Stripe extends AbstractIntegration implements CanCreateSubscription, CanSe
             }
 
             return $result;
-            
+
         } catch (\Exception $e) {
             logger()->error('Failed to fetch payment-only methods from Stripe', [
                 'error' => $e->getMessage(),
                 'integration_id' => $this->integration->id
             ]);
-            
+
             return [];
         }
     }
@@ -645,7 +690,7 @@ class Stripe extends AbstractIntegration implements CanCreateSubscription, CanSe
     {
         $currency = strtolower($currency);
         $country = strtoupper($country);
-        
+
         // Currency and country restrictions based on Stripe's documentation
         $restrictions = [
             'us_bank_account' => [
@@ -806,12 +851,12 @@ class Stripe extends AbstractIntegration implements CanCreateSubscription, CanSe
             // Check if method has restrictions
             if (isset($restrictions[$method])) {
                 $restriction = $restrictions[$method];
-                
+
                 // Check currency restriction
                 if (isset($restriction['currencies']) && !in_array($currency, $restriction['currencies'])) {
                     continue;
                 }
-                
+
                 // Check country restriction
                 if (isset($restriction['countries']) && !in_array($country, $restriction['countries'])) {
                     continue;

@@ -17,6 +17,8 @@ function CheckoutSummaryComponent({ context }: { context: BlockContextType }) {
 
   });
 
+
+
   const [title] = Numi.useStateString({
     label: 'Title',
     name: 'title',
@@ -88,10 +90,11 @@ function CheckoutSummaryComponent({ context }: { context: BlockContextType }) {
 
   const [discountCode, setDiscountCode] = Numi.useStateString({
     label: 'Allow discount codes',
-    name: 'discountCode',
+    name: `discountCode`,
     defaultValue: '',
     inspector: 'hidden',
     group: 'discountCodes',
+    asState: true,
   });
 
   const [stackedDiscounts, setStackedDiscounts] = Numi.useStateBoolean({
@@ -371,10 +374,6 @@ function CheckoutSummaryComponent({ context }: { context: BlockContextType }) {
     return !session.discounts || session.discounts.length === 0;
   }, [stackedDiscounts, session.discounts]);
 
-  if (style.hidden) {
-    return null;
-  }
-
   const currency = useMemo(() => {
     if (showCurrency) {
       return session.currency;
@@ -396,6 +395,10 @@ function CheckoutSummaryComponent({ context }: { context: BlockContextType }) {
         }
       });
   }, [session.line_items]);
+
+  if (style.hidden) {
+    return null;
+  }
 
   const LineItem = ({ item }: { item: CheckoutItem }) => {
     return (<div className="flex-grow overflow-hidden">

@@ -59,6 +59,7 @@ export const FormProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const [formState, dispatch] = useReducer(formReducer, initialState);
 
     const setFieldValue = useCallback((name: string, value: any) => {
+        console.log('dispatcher.setFieldValue', { name, value });
         dispatch({ type: 'SET_FIELD_VALUE', name, value });
     }, []);
 

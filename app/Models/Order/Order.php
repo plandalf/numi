@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use App\Models\Organization;
 
 /**
  * @property DBCollection<OrderItem> $items
@@ -67,6 +68,11 @@ class Order extends Model
     public function checkoutSession(): BelongsTo
     {
         return $this->belongsTo(CheckoutSession::class);
+    }
+
+    public function organization(): BelongsTo
+    {
+        return $this->belongsTo(Organization::class);
     }
 
     /**
@@ -128,21 +134,39 @@ class Order extends Model
     {
         $subtotal = $this->items->sum('total_amount');
 
-        $discounts = $this->checkoutSession->discounts;
-        if (empty($discounts)) {
+        try {
+            \Log::info('Calculating order total amount', [
+                'order_id' => $this->id,
+                'has_checkout_session_relationship' => $this->relationLoaded('checkoutSession') ? 'yes' : 'no',
+                'checkout_session_id' => $this->checkout_session_id ?? 'none'
+            ]);
+            
+            $discounts = $this->checkoutSession?->discounts;
+            if (empty($discounts)) {
+                return $subtotal;
+            }
+
+            $discountAmount = 0;
+            foreach ($discounts as $discount) {
+                if (isset($discount['percent_off'])) {
+                    $discountAmount += ($subtotal * ($discount['percent_off'] / 100));
+                } elseif (isset($discount['amount_off'])) {
+                    $discountAmount += $discount['amount_off'];
+                }
+            }
+
+            return max(0, $subtotal - $discountAmount);
+        } catch (\Exception $e) {
+            // Log the error and return subtotal without discounts
+            \Log::error('Failed to calculate discounts in Order total amount', [
+                'order_id' => $this->id,
+                'checkout_session_id' => $this->checkout_session_id,
+                'has_checkout_session_relationship' => $this->relationLoaded('checkoutSession') ? 'yes' : 'no',
+                'error' => $e->getMessage(),
+                'stack_trace' => $e->getTraceAsString()
+            ]);
             return $subtotal;
         }
-
-        $discountAmount = 0;
-        foreach ($discounts as $discount) {
-            if (isset($discount['percent_off'])) {
-                $discountAmount += ($subtotal * ($discount['percent_off'] / 100));
-            } elseif (isset($discount['amount_off'])) {
-                $discountAmount += $discount['amount_off'];
-            }
-        }
-
-        return max(0, $subtotal - $discountAmount);
     }
 
     public function customer(): BelongsTo

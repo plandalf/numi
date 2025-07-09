@@ -42,6 +42,15 @@ Route::get('/social-image/{offer}', [\App\Http\Controllers\SocialImageController
     ->name('social-image.generate');
     // ->middleware(['signed']);
 
+Route::get('/order-status/{order}', function (App\Models\Order\Order $order, Request $request) {
+    // Validate the signed URL
+    // if (! $request->hasValidSignature()) {
+    //     abort(403, 'Invalid or expired order status link.');
+    // }
+    
+    return app(App\Http\Controllers\OrderStatusController::class)->show($order);
+})->name('order-status.show')->middleware('signed');
+
 Route::post('/checkouts/{checkoutSession}/mutations', [CheckoutSessionController::class, 'storeMutation'])
     ->name('checkouts.mutations.store');
 

@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\CheckoutSessionAPIController;
 use App\Http\Controllers\Api\CustomerAPIController;
+use App\Http\Controllers\Api\CustomerPaymentMethodController;
 use App\Http\Controllers\Api\FulfillmentAPIController;
 use App\Http\Controllers\OfferItemsController;
 use Illuminate\Support\Facades\Route;
@@ -12,6 +13,10 @@ Route::middleware(['force-json', 'api-key'])->group(function () {
 
     Route::resource('checkout_sessions', CheckoutSessionAPIController::class);
     Route::resource('customers', CustomerAPIController::class);
+    
+    // Customer payment methods
+    Route::get('customers/{customer}/payment-methods', [CustomerPaymentMethodController::class, 'index']);
+    Route::post('customers/{customer}/payment-methods/mark-used', [CustomerPaymentMethodController::class, 'markAsUsed']);
 
     Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::get('orders', function () {

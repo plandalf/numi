@@ -32,6 +32,22 @@ export type CheckoutItem = {
   type: OfferItemType;
 };
 
+export interface Customer {
+  id: string;
+  email: string;
+  name?: string;
+  payment_methods?: SavedPaymentMethod[];
+}
+
+export interface SavedPaymentMethod {
+  id: string;
+  type: string;
+  display_name: string;
+  is_default: boolean;
+  last_used_at: string;
+  details: Record<string, unknown>;
+}
+
 export interface CheckoutSession {
 
   id: string;
@@ -51,7 +67,7 @@ export interface CheckoutSession {
   total: number;
   integration_client: IntegrationClient;
 
-  // customer?: Customer;
+  customer?: Customer;
   // shipping_address?: CheckoutAddress;
   // billing_address?: CheckoutAddress;
 
@@ -60,7 +76,9 @@ export interface CheckoutSession {
   publishable_key?: string;
   discounts?: Discount[];
   enabled_payment_methods?: string[];
+  frontend_payment_methods?: string[];
   intent_mode?: 'setup' | 'payment';
+  order_status_url?: string;
 }
 
 export interface CheckoutPageProps {

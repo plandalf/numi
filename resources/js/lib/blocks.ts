@@ -8,7 +8,11 @@ export const hasVisibilityCondition = (visibility?: boolean | { conditional: Rul
 
   if(typeof visibility === 'boolean') return true;
 
-  return typeof visibility === 'object' && 'conditional' in visibility && visibility.conditional.rules.length > 0;
+  return typeof visibility === 'object' && 
+         'conditional' in visibility && 
+         visibility.conditional && 
+         visibility.conditional.rules && 
+         visibility.conditional.rules.length > 0;
 };
 
 export const isEvaluatedVisible = (
@@ -23,7 +27,11 @@ export const isEvaluatedVisible = (
   if (typeof visibility === 'object' && 'conditional' in visibility) {
     const condition = visibility.conditional;
 
-    if(condition.rules.length === 0 || Object.keys(context.fields ?? {}).length === 0) return true;
+    // Check if condition exists and has rules
+    if (!condition || !condition.rules || condition.rules.length === 0 || Object.keys(context.fields ?? {}).length === 0) {
+      return true;
+    }
+    
     // console.log('condition-visibility', condition, context);
 
     try {

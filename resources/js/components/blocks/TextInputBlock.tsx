@@ -4,7 +4,7 @@ import { useMemo } from "react";
 import { resolveThemeValue } from "@/lib/theme";
 
 function TextInputBlockComponent({ context }: { context: BlockContextType }) {
-  const { updateSessionProperties } = Numi.useCheckout();
+  const { updateSessionProperties, errors } = Numi.useCheckout();
   const theme = Numi.useTheme();
 
   const [id] = Numi.useStateString({
@@ -27,11 +27,33 @@ function TextInputBlockComponent({ context }: { context: BlockContextType }) {
     defaultValue: '',
   });
 
-  const { isValid, errors, validate } = Numi.useValidation({
+  const [validationType] = Numi.useStateEnumeration({
+    name: 'validationType',
+    initialValue: 'none',
+    options: ['none', 'email', 'required'],
+    labels: {
+      none: 'None',
+      email: 'Email',
+      required: 'Required',
+    },
+    inspector: 'select',
+    label: 'Validation Type',
+  });
+
+  const { isValid, errors: localErrors, validate, validateField } = Numi.useValidation({
     rules: {
-      isRequired: true,
+      isRequired: validationType === 'required' || context.blockConfig.validation?.isRequired,
+      email: validationType === 'email' || context.blockConfig.validation?.email,
+      pattern: context.blockConfig.validation?.pattern,
+      patternMessage: context.blockConfig.validation?.patternMessage,
+      minLength: context.blockConfig.validation?.minLength,
+      maxLength: context.blockConfig.validation?.maxLength,
     },
   });
+
+  // Get errors from global state or local validation
+  const blockErrors = errors[context.blockId] || localErrors;
+  const hasErrors = blockErrors && blockErrors.length > 0;
 
   const appearance = Numi.useAppearance([
     Appearance.padding('padding', 'Padding', {}),
@@ -48,7 +70,7 @@ function TextInputBlockComponent({ context }: { context: BlockContextType }) {
   };
 
   const style = Numi.useStyle([
-    Style.alignment('alignment', 'Alignment', {}, 'left'),
+    Style.alignment('alignment', 'Alignment', {}, 'expand'),
     Style.font( 'labelFont', 'Label Font & Color', fontConfig, theme?.label_typography as FontValue),
     Style.backgroundColor('inputBackgroundColor', 'Input Background Color', {}, '#FFFFFF'),
     Style.font('inputFont', 'Input Font & Color',
@@ -97,30 +119,50 @@ function TextInputBlockComponent({ context }: { context: BlockContextType }) {
     fontWeight: style.inputFont?.weight,
     fontSize: style.inputFont?.size,
     lineHeight: style.inputFont?.lineHeight,
-    borderColor: resolveThemeValue(style.borderColor, theme),
+    borderColor: hasErrors ? '#ef4444' : resolveThemeValue(style.borderColor, theme),
     borderWidth: style.border?.width ?? '0.5px',
     borderStyle: style.border?.style,
     borderRadius : style.borderRadius,
-  }), [style]);
+  }), [style, hasErrors]);
+
+  const errorStyles = useMemo(() => ({
+    color: '#ef4444',
+    fontSize: '12px',
+    marginTop: '4px',
+    fontFamily: style.inputFont?.font || 'Inter',
+  }), [style.inputFont?.font]);
 
   const onTextChange = (e: React.ChangeEvent<HTMLInputElement>) => {  
-    setText(e.target.value);
-    updateSessionProperties(context.blockId, e.target.value);
+    const newValue = e.target.value;
+    setText(newValue);
+    
+    // Validate on change if there are validation rules
+    if (validationType !== 'none' || context.blockConfig.validation) {
+      validate(newValue);
+    }
   };
 
   return (
     <div className='flex flex-col' style={containerStyle}>
-      {label && <label htmlFor="" style={labelStyles}>{label}</label>}
+      {label && <label htmlFor={id} style={labelStyles}>{label}</label>}
       <div className="flex flex-row" style={{ width: style.alignment == 'expand' ? '100%' : 'auto' }}>
         <input
           id={id}
           className="border border-gray-300 rounded-md p-2"
-          type="text"
+          type={validationType === 'email' ? 'email' : 'text'}
           value={text}
           onChange={onTextChange}
           style={inputStyles}
+          disabled={isDisabled}
         />
       </div>
+      {hasErrors && (
+        <div style={errorStyles}>
+          {blockErrors.map((error, index) => (
+            <div key={index}>{error}</div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

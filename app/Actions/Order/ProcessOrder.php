@@ -36,10 +36,39 @@ class ProcessOrder
 
     public function __invoke(Order $order, CheckoutSession $checkoutSession, ?string $confirmationToken = null): Order
     {
+        $customerPaymentService = app(\App\Services\CustomerPaymentService::class);
+
         try {
-            $integrationClient = $checkoutSession->integrationClient();
             $order->loadMissing('items.price.integration');
             $orderItems = $order->items;
+
+            // Check if we have any items that require payment processing
+//            $hasIntegrationItems = $orderItems->some(function ($item) {
+//                return $item->price && $item->price->integration_id;
+//            });
+
+            // If no items require integration, mark as completed immediately
+//            if (!$hasIntegrationItems) {
+//                Log::info('Order contains only manual processing items, marking as completed', [
+//                    'order_id' => $order->id,
+//                    'checkout_session_id' => $checkoutSession->id,
+//                ]);
+//
+//                $order->markAsCompleted();
+//                $order->save();
+//
+//                // Handle fulfillment for manual processing orders
+//                $this->handleOrderFulfillment($order);
+//
+//                return $order;
+//            }
+
+            $integrationClient = $checkoutSession->integrationClient();
+
+            // If we have integration items but no integration client, that's an error
+            if (!$integrationClient) {
+                throw new \Exception('Order contains items that require payment processing but no payment integration is available');
+            }
 
             // Determine if we need setup intent (for subscriptions) or direct payment intent
             $hasSubscriptionItems = $this->hasSubscriptionItems($orderItems);
@@ -47,6 +76,8 @@ class ProcessOrder
 
             // Handle setup intent flow for subscriptions
             if ($hasSubscriptionItems && $integrationClient instanceof CanSetupIntent && $confirmationToken) {
+                // Ensure the order has the checkout session relationship loaded for the Stripe integration
+                $order->load('checkoutSession');
                 $setupIntent = $integrationClient->createSetupIntent($order, $confirmationToken);
 
                 // Check if the setup intent was successful
@@ -101,16 +132,30 @@ class ProcessOrder
                 }
             }
 
-            // Process each group of items based on their type
+            // Process each group of items based on their type (only those with integration IDs)
             $groupedItems->each(function (Collection $items, $type) use ($integrationClient, $order, $checkoutSession, $discounts) {
+                // Filter items to only process those with integration IDs
+                $integrationItems = $items->filter(function ($item) {
+                    return $item->price && $item->price->integration_id;
+                });
+
+                // Skip if no integration items in this group
+                if ($integrationItems->isEmpty()) {
+                    Log::info('Skipping payment processing for items without integration', [
+                        'order_id' => $order->id,
+                        'type' => $type,
+                        'item_count' => $items->count(),
+                    ]);
+                    return;
+                }
                 // Handle subscription items (graduated, volume, package)
                 if (in_array($type, [ChargeType::GRADUATED->value, ChargeType::VOLUME->value, ChargeType::PACKAGE->value, ChargeType::RECURRING->value])
                     && $integrationClient instanceof CanCreateSubscription) {
                     $subscription = $integrationClient->createSubscription([
                         'order' => $order,
-                        'items' => $items->toArray(),
+                        'items' => $integrationItems->toArray(),
                         'discounts' => $discounts,
-                        'cancel_at' => $this->getAutoCancelationTimestamp($items->first()->price),
+                        'cancel_at' => $this->getAutoCancelationTimestamp($integrationItems->first()->price),
                     ]);
 
                     // Validate the subscription payment
@@ -135,12 +180,14 @@ class ProcessOrder
                 // Handle one-time payment items
                 elseif ($type === ChargeType::ONE_TIME->value) {
                     /** @var Stripe $integrationClient */
-                    
+
                     // If we have only one-time items and a confirmation token, use direct payment intent
                     if ($hasOnlyOneTimeItems && $confirmationToken) {
+                        // Ensure the order has the checkout session relationship loaded for the Stripe integration
+                        $order->load('checkoutSession');
                         $paymentIntent = $integrationClient->createDirectPaymentIntent([
                             'order' => $order,
-                            'items' => $items->toArray(),
+                            'items' => $integrationItems->toArray(),
                             'discounts' => $discounts,
                             'confirmation_token' => $confirmationToken,
                         ]);
@@ -148,7 +195,7 @@ class ProcessOrder
                         // Use existing flow (requires saved payment method from setup intent)
                         $paymentIntent = $integrationClient->createPaymentIntent([
                             'order' => $order,
-                            'items' => $items->toArray(),
+                            'items' => $integrationItems->toArray(),
                             'discounts' => $discounts,
                         ]);
                     }
@@ -196,6 +243,11 @@ class ProcessOrder
                 'error_details' => $e->getErrorDetails(),
             ]);
 
+            // Ensure customer is associated with checkout session even if order fails
+            if ($order->customer) {
+                $customerPaymentService->ensureCustomerAssociation($checkoutSession, $order->customer);
+            }
+
             $checkoutSession->markAsFailed(true);
             throw $e;
         } catch (\Exception $e) {
@@ -204,6 +256,11 @@ class ProcessOrder
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
             ]);
+
+            // Ensure customer is associated with checkout session even if order fails
+            if ($order->customer) {
+                $customerPaymentService->ensureCustomerAssociation($checkoutSession, $order->customer);
+            }
 
             $checkoutSession->markAsFailed(true);
             throw $e;

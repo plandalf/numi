@@ -51,4 +51,20 @@ class Customer extends Model
     {
         return $this->hasMany(Order::class);
     }
+
+    /**
+     * Get the payment methods for the customer.
+     */
+    public function paymentMethods(): HasMany
+    {
+        return $this->hasMany(CustomerPaymentMethod::class);
+    }
+
+    /**
+     * Get the checkout sessions for the customer.
+     */
+    public function checkoutSessions(): HasMany
+    {
+        return $this->hasMany(\App\Models\Checkout\CheckoutSession::class);
+    }
 }

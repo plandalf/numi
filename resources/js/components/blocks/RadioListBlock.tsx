@@ -203,8 +203,7 @@ function RadioListBlock() {
   const handleTabChange = useCallback((value: string) => {
     setSelectedTab(value);
     executeCallbacks(Event.onClick, value);
-    updateSessionProperties(blockContext.blockId, value);
-  }, [executeCallbacks, updateSessionProperties, blockContext.blockId]);
+  }, [executeCallbacks]);
 
   // useEffect(() => {
   //   executeCallbacks(Event.onClick, selectedTab);

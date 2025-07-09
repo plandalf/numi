@@ -6,6 +6,7 @@ use App\Database\Traits\UuidRouteKey;
 use App\Enums\CheckoutSessionStatus;
 use App\Enums\IntegrationType;
 use App\Models\Customer;
+use App\Models\Integration;
 use App\Models\Order\Order;
 use App\Models\Organization;
 use App\Models\Store\Offer;
@@ -20,10 +21,16 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Arr;
 
 /**
+ * @property int $id
+ * @property string $status
  * @property array<string, string> $properties
- * @property Carbon $expires_at
- * @property Collection<CheckoutLineItem> $line_items
+ *
  * @property Customer $customer
+ * @property Order|null $order
+ * @property Integration $integration
+ * @property Collection<CheckoutLineItem> $lineItems
+ *
+ * @property Carbon $expires_at
  */
 class CheckoutSession extends Model
 {
@@ -43,17 +50,25 @@ class CheckoutSession extends Model
         'discounts',
         'properties',
         'test_mode',
-        // 'customer_id',
+        'customer_id',
+        'payment_method_id',
+        'error_message',
+        'error_code',
+        'error_details',
+        'failed_at',
     ];
 
     protected $casts = [
         'status' => CheckoutSessionStatus::class,
         'expires_at' => 'datetime',
         'finalized_at' => 'datetime',
+        'failed_at' => 'datetime',
         'metadata' => 'array',
         'discounts' => 'array',
         'properties' => 'array',
+        'error_details' => 'array',
         'test_mode' => 'boolean',
+        'payment_method_id' => 'integer',
     ];
 
     protected $attributes = [
@@ -75,6 +90,11 @@ class CheckoutSession extends Model
         return $this->hasMany(CheckoutLineItem::class, 'checkout_session_id');
     }
 
+    public function paymentMethod()
+    {
+        return $this->belongsTo(\App\Models\PaymentMethod::class);
+    }
+
     public function markAsClosed(bool $save = false): self
     {
         $this->status = CheckoutSessionStatus::CLOSED;
@@ -90,6 +110,36 @@ class CheckoutSession extends Model
     public function markAsFailed(bool $save = false): self
     {
         $this->status = CheckoutSessionStatus::FAILED;
+        $this->failed_at = now();
+
+        if ($save) {
+            $this->save();
+        }
+
+        return $this;
+    }
+
+    public function setError(string $message, ?string $code = null, ?array $details = null, bool $save = false): self
+    {
+        $this->error_message = $message;
+        $this->error_code = $code;
+        $this->error_details = $details;
+        $this->status = CheckoutSessionStatus::FAILED;
+        $this->failed_at = now();
+
+        if ($save) {
+            $this->save();
+        }
+
+        return $this;
+    }
+
+    public function clearError(bool $save = false): self
+    {
+        $this->error_message = null;
+        $this->error_code = null;
+        $this->error_details = null;
+        $this->failed_at = null;
 
         if ($save) {
             $this->save();
@@ -150,50 +200,86 @@ class CheckoutSession extends Model
         return Arr::get($this->integration?->config, 'access_token.stripe_publishable_key');
     }
 
+    /**
+     * Get the payment methods that should be used for Stripe Elements configuration
+     * This ensures consistency between frontend and backend
+     */
     public function getEnabledPaymentMethodsAttribute()
     {
         if (!$this->integration) {
             return [];
         }
 
-        // Get all enabled payment methods from integration
-        $enabledMethods = $this->integration->getEnabledPaymentMethods();
-        
-        // Get all available methods for this currency to check which ones are valid
-        $currency = strtolower($this->currency ?? 'usd');
-        $availableForCurrency = array_merge(
-            array_keys($this->integration->getAvailablePaymentMethods($currency)),
-            array_keys($this->integration->getPaymentOnlyMethods($currency))
-        );
+        try {
+            // For Stripe integrations, use the available payment methods from the API
+            // to ensure consistency with what the frontend Stripe Elements is configured with
+            if ($this->integration->type === \App\Enums\IntegrationType::STRIPE ||
+                $this->integration->type === \App\Enums\IntegrationType::STRIPE_TEST) {
 
-        // Filter enabled methods to only include those available for this currency
-        $currencyFilteredMethods = array_values(array_intersect($enabledMethods, $availableForCurrency));
+                $currency = strtolower($this->currency ?? 'usd');
+                $availableMethods = array_keys($this->integration->getAvailablePaymentMethods($currency));
+                $paymentOnlyMethods = array_keys($this->integration->getPaymentOnlyMethods($currency));
 
-        // Filter by amount limits if this is a payment (not setup) session
-        if ($this->intent_mode === 'payment') {
-            $amountLimitService = app(\App\Services\PaymentMethodAmountLimitService::class);
-            $totalInCents = (int) ($this->total * 100); // Convert to cents
-            
-            $currencyFilteredMethods = $amountLimitService->filterPaymentMethodsByAmount(
-                $currencyFilteredMethods, 
-                $totalInCents, 
-                $currency
-            );
+                // Combine both types of payment methods
+                $allAvailableMethods = array_merge($availableMethods, $paymentOnlyMethods);
 
-            // Log filtered methods for debugging
-            if (count($currencyFilteredMethods) !== count(array_intersect($enabledMethods, $availableForCurrency))) {
-                logger()->debug('Payment methods filtered by amount limits', [
-                    'checkout_session_id' => $this->id,
-                    'total_amount' => $this->total,
-                    'total_in_cents' => $totalInCents,
-                    'currency' => $currency,
-                    'original_methods' => array_values(array_intersect($enabledMethods, $availableForCurrency)),
-                    'filtered_methods' => $currencyFilteredMethods,
-                ]);
+                // Filter by the integration's enabled payment methods
+                $enabledMethods = $this->integration->getEnabledPaymentMethods();
+                $filteredMethods = array_values(array_intersect($allAvailableMethods, $enabledMethods));
+
+                // If no methods match, fall back to available methods
+                if (empty($filteredMethods)) {
+                    $filteredMethods = $allAvailableMethods;
+                }
+
+                // Filter by amount limits if this is a payment (not setup) session
+                if ($this->intent_mode === 'payment') {
+                    $amountLimitService = app(\App\Services\PaymentMethodAmountLimitService::class);
+                    $totalInCents = (int) ($this->total * 100); // Convert to cents
+
+                    $filteredMethods = $amountLimitService->filterPaymentMethodsByAmount(
+                        $filteredMethods,
+                        $totalInCents,
+                        $currency
+                    );
+
+                    // Log filtered methods for debugging
+                    if (count($filteredMethods) !== count(array_intersect($allAvailableMethods, $enabledMethods))) {
+                        logger()->debug('Payment methods filtered by amount limits', [
+                            'checkout_session_id' => $this->id,
+                            'total_amount' => $this->total,
+                            'total_in_cents' => $totalInCents,
+                            'currency' => $currency,
+                            'original_methods' => array_values(array_intersect($allAvailableMethods, $enabledMethods)),
+                            'filtered_methods' => $filteredMethods,
+                        ]);
+                    }
+                }
+
+                return $filteredMethods;
+            } else {
+                // For non-Stripe integrations, use the configured enabled methods
+                $enabledMethods = $this->integration->getEnabledPaymentMethods();
+                return $enabledMethods;
             }
+        } catch (\Exception $e) {
+            // Log the error and return empty array as fallback
+            logger()->warning('Failed to get enabled payment methods from integration', [
+                'checkout_session_id' => $this->id,
+                'integration_id' => $this->integration->id ?? null,
+                'error' => $e->getMessage(),
+            ]);
+            return [];
         }
+    }
 
-        return $currencyFilteredMethods;
+    /**
+     * Get the payment methods for frontend Stripe Elements configuration
+     * This should match exactly what the backend uses for payment intents
+     */
+    public function getFrontendPaymentMethodsAttribute()
+    {
+        return $this->enabled_payment_methods;
     }
 
     public function getIntentModeAttribute()
@@ -206,7 +292,7 @@ class CheckoutSession extends Model
         // Check if any line item has a recurring price (subscription)
         $hasSubscriptionItems = $this->lineItems->some(function (CheckoutLineItem $lineItem) {
             $price = $lineItem->price;
-            return $price && 
+            return $price &&
                    in_array($price->type?->value, ['graduated', 'volume', 'package', 'recurring']) &&
                    !empty($price->renew_interval);
         });
@@ -238,7 +324,7 @@ class CheckoutSession extends Model
          * If test_mode is true, we use STRIPE_TEST, otherwise STRIPE.
          */
         $integrationType = $this->test_mode ? IntegrationType::STRIPE_TEST : IntegrationType::STRIPE;
-        
+
         return $this->organization->integrations()
             ->where('type', $integrationType)
             ->first();

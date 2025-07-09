@@ -1,16 +1,16 @@
-import Numi, { Style, BorderValue, Appearance } from "@/contexts/Numi";
+import Numi, { Style, Appearance } from "@/contexts/Numi";
 import { BlockContextType } from "@/types/blocks";
 import { Switch } from "@/components/ui/switch";
-import { useCallback, useEffect, useMemo } from "react";
+import { useCallback, useMemo } from "react";
 import { Check } from "lucide-react";
 import { Event, EVENT_LABEL_MAP } from "../editor/interaction-event-editor";
 import { resolveThemeValue } from "@/lib/theme";
 import { MarkdownText } from "../ui/markdown-text";
-import { useVisibilityChange } from "@/hooks/use-visibility-change";
+
 
 function CheckboxBlockComponent({ context }: { context: BlockContextType }) {
 
-  const { updateSessionProperties } = Numi.useCheckout({});
+  const { errors } = Numi.useCheckout({});
   const theme = Numi.useTheme();
 
   const [id] = Numi.useStateString({
@@ -39,13 +39,7 @@ function CheckboxBlockComponent({ context }: { context: BlockContextType }) {
     format: 'markdown',
   });
 
-  const [isDefaultChecked] = Numi.useStateBoolean({
-    name: 'is_default_checked',
-    label: 'Default Checked',
-    defaultValue: false,
-  });
-
-  const [checked, setChecked, checkedSessionValue] = Numi.useStateBoolean({
+  const [checked, setChecked] = Numi.useStateBoolean({
     label: 'Checked',
     name: 'value',
     defaultValue: false,
@@ -54,11 +48,15 @@ function CheckboxBlockComponent({ context }: { context: BlockContextType }) {
   });
 
   // validation rules~
-  const { isValid, errors, validate } = Numi.useValidation({
+  const { errors: localErrors, validate } = Numi.useValidation({
     rules: {
-      isRequired: false,
+      isRequired: context.blockConfig.validation?.isRequired ?? false,
     },
   });
+
+  // Get errors from global state or local validation
+  const blockErrors = errors[context.blockId] || localErrors;
+  const hasErrors = blockErrors && blockErrors.length > 0;
 
   const { executeCallbacks } = Numi.useEventCallback({
     name: 'checkbox',
@@ -76,171 +74,114 @@ function CheckboxBlockComponent({ context }: { context: BlockContextType }) {
     const newChecked = !checked;
     setChecked(newChecked);
     executeCallbacks(newChecked ? Event.onSelect : Event.onUnSelect);
-    updateSessionProperties(context.blockId, newChecked);
-  }, [executeCallbacks, updateSessionProperties, context.blockId, checked]);
+    
+    // Validate on change if required
+    if (context.blockConfig.validation?.isRequired) {
+      validate(newChecked);
+    }
+  }, [executeCallbacks, checked, setChecked, validate, context.blockConfig.validation?.isRequired]);
 
   const appearance = Numi.useAppearance([
-    Appearance.margin('margin', 'Margin', {}),
     Appearance.padding('padding', 'Padding', {}, '0px'),
+    Appearance.margin('margin', 'Margin', {}),
     Appearance.spacing('spacing', 'Spacing', { config: { format: 'single' } }),
     Appearance.visibility('visibility', 'Visibility', {}, { conditional: [] }),
   ]);
 
+  const fontConfig = {
+    config: {
+      hideVerticalAlignment: true,
+      hideHorizontalAlignment: true,
+    },
+  };
+
   const style = Numi.useStyle([
-    Style.backgroundColor('activeBackgroundColor', 'Selected Color', {}, theme?.primary_color),
-    Style.backgroundColor('inactiveBackgroundColor', 'Unselected Color', {}, theme?.primary_contrast_color),
-    Style.textColor('checkColor', 'Check Color', {}),
-    Style.font('font', 'Label Font & Color',
-      {
-        config: {
-          hideVerticalAlignment: true,
-          hideHorizontalAlignment: true,
-        },
-      },
-      {},
-    ),
+    Style.alignment('alignment', 'Alignment', {}, 'left'),
+    Style.font('labelFont', 'Label Font & Color', fontConfig, theme?.label_typography),
+    Style.backgroundColor('backgroundColor', 'Background Color', {}, theme?.primary_surface_color),
     Style.border('border', 'Border', {}, { width: '1px', style: 'solid' }),
-    Style.borderRadius('borderRadius', 'Border Radius', {}, '5px'),
+    Style.borderRadius('borderRadius', 'Border Radius', {}, theme?.border_radius),
     Style.borderColor('borderColor', 'Border Color', {}, theme?.primary_border_color),
     Style.hidden('hidden', 'Hidden', {}, false),
   ]);
 
-  const font = style.font;
-  const border = style?.border as BorderValue;
-  const borderColor = resolveThemeValue(style?.borderColor, theme, 'primary_border_color');
-  const checkColor = resolveThemeValue(style?.checkColor, theme, 'primary_contrast_color');
-  const backgroundColorActive = resolveThemeValue(style?.activeBackgroundColor, theme, 'primary_color');
-  const backgroundColorInactive = resolveThemeValue(style?.inactiveBackgroundColor, theme);
-  const borderRadius = style?.borderRadius;
-  const shadow = style?.shadow as string;
-
-  const isManuallyStyledCheckbox = (borderRadius != undefined || backgroundColorActive != undefined || backgroundColorInactive != undefined);
-
-  const containerStyles = useMemo(() => ({
-    padding: appearance.padding,
+  const containerStyle = useMemo(() => ({
+    rowGap: appearance.spacing,
     margin: appearance.margin,
-    gap: appearance.spacing,
-  }), [appearance]);
+    alignItems: style.alignment != 'expand' ? style.alignment : 'flex-start'
+  }), [appearance, style]);
+
+  const labelStyles = useMemo(() => ({
+    color: (resolveThemeValue(style?.labelFont?.color, theme) as string) || '#000000',
+    fontFamily: style?.labelFont?.font || 'Inter, sans-serif',
+    fontWeight: style?.labelFont?.weight || '400',
+    fontSize: style?.labelFont?.size || '14px',
+    lineHeight: style?.labelFont?.lineHeight || '1.5',
+  }), [style?.labelFont, theme]);
 
   const checkboxStyles = useMemo(() => ({
-    backgroundColor: checked ? backgroundColorActive : backgroundColorInactive,
-    borderColor: borderColor,
-    borderWidth: border?.width,
-    borderStyle: border?.style,
-    borderRadius : borderRadius,
-    boxShadow: shadow,
-    appearance: 'none',
-    ...isManuallyStyledCheckbox ? {
-      width: '14px',
-      height: '14px',
-    } : {},
-  }), [
-    isManuallyStyledCheckbox,
-    backgroundColorActive,
-    backgroundColorInactive,
-    border,
-    borderRadius,
-    shadow,
-    borderColor,
-    checked,
-  ]);
+    backgroundColor: (resolveThemeValue(style.backgroundColor, theme) as string) || '#ffffff',
+    borderColor: hasErrors ? '#ef4444' : ((resolveThemeValue(style.borderColor, theme) as string) || '#d1d5db'),
+    borderWidth: style.border?.width || '1px',
+    borderStyle: style.border?.style || 'solid',
+    borderRadius: style.borderRadius || '4px',
+  }), [style, hasErrors, theme]);
 
-  const switchStyles = useMemo(() => ({
-    backgroundColor: checked ? backgroundColorActive : backgroundColorInactive,
-    borderColor: borderColor,
-    borderWidth: border?.width,
-    borderStyle: border?.style,
-    boxShadow: shadow,
-  }), [
-    backgroundColorActive,
-    backgroundColorInactive,
-    border,
-    borderRadius,
-    shadow,
-    borderColor,
-    checked,
-  ]);
-
-  const checkboxLabelStyles = useMemo(() => ({
-    color: resolveThemeValue(font?.color, theme),
-    fontFamily: font?.font,
-    fontWeight: font?.weight,
-    fontSize: font?.size,
-    lineHeight: font?.lineHeight,
-    letterSpacing: font?.letterSpacing,
-  }), [font]);
-
-  const checkIconStyles = useMemo(() => ({
-    position: 'absolute',
-    pointerEvents: 'none',
-    userSelect: 'none',
-    width: '10px',
-    height: '10px',
-    top: '55%',
-    left: '50%',
-    transform: 'translate(-50%, -50%)',
-    color: checkColor,
-  }), [checkColor]);
-
-  const switchThumbStyles = useMemo(() => ({
-    backgroundColor: checkColor,
-  }), [checkColor]);
+  const errorStyles = useMemo(() => ({
+    color: '#ef4444',
+    fontSize: '12px',
+    marginTop: '4px',
+    fontFamily: 'Inter, sans-serif',
+  }), []);
 
   if (style.hidden) {
     return null;
   }
 
-  const labelComponent = (
-    label && <MarkdownText text={label} theme={theme} style={checkboxLabelStyles} />
-  );
-
-  useEffect(() => {
-    if(checkedSessionValue === null) {
-      updateSessionProperties(context.blockId, isDefaultChecked);
-      setChecked(isDefaultChecked);
-    }
-  }, [isDefaultChecked, checkedSessionValue]);
-
-  useVisibilityChange({ hidden: context.hidden, onVisible: () => {
-    updateSessionProperties(context.blockId, isDefaultChecked);
-    setChecked(isDefaultChecked);
-  }});
-
-
   return (
-    <div>
-      {checkboxStyle === 'checkbox' && (
-        isManuallyStyledCheckbox ? (
-          <div className="flex items-center gap-2" style={containerStyles}>
-            <div className="relative flex justify-center">
-              <input
-                style={checkboxStyles}
-                id={id}
-                type="checkbox"
-                name={context.blockId}
-                checked={checked}
-                onChange={handleChange}
-              />
-              {(isManuallyStyledCheckbox && checked) && <Check strokeWidth="5" className="pb-0.5" style={checkIconStyles} />}
-            </div>
-            {label && labelComponent}
-          </div>
-        ) : (
-          <div className="flex items-center" style={containerStyles}>
-            <input style={checkboxStyles} id={id} type="checkbox" name={context.blockId} checked={checked} onChange={handleChange} />
-            {label && labelComponent}
-          </div>)
-      )}
-      {checkboxStyle === 'switch' && (
-        <div className="flex items-center gap-2" style={containerStyles}>
+    <div className='flex flex-col' style={containerStyle}>
+      <div className="flex items-center gap-2" style={{ width: style.alignment == 'expand' ? '100%' : 'auto' }}>
+        {checkboxStyle === 'switch' ? (
           <Switch
-            style={switchStyles}
-            thumbProps={{
-              style: switchThumbStyles,
-            }}
+            id={id || `checkbox-${context.blockId}`}
             checked={checked}
             onCheckedChange={handleChange}
-          />{label && labelComponent}
+            style={checkboxStyles}
+          />
+        ) : (
+          <div
+            id={id || `checkbox-${context.blockId}`}
+            className="flex items-center justify-center cursor-pointer"
+            style={{
+              width: '20px',
+              height: '20px',
+              ...checkboxStyles
+            }}
+            onClick={handleChange}
+          >
+            {checked && (
+              <Check
+                size={14}
+                color={(resolveThemeValue(style.labelFont?.color, theme) as string) || '#000000'}
+              />
+            )}
+          </div>
+        )}
+        {label && (
+          <label 
+            htmlFor={id || `checkbox-${context.blockId}`} 
+            style={labelStyles} 
+            className="cursor-pointer flex-1"
+          >
+            <MarkdownText text={label} />
+          </label>
+        )}
+      </div>
+      {hasErrors && (
+        <div style={errorStyles}>
+          {blockErrors.map((error, index) => (
+            <div key={index}>{error}</div>
+          ))}
         </div>
       )}
     </div>

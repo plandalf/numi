@@ -220,16 +220,46 @@ const ValidationSection = ({ block, onUpdate }: { block: Block, onUpdate: (block
     });
   };
 
+  // Show validation for text inputs and checkboxes
+  const isTextInput = block.type === 'text_input';
+  const isCheckbox = block.type === 'checkbox';
+
+  if (!isTextInput && !isCheckbox) {
+    return null;
+  }
+
   return (
-    <>
-      <div className="flex items-center gap-2 mb-4">
-        <Checkbox
-          checked={block.validation?.isRequired ?? false}
-          onCheckedChange={(checked) => handleValidationChange('isRequired', !!checked)}
-        />
-        <Label className="mb-0">Required</Label>
+    <div className="space-y-4">
+      <h3 className="font-semibold">Validation</h3>
+      
+      <div className="space-y-2">
+        {/* Required validation - for both text inputs and checkboxes */}
+        <div className="flex items-center justify-between gap-3 border rounded-md py-2 px-4 bg-white">
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+            <Label className="mb-0 text-sm">Required field</Label>
+          </div>
+          <Checkbox
+            checked={block.validation?.isRequired ?? false}
+            onCheckedChange={(checked) => handleValidationChange('isRequired', !!checked)}
+          />
+        </div>
+
+        {/* Email validation - only for text inputs */}
+        {isTextInput && (
+          <div className="flex items-center justify-between gap-3 border rounded-md py-2 px-4 bg-white">
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+              <Label className="mb-0 text-sm">Email validation</Label>
+            </div>
+            <Checkbox
+              checked={block.validation?.email ?? false}
+              onCheckedChange={(checked) => handleValidationChange('email', !!checked)}
+            />
+          </div>
+        )}
       </div>
-    </>
+    </div>
   )
 }
 
@@ -343,7 +373,6 @@ export const Inspector = ({
     { type: 'validation', label: 'Validation' },
     { type: 'interaction', label: 'Interaction' },
     { type: 'eventCallback', label: 'Event Callback' },
-    { type: 'conditions', label: 'Conditions' },
   ];
 
   const handleSaveToLibrary = async (data: { name: string }) => {
@@ -382,7 +411,7 @@ export const Inspector = ({
             {Object.entries(groupedHooksByGroup).map(([group, hooks]) => {
               // Skip hooks that are handled by special sections
               const filteredHooks = hooks.filter(hook =>
-                !['appearance', 'style', 'validation', 'interaction', 'conditions', 'eventCallback'].includes(hook.type)
+                !['appearance', 'style', 'validation', 'interaction', 'eventCallback'].includes(hook.type)
               );
 
               if (filteredHooks.length === 0) return null;
@@ -470,8 +499,6 @@ export const Inspector = ({
                     <ValidationSection block={block} onUpdate={onUpdate} />
                   ) : type === 'interaction' || type === 'eventCallback' ? (
                     <InteractionSection globalState={globalState} block={block} onUpdate={onUpdate} />
-                  ) : type === 'conditions' ? (
-                    <ConditionsSection globalState={globalState} block={block} onUpdate={onUpdate} />
                   ) : null}
                 </div>
               );
