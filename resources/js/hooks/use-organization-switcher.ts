@@ -33,6 +33,7 @@ export function useOrganizationSwitcher({
       preserveScroll: false,
       replace: true,
       onSuccess: () => {
+        router.flushAll();
         onSwitch?.(id);
       },
     });
