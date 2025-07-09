@@ -1,7 +1,7 @@
 import { PlaceholderPattern } from '@/components/ui/placeholder-pattern';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
-import { Head, router } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import { Button } from '@/components/ui/button';
 import { Copy, CopyPlus, ExternalLink, Plus } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -47,7 +47,7 @@ export default function Dashboard({ offers, globalTemplates, organizationTemplat
       const id = `page_${Math.random().toString(36).substr(2, 9)}`;
 
       const defaultName = pageName || (type === 'entry' ? 'Entry Page' : type === 'ending' ? 'Ending Page' : 'New Page');
-  
+
       const updatedView = {
         pages: {
           [id]: {
@@ -144,10 +144,11 @@ export default function Dashboard({ offers, globalTemplates, organizationTemplat
             <div className="grid auto-rows-min gap-4 md:grid-cols-3">
               {offers.length > 0 ? (
                 offers.map((offer) => (
-                  <Card
+                  <Link
                     key={offer.id}
-                    className="cursor-pointer !bg-[#d1dafb1a] !hover:bg-[#d1dafb40] hover:scale-101 transition-all duration-200 active:scale-100"
-                    onClick={() => router.get(route('offers.edit', offer.id))}
+                    prefetch
+                    className="bg-card text-card-foreground flex flex-col gap-6 rounded-xl border py-6 cursor-pointer !bg-[#d1dafb1a] !hover:bg-[#d1dafb40] hover:scale-101 transition-all duration-200 active:scale-100"
+                    href={route('offers.edit', offer.id)}
                   >
                     <CardHeader className="flex flex-row justify-between items-center">
                       <div className="flex flex-col items-start">
@@ -200,7 +201,7 @@ export default function Dashboard({ offers, globalTemplates, organizationTemplat
                           className="h-32 w-full stroke-neutral-900/20 dark:stroke-neutral-100/20" />
                       )}
                     </CardContent>
-                  </Card>
+                  </Link>
                 ))
               ) : (
                 <div
@@ -225,7 +226,7 @@ export default function Dashboard({ offers, globalTemplates, organizationTemplat
             open={isPageEditorDialogOpen}
             onOpenChange={setIsPageEditorDialogOpen}
             onSubmit={createNewOffer}
-            copy={{ 
+            copy={{
               title: 'Add your first page',
               description: 'Select a specific layout for your first page'
             }}

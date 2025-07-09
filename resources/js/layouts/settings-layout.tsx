@@ -82,7 +82,7 @@ export default function SettingsLayout({ children }: SettingsLayoutProps) {
                                             asChild
                                             isActive={isActive}
                                         >
-                                            <Link href={item.href}>
+                                            <Link href={item.href} prefetch>
                                                 <Icon className="h-4 w-4" />
                                                 <span>{item.title}</span>
                                             </Link>

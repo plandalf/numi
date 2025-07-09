@@ -29,12 +29,15 @@ export function useOrganizationSwitcher({
 
   const handleSwitch = (id: number) => {
     router.post(route('organizations.switch', { organization: id }), {},{
+      preserveState: false,
+      preserveScroll: false,
+      replace: true,
       onSuccess: () => {
         onSwitch?.(id);
       },
     });
   };
-   
+
   return {
     currentOrganization: auth?.user?.current_organization!,
     organizations: auth?.user?.organizations ?? [],
