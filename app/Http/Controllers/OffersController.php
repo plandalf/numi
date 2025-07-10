@@ -204,7 +204,7 @@ class OffersController extends Controller
         $themeId = $offer->theme_id;
 
         // No need to duplicate if it's a global theme
-        if($offer->theme->organization_id) {
+        if($offer->theme?->organization_id) {
             $newTheme = $offer->theme->replicate();
             $newTheme->name = (
                 $offer->name
