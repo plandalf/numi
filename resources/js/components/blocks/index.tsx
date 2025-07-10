@@ -16,6 +16,7 @@ import DetailTimelineBlock from '@/components/blocks/DetailTimelineBlock';
 import RadioListBlock from "./RadioListBlock";
 import DividerBlockComponent from "./DividerBlock";
 import RatingBlockComponent from "./RatingBlock";
+import HtmlBlockComponent from "./HtmlBlock";
 
 export const blockTypes = {
   text: TextBlockComponent,
@@ -36,6 +37,7 @@ export const blockTypes = {
   plan_descriptor: PlanDescriptorComponent,
   heading: HeadingBlockComponent,
   divider: DividerBlockComponent,
+  html: HtmlBlockComponent,
 }
 
 type BlockMeta = {
@@ -153,6 +155,12 @@ export const blockMetas: Record<keyof typeof blockTypes, BlockMeta> = {
     title: 'Rating Block',
     icon: '⭐',
     description: 'A block for star-based rating selection.',
+  },
+  html: {
+    id: 'html',
+    title: 'HTML Block',
+    icon: '🔤',
+    description: 'A block for displaying HTML content.',
   },
 };
 

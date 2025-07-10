@@ -18,7 +18,8 @@ import {
   Minus,
   FlameIcon,
   BookmarkIcon,
-  Star
+  Star,
+  CodeIcon
 } from 'lucide-react';
 import { useDraggable } from '@dnd-kit/core';
 import SearchBar from './search-bar';
@@ -40,6 +41,8 @@ export const CustomElementIcon = ({ type }: CustomElementIconProps) => {
         return <LayoutPanelLeft className="w-6 h-6" />;
     case 'button':
         return <SquareMousePointer className="w-6 h-6" />;
+    case 'html':
+        return <CodeIcon className="w-6 h-6" />;
     case 'link':
         return <LinkIcon className="w-6 h-6" />;
     case 'checkbox':
@@ -118,6 +121,7 @@ const baseElements = [
   { type: 'heading', title: 'Heading' },
   { type: 'divider', title: 'Divider' },
   { type: 'rating', title: 'Rating' },
+  { type: 'html', title: 'HTML Block' },
 ];
 
 const interactiveElements = [

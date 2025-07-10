@@ -110,7 +110,7 @@ function StripeElementsComponent({ context }: { context: BlockContextType }) {
         hideLetterSpacing: true,
       }
     }, theme?.label_typography as FontValue),
-    Style.backgroundColor('paymentFormBackgroundColor', 'Payment Form Background Color', {}, theme?.primary_surface_color),
+    Style.backgroundColor('paymentFormBackgroundColor', 'Payment Form Background Color', {}, 'transparent'), 
     Style.borderRadius('paymentFormBorderRadius', 'Payment Form Border Radius', {}, theme?.border_radius),
     Style.border('paymentFormBorder', 'Payment Form Border', {}, { width: '0px', style: 'none' }),
     Style.borderColor('paymentFormBorderColor', 'Payment Form Border Color', {}, theme?.secondary_border_color),
