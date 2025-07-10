@@ -47,7 +47,7 @@ export interface CheckoutSession {
   // exclusive_taxes: number;
   inclusive_taxes: number;
   shipping: number;
-  discount: number;
+  discount: string;
   total: number;
   integration_client: IntegrationClient;
 

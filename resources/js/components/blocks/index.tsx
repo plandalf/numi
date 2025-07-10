@@ -15,6 +15,7 @@ import HeadingBlockComponent from "./HeadingBlock";
 import DetailTimelineBlock from '@/components/blocks/DetailTimelineBlock';
 import RadioListBlock from "./RadioListBlock";
 import DividerBlockComponent from "./DividerBlock";
+import RatingBlockComponent from "./RatingBlock";
 
 export const blockTypes = {
   text: TextBlockComponent,
@@ -28,6 +29,7 @@ export const blockTypes = {
   quote: QuoteBlockComponent,
   option_selector: OptionSelectorComponent,
   radio_list: RadioListBlock,
+  rating: RatingBlockComponent,
   checkout_summary: CheckoutSummaryComponent,
   add_on: AddOnBlockComponent,
   payment_method: PaymentMethodBlock,
@@ -68,11 +70,23 @@ export const blockMetas: Record<keyof typeof blockTypes, BlockMeta> = {
     icon: '📋',
     description: 'A block for displaying a list of details.',
   },
+  detail_timeline: {
+    id: 'detail_timeline',
+    title: 'Detail Timeline Block',
+    icon: '📅',
+    description: 'A block for displaying timeline information.',
+  },
   button: {
     id: 'button',
     title: 'Button Block',
     icon: '🔘',
     description: 'A block for actions and triggers.',
+  },
+  link: {
+    id: 'link',
+    title: 'Link Block',
+    icon: '🔗',
+    description: 'A block for clickable links.',
   },
   image: {
     id: 'image',
@@ -98,6 +112,12 @@ export const blockMetas: Record<keyof typeof blockTypes, BlockMeta> = {
     icon: '🧾',
     description: 'A block for displaying checkout/order summary.',
   },
+  add_on: {
+    id: 'add_on',
+    title: 'Add On Block',
+    icon: '➕',
+    description: 'A block for additional options or add-ons.',
+  },
   payment_method: {
     id: 'payment_method',
     title: 'Payment Method Block',
@@ -110,11 +130,29 @@ export const blockMetas: Record<keyof typeof blockTypes, BlockMeta> = {
     icon: '📋',
     description: 'A block for displaying plan descriptions and details.',
   },
+  heading: {
+    id: 'heading',
+    title: 'Heading Block',
+    icon: '📝',
+    description: 'A block for displaying headings and titles.',
+  },
+  divider: {
+    id: 'divider',
+    title: 'Divider Block',
+    icon: '➖',
+    description: 'A block for visual separation.',
+  },
   radio_list: {
     id: 'radio_list',
     title: 'Radio List Block',
     icon: '🔘',
     description: 'A block for displaying a list of radio options.',
+  },
+  rating: {
+    id: 'rating',
+    title: 'Rating Block',
+    icon: '⭐',
+    description: 'A block for star-based rating selection.',
   },
 };
 

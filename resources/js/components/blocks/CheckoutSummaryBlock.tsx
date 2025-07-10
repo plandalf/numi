@@ -13,9 +13,7 @@ import { OfferItemType } from "@/types/offer";
 
 function CheckoutSummaryComponent({ context }: { context: BlockContextType }) {
   const theme = Numi.useTheme();
-  const { session, addDiscount, removeDiscount, isEditor } = Numi.useCheckout({
-
-  });
+  const { session, addDiscount, removeDiscount, isEditor } = Numi.useCheckout({});
 
   const [title] = Numi.useStateString({
     label: 'Title',
@@ -86,13 +84,7 @@ function CheckoutSummaryComponent({ context }: { context: BlockContextType }) {
     group: 'lineItems',
   });
 
-  const [discountCode, setDiscountCode] = Numi.useStateString({
-    label: 'Allow discount codes',
-    name: 'discountCode',
-    defaultValue: '',
-    inspector: 'hidden',
-    group: 'discountCodes',
-  });
+  const [discountCode, setDiscountCode] = useState(session.discount || '');
 
   const [stackedDiscounts, setStackedDiscounts] = Numi.useStateBoolean({
     label: 'Allow stacking discounts',
@@ -178,8 +170,6 @@ function CheckoutSummaryComponent({ context }: { context: BlockContextType }) {
     Style.hidden('hidden', 'Hidden', {}, false),
   ]);
 
-
-
   const containerStyle = useMemo(() => {
     return {
       backgroundColor: resolveThemeValue(style.backgroundColor, theme, 'primary_surface_color') as string,
@@ -253,8 +243,6 @@ function CheckoutSummaryComponent({ context }: { context: BlockContextType }) {
     };
   }, [style?.itemQuantityFont]);
 
-
-
   const inputStyle = useMemo(() => {
     return {
       backgroundColor: resolveThemeValue(style.inputBackgroundColor, theme, 'secondary_surface_color') as string,
@@ -269,9 +257,6 @@ function CheckoutSummaryComponent({ context }: { context: BlockContextType }) {
       borderStyle: style?.inputBorder?.style,
     };
   }, [style]);
-
-
-
 
   const buttonStyle = useMemo(() => {
     const buttonTextFont = {
@@ -336,6 +321,7 @@ function CheckoutSummaryComponent({ context }: { context: BlockContextType }) {
   }, [appearance.summarySpacing]);
 
   const [errors, setErrors] = useState<Record<string, string>>({});
+
   const [isDiscountSubmitting, setIsDiscountSubmitting] = useState(false);
 
   const handleApplyDiscount = () => {
@@ -509,9 +495,9 @@ function CheckoutSummaryComponent({ context }: { context: BlockContextType }) {
       )}
 
       {/* Order Summary Calculations */}
-      {(showSubtotal || 
-        (showShipping && session.shipping > 0) || 
-        (showTaxes && session.inclusive_taxes > 0) || 
+      {(showSubtotal ||
+        (showShipping && session.shipping > 0) ||
+        (showTaxes && session.inclusive_taxes > 0) ||
         (session.discounts && session.discounts.length > 0)
       ) && (
         <div className="space-y-2 text-sm flex flex-col" style={summaryContainerStyle}>
