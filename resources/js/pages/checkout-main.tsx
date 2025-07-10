@@ -720,7 +720,7 @@ export const NavigationProvider = ({ children, onPageChange }: NavigationProvide
 
   const canGoBack = () => {
     // Can't go back from entry pages
-    if (currentPage.type === 'entry') return false;
+    if (currentPage?.type === 'entry') return false;
     // Can go back if we have history
     return pageHistory.length > 0;
   };
