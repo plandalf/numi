@@ -5,6 +5,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { MarkdownIcon } from '../blocks/MarkdownIcon';
 import { Tooltip, TooltipTrigger, TooltipContent } from '../ui/tooltip';
 import { ExternalLinkIcon } from 'lucide-react';
+import { Input } from '../ui/input';
 
 interface StringEditorProps {
   label?: string;
@@ -81,9 +82,9 @@ export const StringEditor: React.FC<StringEditorProps> = ({ label, placeholder, 
         onBlur={() => validate(value)}
       />
     ) : (
-      <input
+      <Input
         type="text"
-        className="bg-white border border-gray-300 rounded-md p-1.75 w-full text-sm"
+        
         value={value}
         onChange={e => handleChange(e)}
         placeholder={placeholder}
