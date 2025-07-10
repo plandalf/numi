@@ -196,24 +196,6 @@ function EditApp({ publishableKey }: { publishableKey: string | undefined }) {
   const dragOverRafRef = useRef<number | null>(null); // Ref for requestAnimationFrame
 
   function generateIdForBlockType(type: string) {
-    // Count all blocks of the given type across all pages and sections
-    let count = 0;
-
-    // Iterate through all pages
-    Object.values(data.view.pages).forEach(page => {
-      // Iterate through all sections in each page
-      Object.values(page.view).forEach(section => {
-        // Count blocks of the specified type in this section
-        if (section.blocks) {
-          section.blocks.forEach(block => {
-            if (block.type === type) {
-              count++;
-            }
-          });
-        }
-      });
-    });
-
     // Convert snake_case to camelCase
     const camelCaseType = type
       .split('_')
@@ -225,8 +207,48 @@ function EditApp({ publishableKey }: { publishableKey: string | undefined }) {
       })
       .join('');
 
-    // Return the camelCase type with the next sequential number
-    return `${camelCaseType}${count + 1}`;
+    // Collect all existing IDs for blocks of this type
+    const existingIds = new Set<string>();
+    const existingNumbers: number[] = [];
+
+    // Iterate through all pages and sections to find existing IDs
+    Object.values(data.view.pages).forEach(page => {
+      Object.values(page.view).forEach(section => {
+        if (section.blocks) {
+          section.blocks.forEach(block => {
+            if (block.type === type && block.id) {
+              existingIds.add(block.id);
+              
+              // Extract number suffix if it matches our pattern
+              const regex = new RegExp(`^${camelCaseType}(\\d+)$`);
+              const match = block.id.match(regex);
+              if (match) {
+                existingNumbers.push(parseInt(match[1], 10));
+              }
+            }
+          });
+        }
+      });
+    });
+
+    // Find the next available number
+    let nextNumber = 1;
+    
+    if (existingNumbers.length > 0) {
+      // Sort numbers to find gaps or get the next sequential number
+      existingNumbers.sort((a, b) => a - b);
+      
+      // Look for the first gap in the sequence
+      for (let i = 1; i <= existingNumbers[existingNumbers.length - 1] + 1; i++) {
+        const proposedId = `${camelCaseType}${i}`;
+        if (!existingIds.has(proposedId)) {
+          nextNumber = i;
+          break;
+        }
+      }
+    }
+
+    return `${camelCaseType}${nextNumber}`;
   }
 
   function setSections(newSectionsForPage: Record<string, ViewSection> | ((currentSections: Record<string, ViewSection>) => Record<string, ViewSection>)) {
