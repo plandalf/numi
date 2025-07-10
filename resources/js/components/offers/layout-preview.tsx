@@ -18,7 +18,7 @@ import { Badge } from '../ui/badge';
 import { Theme } from '@/types/theme';
 import { resolveThemeValue } from '@/lib/theme';
 import { NavigationBar } from '@/pages/checkout';
-import { EyeIcon, EyeOffIcon } from 'lucide-react';
+import { EyeIcon, EyeOffIcon, GripVerticalIcon } from 'lucide-react';
 import { getLayoutJSONConfig } from '@/config/layouts';
 
 // Local interfaces that match the actual structure
@@ -111,7 +111,9 @@ const createElement = (
   }
 
   // Use a div
-  return <div {...props}>{children}</div>;
+  return <div {...props}>
+    {children}
+  </div>;
 };
 
 interface RecursiveRenderElementProps {
@@ -260,8 +262,6 @@ const TailwindLayoutRenderer = ({
 
   const { selectedSectionId, setSelectedSectionId, hoveredSectionId } = useEditor();
 
-  // console.log(`TailwindLayoutRenderer rendering. Context selectedSectionId: ${selectedSectionId}`);
-
   return (
     <RecursiveRenderElement
       element={config.template}
@@ -364,18 +364,15 @@ const BlockRendererComponent = ({ block, children, onBlockSelect }: {
       })}
       onClick={handleClick}>
       <BlockContext.Provider value={blockContext}>
-        {/* {!hideBlockId && (
-          <div className={cx({
-            "hidden group-hover:block absolute text-xs bg-gray-100 border font-semibold right-0 top-0": true,
-            "!block": selectedBlockId === block.id,
-            "opacity-50": !isVisible,
-          })}>{block.id}</div>
-        )} */}
         {children(blockContext)}
         {hasVisibilityCondition && <Badge variant="outline" className={cn("absolute top-0 right-0", {
           "bg-green-100 text-green-500": isVisible,
           "bg-red-100 text-red-500": !isVisible,
         })}>{isVisible ? <EyeIcon className="size-5" /> : <EyeOffIcon className="size-5" />}</Badge>}
+        {/* drag handle */}
+        <div className="absolute -top-4 -right-4 bg-white p-1 hidden group-hover:block rounded">
+          <GripVerticalIcon className="size-4" />
+        </div>
       </BlockContext.Provider>
     </div>
   );

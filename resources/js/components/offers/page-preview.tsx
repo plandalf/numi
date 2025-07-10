@@ -97,27 +97,6 @@ export default function PagePreview({ page, onUpdatePage }: PreviewProps) {
       setLivePreviewPage(page);
   }, [page]);
 
-  const selectedBlock = selectedBlockId ? findBlockInPage(livePreviewPage, selectedBlockId) : null;
-
-
-  const handleBlockUpdate = (updatedBlock: Block) => {
-      if (!updatedBlock.id) return;
-
-      // Apply changes to the live preview immediately
-      const updatedPreviewPage = JSON.parse(JSON.stringify(livePreviewPage));
-      updateBlockInPage(updatedPreviewPage, updatedBlock);
-
-      // Update live preview
-      setLivePreviewPage(updatedPreviewPage);
-      setPendingChanges(updatedBlock);
-  };
-
-  const handleSaveChanges = () => {
-      if (!pendingChanges || !pendingChanges.id || !onUpdatePage) return;
-      onUpdatePage(livePreviewPage);
-      setPendingChanges(null);
-  };
-
 return (
 
   <div className="h-full flex">
