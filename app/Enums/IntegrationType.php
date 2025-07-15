@@ -6,6 +6,7 @@ enum IntegrationType: string
 {
     case STRIPE = 'stripe';
     case STRIPE_TEST = 'stripe_test';
+    case KAJABI = 'kajabi';
 
     /**
      * Get all available charge types as an array of values.
@@ -23,7 +24,9 @@ enum IntegrationType: string
     public function label(): string
     {
         return match ($this) {
-            self::STRIPE => 'Stripe'
+            self::STRIPE => 'Stripe',
+            self::STRIPE_TEST => 'Stripe (Test)',
+            self::KAJABI => 'Kajabi'
         };
     }
 }

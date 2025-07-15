@@ -144,6 +144,11 @@ class Organization extends Model
         return $this->hasMany(ApiKey::class);
     }
 
+    public function sequences(): HasMany
+    {
+        return $this->hasMany(\App\Models\Automation\Sequence::class);
+    }
+
     public function getTrialDaysLeftAttribute()
     {
         if (! config('cashier.enable_billing')) {

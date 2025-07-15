@@ -12,10 +12,12 @@ use App\Http\Controllers\OffersController;
 use App\Http\Controllers\OrganizationController;
 use App\Http\Controllers\PriceController;
 use App\Http\Controllers\ProductsController;
+use App\Http\Controllers\ReusableBlockController;
 use App\Http\Controllers\SequencesController;
 use App\Http\Controllers\Settings\ProfileController;
 use App\Http\Controllers\ThemeController;
 use App\Http\Controllers\TemplateController;
+use App\Http\Controllers\WebhookController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use App\Http\Controllers\OrdersController;
@@ -23,10 +25,20 @@ use App\Http\Controllers\FeedbackController;
 use App\Http\Controllers\OfferItemPriceController;
 use App\Http\Controllers\OnboardingController;
 use App\Http\Controllers\ApiKeysController;
-use App\Http\Controllers\OnboardingInfoController;
-use App\Http\Controllers\BlockLibraryController;
+use App\Http\Controllers\ImpersonationController;
 
 Route::redirect('/', '/dashboard')->name('home');
+
+Route::get('test', function () {
+
+    $kajabi = new \App\Apps\Kajabi\KajabiApp();
+    $integration = \App\Models\Integration::find(1);
+
+    dd(
+        $integration,
+        $kajabi->test($integration)
+    );
+});
 
 Route::middleware(['frame-embed'])->group(function () {
     Route::get('/o/{offer}/{environment?}', [CheckoutController::class, 'initialize'])
@@ -107,16 +119,98 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::middleware(['organization', 'subscription'])->group(function () {
 
         Route::resource('products', ProductsController::class);
-        Route::resource('sequences', SequencesController::class);
         Route::post('products/{product}/prices/import', [PriceController::class, 'import'])->name('products.prices.import');
         Route::resource('products.prices', PriceController::class);
+
+
+        // todo: prefix all this with /automation (the module)
+
+        // automation/sequences
+        // automation/apps
+
+        // Test-specific routes that match the test expectations (must come before resource routes)
+        Route::prefix('sequences')->name('sequences.')->group(function () {
+            Route::get('/discovered-apps', [SequencesController::class, 'getDiscoveredApps'])->name('discovered-apps');
+            Route::get('/discovered-actions', [SequencesController::class, 'getDiscoveredActions'])->name('discovered-actions');
+            Route::get('/discovered-triggers', [SequencesController::class, 'getDiscoveredTriggers'])->name('discovered-triggers');
+            Route::get('/discovered-resources', [SequencesController::class, 'getDiscoveredResources'])->name('discovered-resources');
+            Route::get('/resource-search/{resource}', [SequencesController::class, 'searchResource'])->name('resource-search');
+            Route::post('/test-action-config', [SequencesController::class, 'testActionConfig'])->name('test-action-config');
+        });
+
+        Route::resource('sequences', SequencesController::class);
+
+        // Sequences automation routes
+        Route::prefix('sequences/{sequence}')->name('sequences.')->group(function () {
+            Route::get('/apps', [SequencesController::class, 'getApps'])->name('apps.index');
+            Route::get('/triggers/{trigger}', [SequencesController::class, 'showTrigger'])->name('triggers.show');
+            Route::post('/triggers', [SequencesController::class, 'storeTrigger'])->name('triggers.store');
+            Route::put('/triggers/{trigger}', [SequencesController::class, 'updateTrigger'])->name('triggers.update');
+            Route::delete('/triggers/{trigger}', [SequencesController::class, 'destroyTrigger'])->name('triggers.destroy');
+            Route::post('/triggers/{trigger}/test', [SequencesController::class, 'testTrigger'])->name('triggers.test');
+            Route::get('/actions/{node}', [SequencesController::class, 'showAction'])->name('actions.show');
+            Route::post('/actions', [SequencesController::class, 'storeAction'])->name('actions.store');
+            Route::put('/actions/{node}', [SequencesController::class, 'updateAction'])->name('actions.update');
+            Route::delete('/actions/{node}', [SequencesController::class, 'destroyAction'])->name('actions.destroy');
+            Route::post('/actions/{node}/test', [SequencesController::class, 'testAction'])->name('actions.test');
+            Route::post('/actions/test', [SequencesController::class, 'testActionConfig'])->name('actions.test-config');
+        });
+
+        // Apps and automation API routes
+        Route::prefix('apps')->name('apps.')->group(function () {
+            Route::get('/', [SequencesController::class, 'getApps'])->name('index');
+            Route::get('/{app}', [SequencesController::class, 'getApp'])->name('show');
+            Route::get('/{app}/triggers', [SequencesController::class, 'getAppTriggers'])->name('triggers');
+            Route::get('/{app}/actions', [SequencesController::class, 'getAppActions'])->name('actions');
+        });
+
+        // todo: do discovery later.
+
+        // Discovered app actions and triggers routes
+        Route::prefix('discovered')->name('discovered.')->group(function () {
+            Route::get('/actions', [SequencesController::class, 'getDiscoveredActions'])->name('actions');
+            Route::get('/triggers', [SequencesController::class, 'getDiscoveredTriggers'])->name('triggers');
+            Route::get('/apps/{appName}/actions', [SequencesController::class, 'getDiscoveredAppActions'])->name('apps.actions');
+            Route::get('/apps/{appName}/triggers', [SequencesController::class, 'getDiscoveredAppTriggers'])->name('apps.triggers');
+            Route::get('/resources', [SequencesController::class, 'getDiscoveredResources'])->name('resources');
+            Route::post('/resources/search', [SequencesController::class, 'searchResource'])->name('resources.search');
+            Route::get('/debug', [SequencesController::class, 'debugDiscovery'])->name('debug');
+        });
+
+
+        // /integrations
+
+        // Integration management for automation
+        Route::prefix('automation-integrations')->name('automation-integrations.')->group(function () {
+            Route::get('/', [SequencesController::class, 'getIntegrations'])->name('index');
+            Route::post('/', [SequencesController::class, 'storeIntegration'])->name('store');
+            Route::get('/credential-fields/{integrationType}', [SequencesController::class, 'getIntegrationCredentialFields'])->name('credential-fields');
+            Route::get('/{integration:uuid}/test', [SequencesController::class, 'testIntegration'])->name('test');
+            Route::get('/{integration:uuid}/triggers', [SequencesController::class, 'getIntegrationTriggers'])->name('triggers');
+            Route::get('/{integration:uuid}/actions', [SequencesController::class, 'getIntegrationActions'])->name('actions');
+            Route::post('/{integration:uuid}/actions/test', [SequencesController::class, 'testIntegrationAction'])->name('actions.test');
+            Route::put('/{integration:uuid}', [SequencesController::class, 'updateIntegration'])->name('update');
+            Route::delete('/{integration:uuid}', [SequencesController::class, 'destroyIntegration'])->name('destroy');
+        });
+
+        // ?
+        // Webhook triggers (for webhook-only triggers without integrations
+        // todo: delete! its a regular trigger
+        Route::prefix('webhook-triggers')->name('webhook-triggers.')->group(function () {
+            Route::post('/', [SequencesController::class, 'storeWebhookTrigger'])->name('store');
+        });
+
+        // todo
+        Route::resource('integrations', IntegrationsController::class);
+        // integrations/{id}/authorize
+        // integrations/{id}/callback
 
         Route::get('/integrations/{integrationType}/callback', [IntegrationsController::class, 'callback']);
         Route::post('/integrations/{integrationType}/authorizations', [IntegrationsController::class, 'authorizeIntegration']);
         Route::get('/integrations/{integration}/products', [IntegrationsController::class, 'products'])->name('integrations.products');
         Route::get('/integrations/{integration}/products/{gatewayProductId}/prices', [IntegrationsController::class, 'prices'])->name('integrations.prices');
         Route::put('/integrations/{integration}/payment-methods', [IntegrationsController::class, 'updatePaymentMethods'])->name('integrations.payment-methods.update');
-        Route::resource('integrations', IntegrationsController::class);
+
 
         // Onboarding routes
         Route::prefix('onboarding')->name('onboarding.')->group(function () {
@@ -160,10 +254,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         // Reusable Blocks routes (replacing block-library routes)
         Route::prefix('reusable-blocks')->name('reusable-blocks.')->group(function () {
-            Route::get('/', [\App\Http\Controllers\ReusableBlockController::class, 'index'])->name('index');
-            Route::post('/', [\App\Http\Controllers\ReusableBlockController::class, 'store'])->name('store');
-            Route::delete('/{reusableBlock}', [\App\Http\Controllers\ReusableBlockController::class, 'destroy'])->name('destroy');
-            Route::post('/{reusableBlock}/use', [\App\Http\Controllers\ReusableBlockController::class, 'use'])->name('use');
+            Route::get('/', [ReusableBlockController::class, 'index'])->name('index');
+            Route::post('/', [ReusableBlockController::class, 'store'])->name('store');
+            Route::delete('/{reusableBlock}', [ReusableBlockController::class, 'destroy'])->name('destroy');
+            Route::post('/{reusableBlock}/use', [ReusableBlockController::class, 'use'])->name('use');
         });
 
         // Profile Routes
@@ -198,10 +292,34 @@ Route::middleware(['auth'])->group(function () {
 });
 
 Route::get('m/{dir}/{media}.{extension}', function (string $dir, \App\Models\Media $media) {
-    return redirect()->away($media->getSignedUrl(60));
+    $url = config('app.s3_url') . $media->path;
+
+    return redirect($url);
+})->name('media.show')->where('extension', '[a-zA-Z]+');
+
+// Webhook endpoints (public, no authentication required)
+Route::prefix('webhooks')->name('webhooks.')->group(function () {
+    Route::any('/{trigger_uuid}', [WebhookController::class, 'handleTrigger'])
+        ->name('trigger')
+        ->where('trigger_uuid', '[0-9a-f-]{36}');
 });
 
-Route::post('/feedback', [FeedbackController::class, 'submit'])->name('feedback.submit');
+// Feedback route
+Route::post('feedback', [FeedbackController::class, 'store'])->name('feedback.store');
+
+// Authentication routes
+require __DIR__.'/auth.php';
+
+// Impersonation routes - LOCAL DEVELOPMENT ONLY
+if (app()->environment('local')) {
+    Route::prefix('dev')->group(function () {
+        Route::get('/impersonate', [ImpersonationController::class, 'impersonate'])
+            ->name('impersonate')
+            ->middleware('signed');
+
+        Route::post('/stop-impersonation', [ImpersonationController::class, 'stopImpersonation'])
+            ->name('stop-impersonation');
+    });
+}
 
 require __DIR__.'/settings.php';
-require __DIR__.'/auth.php';

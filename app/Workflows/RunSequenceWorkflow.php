@@ -19,6 +19,17 @@ class RunSequenceWorkflow extends Workflow
         Trigger $trigger,
         ResourceEvent $event,
     ) {
+        // Check if trigger has a next node to execute
+        if (!$trigger->nextNode) {
+            // Log that the trigger has no connected nodes
+            \Log::warning('Trigger has no connected nodes', [
+                'trigger_id' => $trigger->id,
+                'trigger_name' => $trigger->name,
+                'sequence_id' => $trigger->sequence_id
+            ]);
+            return true; // Return success but don't execute anything
+        }
+
         yield from $this->runNode($trigger->nextNode, $event);
 
         return true;
