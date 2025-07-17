@@ -54,6 +54,8 @@ class TemplateService
 
             $hostedPage = HostedPage::create([
                 'organization_id' => $organization->id,
+                'style' => $template->hosted_page_style,
+                'appearance' => $template->hosted_page_appearance,
             ]);
 
             $offer = new Offer;
@@ -68,11 +70,7 @@ class TemplateService
         });
     }
 
-    public function createTemplate(array $data) {
-        return Template::create($data);
-    }
-
-    public function createTemplateWithTheme(array $data)
+    public function createTemplate(array $data)
     {
         return DB::transaction(function () use ($data) {
             $theme = $this->themeService->createTheme([
@@ -81,18 +79,20 @@ class TemplateService
                 'name' => 'From Template: '.$data['name'],
             ]);
 
-            $template = $this->createTemplate([
+            $template = Template::create([
                 'organization_id' => $data['organization_id'],
                 'name' => $data['name'],
                 'view' => $data['view'],
                 'preview_images' => data_get($data, 'preview_images', []),
+                'hosted_page_style' => data_get($data, 'hosted_page_style', []),
+                'hosted_page_appearance' => data_get($data, 'hosted_page_appearance', []),
                 'theme_id' => $theme->id,
             ]);
             return $template;
         });
     }
 
-    public function updateTemplateWithTheme(Template $template, array $data)
+    public function updateTemplate(Template $template, array $data)
     {
         return DB::transaction(function () use ($template, $data) {
             $template->theme->update([
@@ -102,6 +102,8 @@ class TemplateService
             $template->update([
                 'view' => $data['view'],
                 'preview_images' => data_get($data, 'preview_images', []),
+                'hosted_page_style' => data_get($data, 'hosted_page_style', []),
+                'hosted_page_appearance' => data_get($data, 'hosted_page_appearance', []),
             ]);
             return $template;
         });

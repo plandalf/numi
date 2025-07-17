@@ -26,12 +26,14 @@ class HostedPage extends Model
         parent::__construct($attributes);
         
         static::creating(function ($model) {
-            $model->style = [
-                'primary_color' => '#000000',
-                'secondary_color' => '#FFFFFF',
-                'font_family' => 'Arial, sans-serif',
-                'font_weight' =>'normal',
-            ];
+            if(!$model->style) {
+                $model->style = [
+                    'primary_color' => '#000000',
+                    'secondary_color' => '#FFFFFF',
+                    'font_family' => 'Arial, sans-serif',
+                    'font_weight' =>'normal',
+                ];
+            }
         });
     }
 
