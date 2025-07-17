@@ -50,7 +50,7 @@ class GenerateHostedPage extends Command
         }
 
         try {
-            $organizations = $organizationId ? Organization::where('ulid', $organizationId)->get() : Organization::all();
+            $organizations = $organizationId ? Organization::where('id', $organizationId)->get() : Organization::all();
 
             foreach ($organizations as $organization) {
 
