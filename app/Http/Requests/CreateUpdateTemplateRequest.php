@@ -7,7 +7,7 @@ namespace App\Http\Requests;
 use App\Http\Requests\CreateUpdateThemeRequest;
 use Illuminate\Foundation\Http\FormRequest;
 
-class CreateUpdateTemplateWithThemeRequest extends FormRequest
+class CreateUpdateTemplateRequest extends FormRequest
 {
     /**
      * We're encoding view field to preserve the actual contents like
@@ -44,6 +44,10 @@ class CreateUpdateTemplateWithThemeRequest extends FormRequest
             'category' => ['string', 'max:255'],
             'view' => ['nullable', 'array'],
             'preview_images' => ['nullable', 'array'],
+            'hosted_page_style' => ['nullable', 'array'],
+            'hosted_page_style.*' => ['nullable'],
+            'hosted_page_appearance' => ['nullable', 'array'],
+            'hosted_page_appearance.*' => ['nullable'],
         ];
 
         // Only include theme validation if theme data is present
