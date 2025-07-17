@@ -89,10 +89,14 @@ class OffersController extends Controller
             $request->user()->current_organization_id
         );
 
-        // If the offer has no hosted page, set the hosted page to the organization's hosted page
-        if(!$offer->hosted_page_id && $offer->organization->hostedPage) {
+        // If the offer has no hosted page, generate a new one
+        if(!$offer->hosted_page_id) {
+            $hostedPage = HostedPage::create([
+                'organization_id' => $offer->organization_id,
+            ]);
+
             $offer->update([
-                'hosted_page_id' => $offer->organization->hostedPage->id,
+                'hosted_page_id' => $hostedPage->id,
             ]);
         }
 
