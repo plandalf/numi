@@ -114,9 +114,9 @@ class Organization extends Model
         return $this->hasMany(Theme::class);
     }
 
-    public function hostedPages(): HasMany
+    public function hostedPage(): HasOne
     {
-        return $this->hasMany(HostedPage::class);
+        return $this->hasOne(HostedPage::class);
     }
 
     public function logoMedia(): BelongsTo

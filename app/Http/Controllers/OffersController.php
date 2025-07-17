@@ -50,15 +50,13 @@ class OffersController extends Controller
 
     public function store(OfferCreateRequest $request, Organization $organization)
     {
-        $hostedPage = HostedPage::create([
-            'organization_id' => $organization->id,
-        ]);
-
         $offer = Offer::query()->create([
             'name' => null,
             'status' => 'draft',
             'organization_id' => $organization->id,
-            'hosted_page_id' => $hostedPage->id,
+            'hosted_page_id' => $organization?->hostedPage
+                ? $organization->hostedPage->id
+                : HostedPage::getDefaultForOrganization($organization)->id,
             'view' => $request->view
         ]);
 
