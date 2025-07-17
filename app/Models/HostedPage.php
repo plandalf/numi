@@ -21,21 +21,18 @@ class HostedPage extends Model
         'appearance' => 'array',
     ];
 
-    public static function getDefaultForOrganization(Organization $organization)
+    public function __construct(array $attributes = [])
     {
-        return self::query()->firstOrCreate(
-            ['organization_id' => $organization->id],
-            [
-                'logo_image_id' => null,
-                'background_image_id' => null,
-                'style' => [
-                    'primary_color' => '#000000',
-                    'secondary_color' => '#FFFFFF',
-                    'font_family' => 'Arial, sans-serif',
-                    'font_weight' => 'normal',
-                ],
-            ]
-        );
+        parent::__construct($attributes);
+        
+        static::creating(function ($model) {
+            $model->style = [
+                'primary_color' => '#000000',
+                'secondary_color' => '#FFFFFF',
+                'font_family' => 'Arial, sans-serif',
+                'font_weight' =>'normal',
+            ];
+        });
     }
 
     public function organization(): BelongsTo
