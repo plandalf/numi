@@ -52,14 +52,16 @@ class TemplateService
         return DB::transaction(function () use ($template, $organizationId) {
             $organization = Organization::find($organizationId);
 
+            $hostedPage = HostedPage::create([
+                'organization_id' => $organization->id,
+            ]);
+
             $offer = new Offer;
             $offer->organization_id = $organizationId;
             $offer->name = $template->name;
             $offer->view = $template->view;
             $offer->theme_id = optional($template->theme)->id;
-            $offer->hosted_page_id =  $organization?->hostedPage
-                ? $organization->hostedPage->id
-                : HostedPage::getDefaultForOrganization($organization);
+            $offer->hosted_page_id = $hostedPage->id;
             $offer->save();
 
             return $offer;
