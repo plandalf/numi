@@ -111,7 +111,9 @@ class OffersController extends Controller
             'hostedPage.backgroundImage',
         ]);
 
-        $stripeIntegration = Integration::where('organization_id', $offer->organization_id)->where('type', IntegrationType::STRIPE)->first();
+        $stripeIntegration = Integration::where('organization_id', $offer->organization_id)
+            ->whereIn('type', [IntegrationType::STRIPE, IntegrationType::STRIPE_TEST])
+            ->first();
 
         return Inertia::render('offers/edit', [
             'offer' => new OfferResource($offer),

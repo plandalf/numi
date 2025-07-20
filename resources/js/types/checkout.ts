@@ -61,6 +61,52 @@ export interface CheckoutSession {
   discounts?: Discount[];
   enabled_payment_methods?: string[];
   intent_mode?: 'setup' | 'payment';
+  intent_type?: string;
+  has_subscription_items?: boolean;
+  has_onetime_items?: boolean;
+  has_mixed_cart?: boolean;
+  
+  intent_state?: {
+    can_proceed: boolean;
+    blocked: boolean;
+    reason?: string;
+    intent_status?: string;
+    requires_action: boolean;
+    payment_confirmed: boolean;
+    intent_id?: string;
+    intent_type?: string;
+  };
+  
+  payment_method?: {
+    id: number;
+    type: string;
+    billing_details: {
+      name?: string;
+      email?: string;
+      phone?: string;
+      address?: {
+        line1?: string;
+        line2?: string;
+        city?: string;
+        state?: string;
+        postal_code?: string;
+        country?: string;
+      };
+    };
+    properties: Record<string, any>;
+    card?: {
+      brand: string;
+      last4: string;
+      exp_month: number;
+      exp_year: number;
+    };
+  };
+  
+  customer?: {
+    id: number;
+    email?: string;
+    name?: string;
+  };
 }
 
 export interface CheckoutPageProps {

@@ -9,9 +9,11 @@ use App\Http\Controllers\MediaController;
 use App\Http\Controllers\NoAccessController;
 use App\Http\Controllers\OfferItemsController;
 use App\Http\Controllers\OffersController;
+use App\Http\Controllers\OrderStatusController;
 use App\Http\Controllers\OrganizationController;
 use App\Http\Controllers\PriceController;
 use App\Http\Controllers\ProductsController;
+use App\Http\Controllers\ReusableBlockController;
 use App\Http\Controllers\SequencesController;
 use App\Http\Controllers\Settings\ProfileController;
 use App\Http\Controllers\ThemeController;
@@ -23,27 +25,56 @@ use App\Http\Controllers\FeedbackController;
 use App\Http\Controllers\OfferItemPriceController;
 use App\Http\Controllers\OnboardingController;
 use App\Http\Controllers\ApiKeysController;
-use App\Http\Controllers\OnboardingInfoController;
-use App\Http\Controllers\BlockLibraryController;
 
 Route::redirect('/', '/dashboard')->name('home');
 
+Route::get('test', function () {
+    $j = json_decode('{"action":"prepare_payment","email":"asdf@sdf.com","payment_type":"klarna","current_url":"http://aa.localhost:8000/checkout/019828ff-abd5-7076-a2e7-b938a5b5d617?expires=1753466501&signature=ab15d100f1d8d2126ec8c83f1b245136c3de829ce21bd7a381cbacc46866ba00"}');
+
+    $session = \App\Models\Checkout\CheckoutSession::firstWhere('uuid', '019828ff-abd5-7076-a2e7-b938a5b5d617');
+
+    $prepare = app(\App\Actions\Checkout\PreparePaymentAction::class, ['session' => $session]);
+
+    dd($prepare([
+        'email' => $j->email,
+        'payment_type' => $j->payment_type,
+        'current_url' => $j->current_url,
+    ]));
+});
+
 Route::middleware(['frame-embed'])->group(function () {
+    // Init new checkout
     Route::get('/o/{offer}/{environment?}', [CheckoutController::class, 'initialize'])
         ->name('offers.show')
         ->where('environment', 'live|test');
 
+    // Show checkout
     Route::get('/checkout/{checkout}', [CheckoutController::class, 'show'])
         ->name('checkouts.show');
+
+    Route::get('/checkout/{session}/callback', [CheckoutController::class, 'callback'])
+        ->name('checkout.redirect.callback');
+
+    Route::get('continue/{hash}', function ($hash) {
+        // decrypt and
+    });
+
+    Route::post('/checkouts/{checkoutSession}/mutations', [CheckoutSessionController::class, 'storeMutation'])
+        ->name('checkouts.mutations.store');
+
+    Route::get('/order-status/{order}', OrderStatusController::class)
+        ->name('order-status.show')
+        ->middleware('signed');
 });
 
 // Social image generation route (signed URL required)
 Route::get('/social-image/{offer}', [\App\Http\Controllers\SocialImageController::class, 'generate'])
     ->name('social-image.generate');
-    // ->middleware(['signed']);
 
-Route::post('/checkouts/{checkoutSession}/mutations', [CheckoutSessionController::class, 'storeMutation'])
-    ->name('checkouts.mutations.store');
+// Internal route to generate signed order status URL for admins
+Route::get('/admin/order-status/{order}/public', [OrderStatusController::class, 'generatePublicUrl'])
+    ->name('order-status.public-url')
+    ->middleware(['auth', 'organization']);
 
 Route::middleware(['auth', 'verified'])->group(function () {
     // No access route
@@ -160,10 +191,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         // Reusable Blocks routes (replacing block-library routes)
         Route::prefix('reusable-blocks')->name('reusable-blocks.')->group(function () {
-            Route::get('/', [\App\Http\Controllers\ReusableBlockController::class, 'index'])->name('index');
-            Route::post('/', [\App\Http\Controllers\ReusableBlockController::class, 'store'])->name('store');
-            Route::delete('/{reusableBlock}', [\App\Http\Controllers\ReusableBlockController::class, 'destroy'])->name('destroy');
-            Route::post('/{reusableBlock}/use', [\App\Http\Controllers\ReusableBlockController::class, 'use'])->name('use');
+            Route::get('/', [ReusableBlockController::class, 'index'])->name('index');
+            Route::post('/', [ReusableBlockController::class, 'store'])->name('store');
+            Route::delete('/{reusableBlock}', [ReusableBlockController::class, 'destroy'])->name('destroy');
+            Route::post('/{reusableBlock}/use', [ReusableBlockController::class, 'use'])->name('use');
         });
 
         // Profile Routes
@@ -202,6 +233,19 @@ Route::get('m/{dir}/{media}.{extension}', function (string $dir, \App\Models\Med
 });
 
 Route::post('/feedback', [FeedbackController::class, 'submit'])->name('feedback.submit');
+
+Route::get('/orders/{uuid}/receipt', [App\Http\Controllers\OrderController::class, 'receipt'])
+    ->name('orders.receipt')
+    ->middleware('signed');
+
+// Test route for receipt generation (remove in production)
+Route::get('/test-receipt/{uuid}', function($uuid) {
+    $order = \App\Models\Order\Order::where('uuid', $uuid)->first();
+    if (!$order) {
+        return 'Order not found';
+    }
+    return redirect($order->getReceiptUrl());
+})->name('test.receipt');
 
 require __DIR__.'/settings.php';
 require __DIR__.'/auth.php';

@@ -181,6 +181,7 @@ function EditApp({ publishableKey }: { publishableKey: string | undefined }) {
     metadata: {},
     integration_client: IntegrationClient.STRIPE,
     status: 'open',
+    intent_type: 'payment',
     // taxes: lineItems.reduce((acc, item) => Number(acc) + Number(item.taxes), 0),
     inclusive_taxes: lineItems.reduce((acc, item) => Number(acc) + Number(item.inclusive_taxes ?? 0), 0),
     // exclusive_taxes: lineItems.reduce((acc, item) => Number(acc) + Number(item.exclusive_taxes ?? 0), 0),
@@ -218,7 +219,7 @@ function EditApp({ publishableKey }: { publishableKey: string | undefined }) {
           section.blocks.forEach(block => {
             if (block.type === type && block.id) {
               existingIds.add(block.id);
-              
+
               // Extract number suffix if it matches our pattern
               const regex = new RegExp(`^${camelCaseType}(\\d+)$`);
               const match = block.id.match(regex);
@@ -233,11 +234,11 @@ function EditApp({ publishableKey }: { publishableKey: string | undefined }) {
 
     // Find the next available number
     let nextNumber = 1;
-    
+
     if (existingNumbers.length > 0) {
       // Sort numbers to find gaps or get the next sequential number
       existingNumbers.sort((a, b) => a - b);
-      
+
       // Look for the first gap in the sequence
       for (let i = 1; i <= existingNumbers[existingNumbers.length - 1] + 1; i++) {
         const proposedId = `${camelCaseType}${i}`;
@@ -503,7 +504,7 @@ function EditApp({ publishableKey }: { publishableKey: string | undefined }) {
           try {
             const response = await axios.post(`/reusable-blocks/${activeBlockId}/use`);
             const reusableBlock = response.data.configuration;
-            
+
             const newBlockToAdd: Block = {
               ...reusableBlock,
               id: generateIdForBlockType(reusableBlock.type),

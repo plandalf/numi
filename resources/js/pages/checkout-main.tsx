@@ -307,7 +307,7 @@ export function GlobalStateProvider({ offer, offerItems, session: defaultSession
       const action = currentPage.type === 'payment' ? 'commit' : 'setFields';
       const nextPageId = handleNavigationLogic(currentPage, fields);
 
-      const params: Record<string, any> = {
+      let params: Record<string, any> = {
         action,
         metadata: {
           fields: fieldStates,
@@ -323,7 +323,7 @@ export function GlobalStateProvider({ offer, offerItems, session: defaultSession
           return false;
         }
 
-        params.confirmation_token = body.confirmation_token;
+        params = { ...params, ...body };
       }
 
       // Use Axios instead of fetch
@@ -816,6 +816,16 @@ export const NavigationProvider = ({ children, onPageChange }: NavigationProvide
     canGoForward,
     navigationHistory
   };
+
+  const [hydrated, setHydrated] = useState(false);
+
+  useEffect(() => {
+    setHydrated(true);
+  }, []);
+
+  if (!hydrated) {
+    return null;
+  }
 
   return (
     <NavigationContext.Provider value={value}>

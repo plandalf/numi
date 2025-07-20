@@ -650,6 +650,14 @@ export default function Show({ order, errors, flash }: OrdersShowProps) {
                             })}>
                                 {order.status.label}
                             </Badge>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => window.open(route('order-status.public-url', order.uuid), '_blank')}
+                            >
+                                <ExternalLink className="h-4 w-4 mr-2" />
+                                View Public Status
+                            </Button>
                         </div>
                     </div>
                 </header>

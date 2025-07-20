@@ -2,9 +2,13 @@
 
 namespace App\Http\Resources\Checkout;
 
+use App\Models\Checkout\CheckoutSession;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
+/**
+ * @mixin CheckoutSession
+ */
 class CheckoutSessionResource extends JsonResource
 {
     public function toArray(Request $request)
@@ -17,16 +21,42 @@ class CheckoutSessionResource extends JsonResource
             'currency' => $this->currency,
             'total' => $this->total,
             'subtotal' => $this->subtotal,
+
             'publishable_key' => $this->publishable_key,
             'integration_client' => $this->integration?->type?->value,
+            'client_secret' => $this->client_secret,
+            'intent_type' => $this->intent_type,
+            'intent_mode' => $this->intent_mode, // Computed from line items
+            'has_subscription_items' => $this->has_subscription_items, // Computed from line items
+            'has_onetime_items' => $this->has_onetime_items, // Computed from line items
+            'has_mixed_cart' => $this->has_mixed_cart, // Computed from line items
+            'payment_confirmed_at' => $this->payment_confirmed_at,
+            'payment_method_locked' => $this->payment_method_locked,
+            'return_url' => $this->return_url,
+            'enabled_payment_methods' => $this->enabled_payment_methods,
+            'intent_state' => $this->hasActiveIntent() ? $this->getIntentState() : null,
+
             'current_page' => data_get($this->metadata, 'current_page_id'),
+            'selected_payment_method' => data_get($this->metadata, 'selected_payment_method'),
             'discounts' => $this->discounts,
             'taxes' => $this->taxes,
-            // 'exclusive_taxes' => $this->exclusive_taxes,
             'inclusive_taxes' => $this->inclusive_taxes,
-            // 'discount' => $this->discount,
-            'enabled_payment_methods' => $this->enabled_payment_methods,
-            'intent_mode' => $this->intent_mode,
+            'payment_method' => $this->whenLoaded('paymentMethod', function () {
+                return [
+                    'id' => $this->paymentMethod->id,
+                    'type' => $this->paymentMethod->type,
+                    'billing_details' => $this->paymentMethod->billing_details,
+                    'properties' => $this->paymentMethod->properties,
+                    'card' => $this->paymentMethod->properties['card'] ?? null,
+                ];
+            }),
+            'customer' => $this->whenLoaded('customer', function () {
+                return [
+                    'id' => $this->customer->id,
+                    'email' => $this->customer->email,
+                    'name' => $this->customer->name,
+                ];
+            }),
         ];
     }
 }

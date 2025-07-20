@@ -76,7 +76,6 @@ class Integration extends Model
 
     public function getPublishableKeyAttribute()
     {
-
         return Arr::get($this->config, 'access_token.stripe_publishable_key');
     }
 

@@ -2,6 +2,7 @@
 
 namespace App\Actions\Checkout;
 
+use App\Enums\IntegrationType;
 use App\Models\Checkout\CheckoutSession;
 use App\Models\Store\Offer;
 
@@ -13,11 +14,20 @@ class CreateCheckoutSessionAction
 
     public function execute(Offer $offer, array $checkoutItems, bool $testMode = false): CheckoutSession
     {
-        $checkoutSession = CheckoutSession::create([
-            'organization_id' => $offer->organization_id,
-            'offer_id' => $offer->id,
-            'test_mode' => $testMode,
-        ]);
+        $paymentIntegration = $offer->organization
+            ->integrations()
+            ->where('type', $testMode
+                ? IntegrationType::STRIPE_TEST
+                : IntegrationType::STRIPE)
+            ->first();
+
+        $checkoutSession = CheckoutSession::query()
+            ->create([
+                'organization_id' => $offer->organization_id,
+                'offer_id' => $offer->id,
+                'payments_integration_id' => $paymentIntegration->id,
+                'test_mode' => $testMode,
+            ]);
 
         foreach ($offer->offerItems as $offerItem) {
             if (! $offerItem->default_price_id || !$offerItem->is_required) {
