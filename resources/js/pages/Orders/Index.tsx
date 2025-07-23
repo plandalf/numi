@@ -1,7 +1,7 @@
 import { Link, Head, router } from '@inertiajs/react';
 import AppLayout from "@/layouts/app-layout";
 import cx from "classnames";
-import { formatDate, formatMoney } from '@/lib/utils';
+import { formatDate, formatMoney, formatTimestamp } from '@/lib/utils';
 import { Search, ExternalLink, FileText, Package, AlertTriangle } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { useDebounce } from '@/hooks/use-debounce';
@@ -103,7 +103,7 @@ export default function Index({ orders, filters, showOrdersTutorial }: OrdersInd
 
   const getFulfillmentStatus = (order: Order) => {
     const { total_items, fulfilled_items, unprovisionable_items } = order.fulfillment_summary;
-    
+
     if (total_items === 0) return { status: 'no-items', label: 'No Items', color: 'bg-gray-100 text-gray-700' };
     if (fulfilled_items === total_items) return { status: 'fulfilled', label: 'Fulfilled', color: 'bg-green-100 text-green-700' };
     if (unprovisionable_items === total_items) return { status: 'unprovisionable', label: 'Unprovisionable', color: 'bg-red-100 text-red-700' };
@@ -194,9 +194,9 @@ export default function Index({ orders, filters, showOrdersTutorial }: OrdersInd
                   {orders.data.map((order: Order) => {
                     const fulfillmentStatus = getFulfillmentStatus(order);
                     const needsFulfillment = requiresFulfillment(order);
-                    
+
                     return (
-                      <TableRow 
+                      <TableRow
                         key={order.id}
                         className={cx({
                           'bg-yellow-50 border-l-4 border-l-yellow-400': needsFulfillment,
@@ -236,7 +236,7 @@ export default function Index({ orders, filters, showOrdersTutorial }: OrdersInd
                           </Badge>
                         </TableCell>
                         <TableCell className="whitespace-nowrap">
-                          {formatDate(order.created_at)}
+                          {formatTimestamp(order.completed_at)}
                         </TableCell>
                         <TableCell>
                           {order.items?.length || 0} {order.items?.length === 1 ? 'item' : 'items'}

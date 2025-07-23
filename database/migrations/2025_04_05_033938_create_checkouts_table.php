@@ -21,10 +21,6 @@ return new class extends Migration
             $table->foreignId('checkout_id')->constrained('store_checkouts');
             $table->foreignId('price_id')->constrained('catalog_prices');
             $table->integer('quantity');
-
-            // checkout -> converts to an "order" or multiple?
-            // side-effects of an order when its provisioned?
-
             $table->timestamps();
         });
     }

@@ -42,8 +42,24 @@ export function formatDate(dateString: string): string {
     const date = new Date(dateString);
     const day = date.getDate();
     const suffix = getDaySuffix(day);
-    const monthYear = format(date, 'MMM yyyy');
+    try {
+      const monthYear = format(date, 'MMM yyyy');
+      return `${day}${suffix} ${monthYear}`;
+    } catch {
+      return '-';
+    }
+}
+
+export function formatTimestamp(timestampString: string): string {
+  const date = new Date(timestampString);
+  const day = date.getDate();
+  const suffix = getDaySuffix(day);
+  try {
+    const monthYear = format(date, 'MMM - hh:mm:ss');
     return `${day}${suffix} ${monthYear}`;
+  } catch {
+    return '-';
+  }
 }
 
 /**

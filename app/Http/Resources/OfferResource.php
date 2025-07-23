@@ -2,11 +2,15 @@
 
 namespace App\Http\Resources;
 
+use App\Models\Store\Offer;
 use App\Models\Store\OfferItem;
 use App\Models\Theme;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
+/**
+ * @mixin Offer
+ */
 class OfferResource extends JsonResource
 {
     public static $wrap = false;

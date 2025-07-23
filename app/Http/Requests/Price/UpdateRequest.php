@@ -86,7 +86,7 @@ class UpdateRequest extends FormRequest
                 'integer',
                 'min:1',
             ],
-            'cancel_after_cycles' => ['sometimes', 'nullable', 'integer', 'min:1'],
+            'cancel_after_cycles' => ['sometimes', 'nullable', 'integer'],
             'properties' => ['sometimes', 'nullable', 'array'],
             // Add tiered/package properties validation if applicable
             'gateway_provider' => ['sometimes', 'nullable', 'string', 'max:255'],

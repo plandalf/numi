@@ -3,81 +3,61 @@
 namespace App\Http\Controllers\Api;
 
 use App\Actions\Checkout\CommitCheckoutAction;
-use App\Actions\Checkout\CreateCheckoutSessionAction;
+use App\Actions\Checkout\PreparePaymentAction;
+use App\Enums\CheckoutSessionStatus;
+use App\Exceptions\CheckoutException;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Checkout\CheckoutSessionResource;
 use App\Models\Catalog\Price;
 use App\Models\Checkout\CheckoutSession;
 use App\Models\Store\OfferItem;
 use App\Modules\Integrations\Contracts\AcceptsDiscount;
-use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
-use Illuminate\Validation\ValidationException;
 use Stripe\Exception\InvalidRequestException;
 
 class CheckoutSessionController extends Controller
 {
-    public function __construct(
-        private readonly CreateCheckoutSessionAction $createCheckoutSessionAction,
-        private readonly CommitCheckoutAction $commitCheckoutAction
-    ) {}
-
-    public function storeMutation(CheckoutSession $checkoutSession, Request $request)
-    {
+    public function storeMutation(
+        CheckoutSession $checkoutSession,
+        Request $request
+    ) {
         $action = $request->input('action');
 
-        switch ($action) {
-            case 'setFields':
-                $checkoutSession->update([
-                    'metadata' => $request->input('metadata'),
-                ]);
-                break;
-            case 'setProperties':
-                return $this->setProperties($checkoutSession, $request);
-            case 'commit':
-                return $this->commit($checkoutSession, $request);
-            case 'setItem':
-                return $this->setItem($checkoutSession, $request);
-            case 'addDiscount':
-                return $this->addDiscount($checkoutSession, $request);
-            case 'removeDiscount':
-                return $this->removeDiscount($checkoutSession, $request);
-            default:
-                abort(400);
-        }
-
-        return [
-            'id' => $checkoutSession->id,
-        ];
-    }
-
-    private function commit(CheckoutSession $checkoutSession, Request $request): JsonResponse
-    {
         try {
-            $token = $request->input('confirmation_token');
-
-            if (empty($token)) {
-                throw ValidationException::withMessages([
-                    'payment_method' => ['Confirmation token is required'],
-                ]);
+            switch ($action) {
+                case 'setFields':
+                    return $checkoutSession->update($request->only('metadata'));
+                case 'setProperties':
+                    return $this->setProperties($checkoutSession, $request);
+                case 'setItem':
+                    return $this->setItem($checkoutSession, $request);
+                case 'addDiscount':
+                    return $this->addDiscount($checkoutSession, $request);
+                case 'removeDiscount':
+                    return $this->removeDiscount($checkoutSession, $request);
+                case 'commit':
+                    return $this->commit($checkoutSession, $request);
+                case 'prepare_payment':
+                    return $this->preparePayment($checkoutSession, $request);
+                default:
+                    abort(400);
             }
-
-            $this->commitCheckoutAction->execute($checkoutSession, $token);
-
-            return response()->json([
-                'message' => 'Commit successful',
-                'checkout_session' => new CheckoutSessionResource($checkoutSession),
-            ]);
-        } catch (Exception $e) {
+        } catch (CheckoutException $e) {
             return response()->json([
                 'message' => $e->getMessage(),
+                'type' => $e->type,
             ], 400);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'An error occurred while processing the request.',
+                'error' => $e->getMessage(),
+            ], 500);
         }
     }
 
-    private function setItem(CheckoutSession $checkoutSession, Request $request)
+    protected function setItem(CheckoutSession $checkoutSession, Request $request)
     {
         $required = $request->input('required');
         $priceId = $request->input('price_id');
@@ -107,7 +87,9 @@ class CheckoutSessionController extends Controller
             if (!$required) {
                 $checkoutSession->lineItems()->where('offer_item_id', $request->input('offer_item_id'))->delete();
 
-                $checkoutSession->load(['lineItems.offerItem.offerPrices', 'offer.theme', 'lineItems.price.integration', 'lineItems.price.product', 'integration']);
+                $checkoutSession->load(['lineItems.offerItem.offerPrices', 'lineItems.price.product', 'lineItems.price']);
+
+                // Don't include payment methods for setItem mutations - they're not needed
                 return new CheckoutSessionResource($checkoutSession);
             }
         }
@@ -120,11 +102,12 @@ class CheckoutSessionController extends Controller
             'deleted_at' => null,
         ]);
 
-        $checkoutSession->load(['lineItems.offerItem.offerPrices', 'offer.theme', 'lineItems.price.integration', 'lineItems.price.product', 'lineItems.price', 'integration']);
+        $checkoutSession->load(['lineItems.offerItem.offerPrices', 'lineItems.price.product', 'lineItems.price']);
+
         return new CheckoutSessionResource($checkoutSession);
     }
 
-    private function setProperties(CheckoutSession $checkoutSession, Request $request)
+    protected function setProperties(CheckoutSession $checkoutSession, Request $request)
     {
         $properties = json_decode($request->input('properties'), true);
 
@@ -132,11 +115,12 @@ class CheckoutSessionController extends Controller
             'properties' => array_merge($checkoutSession->properties ?? [], $properties),
         ]);
 
-        $checkoutSession->load(['lineItems.offerItem.offerPrices', 'offer.theme', 'lineItems.price.integration', 'lineItems.price.product', 'lineItems.price', 'integration']);
+        $checkoutSession->load(['lineItems.offerItem.offerPrices', 'lineItems.price.product', 'lineItems.price']);
+
         return new CheckoutSessionResource($checkoutSession);
     }
 
-    private function addDiscount(CheckoutSession $checkoutSession, Request $request)
+    protected function addDiscount(CheckoutSession $checkoutSession, Request $request)
     {
         $coupon = $request->input('discount');
 
@@ -176,7 +160,11 @@ class CheckoutSessionController extends Controller
                 'discounts' => array_merge($existingDiscounts ?? [], [$discount]),
             ]);
 
-            $checkoutSession->load(['lineItems.offerItem.offerPrices', 'offer.theme', 'lineItems.price.integration', 'lineItems.price.product', 'lineItems.price', 'integration']);
+            $checkoutSession->load(['lineItems.offerItem.offerPrices', 'lineItems.price.product', 'lineItems.price']);
+
+            // Include payment methods for discount validation
+            $request->merge(['include_payment_methods' => true]);
+
             return new CheckoutSessionResource($checkoutSession);
         } catch (InvalidRequestException $e) {
             return response()->json([
@@ -185,7 +173,7 @@ class CheckoutSessionController extends Controller
         }
     }
 
-    public function removeDiscount(CheckoutSession $checkoutSession, Request $request)
+    protected function removeDiscount(CheckoutSession $checkoutSession, Request $request)
     {
         $discount = $request->input('discount');
 
@@ -193,7 +181,65 @@ class CheckoutSessionController extends Controller
             'discounts' => Arr::where($checkoutSession->discounts, fn($d) => $d['id'] !== $discount),
         ]);
 
-        $checkoutSession->load(['lineItems.offerItem.offerPrices', 'offer.theme', 'lineItems.price.integration', 'lineItems.price.product', 'lineItems.price', 'integration']);
+        $checkoutSession->load(['lineItems.offerItem.offerPrices', 'lineItems.price.product', 'lineItems.price']);
+
         return new CheckoutSessionResource($checkoutSession);
+    }
+
+    /**
+     * JIT: Prepare payment by creating the appropriate Stripe intent just-in-time
+     * This is called by the frontend after validating payment details
+     */
+    protected function preparePayment(CheckoutSession $session, Request $request)
+    {
+        $validated = $request->validate([
+            'email' => 'required|email',
+            'payment_type' => 'nullable|string',
+            'current_url' => 'required|url',
+        ]);
+
+        abort_if($session->status === CheckoutSessionStatus::CLOSED, 400, 'Checkout session is not active');
+
+        abort_if($session->hasACompletedOrder(), 400, 'Checkout session is already completed');
+
+        abort_if(!is_null($session->payment_confirmed_at), 400, 'Payment is already confirmed');
+
+        $prepare = app(PreparePaymentAction::class, ['session' => $session]);
+
+        $extras = $prepare($validated);
+
+        return array_merge([
+            'message' => 'Payment prepared',
+            'checkout_session' => new CheckoutSessionResource($session),
+        ], $extras);
+    }
+
+    /**
+     * Commit will attempt to finalize the checkout session and process the order.
+     */
+    protected function commit(CheckoutSession $session, Request $request)
+    {
+        abort_if($session->hasACompletedOrder(), 400, 'Checkout session is already completed');
+
+        abort_if(
+            !$session->intent_id || !$session->client_secret,
+            400,
+            'No payment intent found. Payment must be prepared first.'
+        );
+
+        abort_if(is_null($session->customer), 400, 'No customer found for this checkout session.');
+
+        $commit = app(CommitCheckoutAction::class);
+
+        $commit($session);
+
+        $session->refresh();
+
+        $session->loadMissing(['order', 'order.items']);
+
+        return [
+            'message' => 'Order processed successfully',
+            'checkout_session' => new CheckoutSessionResource($session),
+        ];
     }
 }

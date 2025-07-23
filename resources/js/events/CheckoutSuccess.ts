@@ -6,7 +6,7 @@ export class CheckoutSuccess extends BaseEvent {
   public checkoutSession: CheckoutSession;
 
   constructor(checkoutSession: CheckoutSession) {
-    super();
+    super('checkout_success', checkoutSession);
     this.checkoutSession = checkoutSession;
   }
 }
