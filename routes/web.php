@@ -29,19 +29,6 @@ use App\Http\Controllers\ApiKeysController;
 Route::redirect('/', '/dashboard')->name('home');
 
 Route::get('test', function () {
-
-    $session = \App\Models\Checkout\CheckoutSession::firstWhere('uuid', '0198336b-d6a2-714c-9dcd-21193654f75e');
-
-    $commit = app(\App\Actions\Checkout\CommitCheckoutAction::class);
-
-    $commit(
-        $session,
-    );
-
-//    $prepare = app(\App\Actions\Checkout\PreparePaymentAction::class, ['session' => $session]);
-    $prepare = app(\App\Actions\Order\ProcessOrderAction::class, ['session' => $session]);
-
-    dd($prepare($session->order));
 });
 
 Route::middleware(['frame-embed'])->group(function () {

@@ -12,9 +12,8 @@ import { CheckoutPageProps, CheckoutSession, NavigationBarProps, TailwindLayoutR
 import { findUniqueFontsFromTheme, findUniqueFontsFromView } from '@/utils/font-finder';
 import WebFont from 'webfontloader';
 import { Theme } from '@/types/theme';
-import { resolveThemeValue } from '@/lib/theme';
 import { ChevronLeftIcon } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { sendMessage } from '@/utils/sendMessage';
 import { OnInit } from '@/events/OnInit';

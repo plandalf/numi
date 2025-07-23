@@ -600,25 +600,12 @@ function StripeElementsComponent({
     return paymentIntelligence.getFilteringInfo(paymentSessionForFiltering)
   }, [paymentSessionForFiltering]);
 
-  class MessageEvent extends BaseEvent{
-    public type: string = 'numi_embed_message';
-  }
-
-  function handleTestPost() {
-    window.parent.postMessage(new MessageEvent('numi_embed_message', {
-      url: 'http://example.com/test',
-    }), '*');
-
-    // this will force
-  }
-
   if (style.hidden) {
     return null;
   }
 
   return (
     <div className="flex flex-col gap-4" style={containerStyle}>
-      <button onClick={handleTestPost} type={"button"}>TEST POST</button>
 
       {title && (<MarkdownText theme={theme} text={title} style={titleStyle} />)}
       {description && (<MarkdownText theme={theme} text={description} style={descriptionStyle} />)}
