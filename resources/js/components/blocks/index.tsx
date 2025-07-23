@@ -17,6 +17,8 @@ import RadioListBlock from "./RadioListBlock";
 import DividerBlockComponent from "./DividerBlock";
 import RatingBlockComponent from "./RatingBlock";
 import HtmlBlockComponent from "./HtmlBlock";
+import VerticalProductsComponent from "./VerticalProductsBlock";
+import HorizontalProductsComponent from "./HorizontalProductsBlock";
 
 export const blockTypes = {
   text: TextBlockComponent,
@@ -38,6 +40,8 @@ export const blockTypes = {
   heading: HeadingBlockComponent,
   divider: DividerBlockComponent,
   html: HtmlBlockComponent,
+  vertical_products: VerticalProductsComponent,
+  horizontal_products: HorizontalProductsComponent,
 }
 
 type BlockMeta = {
@@ -161,6 +165,18 @@ export const blockMetas: Record<keyof typeof blockTypes, BlockMeta> = {
     title: 'HTML Block',
     icon: '🔤',
     description: 'A block for displaying HTML content.',
+  },
+  vertical_products: {
+    id: 'vertical_products',
+    title: 'Product Selector',
+    icon: '📦',
+    description: 'A block for selecting between different pricing plans.',
+  },
+  horizontal_products: {
+    id: 'horizontal_products',
+    title: 'Horizontal Product Cards',
+    icon: '🎯',
+    description: 'A horizontal grid of product cards with features and selection.',
   },
 };
 

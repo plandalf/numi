@@ -19,7 +19,8 @@ import {
   FlameIcon,
   BookmarkIcon,
   Star,
-  CodeIcon
+  CodeIcon,
+  Package
 } from 'lucide-react';
 import { useDraggable } from '@dnd-kit/core';
 import SearchBar from './search-bar';
@@ -69,6 +70,10 @@ export const CustomElementIcon = ({ type }: CustomElementIconProps) => {
         return <Minus className="w-6 h-6" />;
     case 'rating':
         return <Star className="w-6 h-6" />;
+    case 'vertical_products':
+        return <Package className="w-6 h-6" />;
+    case 'horizontal_products':
+        return <Package className="w-6 h-6" />;
     default:
         return null;
   }
@@ -132,6 +137,8 @@ const interactiveElements = [
   { type: 'option_selector', title: 'Option Slide' },
   { type: 'radio_list', title: 'Radio List' },
   { type: 'text_input', title: 'Entry Field' },
+  { type: 'vertical_products', title: 'Product Selector' },
+  { type: 'horizontal_products', title: 'Product Cards' },
 ];
 
 const paymentElements = [
