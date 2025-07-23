@@ -298,7 +298,6 @@ export function GlobalStateProvider({ offer, offerItems, session: defaultSession
 
   const submitPage = async (pageId: string): Promise<boolean> => {
     try {
-      console.log('submitPage', pageId)
       setSubmitting(true);
       setSubmitError(null);
 
@@ -306,6 +305,7 @@ export function GlobalStateProvider({ offer, offerItems, session: defaultSession
       const currentPage = offer.view.pages[pageId];
       const action = currentPage.type === 'payment' ? 'commit' : 'setFields';
       const nextPageId = handleNavigationLogic(currentPage, fields);
+      console.log('submitPage', { pageId, action, nextPageId });
 
       let params: Record<string, any> = {
         action,
@@ -319,6 +319,8 @@ export function GlobalStateProvider({ offer, offerItems, session: defaultSession
       if (action === 'commit') {
         const body = (await submissionProps?.() ?? {}) as { error?: string, confirmation_token?: string };
 
+        console.log('action-submit', { body });
+
         if (body.type && body.type === 'intercept') {
           console.log("INTERCEPTING SUBMISSION");
           setSubmitError(body.error);
@@ -329,7 +331,6 @@ export function GlobalStateProvider({ offer, offerItems, session: defaultSession
           setSubmitError(body.error);
           return false;
         }
-
 
         params = { ...params, ...body };
       }

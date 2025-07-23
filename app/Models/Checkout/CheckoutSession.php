@@ -65,6 +65,7 @@ use Illuminate\Support\Arr;
  * @property Integration $integration DEPRECATED
  * @property mixed $intent_id
  * @property Stripe $integrationClient
+ * @property int $id
  */
 class CheckoutSession extends Model
 {

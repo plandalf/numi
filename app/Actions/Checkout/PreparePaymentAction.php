@@ -82,13 +82,6 @@ class PreparePaymentAction
 
         $isRedirectMethod = $paymentType && in_array($paymentType, $redirectMethods);
 
-//        canceled
-//processing
-//requires_action
-//requires_capture
-//requires_confirmation
-//requires_payment_method
-//succeeded
         $response = [
             'intent_state' => $intent->status,
             'intent_id' => $intent->id,

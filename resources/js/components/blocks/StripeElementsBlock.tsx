@@ -1,6 +1,6 @@
 import Numi, { Appearance, FontValue, Style } from "@/contexts/Numi";
 import React, { useState, useEffect, useRef, useMemo, useCallback, CSSProperties } from "react";
-import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
+import { Elements, PaymentElement, useStripe, useElements, AddressElement } from '@stripe/react-stripe-js';
 import { loadStripe, Stripe } from '@stripe/stripe-js';
 import { useCheckoutState } from "@/pages/checkout-main";
 import { resolveThemeValue } from "@/lib/theme";
@@ -731,14 +731,6 @@ function PaymentForm({
   const [error, setError] = useState<string | null>(null);
   const [debugMessages, setDebugMessages] = useState<string[]>([]);
   const [debugMode] = useState(true); // Enable debug mode by default
-  const [currentStep, setCurrentStep] = useState<string>('');
-  const [stepData, setStepData] = useState<Record<string, unknown> | null>(null);
-  const [waitingForApproval, setWaitingForApproval] = useState(false);
-
-  // Payment method memory state
-  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string>('');
-  const [fallbackPaymentMethod] = useState<string>('card');
-
 
 
   // Handle payment method change with memory - memoized to prevent re-renders
@@ -758,7 +750,7 @@ function PaymentForm({
                     supportedMethods.includes('link') ? 'link' :
                     supportedMethods[0] || 'card';
 
-    setFallbackPaymentMethod(fallback);
+    // setFallbackPaymentMethod(fallback);
     setPaymentType(fallback);
 
     // Show user notification
@@ -787,20 +779,8 @@ function PaymentForm({
   }, [session?.intent_state]);
 
   const addDebugMessage = (message: string) => {
-    setDebugMessages(prev => [...prev.slice(-4), `${new Date().toISOString().slice(11, 23)}: ${message}`]);
-  };
-
-  // Helper function to wait for user approval in debug mode
-  const waitForApproval = async (step: string, data?: any): Promise<void> => {
-    if (!debugMode) return;
-
-    setCurrentStep(step);
-    setStepData(data);
-    setWaitingForApproval(true);
-
-    return new Promise((resolve) => {
-      (window as any).__debugApprovalResolve = resolve;
-    });
+    console.debug('StripeBlock@debug', message);
+    setDebugMessages(prev => [...prev, `${new Date().toISOString().slice(11, 23)}: ${message}`]);
   };
 
   const RETURN_STRIPE_NOT_INITIALIZED =  {
@@ -827,8 +807,6 @@ function PaymentForm({
       if (collectsEmail && !emailAddress) return RETURN_EMAIL_REQUIRED;
       if (emailAddress && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailAddress)) return RETURN_EMAIL_INVALID;
 
-      // transition('something')
-
       setIsProcessing(true);
       setError(null);
       addDebugMessage('Starting JIT payment process');
@@ -849,11 +827,6 @@ function PaymentForm({
             code: submitError.code || 'elements_submit_failed',
           };
         }
-
-        addDebugMessage('Step 1 passed: Payment details validated');
-
-        // JIT Step 2: Create intent on backend just-in-time
-        addDebugMessage('Step 2: Creating payment intent on backend');
 
         const prepareResponse = await axios.post(`/checkouts/${sessionId}/mutations`, {
           action: 'prepare_payment',
@@ -901,8 +874,6 @@ function PaymentForm({
           };
         }
 
-        addDebugMessage(`Step 2 passed: Intent created (${intent_type})`);
-
         // Check if backend supports the selected payment method
         if (supported_payment_methods && !supported_payment_methods.includes(paymentType)) {
           handlePaymentMethodRejection(paymentType, supported_payment_methods);
@@ -937,8 +908,6 @@ function PaymentForm({
         if (intent_type === 'payment') {
           addDebugMessage(`Using confirmPayment for payment intent (redirect: ${isRedirectMethod})`);
 
-          let confirmResult;
-
           if (paymentType === 'card') {
             confirmParams.save_payment_method = true;
 
@@ -949,6 +918,7 @@ function PaymentForm({
               confirmParams,
               redirect: 'if_required',
             });
+            addDebugMessage('Step 2: Confirming card payment with elements');
           } else if (paymentType === 'klarna') {
             confirmResult = await stripe.confirmKlarnaPayment(
               client_secret,
@@ -967,6 +937,7 @@ function PaymentForm({
                 handleActions: false,
               }
             )
+            addDebugMessage(`Step 2: Confirming Klarna payment with client_secret: ${client_secret}`);
           } else {
             confirmResult = await stripe.confirmPayment({
               elements,
@@ -974,10 +945,21 @@ function PaymentForm({
               confirmParams,
               redirect: 'if_required',
             })
+            addDebugMessage(`Step 2: Confirming payment with client_secret: ${client_secret}`);
           }
 
+          console.warn('StripeBlock@confirm', confirmResult);
 
-          console.log("Stripe@confirmResult", { confirmResult });
+          if (!confirmResult) {
+            setError('Failed to confirm payment - no result returned');
+            setIsProcessing(false);
+            addDebugMessage('Step 2 failed: No confirm result returned');
+            return {
+              error: 'Payment confirmation failed',
+              type: 'confirmation_error',
+              code: 'stripe_confirm_failed',
+            }
+          }
 
           if (confirmResult.error) {
             // This point will only be reached if there is an immediate error when
@@ -996,15 +978,16 @@ function PaymentForm({
 
           if (confirmResult?.paymentIntent.next_action?.redirect_to_url?.url) {
             // if we're in an iframe?
-            if (window.parent !== window) {
-              window.location.href = confirmResult.paymentIntent.next_action.redirect_to_url.url;
+            window.location.href = confirmResult.paymentIntent.next_action.redirect_to_url.url;
+            if (window.parent === window) {
+              console.warn('we are not in an iframe, redirecting directly');
               // we're in an iframe, so we need to post a message to the parent!
             } else {
-              window.parent.postMessage(new MessageEvent('payment_redirect', {
-                url: 'http://example.com/test',
-              }), '*');
+              console.warn('we are in an iframe, posting message to parent');
+              // window.parent.postMessage(new MessageEvent('payment_redirect', {
+              //   url: 'http://example.com/test',
+              // }), '*');
             }
-
 
             return {
               error: 'Redirecting you to complete payment',
@@ -1026,43 +1009,48 @@ function PaymentForm({
           throw new Error(`Unknown intent type: ${intent_type}`);
         }
 
+
         if (confirmError) {
           const errorMessage = confirmError.message || 'Payment confirmation failed';
 
           return {
             error: errorMessage,
-            type: confirmError.type || 'confirmation_error',
+            type: 'intercept',
             code: confirmError.code || 'stripe_confirm_failed',
           };
+        }
+
+        if (confirmResult === undefined) {
+          return {
+            error: 'Confirmation required',
+            type: 'intercept',
+          }
         }
 
         // Check if this is a redirect-based payment that requires user action
         if (confirmResult && confirmResult.paymentIntent
           && confirmResult.paymentIntent.status === 'requires_action'
         ) {
-          addDebugMessage('Step 2: Redirect payment requires action - user will be redirected');
+          console.log('StripeBlock@paymentIntent.requires-action', confirmResult.paymentIntent);
+          addDebugMessage('Step 2: Redirect payment requires action');
           setIsProcessing(false);
 
           return {
-            payment_confirmed: false,
-            requires_action: true,
-            email: emailAddress,
-            intent_type: intent_type,
-            jit_process: 'redirect_initiated',
+            type: 'intercept',
+            error: 'Payment requires additional action',
           };
         }
 
         // Check if this is a setup intent that requires action
-        if (confirmResult && confirmResult.setupIntent && confirmResult.setupIntent.status === 'requires_action') {
-          addDebugMessage('Step 2: Setup intent requires action - user will be redirected');
+        if (confirmResult && confirmResult.setupIntent
+          && confirmResult.setupIntent.status === 'requires_action'
+        ) {
+          addDebugMessage('Step 2: Setup intent requires action');
           setIsProcessing(false);
 
           return {
-            payment_confirmed: false,
-            requires_action: true,
-            email: emailAddress,
-            intent_type: intent_type,
-            jit_process: 'redirect_initiated',
+            type: 'intercept',
+            error: 'Payment requires additional action',
           };
         }
 
@@ -1092,7 +1080,7 @@ function PaymentForm({
           setIsProcessing(false);
           return {
             error: 'Payment method not supported, please try another method',
-            type: 'payment_method_error',
+            type: 'intercept',
             code: 'unsupported_payment_method',
           };
         }
@@ -1102,12 +1090,14 @@ function PaymentForm({
         addDebugMessage(`Process failed: ${errorMessage}`);
         return {
           error: errorMessage,
-          type: 'api_error',
+          type: 'intercept',
           code: 'unexpected_error',
         };
       }
     });
   }, [stripe, elements, emailAddress, collectsEmail, sessionId, paymentType]);
+
+  const [shouldShowAddress, setShouldShowAddress] = useState(true);
 
   // Get enabled payment methods from session using intelligence service - memoized
   const paymentSessionForForm = useMemo(() => toPaymentSession(session), [session]);
@@ -1117,138 +1107,6 @@ function PaymentForm({
 
   return (
     <div className="flex flex-col space-y-4" style={style}>
-      {/* Payment Method Memory Status */}
-      {selectedPaymentMethod && selectedPaymentMethod !== paymentType && (
-        <div className="bg-blue-50 border border-blue-200 text-blue-700 px-4 py-3 rounded">
-          <div className="flex items-center">
-            <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-            </svg>
-            <span className="text-sm">
-              Payment method switched to {paymentType} (previously {selectedPaymentMethod})
-            </span>
-          </div>
-        </div>
-      )}
-
-      {/* Error overlay - positioned absolutely over the Payment Element */}
-      {error && (
-        <div className="relative">
-          <div className="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center z-10 rounded">
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded shadow-lg max-w-md">
-              <div className="flex items-center mb-2">
-                <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                </svg>
-                <span className="font-medium">Payment Error</span>
-              </div>
-              <p className="text-sm mb-3">{error}</p>
-              {debugMessages.length > 0 && (
-                <div className="mb-3 text-xs font-mono">
-                  <div className="text-red-600 font-semibold mb-1">Debug trace:</div>
-                  {debugMessages.map((msg, i) => (
-                    <div key={i} className="text-red-500">{msg}</div>
-                  ))}
-                </div>
-              )}
-              <button
-                onClick={() => {
-                  setError(null);
-                  setDebugMessages([]);
-                }}
-                className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition-colors text-sm"
-              >
-                Try Again
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Debug Approval Overlay */}
-      {waitingForApproval && (
-        <div className="relative">
-          <div className="fixed top-10 w-100 h-auto left-10 inset-0">
-            <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 px-6 py-4 rounded shadow-lg">
-              <div className="flex items-center mb-3">
-                <svg className="w-6 h-6 mr-2 text-yellow-600" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                </svg>
-                <span className="font-bold text-lg">Debug Approval Required</span>
-              </div>
-
-              <div className="mb-4">
-                <div className="font-semibold text-sm mb-2">Current Step: {currentStep}</div>
-                {stepData && (
-                  <div className="text-xs font-mono bg-yellow-100 p-2 rounded mb-2">
-                    <div className="font-semibold mb-1">Step Data:</div>
-                    <pre className="whitespace-pre-wrap text-xs">
-                      {JSON.stringify(stepData, null, 2)}
-                    </pre>
-                  </div>
-                )}
-                <div className="text-sm">
-                  Review the information above and click "Continue" to proceed to the next step.
-                </div>
-              </div>
-
-              <div className="flex gap-2">
-                <button
-                  onClick={() => {
-                    if ((window as any).__debugApprovalResolve) {
-                      (window as any).__debugApprovalResolve();
-                      (window as any).__debugApprovalResolve = null;
-                    }
-                    setWaitingForApproval(false);
-                    setCurrentStep('');
-                    setStepData(null);
-                  }}
-                  className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition-colors text-sm font-medium"
-                >
-                  ✅ Continue
-                </button>
-                <button
-                  onClick={() => {
-                    setWaitingForApproval(false);
-                    setCurrentStep('');
-                    setStepData(null);
-                    setError('Payment cancelled by user during debug');
-                    setIsProcessing(false);
-                  }}
-                  className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 transition-colors text-sm font-medium"
-                >
-                  ❌ Cancel
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Processing overlay - positioned absolutely over the Payment Element */}
-      {isProcessing && !waitingForApproval && (
-        <div className="relative">
-          <div className="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center z-10 rounded">
-            <div className="bg-blue-50 border border-blue-200 text-blue-700 px-4 py-3 rounded shadow-lg">
-              <div className="flex items-center">
-                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600 mr-2"></div>
-                <span className="font-medium">Processing Payment...</span>
-              </div>
-              <p className="mt-1 text-sm">
-                Please wait while we process your payment using the JIT system.
-              </p>
-              {debugMessages.length > 0 && (
-                <div className="mt-2 text-xs font-mono">
-                  {debugMessages.map((msg, i) => (
-                    <div key={i} className="text-blue-600">{msg}</div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
       <PaymentElement
         onChange={handlePaymentMethodChange}
         options={{
@@ -1266,27 +1124,23 @@ function PaymentForm({
           wallets,
         }}
       />
-      {/*<AddressElement*/}
-      {/*  options={{*/}
-      {/*    mode: 'billing',*/}
-      {/*  }}*/}
-      {/*/>*/}
-       {/* Debug messages during interaction */}
-       {debugMessages.length > 0 && !isProcessing && (
-        <div style={{
-          padding: '8px',
-          backgroundColor: '#f0f8ff',
-          border: '1px solid #b0d4f1',
-          borderRadius: '4px',
-          fontSize: '11px',
-          fontFamily: 'monospace'
-        }}>
-          <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>🔧 JIT Process Log:</div>
-          {debugMessages.map((msg, i) => (
-            <div key={i} style={{ color: '#2563eb' }}>{msg}</div>
-          ))}
-        </div>
+      {session.is_test_mode && shouldShowAddress && (
+        <button onClick={() => setShouldShowAddress(false)}>Skip address</button>
       )}
+      {shouldShowAddress && (
+        <AddressElement
+          options={{
+            mode: 'billing',
+          }}
+        />
+      )}
+
+      {session.is_test_mode && debugMessages.map((msg, index) => (
+        <div key={index} className="text-xs text-gray-500" style={{ whiteSpace: 'pre-wrap' }}>
+          {msg}
+        </div>
+      ))}
+
     </div>
   );
 }

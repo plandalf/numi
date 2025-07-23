@@ -12,6 +12,4 @@ class CheckoutException extends \Exception
         $exception->type = 'checkout_error';
         return $exception;
     }
-
-
 }

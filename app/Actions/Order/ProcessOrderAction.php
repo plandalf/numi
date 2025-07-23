@@ -8,6 +8,7 @@ use App\Enums\ChargeType;
 use App\Enums\CheckoutSessionStatus;
 use App\Enums\OrderStatus;
 use App\Enums\RenewInterval;
+use App\Exceptions\CheckoutException;
 use App\Exceptions\Payment\PaymentException;
 use App\Models\Catalog\Price;
 use App\Models\Checkout\CheckoutSession;
@@ -27,6 +28,7 @@ class ProcessOrderAction
     protected PaymentValidationService $paymentValidationService;
     protected AutoFulfillOrderAction $autoFulfillOrderAction;
     protected SendOrderNotificationAction $sendOrderNotificationAction;
+    private \Stripe\StripeClient $stripeClient;
 
     public function __construct(
         public CheckoutSession $session,
@@ -41,6 +43,42 @@ class ProcessOrderAction
         $this->stripeClient = $this->session->paymentsIntegration->integrationClient()->getStripeClient();
     }
 
+    public function __invoke(Order $order): Order
+    {
+        // CRITICAL: Check if order is already completed to prevent double charging
+        if ($order->status === OrderStatus::COMPLETED) {
+            return $this->orderAlreadyCompleted($order);
+        }
+
+        $checkoutSession = $this->session;
+
+        $order->loadMissing('items.price.integration');
+
+        $checkoutSession->load(['paymentMethod', 'customer']);
+
+        $customer = $this->ensureCustomerExists($order, $checkoutSession);
+
+        $order->customer()->associate($customer);
+
+        // if Payment
+        $paidOrder = match($this->session->intent_type) {
+            'payment' => $this->processPaymentIntent($order),
+            'setup' => $this->processSetupIntent($order),
+        };
+
+        if (is_null($paidOrder)) {
+            throw CheckoutException::message('Payment intent processing failed. Please check payment details.');
+        }
+
+        $order->markAsCompleted();
+        $order->save();
+
+        $this->handleOrderFulfillment($order);
+
+        return $order;
+    }
+
+
     protected function processPaymentIntent(Order $order): ?Order
     {
         $intent = $this->stripeClient->paymentIntents->retrieve($this->session->intent_id);
@@ -48,35 +86,32 @@ class ProcessOrderAction
         if ($intent->status === 'succeeded') {
             return $order;
         }
+
+        return null;
     }
 
     protected function processSetupIntent(Order $order): ?Order
     {
-
-//        // Determine if we need setup intent (for subscriptions) or direct payment intent
-//        $hasSubscriptionItems = $this->hasSubscriptionItems($orderItems);
-//        $hasOnlyOneTimeItems = $this->hasOnlyOneTimeItems($orderItems);
-
         $intent = $this->stripeClient->setupIntents->retrieve($this->session->intent_id);
 
         // Check if the setup intent was successful
         if ($intent->status !== 'succeeded') {
-
-            $errorMessage = $setupIntent->last_setup_error?->message ?? $setupIntent->status;
+            $errorMessage = $setupIntent->last_setup_error?->message ?? $intent->status;
             $errorType = $this->paymentValidationService->determinePaymentErrorType(
                 $errorMessage,
-                $setupIntent->last_setup_error?->code
+                $intent->last_setup_error?->code
             );
 
             $errorDetails = [
-                'setup_intent_id' => $setupIntent->id,
-                'status' => $setupIntent->status,
-                'error' => $setupIntent->last_setup_error ?? null,
+                'setup_intent_id' => $intent->id,
+                'status' => $intent->status,
+                'error' => $intent->last_setup_error ?? null,
             ];
 
             Log::error('Setup intent failed', $errorDetails);
 
-            $checkoutSession->markAsFailed(true);
+            $this->session->markAsFailed(true);
+
             throw new PaymentException(
                 $this->paymentValidationService->getUserFriendlyErrorMessage($errorType),
                 $errorType,
@@ -132,10 +167,6 @@ class ProcessOrderAction
             'expand' => [
                 'latest_invoice.payment_intent',
             ],
-
-            // note: this only works for some PM's
-//            'off_session' => true,
-//            'payment_behavior' => 'default_incomplete',
         ];
 
         $discounts = $this->session->discounts;
@@ -163,7 +194,7 @@ class ProcessOrderAction
                         }
                     }
                 } catch (\Exception $e) {
-                    logger()->warning('Failed to apply discount', [
+                    logger()->warning(logname('fail.discount-apply'), [
                         'discount_id' => $discount['id'],
                         'error' => $e->getMessage()
                     ]);
@@ -182,56 +213,22 @@ class ProcessOrderAction
 
         $sub = $stripe->subscriptions->create($subscriptionData);
 
-
-        return $order;
-        //   Subscription (and mixed cart): Create a Subscription in Stripe in “incomplete” status, so that it can be paid for now. Use the parameters:
-        //   customer: the ID of the Customer you determined/created.
-        //   items: the recurring price(s) the user chose.
-        //   add_invoice_items: any one-time price IDs for one-time products in the cart (if applicable)
-    }
-
-    public function __invoke(Order $order): Order
-    {
-        // CRITICAL: Check if order is already completed to prevent double charging
-        if ($order->status === OrderStatus::COMPLETED) {
-            return $this->orderAlreadyCompleted($order);
-        }
-
-        $checkoutSession = $this->session;
-
-        // if payment not completed we need to pries
-        $integrationClient = $checkoutSession->integrationClient();
-        $order->loadMissing('items.price.integration');
-
-        $checkoutSession->load(['paymentMethod', 'customer']);
-
-        // Aggressively find or create customer early in the process
-        $customer = $this->ensureCustomerExists($order, $checkoutSession);
-
-        $order->customer()->associate($customer);
-
-        // if Payment
-        $order = match($this->session->intent_type) {
-            'payment' => $this->processPaymentIntent($order),
-            'setup' => $this->processSetupIntent($order),
-        };
-
-        $order->markAsCompleted();
-
-        $order->save();
-
-        $this->handleOrderFulfillment($order);
+        logger()->info(logname(), [
+            'subscription_id' => $sub->id,
+        ]);
 
         return $order;
     }
+
 
     public function getAutoCancelationTimestamp(Price $price)
     {
-        if($price->type === ChargeType::ONE_TIME->value) {
+        if ($price->type === ChargeType::ONE_TIME->value) {
             return null;
         }
 
         $cancelAfterCycles = $price->cancel_after_cycles;
+
         if ($cancelAfterCycles) {
             $renewInterval = $price->renew_interval;
 
@@ -247,31 +244,6 @@ class ProcessOrderAction
         }
 
         return null;
-    }
-
-    /**
-     * Check if order contains subscription items (recurring charges)
-     */
-    private function hasSubscriptionItems(Collection $orderItems): bool
-    {
-        return $orderItems->some(function (OrderItem $item) {
-            return in_array($item->price->type->value, [
-                ChargeType::GRADUATED->value,
-                ChargeType::VOLUME->value,
-                ChargeType::PACKAGE->value,
-                ChargeType::RECURRING->value
-            ]) && !empty($item->price->renew_interval);
-        });
-    }
-
-    /**
-     * Check if order contains only one-time payment items
-     */
-    private function hasOnlyOneTimeItems(Collection $orderItems): bool
-    {
-        return $orderItems->every(function (OrderItem $item) {
-            return $item->price->type->value === ChargeType::ONE_TIME->value;
-        });
     }
 
     /**
@@ -315,57 +287,6 @@ class ProcessOrderAction
             ]);
         }
     }
-
-    /**
-     * Update payment method external_id if it's still temporary.
-     */
-    protected function updatePaymentMethodExternalId(CheckoutSession $checkoutSession, $integrationClient): void
-    {
-        if (!$checkoutSession->paymentMethod || !str_starts_with($checkoutSession->paymentMethod->external_id, 'temp_')) {
-            return;
-        }
-
-        try {
-            // Get the customer's default payment method from Stripe
-            $customer = $checkoutSession->customer;
-            if (!$customer || !$customer->reference_id) {
-                Log::warning('Cannot update payment method - no customer or reference_id', [
-                    'checkout_session_id' => $checkoutSession->id,
-                    'customer_id' => $customer?->id,
-                    'customer_reference_id' => $customer?->reference_id,
-                ]);
-                return;
-            }
-
-            $stripeCustomer = $integrationClient->stripeClient->customers->retrieve($customer->reference_id);
-            $defaultPaymentMethod = $stripeCustomer->invoice_settings->default_payment_method ?? null;
-
-            if ($defaultPaymentMethod) {
-                $checkoutSession->paymentMethod->update([
-                    'external_id' => $defaultPaymentMethod,
-                ]);
-
-                Log::info('🦆 Updated temporary payment method external_id with customer default', [
-                    'payment_method_id' => $checkoutSession->paymentMethod->id,
-                    'old_external_id' => $checkoutSession->paymentMethod->external_id,
-                    'new_external_id' => $defaultPaymentMethod,
-                    'customer_id' => $customer->id,
-                ]);
-            } else {
-                Log::warning('🦆 Customer has no default payment method in Stripe', [
-                    'customer_id' => $customer->id,
-                    'stripe_customer_id' => $customer->reference_id,
-                ]);
-            }
-        } catch (\Exception $e) {
-            Log::error('Failed to update payment method external_id', [
-                'error' => $e->getMessage(),
-                'checkout_session_id' => $checkoutSession->id,
-                'payment_method_id' => $checkoutSession->paymentMethod->id,
-            ]);
-        }
-    }
-
     private function orderAlreadyCompleted(Order $order)
     {
         Log::warning('Attempted to process already completed order', [
