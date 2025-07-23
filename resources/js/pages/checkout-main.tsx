@@ -833,16 +833,6 @@ export const NavigationProvider = ({ children, onPageChange }: NavigationProvide
     navigationHistory
   };
 
-  const [hydrated, setHydrated] = useState(false);
-
-  useEffect(() => {
-    setHydrated(true);
-  }, []);
-
-  if (!hydrated) {
-    return null;
-  }
-
   return (
     <NavigationContext.Provider value={value}>
       {children}
