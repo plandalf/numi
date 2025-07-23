@@ -112,7 +112,7 @@ class Integration extends Model
     /**
      * Get all available payment methods for this integration type (SetupIntent compatible)
      */
-    public function getAvailablePaymentMethods(string $currency = 'usd'): array
+    public function getAvailablePaymentMethods(?string $currency = null): array
     {
         // For Stripe integrations, fetch real payment methods from the API
         if ($this->type === IntegrationType::STRIPE || $this->type === IntegrationType::STRIPE_TEST) {
@@ -143,7 +143,7 @@ class Integration extends Model
     /**
      * Get payment methods that only support immediate payments (PaymentIntent only)
      */
-    public function getPaymentOnlyMethods(string $currency = 'usd'): array
+    public function getPaymentOnlyMethods(?string $currency = null): array
     {
         // For Stripe integrations, fetch payment-only methods from the API
         if ($this->type === IntegrationType::STRIPE || $this->type === IntegrationType::STRIPE_TEST) {
@@ -167,7 +167,7 @@ class Integration extends Model
     /**
      * Get all payment methods (both SetupIntent and PaymentIntent only)
      */
-    public function getAllPaymentMethods(string $currency = 'usd'): array
+    public function getAllPaymentMethods(?string $currency): array
     {
         return array_merge(
             $this->getAvailablePaymentMethods($currency),

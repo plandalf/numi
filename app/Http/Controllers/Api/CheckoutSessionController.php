@@ -235,6 +235,8 @@ class CheckoutSessionController extends Controller
 
         $session->refresh();
 
+        $session->loadMissing(['order', 'order.items']);
+
         return [
             'message' => 'Order processed successfully',
             'checkout_session' => new CheckoutSessionResource($session),

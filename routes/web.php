@@ -29,17 +29,19 @@ use App\Http\Controllers\ApiKeysController;
 Route::redirect('/', '/dashboard')->name('home');
 
 Route::get('test', function () {
-    $j = json_decode('{"action":"prepare_payment","email":"asdf@sdf.com","payment_type":"klarna","current_url":"http://aa.localhost:8000/checkout/019828ff-abd5-7076-a2e7-b938a5b5d617?expires=1753466501&signature=ab15d100f1d8d2126ec8c83f1b245136c3de829ce21bd7a381cbacc46866ba00"}');
 
-    $session = \App\Models\Checkout\CheckoutSession::firstWhere('uuid', '019828ff-abd5-7076-a2e7-b938a5b5d617');
+    $session = \App\Models\Checkout\CheckoutSession::firstWhere('uuid', '0198336b-d6a2-714c-9dcd-21193654f75e');
 
-    $prepare = app(\App\Actions\Checkout\PreparePaymentAction::class, ['session' => $session]);
+    $commit = app(\App\Actions\Checkout\CommitCheckoutAction::class);
 
-    dd($prepare([
-        'email' => $j->email,
-        'payment_type' => $j->payment_type,
-        'current_url' => $j->current_url,
-    ]));
+    $commit(
+        $session,
+    );
+
+//    $prepare = app(\App\Actions\Checkout\PreparePaymentAction::class, ['session' => $session]);
+    $prepare = app(\App\Actions\Order\ProcessOrderAction::class, ['session' => $session]);
+
+    dd($prepare($session->order));
 });
 
 Route::middleware(['frame-embed'])->group(function () {

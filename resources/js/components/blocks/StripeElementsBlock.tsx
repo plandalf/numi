@@ -1,5 +1,5 @@
 import Numi, { Appearance, FontValue, Style } from "@/contexts/Numi";
-import { useState, useEffect, useRef, useMemo, CSSProperties } from "react";
+import React, { useState, useEffect, useRef, useMemo, useCallback, CSSProperties } from "react";
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { loadStripe, Stripe } from '@stripe/stripe-js';
 import { useCheckoutState } from "@/pages/checkout-main";
@@ -11,6 +11,7 @@ import { usePage } from "@inertiajs/react";
 import { Font } from "@/types";
 import axios from "@/lib/axios";
 import { paymentIntelligence, PaymentSession } from "@/lib/payment-intelligence";
+import { BaseEvent } from '@/events/BaseEvent';
 
 // Define the type for the checkout state
 interface CheckoutState {
@@ -31,12 +32,11 @@ function toPaymentSession(session: any): PaymentSession {
   };
 }
 
-// Abstracted Email Input Component
-function EmailInput({
+// Abstracted Email Input Component - Memoized to prevent re-renders
+const EmailInput = React.memo(({
   value,
   onChange,
   style,
-  appearance,
   theme,
   inputLabelFont,
   inputTextFont,
@@ -49,60 +49,71 @@ function EmailInput({
   value: string;
   onChange: (email: string) => void;
   style?: CSSProperties;
-  appearance: any;
-  theme: any;
-  inputLabelFont: any;
-  inputTextFont: any;
-  inputBackgroundColor: any;
-  inputBorderColor: any;
-  inputBorder: any;
-  inputBorderRadius: any;
-  inputPadding: any;
-}) {
+  theme: Record<string, unknown>;
+  inputLabelFont: FontValue;
+  inputTextFont: FontValue;
+  inputBackgroundColor: string;
+  inputBorderColor: string;
+  inputBorder: { width?: string; style?: string };
+  inputBorderRadius: string;
+  inputPadding: string;
+}) => {
+  // Memoize the onChange handler to prevent re-renders
+  const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    // console.log('JIT: Email input onChange:', e.target.value);
+    onChange(e.target.value);
+  }, [onChange]);
+
+  const handleFocus = useCallback((e: React.FocusEvent<HTMLInputElement>) => {
+    // console.log('JIT: Email input focused, current value:', e.target.value);
+  }, []);
+
+  const handleBlur = useCallback((e: React.FocusEvent<HTMLInputElement>) => {
+    // console.log('JIT: Email input blurred, final value:', e.target.value);
+  }, []);
+
+  // Memoize the input styles to prevent recalculation
+  const inputStyles = useMemo(() => ({
+    padding: inputPadding != '' ? inputPadding : '0.5rem',
+    color: resolveThemeValue(inputTextFont?.color, theme),
+    backgroundColor: resolveThemeValue(inputBackgroundColor, theme),
+    fontFamily: inputTextFont?.font,
+    fontWeight: inputTextFont?.weight,
+    fontSize: inputTextFont?.size,
+    lineHeight: inputTextFont?.lineHeight,
+    borderColor: resolveThemeValue(inputBorderColor, theme),
+    borderWidth: inputBorder?.width ?? '0.5px',
+    borderStyle: inputBorder?.style,
+    borderRadius: inputBorderRadius
+  }), [inputPadding, inputTextFont, theme, inputBackgroundColor, inputBorderColor, inputBorder, inputBorderRadius]);
+
+  const labelStyles = useMemo(() => ({
+    color: resolveThemeValue(inputLabelFont?.color, theme),
+    fontFamily: inputLabelFont?.font,
+    fontWeight: inputLabelFont?.weight,
+    fontSize: inputLabelFont?.size,
+    lineHeight: inputLabelFont?.lineHeight,
+    letterSpacing: inputLabelFont?.letterSpacing,
+  }), [inputLabelFont, theme]);
+
   return (
     <div className='flex flex-col' style={style}>
-      <label htmlFor="checkout-email" style={{
-        color: resolveThemeValue(inputLabelFont?.color, theme),
-        fontFamily: inputLabelFont?.font,
-        fontWeight: inputLabelFont?.weight,
-        fontSize: inputLabelFont?.size,
-        lineHeight: inputLabelFont?.lineHeight,
-        letterSpacing: inputLabelFont?.letterSpacing,
-      }}>Email</label>
+      <label htmlFor="checkout-email" style={labelStyles}>Email</label>
       <div className="flex flex-row w-full">
         <input
           id={'checkout-email'}
           className="border border-gray-300 rounded-md p-2 w-full"
           type="email"
           value={value}
-          onChange={(e) => {
-            console.log('JIT: Email input onChange:', e.target.value);
-            onChange(e.target.value);
-          }}
-          onFocus={(e) => {
-            console.log('JIT: Email input focused, current value:', e.target.value);
-          }}
-          onBlur={(e) => {
-            console.log('JIT: Email input blurred, final value:', e.target.value);
-          }}
-          style={{
-            padding: inputPadding != '' ? inputPadding : '0.5rem',
-            color: resolveThemeValue(inputTextFont?.color, theme),
-            backgroundColor: resolveThemeValue(inputBackgroundColor, theme),
-            fontFamily: inputTextFont?.font,
-            fontWeight: inputTextFont?.weight,
-            fontSize: inputTextFont?.size,
-            lineHeight: inputTextFont?.lineHeight,
-            borderColor: resolveThemeValue(inputBorderColor, theme),
-            borderWidth: inputBorder?.width ?? '0.5px',
-            borderStyle: inputBorder?.style,
-            borderRadius: inputBorderRadius
-          }}
+          onChange={handleChange}
+          onFocus={handleFocus}
+          onBlur={handleBlur}
+          style={inputStyles}
         />
       </div>
     </div>
   );
-}
+});
 
 function StripeElementsComponent({
   onSuccess,
@@ -363,47 +374,23 @@ function StripeElementsComponent({
       }
 
       setIsLoading(false)
-
-      // Set debug info
-      setDebugInfo({
-        timestamp: new Date().toISOString(),
-        protocol: window.location.protocol,
-        userAgent: navigator.userAgent,
-        applePay: !!(window as any).ApplePaySession,
-        paymentRequest: !!window.PaymentRequest,
-        stripeKey: session.publishable_key ? 'Present' : 'Missing',
-        currency: session.currency,
-      });
     }
 
     initializeStripe();
   }, [session.publishable_key]);
-
-
 
   const [internalEmailAddress, setInternalEmailAddress] = useState('');
 
   // Use external email if provided, otherwise use internal state
   const emailAddress = externalEmailAddress !== undefined ? externalEmailAddress : internalEmailAddress;
 
-  // Pass emailAddress to PaymentForm component
-  const handleEmailChange = (email: string) => {
-    console.log('JIT: handleEmailChange called with:', email);
-    console.log('JIT: Current emailAddress:', emailAddress);
-    console.log('JIT: Current internalEmailAddress:', internalEmailAddress);
-    console.log('JIT: Current externalEmailAddress:', externalEmailAddress);
-    
-    // Always update internal state first
+  // Memoize the email change handler to prevent re-renders
+  const handleEmailChange = useMemo(() => (email: string) => {
     setInternalEmailAddress(email);
-    
-    // Then call external handler if provided
     if (externalOnEmailChange) {
-      console.log('JIT: Using external email change handler');
       externalOnEmailChange(email);
-    } else {
-      console.log('JIT: Using internal email state only');
     }
-  };
+  }, [externalOnEmailChange]);
 
   // Initialize email from session if available (only for internal state)
   useEffect(() => {
@@ -414,14 +401,10 @@ function StripeElementsComponent({
         || session.payment_method?.billing_details?.email;
 
       if (sessionEmail) {
-        console.log('JIT: Initializing email from session:', sessionEmail);
         setInternalEmailAddress(sessionEmail);
       }
     }
-  }, [session.properties?.email, session.customer?.email, session.payment_method?.billing_details?.email, externalEmailAddress]);
-
-  // Note: Email will be updated to session during payment preparation
-  // This avoids conflicts with the input field and ensures email is saved when needed
+  }, [session.properties?.email, session.customer?.email, session.payment_method?.billing_details?.email, externalEmailAddress, internalEmailAddress]);
 
   const googleFontsUrl = useMemo(() => {
     const uniqueFonts = !isEditor
@@ -529,38 +512,39 @@ function StripeElementsComponent({
           borderColor: resolveThemeValue(style.inputBorderColor, theme),
           boxShadow:  `0 0 0 3px ${resolveThemeValue(style.inputBorderColor, theme)}20`,
         },
-        '.PaymentMethodSelector': {
-          borderRadius: style.inputBorderRadius,
-        },
+        // '.PaymentMethodSelector': {
+        //   borderRadius: style.inputBorderRadius,
+        // },
         '.PaymentMethodSelectorTab': {
           borderRadius: style.inputBorderRadius,
           borderColor: resolveThemeValue(style.inputBorderColor, theme),
           color: resolveThemeValue(style.inputTextFont?.color, theme),
           backgroundColor: resolveThemeValue(style.inputBackgroundColor, theme),
         },
-        '.PaymentMethodSelectorTab--selected': {
-          borderColor: resolveThemeValue(style.inputBorderColor, theme),
-          backgroundColor: resolveThemeValue(style.paymentFormBackgroundColor, theme),
-        },
-        '.WalletButton': {
-          borderRadius: style.inputBorderRadius,
-          height: '48px',
-        },
+        // '.PaymentMethodSelectorTab--selected': {
+        //   borderColor: resolveThemeValue(style.inputBorderColor, theme),
+        //   backgroundColor: resolveThemeValue(style.paymentFormBackgroundColor, theme),
+        // },
+        // '.WalletButton': {
+        //   borderRadius: style.inputBorderRadius,
+        //   height: '48px',
+        // },
       }
     }
   }, [style, appearance,theme, containerStyle, errorPanelStyle]);
 
+  // Memoize payment intelligence results to prevent frequent recalculations
+  const paymentIntelligenceResults = useMemo(() => {
+    if (!session || !session.currency || session.total === undefined) {
+      return null;
+    }
+
+    const paymentSession = toPaymentSession(session);
+    return paymentIntelligence.getAvailableMethodsForContext(paymentSession);
+  }, [session?.currency, session?.total, session?.enabled_payment_methods, session?.intent_mode, session?.has_subscription_items, session?.has_onetime_items, session?.has_mixed_cart]);
+
   // JIT: Configure Stripe Elements in deferred mode (no client_secret needed)
   const stripeOptions = useMemo(() => {
-    // Debug: Log session state to understand why initialization might fail
-    console.log('JIT: Session state for Stripe initialization:', {
-      hasSession: !!session,
-      sessionId: session?.id,
-      currency: session?.currency,
-      total: session?.total,
-      enabledPaymentMethods: session?.enabled_payment_methods,
-      publishableKey: session?.publishable_key,
-    });
 
     // Don't initialize if session is not properly loaded
     if (!session || !session.currency || session.total === undefined) {
@@ -572,40 +556,27 @@ function StripeElementsComponent({
       return null;
     }
 
-    // Use Payment Method Intelligence to get filtered methods
-    const paymentSession = toPaymentSession(session);
-    const { paymentMethods, wallets, hasRedirectMethods, intentMode } =
-      paymentIntelligence.getAvailableMethodsForContext(paymentSession);
+    // Use memoized payment intelligence results
+    if (!paymentIntelligenceResults) {
+      return null;
+    }
 
-    console.log('JIT: Configuring Stripe Elements (Deferred Mode):', {
-      mode: intentMode,
-      currency: session.currency,
-      total: session.total,
-      originalMethods: session.enabled_payment_methods,
-      filteredMethods: paymentMethods,
+    const {
+      paymentMethods,
+      wallets,
       hasRedirectMethods,
-      hasSubscriptionItems: session.has_subscription_items, // From backend
-      hasOnetimeItems: session.has_onetime_items, // From backend
-      hasMixedCart: session.has_mixed_cart, // From backend
-      intentMode: session.intent_mode, // From backend
-      lineItemsCount: session.line_items?.length || 0,
-      lineItemsTotal: session.line_items?.reduce((sum: number, item: any) => sum + (item.total || 0), 0) || 0
-    });
+      intentMode
+    } = paymentIntelligenceResults;
 
     // JIT: Configure deferred mode without client_secret
     const options: any = {
-      mode: intentMode, // 'payment' or 'setup'
+      mode: intentMode,
       currency: session.currency.toLowerCase(),
       appearance: stripeElementAppearance,
       fonts: [{
         cssSrc: googleFontsUrl,
       }],
       paymentMethodTypes: paymentMethods.length > 0 ? paymentMethods : ['card'],
-      wallets,
-      automatic_payment_methods: {
-        enabled: true,
-        allow_redirects: hasRedirectMethods ? 'always' : 'never',
-      },
     };
 
     // Add amount for payment mode (required by Stripe in deferred mode)
@@ -613,11 +584,6 @@ function StripeElementsComponent({
       const amountInCents = session.total || 0;
 
       if (amountInCents <= 0) {
-        console.warn('JIT: Invalid amount for payment mode, falling back to setup mode', {
-          sessionTotal: session.total,
-          amountInCents,
-          intentMode
-        });
         options.mode = 'setup';
         delete options.amount;
       } else {
@@ -625,14 +591,26 @@ function StripeElementsComponent({
       }
     }
 
-    console.log('JIT: Final Stripe Elements Options:', options);
     return options;
-  }, [session, stripeElementAppearance, googleFontsUrl, session.line_items, session.total, session.currency]);
+  }, [session, stripeElementAppearance, googleFontsUrl, paymentIntelligenceResults]);
 
-  // Get payment method filtering info for UI display
-  const paymentSessionForFiltering = toPaymentSession(session);
-  const { limitMessages, intentModeInfo, availableMethods } =
-    paymentIntelligence.getFilteringInfo(paymentSessionForFiltering);
+  // Get payment method filtering info for UI display - memoized
+  const paymentSessionForFiltering = useMemo(() => toPaymentSession(session), [session]);
+  const { limitMessages, intentModeInfo, availableMethods } = useMemo(() => {
+    return paymentIntelligence.getFilteringInfo(paymentSessionForFiltering)
+  }, [paymentSessionForFiltering]);
+
+  class MessageEvent extends BaseEvent{
+    public type: string = 'numi_embed_message';
+  }
+
+  function handleTestPost() {
+    window.parent.postMessage(new MessageEvent('numi_embed_message', {
+      url: 'http://example.com/test',
+    }), '*');
+
+    // this will force
+  }
 
   if (style.hidden) {
     return null;
@@ -640,6 +618,8 @@ function StripeElementsComponent({
 
   return (
     <div className="flex flex-col gap-4" style={containerStyle}>
+      <button onClick={handleTestPost} type={"button"}>TEST POST</button>
+
       {title && (<MarkdownText theme={theme} text={title} style={titleStyle} />)}
       {description && (<MarkdownText theme={theme} text={description} style={descriptionStyle} />)}
 
@@ -669,11 +649,6 @@ function StripeElementsComponent({
         </div>
       ) : stripePromise && stripeOptions && !session?.intent_state?.blocked ? (
         <>
-          {(() => {
-            console.log('JIT: Rendering Stripe Elements with:', { stripePromise: !!stripePromise, stripeOptions });
-            return null;
-          })()}
-
           {/* Check if payment is already confirmed */}
           {session?.intent_state?.payment_confirmed ? (
             <div style={{
@@ -735,211 +710,9 @@ function StripeElementsComponent({
               />
             </Elements>
           )}
-
-          {/* JIT: Intent Mode Information */}
-          {intentModeInfo && (
-            <div style={{
-              marginBottom: '16px',
-              padding: '12px',
-              backgroundColor: warningPanelStyle.backgroundColor,
-              border: `1px solid ${warningPanelStyle.borderColor}`,
-              borderRadius: warningPanelStyle.borderRadius,
-              fontSize: '14px',
-              color: warningPanelStyle.color,
-              fontFamily: warningPanelStyle.fontFamily
-            }}>
-              <div style={{ fontWeight: '500', marginBottom: '4px' }}>ℹ️ Payment Mode Info</div>
-              <div style={{ fontSize: '12px' }}>{intentModeInfo}</div>
-            </div>
-          )}
-
-          {/* JIT: Mixed Cart Information */}
-          {session.has_mixed_cart && (
-            <div style={{
-              marginBottom: '16px',
-              padding: '12px',
-              backgroundColor: '#e3f2fd',
-              border: '1px solid #2196f3',
-              borderRadius: '4px',
-              fontSize: '14px',
-              color: '#1976d2'
-            }}>
-              <div style={{ fontWeight: '500', marginBottom: '4px' }}>🛒 Mixed Cart Detected</div>
-              <div style={{ fontSize: '12px' }}>
-                This order contains both one-time purchases and subscription items.
-                They will be combined in a single payment using Stripe's invoice system.
-              </div>
-            </div>
-          )}
-
-          {/* JIT: Payment Method Filtering Information */}
-          {limitMessages.length > 0 && (
-            <div style={{
-              marginBottom: '16px',
-              padding: '12px',
-              backgroundColor: '#fef3cd',
-              border: '1px solid #ffd60a',
-              borderRadius: '4px',
-              fontSize: '14px',
-              color: '#8b4513'
-            }}>
-              <div style={{ fontWeight: '500', marginBottom: '4px' }}>⚠️ Some payment methods are not available:</div>
-              <div style={{ fontSize: '12px', lineHeight: '1.4' }}>
-                {limitMessages.join(', ')}
-              </div>
-            </div>
-          )}
-
-          {/* JIT: Intent State Information */}
-          {session?.intent_state && (
-            <div style={{
-              marginBottom: '16px',
-              padding: '12px',
-              backgroundColor: session.intent_state.blocked ? '#fef2f2' : '#f0f9ff',
-              border: `1px solid ${session.intent_state.blocked ? '#fecaca' : '#bae6fd'}`,
-              borderRadius: '4px',
-              fontSize: '14px',
-              color: session.intent_state.blocked ? '#dc2626' : '#0369a1'
-            }}>
-              <div style={{ fontWeight: '500', marginBottom: '4px' }}>
-                {session.intent_state.blocked ? '⚠️ Payment Blocked' : 'ℹ️ Payment Status'}
-              </div>
-              <div style={{ fontSize: '12px', lineHeight: '1.4' }}>
-                <div>Status: {session.intent_state.intent_status || 'Unknown'}</div>
-                {session.intent_state.reason && <div>Reason: {session.intent_state.reason}</div>}
-                {session.intent_state.payment_confirmed && <div>✅ Payment confirmed</div>}
-                {session.intent_state.requires_action && <div>🔄 Requires action</div>}
-              </div>
-            </div>
-          )}
-
-          {/* JIT: Available Payment Methods Display */}
-          {availableMethods.length > 0 && (
-            <div style={{
-              marginBottom: '16px',
-              fontSize: '14px',
-              color: resolveThemeValue(style?.descriptionTextFont?.color, theme) || '#666666',
-              fontFamily: style?.descriptionTextFont?.font || 'Inter'
-            }}>
-              <div style={{ marginBottom: '8px', fontWeight: '500' }}>✅ Available payment methods:</div>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                {availableMethods.map((method: string) => (
-                  <span
-                    key={method}
-                    style={{
-                      fontSize: '12px',
-                      padding: '4px 8px',
-                      backgroundColor: '#e0f2fe',
-                      borderRadius: '4px',
-                      color: '#0277bd',
-                      border: '1px solid #b3e5fc'
-                    }}
-                  >
-                    {method}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* JIT: Debug Information */}
-          <div style={{
-            marginBottom: '16px',
-            padding: '12px',
-            backgroundColor: '#f8f9fa',
-            border: '1px solid #dee2e6',
-            borderRadius: '4px',
-            fontSize: '12px',
-            fontFamily: 'monospace'
-          }}>
-            <div><strong>🔧 JIT System Debug:</strong></div>
-            <div>Mode: {stripeOptions?.mode} (deferred)</div>
-            <div>Intent Mode: {session.intent_mode || 'auto-detected'}</div>
-            <div>Intent Type: {session.intent_type || 'none'}</div>
-            <div>Has Subscription: {session.has_subscription_items ? 'Yes' : 'No'}</div>
-            <div>Has One-time: {session.has_onetime_items ? 'Yes' : 'No'}</div>
-            <div>Has Mixed Cart: {session.has_mixed_cart ? 'Yes' : 'No'}</div>
-            <div>Currency: {session.currency}</div>
-            <div>Total: {session.total}</div>
-            <div>Deferred Amount: {stripeOptions?.amount || 'N/A (setup mode)'}</div>
-            <div>Client Secret: {session.client_secret ? 'Present (Legacy)' : 'NONE (JIT ✓)'}</div>
-            <div>Available Methods: {availableMethods.join(', ') || 'none'}</div>
-            <div>Redirect Methods: {stripeOptions?.automatic_payment_methods?.allow_redirects || 'auto'}</div>
-          </div>
-
-          <a href={`/checkout/${session.id}/debug`} target={"_blank"} style={{
-            fontSize: '12px',
-            color: '#666',
-            textDecoration: 'underline'
-          }}>🔍 Debug Checkout Session</a>
-
-          {/* Debug Controls */}
-          <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
-            <button
-              onClick={() => {
-                window.location.reload();
-              }}
-              style={{
-                fontSize: '12px',
-                color: '#666',
-                textDecoration: 'underline',
-                background: 'none',
-                border: 'none',
-                cursor: 'pointer',
-                padding: '4px 8px',
-                borderRadius: '4px',
-                border: '1px solid #ddd'
-              }}
-            >
-              🔄 Reload Page
-            </button>
-          </div>
         </>
       ) : (
-        <div className="bg-yellow-50 border border-yellow-200 text-yellow-700 px-4 py-3 rounded" style={warningPanelStyle}>
-          <div className="font-semibold mb-2">❌ Payment Initialization Failed</div>
-          <div className="text-sm mb-3">
-            Unable to initialize payment. Please try again later.
-          </div>
-
-          {/* Debug: Show specific failure reasons */}
-          <div className="text-xs font-mono bg-yellow-100 p-3 rounded border">
-            <div className="font-semibold mb-2">🔍 Debug Information:</div>
-            <div><strong>Stripe Promise:</strong> {stripePromise ? '✅ Loaded' : '❌ Failed'}</div>
-            <div><strong>Stripe Options:</strong> {stripeOptions ? '✅ Configured' : '❌ Missing'}</div>
-            <div><strong>Session:</strong> {session ? '✅ Present' : '❌ Missing'}</div>
-            <div><strong>Session ID:</strong> {session?.id || 'N/A'}</div>
-            <div><strong>Currency:</strong> {session?.currency || '❌ Missing'}</div>
-            <div><strong>Total:</strong> {session?.total !== undefined ? `$${(session.total / 100).toFixed(2)}` : '❌ Missing'}</div>
-            <div><strong>Publishable Key:</strong> {session?.publishable_key ? '✅ Present' : '❌ Missing'}</div>
-            <div><strong>Enabled Methods:</strong> {session?.enabled_payment_methods?.length ? session.enabled_payment_methods.join(', ') : '❌ None'}</div>
-            <div><strong>Intent State Blocked:</strong> {session?.intent_state?.blocked ? '❌ Yes' : '✅ No'}</div>
-            {session?.intent_state?.blocked && (
-              <div><strong>Block Reason:</strong> {session.intent_state.reason || 'Unknown'}</div>
-            )}
-            <div><strong>Stripe Error:</strong> {stripeError || 'None'}</div>
-          </div>
-
-          {/* Action buttons */}
-          <div className="mt-3 flex gap-2">
-            <button
-              onClick={() => window.location.reload()}
-              className="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700"
-            >
-              🔄 Retry
-            </button>
-            <button
-              onClick={() => {
-                console.log('Full session data:', session);
-                console.log('Stripe options:', stripeOptions);
-                console.log('Stripe promise:', stripePromise);
-              }}
-              className="bg-gray-600 text-white px-3 py-1 rounded text-sm hover:bg-gray-700"
-            >
-              📋 Log to Console
-            </button>
-          </div>
-        </div>
+       <div></div>
       )}
     </div>
   );
@@ -964,76 +737,46 @@ function PaymentForm({
   const stripe = useStripe();
   const elements = useElements();
   const { setPageSubmissionProps } = useCheckoutState() as CheckoutState;
-  const { session } = Numi.useCheckout();
+
+  const { session, submitPage } = Numi.useCheckout();
   const [paymentType, setPaymentType] = useState<string>('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [debugMessages, setDebugMessages] = useState<string[]>([]);
-  const [debugMode, setDebugMode] = useState(true); // Enable debug mode by default
+  const [debugMode] = useState(true); // Enable debug mode by default
   const [currentStep, setCurrentStep] = useState<string>('');
-  const [stepData, setStepData] = useState<any>(null);
+  const [stepData, setStepData] = useState<Record<string, unknown> | null>(null);
   const [waitingForApproval, setWaitingForApproval] = useState(false);
 
   // Payment method memory state
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string>('');
-  const [fallbackPaymentMethod, setFallbackPaymentMethod] = useState<string>('card');
+  const [fallbackPaymentMethod] = useState<string>('card');
 
-  // Initialize payment method memory
-  useEffect(() => {
-    const storageKey = `payment_method_${sessionId}`;
-    const savedMethod = sessionStorage.getItem(storageKey);
-    
-    if (savedMethod) {
-      setSelectedPaymentMethod(savedMethod);
-      setPaymentType(savedMethod);
-      addDebugMessage(`Restored saved payment method: ${savedMethod}`);
-    } else {
-      // Set default payment method
-      setSelectedPaymentMethod('card');
-      setPaymentType('card');
-      addDebugMessage('Using default payment method: card');
-    }
-  }, [sessionId]);
 
-  // Save payment method selection to session storage
-  const savePaymentMethod = (method: string) => {
-    const storageKey = `payment_method_${sessionId}`;
-    sessionStorage.setItem(storageKey, method);
-    setSelectedPaymentMethod(method);
-    addDebugMessage(`Saved payment method: ${method}`);
-  };
 
-  // Handle payment method change with memory
-  const handlePaymentMethodChange = (evt: any) => {
+  // Handle payment method change with memory - memoized to prevent re-renders
+  const handlePaymentMethodChange = useCallback((evt: { value?: { type?: string } }) => {
     const newMethod = evt.value?.type || '';
     setPaymentType(newMethod);
-    
     if (newMethod) {
-      savePaymentMethod(newMethod);
-      addDebugMessage(`Payment method selected: ${newMethod}`);
       console.log('JIT: Selected payment type:', newMethod, evt);
     }
-  };
+  }, []);
 
   // Handle backend payment method rejection
   const handlePaymentMethodRejection = (rejectedMethod: string, supportedMethods: string[]) => {
-    addDebugMessage(`Payment method ${rejectedMethod} not supported by backend`);
-    addDebugMessage(`Supported methods: ${supportedMethods.join(', ')}`);
-    
+
     // Find a fallback method from supported methods
-    const fallback = supportedMethods.includes('card') ? 'card' : 
-                    supportedMethods.includes('link') ? 'link' : 
+    const fallback = supportedMethods.includes('card') ? 'card' :
+                    supportedMethods.includes('link') ? 'link' :
                     supportedMethods[0] || 'card';
-    
+
     setFallbackPaymentMethod(fallback);
     setPaymentType(fallback);
-    savePaymentMethod(fallback);
-    
-    addDebugMessage(`Switched to fallback method: ${fallback}`);
-    
+
     // Show user notification
     setError(`The selected payment method (${rejectedMethod}) is not available. We've switched to ${fallback}.`);
-    
+
     // Clear error after 5 seconds
     setTimeout(() => {
       setError(null);
@@ -1069,42 +812,35 @@ function PaymentForm({
     setWaitingForApproval(true);
 
     return new Promise((resolve) => {
-      // Store the resolve function globally so the approve button can call it
       (window as any).__debugApprovalResolve = resolve;
     });
   };
 
+  const RETURN_STRIPE_NOT_INITIALIZED =  {
+    error: 'Stripe has not been initialized',
+    type: 'validation_error',
+    code: 'stripe_not_initialized',
+  };
+
+  const RETURN_EMAIL_REQUIRED = {
+    error: 'Email is required',
+    type: 'validation_error',
+    code: 'email_required',
+  }
+  const RETURN_EMAIL_INVALID = {
+    error: 'Please enter a valid email address',
+    type: 'validation_error',
+    code: 'invalid_email',
+  };
+
+
   useEffect(() => {
     setPageSubmissionProps(async () => {
-      if (!stripe || !elements) {
-        return {
-          error: 'Stripe has not been initialized',
-          type: 'validation_error',
-          code: 'stripe_not_initialized',
-        };
-      }
+      if (!stripe || !elements) return RETURN_STRIPE_NOT_INITIALIZED;
+      if (collectsEmail && !emailAddress) return RETURN_EMAIL_REQUIRED;
+      if (emailAddress && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailAddress)) return RETURN_EMAIL_INVALID;
 
-              // Validate email if collecting email
-        if (collectsEmail && !emailAddress) {
-          addDebugMessage('Validation failed: Email is required');
-          return {
-            error: 'Email is required',
-            type: 'validation_error',
-            code: 'email_required',
-          };
-        }
-
-        // Basic email validation
-        if (emailAddress && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailAddress)) {
-          addDebugMessage('Validation failed: Invalid email format');
-          return {
-            error: 'Please enter a valid email address',
-            type: 'validation_error',
-            code: 'invalid_email',
-          };
-        }
-
-        addDebugMessage(`Email validation passed: ${emailAddress}`);
+      // transition('something')
 
       setIsProcessing(true);
       setError(null);
@@ -1113,12 +849,6 @@ function PaymentForm({
       try {
         // JIT Step 1: Validate payment details with elements.submit()
         addDebugMessage('Step 1: Validating payment details');
-        await waitForApproval('Step 1: Validate Payment Details', {
-          step: 'elements.submit()',
-          description: 'Validating payment details with Stripe Elements',
-          paymentType,
-          email: emailAddress
-        });
 
         const { error: submitError } = await elements.submit();
         if (submitError) {
@@ -1137,17 +867,6 @@ function PaymentForm({
 
         // JIT Step 2: Create intent on backend just-in-time
         addDebugMessage('Step 2: Creating payment intent on backend');
-        await waitForApproval('Step 2: Create Payment Intent', {
-          step: 'prepare_payment',
-          description: 'Creating payment intent on backend just-in-time',
-          endpoint: `/checkouts/${sessionId}/mutations`,
-          payload: {
-            action: 'prepare_payment',
-            email: emailAddress,
-            payment_type: paymentType,
-            current_url: window.location.href
-          }
-        });
 
         const prepareResponse = await axios.post(`/checkouts/${sessionId}/mutations`, {
           action: 'prepare_payment',
@@ -1158,7 +877,7 @@ function PaymentForm({
 
         if (prepareResponse.status !== 200) {
           const errorMessage = prepareResponse.data?.message || 'Failed to prepare payment';
-          
+
           // Check if this is a payment method rejection
           if (errorMessage.includes('payment method') || errorMessage.includes('not supported')) {
             // Try to extract supported methods from error or use defaults
@@ -1171,7 +890,7 @@ function PaymentForm({
               code: 'unsupported_payment_method',
             };
           }
-          
+
           setError(errorMessage);
           setIsProcessing(false);
           addDebugMessage(`Step 2 failed: ${errorMessage}`);
@@ -1209,11 +928,10 @@ function PaymentForm({
         }
 
         // Use backend-provided redirect method flag
-        const isRedirectMethod = is_redirect_method === true;
+        const isRedirectMethod = is_redirect_method;
 
         // Build confirm params based on payment method type
         const confirmParams: any = {
-
           payment_method_data: {
             billing_details: {
               email: emailAddress,
@@ -1221,91 +939,100 @@ function PaymentForm({
           },
         };
 
-        addDebugMessage(`Using email in payment confirmation: ${emailAddress}`);
-
         // Always use backend-provided return_url - Stripe requires it for all confirmations
         if (return_url) {
           confirmParams.return_url = return_url;
-          addDebugMessage(`Using backend return_url: ${return_url} (redirect: ${isRedirectMethod})`);
-        } else {
-          addDebugMessage(`Warning: No return_url provided by backend`);
         }
-
-        // For setup intents, use redirect: 'if_required' to avoid unnecessary redirects
-        // Note: redirect parameter is only valid for setup intents, not payment intents
-        if (intent_type === 'setup' && !isRedirectMethod) {
-          confirmParams.redirect = 'if_required';
-          addDebugMessage('Using redirect: if_required for setup intent');
-        }
-
-
-        // JIT Step 3: Confirm payment with the just-created intent
-        addDebugMessage('Step 3: Confirming payment with Stripe');
-        await waitForApproval('Step 3: Confirm Payment', {
-          step: intent_type === 'payment' ? 'stripe.confirmPayment' : 'stripe.confirmSetup',
-          description: `Confirming ${intent_type} intent with Stripe`,
-          intent_type,
-          is_redirect_method: is_redirect_method,
-          return_url: return_url,
-          confirmParams: {
-            ...confirmParams,
-            // Don't show the full confirmParams in debug to keep it clean
-            has_return_url: !!return_url,
-            has_redirect_setting: intent_type === 'setup' && !isRedirectMethod
-          }
-        });
 
         let confirmError;
         let confirmResult;
 
         if (intent_type === 'payment') {
           addDebugMessage(`Using confirmPayment for payment intent (redirect: ${isRedirectMethod})`);
-          confirmResult = await stripe.confirmKlarnaPayment(
-            client_secret,
-            {
-              return_url: return_url,
-              // setup_future_usage: 'off_session',
-              payment_method: {
-                // type: 'klarna',
-                billing_details: {
-                  email: emailAddress,
-                  address: {
-                    country: 'AU'
-                  }
-                },
-              }
-            },
-            {
-              handleActions: false,
-            }
-          )
 
-          if (confirmResult?.paymentIntent.next_action?.redirect_to_url?.url) {
-            window.location.href = confirmResult.paymentIntent.next_action.redirect_to_url.url;
-            return;
+          let confirmResult;
+
+          if (paymentType === 'card') {
+            confirmParams.save_payment_method = true;
+
+            // For card payments, confirm with elements
+            confirmResult = await stripe.confirmPayment({
+              elements,
+              clientSecret: client_secret,
+              confirmParams,
+              redirect: 'if_required',
+            });
+          } else if (paymentType === 'klarna') {
+            confirmResult = await stripe.confirmKlarnaPayment(
+              client_secret,
+              {
+                return_url: return_url,
+                payment_method: {
+                  billing_details: {
+                    email: emailAddress,
+                    address: {
+                      country: 'AU'
+                    }
+                  },
+                }
+              },
+              {
+                handleActions: false,
+              }
+            )
+          } else {
+            confirmResult = await stripe.confirmPayment({
+              elements,
+              clientSecret: client_secret,
+              confirmParams,
+              redirect: 'if_required',
+            })
           }
 
-          console.log("RESULT", { confirmResult });
 
-          // {
-          //   elements,
-          //   clientSecret: ,
-          //   confirmParams,
-          //   redirect: 'if_required',
-          // });
-          // confirmResult = await stripe.confirmPayment({
-          //   elements,
-          //   clientSecret: client_secret,
-          //   confirmParams,
-          //   redirect: 'if_required',
-          // });
-          confirmError = confirmResult.error;
+          console.log("Stripe@confirmResult", { confirmResult });
+
+          if (confirmResult.error) {
+            // This point will only be reached if there is an immediate error when
+            // confirming the payment. Show error to your customer (for example, payment
+            // details incomplete)
+            setError(confirmResult.error);
+            setIsProcessing(false);
+            addDebugMessage(`Step 2 failed: ${confirmResult.error}`);
+
+            return {
+              error,
+              type: 'confirmation_error',
+              code: 'stripe_confirm_failed',
+            }
+          }
+
+          if (confirmResult?.paymentIntent.next_action?.redirect_to_url?.url) {
+            // if we're in an iframe?
+            if (window.parent !== window) {
+              window.location.href = confirmResult.paymentIntent.next_action.redirect_to_url.url;
+              // we're in an iframe, so we need to post a message to the parent!
+            } else {
+              window.parent.postMessage(new MessageEvent('payment_redirect', {
+                url: 'http://example.com/test',
+              }), '*');
+            }
+
+
+            return {
+              error: 'Redirecting you to complete payment',
+              type: 'payment_redirect',
+              code: false,
+            };
+          }
         } else if (intent_type === 'setup') {
           addDebugMessage(`Using confirmSetup for setup intent (redirect: ${isRedirectMethod})`);
+
           confirmResult = await stripe.confirmSetup({
             elements,
             clientSecret: client_secret,
             confirmParams,
+            redirect: 'if_required',
           });
           confirmError = confirmResult.error;
         } else {
@@ -1314,9 +1041,7 @@ function PaymentForm({
 
         if (confirmError) {
           const errorMessage = confirmError.message || 'Payment confirmation failed';
-          setError(errorMessage);
-          setIsProcessing(false);
-          addDebugMessage(`Step 2 failed: ${errorMessage}`);
+
           return {
             error: errorMessage,
             type: confirmError.type || 'confirmation_error',
@@ -1325,24 +1050,11 @@ function PaymentForm({
         }
 
         // Check if this is a redirect-based payment that requires user action
-        if (confirmResult && confirmResult.paymentIntent && confirmResult.paymentIntent.status === 'requires_action') {
+        if (confirmResult && confirmResult.paymentIntent
+          && confirmResult.paymentIntent.status === 'requires_action'
+        ) {
           addDebugMessage('Step 2: Redirect payment requires action - user will be redirected');
           setIsProcessing(false);
-
-          // Debug: Show what would happen next for redirect
-          console.log('JIT: Redirect payment initiated!', {
-            intent_type,
-            paymentType,
-            email: emailAddress,
-            isRedirectMethod,
-            nextSteps: [
-              '1. User would be redirected to external site (3DS, bank, etc.)',
-              '2. User completes authentication on external site',
-              '3. User is redirected back to return_url',
-              '4. Backend would receive webhook (payment_intent.succeeded)',
-              '5. Order would be marked as paid and items provisioned'
-            ]
-          });
 
           return {
             payment_confirmed: false,
@@ -1350,16 +1062,6 @@ function PaymentForm({
             email: emailAddress,
             intent_type: intent_type,
             jit_process: 'redirect_initiated',
-            debug_info: {
-              message: 'Redirect payment initiated!',
-              nextSteps: [
-                'User would be redirected to external site (3DS, bank, etc.)',
-                'User completes authentication on external site',
-                'User is redirected back to return_url',
-                'Backend would receive webhook (payment_intent.succeeded)',
-                'Order would be marked as paid and items provisioned'
-              ]
-            }
           };
         }
 
@@ -1368,57 +1070,18 @@ function PaymentForm({
           addDebugMessage('Step 2: Setup intent requires action - user will be redirected');
           setIsProcessing(false);
 
-          // Debug: Show what would happen next for setup redirect
-          console.log('JIT: Setup intent redirect initiated!', {
-            intent_type,
-            paymentType,
-            email: emailAddress,
-            isRedirectMethod,
-            nextSteps: [
-              '1. User would be redirected to external site for setup',
-              '2. User completes setup on external site',
-              '3. User is redirected back to return_url',
-              '4. Backend would receive webhook (setup_intent.succeeded)',
-              '5. Subscription would be activated'
-            ]
-          });
-
           return {
             payment_confirmed: false,
             requires_action: true,
             email: emailAddress,
             intent_type: intent_type,
             jit_process: 'redirect_initiated',
-            debug_info: {
-              message: 'Setup intent redirect initiated!',
-              nextSteps: [
-                'User would be redirected to external site for setup',
-                'User completes setup on external site',
-                'User is redirected back to return_url',
-                'Backend would receive webhook (setup_intent.succeeded)',
-                'Subscription would be activated'
-              ]
-            }
           };
         }
 
         // Payment confirmed successfully (for immediate payments like cards)
         addDebugMessage('Step 2 passed: Payment confirmed successfully (immediate)');
         setIsProcessing(false);
-
-        // Debug: Show what would happen next
-        console.log('JIT: Payment completed successfully!', {
-          intent_type,
-          paymentType,
-          email: emailAddress,
-          nextSteps: [
-            '1. Backend would receive webhook (payment_intent.succeeded)',
-            '2. Order would be marked as paid',
-            '3. Items would be provisioned',
-            '4. User would be redirected to success page',
-            '5. Email confirmation would be sent'
-          ]
-        });
 
         console.log('CONFMRING AND PROCEEDING!');
 
@@ -1429,22 +1092,12 @@ function PaymentForm({
           email: emailAddress,
           intent_type: intent_type,
           jit_process: 'completed',
-          debug_info: {
-            message: 'Payment completed successfully!',
-            nextSteps: [
-              'Backend would receive webhook (payment_intent.succeeded)',
-              'Order would be marked as paid',
-              'Items would be provisioned',
-              'User would be redirected to success page',
-              'Email confirmation would be sent'
-            ]
-          }
         };
 
       } catch (error: any) {
         console.error('JIT: Payment processing error:', error);
         const errorMessage = error.response?.data?.message || error.message;
-        
+
         // Check if this is a payment method rejection
         if (errorMessage.includes('payment method') || errorMessage.includes('not supported')) {
           const supportedMethods = ['card', 'link']; // Default fallbacks
@@ -1456,7 +1109,7 @@ function PaymentForm({
             code: 'unsupported_payment_method',
           };
         }
-        
+
         setError(errorMessage);
         setIsProcessing(false);
         addDebugMessage(`Process failed: ${errorMessage}`);
@@ -1469,11 +1122,11 @@ function PaymentForm({
     });
   }, [stripe, elements, emailAddress, collectsEmail, sessionId, paymentType]);
 
-
-
-     // Get enabled payment methods from session using intelligence service
-   const paymentSessionForForm = toPaymentSession(session);
-   const { wallets } = paymentIntelligence.getAvailableMethodsForContext(paymentSessionForForm);
+  // Get enabled payment methods from session using intelligence service - memoized
+  const paymentSessionForForm = useMemo(() => toPaymentSession(session), [session]);
+  const { wallets } = useMemo(() => {
+    return paymentIntelligence.getAvailableMethodsForContext(paymentSessionForForm);
+  }, [paymentSessionForForm]);
 
   return (
     <div className="flex flex-col space-y-4" style={style}>
@@ -1620,6 +1273,7 @@ function PaymentForm({
           },
           layout: {
             type: 'tabs',
+            // type: 'accordion',
             defaultCollapsed: false,
           },
           wallets,

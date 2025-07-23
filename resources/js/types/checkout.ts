@@ -41,6 +41,8 @@ export interface CheckoutSession {
   properties: Record<string, any>;
   line_items: CheckoutItem[];
 
+  is_test_mode: boolean;
+
   currency: string;
   subtotal: number;
   taxes: number;
@@ -65,7 +67,7 @@ export interface CheckoutSession {
   has_subscription_items?: boolean;
   has_onetime_items?: boolean;
   has_mixed_cart?: boolean;
-  
+
   intent_state?: {
     can_proceed: boolean;
     blocked: boolean;
@@ -76,7 +78,7 @@ export interface CheckoutSession {
     intent_id?: string;
     intent_type?: string;
   };
-  
+
   payment_method?: {
     id: number;
     type: string;
@@ -101,7 +103,7 @@ export interface CheckoutSession {
       exp_year: number;
     };
   };
-  
+
   customer?: {
     id: number;
     email?: string;

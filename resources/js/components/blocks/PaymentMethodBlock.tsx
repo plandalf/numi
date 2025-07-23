@@ -3,44 +3,52 @@ import Numi from "@/contexts/Numi";
 import { IntegrationClient } from "@/types/checkout";
 import StripeElementsComponent from "./StripeElementsBlock";
 import axios from "@/lib/axios";
+import { useNavigation } from '@/pages/checkout-main';
 
 function PaymentMethodBlock() {
-  const { session } = Numi.useCheckout({});
+  const { currentPage, goToNextPage } = useNavigation();
+  const { session, submitPage} = Numi.useCheckout({});
   const [showForm, setShowForm] = useState(!session?.payment_method);
   const [isRedirectPayment, setIsRedirectPayment] = useState(false);
 
-  // Reset form state when session changes (e.g., after refresh)
-  useEffect(() => {
-    console.log('PaymentMethodBlock: Session updated', {
-      hasPaymentMethod: !!session?.payment_method,
-      paymentMethod: session?.payment_method,
-      hasCustomer: !!session?.customer,
-      customer: session?.customer,
-    });
-
-    setShowForm(!session?.payment_method);
-
-    // Check if this is a redirect payment that needs completion
-    if (session?.metadata?.is_redirect_payment && session?.metadata?.pending_confirmation_token) {
-      setIsRedirectPayment(true);
-      completeRedirectPayment();
-    }
-  }, [session?.payment_method, session?.metadata]);
-
-  const completeRedirectPayment = useCallback(async () => {
-    try {
-      const response = await axios.post(`/checkouts/${session?.id}/mutations`, {
-        action: 'completeRedirectPayment',
-      });
-
-      if (response.data.checkout_session) {
-        // Refresh the session with the updated data
-        window.location.reload();
+  // useeffect, if theres a next_action=confirm_automatically in the url we need to submit the form! (somehow)
+  useEffect( () => {
+    const doSomething = async () => {
+      const url = new URL(window.location.href);
+      if (url.searchParams.get("next_action") === "confirm_automatically") {
+        await submitPage(currentPage.id);
+        goToNextPage({});
       }
-    } catch (error) {
-      console.error('Failed to complete redirect payment:', error);
     }
-  }, [session?.id]);
+    doSomething()
+  }, []);
+
+
+  // // Reset form state when session changes (e.g., after refresh)
+  // useEffect(() => {
+  //   setShowForm(!session?.payment_method);
+  //
+  //   // Check if this is a redirect payment that needs completion
+  //   if (session?.metadata?.is_redirect_payment && session?.metadata?.pending_confirmation_token) {
+  //     setIsRedirectPayment(true);
+  //     completeRedirectPayment();
+  //   }
+  // }, [session?.payment_method, session?.metadata]);
+  //
+  // const completeRedirectPayment = useCallback(async () => {
+  //   try {
+  //     const response = await axios.post(`/checkouts/${session?.id}/mutations`, {
+  //       action: 'completeRedirectPayment'
+  //     });
+  //
+  //     if (response.data.checkout_session) {
+  //       // Refresh the session with the updated data
+  //       window.location.reload();
+  //     }
+  //   } catch (error) {
+  //     console.error('Failed to complete redirect payment:', error);
+  //   }
+  // }, [session?.id]);
 
   const handleSuccess = useCallback(() => {
     setShowForm(false);
@@ -68,10 +76,9 @@ function PaymentMethodBlock() {
         <div className="border p-4 rounded bg-gray-50 flex items-center justify-between">
           <div>
             <div>
-              <span className="font-semibold">{pm.type?.toUpperCase()}</span>{" "}
-              {pm.card && (
+              {pm.type === 'card' && (
                 <>
-                  {pm.card.brand} •••• {pm.card.last4} (exp {pm.card.exp_month}/{pm.card.exp_year})
+                  {pm.properties.brand} •••• {pm.properties.last4} (exp {pm.properties.exp_month}/{pm.properties.exp_year})
                 </>
               )}
             </div>
@@ -94,7 +101,7 @@ function PaymentMethodBlock() {
         emailAddress={session.properties?.email}
         onEmailChange={(email) => {
           // Update session properties with email
-          console.log('PaymentMethodBlock: Email changed to', email);
+          // console.log('PaymentMethodBlock: Email changed to', email);
         }}
       />
     );

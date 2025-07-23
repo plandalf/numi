@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources\Checkout;
 
+use App\Http\Resources\OrderResource;
 use App\Models\Checkout\CheckoutSession;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -21,7 +22,7 @@ class CheckoutSessionResource extends JsonResource
             'currency' => $this->currency,
             'total' => $this->total,
             'subtotal' => $this->subtotal,
-
+            'is_test_mode' => $this->test_mode,
             'publishable_key' => $this->publishable_key,
             'integration_client' => $this->integration?->type?->value,
             'client_secret' => $this->client_secret,
@@ -35,7 +36,6 @@ class CheckoutSessionResource extends JsonResource
             'return_url' => $this->return_url,
             'enabled_payment_methods' => $this->enabled_payment_methods,
             'intent_state' => $this->hasActiveIntent() ? $this->getIntentState() : null,
-
             'current_page' => data_get($this->metadata, 'current_page_id'),
             'selected_payment_method' => data_get($this->metadata, 'selected_payment_method'),
             'discounts' => $this->discounts,
@@ -44,10 +44,9 @@ class CheckoutSessionResource extends JsonResource
             'payment_method' => $this->whenLoaded('paymentMethod', function () {
                 return [
                     'id' => $this->paymentMethod->id,
-                    'type' => $this->paymentMethod->type,
                     'billing_details' => $this->paymentMethod->billing_details,
+                    'type' => $this->paymentMethod->type,
                     'properties' => $this->paymentMethod->properties,
-                    'card' => $this->paymentMethod->properties['card'] ?? null,
                 ];
             }),
             'customer' => $this->whenLoaded('customer', function () {
@@ -57,6 +56,9 @@ class CheckoutSessionResource extends JsonResource
                     'name' => $this->customer->name,
                 ];
             }),
+            'order' => $this->whenLoaded('order', function () {
+                return new OrderResource($this->order);
+            }, null),
         ];
     }
 }

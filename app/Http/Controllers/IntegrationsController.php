@@ -55,8 +55,8 @@ class IntegrationsController extends Controller
         Gate::authorize('update', $integration);
 
         // Get the organization's default currency for validation
-        $currency = strtolower($integration->organization->default_currency ?? 'usd');
-        
+        $currency = $integration->organization->default_currency;
+
         // Get all available payment methods (both setup and payment-only)
         $allAvailablePaymentMethods = array_keys($integration->getAllPaymentMethods($currency));
 

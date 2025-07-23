@@ -94,22 +94,11 @@ class PreparePaymentAction
             'intent_id' => $intent->id,
             'intent_type' => $intentMode,
             'client_secret' => $intent->client_secret,
+            'is_redirect_method' => $isRedirectMethod,
+            'return_url' => route('checkout.redirect.callback', [$this->session]),
         ];
 
-        // Always provide return_url - Stripe requires it for all payment confirmations
-        // For redirect methods, use the redirect return route
-        // For card payments, use the current URL as fallback for 3D Secure etc.
-        if ($isRedirectMethod) {
-            $response['return_url'] = route('checkout.redirect.callback', [$this->session]);
-            $response['is_redirect_method'] = true;;
-        } else {
-            // For card payments, use current URL as return_url for 3D Secure etc.
-            $response['return_url'] = $currentUrl;
-            $response['is_redirect_method'] = false;
-        }
-
         return $response;
-
     }
 
 
@@ -156,19 +145,19 @@ class PreparePaymentAction
     /**
      * Create the appropriate Stripe intent based on cart contents
      */
-    private function createStripeIntent(?Customer $customer, string $intentMode, string $selectedPmType): mixed
+    private function createStripeIntent(?Customer $customer, string $intentMode, string $selectedPmType): PaymentIntent|SetupIntent|null
     {
         if ($intentMode === 'payment') {
             return $this->createPaymentIntent($customer, $selectedPmType);
         }
 
-        return $this->createSetupIntent($customer);
+        return $this->createSetupIntent($customer, $selectedPmType);
     }
 
     /**
      * Create a PaymentIntent for one-time payments
      */
-    private function createPaymentIntent(Customer $customer, string $selectedPmType): PaymentIntent|SetupIntent|null
+    private function createPaymentIntent(Customer $customer, string $selectedPmType): PaymentIntent|null
     {
         $paymentMethods = $this->getFilteredPaymentMethods('payment');
 
@@ -178,27 +167,12 @@ class PreparePaymentAction
     /**
      * Create a SetupIntent for subscriptions
      */
-    private function createSetupIntent(Customer $customer): array
+    private function createSetupIntent(Customer $customer, string $selectedPmType): SetupIntent|null
     {
         // Get filtered payment methods for this context
-        $paymentMethods = $this->getFilteredPaymentMethods($checkoutSession, 'setup');
+        $paymentMethods = $this->getFilteredPaymentMethods('setup');
 
-        $intent = $integrationClient->createSetupIntent([
-            'checkout_session' => $checkoutSession,
-            'customer' => $customer?->reference_id,
-            'metadata' => [
-                'checkout_session_id' => $checkoutSession->getRouteKey(),
-                'jit_created' => true,
-            ],
-            'payment_method_types' => $paymentMethods,
-            'usage' => 'off_session',
-        ]);
-
-        return [
-            'intent_id' => $intent->id,
-            'intent_type' => 'setup',
-            'client_secret' => $intent->client_secret,
-        ];
+        return $this->stripe->createSetupIntentForCheckout($this->session, $customer, $selectedPmType, $paymentMethods);
     }
 
     /**

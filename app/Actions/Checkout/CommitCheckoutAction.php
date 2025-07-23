@@ -8,6 +8,7 @@ use App\Actions\Order\ProcessOrderAction;
 use App\Enums\CheckoutSessionStatus;
 use App\Models\Checkout\CheckoutSession;
 use App\Models\Order\Order;
+use App\Models\PaymentMethod;
 use Illuminate\Support\Facades\Log;
 
 class CommitCheckoutAction
@@ -18,45 +19,83 @@ class CommitCheckoutAction
     ) {}
 
     //, ?string $confirmationToken = null, ?string $email = null
-    public function __invoke(CheckoutSession $checkoutSession): Order
+    public function __invoke(CheckoutSession $session): Order
     {
-        $process = app(ProcessOrderAction::class, ['session' => $checkoutSession]);
+        // pull intent
+        // ensure the pm is saved to the customer
 
+        if ($session->intent_type === 'payment') {
+            $intent = $session->paymentsIntegration
+                ->integrationClient()
+                ->getStripeClient()
+                ->paymentIntents
+                ->retrieve($session->intent_id, [
+                    'expand' => ['payment_method', 'latest_charge'],
+                ]);
+        } else if ($session->intent_type === 'setup') {
 
-        // If the checkout session is already closed, return it
-        if ($checkoutSession->status === CheckoutSessionStatus::CLOSED
-            || $checkoutSession->status === CheckoutSessionStatus::FAILED
-        ) {
-            return ($this->processOrder)($checkoutSession->order, $checkoutSession, $confirmationToken, $email);
+            $intent = $session->paymentsIntegration
+                ->integrationClient()
+                ->getStripeClient()
+                ->setupIntents
+                ->retrieve($session->intent_id, [
+                    'expand' => ['payment_method'],
+                ]);
+        } else {
+            dd('oof');
         }
 
-        Log::info(logname('creating-order'));
-        $order = ($this->createOrderAction)($checkoutSession);
-        Log::info(logname('created-order'), [
-            'id' => $order->id,
-        ]);
+
+        // OR, confirm it?
+        $paymentMethod = PaymentMethod::query()
+            ->firstOrCreate([
+                'customer_id' => $session->customer_id,
+                'organization_id' => $session->organization_id,
+                'integration_id' => $session->payments_integration_id,
+                'external_id' => $intent->payment_method->id,
+            ], [
+                'type' => $intent->payment_method->type,
+                'properties' => $intent->payment_method->{$intent->payment_method->type},
+                'metadata' => $intent->payment_method->metadata,
+                'can_redisplay' => $intent->payment_method->allow_redisplay !== 'limited',
+                'billing_details' => $intent->payment_method->billing_details->toArray(),
+            ]);
+        $session->payment_method_id = $paymentMethod->id;
+
+
+        $process = app(ProcessOrderAction::class, ['session' => $session]);
+
+        // If the checkout session is already closed, return it
+        if ($session->status === CheckoutSessionStatus::CLOSED
+            || $session->status === CheckoutSessionStatus::FAILED
+        ) {
+            return $process($session->order);
+        }
+
+        $order = ($this->createOrderAction)($session);
 
         // Create order items from checkout line items
-        foreach ($checkoutSession->lineItems as $lineItem) {
+        foreach ($session->lineItems as $lineItem) {
             Log::info(logname('processing-item'), [
                 'id' => $lineItem->id,
             ]);
             ($this->createOrderItemAction)($order, $lineItem);
         }
 
-        $processed = ($this->processOrder)($order, $checkoutSession, $confirmationToken, $email);
+        $processed = $process($order);
 
-        $checkoutSession->markAsClosed(true);
+        $session->markAsClosed(true);
 
+        $session->update([
+            'payment_confirmed_at' => now(),
+            'payment_method_locked' => true,
+        ]);
 
         // Mark payment as confirmed locally
-        $checkoutSession->update([
-//            'payment_confirmed_at' => now(),
+        $session->update([
             'status' => \App\Enums\CheckoutSessionStatus::CLOSED,
-            // finalised at happens NOW
-            'metadata' => array_merge($checkoutSession->metadata ?? [], [
+            'metadata' => array_merge($session->metadata ?? [], [
                 'committed_at' => now()->toISOString(),
-//                'payment_status' => $paymentStatus,
             ])
         ]);
 

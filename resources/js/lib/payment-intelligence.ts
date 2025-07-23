@@ -150,17 +150,17 @@ export class PaymentIntelligenceService {
       this.config.redirectMethods.includes(method)
     );
 
-    console.log('Payment Intelligence Results:', {
-      provider: this.config.name,
-      originalMethods: enabledMethods,
-      filteredMethods: paymentMethods,
-      intentMode,
-      hasSubscription: session.has_subscription_items,
-      total: session.total,
-      currency: session.currency,
-      filteringReasons,
-      hasRedirectMethods
-    });
+    // console.log('Payment Intelligence Results:', {
+    //   provider: this.config.name,
+    //   originalMethods: enabledMethods,
+    //   filteredMethods: paymentMethods,
+    //   intentMode,
+    //   hasSubscription: session.has_subscription_items,
+    //   total: session.total,
+    //   currency: session.currency,
+    //   filteringReasons,
+    //   hasRedirectMethods
+    // });
 
     return { 
       paymentMethods, 

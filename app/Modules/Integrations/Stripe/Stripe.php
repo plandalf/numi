@@ -21,6 +21,8 @@ use App\Modules\Integrations\Stripe\Actions\ImportStripeProductAction;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Str;
+use Stripe\PaymentIntent;
+use Stripe\SetupIntent;
 use Stripe\StripeClient;
 use Illuminate\Support\Facades\Log;
 
@@ -237,8 +239,10 @@ class Stripe extends AbstractIntegration implements CanCreateSubscription, CanSe
         return $this->stripeClient->setupIntents->retrieve($intentId);
     }
 
-    public function createSubscription(array $data = [])
+    public function createSubscription(Order $order)
     {
+        // items?
+
         $order = $data['order'] ?? null;
         $items = $data['items'] ?? [];
         $discounts = $data['discounts'] ?? [];
@@ -273,6 +277,7 @@ class Stripe extends AbstractIntegration implements CanCreateSubscription, CanSe
             'payment_settings' => [
                 'payment_method_types' => ['card'],
                 'save_default_payment_method' => 'on_subscription',
+                // todo: create this as draft?
             ],
             'expand' => ['latest_invoice.payment_intent'],
         ];
@@ -421,13 +426,51 @@ class Stripe extends AbstractIntegration implements CanCreateSubscription, CanSe
         return (new ImportStripePriceAction)($product, $gatewayPrices);
     }
 
-    public function createPaymentIntentForCheckout(CheckoutSession $session, Customer $customer, ?string $selectedPmType, ?array $paymentMethods = null)
+    public function createSetupIntentForCheckout(CheckoutSession $session, Customer $customer, ?string $selectedPmType, ?array $paymentMethods = null): SetupIntent
     {
-//            'automatic_payment_methods' => [
-//        'enabled' => true,
-//        'allow_redirects' => 'if_required', //, $this->hasRedirectMethods($paymentMethods) ? 'always' : 'never',
-////            'setup_future_usage' => 'off_session', // Save payment method for future use
+        // Get payment method types from data or fall back to session enabled methods
+        $paymentMethodTypes = $paymentMethods ?? $session->enabled_payment_methods ?? ['card'];
 
+        // Filter out specific payment method types that are not supported for JIT intents
+        $paymentMethodTypes = collect($paymentMethodTypes)
+            ->filter(fn ($i) => !in_array($i, ['apple_pay', 'google_pay']))
+            ->values();
+
+        $setupIntentData = [
+            'customer' => $customer->reference_id,
+            'metadata' => [
+                'checkout_session_id' => $session->getRouteKey(),
+            ],
+            'payment_method_types' => $paymentMethodTypes->all(),
+//            'usage' => 'off_session',
+        ];
+
+        // Create a more specific idempotency key that includes key parameters
+        // This prevents conflicts when parameters change (e.g., payment method types)
+        $idempotencyKeyData = [
+            'session_id' => $session->getRouteKey(),
+            'customer' => $setupIntentData['customer'] ?? null,
+            'payment_method_types' => $setupIntentData['payment_method_types'] ?? [],
+        ];
+
+        // Create a hash of the key parameters for the idempotency key
+        $idempotencyKey = $session->getRouteKey() . '-' . md5(serialize($idempotencyKeyData));
+
+        if ($session->intent_id) {
+            return $this->stripeClient
+                ->setupIntents
+                ->update($session->intent_id, $setupIntentData);
+        }
+
+        return $this->stripeClient
+            ->setupIntents
+            ->create($setupIntentData, [
+                'idempotency_key' => $idempotencyKey,
+            ]);
+    }
+
+    public function createPaymentIntentForCheckout(CheckoutSession $session, Customer $customer, ?string $selectedPmType, ?array $paymentMethods = null): PaymentIntent
+    {
         $amount = $session->total;
         $currency = $session->currency;
 
@@ -448,14 +491,6 @@ class Stripe extends AbstractIntegration implements CanCreateSubscription, CanSe
                 'checkout_session_id' => $session->getRouteKey(),
             ],
             'payment_method_types' => $paymentMethodTypes->all(),
-
-            // Add automatic payment methods configuration if provided
-        // Only use automatic_payment_methods if payment_method_types is not explicitly set
-//            'automatic_payment_methods' => true,
-
-            // Add setup_future_usage if provided
-//            'setup_future_usage' => 'off_session',
-            'setup_future_usage' => 'on_session',
         ]);
 
         // Create a more specific idempotency key that includes key parameters
@@ -466,273 +501,160 @@ class Stripe extends AbstractIntegration implements CanCreateSubscription, CanSe
             'currency' => $paymentIntentData['currency'],
             'customer' => $paymentIntentData['customer'] ?? null,
             'payment_method_types' => $paymentIntentData['payment_method_types'] ?? [],
-            'setup_future_usage' => $paymentIntentData['setup_future_usage'] ?? null,
         ];
 
         // Create a hash of the key parameters for the idempotency key
         $idempotencyKey = $session->getRouteKey() . '-' . md5(serialize($idempotencyKeyData));
 
-        $data = [
-            'checkout_session_id' => $session->id,
-            'idempotency_key' => $idempotencyKey,
-            'intent_to_create' => $paymentIntentData,
-        ];
-//        dd($data);
-
-        Log::info(logname('jit-creating'), $data);
-
-//        $intent = $this->stripeClient->paymentIntents->retrieve($session->intent_id);
-
         if ($session->intent_id) {
-            return $this->stripeClient->paymentIntents
+            return $this->stripeClient
+                ->paymentIntents
                 ->update($session->intent_id, $paymentIntentData);
         }
 
-        return $this->stripeClient->paymentIntents
+        return $this->stripeClient
+            ->paymentIntents
             ->create($paymentIntentData, [
                 'idempotency_key' => $idempotencyKey,
             ]);
-
-        // [stripe-intent] Support both old order-based flow and new session-based flow
-//        if ($session) {
-//
-//        } else {
-//            // Legacy flow: working with Order (existing logic)
-//            $order = $data['order'] ?? null;
-//            $items = $data['items'] ?? [];
-//            $discounts = $data['discounts'] ?? [];
-//
-//            if (!$order || empty($items)) {
-//                throw new \InvalidArgumentException('Order and items are required to create a payment intent');
-//            }
-//
-//            // Get the customer from the order
-//            $customer = $order->customer;
-//
-//            if (!$customer) {
-//                throw new \InvalidArgumentException('Customer is required to create a payment intent');
-//            }
-//
-//            // Get the payment method from the checkout session
-//            $session = $order->checkoutSession;
-//            $paymentMethod = $session->paymentMethod;
-//
-//            if (!$paymentMethod || !$paymentMethod->external_id) {
-//                throw new \InvalidArgumentException('No payment method available for this checkout session');
-//            }
-//
-//            // Calculate the total amount
-//            $amount = 0;
-//            $currency = null;
-//
-//            foreach ($items as $item) {
-//                $price = $item['price'];
-//                $quantity = $item['quantity'] ?? 1;
-//
-//                if (! $currency) {
-//                    $currency = $price['currency'];
-//                } elseif ($currency !== $price['currency']) {
-//                    throw new \InvalidArgumentException('All items must have the same currency');
-//                }
-//
-//                $amount += $price['amount']->getAmount() * $quantity;
-//            }
-//
-//            // Apply discounts if any
-//            if (!empty($discounts)) {
-//                $discountAmount = 0;
-//                foreach ($discounts as $discount) {
-//                    try {
-//                        // Try to get the promotion code for this discount
-//                        $promotionCode = $this->stripeClient->promotionCodes->all([
-//                            'code' => $discount['id'],
-//                            'active' => true,
-//                            'limit' => 1
-//                        ])->data[0] ?? null;
-//
-//                        if ($promotionCode) {
-//                            // Apply promotion code discount
-//                            if ($promotionCode->coupon->percent_off) {
-//                                $discountAmount += $amount * ($promotionCode->coupon->percent_off / 100);
-//                            } else {
-//                                $discountAmount += $promotionCode->coupon->amount_off;
-//                            }
-//                        } else {
-//                            // Fallback to direct coupon calculation
-//                            if (isset($discount['percent_off'])) {
-//                                $discountAmount += $amount * ($discount['percent_off'] / 100);
-//                            } elseif (isset($discount['amount_off'])) {
-//                                $discountAmount += $discount['amount_off'];
-//                            }
-//                        }
-//                    } catch (\Exception $e) {
-//                        logger()->warning('Failed to apply discount', [
-//                            'discount_id' => $discount['id'],
-//                            'error' => $e->getMessage()
-//                        ]);
-//                    }
-//                }
-//                $amount = max(0, $amount - $discountAmount);
-//            }
-//
-//            // Create the payment intent with the payment method from the checkout session
-//            $paymentIntent = $this->stripeClient->paymentIntents->create([
-//                'amount' => (int) $amount,
-//                'currency' => strtolower($currency),
-//                'customer' => $customer->reference_id,
-//                'payment_method' => $paymentMethod->external_id,
-//                'confirm' => true,
-//                'off_session' => true,
-//                'metadata' => [
-//                    'order_id' => $order->id,
-//                ],
-//            ]);
-//
-//            // Verify the payment intent status
-//            if ($paymentIntent->status === 'requires_payment_method') {
-//                throw new \InvalidArgumentException('Payment method is required but not provided');
-//            }
-//
-//            return $paymentIntent;
-//        }
     }
 
     /**
      * Create a direct payment intent using a confirmation token
      * This is used for one-time payments that don't require saving payment methods
      */
-    public function createDirectPaymentIntent(array $data = [])
-    {
-        $order = $data['order'] ?? null;
-        $items = $data['items'] ?? [];
-        $discounts = $data['discounts'] ?? [];
-        $confirmationToken = $data['confirmation_token'] ?? null;
-
-        if (!$order || empty($items) || !$confirmationToken) {
-            throw new \InvalidArgumentException('Order, items, and confirmation token are required to create a direct payment intent');
-        }
-
-        // Ensure checkout_session and customer relationships are loaded
-        $order->load(['checkoutSession', 'customer']);
-
-        // Get the customer from the order
-        $customer = $order->customer;
-
-        if (!$customer) {
-            throw new \InvalidArgumentException('Customer is required to create a direct payment intent');
-        }
-
-        // Calculate the total amount
-        $amount = 0;
-        $currency = null;
-
-        foreach ($items as $item) {
-            $price = $item['price'];
-            $quantity = $item['quantity'] ?? 1;
-
-            if (!$currency) {
-                $currency = $price['currency'];
-            } elseif ($currency !== $price['currency']) {
-                throw new \InvalidArgumentException('All items must have the same currency');
-            }
-
-            $amount += $price['amount']->getAmount() * $quantity;
-        }
-
-        // Apply discounts if any
-        if (!empty($discounts)) {
-            $discountAmount = 0;
-            foreach ($discounts as $discount) {
-                try {
-                    // Try to get the promotion code for this discount
-                    $promotionCode = $this->stripeClient->promotionCodes->all([
-                        'code' => $discount['id'],
-                        'active' => true,
-                        'limit' => 1
-                    ])->data[0] ?? null;
-
-                    if ($promotionCode) {
-                        // Apply promotion code discount
-                        if ($promotionCode->coupon->percent_off) {
-                            $discountAmount += $amount * ($promotionCode->coupon->percent_off / 100);
-                        } else {
-                            $discountAmount += $promotionCode->coupon->amount_off;
-                        }
-                    } else {
-                        // Fallback to direct coupon calculation
-                        if (isset($discount['percent_off'])) {
-                            $discountAmount += $amount * ($discount['percent_off'] / 100);
-                        } elseif (isset($discount['amount_off'])) {
-                            $discountAmount += $discount['amount_off'];
-                        }
-                    }
-                } catch (\Exception $e) {
-                    logger()->warning('Failed to apply discount to direct payment intent', [
-                        'discount_id' => $discount['id'],
-                        'error' => $e->getMessage()
-                    ]);
-                }
-            }
-            $amount = max(0, $amount - $discountAmount);
-        }
-
-        // Get enabled payment methods that are compatible with this currency
-        $enabledPaymentMethods = $order->checkoutSession?->enabled_payment_methods ?? [];
-
-        // Prepare payment intent data
-        $paymentIntentData = [
-            'amount' => (int) $amount,
-            'currency' => strtolower($currency),
-            'customer' => $customer->reference_id,
-            'confirmation_token' => $confirmationToken,
-            'confirm' => true,
-            'metadata' => [
-                'order_id' => $order->id,
-                'payment_type' => 'direct_one_time',
-            ],
-            //'setup_future_usage' => 'off_session',
-
-            //ConfirmationTokens help transport client side data collected by Stripe JS over to your server for
-            // confirming a PaymentIntent or SetupIntent.
-            // If the confirmation is successful, values present on the ConfirmationToken are written onto the Intent.
-
-            // TODO: idempotency key for a checkout
-            // allow people to swap?
-            // we may need to change intent on cart?
-        ];
-
-        // Use specific payment method types to avoid conflicts with Stripe Elements
-        $paymentIntentData['payment_method_types'] = ['card'];
-
-        // TODO: support other types of payment methods
-        //
-//        $paymentIntent = $stripe->paymentIntents->create([
-//            'payment_method_types' => ['klarna'],
-//            'amount' => 1099,
-//            'currency' => 'eur',
-//        ]);
-
-        // Add return URL for 3D Secure flows
-        // dont
-//        $paymentIntentData['return_url'] = config('app.url') . '/checkout/complete';
-
-        // todo: do some kind of redirect?
-
-        // Create the payment intent with the confirmation token
-        $paymentIntent = $this->stripeClient->paymentIntents->create($paymentIntentData);
-
-        // If the payment intent has a payment method, update our database
-        // Note: The payment method update is now handled in ProcessOrder to ensure proper flow
-        if ($paymentIntent->payment_method) {
-            Log::info(logname('intent-created'), [
-                'payment_intent_id' => $paymentIntent->id,
-                'payment_method_id' => $paymentIntent->payment_method,
-                'status' => $paymentIntent->status,
-            ]);
-        }
-
-        return $paymentIntent;
-    }
+//    public function createDirectPaymentIntent(array $data = [])
+//    {
+//        $order = $data['order'] ?? null;
+//        $items = $data['items'] ?? [];
+//        $discounts = $data['discounts'] ?? [];
+//        $confirmationToken = $data['confirmation_token'] ?? null;
+//
+//        if (!$order || empty($items) || !$confirmationToken) {
+//            throw new \InvalidArgumentException('Order, items, and confirmation token are required to create a direct payment intent');
+//        }
+//
+//        // Ensure checkout_session and customer relationships are loaded
+//        $order->load(['checkoutSession', 'customer']);
+//
+//        // Get the customer from the order
+//        $customer = $order->customer;
+//
+//        if (!$customer) {
+//            throw new \InvalidArgumentException('Customer is required to create a direct payment intent');
+//        }
+//
+//        // Calculate the total amount
+//        $amount = 0;
+//        $currency = null;
+//
+//        foreach ($items as $item) {
+//            $price = $item['price'];
+//            $quantity = $item['quantity'] ?? 1;
+//
+//            if (!$currency) {
+//                $currency = $price['currency'];
+//            } elseif ($currency !== $price['currency']) {
+//                throw new \InvalidArgumentException('All items must have the same currency');
+//            }
+//
+//            $amount += $price['amount']->getAmount() * $quantity;
+//        }
+//
+//        // Apply discounts if any
+//        if (!empty($discounts)) {
+//            $discountAmount = 0;
+//            foreach ($discounts as $discount) {
+//                try {
+//                    // Try to get the promotion code for this discount
+//                    $promotionCode = $this->stripeClient->promotionCodes->all([
+//                        'code' => $discount['id'],
+//                        'active' => true,
+//                        'limit' => 1
+//                    ])->data[0] ?? null;
+//
+//                    if ($promotionCode) {
+//                        // Apply promotion code discount
+//                        if ($promotionCode->coupon->percent_off) {
+//                            $discountAmount += $amount * ($promotionCode->coupon->percent_off / 100);
+//                        } else {
+//                            $discountAmount += $promotionCode->coupon->amount_off;
+//                        }
+//                    } else {
+//                        // Fallback to direct coupon calculation
+//                        if (isset($discount['percent_off'])) {
+//                            $discountAmount += $amount * ($discount['percent_off'] / 100);
+//                        } elseif (isset($discount['amount_off'])) {
+//                            $discountAmount += $discount['amount_off'];
+//                        }
+//                    }
+//                } catch (\Exception $e) {
+//                    logger()->warning('Failed to apply discount to direct payment intent', [
+//                        'discount_id' => $discount['id'],
+//                        'error' => $e->getMessage()
+//                    ]);
+//                }
+//            }
+//            $amount = max(0, $amount - $discountAmount);
+//        }
+//
+//        // Get enabled payment methods that are compatible with this currency
+//        $enabledPaymentMethods = $order->checkoutSession?->enabled_payment_methods ?? [];
+//
+//        // Prepare payment intent data
+//        $paymentIntentData = [
+//            'amount' => (int) $amount,
+//            'currency' => strtolower($currency),
+//            'customer' => $customer->reference_id,
+//            'confirmation_token' => $confirmationToken,
+//            'confirm' => true,
+//            'metadata' => [
+//                'order_id' => $order->id,
+//                'payment_type' => 'direct_one_time',
+//            ],
+//            //'setup_future_usage' => 'off_session',
+//
+//            //ConfirmationTokens help transport client side data collected by Stripe JS over to your server for
+//            // confirming a PaymentIntent or SetupIntent.
+//            // If the confirmation is successful, values present on the ConfirmationToken are written onto the Intent.
+//
+//            // TODO: idempotency key for a checkout
+//            // allow people to swap?
+//            // we may need to change intent on cart?
+//        ];
+//
+//        // Use specific payment method types to avoid conflicts with Stripe Elements
+//        $paymentIntentData['payment_method_types'] = ['card'];
+//
+//        // TODO: support other types of payment methods
+//        //
+////        $paymentIntent = $stripe->paymentIntents->create([
+////            'payment_method_types' => ['klarna'],
+////            'amount' => 1099,
+////            'currency' => 'eur',
+////        ]);
+//
+//        // Add return URL for 3D Secure flows
+//        // dont
+////        $paymentIntentData['return_url'] = config('app.url') . '/checkout/complete';
+//
+//        // todo: do some kind of redirect?
+//
+//        // Create the payment intent with the confirmation token
+//        $paymentIntent = $this->stripeClient->paymentIntents->create($paymentIntentData);
+//
+//        // If the payment intent has a payment method, update our database
+//        // Note: The payment method update is now handled in ProcessOrder to ensure proper flow
+//        if ($paymentIntent->payment_method) {
+//            Log::info(logname('intent-created'), [
+//                'payment_intent_id' => $paymentIntent->id,
+//                'payment_method_id' => $paymentIntent->payment_method,
+//                'status' => $paymentIntent->status,
+//            ]);
+//        }
+//
+//        return $paymentIntent;
+//    }
 
     public function getDiscount(string $code)
     {
@@ -743,7 +665,7 @@ class Stripe extends AbstractIntegration implements CanCreateSubscription, CanSe
      * Get available payment methods from Stripe's API
      * This fetches real payment method capabilities for the account
      */
-    public function getAvailablePaymentMethods(string $currency = 'usd'): array
+    public function getAvailablePaymentMethods(?string $currency = null): array
     {
         try {
             // Get account details to determine capabilities
@@ -751,6 +673,7 @@ class Stripe extends AbstractIntegration implements CanCreateSubscription, CanSe
 
             // Get country-specific payment method support
             $country = $account->country ?? 'US';
+            $currency ??= $account->default_currency;
 
             // Map of Stripe API payment method types to display names
             // Only including payment methods that support SetupIntent
@@ -828,6 +751,7 @@ class Stripe extends AbstractIntegration implements CanCreateSubscription, CanSe
                 'klarna' => 'Klarna',
                 'afterpay_clearpay' => 'Afterpay/Clearpay',
                 'affirm' => 'Affirm',
+                'au_becs_debit' => 'BECS Direct Debit',
                 'fpx' => 'FPX',
                 'grabpay' => 'GrabPay',
                 'oxxo' => 'OXXO',
@@ -1032,6 +956,7 @@ class Stripe extends AbstractIntegration implements CanCreateSubscription, CanSe
 
         // Filter payment methods based on restrictions
         $filtered = [];
+
         foreach ($paymentMethods as $method) {
             // Always include basic payment methods
             if (in_array($method, ['card', 'apple_pay', 'google_pay', 'link'])) {

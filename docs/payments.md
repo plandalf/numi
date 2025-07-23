@@ -47,6 +47,7 @@ Designing the Checkout Workflow
    Create a Checkout record in your database to track the cart items, chosen mode (one-time vs subscription), customer email, and any other arbitrary fields collected. Assign it a unique ID or token. This will let you resume the checkout if the user returns later and prevent duplicate processing.
    On the email collection page, store the email in this Checkout record. (If the email corresponds to an existing customer of the tenant/merchant, you could later attach the Stripe Customer for payment – more on this below.)
    If the user navigates away and later returns via the Checkout ID, check if the checkout is already completed. If yes, redirect them to an order confirmation/status page instead of restarting payment. If not, restore their progress (e.g. prefill email, retain cart items).
+
 2. Switching Between One-Time Purchase and Subscription
    For products that can be either bought outright or subscribed to, your UI should allow toggling and update the pricing line items accordingly. Key points in the workflow:
    Dynamic Line Items: When the user switches mode, update the Checkout state with the new line items. For example, switching to “subscription” might replace a one-time price item with a recurring price item. This can happen client-side (in React) and be saved to your backend when the user proceeds.
@@ -55,9 +56,7 @@ Designing the Checkout Workflow
    stackoverflow.com
    . This means the customer will be charged once for the total of the one-time product + the first subscription period, and the subscription will be set up for subsequent renewals:
    Example: If the cart has a $100 one-time product and a $20/month subscription, you would create a Stripe Subscription with the $20/month price and add a one-time $100 price as an invoice item. The initial invoice will total $120 in a single charge, after which the subscription continues at $20/month. This avoids scenarios where a one-time charge succeeds but the subscription creation fails (or vice versa) – it’s all one combined payment
-   stackoverflow.com
-   stackoverflow.com
-   .
+   
 3. Back-End: Handling Payment Intents and Subscriptions
    When the customer submits the payment form (on the final step of your checkout): A. Determine the Checkout Mode: Inspect the Checkout record to see if it contains any subscription items. There are two scenarios:
    Payment (One-time purchases only): No recurring items in cart.
@@ -67,24 +66,17 @@ Designing the Checkout Workflow
    For subscriptions, a Stripe Customer is required (Stripe subscriptions always belong to a Customer). So if the user is in “subscription” mode and you haven’t created a customer yet, create one now (using the collected email, name, etc.). If your system already has a Stripe Customer ID (e.g. the tenant passed an existing customer or you found one by email), use that. Otherwise, create a new customer via the Stripe API.
    C. Create the Stripe Intent(s): Depending on the mode, you will create one of the following on your backend (Laravel) and send its details (like a client secret) to the frontend for confirmation:
    One-time Payment: Create a PaymentIntent for the total amount of the cart. Include amount, currency, and allowed payment_method_types. Enable automatic_payment_methods if you want Stripe to automatically offer all available methods, or explicitly set the types based on your logic. You do not need to confirm it server-side; just create it with status=requires_confirmation. Do not attach a payment method yet. If you created a Customer and want to save the card for later, you can set setup_future_usage='off_session' on the PaymentIntent or attach the customer to it so that Stripe knows to save the card on file
-   docs.stripe.com
-   docs.stripe.com
-   .
+
    Subscription (and mixed cart): Create a Subscription in Stripe in “incomplete” status, so that it can be paid for now. Use the parameters:
    customer: the ID of the Customer you determined/created.
    items: the recurring price(s) the user chose.
    add_invoice_items: any one-time price IDs for one-time products in the cart (if applicable)
-   stackoverflow.com
-   .
    payment_behavior: 'default_incomplete': this tells Stripe not to attempt payment yet, but to create an invoice and PaymentIntent that you will confirm after collecting payment details
-   docs.stripe.com
-   .
    expand: ['latest_invoice.payment_intent'] (or in newer API versions, expand ['latest_invoice.confirmation_secret'] as seen in Stripe docs) so that the Stripe response includes the PaymentIntent client secret needed for confirmation
-   docs.stripe.com
-   .
+
    Optionally, payment_settings[save_default_payment_method] = 'on_subscription' so that the provided card will be saved to the customer and set as the default for future subscription renewals
-   docs.stripe.com
-   .
+   
+
    The Stripe Subscription creation will return a Subscription object in status incomplete along with an associated PaymentIntent for the first payment (unless the subscription has a free trial or $0 due now, in which case Stripe provides a SetupIntent via pending_setup_intent instead)
    docs.stripe.com
    . You will need to capture the PaymentIntent’s client secret from this response.
@@ -178,8 +170,7 @@ Designing the Checkout Workflow
    For one-time purchases, allocate or ship the product, grant digital access, etc., and note in your system that item is delivered.
    For the subscription, record the subscription ID and plan details in your system so that you know the user is subscribed. If the subscription involves provisioning (e.g. unlocking a SaaS account, scheduling future jobs), handle that.
    Because you combined them in one Stripe call if it was a mixed cart, you may get one webhook (e.g. invoice.payment_succeeded with invoice containing both items) to signal success
-   stackoverflow.com
-   stackoverflow.com
+
    . Your webhook handler can parse that and create both the one-time order and the subscription record in your DB.
    Redirect to Order Status: After payment, your front-end should navigate the user to a confirmation page (which could include summary of their order or subscription). If they try to refresh or revisit the checkout URL, your app should recognize the session as completed and redirect them to that confirmation instead of reattempting payment (preventing double charges).
    Handle Failures Gracefully: If the payment fails or is abandoned:

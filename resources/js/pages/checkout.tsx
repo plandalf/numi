@@ -335,6 +335,10 @@ const CheckoutController = ({ offer, session }: { offer: OfferConfiguration, ses
       sendMessage(new PaymentInitialized(session));
     }
 
+    if (currentPage === 'ending' && session.order?.id) {
+      // sendMessage(new CheckoutCompleted(session.order));
+    }
+
     sendMessage(new PageChanged(currentPage.id));
   }, [currentPage]);
 
@@ -527,6 +531,11 @@ export default function CheckoutPage({ offer, fonts, error, checkoutSession }: C
         </script>
       </Head>
       <GlobalStateProvider offer={offer} session={checkoutSession} offerItems={offer.items}>
+        {checkoutSession.is_test_mode && (
+          <div className="bg-yellow-50 text-yellow-700 border-b border-yellow-200">
+            <p className="text-sm text-center py-1 font-semibold">You are in test mode. No real transactions will occur.</p>
+          </div>
+        )}
         <NavigationProvider>
           <div className="min-h-screen bg-gray-50 flex flex-col gap-4 justify-center items-center" style={containerStyle}>
             {error ? (
