@@ -44,10 +44,6 @@ Route::middleware(['frame-embed'])->group(function () {
     Route::get('/checkout/{session}/callback', [CheckoutController::class, 'callback'])
         ->name('checkout.redirect.callback');
 
-    Route::get('continue/{hash}', function ($hash) {
-        // decrypt and
-    });
-
     Route::post('/checkouts/{checkoutSession}/mutations', [CheckoutSessionController::class, 'storeMutation'])
         ->name('checkouts.mutations.store');
 

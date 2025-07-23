@@ -25,7 +25,7 @@ class CreateCheckoutSessionAction
             ->create([
                 'organization_id' => $offer->organization_id,
                 'offer_id' => $offer->id,
-                'payments_integration_id' => $paymentIntegration->id,
+                'payments_integration_id' => $paymentIntegration?->id,
                 'test_mode' => $testMode,
             ]);
 
