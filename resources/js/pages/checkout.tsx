@@ -13,7 +13,7 @@ import { findUniqueFontsFromTheme, findUniqueFontsFromView } from '@/utils/font-
 import WebFont from 'webfontloader';
 import { Theme } from '@/types/theme';
 import { ChevronLeftIcon } from 'lucide-react';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { sendMessage } from '@/utils/sendMessage';
 import { OnInit } from '@/events/OnInit';
@@ -249,6 +249,27 @@ const CheckoutController = ({ offer, session }: { offer: OfferConfiguration, ses
     submitPage,
   } = useCheckoutState();
 
+  // Separate state for toast visibility
+  const [showErrorToast, setShowErrorToast] = useState(false);
+
+  // Show toast when submitError changes
+  useEffect(() => {
+    if (submitError) {
+      setShowErrorToast(true);
+    }
+  }, [submitError]);
+
+  // Auto-hide toast after 3 seconds (but keep submitError state)
+  useEffect(() => {
+    if (showErrorToast) {
+      const timer = setTimeout(() => {
+        setShowErrorToast(false);
+      }, 3000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [showErrorToast]);
+
   const isMobile = useIsMobile();
 
   const { validateAllFields } = useValidateFields();
@@ -353,8 +374,8 @@ const CheckoutController = ({ offer, session }: { offer: OfferConfiguration, ses
   return (
     <>
       {/* Fixed error toast */}
-      {submitError && (
-        <div className="fixed top-4 right-4 z-50 max-w-md">
+      {showErrorToast && submitError && (
+        <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-50 max-w-md">
           <div className="bg-red-50 border border-red-200 rounded-md shadow-lg p-4">
             <div className="flex items-start">
               <div className="flex-shrink-0">
@@ -369,7 +390,7 @@ const CheckoutController = ({ offer, session }: { offer: OfferConfiguration, ses
                 <button
                   type="button"
                   className="inline-flex text-red-400 hover:text-red-500"
-                  onClick={() => setSubmitError(null)}
+                  onClick={() => setShowErrorToast(false)}
                 >
                   <span className="sr-only">Dismiss</span>
                   <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">

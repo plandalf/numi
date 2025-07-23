@@ -112,7 +112,7 @@ function CheckoutSummaryComponent({ context }: { context: BlockContextType }) {
   const [totalLabel, setTotalLabel] = Numi.useStateString({
     label: 'Label',
     name: 'totalLabel',
-    defaultValue: 'Total',
+    defaultValue: session.has_subscription_items ? 'Total Due Today' : 'Total',
     group: 'total',
   });
 
@@ -409,17 +409,21 @@ function CheckoutSummaryComponent({ context }: { context: BlockContextType }) {
           </>
         )}
       </div>
-      {showQuantity && item.price?.type === 'one_time' && <div className="text-sm text-gray-500" style={itemQuantityStyle}>
-        Qty: {item.quantity} {showItemPrices && item.total !== undefined && `× ${formatMoney(item.subtotal, currency)}`}
-      </div>}
-      {item.price && item.price.type !== 'one_time' && (
-          <div className="text-sm text-gray-700">
-              <div>Price per {item.price.renew_interval}: {formatMoney(item.total, currency)}</div>
-              {item.price.cancel_after_cycles && (
-                <div>Total ({item.price.cancel_after_cycles} {item.price.renew_interval}s): {formatMoney(item.price.cancel_after_cycles * item.total, currency)}</div>
-              )}
+      <div className="leading-tight text-sm text-gray-500">
+        {showQuantity && item.price?.type === 'one_time' && (
+          <div style={itemQuantityStyle}>
+            Qty: {item.quantity} {showItemPrices && item.total !== undefined && `× ${formatMoney(item.subtotal, currency)}`}
           </div>
         )}
+        {item.price && item.price.type !== 'one_time' && (
+          <>
+            <div style={itemQuantityStyle}>Price per {item.price.renew_interval}: {formatMoney(item.total, currency)}</div>
+            {item.price.cancel_after_cycles && (
+               <div>Total ({item.price.cancel_after_cycles} {item.price.renew_interval}s): {formatMoney(item.price.cancel_after_cycles * item.total, currency)}</div>
+             )}
+           </>
+        )}
+      </div>
     </div>)
   }
 

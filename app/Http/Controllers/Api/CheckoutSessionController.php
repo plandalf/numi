@@ -51,7 +51,7 @@ class CheckoutSessionController extends Controller
             ], 400);
         } catch (\Exception $e) {
             return response()->json([
-                'message' => 'An error occurred while processing the request.',
+                'message' => $e->getMessage(), //'An error occurred while processing the request.',
                 'error' => $e->getMessage(),
             ], 500);
         }
