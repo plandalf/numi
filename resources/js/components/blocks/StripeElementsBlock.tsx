@@ -1116,6 +1116,11 @@ function PaymentForm({
               email: emailAddress || '',
             },
           },
+          fields: {
+            billingDetails: {
+              email: 'never',
+            },
+          },
           layout: {
             type: 'tabs',
             // type: 'accordion',
