@@ -1,6 +1,6 @@
 import { Head } from '@inertiajs/react';
 import {
-  GlobalStateProvider, layoutConfig,
+  GlobalStateProvider,
   LoadingError,
   NavigationProvider, PageNotFound, Section,
   useCheckoutState,
@@ -265,7 +265,7 @@ const CheckoutController = ({ offer, session }: { offer: OfferConfiguration, ses
       const timer = setTimeout(() => {
         setShowErrorToast(false);
       }, 3000);
-      
+
       return () => clearTimeout(timer);
     }
   }, [showErrorToast]);

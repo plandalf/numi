@@ -30,7 +30,8 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
 
         $middleware->validateCsrfTokens(except: [
-            'client/*',
+            'checkout/*',
+            'checkouts/*',
         ]);
 
         $middleware->alias([

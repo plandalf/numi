@@ -20,8 +20,6 @@ class TakeSocialImageScreenshotJob extends QueueableJob
             return;
         }
 
-        logger()->info('social-image-screenshot: starting', ['offer_id' => $this->offer->id]);
-
         // Generate the social image URL
         $socialImageUrl = $this->offer->getSocialImageUrl();
 
@@ -61,30 +59,16 @@ class TakeSocialImageScreenshotJob extends QueueableJob
 
         // Check if offer already has a social image
         $existingSocialImage = $this->offer->socialImage;
-        
+
         if ($existingSocialImage) {
-            // Update existing social image
-            logger()->info('social-image-screenshot: updating-existing', [
-                'offer_id' => $this->offer->id,
-                'social_image_id' => $existingSocialImage->id,
-            ]);
-            
             // Update the existing media record
             $existingSocialImage->update([
                 'size' => $res->getBody()->getSize(),
             ]);
-            
+
             // Replace the file content
             Storage::put($existingSocialImage->path, $res->body(), 'private');
-            
-            logger()->info('social-image-screenshot: updated-existing-social-image', [
-                'offer_id' => $this->offer->id,
-                'social_image_id' => $existingSocialImage->id,
-            ]);
         } else {
-            // Create new social image
-            logger()->info('social-image-screenshot: creating-new', ['offer_id' => $this->offer->id]);
-            
             $uuid = Str::uuid();
             $filename = $uuid.'.jpg';
             $disk = config('filesystems.default');
@@ -120,11 +104,6 @@ class TakeSocialImageScreenshotJob extends QueueableJob
                 $this->offer->socialImage()->associate($media);
                 $this->offer->save();
             });
-
-            logger()->info('social-image-screenshot: created-new-social-image', [
-                'offer_id' => $this->offer->id,
-                'social_image_id' => $media->id,
-            ]);
         }
     }
-} 
+}

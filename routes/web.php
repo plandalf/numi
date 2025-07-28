@@ -31,26 +31,27 @@ Route::redirect('/', '/dashboard')->name('home');
 Route::get('test', function () {
 });
 
-Route::middleware(['frame-embed'])->group(function () {
-    // Init new checkout
-    Route::get('/o/{offer}/{environment?}', [CheckoutController::class, 'initialize'])
-        ->name('offers.show')
-        ->where('environment', 'live|test');
+Route::middleware(['frame-embed'])
+    ->group(function () {
+        // Init new checkout
+        Route::get('/o/{offer}/{environment?}', [CheckoutController::class, 'initialize'])
+            ->name('offers.show')
+            ->where('environment', 'live|test');
 
-    // Show checkout
-    Route::get('/checkout/{checkout}', [CheckoutController::class, 'show'])
-        ->name('checkouts.show');
+        // Show checkout
+        Route::get('/checkout/{checkout}', [CheckoutController::class, 'show'])
+            ->name('checkouts.show');
 
-    Route::get('/checkout/{session}/callback', [CheckoutController::class, 'callback'])
-        ->name('checkout.redirect.callback');
+        Route::get('/checkout/{session}/callback', [CheckoutController::class, 'callback'])
+            ->name('checkout.redirect.callback');
 
-    Route::post('/checkouts/{checkoutSession}/mutations', [CheckoutSessionController::class, 'storeMutation'])
-        ->name('checkouts.mutations.store');
+        Route::post('/checkouts/{checkoutSession}/mutations', [CheckoutSessionController::class, 'storeMutation'])
+            ->name('checkouts.mutations.store');
 
-    Route::get('/order-status/{order}', OrderStatusController::class)
-        ->name('order-status.show')
-        ->middleware('signed');
-});
+        Route::get('/order-status/{order}', OrderStatusController::class)
+            ->name('order-status.show')
+            ->middleware('signed');
+    });
 
 // Social image generation route (signed URL required)
 Route::get('/social-image/{offer}', [\App\Http\Controllers\SocialImageController::class, 'generate'])

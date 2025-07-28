@@ -15,6 +15,7 @@ use App\Modules\Integrations\Contracts\AcceptsDiscount;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Log;
 use Stripe\Exception\InvalidRequestException;
 
 class CheckoutSessionController extends Controller
@@ -45,11 +46,15 @@ class CheckoutSessionController extends Controller
                     abort(400);
             }
         } catch (CheckoutException $e) {
+            report($e);
+
             return response()->json([
                 'message' => $e->getMessage(),
                 'type' => $e->type,
             ], 400);
         } catch (\Exception $e) {
+            report($e);
+
             return response()->json([
                 'message' => $e->getMessage(), //'An error occurred while processing the request.',
                 'error' => $e->getMessage(),
