@@ -79,7 +79,7 @@ export function generateDefaultPage({
 
 function PageNode({ data, id }: { data: { page: Page; isStart?: boolean; isOrphan: boolean }; id: string }) {
     const { page, isStart, isOrphan } = data;
-    const { setEditingBranch, onUpdateBranches, onDeletePage } = useContext(PageFlowContext);
+    const { setEditingBranch, onUpdateBranches, onDeletePage, onDeleteConnection } = useContext(PageFlowContext);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const context = useContext(GlobalStateContext);
 
@@ -114,6 +114,25 @@ function PageNode({ data, id }: { data: { page: Page; isStart?: boolean; isOrpha
     };
 
     const hasDefaultConnection = !!page.next_page?.default_next_page;
+
+    // Handle removing default connection
+    const handleRemoveDefaultConnection = useCallback((event: React.MouseEvent) => {
+        event.stopPropagation();
+        if (hasDefaultConnection && page.next_page?.default_next_page) {
+            console.log('Removing default connection from page:', id);
+            onDeleteConnection(id, page.next_page.default_next_page);
+        }
+    }, [id, hasDefaultConnection, page.next_page?.default_next_page, onDeleteConnection]);
+
+    // Handle removing branch connection
+    const handleRemoveBranchConnection = useCallback((event: React.MouseEvent, branchIndex: number) => {
+        event.stopPropagation();
+        const branch = page.next_page?.branches?.[branchIndex];
+        if (branch?.next_page) {
+            console.log('Removing branch connection from page:', id, 'branch:', branchIndex);
+            onDeleteConnection(id, branch.next_page, branchIndex);
+        }
+    }, [id, page.next_page?.branches, onDeleteConnection]);
 
     // Determine icon and border style based on page type
     let typeIcon = null;
@@ -164,7 +183,7 @@ function PageNode({ data, id }: { data: { page: Page; isStart?: boolean; isOrpha
                         className={cn(
                             '!w-6 !h-6 !border-2 !border-background rounded-full flex items-center justify-center',
                             hasDefaultConnection
-                                ? '!bg-muted-foreground/50 pointer-events-none cursor-not-allowed'
+                                ? '!bg-red-500 hover:!bg-red-600'
                                 : '!bg-primary hover:!bg-primary/80 cursor-grab active:cursor-grabbing'
                         )}
                         isConnectable={!hasDefaultConnection}
@@ -176,6 +195,14 @@ function PageNode({ data, id }: { data: { page: Page; isStart?: boolean; isOrpha
                             <Plus className="w-4 h-4 text-background pointer-events-none" />
                         )}
                     </Handle>
+                    {/* Clickable overlay for removing connection */}
+                    {hasDefaultConnection && (
+                        <button
+                            className="absolute top-0 left-0 w-6 h-6 rounded-full bg-transparent hover:bg-red-600/20 cursor-pointer z-20"
+                            onClick={handleRemoveDefaultConnection}
+                            title="Remove connection"
+                        />
+                    )}
                 </div>
             )}
 
@@ -256,10 +283,10 @@ function PageNode({ data, id }: { data: { page: Page; isStart?: boolean; isOrpha
                                                     className={cn(
                                                         '!w-6 !h-6 !border-2 !border-background rounded-full flex items-center justify-center',
                                                         branch.next_page
-                                                            ? '!bg-muted-foreground/50 cursor-grab opacity-60'
+                                                            ? '!bg-red-500 hover:!bg-red-600'
                                                             : '!bg-secondary hover:!bg-secondary/80 cursor-grab active:cursor-grabbing'
                                                     )}
-                                                    isConnectable={true}
+                                                    isConnectable={!branch.next_page}
                                                     data-branch-index={index}
                                                     data-handleid={`branch-${index}`}
                                                 >
@@ -267,9 +294,17 @@ function PageNode({ data, id }: { data: { page: Page; isStart?: boolean; isOrpha
                                                         <Plus className="w-4 h-4 text-background pointer-events-none" />
                                                     )}
                                                     {branch.next_page && (
-                                                        <Plus className="w-4 h-4 text-background pointer-events-none opacity-30" />
+                                                        <X className="w-4 h-4 text-background pointer-events-none" />
                                                     )}
                                                 </Handle>
+                                                {/* Clickable overlay for removing branch connection */}
+                                                {branch.next_page && (
+                                                    <button
+                                                        className="absolute top-0 left-0 w-6 h-6 rounded-full bg-transparent hover:bg-red-600/20 cursor-pointer z-20"
+                                                        onClick={(event) => handleRemoveBranchConnection(event, index)}
+                                                        title="Remove branch connection"
+                                                    />
+                                                )}
                                             </div>
                                         </div>
                                     </div>
@@ -343,13 +378,12 @@ const CustomEdge = ({
     sourceY,
     targetX,
     targetY,
-    sourceHandleId, // Renamed from sourceHandle to avoid conflict if sourceHandle object is passed
+    sourceHandle, // This is the correct prop name from React Flow
     style = {},
     sourcePosition,
     targetPosition,
     markerEnd
 }: any) => {
-    const { setEdges, getEdges } = useReactFlow();
     const { onDeleteConnection } = useContext(PageFlowContext);
 
     // Calculate mid point for the delete button
@@ -370,8 +404,8 @@ const CustomEdge = ({
         event.stopPropagation();
 
         // Extract connection type and branch index if applicable
-        const isBranch = sourceHandleId?.startsWith('branch-');
-        const branchIndex = isBranch ? parseInt(sourceHandleId.split('-')[1]) : undefined;
+        const isBranch = sourceHandle?.startsWith('branch-');
+        const branchIndex = isBranch ? parseInt(sourceHandle.split('-')[1]) : undefined;
 
         console.log('Deleting connection:', {
             id, source, target,
@@ -384,9 +418,6 @@ const CustomEdge = ({
         // The change in view.pages will cause initialEdges to recompute
         // And then useEffect will sync it with React Flow's edges state
         onDeleteConnection(source, target, isBranch ? branchIndex : undefined);
-
-        // Remove edge from ReactFlow - NO LONGER NEEDED HERE
-        // setEdges(edges => edges.filter(edge => edge.id !== id));
     };
 
     return (
@@ -472,6 +503,13 @@ export default function PageFlowEditor({ view, onUpdateFlow }: PageFlowEditorPro
 
         const sourceId = params.source;
         const targetId = params.target;
+        
+        // Prevent self-referencing connections
+        if (sourceId === targetId) {
+            console.warn('Attempted to create self-referencing connection, ignoring:', { sourceId, targetId });
+            return;
+        }
+        
         const sourcePage = view.pages[sourceId];
 
         if (!sourcePage) {
@@ -488,12 +526,6 @@ export default function PageFlowEditor({ view, onUpdateFlow }: PageFlowEditorPro
             // Make sure branch exists
             if (branchIndex >= 0 && branchIndex < sourcePage.next_page.branches.length) {
                 const updatedBranches = [...sourcePage.next_page.branches];
-
-                // Check if this branch already has a connection to a *different* target
-                const currentTarget = updatedBranches[branchIndex].next_page;
-                // if (currentTarget && currentTarget !== targetId) {
-                    // Old edge removal will be handled by React Flow based on new edges prop
-                // }
 
                 // Update branch target
                 updatedBranches[branchIndex] = {
@@ -530,29 +562,11 @@ export default function PageFlowEditor({ view, onUpdateFlow }: PageFlowEditorPro
                     first_page: view.first_page
                 });
 
-                // Manually add the edge to ReactFlow to see it immediately - NO LONGER NEEDED
-                // const newEdge = {
-                //     id: `${sourceId}-${targetId}-branch-${branchIndex}`,
-                //     source: sourceId,
-                //     target: targetId,
-                //     sourceHandle: `branch-${branchIndex}`,
-                //     type: 'default',
-                //     animated: true,
-                //     data: { type: 'branch' }
-                // };
-                // reactFlowInstance.addEdges([newEdge]);
-
             } else {
                 console.error('Branch index out of bounds:', { branchIndex, branchesLength: sourcePage.next_page.branches.length });
             }
         } else {
             // Handle default connection
-
-            // Check if there's already a default connection to a *different* target
-            const currentTarget = sourcePage.next_page.default_next_page;
-            // if (currentTarget && currentTarget !== targetId) {
-                // Old edge removal will be handled by React Flow based on new edges prop
-            // }
 
             updatedPages[sourceId] = {
                 ...sourcePage,
@@ -567,18 +581,6 @@ export default function PageFlowEditor({ view, onUpdateFlow }: PageFlowEditorPro
                 pages: updatedPages,
                 first_page: view.first_page
             });
-
-            // Manually add the edge to ReactFlow to see it immediately - NO LONGER NEEDED
-            // const newEdge = {
-            //     id: `${sourceId}-${targetId}`,
-            //     source: sourceId,
-            //     target: targetId,
-            //     sourceHandle: 'default',
-            //     type: 'default',
-            //     animated: true,
-            //     data: { type: 'default' }
-            // };
-            // reactFlowInstance.addEdges([newEdge]);
         }
     }, [view.pages, view.first_page, onUpdateFlow]);
 
@@ -623,6 +625,62 @@ export default function PageFlowEditor({ view, onUpdateFlow }: PageFlowEditorPro
         return ids;
     }, [view.pages, view.first_page]);
 
+    // Function to clean up self-referencing connections
+    const cleanupSelfReferencingConnections = useCallback(() => {
+        let hasChanges = false;
+        const updatedPages = { ...view.pages };
+
+        Object.entries(view.pages).forEach(([pageId, page]) => {
+            let pageModified = false;
+
+            // Check default next page
+            if (page.next_page?.default_next_page === pageId) {
+                console.warn('Cleaning up self-referencing default connection:', pageId);
+                updatedPages[pageId] = {
+                    ...page,
+                    next_page: { ...page.next_page, default_next_page: null }
+                };
+                pageModified = true;
+            }
+
+            // Check branches
+            if (page.next_page?.branches) {
+                const newBranches = page.next_page.branches.map((branch, index) => {
+                    if (branch.next_page === pageId) {
+                        console.warn('Cleaning up self-referencing branch connection:', { pageId, branchIndex: index });
+                        return { ...branch, next_page: null };
+                    }
+                    return branch;
+                });
+
+                if (JSON.stringify(newBranches) !== JSON.stringify(page.next_page.branches)) {
+                    updatedPages[pageId] = {
+                        ...updatedPages[pageId],
+                        next_page: { ...updatedPages[pageId].next_page, branches: newBranches }
+                    };
+                    pageModified = true;
+                }
+            }
+
+            if (pageModified) {
+                hasChanges = true;
+            }
+        });
+
+        if (hasChanges) {
+            console.log('Cleaning up self-referencing connections in view data');
+            onUpdateFlow({
+                pages: updatedPages,
+                first_page: view.first_page
+            });
+        }
+    }, [view.pages, view.first_page, onUpdateFlow]);
+
+    // Clean up self-referencing connections when view changes
+    useEffect(() => {
+        cleanupSelfReferencingConnections();
+    }, [cleanupSelfReferencingConnections]);
+
     // Derive nodes from ordered pages
     const initialNodes = useMemo(() => {
         const nodes: Node[] = [];
@@ -657,30 +715,40 @@ export default function PageFlowEditor({ view, onUpdateFlow }: PageFlowEditorPro
         Object.entries(view.pages).forEach(([pageId, page]) => {
             // Add default next page edge
             if (page.next_page?.default_next_page) {
-                edges.push({
-                    id: `${pageId}-${page.next_page.default_next_page}`,
-                    source: pageId,
-                    target: page.next_page.default_next_page,
-                    sourceHandle: 'default',
-                    type: 'default',
-                    animated: true,
-                    data: { type: 'default' }
-                } as Edge);
+                // Prevent self-referencing edges
+                if (pageId !== page.next_page.default_next_page) {
+                    edges.push({
+                        id: `${pageId}-${page.next_page.default_next_page}`,
+                        source: pageId,
+                        target: page.next_page.default_next_page,
+                        sourceHandle: 'default',
+                        type: 'default',
+                        animated: true,
+                        data: { type: 'default' }
+                    } as Edge);
+                } else {
+                    console.warn('Found self-referencing default connection, filtering out:', pageId);
+                }
             }
 
             // Add branch edges
             page.next_page?.branches?.forEach((branch, index) => {
                 if (branch.next_page) {
-                    edges.push({
-                        id: `${pageId}-${branch.next_page}-branch-${index}`,
-                        source: pageId,
-                        target: branch.next_page,
-                        sourceHandle: `branch-${index}`,
-                        type: 'default',
-                        animated: true,
-                        label: getBranchLabel(branch.condition),
-                        data: { type: 'branch', condition: branch.condition }
-                    } as Edge);
+                    // Prevent self-referencing edges
+                    if (pageId !== branch.next_page) {
+                        edges.push({
+                            id: `${pageId}-${branch.next_page}-branch-${index}`,
+                            source: pageId,
+                            target: branch.next_page,
+                            sourceHandle: `branch-${index}`,
+                            type: 'default',
+                            animated: true,
+                            label: getBranchLabel(branch.condition),
+                            data: { type: 'branch', condition: branch.condition }
+                        } as Edge);
+                    } else {
+                        console.warn('Found self-referencing branch connection, filtering out:', { pageId, branchIndex: index });
+                    }
                 }
             });
         });
@@ -731,51 +799,65 @@ export default function PageFlowEditor({ view, onUpdateFlow }: PageFlowEditorPro
         // pendingConnection.source is guaranteed by the guard above.
         const sourcePage = view.pages[pendingConnection.source];
         if (sourcePage) {
-            if (pendingConnection.sourceHandleId?.startsWith('branch-')) {
-                const branchIndex = parseInt(pendingConnection.sourceHandleId.split('-')[1]);
-                const updatedBranches = [...(sourcePage.next_page.branches || [])];
-                // Ensure branchIndex is valid before assignment
-                if (branchIndex >= 0 && branchIndex < updatedBranches.length) {
-                    updatedBranches[branchIndex] = {
-                        ...updatedBranches[branchIndex],
-                        next_page: id,
-                        condition: {
-                            combinator: 'and',
-                            rules: [],
-                            action: 'show'
-                        } as RuleGroup
-                    };
+            // Prevent self-referencing connections
+            if (pendingConnection.source === id) {
+                console.warn('Attempted to create self-referencing connection during page creation, ignoring');
+                // Still create the page but don't connect it
+                onUpdateFlow({
+                    pages: updatedPages,
+                    first_page: Object.keys(view.pages).length === 0 ? id : view.first_page
+                });
+            } else {
+                if (pendingConnection.sourceHandleId?.startsWith('branch-')) {
+                    const branchIndex = parseInt(pendingConnection.sourceHandleId.split('-')[1]);
+                    const updatedBranches = [...(sourcePage.next_page.branches || [])];
+                    // Ensure branchIndex is valid before assignment
+                    if (branchIndex >= 0 && branchIndex < updatedBranches.length) {
+                        updatedBranches[branchIndex] = {
+                            ...updatedBranches[branchIndex],
+                            next_page: id,
+                            condition: {
+                                combinator: 'and',
+                                rules: [],
+                                action: 'show'
+                            } as RuleGroup
+                        };
+                        updatedPages[pendingConnection.source] = {
+                            ...sourcePage,
+                            next_page: {
+                                ...sourcePage.next_page,
+                                branches: updatedBranches
+                            }
+                        };
+                    } else {
+                        console.error(`Invalid branchIndex ${branchIndex} for page ${pendingConnection.source}`);
+                        // Decide how to handle: create page but don't link? Or abort?
+                        // For now, page is created but this specific branch link might fail.
+                    }
+                } else {
+                    // Default connection
                     updatedPages[pendingConnection.source] = {
                         ...sourcePage,
                         next_page: {
                             ...sourcePage.next_page,
-                            branches: updatedBranches
+                            default_next_page: id
                         }
                     };
-                } else {
-                    console.error(`Invalid branchIndex ${branchIndex} for page ${pendingConnection.source}`);
-                    // Decide how to handle: create page but don't link? Or abort?
-                    // For now, page is created but this specific branch link might fail.
                 }
-            } else {
-                // Default connection
-                updatedPages[pendingConnection.source] = {
-                    ...sourcePage,
-                    next_page: {
-                        ...sourcePage.next_page,
-                        default_next_page: id
-                    }
-                };
+
+                onUpdateFlow({
+                    pages: updatedPages,
+                    first_page: Object.keys(view.pages).length === 0 ? id : view.first_page
+                });
             }
         } else {
             console.error(`Source page ${pendingConnection.source} not found during handleCreatePage`);
             // New page is created but not linked from source.
+            onUpdateFlow({
+                pages: updatedPages,
+                first_page: Object.keys(view.pages).length === 0 ? id : view.first_page
+            });
         }
-
-        onUpdateFlow({
-            pages: updatedPages,
-            first_page: Object.keys(view.pages).length === 0 ? id : view.first_page
-        });
 
         // Reset state
         setPendingPosition(null);
@@ -871,6 +953,16 @@ export default function PageFlowEditor({ view, onUpdateFlow }: PageFlowEditorPro
                     const targetNodeId = targetNode.getAttribute('data-id');
 
                     if (targetNodeId && currentConnectingNode.sourceHandleId) {
+                        // Prevent self-referencing connections
+                        if (currentConnectingNode.source === targetNodeId) {
+                            console.warn('Attempted to create self-referencing connection, ignoring');
+                            setDragPreviewPosition(null);
+                            setPendingPosition(null);
+                            setPendingConnection(null);
+                            connectingNodeRef.current = null;
+                            return;
+                        }
+
                         const connection: Connection = {
                             source: currentConnectingNode.source,
                             sourceHandle: currentConnectingNode.sourceHandleId,
