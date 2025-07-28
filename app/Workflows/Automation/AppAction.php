@@ -3,7 +3,7 @@
 namespace App\Workflows\Automation;
 
 use App\Models\Integration;
-use App\Workflows\Attributes\Action;
+use App\Workflows\Attributes\IsAction;
 use ReflectionClass;
 
 abstract class AppAction
@@ -11,11 +11,16 @@ abstract class AppAction
     protected Integration $integration;
     protected array $configuration;
 
-    public function __construct(Integration $integration, array $configuration = [])
+    public function __construct(
+//        Integration $integration,
+//        array $configuration = []
+    )
     {
-        $this->integration = $integration;
-        $this->configuration = $configuration;
+//        $this->integration = $integration;
+//        $this->configuration = $configuration;
     }
+
+    abstract public function __invoke(Bundle $bundle): ?array;
 
     /**
      * Get the action metadata from the Action attribute
@@ -23,14 +28,14 @@ abstract class AppAction
     public static function getMetadata(): array
     {
         $reflection = new ReflectionClass(static::class);
-        $attributes = $reflection->getAttributes(Action::class);
-        
+        $attributes = $reflection->getAttributes(IsAction::class);
+
         if (empty($attributes)) {
             throw new \Exception('AppAction must have an Action attribute');
         }
-        
+
         $action = $attributes[0]->newInstance();
-        
+
         return [
             'key' => $action->key,
             'noun' => $action->noun,
@@ -48,16 +53,16 @@ abstract class AppAction
         if (!method_exists(static::class, 'props')) {
             return [];
         }
-        
+
         $props = static::props();
         $schema = [];
-        
+
         foreach ($props as $field) {
             if ($field instanceof Field) {
                 $schema[$field->getKey()] = $field->toArray();
             }
         }
-        
+
         return $schema;
     }
 
@@ -68,7 +73,7 @@ abstract class AppAction
     {
         $metadata = static::getMetadata();
         $props = static::getProps();
-        
+
         return [
             'key' => $metadata['key'],
             'noun' => $metadata['noun'],
@@ -81,15 +86,10 @@ abstract class AppAction
     }
 
     /**
-     * Execute the action with a Bundle object
-     */
-    abstract public function __invoke(Bundle $bundle): array;
-
-    /**
      * Get sample output data for testing
      */
     public function sample(): array
     {
         return [];
     }
-} 
+}

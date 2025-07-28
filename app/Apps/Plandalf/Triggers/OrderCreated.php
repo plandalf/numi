@@ -2,11 +2,13 @@
 
 namespace App\Apps\Plandalf\Triggers;
 
+use App\Workflows\Attributes\IsTrigger;
 use App\Workflows\Attributes\Trigger;
 use App\Workflows\Automation\AppTrigger;
 use App\Workflows\Automation\Bundle;
+use App\Workflows\Automation\Field;
 
-#[Trigger(
+#[IsTrigger(
     key: 'order_created',
     noun: 'Order',
     label: 'Order Created',
@@ -14,9 +16,25 @@ use App\Workflows\Automation\Bundle;
 )]
 class OrderCreated extends AppTrigger
 {
-
     public function __invoke(Bundle $bundle): array
     {
-        // TODO: Implement __invoke() method.
+        $input = $bundle->input;
+
+        return [
+            'order_id' => $input['order_id'] ?? null,
+            'offer_id' => $input['offer_id'] ?? null,
+            'triggered_at' => $input['triggered_at'] ?? now()->toISOString(),
+            'event_type' => $input['event_type'],
+        ];
+    }
+
+    public static function props(): array
+    {
+        return [
+            Field::string('offer', 'Offer')
+                ->dynamic('offer.id,name')
+                ->multiple()
+                ->help('Offer to filter on'),
+        ];
     }
 }

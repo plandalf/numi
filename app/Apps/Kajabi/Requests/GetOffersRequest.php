@@ -2,34 +2,15 @@
 
 namespace App\Apps\Kajabi\Requests;
 
-use Sammyjo20\Saloon\Http\Request;
-use Sammyjo20\Saloon\Traits\Plugins\AcceptsJson;
+use Saloon\Enums\Method;
+use Saloon\Http\Request;
 
 class GetOffersRequest extends Request
 {
-    use AcceptsJson;
+    protected Method $method = Method::GET;
 
-    protected ?string $method = 'GET';
-
-    public function __construct(
-        protected array $query = []
-    ) {}
-
-    public function defineEndpoint(): string
+    public function resolveEndpoint(): string
     {
-        $endpoint = '/offers';
-        
-        if (isset($this->query['id'])) {
-            $endpoint .= '/' . $this->query['id'];
-        }
-        
-        return $endpoint;
+        return 'offers';
     }
-
-    public function defaultQuery(): array
-    {
-        return array_filter($this->query, function ($value) {
-            return $value !== null;
-        });
-    }
-} 
+}

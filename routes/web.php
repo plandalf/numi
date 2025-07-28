@@ -18,6 +18,8 @@ use App\Http\Controllers\Settings\ProfileController;
 use App\Http\Controllers\ThemeController;
 use App\Http\Controllers\TemplateController;
 use App\Http\Controllers\WebhookController;
+use App\Workflows\Automation\Events\SystemEvent;
+use App\Workflows\Automation\TemplateResolver;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use App\Http\Controllers\OrdersController;
@@ -26,17 +28,83 @@ use App\Http\Controllers\OfferItemPriceController;
 use App\Http\Controllers\OnboardingController;
 use App\Http\Controllers\ApiKeysController;
 use App\Http\Controllers\ImpersonationController;
+use Workflow\Serializers\Serializer;
 
 Route::redirect('/', '/dashboard')->name('home');
 
-Route::get('test', function () {
+Route::get('wf', function () {
 
-    $kajabi = new \App\Apps\Kajabi\KajabiApp();
-    $integration = \App\Models\Integration::find(1);
+    $wf = \App\Models\Automation\StoredWorkflow::query()
+        ->latest()
+        ->first();
 
     dd(
-        $integration,
-        $kajabi->test($integration)
+        $wf->id,
+        get_class($wf->status),
+        Serializer::unserialize($wf->arguments),
+        $wf->logs()->get(),
+        $wf->toWorkflow()->exceptions()
+        ->map(function (\Workflow\Models\StoredWorkflowException $e) {
+            return Serializer::unserialize($e->exception);
+        })->toArray()
+    );
+});
+
+Route::get('test', function () {
+    $sequence = \App\Models\Automation\Sequence::query()->find(4);
+    $order = \App\Models\Order\Order::find(50);
+
+
+    $node = \App\Models\Automation\Node::query()->find(2);
+    $bundle = new \App\Workflows\Automation\Bundle(
+        input: [
+            'xyz' => '123',
+        ],
+        integration: \App\Models\Integration::find(6),
+    );
+    $wf = \App\Models\Automation\StoredWorkflow::query()
+        ->latest()
+        ->first();
+
+    $a = new \App\Workflows\Automation\NodeActivities\ActionActivity(
+        0,
+        now(),
+        $wf,
+        $node,
+        $bundle,
+    );
+
+    dd(
+        $a->handle()
+    );
+
+//    ::dispatchSync($node,$bundle);
+
+//    $configuration = $node->configuration ?? $node->arguments ?? [];
+//
+//    // Use the enhanced template resolver for workflow context
+//    $r = TemplateResolver::resolveForWorkflow(
+//        $configuration,
+//        100,
+//        \App\Models\Automation\TriggerEvent::query()->find(152)
+//    );
+//    dd(
+//        $r
+//    );
+
+    // Fire the system event - this will automatically find and process matching triggers
+    event(
+        new SystemEvent(
+            type: 'order_created',
+            app: 'plandalf',
+            organization: $order->organization,
+            props: [
+                'order_id' => $order->id,
+                'offer_id' => $order->checkoutSession->offer_id,
+                'triggered_at' => now()->toISOString(),
+                'event_type' => 'order_created',
+            ]
+        )
     );
 });
 
@@ -60,6 +128,8 @@ Route::post('/checkouts/{checkoutSession}/mutations', [CheckoutSessionController
 Route::middleware(['auth', 'verified'])->group(function () {
     // No access route
     Route::get('/no-access', [NoAccessController::class, '__invoke'])->name('no-access');
+
+    Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     // Organization setup route - no organization middleware
     Route::get('/organizations/setup', function () {
@@ -122,95 +192,34 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('products/{product}/prices/import', [PriceController::class, 'import'])->name('products.prices.import');
         Route::resource('products.prices', PriceController::class);
 
+        // Offers routes
+        Route::resource('offers', OffersController::class)->except(['show', 'create']);
 
-        // todo: prefix all this with /automation (the module)
-
-        // automation/sequences
-        // automation/apps
-
-        // Test-specific routes that match the test expectations (must come before resource routes)
-        Route::prefix('sequences')->name('sequences.')->group(function () {
-            Route::get('/discovered-apps', [SequencesController::class, 'getDiscoveredApps'])->name('discovered-apps');
-            Route::get('/discovered-actions', [SequencesController::class, 'getDiscoveredActions'])->name('discovered-actions');
-            Route::get('/discovered-triggers', [SequencesController::class, 'getDiscoveredTriggers'])->name('discovered-triggers');
-            Route::get('/discovered-resources', [SequencesController::class, 'getDiscoveredResources'])->name('discovered-resources');
-            Route::get('/resource-search/{resource}', [SequencesController::class, 'searchResource'])->name('resource-search');
-            Route::post('/test-action-config', [SequencesController::class, 'testActionConfig'])->name('test-action-config');
+        Route::prefix('offers/{offer}')->name('offers.')->group(function () {
+            Route::get('pricing', [OffersController::class, 'pricing'])->name('pricing');
+            Route::put('theme', [OffersController::class, 'updateTheme'])->name('update.theme');
+            // Offer items resource
+            Route::resource('items', OfferItemsController::class)->names('items');
+            Route::put('items/{item}/prices/{price}', [OfferItemPriceController::class, 'update'])->name('items.prices.update');
+            Route::get('integrate', [OffersController::class, 'integrate'])->name('integrate');
+            Route::post('publish', [OffersController::class, 'publish'])->name('publish');
+            Route::put('duplicate', [OffersController::class, 'duplicate'])->name('duplicate');
         });
 
-        Route::resource('sequences', SequencesController::class);
+        // Templates routes
+        Route::get('/templates', [TemplateController::class, 'index'])->name('templates.index');
+        Route::post('/templates', [TemplateController::class, 'store'])->name('templates.store');
+        Route::put('/templates/{template}', [TemplateController::class, 'update'])->name('templates.update');
+        Route::post('/templates/{template}/use', [TemplateController::class, 'useTemplate'])->name('templates.use');
+        Route::post('/templates/request', [TemplateController::class, 'requestTemplate'])->name('templates.request');
 
-        // Sequences automation routes
-        Route::prefix('sequences/{sequence}')->name('sequences.')->group(function () {
-            Route::get('/apps', [SequencesController::class, 'getApps'])->name('apps.index');
-            Route::get('/triggers/{trigger}', [SequencesController::class, 'showTrigger'])->name('triggers.show');
-            Route::post('/triggers', [SequencesController::class, 'storeTrigger'])->name('triggers.store');
-            Route::put('/triggers/{trigger}', [SequencesController::class, 'updateTrigger'])->name('triggers.update');
-            Route::delete('/triggers/{trigger}', [SequencesController::class, 'destroyTrigger'])->name('triggers.destroy');
-            Route::post('/triggers/{trigger}/test', [SequencesController::class, 'testTrigger'])->name('triggers.test');
-            Route::get('/actions/{node}', [SequencesController::class, 'showAction'])->name('actions.show');
-            Route::post('/actions', [SequencesController::class, 'storeAction'])->name('actions.store');
-            Route::put('/actions/{node}', [SequencesController::class, 'updateAction'])->name('actions.update');
-            Route::delete('/actions/{node}', [SequencesController::class, 'destroyAction'])->name('actions.destroy');
-            Route::post('/actions/{node}/test', [SequencesController::class, 'testAction'])->name('actions.test');
-            Route::post('/actions/test', [SequencesController::class, 'testActionConfig'])->name('actions.test-config');
-        });
-
-        // Apps and automation API routes
-        Route::prefix('apps')->name('apps.')->group(function () {
-            Route::get('/', [SequencesController::class, 'getApps'])->name('index');
-            Route::get('/{app}', [SequencesController::class, 'getApp'])->name('show');
-            Route::get('/{app}/triggers', [SequencesController::class, 'getAppTriggers'])->name('triggers');
-            Route::get('/{app}/actions', [SequencesController::class, 'getAppActions'])->name('actions');
-        });
-
-        // todo: do discovery later.
-
-        // Discovered app actions and triggers routes
-        Route::prefix('discovered')->name('discovered.')->group(function () {
-            Route::get('/actions', [SequencesController::class, 'getDiscoveredActions'])->name('actions');
-            Route::get('/triggers', [SequencesController::class, 'getDiscoveredTriggers'])->name('triggers');
-            Route::get('/apps/{appName}/actions', [SequencesController::class, 'getDiscoveredAppActions'])->name('apps.actions');
-            Route::get('/apps/{appName}/triggers', [SequencesController::class, 'getDiscoveredAppTriggers'])->name('apps.triggers');
-            Route::get('/resources', [SequencesController::class, 'getDiscoveredResources'])->name('resources');
-            Route::post('/resources/search', [SequencesController::class, 'searchResource'])->name('resources.search');
-            Route::get('/debug', [SequencesController::class, 'debugDiscovery'])->name('debug');
-        });
-
-
-        // /integrations
-
-        // Integration management for automation
-        Route::prefix('automation-integrations')->name('automation-integrations.')->group(function () {
-            Route::get('/', [SequencesController::class, 'getIntegrations'])->name('index');
-            Route::post('/', [SequencesController::class, 'storeIntegration'])->name('store');
-            Route::get('/credential-fields/{integrationType}', [SequencesController::class, 'getIntegrationCredentialFields'])->name('credential-fields');
-            Route::get('/{integration:uuid}/test', [SequencesController::class, 'testIntegration'])->name('test');
-            Route::get('/{integration:uuid}/triggers', [SequencesController::class, 'getIntegrationTriggers'])->name('triggers');
-            Route::get('/{integration:uuid}/actions', [SequencesController::class, 'getIntegrationActions'])->name('actions');
-            Route::post('/{integration:uuid}/actions/test', [SequencesController::class, 'testIntegrationAction'])->name('actions.test');
-            Route::put('/{integration:uuid}', [SequencesController::class, 'updateIntegration'])->name('update');
-            Route::delete('/{integration:uuid}', [SequencesController::class, 'destroyIntegration'])->name('destroy');
-        });
-
-        // ?
-        // Webhook triggers (for webhook-only triggers without integrations
-        // todo: delete! its a regular trigger
-        Route::prefix('webhook-triggers')->name('webhook-triggers.')->group(function () {
-            Route::post('/', [SequencesController::class, 'storeWebhookTrigger'])->name('store');
-        });
-
-        // todo
-        Route::resource('integrations', IntegrationsController::class);
-        // integrations/{id}/authorize
-        // integrations/{id}/callback
-
+        // Integrations routes (specific routes first to avoid conflicts)
         Route::get('/integrations/{integrationType}/callback', [IntegrationsController::class, 'callback']);
         Route::post('/integrations/{integrationType}/authorizations', [IntegrationsController::class, 'authorizeIntegration']);
         Route::get('/integrations/{integration}/products', [IntegrationsController::class, 'products'])->name('integrations.products');
         Route::get('/integrations/{integration}/products/{gatewayProductId}/prices', [IntegrationsController::class, 'prices'])->name('integrations.prices');
         Route::put('/integrations/{integration}/payment-methods', [IntegrationsController::class, 'updatePaymentMethods'])->name('integrations.payment-methods.update');
-
+        Route::resource('integrations', IntegrationsController::class);
 
         // Onboarding routes
         Route::prefix('onboarding')->name('onboarding.')->group(function () {
@@ -224,30 +233,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::get('/info', [OnboardingController::class, 'getInfoStatus'])->name('info.index');
             Route::post('/info/{infoKey}/seen', [OnboardingController::class, 'markInfoSeen'])->name('info.seen');
         });
-
-        // Offers routes
-        Route::resource('offers', OffersController::class)->except(['show', 'create']);
-
-        Route::prefix('offers/{offer}')->name('offers.')->group(function () {
-            Route::get('pricing', [OffersController::class, 'pricing'])->name('pricing');
-
-            Route::put('theme', [OffersController::class, 'updateTheme'])->name('update.theme');
-
-            // Add offerItem routes
-            Route::resource('items', OfferItemsController::class)->names('items');
-            Route::put('items/{item}/prices/{price}', [OfferItemPriceController::class, 'update'])->name('items.prices.update');
-
-            Route::get('integrate', [OffersController::class, 'integrate'])->name('integrate');
-            Route::post('publish', [OffersController::class, 'publish'])->name('publish');
-            Route::put('duplicate', [OffersController::class, 'duplicate'])->name('duplicate');
-        });
-
-        Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
-        Route::get('/templates', [TemplateController::class, 'index'])->name('templates.index');
-        Route::post('/templates', [TemplateController::class, 'store'])->name('templates.store');
-        Route::put('/templates/{template}', [TemplateController::class, 'update'])->name('templates.update');
-        Route::post('/templates/{template}/use', [TemplateController::class, 'useTemplate'])->name('templates.use');
-        Route::post('/templates/request', [TemplateController::class, 'requestTemplate'])->name('templates.request');
 
         // Media Upload Route
         Route::post('media', [MediaController::class, 'store'])->name('media.store');
@@ -323,3 +308,5 @@ if (app()->environment('local')) {
 }
 
 require __DIR__.'/settings.php';
+require __DIR__.'/automation.php';
+

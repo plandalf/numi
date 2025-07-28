@@ -5,40 +5,84 @@ namespace App\Workflows;
 use App\Models\Automation\Node;
 use App\Models\Automation\StoredWorkflow;
 use App\Models\Automation\Trigger;
-use App\Models\ResourceEvent;
+use App\Models\Automation\TriggerEvent;
+use App\Models\WorkflowStep;
 use App\Workflows\Automation\ActivitySchemaRegistry;
+use App\Workflows\Automation\Bundle;
+use App\Workflows\Automation\NodeActivities\ActionActivity;
+use App\Workflows\Automation\TemplateResolver;
+use Carbon\Carbon;
 use Workflow\ActivityStub;
 use Workflow\Workflow;
 
 /**
  * @property StoredWorkflow $storedWorkflow
+ * @property Carbon $now
  */
 class RunSequenceWorkflow extends Workflow
 {
     public function execute(
         Trigger $trigger,
-        ResourceEvent $event,
+        TriggerEvent $event,
     ) {
-        // Check if trigger has a next node to execute
-        if (!$trigger->nextNode) {
-            // Log that the trigger has no connected nodes
-            \Log::warning('Trigger has no connected nodes', [
-                'trigger_id' => $trigger->id,
-                'trigger_name' => $trigger->name,
-                'sequence_id' => $trigger->sequence_id
-            ]);
-            return true; // Return success but don't execute anything
-        }
+        foreach ($trigger->sequence->nodes as $node) {
+            // Resolve template variables in node configuration
+            $resolvedConfiguration = $this->resolveNodeConfiguration($node, $event);
 
-        yield from $this->runNode($trigger->nextNode, $event);
+            // Create input bundle with resolved configuration
+            $bundle = new Bundle(
+                input: $resolvedConfiguration,
+                integration: $node->integration,
+            );
+
+            $startTime = $this->now;
+
+            // Execute the action
+            $output = yield ActivityStub::make(ActionActivity::class, $node, $bundle);
+
+            // Create workflow step record
+            WorkflowStep::query()->create([
+                'execution_id' => $this->storedWorkflow->id,
+                'node_id' => $node->id,
+                'step_name' => $node->name ?? "Node {$node->id}",
+                'input_data' => $resolvedConfiguration,
+                'output_data' => $output,
+                'status' => WorkflowStep::STATUS_COMPLETED,
+                'started_at' => $startTime,
+                'completed_at' => $this->now,
+                'duration_ms' => $this->now->sub($startTime)->totalMilliseconds,
+                'max_retries' => $node->retry_config['max_retries'] ?? 0,
+                'parent_step_id' => null, // for parallel/loop actions
+                'loop_iteration' => null, // for loop actions
+                'loop_action_index' => null, // for loop actions
+            ]);
+
+            // Clear the workflow context cache to ensure fresh data for next steps
+//            TemplateResolver::clearWorkflowContext($this->storedWorkflow->id);
+        }
 
         return true;
     }
 
-    private function runNode(Node $node, ResourceEvent $event)
+    /**
+     * Resolve template variables in node configuration
+     */
+    private function resolveNodeConfiguration(Node $node, TriggerEvent $event): array
     {
-        $activityClass = app(ActivitySchemaRegistry::class)
-            ->getActivityClassForType($node->type);
+        $configuration = $node->configuration ?? $node->arguments ?? [];
+
+        // Use the enhanced template resolver for workflow context
+        return TemplateResolver::resolveForWorkflow(
+            $configuration,
+            $this->storedWorkflow->id,
+            $event
+        );
+    }
+
+    protected function runNode(Node $node, $event)
+    {
+        // for now, will always be actionactivity until we have loops
+        $activityClass = ActionActivity::class;
 
         if ($activityClass) {
             yield ActivityStub::make($activityClass, $node, $event);

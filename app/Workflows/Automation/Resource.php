@@ -3,7 +3,7 @@
 namespace App\Workflows\Automation;
 
 use App\Models\Integration;
-use App\Workflows\Attributes\Resource as ResourceAttribute;
+use App\Workflows\Attributes\IsResource as ResourceAttribute;
 use ReflectionClass;
 
 abstract class Resource
@@ -22,13 +22,13 @@ abstract class Resource
     {
         $reflection = new ReflectionClass(static::class);
         $attributes = $reflection->getAttributes(ResourceAttribute::class);
-        
+
         if (empty($attributes)) {
             throw new \Exception('Resource must have a Resource attribute');
         }
-        
+
         $resource = $attributes[0]->newInstance();
-        
+
         return [
             'key' => $resource->key,
             'noun' => $resource->noun,
@@ -43,7 +43,7 @@ abstract class Resource
     public static function getDefinition(): array
     {
         $metadata = static::getMetadata();
-        
+
         return [
             'key' => $metadata['key'],
             'noun' => $metadata['noun'],
@@ -67,4 +67,4 @@ abstract class Resource
      * Get the value and label fields for the resource
      */
     abstract public function getValueLabelFields(): array;
-} 
+}

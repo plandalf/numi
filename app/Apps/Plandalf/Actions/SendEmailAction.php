@@ -3,14 +3,14 @@
 namespace App\Apps\Plandalf\Actions;
 
 use App\Mail\ActivityEmail;
-use App\Workflows\Attributes\Action;
+use App\Workflows\Attributes\IsAction;
 use App\Workflows\Automation\AppAction;
 use App\Workflows\Automation\Bundle;
 use App\Workflows\Automation\Field;
 use Illuminate\Mail\SentMessage;
 use Illuminate\Support\Facades\Mail;
 
-#[Action(
+#[IsAction(
     key: 'send_email',
     noun: 'Email',
     label: 'Send Email',

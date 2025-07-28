@@ -5,13 +5,13 @@ namespace Tests\Feature\Unit\Workflows\Automation;
 use App\Workflows\Automation\AppTrigger;
 use App\Workflows\Automation\Field;
 use App\Workflows\Automation\Bundle;
-use App\Workflows\Attributes\Trigger;
+use App\Workflows\Attributes\IsTrigger;
 use App\Models\Integration;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 // Test trigger classes
-#[Trigger(
+#[IsTrigger(
     key: 'test_trigger',
     noun: 'Test',
     label: 'Test Trigger',
@@ -47,7 +47,7 @@ class TestAppTrigger extends AppTrigger
     }
 }
 
-#[Trigger(
+#[IsTrigger(
     key: 'simple_trigger',
     noun: 'Simple',
     label: 'Simple Trigger',
@@ -66,7 +66,7 @@ class AppTriggerTest extends TestCase
     public function test_get_metadata_from_trigger_attribute()
     {
         $metadata = TestAppTrigger::getMetadata();
-        
+
         $this->assertEquals('test_trigger', $metadata['key']);
         $this->assertEquals('Test', $metadata['noun']);
         $this->assertEquals('Test Trigger', $metadata['label']);
@@ -77,13 +77,13 @@ class AppTriggerTest extends TestCase
     {
         $this->expectException(\Exception::class);
         $this->expectExceptionMessage('AppTrigger must have a Trigger attribute');
-        
+
         // Create a class without the Trigger attribute
         eval('
             namespace Tests\Feature\Unit\Workflows\Automation;
             use App\Workflows\Automation\AppTrigger;
             use App\Workflows\Automation\Bundle;
-            
+
             class InvalidAppTrigger extends AppTrigger
             {
                 public function __invoke(Bundle $bundle): array
@@ -92,7 +92,7 @@ class AppTriggerTest extends TestCase
                 }
             }
         ');
-        
+
         $invalidClass = 'Tests\Feature\Unit\Workflows\Automation\InvalidAppTrigger';
         $invalidClass::getMetadata();
     }
@@ -100,23 +100,23 @@ class AppTriggerTest extends TestCase
     public function test_get_props_with_defined_props_method()
     {
         $props = TestAppTrigger::getProps();
-        
+
         $this->assertIsArray($props);
         $this->assertCount(3, $props);
-        
+
         // Check event field
         $this->assertArrayHasKey('event', $props);
         $this->assertEquals('text', $props['event']['type']);
         $this->assertEquals('Event', $props['event']['label']);
         $this->assertEquals('Enter an event', $props['event']['description']);
-        
+
         // Check type field
         $this->assertArrayHasKey('type', $props);
         $this->assertEquals('select', $props['type']['type']);
         $this->assertEquals('Type', $props['type']['label']);
         $this->assertEquals('Select type', $props['type']['description']);
         $this->assertArrayHasKey('options', $props['type']);
-        
+
         // Check offer field
         $this->assertArrayHasKey('offer', $props);
         $this->assertEquals('resource', $props['offer']['type']);
@@ -128,7 +128,7 @@ class AppTriggerTest extends TestCase
     public function test_get_props_without_props_method()
     {
         $props = SimpleAppTrigger::getProps();
-        
+
         $this->assertIsArray($props);
         $this->assertEmpty($props);
     }
@@ -136,7 +136,7 @@ class AppTriggerTest extends TestCase
     public function test_get_definition_combines_metadata_and_props()
     {
         $definition = TestAppTrigger::getDefinition();
-        
+
         $this->assertIsArray($definition);
         $this->assertArrayHasKey('key', $definition);
         $this->assertArrayHasKey('noun', $definition);
@@ -144,13 +144,13 @@ class AppTriggerTest extends TestCase
         $this->assertArrayHasKey('description', $definition);
         $this->assertArrayHasKey('props', $definition);
         $this->assertArrayHasKey('class', $definition);
-        
+
         $this->assertEquals('test_trigger', $definition['key']);
         $this->assertEquals('Test', $definition['noun']);
         $this->assertEquals('Test Trigger', $definition['label']);
         $this->assertEquals('A test trigger', $definition['description']);
         $this->assertEquals(TestAppTrigger::class, $definition['class']);
-        
+
         // Props should be included
         $this->assertIsArray($definition['props']);
         $this->assertCount(3, $definition['props']);
@@ -159,7 +159,7 @@ class AppTriggerTest extends TestCase
     public function test_get_definition_without_props()
     {
         $definition = SimpleAppTrigger::getDefinition();
-        
+
         $this->assertIsArray($definition);
         $this->assertArrayHasKey('props', $definition);
         $this->assertEmpty($definition['props']);
@@ -169,10 +169,10 @@ class AppTriggerTest extends TestCase
     {
         $integration = Integration::factory()->create();
         $trigger = new TestAppTrigger($integration);
-        
+
         $bundle = new Bundle(['event' => 'purchase_completed', 'type' => 'webhook']);
         $result = $trigger->__invoke($bundle);
-        
+
         $this->assertIsArray($result);
         $this->assertTrue($result['success']);
         $this->assertEquals('purchase_completed', $result['event']);
@@ -182,9 +182,9 @@ class AppTriggerTest extends TestCase
     {
         $integration = Integration::factory()->create();
         $trigger = new TestAppTrigger($integration);
-        
+
         $bundle = new Bundle(['event' => 'purchase_completed']);
-        
+
         // These should not throw exceptions
         $this->assertNull($trigger->subscribe($bundle));
         $this->assertNull($trigger->unsubscribe($bundle));
@@ -194,18 +194,18 @@ class AppTriggerTest extends TestCase
     {
         $integration = Integration::factory()->create();
         $configuration = ['setting1' => 'value1', 'setting2' => 'value2'];
-        
+
         $trigger = new TestAppTrigger($integration, $configuration);
-        
+
         // Use reflection to access protected properties
         $reflection = new \ReflectionClass($trigger);
-        
+
         $integrationProperty = $reflection->getProperty('integration');
         $integrationProperty->setAccessible(true);
-        
+
         $configurationProperty = $reflection->getProperty('configuration');
         $configurationProperty->setAccessible(true);
-        
+
         $this->assertSame($integration, $integrationProperty->getValue($trigger));
         $this->assertEquals($configuration, $configurationProperty->getValue($trigger));
     }
@@ -213,14 +213,14 @@ class AppTriggerTest extends TestCase
     public function test_trigger_constructor_with_empty_configuration()
     {
         $integration = Integration::factory()->create();
-        
+
         $trigger = new TestAppTrigger($integration);
-        
+
         // Use reflection to access protected properties
         $reflection = new \ReflectionClass($trigger);
         $configurationProperty = $reflection->getProperty('configuration');
         $configurationProperty->setAccessible(true);
-        
+
         $this->assertEquals([], $configurationProperty->getValue($trigger));
     }
 
@@ -231,9 +231,9 @@ class AppTriggerTest extends TestCase
             namespace Tests\Feature\Unit\Workflows\Automation;
             use App\Workflows\Automation\AppTrigger;
             use App\Workflows\Automation\Bundle;
-            use App\Workflows\Attributes\Trigger;
-            
-            #[Trigger(
+            use App\Workflows\Attributes\IsTrigger;
+
+            #[IsTrigger(
                 key: "invalid_props_trigger",
                 noun: "Invalid",
                 label: "Invalid Props Trigger",
@@ -249,16 +249,16 @@ class AppTriggerTest extends TestCase
                         ["invalid" => "field"],
                     ];
                 }
-                
+
                 public function __invoke(Bundle $bundle): array
                 {
                     return ["success" => true];
                 }
             }
         ');
-        
+
         $props = \Tests\Feature\Unit\Workflows\Automation\InvalidPropsAppTrigger::getProps();
-        
+
         // Should return empty array when no valid Field objects are found
         $this->assertIsArray($props);
         $this->assertEmpty($props);
@@ -267,32 +267,32 @@ class AppTriggerTest extends TestCase
     public function test_trigger_definition_structure_consistency()
     {
         $definition = TestAppTrigger::getDefinition();
-        
+
         // Required keys
         $requiredKeys = ['key', 'noun', 'label', 'description', 'props', 'class'];
-        
+
         foreach ($requiredKeys as $key) {
             $this->assertArrayHasKey($key, $definition, "Definition missing required key: {$key}");
         }
-        
+
         // Key should be a string
         $this->assertIsString($definition['key']);
         $this->assertNotEmpty($definition['key']);
-        
+
         // Noun should be a string
         $this->assertIsString($definition['noun']);
         $this->assertNotEmpty($definition['noun']);
-        
+
         // Label should be a string
         $this->assertIsString($definition['label']);
         $this->assertNotEmpty($definition['label']);
-        
+
         // Description should be a string
         $this->assertIsString($definition['description']);
-        
+
         // Props should be an array
         $this->assertIsArray($definition['props']);
-        
+
         // Class should be a string and exist
         $this->assertIsString($definition['class']);
         $this->assertTrue(class_exists($definition['class']));
@@ -301,10 +301,10 @@ class AppTriggerTest extends TestCase
     public function test_trigger_with_resource_field()
     {
         $props = TestAppTrigger::getProps();
-        
+
         $this->assertArrayHasKey('offer', $props);
         $offerField = $props['offer'];
-        
+
         $this->assertEquals('resource', $offerField['type']);
         $this->assertEquals('Offer', $offerField['label']);
         $this->assertEquals('Select an offer', $offerField['description']);
@@ -315,16 +315,16 @@ class AppTriggerTest extends TestCase
     {
         $integration = Integration::factory()->create();
         $trigger = new TestAppTrigger($integration);
-        
+
         $bundle = new Bundle(['event' => 'purchase_completed']);
-        
+
         // Test subscription
         $this->assertNull($trigger->subscribe($bundle));
-        
+
         // Test execution
         $result = $trigger->__invoke($bundle);
         $this->assertTrue($result['success']);
-        
+
         // Test unsubscription
         $this->assertNull($trigger->unsubscribe($bundle));
     }
@@ -333,7 +333,7 @@ class AppTriggerTest extends TestCase
     {
         $integration = Integration::factory()->create();
         $trigger = new TestAppTrigger($integration);
-        
+
         $complexData = [
             'event' => 'purchase_completed',
             'type' => 'webhook',
@@ -347,10 +347,10 @@ class AppTriggerTest extends TestCase
                 'timestamp' => time(),
             ],
         ];
-        
+
         $bundle = new Bundle($complexData);
         $result = $trigger->__invoke($bundle);
-        
+
         $this->assertIsArray($result);
         $this->assertTrue($result['success']);
         $this->assertEquals('purchase_completed', $result['event']);

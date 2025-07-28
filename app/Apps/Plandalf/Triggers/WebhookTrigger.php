@@ -2,11 +2,11 @@
 
 namespace App\Apps\Plandalf\Triggers;
 
-use App\Workflows\Attributes\Trigger;
+use App\Workflows\Attributes\IsTrigger;
 use App\Workflows\Automation\AppTrigger;
 use App\Workflows\Automation\Bundle;
 
-#[Trigger(
+#[IsTrigger(
     key: 'webhook',
     noun: 'Webhook',
     label: 'Webhook Trigger',

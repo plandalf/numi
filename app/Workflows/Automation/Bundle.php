@@ -6,15 +6,15 @@ use App\Models\Integration;
 
 class Bundle
 {
-    public array $input;
-    public Integration $integration;
-    public array $meta;
 
-    public string $targetUrl;
-
-    public function __construct(array $input = [])
+    public function __construct(
+        public ?array $input = [],
+        public ?Integration $integration = null,
+    )
     {
         $this->input = $input;
+        // auth
+        // example?
     }
 
     public function __invoke()

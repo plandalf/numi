@@ -1922,4 +1922,59 @@ class SequencesController extends Controller
             abort(403, 'You do not have permission to access this integration.');
         }
     }
+
+    /**
+     * Search discovered apps with filters and pagination.
+     * Handles GET /automation/apps
+     */
+    public function searchApps(Request $request)
+    {
+        $validated = $request->validate([
+            'q' => 'nullable|string',
+            'category' => 'nullable|string',
+            'provider' => 'nullable|string',
+            'page' => 'nullable|integer|min:1',
+        ]);
+
+        // TODO: Replace with actual discovery logic
+        $apps = collect([
+            [
+                'id' => 1,
+                'name' => 'Example App',
+                'category' => 'crm',
+                'provider' => 'internal',
+            ],
+            [
+                'id' => 2,
+                'name' => 'Another App',
+                'category' => 'marketing',
+                'provider' => 'external',
+            ],
+        ]);
+
+        // Filter by search query
+        if (!empty($validated['q'])) {
+            $apps = $apps->filter(fn($app) => str_contains(strtolower($app['name']), strtolower($validated['q'])));
+        }
+        if (!empty($validated['category'])) {
+            $apps = $apps->where('category', $validated['category']);
+        }
+        if (!empty($validated['provider'])) {
+            $apps = $apps->where('provider', $validated['provider']);
+        }
+
+        // Paginate (stubbed)
+        $perPage = 10;
+        $page = $validated['page'] ?? 1;
+        $paginated = $apps->forPage($page, $perPage)->values();
+
+        return response()->json([
+            'data' => $paginated,
+            'meta' => [
+                'page' => $page,
+                'per_page' => $perPage,
+                'total' => $apps->count(),
+            ],
+        ]);
+    }
 }

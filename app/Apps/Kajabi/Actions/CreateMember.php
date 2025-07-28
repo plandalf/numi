@@ -2,15 +2,14 @@
 
 namespace App\Apps\Kajabi\Actions;
 
+use App\Apps\Kajabi\KajabiApp;
 use App\Apps\Kajabi\Requests\MeRequest;
-use App\Models\Integration;
-use App\Modules\Integrations\Kajabi;
-use App\Workflows\Attributes\Action;
+use App\Workflows\Attributes\IsAction;
 use App\Workflows\Automation\AppAction;
 use App\Workflows\Automation\Bundle;
 use App\Workflows\Automation\Field;
 
-#[Action(
+#[IsAction(
     key: 'create_member',
     noun: 'Member',
     label: 'Create Member',
@@ -34,31 +33,18 @@ class CreateMember extends AppAction
      */
     public function __invoke(Bundle $bundle): array
     {
-        $kajabi = app(Kajabi::class);
+        $kajabi = new KajabiApp();
+
         $connector = $kajabi->auth($bundle->integration);
-        
-        // For now, just test the connection
+
         $response = $connector->send(new MeRequest());
-        
-        return [
-            'member_email' => $bundle->input['email'],
-            'first_name' => $bundle->input['first_name'] ?? null,
-            'last_name' => $bundle->input['last_name'] ?? null,
-            'tags' => $bundle->input['tags'] ?? null,
-            'status' => 'created',
-            'created_at' => now()->toISOString(),
-        ];
+
+        return $response->json();
     }
 
     public function sample(): array
     {
         return [
-            'member_email' => 'john@example.com',
-            'first_name' => 'John',
-            'last_name' => 'Doe',
-            'tags' => 'VIP,Newsletter',
-            'status' => 'created',
-            'created_at' => now()->toISOString(),
         ];
     }
-} 
+}

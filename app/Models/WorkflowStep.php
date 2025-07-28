@@ -5,6 +5,33 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
+/**
+ * @property int $id
+ * @property int $execution_id
+ * @property int $node_id
+ * @property string|null $step_name
+ * @property array|null $input_data
+ * @property array|null $output_data
+ * @property array|null $raw_response
+ * @property array|null $processed_output
+ * @property string $status
+ * @property \Carbon\Carbon|null $started_at
+ * @property \Carbon\Carbon|null $completed_at
+ * @property int|null $duration_ms
+ * @property int $retry_count
+ * @property int $max_retries
+ * @property string|null $error_message
+ * @property string|null $error_code
+ * @property array|null $debug_info
+ * @property int|null $parent_step_id
+ * @property int|null $loop_iteration
+ * @property int|null $loop_action_index
+ * @property string|null $action_group_type
+ * @property int|null $action_group_iteration
+ * @property int|null $action_group_index
+ * @property \Carbon\Carbon $created_at
+ * @property \Carbon\Carbon $updated_at
+ */
 class WorkflowStep extends Model
 {
     protected $fillable = [

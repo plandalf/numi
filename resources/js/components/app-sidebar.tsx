@@ -50,8 +50,8 @@ const navGroups = [
             },
             {
                 title: 'Automation',
-                href: '/sequences',
-                route: 'sequences.*',
+                href: '/automation/sequences',
+                route: 'automation.sequences.*',
                 icon: BotIcon,
             },
         ]

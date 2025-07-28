@@ -2,12 +2,12 @@
 
 namespace App\Apps\Kajabi\Triggers;
 
-use App\Workflows\Attributes\Trigger;
+use App\Workflows\Attributes\IsTrigger;
 use App\Workflows\Automation\AppTrigger;
 use App\Workflows\Automation\Bundle;
 use App\Workflows\Automation\Field;
 
-#[Trigger(
+#[IsTrigger(
     key: 'new-purchase',
     noun: 'Purchase',
     label: 'New Purchase',

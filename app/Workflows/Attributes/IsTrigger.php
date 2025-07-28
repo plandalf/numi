@@ -3,13 +3,13 @@
 namespace App\Workflows\Attributes;
 
 #[\Attribute(\Attribute::TARGET_CLASS)]
-class Resource
+class IsTrigger
 {
     public function __construct(
         public string $key,
         public string $noun,
         public string $label,
-        public string $description,
+        public string $description
     ) {
     }
-} 
+}

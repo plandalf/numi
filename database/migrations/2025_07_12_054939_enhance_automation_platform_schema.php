@@ -12,6 +12,11 @@ return new class extends Migration
      */
     public function up(): void
     {
+        Schema::table('integrations', function (Blueprint $table) {
+            $table->uuid('uuid')->unique()->after('id');
+            $table->string('lookup_key', 64)->nullable()->change();
+        });
+
         // ====================================
         // 1. CREATE APPS TABLE FIRST
         // ====================================
@@ -28,16 +33,7 @@ return new class extends Migration
             $table->string('version', 20)->default('1.0.0');
             $table->boolean('is_active')->default(true);
             $table->boolean('is_built_in')->default(false);
-            $table->json('auth_config')->nullable();
-            $table->json('actions')->nullable(); // Available actions defined as config
-            $table->json('triggers')->nullable(); // Available triggers defined as config
-            $table->json('webhook_config')->nullable();
-            $table->json('rate_limits')->nullable();
-            $table->json('metadata')->nullable();
-            $table->json('credentials_schema')->nullable();
             $table->string('documentation_url', 500)->nullable();
-            $table->string('developer_name')->nullable();
-            $table->string('developer_url', 500)->nullable();
             $table->timestamps();
 
             $table->index('key');
@@ -88,20 +84,20 @@ return new class extends Migration
             $table->string('error_code', 100)->nullable();
             $table->json('debug_info')->nullable();
             // Loop and parallel execution support
-            $table->foreignId('parent_step_id')->nullable()->constrained('workflow_steps')->onDelete('cascade');
-            $table->integer('loop_iteration')->nullable();
-            $table->integer('loop_action_index')->nullable();
-            $table->string('action_group_type', 50)->nullable();
-            $table->integer('action_group_iteration')->nullable();
-            $table->integer('action_group_index')->nullable();
+//            $table->foreignId('parent_step_id')->nullable()->constrained('workflow_steps')->onDelete('cascade');
+//            $table->integer('loop_iteration')->nullable();
+//            $table->integer('loop_action_index')->nullable();
+//            $table->string('action_group_type', 50)->nullable();
+//            $table->integer('action_group_iteration')->nullable();
+//            $table->integer('action_group_index')->nullable();
             $table->timestamps(6);
 
             $table->index(['execution_id', 'node_id']);
             $table->index('status');
             $table->index('error_code');
             $table->index('parent_step_id');
-            $table->index('loop_iteration');
-            $table->index('action_group_type');
+//            $table->index('loop_iteration');
+//            $table->index('action_group_type');
         });
 
         // Workflow templates table - Pre-built templates
@@ -173,6 +169,8 @@ return new class extends Migration
             $table->foreignId('integration_id')->nullable()->constrained('integrations')->onDelete('set null');
             $table->string('event_source', 50);
             $table->json('event_data');
+            $table->json('event_raw')->nullable();
+
             $table->json('metadata')->nullable();
             $table->timestamp('processed_at', 6)->nullable();
             $table->foreignId('workflow_execution_id')->nullable()->constrained('workflow_executions')->onDelete('set null');
@@ -227,6 +225,7 @@ return new class extends Migration
 
         // Enhance automation_nodes table (nodes ARE the actions)
         Schema::table('automation_nodes', function (Blueprint $table) {
+            $table->bigInteger('app_id')->nullable();
             $table->string('name')->nullable()->after('sequence_id');
             $table->text('description')->nullable()->after('name');
             $table->foreignId('integration_id')->nullable()->after('type')->constrained('integrations')->onDelete('set null');
@@ -251,6 +250,7 @@ return new class extends Migration
         Schema::table('automation_triggers', function (Blueprint $table) {
             $table->string('name')->nullable()->after('sequence_id');
             $table->foreignId('integration_id')->nullable()->after('name')->constrained('integrations')->onDelete('set null');
+            $table->string('app_id')->nullable()->after('integration_id');
             $table->string('trigger_key')->nullable()->after('integration_id'); // References trigger in app config
             $table->json('configuration')->nullable()->after('trigger_key');
             $table->json('conditions')->nullable()->after('configuration');
@@ -264,6 +264,17 @@ return new class extends Migration
             $table->index('integration_id');
             $table->index('trigger_key');
             $table->index('webhook_url');
+
+            // todo: wtf is this for?
+            $table->dropColumn(['event_name', 'target_type', 'target_id']);
+            // Add trigger type to differentiate between webhook and integration triggers
+            $table->string('trigger_type', 50)
+                ->default('integration')
+                ->after('name');
+
+            // Add authentication configuration for webhook triggers
+            $table->json('webhook_auth_config')->nullable()->after('webhook_secret');
+            $table->json('metadata')->nullable()->after('webhook_auth_config');
         });
 
         // Enhance automation_edges table (defines how nodes connect)
@@ -297,7 +308,7 @@ return new class extends Migration
             $table->dropIndex(['automation_edges_from_node_id_index']);
             $table->dropIndex(['automation_edges_to_node_id_index']);
             $table->dropIndex(['automation_edges_sequence_id_index']);
-            
+
             $table->dropColumn(['conditions', 'metadata']);
         });
 
@@ -307,9 +318,9 @@ return new class extends Migration
             $table->dropIndex(['automation_triggers_integration_id_index']);
             $table->dropIndex(['automation_triggers_trigger_key_index']);
             $table->dropIndex(['automation_triggers_webhook_url_index']);
-            
+
             $table->dropColumn([
-                'name', 'integration_id', 'trigger_key', 'configuration', 
+                'name', 'integration_id', 'trigger_key', 'configuration',
                 'conditions', 'webhook_url', 'is_active', 'last_triggered_at', 'trigger_count'
             ]);
         });
@@ -319,7 +330,7 @@ return new class extends Migration
             $table->dropIndex(['automation_nodes_integration_id_index']);
             $table->dropIndex(['automation_nodes_action_key_index']);
             $table->dropIndex(['automation_nodes_parent_node_id_index']);
-            
+
             $table->dropColumn([
                 'name', 'description', 'integration_id', 'action_key', 'configuration',
                 'position', 'metadata', 'retry_config', 'timeout_seconds', 'loop_actions',
@@ -331,7 +342,7 @@ return new class extends Migration
             $table->dropIndex(['automation_sequences_is_active_index']);
             $table->dropIndex(['automation_sequences_is_template_index']);
             $table->dropIndex(['automation_sequences_created_by_index']);
-            
+
             $table->dropColumn([
                 'description', 'is_active', 'is_template', 'metadata', 'settings',
                 'created_by', 'last_run_at', 'run_count'
@@ -342,11 +353,16 @@ return new class extends Migration
             $table->dropIndex(['integrations_organization_id_app_id_index']);
             $table->dropIndex(['integrations_webhook_url_index']);
             $table->dropIndex(['integrations_last_sync_at_index']);
-            
+
             $table->dropColumn([
                 'app_id', 'webhook_url', 'webhook_secret', 'connection_config',
                 'last_sync_at', 'sync_errors'
             ]);
+        });
+
+        Schema::table('integrations', function (Blueprint $table) {
+            $table->string('lookup_key', 64)->nullable(false)->change();
+            $table->dropColumn('uuid');
         });
     }
 };

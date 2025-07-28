@@ -1,12 +1,15 @@
 <?php
 
-namespace App\Workflows\Automation;
+namespace App\Workflows\Automation\NodeActivities;
 
+use App\Apps\Kajabi\Actions\CreateMember;
 use App\Models\Automation\Node;
+use App\Models\Automation\Trigger;
+use App\Models\Integration;
 use App\Models\ResourceEvent;
+use App\Services\AppDiscoveryService;
 use App\Workflows\Automation\Attributes\Activity;
 use App\Workflows\Automation\Bundle;
-use App\Services\AppDiscoveryService;
 use Illuminate\Support\Facades\Log;
 use Workflow\Activity as WorkflowActivity;
 
@@ -15,15 +18,44 @@ use Workflow\Activity as WorkflowActivity;
     name: 'App Action',
     description: 'Executes an action from a connected app',
 )]
-class AppActionActivity extends WorkflowActivity
+class ActionActivity extends WorkflowActivity
 {
-    public function execute(Node $node, ResourceEvent $event)
+    public function execute(Node $node, Bundle $bundle)
     {
+        // basically we want to inject the app itself?
+
+        // Get discovered apps to find the action
+        $discoveryService = new AppDiscoveryService();
+        $apps = $discoveryService->discoverApps();
+
+
+//        dd($node->app);
+        $data = $discoveryService->getApp($node->app->key);
+
+        $matchingActionKeys = collect(
+            data_get($data, 'actions', [])
+        )->pluck('key');
+
+        $action = collect($data['actions'])
+            ->firstWhere('key', $node->action_key);
+
+//        dd($action);
+        $e = new $action['class'];
+
+        return $e($bundle, new Integration());
+
+        return $this->executeAction(
+            $node,
+            $event,
+            $actionData,
+            $appName
+        );
+
         try {
             $metadata = $node->metadata ?? [];
             $appActionKey = $metadata['app_action_key'] ?? null;
             $appName = $metadata['app_name'] ?? null;
-            
+
             if (!$appActionKey || !$appName) {
                 throw new \Exception('Action metadata missing app_action_key or app_name');
             }
@@ -35,19 +67,16 @@ class AppActionActivity extends WorkflowActivity
                 'event_id' => $event->id
             ]);
 
-            // Get discovered apps to find the action
-            $discoveryService = new AppDiscoveryService();
-            $apps = $discoveryService->discoverApps();
-            
+
             // Convert app name to proper case for lookup
             $appKey = ucfirst(strtolower($appName));
-            
+
             if (!isset($apps[$appKey])) {
                 throw new \Exception("App '{$appKey}' not found in discovery");
             }
 
             $appData = $apps[$appKey];
-            
+
             // Find the action in the app's actions
             $actionData = null;
             foreach ($appData['actions'] as $appAction) {
@@ -61,8 +90,7 @@ class AppActionActivity extends WorkflowActivity
                 throw new \Exception("Action '{$appActionKey}' not found in app '{$appKey}'");
             }
 
-            // Execute the action based on its type
-            return $this->executeAction($node, $event, $actionData, $appName);
+
 
         } catch (\Exception $e) {
             Log::error('App action execution failed', [
@@ -76,39 +104,6 @@ class AppActionActivity extends WorkflowActivity
                 'status' => 'failed',
                 'executed_at' => now()->toISOString(),
             ];
-        }
-    }
-
-    private function executeAction(Node $node, ResourceEvent $event, array $actionData, string $appName): array
-    {
-        $actionKey = $actionData['key'];
-        $arguments = $node->arguments ?? [];
-
-        // Handle different action types
-        switch ($actionKey) {
-            case 'send_email':
-                return $this->executeEmailAction($arguments, $event);
-            
-            case 'create_contact_tag':
-                return $this->executeCreateContactTagAction($arguments, $event);
-            
-            case 'create_member':
-                return $this->executeCreateMemberAction($arguments, $event);
-            
-            default:
-                // For unknown actions, return a mock response
-                return [
-                    'action_id' => $node->id,
-                    'action_name' => $node->name,
-                    'action_type' => $node->type,
-                    'action_key' => $actionKey,
-                    'app_name' => $appName,
-                    'executed_at' => now()->toISOString(),
-                    'status' => 'completed',
-                    'result' => 'success',
-                    'message' => "Action '{$actionKey}' executed successfully (mock response)",
-                    'data' => $arguments,
-                ];
         }
     }
 
@@ -158,7 +153,7 @@ class AppActionActivity extends WorkflowActivity
     private function executeCreateContactTagAction(array $arguments, ResourceEvent $event): array
     {
         $tagName = $arguments['tag_name'] ?? 'Default Tag';
-        
+
         Log::info('Creating contact tag via workflow', [
             'tag_name' => $tagName,
             'event_id' => $event->id
@@ -179,7 +174,7 @@ class AppActionActivity extends WorkflowActivity
         $email = $arguments['email'] ?? 'test@example.com';
         $firstName = $arguments['first_name'] ?? 'Test';
         $lastName = $arguments['last_name'] ?? 'User';
-        
+
         Log::info('Creating member via workflow', [
             'email' => $email,
             'first_name' => $firstName,
@@ -208,4 +203,4 @@ class AppActionActivity extends WorkflowActivity
             return data_get($context, $key, $matches[0]);
         }, $template);
     }
-} 
+}

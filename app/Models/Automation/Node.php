@@ -14,11 +14,23 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string $type
  * @property array $arguments
  * @property array $configuration
+ * @property string|null $description
+ * @property int|null $integration_id
+ * @property string|null $action_key
+ * @property array|null $position
+ * @property array|null $metadata
+ * @property array|null $retry_config
+ * @property int $timeout_seconds
+ * @property array|null $loop_actions
+ * @property array|null $parallel_actions
+ * @property int|null $parent_node_id
+ * @property \Carbon\Carbon $created_at
+ * @property \Carbon\Carbon $updated_at
  */
 class Node extends Model
 {
     use HasFactory;
-    
+
     protected $table = 'automation_nodes';
 
     protected $guarded = [];
@@ -33,16 +45,7 @@ class Node extends Model
         'parallel_actions' => 'json',
     ];
 
-    // Node types constants
-    const TYPES = [
-        'email' => 'Email Action',
-        'webhook' => 'Webhook Action',
-        'delay' => 'Delay Action',
-        'condition' => 'Condition',
-        'loop' => 'Loop',
-        'parallel' => 'Parallel',
-        'merge' => 'Merge',
-    ];
+    // type: action, loop, parallel, wait?
 
     public function sequence(): BelongsTo
     {
@@ -74,6 +77,11 @@ class Node extends Model
         return $this->hasMany(Node::class, 'parent_node_id');
     }
 
+    public function app(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\App::class);
+    }
+
     /**
      * Get the executable action for this node
      */
@@ -81,7 +89,7 @@ class Node extends Model
     {
         // Use arguments for backward compatibility, fall back to configuration
         $config = $this->configuration ?? $this->arguments ?? [];
-        
+
         return match($this->type) {
             'email' => new EmailActionExecutor($config),
             default => throw new \Exception("No executor available for node type: {$this->type}")

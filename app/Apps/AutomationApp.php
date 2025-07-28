@@ -15,4 +15,17 @@ abstract class AutomationApp
     {
         return [];
     }
+
+    /**
+     * Define the authentication requirements for this app
+     * 
+     * @return array{type: string, fields: array<array{key: string, label: string, type: string, required: boolean, placeholder?: string, help?: string}>}
+     */
+    public function authRequirements(): array
+    {
+        return [
+            'type' => 'none',
+            'fields' => []
+        ];
+    }
 }

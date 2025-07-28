@@ -3,7 +3,7 @@
 namespace App\Workflows\Automation;
 
 use App\Models\Integration;
-use App\Workflows\Attributes\Trigger;
+use App\Workflows\Attributes\IsTrigger;
 use ReflectionClass;
 
 abstract class AppTrigger
@@ -11,10 +11,12 @@ abstract class AppTrigger
     protected Integration $integration;
     protected array $configuration;
 
-    public function __construct(Integration $integration, array $configuration = [])
-    {
-        $this->integration = $integration;
-        $this->configuration = $configuration;
+    public function __construct(
+//        public Integration $integration,
+//        array $configuration = []
+    ) {
+//        $this->integration = $integration;
+//        $this->configuration = $configuration;
     }
 
     /**
@@ -23,14 +25,14 @@ abstract class AppTrigger
     public static function getMetadata(): array
     {
         $reflection = new ReflectionClass(static::class);
-        $attributes = $reflection->getAttributes(Trigger::class);
-        
+        $attributes = $reflection->getAttributes(IsTrigger::class);
+
         if (empty($attributes)) {
             throw new \Exception('AppTrigger must have a Trigger attribute');
         }
-        
+
         $trigger = $attributes[0]->newInstance();
-        
+
         return [
             'key' => $trigger->key,
             'noun' => $trigger->noun,
@@ -47,16 +49,16 @@ abstract class AppTrigger
         if (!method_exists(static::class, 'props')) {
             return [];
         }
-        
+
         $props = static::props();
         $schema = [];
-        
+
         foreach ($props as $field) {
             if ($field instanceof Field) {
                 $schema[$field->getKey()] = $field->toArray();
             }
         }
-        
+
         return $schema;
     }
 
@@ -67,7 +69,7 @@ abstract class AppTrigger
     {
         $metadata = static::getMetadata();
         $props = static::getProps();
-        
+
         return [
             'key' => $metadata['key'],
             'noun' => $metadata['noun'],
@@ -98,4 +100,4 @@ abstract class AppTrigger
     {
         // Override in subclasses if needed
     }
-} 
+}

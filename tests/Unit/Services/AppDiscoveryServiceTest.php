@@ -7,9 +7,9 @@ use App\Apps\AutomationApp;
 use App\Workflows\Automation\AppAction;
 use App\Workflows\Automation\AppTrigger;
 use App\Workflows\Automation\Resource;
-use App\Workflows\Attributes\Action;
-use App\Workflows\Attributes\Trigger;
-use App\Workflows\Attributes\Resource as ResourceAttribute;
+use App\Workflows\Attributes\IsAction;
+use App\Workflows\Attributes\IsTrigger;
+use App\Workflows\Attributes\IsResource as ResourceAttribute;
 use App\Workflows\Automation\Field;
 use App\Workflows\Automation\Bundle;
 use App\Models\Integration;
@@ -18,7 +18,7 @@ use Tests\TestCase;
 use ReflectionClass;
 
 // Mock classes for testing
-#[Action(
+#[IsAction(
     key: 'test_action',
     noun: 'Test',
     label: 'Test Action',
@@ -41,7 +41,7 @@ class MockAppAction extends AppAction
     }
 }
 
-#[Trigger(
+#[IsTrigger(
     key: 'test_trigger',
     noun: 'Test',
     label: 'Test Trigger',
@@ -115,7 +115,7 @@ class MockAutomationApp extends AutomationApp
 class AppDiscoveryServiceTest extends TestCase
 {
     use RefreshDatabase;
-    
+
     private AppDiscoveryService $service;
 
     protected function setUp(): void
@@ -131,7 +131,7 @@ class AppDiscoveryServiceTest extends TestCase
         if (!is_dir($mockAppsPath)) {
             mkdir($mockAppsPath, 0755, true);
         }
-        
+
         // Create a mock app directory
         $mockAppDir = $mockAppsPath . '/TestApp';
         if (!is_dir($mockAppDir)) {
@@ -145,10 +145,10 @@ class AppDiscoveryServiceTest extends TestCase
 
         // Mock the app_path function
         $originalAppPath = function_exists('app_path') ? 'app_path' : null;
-        
+
         // Test with a mock app
         $apps = $this->service->discoverApps();
-        
+
         // Clean up
         if (is_dir($mockAppDir)) {
             rmdir($mockAppDir);
@@ -165,10 +165,10 @@ class AppDiscoveryServiceTest extends TestCase
     public function test_discover_app_actions()
     {
         $actions = $this->service->discoverAppActions(MockAutomationApp::class);
-        
+
         $this->assertIsArray($actions);
         $this->assertCount(1, $actions);
-        
+
         $action = $actions[0];
         $this->assertEquals('test_action', $action['key']);
         $this->assertEquals('Test', $action['noun']);
@@ -182,10 +182,10 @@ class AppDiscoveryServiceTest extends TestCase
     public function test_discover_app_triggers()
     {
         $triggers = $this->service->discoverAppTriggers(MockAutomationApp::class);
-        
+
         $this->assertIsArray($triggers);
         $this->assertCount(1, $triggers);
-        
+
         $trigger = $triggers[0];
         $this->assertEquals('test_trigger', $trigger['key']);
         $this->assertEquals('Test', $trigger['noun']);
@@ -198,10 +198,10 @@ class AppDiscoveryServiceTest extends TestCase
     public function test_discover_app_resources()
     {
         $resources = $this->service->discoverAppResources(MockAutomationApp::class);
-        
+
         $this->assertIsArray($resources);
         $this->assertCount(1, $resources);
-        
+
         $resource = $resources[0];
         $this->assertEquals('test_resource', $resource['key']);
         $this->assertEquals('Test', $resource['noun']);
@@ -213,9 +213,9 @@ class AppDiscoveryServiceTest extends TestCase
     public function test_get_all_actions()
     {
         $allActions = $this->service->getAllActions();
-        
+
         $this->assertIsArray($allActions);
-        
+
         // Should include actions from all discovered apps
         foreach ($allActions as $action) {
             $this->assertArrayHasKey('app', $action);
@@ -227,9 +227,9 @@ class AppDiscoveryServiceTest extends TestCase
     public function test_get_all_triggers()
     {
         $allTriggers = $this->service->getAllTriggers();
-        
+
         $this->assertIsArray($allTriggers);
-        
+
         // Should include triggers from all discovered apps
         foreach ($allTriggers as $trigger) {
             $this->assertArrayHasKey('app', $trigger);
@@ -241,9 +241,9 @@ class AppDiscoveryServiceTest extends TestCase
     public function test_get_all_resources()
     {
         $allResources = $this->service->getAllResources();
-        
+
         $this->assertIsArray($allResources);
-        
+
         // Should include resources from all discovered apps
         foreach ($allResources as $resource) {
             $this->assertArrayHasKey('app', $resource);
@@ -256,7 +256,7 @@ class AppDiscoveryServiceTest extends TestCase
     {
         // Test that the service handles missing Apps directory gracefully
         $apps = $this->service->discoverApps();
-        
+
         // Should return an empty array, not throw an exception
         $this->assertIsArray($apps);
     }
@@ -265,7 +265,7 @@ class AppDiscoveryServiceTest extends TestCase
     {
         // Test with an app that has an invalid action class
         $actions = $this->service->discoverAppActions(MockAutomationApp::class);
-        
+
         // Should not throw an exception, should handle gracefully
         $this->assertIsArray($actions);
     }
@@ -274,7 +274,7 @@ class AppDiscoveryServiceTest extends TestCase
     {
         // Test with an app that has an invalid trigger class
         $triggers = $this->service->discoverAppTriggers(MockAutomationApp::class);
-        
+
         // Should not throw an exception, should handle gracefully
         $this->assertIsArray($triggers);
     }
@@ -283,7 +283,7 @@ class AppDiscoveryServiceTest extends TestCase
     {
         // Test with an app that has an invalid resource class
         $resources = $this->service->discoverAppResources(MockAutomationApp::class);
-        
+
         // Should not throw an exception, should handle gracefully
         $this->assertIsArray($resources);
     }
@@ -291,10 +291,10 @@ class AppDiscoveryServiceTest extends TestCase
     public function test_action_definition_structure()
     {
         $actions = $this->service->discoverAppActions(MockAutomationApp::class);
-        
+
         if (!empty($actions)) {
             $action = $actions[0];
-            
+
             $this->assertArrayHasKey('key', $action);
             $this->assertArrayHasKey('noun', $action);
             $this->assertArrayHasKey('label', $action);
@@ -302,7 +302,7 @@ class AppDiscoveryServiceTest extends TestCase
             $this->assertArrayHasKey('type', $action);
             $this->assertArrayHasKey('props', $action);
             $this->assertArrayHasKey('class', $action);
-            
+
             // Props should be an array
             $this->assertIsArray($action['props']);
         }
@@ -311,17 +311,17 @@ class AppDiscoveryServiceTest extends TestCase
     public function test_trigger_definition_structure()
     {
         $triggers = $this->service->discoverAppTriggers(MockAutomationApp::class);
-        
+
         if (!empty($triggers)) {
             $trigger = $triggers[0];
-            
+
             $this->assertArrayHasKey('key', $trigger);
             $this->assertArrayHasKey('noun', $trigger);
             $this->assertArrayHasKey('label', $trigger);
             $this->assertArrayHasKey('description', $trigger);
             $this->assertArrayHasKey('props', $trigger);
             $this->assertArrayHasKey('class', $trigger);
-            
+
             // Props should be an array
             $this->assertIsArray($trigger['props']);
         }
@@ -330,10 +330,10 @@ class AppDiscoveryServiceTest extends TestCase
     public function test_resource_definition_structure()
     {
         $resources = $this->service->discoverAppResources(MockAutomationApp::class);
-        
+
         if (!empty($resources)) {
             $resource = $resources[0];
-            
+
             $this->assertArrayHasKey('key', $resource);
             $this->assertArrayHasKey('noun', $resource);
             $this->assertArrayHasKey('label', $resource);
@@ -341,4 +341,4 @@ class AppDiscoveryServiceTest extends TestCase
             $this->assertArrayHasKey('class', $resource);
         }
     }
-} 
+}

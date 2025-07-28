@@ -4,52 +4,75 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
-import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Loader2, Webhook } from 'lucide-react';
+import { Loader2, AlertCircle, Settings, TestTube, Play, Webhook, User, ExternalLink, ChevronDown } from 'lucide-react';
 import axios from 'axios';
-
-
-
-
+import { TriggerConfigField } from './TriggerConfigField';
 
 interface AddActionModalProps {
   open: boolean;
   onClose: () => void;
   sequenceId: number;
-  onActionAdded: (action: unknown) => void;
-  editingAction?: Action | null;
-  onActionUpdated?: (action: Action) => void;
+  onActionAdded: (action: CreatedAction) => void;
+  editingAction?: CreatedAction | null;
+  onActionUpdated?: (action: CreatedAction) => void;
 }
 
-interface Action {
+interface CreatedAction {
   id: number;
   name: string;
   type: string;
-  arguments?: Record<string, unknown>;
+  configuration: Record<string, unknown>;
+  app?: {
+    name: string;
+    icon_url?: string;
+    color?: string;
+  };
 }
 
-interface DiscoveredAction {
+interface App {
   key: string;
-  noun: string;
+  name: string;
+  description?: string;
+  icon_url?: string;
+  color?: string;
+  actions?: ActionDefinition[];
+  id: number;
+}
+
+interface ActionDefinition {
+  key: string;
   label: string;
   description: string;
   type: string;
-  app: string;
-  props: Record<string, {
+  requires_auth?: boolean;
+  props?: Record<string, {
     key: string;
     label: string;
     type: string;
     required: boolean;
+    description?: string;
     help?: string;
-    dynamic?: string;
+    dynamic?: boolean;
+    dynamicSource?: string;
     default?: unknown;
-    options?: unknown[];
+    options?: Array<{ value: string; label: string; }>;
   }>;
-  class: string;
 }
 
-// No hardcoded actions - only discovered actions are used
+interface Integration {
+  id: number;
+  uuid: string;
+  name: string;
+  app: {
+    id: number;
+    key: string;
+    name: string;
+    icon_url?: string;
+    color?: string;
+  };
+  current_state: 'active' | 'inactive' | 'created' | 'error';
+}
 
 export function AddActionModal({
   open,
@@ -59,523 +82,613 @@ export function AddActionModal({
   editingAction = null,
   onActionUpdated
 }: AddActionModalProps) {
-  const [step, setStep] = useState<'select-type' | 'configure'>('select-type');
-  const [selectedDiscoveredAction, setSelectedDiscoveredAction] = useState<DiscoveredAction | null>(null);
+  const [activeTab, setActiveTab] = useState('setup');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [validationErrors, setValidationErrors] = useState<Record<string, string[]>>({});
+  
+  // Setup tab state
+  const [selectedApp, setSelectedApp] = useState<App | null>(null);
+  const [selectedAction, setSelectedAction] = useState<ActionDefinition | null>(null);
+  const [selectedIntegration, setSelectedIntegration] = useState<Integration | null>(null);
+  const [apps, setApps] = useState<App[]>([]);
+  const [integrations, setIntegrations] = useState<Integration[]>([]);
+  const [showAppSelector, setShowAppSelector] = useState(false);
+  const [showActionSelector, setShowActionSelector] = useState(false);
+  
+  // Config tab state  
   const [actionName, setActionName] = useState('');
-  const [configuration, setConfiguration] = useState<Record<string, string>>({});
-  const [creating, setCreating] = useState(false);
-  const [testing, setTesting] = useState(false);
-  const [testResult, setTestResult] = useState<{success: boolean; message: string; data?: unknown} | null>(null);
-  const [discoveredActions, setDiscoveredActions] = useState<DiscoveredAction[]>([]);
-  const [loadingActions, setLoadingActions] = useState(false);
-  const [resourceOptions, setResourceOptions] = useState<Record<string, Array<{value: string; label: string}>>>({});
-  const [loadingResources, setLoadingResources] = useState<Record<string, boolean>>({});
+  const [configuration, setConfiguration] = useState<Record<string, unknown>>({});
+  
+  // Test tab state
+  const [testResult, setTestResult] = useState<{ error?: string; [key: string]: unknown } | null>(null);
+  const [testLoading, setTestLoading] = useState(false);
 
-  // Fetch discovered actions when modal opens
   useEffect(() => {
-    if (open && discoveredActions.length === 0) {
-      fetchDiscoveredActions();
-    }
-  }, [open]);
-
-  // Initialize form when editing action or modal opens
-  useEffect(() => {
-    if (editingAction) {
-      setActionName(editingAction.name);
-      setStep('configure');
-
-      // Pre-populate configuration from action arguments
-      const args = editingAction.arguments || {};
-      const config: Record<string, string> = {};
-
-      Object.entries(args).forEach(([key, value]) => {
-        if (value !== undefined && value !== null) {
-          if (Array.isArray(value)) {
-            config[key] = value.join('\n');
-          } else {
-            config[key] = String(value);
-          }
-        }
-      });
-
-      setConfiguration(config);
-
-      // Find the corresponding discovered action
-      if (discoveredActions.length > 0) {
-        const foundAction = discoveredActions.find(action =>
-          action.key === editingAction.type ||
-          action.app === editingAction.type
-        );
-        if (foundAction) {
-          setSelectedDiscoveredAction(foundAction);
-        }
-      }
-    } else {
-      // Reset form for new action
-      setStep('select-type');
-      setSelectedDiscoveredAction(null);
-      setActionName('');
-      setConfiguration({});
-    }
-  }, [editingAction, open, discoveredActions]);
-
-  const fetchDiscoveredActions = async () => {
-    try {
-      setLoadingActions(true);
-      const response = await axios.get('/discovered/actions');
-      setDiscoveredActions(response.data || []);
-    } catch (error) {
-      console.error('Failed to fetch discovered actions:', error);
-    } finally {
-      setLoadingActions(false);
-    }
-  };
-
-  const loadResourceOptions = async (resourceKey: string, search?: string) => {
-    setLoadingResources(prev => ({ ...prev, [resourceKey]: true }));
-
-    try {
-      const response = await axios.post('/discovered/resources/search', {
-        app: selectedDiscoveredAction?.app,
-        resource: resourceKey,
-        integration_id: 1, // This should come from the selected integration
-        search,
-      });
-
-      setResourceOptions(prev => ({
-        ...prev,
-        [resourceKey]: response.data || []
-      }));
-    } catch (error) {
-      console.error('Failed to load resource options:', error);
-    } finally {
-      setLoadingResources(prev => ({ ...prev, [resourceKey]: false }));
-    }
-  };
-
-  const handleDiscoveredActionSelect = (action: DiscoveredAction) => {
-    setSelectedDiscoveredAction(action);
-    setActionName(action.label);
-    setConfiguration({});
-    setResourceOptions({});
-    setLoadingResources({});
-    setStep('configure');
-  };
-
-  const handleConfigurationChange = (key: string, value: string) => {
-    setConfiguration(prev => ({ ...prev, [key]: value }));
-    // Clear test result when configuration changes
-    setTestResult(null);
-  };
-
-  const testAction = async () => {
-    if (!selectedDiscoveredAction) return;
-
-    try {
-      setTesting(true);
-      setTestResult(null);
-
-      const testData = {
-        name: actionName,
-        type: 'app_action',
-        app_action_key: selectedDiscoveredAction.key,
-        app_name: selectedDiscoveredAction.app,
-        configuration: configuration
-      };
-
-      const response = await axios.post(`/sequences/${sequenceId}/actions/test`, testData);
-
-      setTestResult({
-        success: response.data.success,
-        message: response.data.message,
-        data: response.data.data
-      });
-    } catch (error: unknown) {
-      console.error('Action test failed:', error);
-      const errorMessage = (error as { response?: { data?: { message?: string } } })?.response?.data?.message ||
-                          (error as Error)?.message || 'Test failed';
-      setTestResult({
-        success: false,
-        message: errorMessage
-      });
-    } finally {
-      setTesting(false);
-    }
-  };
-
-  const saveAction = async () => {
-    if (!selectedDiscoveredAction) return;
-
-    try {
-      setCreating(true);
-
-      const processedConfig = { ...configuration };
-      const actionData = {
-        name: actionName,
-        type: 'app_action',
-        app_action_key: selectedDiscoveredAction.key,
-        app_name: selectedDiscoveredAction.app,
-        configuration: processedConfig
-      };
-
+    if (open) {
+      loadApps();
+      loadIntegrations();
       if (editingAction) {
-        // Update existing action
-        const response = await axios.put(`/sequences/${sequenceId}/actions/${editingAction.id}`, actionData);
-        onActionUpdated?.(response.data.action);
+        setActionName(editingAction.name);
+        setConfiguration(editingAction.configuration || {});
+        setActiveTab('config');
       } else {
-        // Create new action
-        const response = await axios.post(`/sequences/${sequenceId}/actions`, actionData);
-        onActionAdded(response.data.action);
+        setActiveTab('setup');
+        setSelectedApp(null);
+        setSelectedAction(null);
+        setSelectedIntegration(null);
+        setActionName('');
+        setConfiguration({});
       }
+    }
+  }, [open, editingAction]);
 
+  const loadApps = async () => {
+    try {
+      const response = await axios.get('/automation/apps');
+      setApps(response.data.data || []);
+    } catch (error) {
+      console.error('Failed to load apps:', error);
+    }
+  };
+
+  const loadIntegrations = async () => {
+    try {
+      const response = await axios.get('/automation/integrations');
+      setIntegrations(response.data.data || []);
+    } catch (error) {
+      console.error('Failed to load integrations:', error);
+    }
+  };
+
+  const handleAppSelect = (app: App) => {
+    setSelectedApp(app);
+    setSelectedAction(null);
+    setSelectedIntegration(null);
+    setShowAppSelector(false);
+  };
+
+  const handleActionSelect = (action: ActionDefinition) => {
+    setSelectedAction(action);
+    setActionName(action.label);
+    setShowActionSelector(false);
+    
+    // Check if this action requires auth
+    if (action.requires_auth) {
+      const appIntegrations = integrations.filter(integration => 
+        integration.app.key === selectedApp?.key
+      );
+      const hasActiveIntegration = appIntegrations.some(integration => 
+        integration.current_state === 'active'
+      );
+      
+      if (hasActiveIntegration) {
+        const activeIntegration = appIntegrations.find(integration => 
+          integration.current_state === 'active'
+        );
+        if (activeIntegration) {
+          setSelectedIntegration(activeIntegration);
+        }
+      }
+    }
+  };
+
+  const openIntegrationSetup = () => {
+    if (!selectedApp) return;
+    
+    const integrationName = `${selectedApp.name} Integration`;
+    const setupUrl = `/automation/integrations/setup?app_key=${selectedApp.key}&integration_name=${encodeURIComponent(integrationName)}`;
+    
+    window.open(setupUrl, 'integration_setup', 'width=600,height=700,scrollbars=yes,resizable=yes');
+  };
+
+  // Listen for integration creation from popup window
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      if (event.data.type === 'INTEGRATION_CREATED') {
+        // Refresh integrations list
+        loadIntegrations();
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, []);
+
+  const handleSave = async () => {
+    if (!selectedApp || !selectedAction) return;
+
+    try {
+      setLoading(true);
+      setError(null);
+      setValidationErrors({});
+      
+      const payload = {
+        sequence_id: sequenceId,
+        name: actionName,
+        type: 'app_action',
+        app_action_key: selectedAction.key,
+        app_name: selectedApp.name,
+        configuration: configuration,
+      };
+      
+      if (editingAction) {
+        const response = await axios.put(`/automation/actions/${editingAction.id}`, payload);
+        onActionUpdated?.(response.data.data);
+      } else {
+        const response = await axios.post(`/automation/actions`, payload);
+        onActionAdded(response.data.data);
+      }
+      
       handleClose();
     } catch (error) {
       console.error('Failed to save action:', error);
+      
+      if (axios.isAxiosError(error) && error.response?.status === 422) {
+        setValidationErrors(error.response.data.errors || {});
+      } else if (axios.isAxiosError(error)) {
+        setError(error.response?.data?.message || 'Failed to save action. Please try again.');
+      } else {
+        setError('An unexpected error occurred. Please try again.');
+      }
     } finally {
-      setCreating(false);
+      setLoading(false);
+    }
+  };
+
+  const handleTestAction = async () => {
+    if (!selectedApp || !selectedAction) return;
+
+    try {
+      setTestLoading(true);
+      setTestResult(null);
+      
+      const payload = {
+        sequence_id: sequenceId,
+        app_action_key: selectedAction.key,
+        app_name: selectedApp.name,
+        configuration: configuration,
+      };
+      
+      const response = await axios.post(`/automation/actions/test`, payload);
+      setTestResult(response.data);
+    } catch (error) {
+      console.error('Failed to test action:', error);
+      setTestResult({ error: 'Test failed' });
+    } finally {
+      setTestLoading(false);
     }
   };
 
   const handleClose = () => {
-    setStep('select-type');
-    setSelectedDiscoveredAction(null);
-    setActionName('');
-    setConfiguration({});
-    setResourceOptions({});
-    setLoadingResources({});
+    setActiveTab('setup');
+    setError(null);
+    setValidationErrors({});
     setTestResult(null);
     onClose();
-  };
-
-  const isFormValid = () => {
-    if (!selectedDiscoveredAction) return false;
-
-    return Object.entries(selectedDiscoveredAction.props)
-      .filter(([, field]) => field.required)
-      .every(([key]) => configuration[key]?.trim());
   };
 
   const isEditing = !!editingAction;
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{isEditing ? 'Edit Action' : 'Add Action'}</DialogTitle>
           <DialogDescription>
-            {isEditing
-              ? 'Modify the configuration for this action'
-              : 'Choose an action to execute when this workflow runs'
-            }
+            {isEditing ? 'Modify the configuration for this action' : 'Configure an action to execute when this workflow runs'}
           </DialogDescription>
         </DialogHeader>
 
-        {step === 'select-type' && !isEditing && (
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-medium">App Actions</h3>
-              {loadingActions && <Loader2 className="h-4 w-4 animate-spin" />}
+        {/* Error Display */}
+        {error && (
+          <div className="p-3 bg-red-50 border border-red-200 rounded-lg mb-4">
+            <div className="flex items-center space-x-2">
+              <AlertCircle className="h-4 w-4 text-red-500" />
+              <p className="text-sm text-red-700">{error}</p>
             </div>
-
-            {discoveredActions.length === 0 && !loadingActions ? (
-              <div className="text-center py-8 text-gray-500">
-                <p>No app actions available</p>
-              </div>
-            ) : (
-              <div className="space-y-6">
-                {/* Group actions by app */}
-                {Object.entries(
-                  discoveredActions.reduce((acc, action) => {
-                    if (!acc[action.app]) {
-                      acc[action.app] = [];
-                    }
-                    acc[action.app].push(action);
-                    return acc;
-                  }, {} as Record<string, DiscoveredAction[]>)
-                ).map(([appName, actions]) => (
-                  <div key={appName} className="space-y-3">
-                    <h4 className="text-sm font-medium text-gray-700 uppercase tracking-wide">
-                      {appName} Actions
-                    </h4>
-                    <div className="grid grid-cols-1 gap-3">
-                      {actions.map((action) => (
-                        <Card
-                          key={action.key}
-                          className="cursor-pointer hover:border-primary transition-colors"
-                          onClick={() => handleDiscoveredActionSelect(action)}
-                        >
-                          <CardContent className="p-4">
-                            <div className="flex items-center space-x-3">
-                              <div className="w-10 h-10 rounded-lg bg-blue-600 flex items-center justify-center text-white">
-                                <Webhook className="h-5 w-5" />
-                              </div>
-                              <div className="flex-1">
-                                <h4 className="font-medium">{action.label}</h4>
-                                <p className="text-sm text-gray-500">{action.description}</p>
-                              </div>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
           </div>
         )}
 
-        {(step === 'configure' || isEditing) && selectedDiscoveredAction && (
-          <div className="space-y-4">
-            <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white">
-                <Webhook className="h-4 w-4" />
-              </div>
-              <div>
-                <h3 className="text-lg font-medium">
-                  {isEditing ? 'Edit' : 'Configure'} {selectedDiscoveredAction.label}
-                </h3>
-                <p className="text-sm text-gray-500">{selectedDiscoveredAction.description}</p>
-                <p className="text-xs text-gray-400">App: {selectedDiscoveredAction.app}</p>
-              </div>
-            </div>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="setup">Setup</TabsTrigger>
+            <TabsTrigger value="config">Config</TabsTrigger>
+            <TabsTrigger value="test">Test</TabsTrigger>
+          </TabsList>
 
-            <Tabs defaultValue="configuration" className="w-full">
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="configuration">Configuration</TabsTrigger>
-                <TabsTrigger value="variables">Template Variables</TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="configuration" className="space-y-4">
-                <div>
-                  <Label htmlFor="action-name">Action Name</Label>
-                  <Input
-                    id="action-name"
-                    value={actionName}
-                    onChange={(e) => setActionName(e.target.value)}
-                    placeholder="Give this action a descriptive name"
-                  />
-                </div>
-
-                {selectedDiscoveredAction?.props && Object.entries(selectedDiscoveredAction.props).map(([key, field]) => (
-                  <div key={key}>
-                    <Label htmlFor={key}>
-                      {field.label}
-                      {field.required && <span className="text-red-500 ml-1">*</span>}
-                    </Label>
-
-                    {field.type === 'string' && field.dynamic ? (
-                      <div className="space-y-2">
-                        <Input
-                          id={key}
-                          value={configuration[key] || ''}
-                          onChange={(e) => handleConfigurationChange(key, e.target.value)}
-                          placeholder={`Search ${field.label.toLowerCase()}...`}
-                          onFocus={() => {
-                            if (field.dynamic) {
-                              const [resourceKey] = field.dynamic.split('.');
-                              loadResourceOptions(resourceKey);
-                            }
-                          }}
-                        />
-                        {loadingResources[field.dynamic?.split('.')[0] || ''] && (
-                          <div className="flex items-center space-x-2 text-sm text-gray-500">
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                            <span>Loading options...</span>
+          {/* Setup Tab */}
+          <TabsContent value="setup" className="space-y-4">
+            <h3 className="text-lg font-medium">Setup Action</h3>
+            
+            {/* App Selection */}
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">App *</Label>
+              {selectedApp ? (
+                <Card className="border border-blue-300 bg-blue-50">
+                  <CardContent className="p-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-3">
+                        {selectedApp.icon_url ? (
+                          <img src={selectedApp.icon_url} alt={selectedApp.name} className="w-8 h-8 rounded" />
+                        ) : (
+                          <div
+                            className="w-8 h-8 rounded flex items-center justify-center text-white font-bold text-sm"
+                            style={{ backgroundColor: selectedApp.color || '#3b82f6' }}
+                          >
+                            {selectedApp.name.charAt(0).toUpperCase()}
                           </div>
                         )}
-                        {resourceOptions[field.dynamic?.split('.')[0] || ''] && (
-                          <div className="max-h-40 overflow-y-auto border rounded-md p-2 space-y-1">
-                            {resourceOptions[field.dynamic?.split('.')[0] || ''].map((option) => (
-                              <div
-                                key={option.value}
-                                className="p-2 hover:bg-gray-100 rounded cursor-pointer text-sm"
-                                onClick={() => handleConfigurationChange(key, option.value)}
-                              >
-                                {option.label}
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    ) : field.type === 'text' ? (
-                      <Textarea
-                        id={key}
-                        value={configuration[key] || ''}
-                        onChange={(e) => handleConfigurationChange(key, e.target.value)}
-                        placeholder={`Enter ${field.label.toLowerCase()}`}
-                        rows={3}
-                        className="mt-1"
-                      />
-                    ) : field.type === 'select' ? (
-                      <select
-                        id={key}
-                        value={configuration[key] || ''}
-                        onChange={(e) => handleConfigurationChange(key, e.target.value)}
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary"
-                      >
-                        <option value="">Select {field.label}</option>
-                        {field.options?.map((option: unknown) => {
-                          const opt = option as { value: string; label: string };
-                          return (
-                            <option key={opt.value} value={opt.value}>
-                              {opt.label}
-                            </option>
-                          );
-                        })}
-                      </select>
-                    ) : (
-                      <Input
-                        id={key}
-                        type={field.type === 'email' ? 'email' : 'text'}
-                        value={configuration[key] || ''}
-                        onChange={(e) => handleConfigurationChange(key, e.target.value)}
-                        placeholder={`Enter ${field.label.toLowerCase()}`}
-                        className="mt-1"
-                      />
-                    )}
-
-                    {field.help && (
-                      <p className="text-xs text-gray-500 mt-1">{field.help}</p>
-                    )}
-                  </div>
-                ))}
-              </TabsContent>
-
-              <TabsContent value="variables" className="space-y-4">
-                <div className="bg-blue-50 p-4 rounded-lg">
-                  <div className="flex items-start space-x-2">
-                                            <Webhook className="h-5 w-5 text-blue-600 mt-0.5" />
-                    <div>
-                      <h4 className="font-medium text-blue-900">Template Variables</h4>
-                      <p className="text-sm text-blue-700 mt-1">
-                        Use these variables to make your actions dynamic. They will be replaced with actual values when the workflow runs.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="space-y-3">
-                  <div>
-                    <h5 className="font-medium text-sm">Trigger Variables</h5>
-                    <div className="space-y-1 mt-2">
-                      <div className="flex items-center justify-between p-2 bg-gray-50 rounded text-sm">
-                        <code className="text-blue-600">{'{{trigger.member_email}}'}</code>
-                        <span className="text-gray-600">Customer email address</span>
-                      </div>
-                      <div className="flex items-center justify-between p-2 bg-gray-50 rounded text-sm">
-                        <code className="text-blue-600">{'{{trigger.member_name}}'}</code>
-                        <span className="text-gray-600">Customer full name</span>
-                      </div>
-                      <div className="flex items-center justify-between p-2 bg-gray-50 rounded text-sm">
-                        <code className="text-blue-600">{'{{trigger.product_name}}'}</code>
-                        <span className="text-gray-600">Product name from order</span>
-                      </div>
-                      <div className="flex items-center justify-between p-2 bg-gray-50 rounded text-sm">
-                        <code className="text-blue-600">{'{{trigger.order_id}}'}</code>
-                        <span className="text-gray-600">Unique order identifier</span>
-                      </div>
-                      <div className="flex items-center justify-between p-2 bg-gray-50 rounded text-sm">
-                        <code className="text-blue-600">{'{{trigger.amount}}'}</code>
-                        <span className="text-gray-600">Order amount in cents</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div>
-                    <h5 className="font-medium text-sm">Step Variables</h5>
-                    <div className="space-y-1 mt-2">
-                      <div className="flex items-center justify-between p-2 bg-gray-50 rounded text-sm">
-                        <code className="text-blue-600">{'{{step_1.field_name}}'}</code>
-                        <span className="text-gray-600">Output from previous steps</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </TabsContent>
-            </Tabs>
-
-            {/* Test Section */}
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h4 className="font-medium">Test Action</h4>
-                <Button
-                  onClick={testAction}
-                  disabled={testing || !isFormValid()}
-                  variant="outline"
-                  size="sm"
-                >
-                  {testing ? (
-                    <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Testing...
-                    </>
-                  ) : (
-                    'Test Action'
-                  )}
-                </Button>
-              </div>
-
-              {testResult && (
-                <div className={`p-4 rounded-lg border ${
-                  testResult.success
-                    ? 'bg-green-50 border-green-200'
-                    : 'bg-red-50 border-red-200'
-                }`}>
-                  <div className="flex items-start space-x-2">
-                    <div className={`w-5 h-5 rounded-full flex items-center justify-center ${
-                      testResult.success ? 'bg-green-500' : 'bg-red-500'
-                    }`}>
-                      <span className="text-white text-xs font-bold">
-                        {testResult.success ? '✓' : '✗'}
-                      </span>
-                    </div>
-                    <div className="flex-1">
-                      <p className={`font-medium ${
-                        testResult.success ? 'text-green-800' : 'text-red-800'
-                      }`}>
-                        {testResult.success ? 'Test Successful!' : 'Test Failed'}
-                      </p>
-                      <p className={`text-sm ${
-                        testResult.success ? 'text-green-600' : 'text-red-600'
-                      }`}>
-                        {testResult.message}
-                      </p>
-                      {testResult.data && (
-                        <div className="mt-2 p-2 bg-gray-100 rounded text-xs">
-                          <pre className="whitespace-pre-wrap">
-                            {String(JSON.stringify(testResult.data as Record<string, unknown>, null, 2))}
-                          </pre>
+                        <div>
+                          <h4 className="font-medium text-sm">{selectedApp.name}</h4>
+                          <p className="text-xs text-gray-500">{selectedApp.description}</p>
                         </div>
-                      )}
+                      </div>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => setShowAppSelector(true)}
+                      >
+                        Change
+                      </Button>
                     </div>
-                  </div>
-                </div>
+                  </CardContent>
+                </Card>
+              ) : (
+                <Card className="border-2 border-dashed border-gray-300 hover:border-gray-400 transition-colors cursor-pointer" onClick={() => setShowAppSelector(true)}>
+                  <CardContent className="p-4">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-8 h-8 bg-gray-100 rounded flex items-center justify-center">
+                        <Webhook className="h-4 w-4 text-gray-400" />
+                      </div>
+                      <div>
+                        <p className="font-medium text-sm text-gray-700">Choose an app</p>
+                        <p className="text-xs text-gray-500">Select the app that will execute this action</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
               )}
             </div>
 
-            <div className="flex space-x-2">
-              {!isEditing && (
-                <Button onClick={() => setStep('select-type')} variant="outline" className="flex-1">
-                  Back
-                </Button>
+            {/* Action Selection */}
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Action *</Label>
+              {selectedAction ? (
+                <Card className="border border-blue-300 bg-blue-50">
+                  <CardContent className="p-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <h4 className="font-medium text-sm">{selectedAction.label}</h4>
+                        <p className="text-xs text-gray-500">{selectedAction.description}</p>
+                      </div>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => setShowActionSelector(true)}
+                        disabled={!selectedApp}
+                      >
+                        Change
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ) : (
+                <Card className={`border-2 border-dashed transition-colors ${
+                  selectedApp 
+                    ? 'border-gray-300 hover:border-gray-400 cursor-pointer' 
+                    : 'border-gray-200 cursor-not-allowed'
+                }`} onClick={() => selectedApp && setShowActionSelector(true)}>
+                  <CardContent className="p-4">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-8 h-8 bg-gray-100 rounded flex items-center justify-center">
+                        <Play className="h-4 w-4 text-gray-400" />
+                      </div>
+                      <div>
+                        <p className={`font-medium text-sm ${!selectedApp ? 'text-gray-400' : 'text-gray-700'}`}>
+                          Choose an action
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          {selectedApp ? 'Select the action to execute' : 'Select an app first'}
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
               )}
-              <Button
-                onClick={saveAction}
-                disabled={creating || !isFormValid()}
-                className={isEditing ? "w-full" : "flex-1"}
-              >
-                {creating ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    {isEditing ? 'Updating...' : 'Creating...'}
-                  </>
-                ) : (
-                  isEditing ? 'Update Action' : 'Create Action'
-                )}
-              </Button>
             </div>
-          </div>
+
+            {/* Integration Selection - SIMPLIFIED */}
+            {selectedAction && selectedAction.requires_auth && (
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Account *</Label>
+                {selectedIntegration ? (
+                  <Card className="border border-blue-300 bg-blue-50">
+                    <CardContent className="p-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-3">
+                          <User className="h-8 w-8 p-1.5 bg-blue-100 text-blue-600 rounded" />
+                          <div>
+                            <p className="text-sm font-medium text-blue-900">{selectedIntegration.name}</p>
+                            <p className="text-xs text-blue-700">
+                              {selectedIntegration.app.name} • {selectedIntegration.current_state}
+                            </p>
+                          </div>
+                        </div>
+                        <Button onClick={openIntegrationSetup} variant="outline" size="sm">
+                          <ExternalLink className="h-3 w-3 mr-1" />
+                          Edit
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <Card className="border-2 border-dashed border-gray-300 bg-gray-50 cursor-pointer hover:border-gray-400 transition-colors" onClick={openIntegrationSetup}>
+                    <CardContent className="p-3">
+                      <div className="flex items-center justify-center space-x-2 text-gray-600">
+                        <User className="h-4 w-4" />
+                        <span className="text-sm">Setup {selectedApp?.name} integration</span>
+                        <ChevronDown className="h-3 w-3" />
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
+            )}
+
+            {/* Progress Message */}
+            <div className="space-y-3">
+              {!selectedApp && (
+                <div className="text-center p-3 bg-gray-50 rounded text-sm text-gray-600">
+                  To continue, choose an app
+                </div>
+              )}
+              {selectedApp && !selectedAction && (
+                <div className="text-center p-3 bg-gray-50 rounded text-sm text-gray-600">
+                  To continue, choose an action
+                </div>
+              )}
+              {selectedApp && selectedAction && selectedAction.requires_auth && !selectedIntegration && (
+                <div className="text-center p-3 bg-orange-50 rounded text-sm text-orange-600">
+                  To continue, setup your {selectedApp.name} integration above
+                </div>
+              )}
+              {selectedApp && selectedAction && (!selectedAction.requires_auth || selectedIntegration) && (
+                <div className="text-center p-3 bg-green-50 rounded text-sm text-green-600">
+                  ✓ Setup complete! You can now configure and test your action.
+                </div>
+              )}
+            </div>
+          </TabsContent>
+
+          {/* Config Tab */}
+          <TabsContent value="config" className="space-y-6">
+            <h3 className="text-lg font-medium">Configure Action</h3>
+            
+            {/* Action Name */}
+            <div className="space-y-2">
+              <Label htmlFor="action-name">Action Name</Label>
+              <Input
+                id="action-name"
+                value={actionName}
+                onChange={(e) => setActionName(e.target.value)}
+                placeholder="Give this action a descriptive name"
+                className={validationErrors.name ? 'border-red-300' : ''}
+              />
+              {validationErrors.name && (
+                <p className="text-xs text-red-500">{validationErrors.name[0]}</p>
+              )}
+            </div>
+
+            {/* Configuration Options */}
+            <div className="space-y-4">
+              <div className="flex items-center space-x-2">
+                <Settings className="h-4 w-4 text-gray-500" />
+                <h4 className="font-medium">Configuration Options</h4>
+              </div>
+              
+              {selectedAction?.props && Object.keys(selectedAction.props).length > 0 ? (
+                <Card>
+                  <CardContent className="p-4 space-y-4">
+                    {Object.values(selectedAction.props).map((field) => (
+                                              <TriggerConfigField
+                          key={field.key}
+                          field={field}
+                          value={configuration[field.key]}
+                          onChange={(value) => setConfiguration(prev => ({ ...prev, [field.key]: value }))}
+                          appKey={selectedApp?.key || ''}
+                          integrationId={selectedIntegration?.id}
+                          error={validationErrors[field.key]?.[0]}
+                        />
+                    ))}
+                  </CardContent>
+                </Card>
+              ) : (
+                <Card>
+                  <CardContent className="p-4">
+                    <div className="text-center py-8 text-gray-500">
+                      <Settings className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                      <p className="text-lg font-medium">No configuration required</p>
+                      <p className="text-sm">This action doesn't need any additional configuration</p>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          </TabsContent>
+
+          {/* Test Tab */}
+          <TabsContent value="test" className="space-y-6">
+            <h3 className="text-lg font-medium">Test Action</h3>
+            
+            <div className="space-y-4">
+              <Card>
+                <CardContent className="p-4">
+                  <div className="text-center space-y-4">
+                    <TestTube className="h-12 w-12 mx-auto text-blue-500" />
+                    <div>
+                      <h4 className="font-medium">Test Your Action</h4>
+                      <p className="text-sm text-gray-500 mt-1">
+                        Run a test to verify your action is working correctly
+                      </p>
+                    </div>
+                    <Button 
+                      onClick={handleTestAction} 
+                      disabled={testLoading}
+                      className="w-full"
+                    >
+                      {testLoading ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Testing...
+                        </>
+                      ) : (
+                        <>
+                          <Play className="h-4 w-4 mr-2" />
+                          Run Test
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Test Results */}
+              {testResult && (
+                <Card>
+                  <CardContent className="p-4">
+                    <h4 className="font-medium mb-3">Test Results</h4>
+                    {testResult.error ? (
+                      <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                        <div className="flex items-center space-x-2">
+                          <AlertCircle className="h-4 w-4 text-red-500" />
+                          <p className="text-sm text-red-700">Test failed: {testResult.error}</p>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                        <div className="flex items-center space-x-2">
+                          <div className="h-4 w-4 text-green-500">✓</div>
+                          <p className="text-sm text-green-700">Test completed successfully!</p>
+                        </div>
+                        <pre className="mt-2 text-xs bg-white p-2 rounded border overflow-auto">
+                          {JSON.stringify(testResult, null, 2)}
+                        </pre>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          </TabsContent>
+        </Tabs>
+
+        {/* Save Button */}
+        <div className="flex justify-end pt-4 border-t">
+          <Button onClick={handleSave} disabled={loading || !selectedApp || !selectedAction}>
+            {loading ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                {isEditing ? 'Updating...' : 'Creating...'}
+              </>
+            ) : (
+              isEditing ? 'Update Action' : 'Create Action'
+            )}
+          </Button>
+        </div>
+
+        {/* App Selector Modal */}
+        {showAppSelector && (
+          <Dialog open={showAppSelector} onOpenChange={setShowAppSelector}>
+            <DialogContent className="max-w-2xl">
+              <DialogHeader>
+                <DialogTitle>Choose App</DialogTitle>
+                <DialogDescription>
+                  Select the app that will execute this action.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {apps.map((app) => (
+                  <Card
+                    key={app.id}
+                    className={`cursor-pointer transition-colors ${
+                      selectedApp?.id === app.id ? 'border-blue-500 bg-blue-50' : 'hover:border-gray-300'
+                    }`}
+                    onClick={() => handleAppSelect(app)}
+                  >
+                    <CardContent className="p-3">
+                      <div className="flex items-center space-x-3">
+                        {app.icon_url ? (
+                          <img src={app.icon_url} alt={app.name} className="w-8 h-8 rounded-lg" />
+                        ) : (
+                          <div
+                            className="w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold"
+                            style={{ backgroundColor: app.color || '#3b82f6' }}
+                          >
+                            {app.name.charAt(0).toUpperCase()}
+                          </div>
+                        )}
+                        <div className="flex-1">
+                          <h4 className="font-medium text-sm">{app.name}</h4>
+                          <p className="text-xs text-gray-500">{app.description}</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+              <div className="flex justify-end pt-4">
+                <Button onClick={() => setShowAppSelector(false)} variant="outline">
+                  Cancel
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+        )}
+
+        {/* Action Selector Modal */}
+        {showActionSelector && (
+          <Dialog open={showActionSelector} onOpenChange={setShowActionSelector}>
+            <DialogContent className="max-w-2xl">
+              <DialogHeader>
+                <DialogTitle>Choose Action</DialogTitle>
+                <DialogDescription>
+                  Select the action to execute.
+                </DialogDescription>
+              </DialogHeader>
+              {selectedApp ? (
+                <div className="space-y-2">
+                  {selectedApp.actions?.map((action) => (
+                    <Card
+                      key={action.key}
+                      className={`cursor-pointer transition-colors ${
+                        selectedAction?.key === action.key ? 'border-blue-500 bg-blue-50' : 'hover:border-gray-300'
+                      }`}
+                      onClick={() => handleActionSelect(action)}
+                    >
+                      <CardContent className="p-3">
+                        <div className="flex items-center justify-between">
+                          <div className="flex-1">
+                            <h4 className="font-medium text-sm">{action.label}</h4>
+                            <p className="text-xs text-gray-500">{action.description}</p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center p-4 bg-gray-50 rounded-lg">
+                  <p className="text-sm text-gray-600">Please select an app first.</p>
+                </div>
+              )}
+              <div className="flex justify-end pt-4">
+                <Button onClick={() => setShowActionSelector(false)} variant="outline">
+                  Cancel
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
         )}
       </DialogContent>
     </Dialog>

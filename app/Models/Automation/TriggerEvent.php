@@ -6,6 +6,20 @@ use App\Models\Integration;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
+/**
+ * @property int $id
+ * @property int $trigger_id
+ * @property int|null $integration_id
+ * @property string $event_source
+ * @property array $event_data
+ * @property array|null $metadata
+ * @property \Carbon\Carbon|null $processed_at
+ * @property int|null $workflow_execution_id
+ * @property string $status
+ * @property string|null $error_message
+ * @property \Carbon\Carbon $created_at
+ * @property \Carbon\Carbon $updated_at
+ */
 class TriggerEvent extends Model
 {
     protected $table = 'trigger_events';
@@ -14,6 +28,7 @@ class TriggerEvent extends Model
 
     protected $casts = [
         'event_data' => 'json',
+        'event_raw' => 'json',
         'metadata' => 'json',
         'processed_at' => 'datetime',
     ];

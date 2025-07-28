@@ -7,6 +7,7 @@ import { TutorialCard } from '@/components/onboarding/TutorialCard';
 
 interface Integration {
   id: number;
+  uuid: string;
   lookup_key: string;
   type: string;
   organization_id: number;
@@ -88,7 +89,7 @@ export default function Integrate({ integrations, showIntegrationsTutorial }: In
                   <div className="flex items-center justify-between">
                     <div className="flex items-center">
                       <div className="ml-4">
-                        <Link href={`/integrations/${integration.id}`} className="hover:underline">
+                        <Link href={`/integrations/${integration.uuid}`} className="hover:underline">
                           <h3 className="text-lg font-medium text-gray-900 dark:text-white">
                             {integration.name || integration.type}
                           </h3>

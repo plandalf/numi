@@ -3,12 +3,12 @@
 namespace App\Apps\Kajabi\Actions;
 
 use App\Models\Integration;
-use App\Workflows\Attributes\Action;
+use App\Workflows\Attributes\IsAction;
 use App\Workflows\Automation\AppAction;
 use App\Workflows\Automation\Bundle;
 use App\Workflows\Automation\Field;
 
-#[Action(
+#[IsAction(
     key: 'create_contact_tag',
     noun: 'Contact Tag',
     label: 'Create Contact Tag',
@@ -21,7 +21,10 @@ class CreateContactTag extends AppAction
     {
         return [
             Field::string('name', 'Tag Name')->required()->help('The tag\'s name.'),
-            Field::string('contact', 'Contact ID')->required()->help('The ID of the contact to tag.'),
+            Field::string('contact', 'Contact')
+                ->dynamic('contact.id,name')
+                ->required()
+                ->help('the contact to tag'),
         ];
     }
 

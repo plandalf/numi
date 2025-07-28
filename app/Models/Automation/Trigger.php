@@ -11,33 +11,25 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Str;
 
 /**
- *
- *  hooks/catch/123456/zbB61
- * // hooks/catch/{org-id}/trigger-sqid
- *
- * @property Node $nextNode
- *
  * @property int $id
  * @property int $sequence_id
- *
- * @property string $name
+ * @property string|null $name
  * @property string $trigger_type
- * @property int $integration_id
- * @property string $trigger_key
- * @property int $configuration
- * @property int $conditions
- *
- * // todo : just use endpoint
- * @property string $webhook_url
- *
- * @property int $metadata
- * @property int $is_active
- * @property int $last_triggered_at
+ * @property int|null $integration_id
+ * @property string|null $trigger_key
+ * @property array|null $configuration
+ * @property array|null $conditions
+ * @property string|null $webhook_url
+ * @property string|null $webhook_secret
+ * @property array|null $webhook_auth_config
+ * @property bool $is_active
+ * @property \Carbon\Carbon|null $last_triggered_at
  * @property int $trigger_count
- * @property int $next_node_id
- * @property int $created_at
- * @property int $updated_at
- * @property Organization $organization
+ * @property array|null $metadata
+ * @property \Carbon\Carbon $created_at
+ * @property \Carbon\Carbon $updated_at
+ *
+ * @property Sequence $sequence
  */
 class Trigger extends Model
 {

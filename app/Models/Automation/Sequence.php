@@ -11,6 +11,16 @@ use Illuminate\Database\Eloquent\Model;
  * @property Collection<Edge> $edges
  * @property Trigger $trigger
  * @property string $name
+ * @property string|null $description
+ * @property bool $is_active
+ * @property bool $is_template
+ * @property array|null $metadata
+ * @property array|null $settings
+ * @property int|null $created_by
+ * @property \Carbon\Carbon|null $last_run_at
+ * @property int $run_count
+ * @property \Carbon\Carbon $created_at
+ * @property \Carbon\Carbon $updated_at
  */
 class Sequence extends Model
 {

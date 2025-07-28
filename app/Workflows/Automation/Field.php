@@ -10,6 +10,7 @@ class Field
     protected bool $required = false;
     protected ?string $help = null;
     protected bool $dynamic = false;
+    protected bool $multiple = false;
     protected ?string $dynamicSource = null;
     protected mixed $default = null;
     protected array $options = [];
@@ -164,5 +165,12 @@ class Field
         }
 
         return $field;
+    }
+
+    public function multiple(): self
+    {
+        $this->multiple = true;
+
+        return $this;
     }
 }

@@ -350,12 +350,7 @@ class ProcessOrderWorkflow extends Workflow
 
 namespace App\Workflows\Automation;
 
-use Workflow\Workflow;
-use Workflow\ActivityStub;
-use Workflow\WorkflowStub;
-use App\Models\Sequence;
-use App\Models\WorkflowExecution;
-use App\Models\WorkflowStep;
+use App\Models\Sequence;use App\Models\WorkflowExecution;use App\Models\WorkflowStep;use App\Workflows\Automation\NodeActivities\ActionActivity;use Workflow\ActivityStub;use Workflow\Workflow;
 
 class RunSequenceWorkflow extends Workflow
 {
@@ -386,7 +381,7 @@ class RunSequenceWorkflow extends Workflow
                 // Execute based on node type
                 $stepResult = match($node->type) {
                     'action' => yield ActivityStub::make(
-                        AppActionActivity::class,
+                        ActionActivity::class,
                         ['node' => $node, 'input' => $currentData, 'step' => $step]
                     ),
                     'condition' => yield ActivityStub::make(
@@ -444,7 +439,7 @@ class RunSequenceWorkflow extends Workflow
         
         foreach ($node->parallelNodes as $parallelNode) {
             $activities[] = ActivityStub::make(
-                AppActionActivity::class,
+                ActionActivity::class,
                 ['node' => $parallelNode, 'input' => $currentData]
             );
         }

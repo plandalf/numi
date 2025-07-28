@@ -5,7 +5,7 @@ namespace App\Apps\Plandalf\Actions;
 use App\Workflows\Automation\AppAction;
 use App\Workflows\Automation\Bundle;
 
-#[\App\Workflows\Attributes\Action(
+#[\App\Workflows\Attributes\IsAction(
     key: 'send-webhook',
     noun: 'Webhook',
     label: 'Send Webhook',

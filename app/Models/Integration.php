@@ -20,6 +20,15 @@ use Illuminate\Support\Arr;
  * @property string $secret
  * @property array $config
  * @property string $current_state
+ * @property int|null $app_id
+ * @property string|null $webhook_url
+ * @property string|null $webhook_secret
+ * @property array|null $connection_config
+ * @property \Carbon\Carbon|null $last_sync_at
+ * @property array|null $sync_errors
+ * @property \Carbon\Carbon $created_at
+ * @property \Carbon\Carbon $updated_at
+ * @property \Carbon\Carbon|null $deleted_at
  */
 class Integration extends Model
 {
@@ -44,6 +53,7 @@ class Integration extends Model
         'current_state',
         'environment',
         'app_id',
+        'connection_config',
     ];
 
     /**
