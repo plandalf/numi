@@ -1,6 +1,6 @@
 import { Head } from '@inertiajs/react';
 import {
-  GlobalStateProvider, layoutConfig,
+  GlobalStateProvider,
   LoadingError,
   NavigationProvider, PageNotFound, Section,
   useCheckoutState,
@@ -12,9 +12,8 @@ import { CheckoutPageProps, CheckoutSession, NavigationBarProps, TailwindLayoutR
 import { findUniqueFontsFromTheme, findUniqueFontsFromView } from '@/utils/font-finder';
 import WebFont from 'webfontloader';
 import { Theme } from '@/types/theme';
-import { resolveThemeValue } from '@/lib/theme';
 import { ChevronLeftIcon } from 'lucide-react';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { sendMessage } from '@/utils/sendMessage';
 import { OnInit } from '@/events/OnInit';
@@ -30,7 +29,7 @@ const generateMetaTags = (offer: OfferConfiguration) => {
   const imageUrl = offer.product_image?.url;
   const themeColor = offer.theme?.primary_color || offer.organization?.primary_color || '#3B82F6';
   const currentUrl = typeof window !== 'undefined' ? window.location.href : '';
-  
+
   // Use organization info if available, fallback to Numi
   const organizationName = offer.organization?.name || 'Plandalf';
   const organizationDescription = offer.organization?.description || 'Secure checkout platform';
@@ -84,7 +83,6 @@ export const NavigationBar = ({ children, className, ...props }: NavigationBarPr
   function onBack() {
     goToPrevPage();
   }
-  console.log('navbar', { className   });
 
   return (
     <div className={`${className} flex flex-row items-center`} {...props}>
@@ -177,7 +175,6 @@ const renderElement = (
       const hidden = section?.style?.hidden;
       const borderRadius = section?.style?.borderRadius;
 
-      console.log('spacing', spacing);
       if (!element) return null;
 
       // Render the section with its blocks
@@ -251,6 +248,27 @@ const CheckoutController = ({ offer, session }: { offer: OfferConfiguration, ses
     setSubmitError,
     submitPage,
   } = useCheckoutState();
+
+  // Separate state for toast visibility
+  const [showErrorToast, setShowErrorToast] = useState(false);
+
+  // Show toast when submitError changes
+  useEffect(() => {
+    if (submitError) {
+      setShowErrorToast(true);
+    }
+  }, [submitError]);
+
+  // Auto-hide toast after 3 seconds (but keep submitError state)
+  useEffect(() => {
+    if (showErrorToast) {
+      const timer = setTimeout(() => {
+        setShowErrorToast(false);
+      }, 3000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [showErrorToast]);
 
   const isMobile = useIsMobile();
 
@@ -337,6 +355,10 @@ const CheckoutController = ({ offer, session }: { offer: OfferConfiguration, ses
       sendMessage(new PaymentInitialized(session));
     }
 
+    if (currentPage === 'ending' && session.order?.id) {
+      // sendMessage(new CheckoutCompleted(session.order));
+    }
+
     sendMessage(new PageChanged(currentPage.id));
   }, [currentPage]);
 
@@ -352,8 +374,8 @@ const CheckoutController = ({ offer, session }: { offer: OfferConfiguration, ses
   return (
     <>
       {/* Fixed error toast */}
-      {submitError && (
-        <div className="fixed top-4 right-4 z-50 max-w-md">
+      {showErrorToast && submitError && (
+        <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-50 max-w-md">
           <div className="bg-red-50 border border-red-200 rounded-md shadow-lg p-4">
             <div className="flex items-start">
               <div className="flex-shrink-0">
@@ -368,7 +390,7 @@ const CheckoutController = ({ offer, session }: { offer: OfferConfiguration, ses
                 <button
                   type="button"
                   className="inline-flex text-red-400 hover:text-red-500"
-                  onClick={() => setSubmitError(null)}
+                  onClick={() => setShowErrorToast(false)}
                 >
                   <span className="sr-only">Dismiss</span>
                   <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
@@ -402,16 +424,7 @@ const CheckoutController = ({ offer, session }: { offer: OfferConfiguration, ses
 
 
 export default function CheckoutPage({ offer, fonts, error, checkoutSession }: CheckoutPageProps) {
-
-  if (error) {
-    return <LoadingError error={error}/>;
-  }
-
   const firstPage = offer.view.pages[offer.view.first_page];
-
-  if (!firstPage) {
-    return <PageNotFound/>;
-  }
 
   // Find and load all unique fonts
   const viewFonts = findUniqueFontsFromView(offer.view);
@@ -450,32 +463,37 @@ export default function CheckoutPage({ offer, fonts, error, checkoutSession }: C
   useEffect(() => {
     sendMessage(new OnInit(checkoutSession));
   }, []);
-
-  console.log('offer', offer);
-
   const metaTags = generateMetaTags(offer);
+
+  if (!firstPage) {
+    return <PageNotFound/>;
+  }
+
+  if (error) {
+    return <LoadingError error={error}/>;
+  }
 
   return (
     <>
       <Head>
         <title>{metaTags.title}</title>
-        
+
         {/* Basic Meta Tags */}
         <meta name="description" content={metaTags.description} />
         <meta name="keywords" content="checkout, payment, purchase, secure" />
         <meta name="author" content={metaTags.organizationName} />
         <meta name="robots" content="noindex, nofollow" />
-        
+
         {/* Favicon */}
         {metaTags.organizationFavicon && <link rel="icon" href={metaTags.organizationFavicon} />}
-        
+
         {/* Open Graph Meta Tags for Social Media */}
         <meta property="og:title" content={metaTags.title} />
         <meta property="og:description" content={metaTags.description} />
         <meta property="og:type" content="website" />
         <meta property="og:url" content={metaTags.currentUrl} />
         <meta property="og:site_name" content={`${metaTags.organizationName} Checkout`} />
-        
+
         {/* Open Graph Image */}
         {offer.social_image?.url && (
           <meta property="og:image" content={offer.social_image?.url} />
@@ -483,7 +501,7 @@ export default function CheckoutPage({ offer, fonts, error, checkoutSession }: C
         <meta property="og:image:width" content="1200" />
         <meta property="og:image:height" content="630" />
         <meta property="og:image:alt" content={offer.name || 'Offer Image'} />
-        
+
         {/* Twitter Card Meta Tags */}
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content={metaTags.title} />
@@ -501,38 +519,43 @@ export default function CheckoutPage({ offer, fonts, error, checkoutSession }: C
         ) : metaTags.organizationLogo ? (
           <meta name="twitter:image" content={metaTags.organizationLogo} />
         ) : null} */}
-        
+
         {/* Security and Privacy Meta Tags */}
         <meta name="referrer" content="strict-origin-when-cross-origin" />
         <meta httpEquiv="X-Content-Type-Options" content="nosniff" />
         <meta httpEquiv="X-Frame-Options" content="DENY" />
         <meta httpEquiv="X-XSS-Protection" content="1; mode=block" />
-        
+
         {/* Viewport and Mobile Meta Tags */}
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <meta name="apple-mobile-web-app-title" content={`${metaTags.organizationName} Checkout`} />
-        
+
         {/* Theme and Color Meta Tags */}
         <meta name="theme-color" content={metaTags.themeColor} />
         <meta name="msapplication-TileColor" content={metaTags.themeColor} />
         <meta name="msapplication-config" content="/browserconfig.xml" />
-        
+
         {/* Canonical URL */}
         <link rel="canonical" href={metaTags.currentUrl} />
-        
+
         {/* Preconnect to external domains for performance */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        
+
         {/* Structured Data for SEO */}
         <script type="application/ld+json">
           {JSON.stringify(metaTags.structuredData)}
         </script>
       </Head>
       <GlobalStateProvider offer={offer} session={checkoutSession} offerItems={offer.items}>
+        {checkoutSession.is_test_mode && (
+          <div className="bg-yellow-50 text-yellow-700 border-b border-yellow-200">
+            <p className="text-sm text-center py-1 font-semibold">You are in test mode. No real transactions will occur.</p>
+          </div>
+        )}
         <NavigationProvider>
           <div className="min-h-screen bg-gray-50 flex flex-col gap-4 justify-center items-center" style={containerStyle}>
             {error ? (
@@ -542,7 +565,7 @@ export default function CheckoutPage({ offer, fonts, error, checkoutSession }: C
                 </div>
               </div>
             ) : (
-                <CheckoutController offer={offer} session={checkoutSession} />
+              <CheckoutController offer={offer} session={checkoutSession} />
             )}
           </div>
         </NavigationProvider>

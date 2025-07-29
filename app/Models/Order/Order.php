@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use App\Models\Organization;
+use Illuminate\Support\Facades\URL;
 
 /**
  * @property DBCollection<OrderItem> $items
@@ -22,6 +23,13 @@ use App\Models\Organization;
  * @property array  $fulfillment_config
  * @property Carbon $fulfillment_notified
  * @property Carbon $fulfillment_notified_at
+ * @property \App\Enums\OrderStatus $status
+ * @property \Illuminate\Support\Carbon $completed_at
+ * @property Customer|null $customer
+ * @property int|null $customer_id
+ * @property int $organization_id
+ * @property CheckoutSession $checkoutSession
+ * @property float $total_amount
  */
 class Order extends Model
 {
@@ -35,17 +43,18 @@ class Order extends Model
      * @var array<int, string>
      */
     protected $fillable = [
-        'uuid',
-        'checkout_session_id',
+        'organization_id',
+        'customer_id',
         'status',
         'currency',
-        'redirect_url',
-        'completed_at',
-        'organization_id',
-        'fulfillment_method',
-        'fulfillment_config',
-        'fulfillment_notified',
-        'fulfillment_notified_at',
+        'subtotal',
+        'tax_amount',
+        'total_amount',
+        'intent_id',
+        'intent_type',
+        'payment_id',
+        'payment_method_id',
+        'checkout_session_id',
     ];
 
     /**
@@ -127,6 +136,14 @@ class Order extends Model
     }
 
     /**
+     * Get the signed receipt URL for this order.
+     */
+    public function getReceiptUrl(): string
+    {
+        return URL::signedRoute('orders.receipt', ['uuid' => $this->uuid]);
+    }
+
+    /**
      * Calculate the total amount for the order based on its items.
      *check
      */
@@ -135,6 +152,7 @@ class Order extends Model
         $subtotal = $this->items->sum('total_amount');
 
         $discounts = $this->checkoutSession->discounts;
+
         if (empty($discounts)) {
             return $subtotal;
         }
@@ -192,5 +210,39 @@ class Order extends Model
             'pending_items' => $pendingItems + $partiallyFulfilledItems,
             'unprovisionable_items' => $unprovisionableItems,
         ];
+    }
+
+    public function setIntent(mixed $id, string $type, ?array $metadata = [])
+    {
+        $this->intent_id = $id;
+        $this->intent_type = $type;
+    }
+    //intent_id
+    //intent_type
+    //payment_id
+    //payment_method_id
+
+    /**
+     * Get the payment method for this order.
+     */
+    public function paymentMethod(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\PaymentMethod::class);
+    }
+
+    /**
+     * Get the transaction ID.
+     */
+    public function getTransactionIdAttribute(): ?string
+    {
+        return $this->payment_id;
+    }
+
+    /**
+     * Check if the order has payment information stored.
+     */
+    public function hasPaymentInformation(): bool
+    {
+        return !empty($this->payment_id);
     }
 }

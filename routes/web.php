@@ -9,6 +9,7 @@ use App\Http\Controllers\MediaController;
 use App\Http\Controllers\NoAccessController;
 use App\Http\Controllers\OfferItemsController;
 use App\Http\Controllers\OffersController;
+use App\Http\Controllers\OrderStatusController;
 use App\Http\Controllers\OrganizationController;
 use App\Http\Controllers\PriceController;
 use App\Http\Controllers\ProductsController;
@@ -117,19 +118,40 @@ Route::middleware(['frame-embed'])->group(function () {
         ->name('checkouts.show');
 });
 
+Route::middleware(['frame-embed'])
+    ->group(function () {
+        // Init new checkout
+        Route::get('/o/{offer}/{environment?}', [CheckoutController::class, 'initialize'])
+            ->name('offers.show')
+            ->where('environment', 'live|test');
+
+        // Show checkout
+        Route::get('/checkout/{checkout}', [CheckoutController::class, 'show'])
+            ->name('checkouts.show');
+
+        Route::get('/checkout/{session}/callback', [CheckoutController::class, 'callback'])
+            ->name('checkout.redirect.callback');
+
+        Route::post('/checkouts/{checkoutSession}/mutations', [CheckoutSessionController::class, 'storeMutation'])
+            ->name('checkouts.mutations.store');
+
+        Route::get('/order-status/{order}', OrderStatusController::class)
+            ->name('order-status.show')
+            ->middleware('signed');
+    });
+
 // Social image generation route (signed URL required)
 Route::get('/social-image/{offer}', [\App\Http\Controllers\SocialImageController::class, 'generate'])
     ->name('social-image.generate');
-    // ->middleware(['signed']);
 
-Route::post('/checkouts/{checkoutSession}/mutations', [CheckoutSessionController::class, 'storeMutation'])
-    ->name('checkouts.mutations.store');
+// Internal route to generate signed order status URL for admins
+Route::get('/admin/order-status/{order}/public', [OrderStatusController::class, 'generatePublicUrl'])
+    ->name('order-status.public-url')
+    ->middleware(['auth', 'organization']);
 
 Route::middleware(['auth', 'verified'])->group(function () {
     // No access route
     Route::get('/no-access', [NoAccessController::class, '__invoke'])->name('no-access');
-
-    Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     // Organization setup route - no organization middleware
     Route::get('/organizations/setup', function () {
@@ -192,28 +214,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('products/{product}/prices/import', [PriceController::class, 'import'])->name('products.prices.import');
         Route::resource('products.prices', PriceController::class);
 
-        // Offers routes
-        Route::resource('offers', OffersController::class)->except(['show', 'create']);
-
-        Route::prefix('offers/{offer}')->name('offers.')->group(function () {
-            Route::get('pricing', [OffersController::class, 'pricing'])->name('pricing');
-            Route::put('theme', [OffersController::class, 'updateTheme'])->name('update.theme');
-            // Offer items resource
-            Route::resource('items', OfferItemsController::class)->names('items');
-            Route::put('items/{item}/prices/{price}', [OfferItemPriceController::class, 'update'])->name('items.prices.update');
-            Route::get('integrate', [OffersController::class, 'integrate'])->name('integrate');
-            Route::post('publish', [OffersController::class, 'publish'])->name('publish');
-            Route::put('duplicate', [OffersController::class, 'duplicate'])->name('duplicate');
-        });
-
-        // Templates routes
-        Route::get('/templates', [TemplateController::class, 'index'])->name('templates.index');
-        Route::post('/templates', [TemplateController::class, 'store'])->name('templates.store');
-        Route::put('/templates/{template}', [TemplateController::class, 'update'])->name('templates.update');
-        Route::post('/templates/{template}/use', [TemplateController::class, 'useTemplate'])->name('templates.use');
-        Route::post('/templates/request', [TemplateController::class, 'requestTemplate'])->name('templates.request');
-
-        // Integrations routes (specific routes first to avoid conflicts)
         Route::get('/integrations/{integrationType}/callback', [IntegrationsController::class, 'callback']);
         Route::post('/integrations/{integrationType}/authorizations', [IntegrationsController::class, 'authorizeIntegration']);
         Route::get('/integrations/{integration}/products', [IntegrationsController::class, 'products'])->name('integrations.products');
@@ -233,6 +233,30 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::get('/info', [OnboardingController::class, 'getInfoStatus'])->name('info.index');
             Route::post('/info/{infoKey}/seen', [OnboardingController::class, 'markInfoSeen'])->name('info.seen');
         });
+
+        // Offers routes
+        Route::resource('offers', OffersController::class)->except(['show', 'create']);
+
+        Route::prefix('offers/{offer}')->name('offers.')->group(function () {
+            Route::get('pricing', [OffersController::class, 'pricing'])->name('pricing');
+
+            Route::put('theme', [OffersController::class, 'updateTheme'])->name('update.theme');
+
+            // Add offerItem routes
+            Route::resource('items', OfferItemsController::class)->names('items');
+            Route::put('items/{item}/prices/{price}', [OfferItemPriceController::class, 'update'])->name('items.prices.update');
+
+            Route::get('integrate', [OffersController::class, 'integrate'])->name('integrate');
+            Route::post('publish', [OffersController::class, 'publish'])->name('publish');
+            Route::put('duplicate', [OffersController::class, 'duplicate'])->name('duplicate');
+        });
+
+        Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
+        Route::get('/templates', [TemplateController::class, 'index'])->name('templates.index');
+        Route::post('/templates', [TemplateController::class, 'store'])->name('templates.store');
+        Route::put('/templates/{template}', [TemplateController::class, 'update'])->name('templates.update');
+        Route::post('/templates/{template}/use', [TemplateController::class, 'useTemplate'])->name('templates.use');
+        Route::post('/templates/request', [TemplateController::class, 'requestTemplate'])->name('templates.request');
 
         // Media Upload Route
         Route::post('media', [MediaController::class, 'store'])->name('media.store');
@@ -289,11 +313,22 @@ Route::prefix('webhooks')->name('webhooks.')->group(function () {
         ->where('trigger_uuid', '[0-9a-f-]{36}');
 });
 
-// Feedback route
-Route::post('feedback', [FeedbackController::class, 'store'])->name('feedback.store');
+Route::post('/feedback', [FeedbackController::class, 'submit'])->name('feedback.submit');
 
-// Authentication routes
-require __DIR__.'/auth.php';
+Route::get('/orders/{uuid}/receipt', [App\Http\Controllers\OrderController::class, 'receipt'])
+    ->name('orders.receipt')
+    ->middleware('signed');
+
+// Test route for receipt generation (remove in production)
+Route::get('/test-receipt/{uuid}', function($uuid) {
+    $order = \App\Models\Order\Order::where('uuid', $uuid)->first();
+    if (!$order) {
+        return 'Order not found';
+    }
+    return redirect($order->getReceiptUrl());
+})->name('test.receipt');
+
+
 
 // Impersonation routes - LOCAL DEVELOPMENT ONLY
 if (app()->environment('local')) {

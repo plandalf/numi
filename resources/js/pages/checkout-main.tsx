@@ -298,7 +298,6 @@ export function GlobalStateProvider({ offer, offerItems, session: defaultSession
 
   const submitPage = async (pageId: string): Promise<boolean> => {
     try {
-      console.log('submitPage', pageId)
       setSubmitting(true);
       setSubmitError(null);
 
@@ -306,8 +305,9 @@ export function GlobalStateProvider({ offer, offerItems, session: defaultSession
       const currentPage = offer.view.pages[pageId];
       const action = currentPage.type === 'payment' ? 'commit' : 'setFields';
       const nextPageId = handleNavigationLogic(currentPage, fields);
+      console.log('submitPage', { pageId, action, nextPageId });
 
-      const params: Record<string, any> = {
+      let params: Record<string, any> = {
         action,
         metadata: {
           fields: fieldStates,
@@ -318,12 +318,21 @@ export function GlobalStateProvider({ offer, offerItems, session: defaultSession
 
       if (action === 'commit') {
         const body = (await submissionProps?.() ?? {}) as { error?: string, confirmation_token?: string };
+
+        console.log('action-submit', { body });
+
+        if (body.type && body.type === 'intercept') {
+          console.log("INTERCEPTING SUBMISSION");
+          setSubmitError(body.error);
+          return false;
+        }
+
         if (body.error) {
           setSubmitError(body.error);
           return false;
         }
 
-        params.confirmation_token = body.confirmation_token;
+        params = { ...params, ...body };
       }
 
       // Use Axios instead of fetch
@@ -334,31 +343,38 @@ export function GlobalStateProvider({ offer, offerItems, session: defaultSession
         return false;
       }
 
-      if (action === 'commit') {
+      if (action === 'commit' && response.data?.checkout_session) {
         sendMessage(new CheckoutSuccess(response.data.checkout_session));
       }
 
-      if(!nextPageId) {
+      if (!nextPageId) {
         // Check for redirect_url in URL params
         const urlParams = new URLSearchParams(window.location.search);
-        const redirectUrl = urlParams.get('redirect_url'); // TODO: append the checkout session token to the redirect url
+        const redirectUrl = urlParams.get('redirect_url');
+        // TODO: append the checkout session token to the redirect url
         if (redirectUrl) {
           window.location.href = redirectUrl;
           return true;
         }
       }
 
+      setSubmitting(false);
 
       return true;
     } catch (error) {
+
+      console.error('checkout-main@submitPage error:', error);
+
       if (axios.isAxiosError(error)) {
         setSubmitError(error.response?.data?.message || 'Failed to submit page');
       } else {
         setSubmitError('An unexpected error occurred');
       }
+      setSubmitting(false);
+
       return false;
     } finally {
-      setSubmitting(false);
+      console.log("FINALLY BRUH");
     }
   };
 
@@ -378,7 +394,7 @@ export function GlobalStateProvider({ offer, offerItems, session: defaultSession
 
 
     if (response.status === 200) {
-      sendMessage(new CheckoutResized());
+      // sendMessage(new CheckoutResized());
       setSession(response.data);
     }
 

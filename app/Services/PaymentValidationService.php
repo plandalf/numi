@@ -173,4 +173,121 @@ class PaymentValidationService
             'error_details' => $errorDetails,
         ];
     }
+
+    /**
+     * Validate a confirmed payment from JIT flow
+     *
+     * @param  \App\Models\Checkout\CheckoutSession  $checkoutSession
+     */
+    public function validateConfirmedPayment($checkoutSession): array
+    {
+        $isValid = true;
+        $errorType = null;
+        $errorMessage = null;
+        $errorDetails = null;
+
+        // Check if checkout session has confirmed payment
+        if (!$checkoutSession->payment_confirmed_at || !$checkoutSession->intent_id) {
+            return [
+                'is_valid' => false,
+                'error_type' => 'payment_not_confirmed',
+                'error_message' => 'Payment has not been confirmed',
+                'error_details' => [
+                    'payment_confirmed_at' => $checkoutSession->payment_confirmed_at,
+                    'intent_id' => $checkoutSession->intent_id,
+                ],
+            ];
+        }
+
+        // Get the integration client to retrieve the intent
+        $integrationClient = $checkoutSession->integrationClient();
+        if (!$integrationClient) {
+            return [
+                'is_valid' => false,
+                'error_type' => 'integration_not_found',
+                'error_message' => 'Payment integration not found',
+                'error_details' => [
+                    'checkout_session_id' => $checkoutSession->id,
+                ],
+            ];
+        }
+
+        try {
+            // Retrieve the intent from Stripe to verify its status
+            $intent = $integrationClient->retrieveIntent($checkoutSession->intent_id, $checkoutSession->intent_type);
+            
+            if (!$intent) {
+                return [
+                    'is_valid' => false,
+                    'error_type' => 'intent_not_found',
+                    'error_message' => 'Payment intent not found',
+                    'error_details' => [
+                        'intent_id' => $checkoutSession->intent_id,
+                        'intent_type' => $checkoutSession->intent_type,
+                    ],
+                ];
+            }
+
+            // Check intent status based on type
+            if ($checkoutSession->intent_type === 'payment') {
+                // For PaymentIntents, check if payment succeeded
+                if ($intent->status !== 'succeeded' && $intent->status !== 'processing') {
+                    $isValid = false;
+                    $errorType = 'payment_failed';
+                    $errorMessage = 'Payment was not successful';
+                    $errorDetails = [
+                        'intent_id' => $intent->id,
+                        'status' => $intent->status,
+                        'intent_type' => 'payment',
+                    ];
+                }
+            } elseif ($checkoutSession->intent_type === 'setup') {
+                // For SetupIntents, check if setup succeeded
+                if ($intent->status !== 'succeeded') {
+                    $isValid = false;
+                    $errorType = 'setup_failed';
+                    $errorMessage = 'Payment method setup was not successful';
+                    $errorDetails = [
+                        'intent_id' => $intent->id,
+                        'status' => $intent->status,
+                        'intent_type' => 'setup',
+                    ];
+                }
+            }
+
+            // If payment is valid, log success
+            if ($isValid) {
+                Log::info('JIT: Confirmed payment validation successful', [
+                    'checkout_session_id' => $checkoutSession->id,
+                    'intent_id' => $intent->id,
+                    'intent_type' => $checkoutSession->intent_type,
+                    'status' => $intent->status,
+                ]);
+            }
+
+        } catch (\Exception $e) {
+            Log::error('JIT: Error validating confirmed payment', [
+                'checkout_session_id' => $checkoutSession->id,
+                'intent_id' => $checkoutSession->intent_id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return [
+                'is_valid' => false,
+                'error_type' => 'validation_error',
+                'error_message' => 'Error validating payment: ' . $e->getMessage(),
+                'error_details' => [
+                    'intent_id' => $checkoutSession->intent_id,
+                    'exception' => $e->getMessage(),
+                ],
+            ];
+        }
+
+        return [
+            'is_valid' => $isValid,
+            'error_type' => $errorType,
+            'error_message' => $errorMessage,
+            'error_details' => $errorDetails,
+        ];
+    }
 }

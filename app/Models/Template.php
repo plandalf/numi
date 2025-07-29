@@ -17,6 +17,8 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property int|null $organization_id
  * @property array|null $view
  * @property array|null $preview_images
+ * @property array|null $hosted_page_style
+ * @property array|null $hosted_page_appearance
  * @property \Carbon\Carbon $created_at
  * @property \Carbon\Carbon $updated_at
  * @property \Carbon\Carbon|null $deleted_at
@@ -37,6 +39,8 @@ class Template extends Model
         'organization_id',
         'view',
         'preview_images',
+        'hosted_page_style',
+        'hosted_page_appearance',
     ];
 
     /**
@@ -47,6 +51,8 @@ class Template extends Model
     protected $casts = [
         'view' => 'json',
         'preview_images' => 'array',
+        'hosted_page_style' => 'array',
+        'hosted_page_appearance' => 'array',
     ];
 
     /**

@@ -50,13 +50,15 @@ class OffersController extends Controller
 
     public function store(OfferCreateRequest $request, Organization $organization)
     {
+        $hostedPage = HostedPage::create([
+            'organization_id' => $organization->id,
+        ]);
+
         $offer = Offer::query()->create([
             'name' => null,
             'status' => 'draft',
             'organization_id' => $organization->id,
-            'hosted_page_id' => $organization?->hostedPage
-                ? $organization->hostedPage->id
-                : HostedPage::getDefaultForOrganization($organization)->id,
+            'hosted_page_id' => $hostedPage->id,
             'view' => $request->view
         ]);
 
@@ -87,10 +89,14 @@ class OffersController extends Controller
             $request->user()->current_organization_id
         );
 
-        // If the offer has no hosted page, set the hosted page to the organization's hosted page
-        if(!$offer->hosted_page_id && $offer->organization->hostedPage) {
+        // If the offer has no hosted page, generate a new one
+        if(!$offer->hosted_page_id) {
+            $hostedPage = HostedPage::create([
+                'organization_id' => $offer->organization_id,
+            ]);
+
             $offer->update([
-                'hosted_page_id' => $offer->organization->hostedPage->id,
+                'hosted_page_id' => $hostedPage->id,
             ]);
         }
 
@@ -111,7 +117,9 @@ class OffersController extends Controller
             'hostedPage.backgroundImage',
         ]);
 
-        $stripeIntegration = Integration::where('organization_id', $offer->organization_id)->where('type', IntegrationType::STRIPE)->first();
+        $stripeIntegration = Integration::where('organization_id', $offer->organization_id)
+            ->whereIn('type', [IntegrationType::STRIPE, IntegrationType::STRIPE_TEST])
+            ->first();
 
         return Inertia::render('offers/edit', [
             'offer' => new OfferResource($offer),

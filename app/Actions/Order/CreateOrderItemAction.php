@@ -14,14 +14,15 @@ class CreateOrderItemAction
     public function __invoke(Order $order, CheckoutLineItem $checkoutLineItem): OrderItem
     {
         // Create the order item
-        $orderItem = OrderItem::create([
-            'organization_id' => $order->organization_id,
-            'order_id' => $order->id,
-            'price_id' => $checkoutLineItem->price_id,
-            'offer_item_id' => $checkoutLineItem->offer_item_id,
-            'quantity' => $checkoutLineItem->quantity,
-            'metadata' => [], // Can be extended to include additional metadata if needed
-        ]);
+        $orderItem = OrderItem::updateOrCreate([
+                'order_id' => $order->id,
+                'price_id' => $checkoutLineItem->price_id,
+            ], [
+                'organization_id' => $order->organization_id,
+                'offer_item_id' => $checkoutLineItem->offer_item_id,
+                'quantity' => $checkoutLineItem->quantity,
+                'metadata' => [], // Can be extended to include additional metadata if needed
+            ]);
 
         return $orderItem;
     }

@@ -2,7 +2,9 @@ export class BaseEvent {
   public type: string = 'BaseEvent';
   public source: string;
 
-  constructor() {
+  constructor(type, data) {
     this.source = 'plandalf';
+    this.type = type;
+    this.data = data;
   }
 }

@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\CreateUpdateTemplateWithThemeRequest;
+use App\Http\Requests\CreateUpdateTemplateRequest;
 use App\Http\Resources\TemplateResource;
 use App\Models\Template;
 use App\Notifications\TemplateRequestNotification;
@@ -48,9 +48,9 @@ class TemplateController extends Controller
         return redirect()->route('offers.edit', $offer);
     }
 
-    public function store(CreateUpdateTemplateWithThemeRequest $request)
+    public function store(CreateUpdateTemplateRequest $request)
     {
-        $this->templateService->createTemplateWithTheme([
+        $this->templateService->createTemplate([
             'organization_id' => $request->user()->current_organization_id,
             ...$request->validated(),
         ]);
@@ -58,9 +58,9 @@ class TemplateController extends Controller
         return redirect()->back()->with('success', 'Template created successfully');
     }
 
-    public function update(Template $template, CreateUpdateTemplateWithThemeRequest $request)
+    public function update(Template $template, CreateUpdateTemplateRequest $request)
     {
-        $this->templateService->updateTemplateWithTheme(
+        $this->templateService->updateTemplate(
             $template,
             [
                 'organization_id' => $request->user()->current_organization_id,

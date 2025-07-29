@@ -2,9 +2,13 @@
 
 namespace App\Http\Resources;
 
+use App\Models\Order\Order;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
+/**
+ * @mixin Order
+ */
 class OrderResource extends JsonResource
 {
     /**
@@ -21,11 +25,15 @@ class OrderResource extends JsonResource
                 'value' => $this->status->value,
                 'label' => $this->status->label() ?? ucfirst($this->status->value),
             ],
-            'currency' => $this->currency,
             'total_amount' => $this->total_amount,
-            'completed_at' => $this->completed_at?->toISOString(),
-            'created_at' => $this->created_at->toISOString(),
-            
+            'currency' => $this->currency,
+            'intent_id' => $this->intent_id,
+            'intent_type' => $this->intent_type,
+            'payment_id' => $this->payment_id,
+            'payment_method_id' => $this->payment_method_id,
+            'completed_at' => $this->completed_at,
+            'receipt_url' => $this->getReceiptUrl(),
+
             // Fulfillment information
             'fulfillment_method' => [
                 'value' => $this->fulfillment_method?->value,
@@ -34,7 +42,7 @@ class OrderResource extends JsonResource
             'fulfillment_config' => $this->fulfillment_config,
             'fulfillment_notified' => $this->fulfillment_notified,
             'fulfillment_notified_at' => $this->fulfillment_notified_at?->toISOString(),
-            
+
             // Fulfillment statistics
             'fulfillment_summary' => [
                 'total_items' => $this->whenLoaded('items', function () {
@@ -50,7 +58,7 @@ class OrderResource extends JsonResource
                     return $this->items->where('fulfillment_status', 'unprovisionable')->count();
                 }),
             ],
-            
+
             'customer' => $this->when($this->customer, function () {
                 return [
                     'id' => $this->customer->id,
@@ -64,6 +72,20 @@ class OrderResource extends JsonResource
                     'id' => $this->checkoutSession->id,
                     'status' => $this->checkoutSession->status,
                     'discounts' => $this->checkoutSession->discounts,
+                    'properties' => $this->checkoutSession->properties,
+                    'payment_method' => $this->when($this->checkoutSession->paymentMethod, function () {
+                        $pm = $this->checkoutSession->paymentMethod;
+                        return [
+                            'id' => $pm->id,
+                            'type' => $pm->type,
+                            'brand' => $pm->getCardBrandAttribute(),
+                            'last4' => $pm->getLast4Attribute(),
+                            'exp_month' => $pm->getExpMonthAttribute(),
+                            'exp_year' => $pm->getExpYearAttribute(),
+                            'billing_details' => $pm->billing_details?->toArray(),
+                            'display_name' => $pm->getDisplayNameAttribute(),
+                        ];
+                    }),
                 ];
             }),
             'events' => $this->whenLoaded('events', function () {

@@ -33,6 +33,7 @@ export const PageLayers: React.FC<PageLayersProps> = ({ onAddNewElementClick }) 
     setHoveredBlockId,
     setHoveredSectionId,
     theme,
+    offer,
   } = useEditor();
 
   // Helper function to get block type title from page-elements
@@ -112,8 +113,10 @@ export const PageLayers: React.FC<PageLayersProps> = ({ onAddNewElementClick }) 
     router.put(route('templates.update', selectedTemplateId), {
       view: JSON.stringify(data.view),
       theme: theme,
+      hosted_page_style: offer.hosted_page?.style,
+      hosted_page_appearance: offer.hosted_page?.appearance,
       ...(data?.screenshot?.url && {
-        preview_images: [data.screenshot.url]
+        preview_images: [data.screenshot.url],
       }),
     }, {
       onSuccess: () => {
@@ -141,8 +144,10 @@ export const PageLayers: React.FC<PageLayersProps> = ({ onAddNewElementClick }) 
       name: templateName,
       view: JSON.stringify(data.view),
       theme: theme,
+      hosted_page_style: offer.hosted_page?.style,
+      hosted_page_appearance: offer.hosted_page?.appearance,
       ...(data?.screenshot?.url && {
-        preview_images: [data.screenshot.url]
+        preview_images: [data.screenshot.url],
       }),
      }, {
       onSuccess: () => {

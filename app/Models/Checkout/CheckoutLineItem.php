@@ -7,7 +7,11 @@ use App\Models\Store\OfferItem;
 use App\Traits\ComputesPrice;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
+/**
+ * @property Price $price
+ */
 class CheckoutLineItem extends Model
 {
     use HasFactory, ComputesPrice;
@@ -27,22 +31,22 @@ class CheckoutLineItem extends Model
         'quantity' => 'integer',
     ];
 
-    public function price()
+    public function price(): BelongsTo
     {
         return $this->belongsTo(Price::class);
     }
 
-    public function getCurrencyAttribute()
+    public function getCurrencyAttribute(): ?string
     {
         return $this->price->currency;
     }
 
-    public function session()
+    public function session(): BelongsTo
     {
         return $this->belongsTo(CheckoutSession::class);
     }
 
-    public function offerItem()
+    public function offerItem(): BelongsTo
     {
         return $this->belongsTo(OfferItem::class, 'offer_item_id');
     }

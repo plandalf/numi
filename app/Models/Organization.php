@@ -20,6 +20,31 @@ use function Illuminate\Events\queueable;
 /**
  * @property string|null $checkout_success_url
  * @property string|null $checkout_cancel_url
+ *
+ * @property mixed $name
+ * @property mixed $description
+ * @property mixed $website_url
+ * @property mixed $logo_media_id
+ * @property mixed $favicon_media_id
+ * @property mixed $primary_color
+ * @property mixed $social_media
+ * @property mixed $ulid
+ * @property mixed $default_currency
+ * @property mixed $join_token
+ * @property mixed $stripe_id
+ * @property mixed $pm_type
+ * @property mixed $pm_last_four
+ * @property mixed $trial_ends_at
+ * @property mixed $checkout_success_url
+ * @property mixed $checkout_cancel_url
+ * @property mixed $subdomain
+ * @property mixed $onboarding_mask
+ * @property mixed $fulfillment_method
+ * @property mixed $default_delivery_method
+ * @property mixed $fulfillment_config
+ * @property mixed $fulfillment_notification_email
+ * @property mixed $auto_fulfill_orders
+ * @property mixed $external_platform_config
  */
 class Organization extends Model
 {
@@ -114,9 +139,9 @@ class Organization extends Model
         return $this->hasMany(Theme::class);
     }
 
-    public function hostedPage(): HasOne
+    public function hostedPages(): HasMany
     {
-        return $this->hasOne(HostedPage::class);
+        return $this->hasMany(HostedPage::class);
     }
 
     public function logoMedia(): BelongsTo

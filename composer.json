@@ -10,6 +10,7 @@
     "license": "MIT",
     "require": {
         "php": "^8.2",
+        "barryvdh/laravel-dompdf": "^3.1",
         "dedoc/scramble": "^0.12.23",
         "inertiajs/inertia-laravel": "^2.0",
         "laravel-workflow/laravel-workflow": "^1.0",

@@ -9,6 +9,10 @@ use Illuminate\Support\Str;
 
 class TakeOfferScreenshotJob extends QueueableJob
 {
+    public $timeout = 20;
+
+    public $failOnTimeout = false;
+
     public function __construct(public Offer $offer)
     {
     }
@@ -16,11 +20,9 @@ class TakeOfferScreenshotJob extends QueueableJob
     public function handle(): void
     {
         if (empty(config('services.cloudflare.account_id'))) {
-            logger()->info(logname('no-cloudflare'));
+            logger()->warning(logname('no-cloudflare'));
             return;
         }
-
-        logger()->info(logname('running!'));
 
         $res = \Illuminate\Support\Facades\Http::baseUrl('https://api.cloudflare.com/client/v4/accounts/'.config('services.cloudflare.account_id'))
             ->withToken(config('services.cloudflare.auth_token'), 'Bearer')
@@ -81,18 +83,12 @@ class TakeOfferScreenshotJob extends QueueableJob
                 'uuid' => $uuid,
                 'meta' => null,
             ]);
-//        dump($media);
 
-        logger()->info(logname('finished'));
         Storage::put($media->path, $res->body(), 'private');
-        logger()->info(logname('put'));
-
-    // media->mediable() // associate "screenshot"
 
         Offer::withoutEvents(function () use ($media) {
             $this->offer->screenshot()->associate($media);
             $this->offer->save();
         });
-        logger()->info(logname('saved'));
     }
 }
