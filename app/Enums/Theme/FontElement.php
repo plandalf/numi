@@ -20,6 +20,7 @@ enum FontElement: string
     case UBUNTU = 'Ubuntu';
     case PLAYFAIR_DISPLAY = 'Playfair Display';
     case CORMORANT_GARAMOND = 'Cormorant Garamond';
+    case RUBIK = 'Rubik';
 
     public function getFontWeights(): array
     {
@@ -146,6 +147,13 @@ enum FontElement: string
                 WeightElement::BLACK->value,
             ],
             self::CORMORANT_GARAMOND => [
+                WeightElement::LIGHT->value,
+                WeightElement::REGULAR->value,
+                WeightElement::MEDIUM->value,
+                WeightElement::SEMI_BOLD->value,
+                WeightElement::BOLD->value,
+            ],
+            self::RUBIK => [
                 WeightElement::LIGHT->value,
                 WeightElement::REGULAR->value,
                 WeightElement::MEDIUM->value,
