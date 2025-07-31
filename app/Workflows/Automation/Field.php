@@ -89,6 +89,26 @@ class Field
         return $field;
     }
 
+    public static function json(string $key, string $label, string $description = ''): self
+    {
+        $field = new self();
+        $field->key = $key;
+        $field->label = $label;
+        $field->type = 'json';
+        $field->description = $description;
+        return $field;
+    }
+
+    public static function map(string $key, string $label, string $description = ''): self
+    {
+        $field = new self();
+        $field->key = $key;
+        $field->label = $label;
+        $field->type = 'map';
+        $field->description = $description;
+        return $field;
+    }
+
     public function dynamic(string $source = null): self
     {
         $this->dynamic = true;

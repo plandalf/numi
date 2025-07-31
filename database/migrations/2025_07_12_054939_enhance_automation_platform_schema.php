@@ -12,17 +12,10 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('integrations', function (Blueprint $table) {
-            $table->uuid('uuid')->unique()->after('id');
-            $table->string('lookup_key', 64)->nullable()->change();
-        });
-
         // ====================================
         // 1. CREATE APPS TABLE FIRST
         // ====================================
-
-        // Apps table - Integration definitions with config-based triggers/actions
-        Schema::create('apps', function (Blueprint $table) {
+        Schema::create('automation_apps', function (Blueprint $table) {
             $table->id();
             $table->string('key', 100)->unique();
             $table->string('name');
@@ -43,32 +36,37 @@ return new class extends Migration
             $table->index('version');
         });
 
+        Schema::table('integrations', function (Blueprint $table) {
+            $table->uuid()->unique()->after('id');
+            $table->string('lookup_key', 64)->nullable()->change();
+            $table->foreignId('app_id')->nullable()->after('organization_id')->constrained('automation_apps')->onDelete('set null');
+            $table->json('connection_config')->nullable();
+            $table->timestamp('last_sync_at', 6)->nullable();
+            $table->json('sync_errors')->nullable();
+
+            $table->index(['organization_id', 'app_id']);
+            $table->index('last_sync_at');
+        });
+
+        Schema::table('workflows', function (Blueprint $table) {
+            $table->bigInteger('sequence_id')->nullable()->after('id');
+            $table->bigInteger('event_id');
+        });
+
+        Schema::rename('workflows', 'workflow_runs');
+        Schema::dropIfExists('workflow_executions');
+        Schema::drop('automation_edges');
+        Schema::rename('automation_nodes', 'automation_actions');
+
         // ====================================
         // 2. CREATE NEW AUTOMATION TABLES
         // ====================================
 
-        // Workflow executions table - Enhanced execution tracking
-        Schema::create('workflow_executions', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('sequence_id')->constrained('automation_sequences')->onDelete('cascade');
-            $table->json('trigger_data')->nullable();
-            $table->string('status', 50)->default('pending');
-            $table->timestamp('started_at', 6)->nullable();
-            $table->timestamp('completed_at', 6)->nullable();
-            $table->integer('duration_ms')->nullable();
-            $table->text('error_message')->nullable();
-            $table->json('metadata')->nullable();
-            $table->timestamps(6);
-
-            $table->index(['sequence_id', 'status']);
-            $table->index('created_at');
-        });
-
         // Workflow steps table - Individual step execution tracking
         Schema::create('workflow_steps', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('execution_id')->constrained('workflow_executions')->onDelete('cascade');
-            $table->foreignId('node_id')->constrained('automation_nodes')->onDelete('cascade');
+            $table->foreignId('run_id')->constrained('workflow_runs')->onDelete('cascade');
+            $table->foreignId('action_id')->constrained('automation_actions')->onDelete('cascade');
             $table->string('step_name')->nullable();
             $table->json('input_data')->nullable();
             $table->json('output_data')->nullable();
@@ -83,87 +81,16 @@ return new class extends Migration
             $table->text('error_message')->nullable();
             $table->string('error_code', 100)->nullable();
             $table->json('debug_info')->nullable();
-            // Loop and parallel execution support
-//            $table->foreignId('parent_step_id')->nullable()->constrained('workflow_steps')->onDelete('cascade');
-//            $table->integer('loop_iteration')->nullable();
-//            $table->integer('loop_action_index')->nullable();
-//            $table->string('action_group_type', 50)->nullable();
-//            $table->integer('action_group_iteration')->nullable();
-//            $table->integer('action_group_index')->nullable();
+
             $table->timestamps(6);
 
-            $table->index(['execution_id', 'node_id']);
+            $table->index(['run_id', 'action_id']);
             $table->index('status');
             $table->index('error_code');
-            $table->index('parent_step_id');
-//            $table->index('loop_iteration');
-//            $table->index('action_group_type');
-        });
-
-        // Workflow templates table - Pre-built templates
-        Schema::create('workflow_templates', function (Blueprint $table) {
-            $table->id();
-            $table->string('name');
-            $table->text('description')->nullable();
-            $table->string('category', 100)->nullable();
-            $table->json('template_data');
-            $table->boolean('is_public')->default(false);
-            $table->integer('usage_count')->default(0);
-            $table->foreignId('created_by')->nullable()->constrained('users')->onDelete('set null');
-            $table->timestamps(6);
-
-            $table->index('category');
-            $table->index('is_public');
-        });
-
-        // Data mappings table - Field transformations
-        Schema::create('data_mappings', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('integration_id')->constrained('integrations')->onDelete('cascade');
-            $table->string('source_field');
-            $table->string('target_field');
-            $table->json('transformation_rules')->nullable();
-            $table->boolean('is_active')->default(true);
-            $table->timestamps(6);
-
-            $table->index('integration_id');
-        });
-
-        // Workflow tests table - Testing framework
-        Schema::create('workflow_tests', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('sequence_id')->constrained('automation_sequences')->onDelete('cascade');
-            $table->json('test_data')->nullable();
-            $table->json('step_outputs')->nullable();
-            $table->string('status', 50)->default('running');
-            $table->foreignId('created_by')->nullable()->constrained('users')->onDelete('set null');
-            $table->timestamp('completed_at', 6)->nullable();
-            $table->timestamps(6);
-
-            $table->index('sequence_id');
-            $table->index('status');
-            $table->index('created_by');
-        });
-
-        // Workflow step tests table - Step testing
-        Schema::create('workflow_step_tests', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('workflow_test_id')->constrained('workflow_tests')->onDelete('cascade');
-            $table->foreignId('node_id')->constrained('automation_nodes')->onDelete('cascade');
-            $table->json('input_data')->nullable();
-            $table->json('output_data')->nullable();
-            $table->integer('execution_time_ms')->nullable();
-            $table->string('status', 50)->default('pending');
-            $table->text('error_message')->nullable();
-            $table->timestamps(6);
-
-            $table->index('workflow_test_id');
-            $table->index('node_id');
-            $table->index('status');
         });
 
         // Trigger events table - All trigger initiation data
-        Schema::create('trigger_events', function (Blueprint $table) {
+        Schema::create('automation_events', function (Blueprint $table) {
             $table->id();
             $table->foreignId('trigger_id')->constrained('automation_triggers')->onDelete('cascade');
             $table->foreignId('integration_id')->nullable()->constrained('integrations')->onDelete('set null');
@@ -173,7 +100,6 @@ return new class extends Migration
 
             $table->json('metadata')->nullable();
             $table->timestamp('processed_at', 6)->nullable();
-            $table->foreignId('workflow_execution_id')->nullable()->constrained('workflow_executions')->onDelete('set null');
             $table->string('status', 50)->default('received');
             $table->text('error_message')->nullable();
             $table->timestamps(6);
@@ -185,23 +111,6 @@ return new class extends Migration
             $table->index('created_at');
         });
 
-        // ====================================
-        // 3. EXTEND EXISTING INTEGRATIONS TABLE
-        // ====================================
-
-        // Add automation-specific columns to existing integrations table
-        Schema::table('integrations', function (Blueprint $table) {
-            $table->foreignId('app_id')->nullable()->after('organization_id')->constrained('apps')->onDelete('set null');
-            $table->string('webhook_url', 500)->nullable()->after('config');
-            $table->string('webhook_secret')->nullable()->after('webhook_url');
-            $table->json('connection_config')->nullable()->after('webhook_secret');
-            $table->timestamp('last_sync_at', 6)->nullable()->after('connection_config');
-            $table->json('sync_errors')->nullable()->after('last_sync_at');
-
-            $table->index(['organization_id', 'app_id']);
-            $table->index('webhook_url');
-            $table->index('last_sync_at');
-        });
 
         // ====================================
         // 4. ENHANCE EXISTING AUTOMATION TABLES
@@ -217,74 +126,51 @@ return new class extends Migration
             $table->foreignId('created_by')->nullable()->after('settings')->constrained('users')->onDelete('set null');
             $table->timestamp('last_run_at', 6)->nullable()->after('created_by');
             $table->integer('run_count')->default(0)->after('last_run_at');
+            $table->json('node_schema')->nullable()->after('settings');
 
             $table->index('is_active');
             $table->index('is_template');
             $table->index('created_by');
         });
 
+
         // Enhance automation_nodes table (nodes ARE the actions)
-        Schema::table('automation_nodes', function (Blueprint $table) {
-            $table->bigInteger('app_id')->nullable();
+        Schema::table('automation_actions', function (Blueprint $table) {
+            $table->foreignId('app_id')->nullable()->after('sequence_id')->constrained('automation_apps')->onDelete('set null');
+            $table->foreignId('integration_id')->nullable()->after('app_id')->constrained('integrations')->onDelete('set null');
             $table->string('name')->nullable()->after('sequence_id');
             $table->text('description')->nullable()->after('name');
-            $table->foreignId('integration_id')->nullable()->after('type')->constrained('integrations')->onDelete('set null');
             $table->string('action_key')->nullable()->after('integration_id'); // References action in app config
             $table->json('configuration')->nullable()->after('action_key');
-            $table->json('position')->nullable()->after('configuration');
-            $table->json('metadata')->nullable()->after('position');
-            $table->json('retry_config')->nullable()->after('metadata');
-            $table->integer('timeout_seconds')->default(30)->after('retry_config');
-            // Loop and parallel action storage
-            $table->json('loop_actions')->nullable()->after('timeout_seconds');
-            $table->json('parallel_actions')->nullable()->after('loop_actions');
-            $table->foreignId('parent_node_id')->nullable()->after('parallel_actions')->constrained('automation_nodes')->onDelete('cascade');
-
+            $table->json('test_result')->nullable()->after('configuration');
+            $table->json('metadata')->nullable();
             $table->index('type');
             $table->index('integration_id');
             $table->index('action_key');
-            $table->index('parent_node_id');
         });
 
         // Enhance automation_triggers table
         Schema::table('automation_triggers', function (Blueprint $table) {
+
+            $table->dropColumn('event_name'); // ? filter?
+
+            $table->foreignId('integration_id')->nullable()->after('sequence_id')->constrained('integrations')->onDelete('set null');
+            $table->foreignId('app_id')->nullable()->after('integration_id')->constrained('automation_apps')->onDelete('set null');
             $table->string('name')->nullable()->after('sequence_id');
-            $table->foreignId('integration_id')->nullable()->after('name')->constrained('integrations')->onDelete('set null');
-            $table->string('app_id')->nullable()->after('integration_id');
-            $table->string('trigger_key')->nullable()->after('integration_id'); // References trigger in app config
+            $table->string('trigger_key')->nullable()->after('integration_id');
             $table->json('configuration')->nullable()->after('trigger_key');
             $table->json('conditions')->nullable()->after('configuration');
-            $table->string('webhook_url', 500)->nullable()->after('conditions');
-            $table->boolean('is_active')->default(true)->after('webhook_url');
+            $table->boolean('is_active')->default(true)->after('conditions');
             $table->timestamp('last_triggered_at', 6)->nullable()->after('is_active');
             $table->integer('trigger_count')->default(0)->after('last_triggered_at');
+            $table->string('trigger_type', 50)->default('integration')->after('name');
+            $table->json('metadata')->nullable()->after('trigger_count');
+            $table->json('test_result')->nullable()->after('configuration');
 
             $table->index('is_active');
             $table->index(['sequence_id', 'trigger_key']);
             $table->index('integration_id');
             $table->index('trigger_key');
-            $table->index('webhook_url');
-
-            // todo: wtf is this for?
-            $table->dropColumn(['event_name', 'target_type', 'target_id']);
-            // Add trigger type to differentiate between webhook and integration triggers
-            $table->string('trigger_type', 50)
-                ->default('integration')
-                ->after('name');
-
-            // Add authentication configuration for webhook triggers
-            $table->json('webhook_auth_config')->nullable()->after('webhook_secret');
-            $table->json('metadata')->nullable()->after('webhook_auth_config');
-        });
-
-        // Enhance automation_edges table (defines how nodes connect)
-        Schema::table('automation_edges', function (Blueprint $table) {
-            $table->json('conditions')->nullable()->after('to_node_id');
-            $table->json('metadata')->nullable()->after('conditions');
-
-            $table->index('from_node_id');
-            $table->index('to_node_id');
-            $table->index('sequence_id');
         });
     }
 

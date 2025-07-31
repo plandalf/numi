@@ -2,12 +2,12 @@
 
 namespace Database\Factories\Automation;
 
-use App\Models\Automation\Node;
+use App\Models\Automation\Action;
 use App\Models\Automation\Sequence;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Automation\Node>
+ * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Automation\Action>
  */
 class NodeFactory extends Factory
 {
@@ -16,7 +16,7 @@ class NodeFactory extends Factory
      *
      * @var string
      */
-    protected $model = Node::class;
+    protected $model = Action::class;
 
     /**
      * Define the model's default state.
@@ -97,4 +97,4 @@ class NodeFactory extends Factory
             ],
         ]);
     }
-} 
+}

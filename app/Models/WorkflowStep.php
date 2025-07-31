@@ -7,8 +7,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
  * @property int $id
- * @property int $execution_id
- * @property int $node_id
+ * @property int $run_id
+ * @property int $action_id
  * @property string|null $step_name
  * @property array|null $input_data
  * @property array|null $output_data
@@ -23,20 +23,15 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string|null $error_message
  * @property string|null $error_code
  * @property array|null $debug_info
- * @property int|null $parent_step_id
- * @property int|null $loop_iteration
- * @property int|null $loop_action_index
- * @property string|null $action_group_type
- * @property int|null $action_group_iteration
- * @property int|null $action_group_index
+ *
  * @property \Carbon\Carbon $created_at
  * @property \Carbon\Carbon $updated_at
  */
 class WorkflowStep extends Model
 {
     protected $fillable = [
-        'execution_id',
-        'node_id',
+        'run_id',
+        'action_id',
         'step_name',
         'input_data',
         'output_data',
@@ -52,7 +47,7 @@ class WorkflowStep extends Model
         'error_code',
         'debug_info'
     ];
-    
+
     protected $casts = [
         'input_data' => 'json',
         'output_data' => 'json',
@@ -62,14 +57,24 @@ class WorkflowStep extends Model
         'started_at' => 'datetime',
         'completed_at' => 'datetime',
     ];
-    
+
+    public function node(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\Automation\Action::class);
+    }
+
+    public function run(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\Automation\Run::class, 'run_id');
+    }
+
     // Status constants
     const STATUS_PENDING = 'pending';
     const STATUS_RUNNING = 'running';
     const STATUS_COMPLETED = 'completed';
     const STATUS_FAILED = 'failed';
     const STATUS_SKIPPED = 'skipped';
-    
+
     // Common error codes
     const ERROR_API_TIMEOUT = 'api_timeout';
     const ERROR_API_RATE_LIMIT = 'api_rate_limit';
@@ -77,14 +82,14 @@ class WorkflowStep extends Model
     const ERROR_INVALID_CONFIG = 'invalid_config';
     const ERROR_EXTERNAL_SERVICE = 'external_service_error';
     const ERROR_VALIDATION = 'validation_error';
-    
+
     // Helper methods
     public function shouldRetry(): bool
     {
-        return $this->status === self::STATUS_FAILED && 
+        return $this->status === self::STATUS_FAILED &&
                $this->retry_count < $this->max_retries;
     }
-    
+
     public function recordStart(): void
     {
         $this->update([
@@ -92,7 +97,7 @@ class WorkflowStep extends Model
             'started_at' => now(),
         ]);
     }
-    
+
     public function recordSuccess(array $output, array $rawResponse = null): void
     {
         $this->update([
@@ -104,7 +109,7 @@ class WorkflowStep extends Model
             'processed_output' => $this->processOutput($output),
         ]);
     }
-    
+
     public function recordFailure(string $errorMessage, string $errorCode = null, array $debugInfo = null): void
     {
         $this->update([
@@ -117,12 +122,12 @@ class WorkflowStep extends Model
             'retry_count' => $this->retry_count + 1,
         ]);
     }
-    
+
     private function processOutput(array $output): array
     {
         // Process output for template variables
         $processed = [];
-        
+
         foreach ($output as $key => $value) {
             // Flatten nested arrays for easier templating
             if (is_array($value)) {
@@ -143,7 +148,7 @@ class WorkflowStep extends Model
                 $processed[$key] = $value;
             }
         }
-        
+
         return $processed;
     }
-} 
+}

@@ -3,13 +3,14 @@ import { Head, usePage } from '@inertiajs/react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Settings, Zap, Play, Trash2, Mail, Clock, Filter, Webhook, Edit as EditIcon, TestTube } from 'lucide-react';
+import { Plus, Settings, Zap, Play, Trash2, Mail, Clock, Filter, Webhook, Edit as EditIcon, TestTube, Activity } from 'lucide-react';
 import AppLayout from '@/layouts/app-layout';
 import { AddTriggerModal } from '@/components/sequences/AddTriggerModal';
 import { EditTriggerModal } from '@/components/sequences/EditTriggerModal';
 import { AddActionModal } from '@/components/sequences/AddActionModal';
 import { EditActionModal } from '@/components/sequences/EditActionModal';
 import { TestActionModal } from '@/components/sequences/TestActionModal';
+import { WorkflowRunsModal } from '@/components/sequences/WorkflowRunsModal';
 import axios from 'axios';
 
 interface Sequence {
@@ -26,14 +27,14 @@ interface Trigger {
   name: string;
   trigger_key?: string;
   app_id?: number; // Added for new style triggers
+  app: {
+    id: number;
+    name: string;
+    icon_url?: string;
+    color?: string;
+  };
   integration?: {
     id: number;
-    app: {
-      id: number;
-      name: string;
-      icon_url?: string;
-      color?: string;
-    };
   };
 }
 
@@ -107,12 +108,47 @@ export default function Edit() {
   const [showAddActionModal, setShowAddActionModal] = useState(false);
   const [showEditActionModal, setShowEditActionModal] = useState(false);
   const [showTestActionModal, setShowTestActionModal] = useState(false);
+  const [showWorkflowRunsModal, setShowWorkflowRunsModal] = useState(false);
   const [editingAction, setEditingAction] = useState<Action | null>(null);
   const [testingAction, setTestingAction] = useState<Action | null>(null);
   const [editingTrigger, setEditingTrigger] = useState<CreatedTrigger | null>(null);
   const [triggers, setTriggers] = useState<Trigger[]>(sequence.triggers || []);
-  const [actions, setActions] = useState<Action[]>(sequence.nodes || []);
+  const [actions, setActions] = useState<Action[]>(sequence.actions || []);
 
+  // Get existing trigger constraints for new trigger restrictions
+  const getExistingTriggerConstraints = () => {
+    if (triggers.length === 0) return null;
+
+    const firstTrigger = triggers[0];
+
+    // Extract app info from the first trigger
+    let appId: number | undefined;
+    let triggerKey: string | undefined;
+    let appName: string | undefined;
+
+    if (firstTrigger?.app) {
+      // Old style trigger with integration data
+      appId = firstTrigger.app.id;
+      appName = firstTrigger.app.name;
+      triggerKey = firstTrigger.trigger_key;
+    } else if (firstTrigger.app_id) {
+      // New style trigger with direct app_id
+      appId = firstTrigger.app_id;
+      triggerKey = firstTrigger.trigger_key;
+
+      // Find app name from the apps list
+      const app = apps.find(a => a.id === appId);
+      appName = app?.name;
+    }
+
+    return appId && triggerKey ? {
+      appId,
+      triggerKey,
+      appName: appName || 'Unknown App'
+    } : null;
+  };
+
+  const existingTriggerConstraints = getExistingTriggerConstraints();
 
   const handleTriggerAdded = (newTrigger: CreatedTrigger) => {
     // Close add modal and show edit modal
@@ -147,7 +183,7 @@ export default function Edit() {
   const handleEditTrigger = (trigger: Trigger) => {
     // Convert Trigger to CreatedTrigger format for the edit modal
     let triggerForEdit: CreatedTrigger;
-    
+
     if (trigger.integration?.app) {
       // Trigger has integration data (old style)
       triggerForEdit = {
@@ -187,19 +223,22 @@ export default function Edit() {
         }
       };
     }
-    
+
     setEditingTrigger(triggerForEdit);
     setShowEditTriggerModal(true);
   };
 
-  const handleActionAdded = (newAction: unknown) => {
+  const handleActionAdded = (newAction: CreatedAction) => {
+    // Add to actions list
     setActions(prev => [...prev, newAction as Action]);
+
+    // Close add modal and show edit modal
+    setShowAddActionModal(false);
+    setEditingAction(newAction as Action);
+    setShowEditActionModal(true);
   };
 
-  const handleActionUpdated = (updatedAction: Action) => {
-    setActions(prev => prev.map(a => a.id === updatedAction.id ? updatedAction : a));
-    setEditingAction(null);
-  };
+
 
   const handleEditAction = (action: Action) => {
     setEditingAction(action);
@@ -227,7 +266,7 @@ export default function Edit() {
         color: updatedAction.app.color
       } : undefined
     };
-    
+
     setActions(prev => prev.map(a => a.id === actionForState.id ? actionForState : a));
     setShowEditActionModal(false);
     setEditingAction(null);
@@ -308,9 +347,12 @@ export default function Edit() {
           </div>
 
           <div className="flex space-x-2">
-            <Button variant="outline">
-              <Settings className="h-4 w-4 mr-2" />
-              Settings
+            <Button
+              onClick={() => setShowWorkflowRunsModal(true)}
+              variant="outline"
+            >
+              <Activity className="h-4 w-4 mr-2" />
+              View Runs
             </Button>
             <Button className="bg-green-600 hover:bg-green-700">
               <Play className="h-4 w-4 mr-2" />
@@ -324,15 +366,24 @@ export default function Edit() {
           {/* Triggers */}
           <Card>
             <CardHeader>
-              <div className="flex justify-between items-center">
-                <div>
+              <div>
+                <div className="flex justify-between items-center">
                   <CardTitle>Triggers</CardTitle>
-                  <CardDescription>Events that start this workflow</CardDescription>
+                  <Button onClick={() => setShowAddTriggerModal(true)} size="sm">
+                    <Plus className="h-4 w-4 mr-2" />
+                    {existingTriggerConstraints
+                      ? `Add ${existingTriggerConstraints.appName} Trigger`
+                      : 'Add Trigger'
+                    }
+                  </Button>
                 </div>
-                <Button onClick={() => setShowAddTriggerModal(true)} size="sm">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Trigger
-                </Button>
+                <CardDescription>
+                  {existingTriggerConstraints && (
+                    <span className="block text-xs text-orange-600 mt-1">
+                        Note: All triggers must use {existingTriggerConstraints.appName} • {existingTriggerConstraints.triggerKey}
+                      </span>
+                  )}
+                </CardDescription>
               </div>
             </CardHeader>
             <CardContent className="space-y-3">
@@ -480,84 +531,6 @@ export default function Edit() {
           </Card>
         </div>
 
-        {/* Available Apps */}
-        {apps.length > 0 && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Available Apps</CardTitle>
-              <CardDescription>Discovered apps with their available triggers and actions</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {apps.map((app) => (
-                  <div key={app.id} className="border rounded-lg p-4">
-                    <div className="flex items-center space-x-3 mb-3">
-                      {app.icon_url ? (
-                        <img
-                          src={app.icon_url}
-                          alt={app.name}
-                          className="w-10 h-10 rounded-lg"
-                        />
-                      ) : (
-                        <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold">
-                          {app.name.charAt(0).toUpperCase()}
-                        </div>
-                      )}
-                      <div>
-                        <h4 className="font-medium">{app.name}</h4>
-                        <p className="text-sm text-gray-500">{app.description}</p>
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      {app.triggers && app.triggers.length > 0 && (
-                        <div>
-                          <h5 className="text-xs font-medium text-gray-700 uppercase tracking-wide mb-1">
-                            Triggers ({app.triggers.length})
-                          </h5>
-                          <div className="space-y-1">
-                            {app.triggers.slice(0, 3).map((trigger) => (
-                              <div key={trigger.key} className="text-xs text-gray-600 flex items-center space-x-1">
-                                <Zap className="h-3 w-3 text-blue-500" />
-                                <span>{trigger.label}</span>
-                              </div>
-                            ))}
-                            {app.triggers.length > 3 && (
-                              <div className="text-xs text-gray-500">
-                                +{app.triggers.length - 3} more triggers
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      )}
-
-                      {app.actions && app.actions.length > 0 && (
-                        <div>
-                          <h5 className="text-xs font-medium text-gray-700 uppercase tracking-wide mb-1">
-                            Actions ({app.actions.length})
-                          </h5>
-                          <div className="space-y-1">
-                            {app.actions.slice(0, 3).map((action) => (
-                              <div key={action.key} className="text-xs text-gray-600 flex items-center space-x-1">
-                                <Play className="h-3 w-3 text-green-500" />
-                                <span>{action.label}</span>
-                              </div>
-                            ))}
-                            {app.actions.length > 3 && (
-                              <div className="text-xs text-gray-500">
-                                +{app.actions.length - 3} more actions
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        )}
       </div>
 
       {/* Modals */}
@@ -566,6 +539,7 @@ export default function Edit() {
         onClose={() => setShowAddTriggerModal(false)}
         sequenceId={sequence.id}
         onTriggerAdded={handleTriggerAdded}
+        existingTriggerConstraints={existingTriggerConstraints}
       />
 
       {editingTrigger && (
@@ -585,6 +559,7 @@ export default function Edit() {
         editingAction={null}
         onActionUpdated={() => {}}
       />
+      {/* make this the select event with filter on actions modal */}
 
       {editingAction && (
         <EditActionModal
@@ -599,7 +574,6 @@ export default function Edit() {
             configuration: editingAction.configuration || {},
             app: editingAction.app
           }}
-          sequenceId={sequence.id}
           onActionUpdated={handleActionUpdatedFromEdit}
         />
       )}
@@ -613,6 +587,14 @@ export default function Edit() {
           allActions={actions}
         />
       )}
+
+      <WorkflowRunsModal
+        open={true}
+        onClose={() => {
+          //
+        }}
+        sequenceId={sequence.id}
+      />
     </AppLayout>
   );
 }

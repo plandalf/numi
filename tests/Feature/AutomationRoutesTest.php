@@ -7,7 +7,7 @@ use App\Models\User;
 use App\Models\Organization;
 use App\Models\Automation\Sequence;
 use App\Models\Automation\Trigger;
-use App\Models\Automation\Node;
+use App\Models\Automation\Action;
 use App\Models\App;
 use App\Models\Integration;
 use App\Services\AppDiscoveryService;
@@ -25,12 +25,12 @@ class AutomationRoutesTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        
+
         $this->user = User::factory()->create();
         $this->organization = Organization::factory()->create();
         $this->user->organizations()->attach($this->organization->id, ['role' => 'owner']);
         $this->user->update(['current_organization_id' => $this->organization->id]);
-        
+
         // Create Kajabi app
         $this->kajabiApp = App::factory()->create([
             'key' => 'kajabi',
@@ -46,14 +46,14 @@ class AutomationRoutesTest extends TestCase
             ->getJson('/sequences/discovered-apps');
 
         $response->assertStatus(200);
-        
+
         // Debug: Let's see what's actually returned
         $data = $response->json();
         dump('Discovered apps response:', $data);
-        
+
         // Check if we have any apps at all
         $this->assertNotEmpty($data, 'Response should not be empty');
-        
+
         // Check if we have the expected structure for any app
         $firstApp = array_values($data)[0] ?? null;
         if ($firstApp) {
@@ -720,7 +720,7 @@ class AutomationRoutesTest extends TestCase
             'created_by' => $this->user->id
         ]);
 
-        $node = Node::factory()->create([
+        $node = Action::factory()->create([
             'sequence_id' => $sequence->id,
             'name' => 'Original Action Name'
         ]);
@@ -755,7 +755,7 @@ class AutomationRoutesTest extends TestCase
             'created_by' => $this->user->id
         ]);
 
-        $node = Node::factory()->create([
+        $node = Action::factory()->create([
             'sequence_id' => $sequence->id
         ]);
 
@@ -778,7 +778,7 @@ class AutomationRoutesTest extends TestCase
             'created_by' => $this->user->id
         ]);
 
-        $node = Node::factory()->create([
+        $node = Action::factory()->create([
             'sequence_id' => $sequence->id,
             'type' => 'app_action',
             'arguments' => [
@@ -1049,7 +1049,7 @@ class AutomationRoutesTest extends TestCase
             'created_by' => $this->user->id
         ]);
 
-        $node = Node::factory()->create([
+        $node = Action::factory()->create([
             'sequence_id' => $sequence1->id
         ]);
 
@@ -1061,4 +1061,4 @@ class AutomationRoutesTest extends TestCase
         $response->assertStatus(400)
             ->assertJson(['error' => 'Action does not belong to this sequence']);
     }
-} 
+}

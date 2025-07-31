@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Loader2, ChevronDown } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from '@/components/ui/command';
+import { MapField } from './MapField';
 import axios from 'axios';
 
 interface FieldSchema {
@@ -21,7 +22,8 @@ interface FieldSchema {
   dynamic?: boolean;
   dynamicSource?: string;
   default?: unknown;
-  options?: Array<{ value: string; label: string; }>;
+  options?: Record<string, string> | Array<{ value: string; label: string; }>;
+  resource?: string;
 }
 
 interface TriggerConfigFieldProps {
@@ -31,6 +33,7 @@ interface TriggerConfigFieldProps {
   appKey: string;
   integrationId?: number;
   error?: string;
+  requiresAuth?: boolean;
 }
 
 interface ResourceOption {
@@ -45,7 +48,8 @@ export function TriggerConfigField({
   onChange, 
   appKey, 
   integrationId, 
-  error 
+  error,
+  requiresAuth = false 
 }: TriggerConfigFieldProps) {
   const [loading, setLoading] = useState(false);
   const [resourceOptions, setResourceOptions] = useState<ResourceOption[]>([]);
@@ -53,15 +57,8 @@ export function TriggerConfigField({
   const [showCombobox, setShowCombobox] = useState(false);
   const [resourceError, setResourceError] = useState<string | null>(null);
 
-  // Load dynamic resource data
-  useEffect(() => {
-    if (field.dynamic && field.dynamicSource && integrationId) {
-      loadResourceData();
-    }
-  }, [field.dynamic, field.dynamicSource, integrationId]);
-
-  const loadResourceData = async (search?: string) => {
-    if (!field.dynamicSource || !integrationId) return;
+  const loadResourceData = useCallback(async (search?: string) => {
+    if (!field.dynamicSource || (requiresAuth && !integrationId)) return;
 
     try {
       setLoading(true);
@@ -70,12 +67,12 @@ export function TriggerConfigField({
       // Parse the dynamic source (e.g., "offer.id,name")
       const [resourceKey] = field.dynamicSource.split('.');
       
-      const response = await axios.get('/automation/resources/search', {
+      //apps/{app}/resources/{resource}
+      // const response = await axios.get('/automation/resources/search', {
+      const response = await axios.get(`/automation/apps/${appKey}/resources/${resourceKey}`, {
         params: {
-          app_key: appKey,
-          resource_key: resourceKey,
-          integration_id: integrationId,
-          search: search || searchTerm,
+          ...(requiresAuth && integrationId && { integration_id: integrationId }),
+          search: search || searchTerm || '',
         },
       });
 
@@ -97,11 +94,19 @@ export function TriggerConfigField({
     } finally {
       setLoading(false);
     }
-  };
+  }, [field.dynamicSource, requiresAuth, integrationId, appKey, searchTerm]);
+
+  // Load dynamic resource data
+  useEffect(() => {
+    const shouldLoad = field.dynamic && field.dynamicSource && (!requiresAuth || integrationId);
+    if (shouldLoad) {
+      loadResourceData();
+    }
+  }, [field.dynamic, field.dynamicSource, integrationId, requiresAuth, loadResourceData, value]);
 
   const handleSearch = (search: string) => {
     setSearchTerm(search);
-    if (field.dynamic && field.dynamicSource && integrationId) {
+    if (field.dynamic && field.dynamicSource && (!requiresAuth || integrationId)) {
       // Debounce the search
       const timeoutId = setTimeout(() => {
         loadResourceData(search);
@@ -125,9 +130,9 @@ export function TriggerConfigField({
                   role="combobox"
                   aria-expanded={showCombobox}
                   className={`w-full justify-between ${error ? 'border-red-300' : ''}`}
-                  disabled={!integrationId}
+                  disabled={requiresAuth && !integrationId}
                 >
-                  {selectedOption ? selectedOption.label : `Select ${field.label.toLowerCase()}...`}
+                  {selectedOption ? selectedOption.label : value ? String(value) : `Select ${field.label.toLowerCase()}...`}
                   <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                 </Button>
               </PopoverTrigger>
@@ -211,14 +216,21 @@ export function TriggerConfigField({
           />
         );
 
-      case 'select':
+      case 'select': {
+        // Normalize options to array format
+        const normalizedOptions = field.options ? 
+          Array.isArray(field.options) 
+            ? field.options 
+            : Object.entries(field.options).map(([key, value]) => ({ value: key, label: value }))
+          : [];
+
         return (
           <Select value={String(value || '')} onValueChange={onChange}>
             <SelectTrigger className={error ? 'border-red-300' : ''}>
               <SelectValue placeholder={`Select ${field.label.toLowerCase()}`} />
             </SelectTrigger>
             <SelectContent>
-              {field.options?.map((option) => (
+              {normalizedOptions.map((option) => (
                 <SelectItem key={option.value} value={option.value}>
                   {option.label}
                 </SelectItem>
@@ -226,6 +238,7 @@ export function TriggerConfigField({
             </SelectContent>
           </Select>
         );
+      }
 
       case 'boolean':
         return (
@@ -240,6 +253,117 @@ export function TriggerConfigField({
             </Label>
           </div>
         );
+
+      case 'json': {
+        return (
+          <div className="space-y-2">
+            <Textarea
+              value={typeof value === 'string' ? value : JSON.stringify(value || {}, null, 2)}
+              onChange={(e) => {
+                try {
+                  // Try to parse as JSON to validate
+                  JSON.parse(e.target.value);
+                  onChange(e.target.value);
+                } catch {
+                  // If invalid JSON, still update the value for user to correct
+                  onChange(e.target.value);
+                }
+              }}
+              placeholder={field.description || 'Enter valid JSON'}
+              className={`font-mono text-sm ${error ? 'border-red-300' : ''}`}
+              rows={6}
+            />
+            <p className="text-xs text-gray-500">
+              Enter valid JSON. Use template variables like {`{{order.id}}`} for dynamic values.
+            </p>
+          </div>
+        );
+      }
+
+      case 'map': {
+        const mapValue = (value as Record<string, string>) || {};
+        
+        return (
+          <div className="space-y-2">
+            <MapField
+              value={mapValue}
+              onChange={onChange}
+              emptyText={`No ${field.label.toLowerCase().includes('header') ? 'headers' : 'entries'} yet. Click the button above to add one.`}
+              addButtonText={`Add ${field.label.toLowerCase().includes('header') ? 'Header' : 'Entry'}`}
+            />
+            {field.help && (
+              <p className="text-xs text-gray-500">{field.help}</p>
+            )}
+          </div>
+        );
+      }
+
+      case 'resource': {
+        if (field.dynamic && field.dynamicSource) {
+          // Dynamic resource select/combobox - similar to dynamic string but specifically for resources
+          const selectedOption = resourceOptions.find(opt => opt.value === value);
+          
+          return (
+            <Popover open={showCombobox} onOpenChange={setShowCombobox}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={showCombobox}
+                  className={`w-full justify-between ${error ? 'border-red-300' : ''}`}
+                  disabled={requiresAuth && !integrationId}
+                >
+                  {selectedOption ? selectedOption.label : value ? String(value) : `Select ${field.label.toLowerCase()}...`}
+                  <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-full p-0">
+                <Command>
+                  <CommandInput 
+                    placeholder={`Search ${field.label.toLowerCase()}...`}
+                    value={searchTerm}
+                    onValueChange={handleSearch}
+                  />
+                  <CommandEmpty>
+                    {loading ? (
+                      <div className="flex items-center justify-center py-2">
+                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                        Loading...
+                      </div>
+                    ) : (
+                      `No ${field.label.toLowerCase()} found.`
+                    )}
+                  </CommandEmpty>
+                  <CommandGroup>
+                    {resourceOptions.map((option) => (
+                      <CommandItem
+                        key={option.value}
+                        value={option.value}
+                        onSelect={(currentValue) => {
+                          onChange(currentValue === value ? "" : currentValue);
+                          setShowCombobox(false);
+                        }}
+                      >
+                        {option.label}
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
+                </Command>
+              </PopoverContent>
+            </Popover>
+          );
+        } else {
+          // Static resource input
+          return (
+            <Input
+              value={String(value || '')}
+              onChange={(e) => onChange(e.target.value)}
+              placeholder={field.description || `Enter ${field.label.toLowerCase()}`}
+              className={error ? 'border-red-300' : ''}
+            />
+          );
+        }
+      }
 
       default:
         return (
@@ -283,7 +407,7 @@ export function TriggerConfigField({
         </p>
       )}
       
-      {field.dynamic && !integrationId && (
+      {field.dynamic && !integrationId && requiresAuth && (
         <p className="text-xs text-orange-500">
           Integration required to load dynamic options
         </p>

@@ -82,6 +82,33 @@ interface CreatedTrigger {
   };
 }
 
+interface TestStepProps {
+  testResult: {
+    error?: string;
+    success?: boolean;
+    message?: string;
+    error_details?: unknown;
+    status?: number;
+    data?: {
+      trigger_id?: number;
+      trigger_name?: string;
+      latest_event?: {
+        id: number;
+        source: string;
+        created_at: string;
+        status: string;
+      };
+      result?: unknown;
+      timestamp?: string;
+      is_example?: boolean;
+      example_note?: string;
+    };
+    [key: string]: unknown;
+  } | null;
+  testLoading: boolean;
+  handleTestTrigger: () => void;
+}
+
 interface EditTriggerModalProps {
   open: boolean;
   onClose: () => void;
@@ -196,7 +223,7 @@ function IntegrationSetupModal({ open, onClose, app, onIntegrationCreated }: Int
     onClose();
   };
 
-  if (!app) return null;
+    if (!app) return null;
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
@@ -220,7 +247,7 @@ function IntegrationSetupModal({ open, onClose, app, onIntegrationCreated }: Int
 
         {/* Step 1: Intro */}
         {step === 'intro' && (
-          <div className="space-y-6">
+          <div className="space-y-6 p-6">
             <div className="text-center space-y-4">
               <div className="flex items-center justify-center space-x-4">
                 {app.icon_url ? (
@@ -284,7 +311,7 @@ function IntegrationSetupModal({ open, onClose, app, onIntegrationCreated }: Int
 
         {/* Step 2: OAuth Flow */}
         {step === 'oauth' && (
-          <div className="space-y-6">
+          <div className="space-y-6 p-6">
             <div className="text-center space-y-4">
               <Globe className="h-12 w-12 mx-auto text-blue-500" />
               <div>
@@ -338,7 +365,7 @@ function IntegrationSetupModal({ open, onClose, app, onIntegrationCreated }: Int
 
         {/* Step 3: API Keys Setup */}
         {step === 'api-keys' && (
-          <div className="space-y-6">
+          <div className="space-y-6 p-6">
             <div className="text-center space-y-4">
               <Key className="h-12 w-12 mx-auto text-green-500" />
               <div>
@@ -466,12 +493,255 @@ function IntegrationSetupModal({ open, onClose, app, onIntegrationCreated }: Int
   );
 }
 
+// Helper function to safely stringify unknown data
+function safeStringify(data: unknown): string {
+  try {
+    const result = JSON.stringify(data, null, 2);
+    return result !== undefined ? result : 'null';
+  } catch {
+    return 'Unable to display data';
+  }
+}
+
+// Helper function to check if test result has example error
+function hasExampleError(testResult: unknown): boolean {
+  return Boolean(testResult && 
+    typeof testResult === 'object' && 
+    testResult !== null &&
+    'data' in testResult &&
+    testResult.data &&
+    typeof testResult.data === 'object' &&
+    testResult.data !== null &&
+    'result' in testResult.data &&
+    testResult.data.result && 
+    typeof testResult.data.result === 'object' && 
+    testResult.data.result !== null && 
+    'error' in testResult.data.result);
+}
+
+// Helper function to get example error message
+function getExampleErrorMessage(testResult: unknown): string {
+  if (hasExampleError(testResult)) {
+    const typedResult = testResult as { data: { result: Record<string, unknown> } };
+    return String(typedResult.data.result.error);
+  }
+  return '';
+}
+
+// Enhanced Test Step Component
+function TestStep({ testResult, testLoading, handleTestTrigger }: TestStepProps) {
+  return (
+    <TabsContent value="test" className="absolute inset-0 data-[state=inactive]:hidden">
+      <div className="h-full overflow-y-auto px-6 py-4">
+        <div className="space-y-6">
+          <div>
+            <h3 className="text-lg font-medium mb-4">Test Trigger</h3>
+          </div>
+          
+          <div className="space-y-4">
+            <Card>
+              <CardContent className="p-4">
+                <div className="text-center space-y-4">
+                  <TestTube className="h-12 w-12 mx-auto text-blue-500" />
+                  <div>
+                    <h4 className="font-medium">Test Your Trigger</h4>
+                    <p className="text-sm text-gray-500 mt-1">
+                      Find and analyze the most recent trigger event to verify your trigger is working correctly
+                    </p>
+                  </div>
+                  <Button 
+                    onClick={handleTestTrigger} 
+                    disabled={testLoading}
+                    className="w-full"
+                  >
+                    {testLoading ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Testing...
+                      </>
+                    ) : (
+                      <>
+                        <Play className="h-4 w-4 mr-2" />
+                        Run Test
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Test Results */}
+            {testResult && (
+              <Card>
+                <CardContent className="p-4">
+                  <h4 className="font-medium mb-3">Test Results</h4>
+                  {testResult.error || hasExampleError(testResult) ? (
+                    <div className="space-y-3">
+                      <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                        <div className="flex items-center space-x-2">
+                          <AlertCircle className="h-4 w-4 text-red-500" />
+                          <div className="flex-1">
+                            <p className="text-sm text-red-700 font-medium">
+                              {hasExampleError(testResult) ? 'Example Data Generation Failed' : 'Test Failed'}
+                            </p>
+                            <p className="text-xs text-red-600 mt-1">
+                              {hasExampleError(testResult) ? getExampleErrorMessage(testResult) : testResult.error}
+                            </p>
+                            {hasExampleError(testResult) && (
+                              <p className="text-xs text-amber-600 mt-1">
+                                💡 This error occurred while generating example data. Fix the trigger configuration or create some real trigger events.
+                              </p>
+                            )}
+                            {typeof testResult.status === 'number' && (
+                              <p className="text-xs text-red-500 mt-1">Status: {String(testResult.status)}</p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {/* Error Details */}
+                      {testResult.error_details && typeof testResult.error_details === 'object' && testResult.error_details !== null ? (
+                        <details className="group">
+                          <summary className="cursor-pointer text-sm font-medium text-red-600 hover:text-red-700 flex items-center space-x-1">
+                            <ChevronDown className="h-3 w-3 transition-transform group-open:rotate-180" />
+                            <span>Error Details</span>
+                          </summary>
+                          <div className="mt-2 bg-red-50 rounded p-3 border border-red-200">
+                            <pre className="text-xs overflow-auto max-h-32 text-red-700">
+                              {JSON.stringify(testResult.error_details, null, 2) || 'No error details available'}
+                            </pre>
+                          </div>
+                        </details>
+                      ) : null}
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                        <div className="flex items-center space-x-2">
+                          <CheckCircle className="h-4 w-4 text-green-500" />
+                          <p className="text-sm text-green-700">
+                            {testResult.data?.is_example 
+                              ? 'Test completed with example data!' 
+                              : 'Test completed successfully!'
+                            }
+                          </p>
+                        </div>
+                        {testResult.data?.timestamp && (
+                          <p className="text-xs text-green-600 mt-1">
+                            Executed at {new Date(testResult.data.timestamp).toLocaleString()}
+                          </p>
+                        )}
+                        {testResult.data?.is_example && (
+                          <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded text-xs">
+                            <p className="text-blue-700 font-medium">📋 Using Example Data</p>
+                            <p className="text-blue-600">
+                              No real trigger events found, so we're showing example data for testing. 
+                              This gives you an idea of what data will be available when the trigger actually fires.
+                            </p>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Latest Event Info */}
+                      {testResult.data?.latest_event && typeof testResult.data.latest_event === 'object' && (
+                        <div className="space-y-3">
+                          <div className="flex items-center space-x-2">
+                            <div className={`w-2 h-2 rounded-full ${
+                              testResult.data.is_example ? 'bg-blue-500' : 'bg-purple-500'
+                            }`}></div>
+                            <h5 className="font-medium text-sm">
+                              {testResult.data.is_example ? 'Example Trigger Event' : 'Latest Trigger Event'}
+                            </h5>
+                          </div>
+                          <div className={`rounded-lg p-3 border ${
+                            testResult.data.is_example 
+                              ? 'bg-blue-50 border-blue-200' 
+                              : 'bg-purple-50 border-purple-200'
+                          }`}>
+                            <div className="grid grid-cols-2 gap-2 text-xs">
+                              {testResult.data.latest_event.id && (
+                                <div><strong>Event ID:</strong> {testResult.data.latest_event.id}</div>
+                              )}
+                              <div><strong>Source:</strong> {testResult.data.latest_event.source}</div>
+                              <div><strong>Status:</strong> {testResult.data.latest_event.status}</div>
+                              <div><strong>Created:</strong> {new Date(testResult.data.latest_event.created_at).toLocaleString()}</div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Trigger Output */}
+                      {testResult.data?.result !== undefined && (
+                        <div className="space-y-3">
+                          <div className="flex items-center space-x-2">
+                            <div className={`w-2 h-2 rounded-full ${
+                              testResult.data.is_example ? 'bg-blue-500' : 'bg-blue-500'
+                            }`}></div>
+                            <h5 className="font-medium text-sm">
+                              {testResult.data.is_example ? 'Example Event Data' : 'Trigger Event Data'}
+                            </h5>
+                          </div>
+                          <div className="bg-gray-50 rounded-lg p-3 border">
+                            <pre className="text-xs overflow-auto max-h-48 whitespace-pre-wrap">
+                              {testResult.data.result !== undefined ? safeStringify(testResult.data.result) : 'No event data'}
+                            </pre>
+                          </div>
+                          
+                          {/* Example Data Note */}
+                          {testResult.data.is_example && 
+                            testResult.data.result && 
+                            typeof testResult.data.result === 'object' && 
+                            testResult.data.result !== null &&
+                            'example_note' in testResult.data.result && (
+                             <div className="text-xs text-blue-600 bg-blue-50 p-2 rounded border border-blue-200">
+                               <p className="font-medium text-blue-700 mb-1">ℹ️ About This Data:</p>
+                               <p>{String((testResult.data.result as Record<string, unknown>).example_note)}</p>
+                             </div>
+                           )}
+                          
+                          {/* Available Fields Info */}
+                          <div className="text-xs text-gray-500 bg-blue-50 p-2 rounded border border-blue-200">
+                            <p className="font-medium text-blue-700 mb-1">💡 JSON Schema Generated:</p>
+                            <p>This trigger event data structure has been analyzed and a JSON Schema was automatically generated. The field mappings are now available for use in subsequent actions and can be referenced using dot notation (e.g., <code className="bg-blue-100 px-1 rounded">customer.email</code>).</p>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Full Response Details */}
+                      <details className="group">
+                        <summary className="cursor-pointer text-sm font-medium text-gray-600 hover:text-gray-900 flex items-center space-x-1">
+                          <ChevronDown className="h-3 w-3 transition-transform group-open:rotate-180" />
+                          <span>Full Response</span>
+                        </summary>
+                        <div className="mt-2 bg-gray-50 rounded p-3 border">
+                          <pre className="text-xs overflow-auto max-h-40">
+                            {JSON.stringify(testResult, null, 2)}
+                          </pre>
+                        </div>
+                      </details>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        </div>
+      </div>
+    </TabsContent>
+  );
+}
+
 export function EditTriggerModal({ open, onClose, trigger, onTriggerUpdated }: EditTriggerModalProps) {
   const [activeTab, setActiveTab] = useState('setup');
   const [loading, setLoading] = useState(false);
   const [initializing, setInitializing] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [validationErrors, setValidationErrors] = useState<Record<string, string[]>>({});
+  
+  // Step completion tracking
+  const [setupComplete, setSetupComplete] = useState(false);
+  const [configComplete, setConfigComplete] = useState(false);
+  const [testComplete, setTestComplete] = useState(false);
   
   // Setup tab state
   const [selectedApp, setSelectedApp] = useState<App | null>(null);
@@ -611,6 +881,24 @@ export function EditTriggerModal({ open, onClose, trigger, onTriggerUpdated }: E
     }
   }, [trigger, integrations]);
 
+  // Check step completion
+  useEffect(() => {
+    // Setup step is complete when we have app, trigger event, and integration (if required)
+    const setupValid = selectedApp && selectedTriggerEvent && 
+      (!selectedTriggerEvent.requires_auth || selectedIntegration);
+    setSetupComplete(!!setupValid);
+
+    // Config step is complete when we have a name
+    const configValid = triggerName.trim().length > 0;
+    setConfigComplete(configValid);
+  }, [selectedApp, selectedTriggerEvent, selectedIntegration, triggerName]);
+
+  // Reset test completion when configuration changes
+  useEffect(() => {
+    setTestComplete(false);
+    setTestResult(null);
+  }, [selectedApp, selectedTriggerEvent, selectedIntegration, configuration]);
+
   const loadApps = async () => {
     try {
       const response = await axios.get('/automation/apps');
@@ -685,8 +973,17 @@ export function EditTriggerModal({ open, onClose, trigger, onTriggerUpdated }: E
       
       const response = await axios.put(`/automation/triggers/${trigger.id}`, payload);
       
-      onTriggerUpdated(response.data.data);
-      onClose();
+      // Don't call onTriggerUpdated here - only on final finish
+      // onTriggerUpdated(response.data.data);
+      
+      // Progress to next step instead of closing
+      if (activeTab === 'setup' && setupComplete) {
+        setActiveTab('config');
+      } else if (activeTab === 'config' && configComplete) {
+        setActiveTab('test');
+      }
+      
+      return response.data.data; // Return the updated trigger for handleFinish
     } catch (error) {
       console.error('Failed to update trigger:', error);
       
@@ -709,13 +1006,75 @@ export function EditTriggerModal({ open, onClose, trigger, onTriggerUpdated }: E
       setTestLoading(true);
       setTestResult(null);
       
-      const response = await axios.post(`/automation/triggers/${trigger.id}/test`);
+      const response = await axios.post(`/automation/triggers/${trigger.id}/tests`);
       setTestResult(response.data);
-    } catch (error) {
+      
+      // Mark test as complete if successful
+      // Check for errors in both the main response and nested in example result data
+      const hasMainError = response.data.error;
+      const hasExampleErrorResult = hasExampleError(response.data);
+      
+      if (response.data && !hasMainError && !hasExampleErrorResult) {
+        setTestComplete(true);
+      }
+    } catch (error: unknown) {
       console.error('Failed to test trigger:', error);
-      setTestResult({ error: 'Test failed' });
+      
+      let errorMessage = 'Test failed';
+      let errorDetails = null;
+      
+      if (axios.isAxiosError(error)) {
+        // Extract error message from response
+        if (error.response?.data?.message) {
+          errorMessage = error.response.data.message;
+        } else if (error.response?.data?.error) {
+          errorMessage = error.response.data.error;
+        }
+        
+        // Include error details if available
+        if (error.response?.data?.error_details) {
+          errorDetails = error.response.data.error_details;
+        }
+      }
+      
+      setTestResult({ 
+        error: errorMessage,
+        success: false,
+        error_details: errorDetails,
+        status: axios.isAxiosError(error) ? error.response?.status : undefined
+      });
+      setTestComplete(false);
     } finally {
       setTestLoading(false);
+    }
+  };
+
+  const handleNextStep = () => {
+    if (activeTab === 'setup' && setupComplete) {
+      setActiveTab('config');
+    } else if (activeTab === 'config' && configComplete) {
+      setActiveTab('test');
+    }
+  };
+
+  const handlePreviousStep = () => {
+    if (activeTab === 'test') {
+      setActiveTab('config');
+    } else if (activeTab === 'config') {
+      setActiveTab('setup');
+    }
+  };
+
+  const handleFinish = async () => {
+    try {
+      // Save one final time before closing
+      const updatedTrigger = await handleSave();
+      // Only call onTriggerUpdated when actually finishing
+      onTriggerUpdated(updatedTrigger);
+      onClose();
+    } catch (error) {
+      // Error already handled in handleSave
+      console.error('Failed to finish:', error);
     }
   };
 
@@ -748,8 +1107,8 @@ export function EditTriggerModal({ open, onClose, trigger, onTriggerUpdated }: E
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
+      <DialogContent variant="wizard" className="overflow-hidden">
+        <DialogHeader className="px-6 pt-6 pb-4 border-b">
           <DialogTitle>Edit Trigger</DialogTitle>
           <DialogDescription>
             Configure and test your trigger settings
@@ -766,77 +1125,90 @@ export function EditTriggerModal({ open, onClose, trigger, onTriggerUpdated }: E
           <>
             {/* Error Display */}
             {error && (
-              <div className="p-3 bg-red-50 border border-red-200 rounded-lg mb-4">
-                <div className="flex items-center space-x-2">
-                  <AlertCircle className="h-4 w-4 text-red-500" />
-                  <p className="text-sm text-red-700">{error}</p>
+              <div className="px-6 mb-4">
+                <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                  <div className="flex items-center space-x-2">
+                    <AlertCircle className="h-4 w-4 text-red-500" />
+                    <p className="text-sm text-red-700">{error}</p>
+                  </div>
                 </div>
               </div>
             )}
 
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <TabsList className="grid w-full grid-cols-3">
-                <TabsTrigger value="setup">Setup</TabsTrigger>
-                <TabsTrigger value="config">Config</TabsTrigger>
-                <TabsTrigger value="test">Test</TabsTrigger>
-              </TabsList>
+            <div className="flex-1 flex flex-col min-h-0">
+              <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
+                <TabsList className="grid w-full grid-cols-3 mx-6">
+                  <TabsTrigger value="setup" disabled={false}>
+                    1. Setup
+                  </TabsTrigger>
+                  <TabsTrigger value="config" disabled={!setupComplete}>
+                    2. Config
+                  </TabsTrigger>
+                  <TabsTrigger value="test" disabled={!configComplete}>
+                    3. Test
+                  </TabsTrigger>
+                </TabsList>
 
-              {/* Setup Tab */}
-              <TabsContent value="setup" className="space-y-4">
-                <h3 className="text-lg font-medium">Setup Trigger</h3>
-                
-                {/* App Selection */}
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">App *</Label>
-                  {selectedApp ? (
-                    <Card className="border border-blue-300 bg-blue-50">
-                      <CardContent className="p-3">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center space-x-3">
-                            {selectedApp.icon_url ? (
-                              <img src={selectedApp.icon_url} alt={selectedApp.name} className="w-8 h-8 rounded" />
-                            ) : (
-                              <div
-                                className="w-8 h-8 rounded flex items-center justify-center text-white font-bold text-sm"
-                                style={{ backgroundColor: selectedApp.color || '#3b82f6' }}
-                              >
-                                {selectedApp.name.charAt(0).toUpperCase()}
-                              </div>
-                            )}
-                            <div>
-                              <h4 className="font-medium text-sm">{selectedApp.name}</h4>
-                              <p className="text-xs text-gray-500">{selectedApp.description}</p>
-                            </div>
-                          </div>
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => setShowAppSelector(true)}
-                          >
-                            Change
-                          </Button>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ) : (
-                    <Card className="border-2 border-dashed border-gray-300 hover:border-gray-400 transition-colors cursor-pointer" onClick={() => setShowAppSelector(true)}>
-                      <CardContent className="p-4">
-                        <div className="flex items-center space-x-3">
-                          <div className="w-8 h-8 bg-gray-100 rounded flex items-center justify-center">
-                            <Zap className="h-4 w-4 text-gray-400" />
-                          </div>
-                          <div>
-                            <p className="font-medium text-sm text-gray-700">Choose an app</p>
-                            <p className="text-xs text-gray-500">Select the app that will trigger this automation</p>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  )}
-                </div>
+                <div className="flex-1 relative min-h-0">
 
-                {/* Trigger Event Selection */}
-                <div className="space-y-2">
+                  {/* Setup Tab */}
+                  <TabsContent value="setup" className="absolute inset-0 data-[state=inactive]:hidden">
+                    <div className="h-full overflow-y-auto px-6 py-4">
+                      <div className="space-y-6">
+                        <h3 className="text-lg font-medium">Setup Trigger</h3>
+                        
+                        {/* App Selection */}
+                        <div className="space-y-2">
+                          <Label className="text-sm font-medium">App *</Label>
+                          {selectedApp ? (
+                            <Card className="border border-blue-300 bg-blue-50">
+                              <CardContent className="p-3">
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center space-x-3">
+                                    {selectedApp.icon_url ? (
+                                      <img src={selectedApp.icon_url} alt={selectedApp.name} className="w-8 h-8 rounded" />
+                                    ) : (
+                                      <div
+                                        className="w-8 h-8 rounded flex items-center justify-center text-white font-bold text-sm"
+                                        style={{ backgroundColor: selectedApp.color || '#3b82f6' }}
+                                      >
+                                        {selectedApp.name.charAt(0).toUpperCase()}
+                                      </div>
+                                    )}
+                                    <div>
+                                      <h4 className="font-medium text-sm">{selectedApp.name}</h4>
+                                      <p className="text-xs text-gray-500">{selectedApp.description}</p>
+                                    </div>
+                                  </div>
+                                  <Button 
+                                    variant="outline" 
+                                    size="sm"
+                                    onClick={() => setShowAppSelector(true)}
+                                  >
+                                    Change
+                                  </Button>
+                                </div>
+                              </CardContent>
+                            </Card>
+                          ) : (
+                            <Card className="border-2 border-dashed border-gray-300 hover:border-gray-400 transition-colors cursor-pointer" onClick={() => setShowAppSelector(true)}>
+                              <CardContent className="p-4">
+                                <div className="flex items-center space-x-3">
+                                  <div className="w-8 h-8 bg-gray-100 rounded flex items-center justify-center">
+                                    <Zap className="h-4 w-4 text-gray-400" />
+                                  </div>
+                                  <div>
+                                    <p className="font-medium text-sm text-gray-700">Choose an app</p>
+                                    <p className="text-xs text-gray-500">Select the app that will trigger this automation</p>
+                                  </div>
+                                </div>
+                              </CardContent>
+                            </Card>
+                          )}
+                        </div>
+
+                        {/* Trigger Event Selection */}
+                        <div className="space-y-2">
                   <Label className="text-sm font-medium">Trigger event *</Label>
                   {selectedTriggerEvent ? (
                     <Card className="border border-blue-300 bg-blue-50">
@@ -958,143 +1330,158 @@ export function EditTriggerModal({ open, onClose, trigger, onTriggerUpdated }: E
                       ✓ Setup complete! You can now configure and test your trigger.
                     </div>
                   )}
-                </div>
-              </TabsContent>
-
-              {/* Config Tab */}
-              <TabsContent value="config" className="space-y-6">
-                <h3 className="text-lg font-medium">Configure Trigger</h3>
-                
-                {/* Trigger Name */}
-                <div className="space-y-2">
-                  <Label htmlFor="trigger-name">Trigger Name</Label>
-                  <Input
-                    id="trigger-name"
-                    value={triggerName}
-                    onChange={(e) => setTriggerName(e.target.value)}
-                    placeholder="Give this trigger a descriptive name"
-                    className={validationErrors.name ? 'border-red-300' : ''}
-                  />
-                  {validationErrors.name && (
-                    <p className="text-xs text-red-500">{validationErrors.name[0]}</p>
-                  )}
-                </div>
-
-                {/* Configuration Options */}
-                <div className="space-y-4">
-                  <div className="flex items-center space-x-2">
-                    <Settings className="h-4 w-4 text-gray-500" />
-                    <h4 className="font-medium">Configuration Options</h4>
-                  </div>
-                  
-                  {selectedTriggerEvent?.props && Object.keys(selectedTriggerEvent.props).length > 0 ? (
-                    <Card>
-                      <CardContent className="p-4 space-y-4">
-                        {Object.values(selectedTriggerEvent.props).map((field) => (
-                          <TriggerConfigField
-                            key={field.key}
-                            field={field}
-                            value={configuration[field.key]}
-                            onChange={(value) => setConfiguration(prev => ({ ...prev, [field.key]: value }))}
-                            appKey={selectedApp?.key || ''}
-                            integrationId={selectedIntegration?.id}
-                            error={validationErrors[field.key]?.[0]}
-                          />
-                        ))}
-                      </CardContent>
-                    </Card>
-                  ) : (
-                    <Card>
-                      <CardContent className="p-4">
-                        <div className="text-center py-8 text-gray-500">
-                          <Settings className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                          <p className="text-lg font-medium">No configuration required</p>
-                          <p className="text-sm">This trigger doesn't need any additional configuration</p>
                         </div>
-                      </CardContent>
-                    </Card>
-                  )}
-                </div>
-              </TabsContent>
-
-              {/* Test Tab */}
-              <TabsContent value="test" className="space-y-6">
-                <h3 className="text-lg font-medium">Test Trigger</h3>
-                
-                <div className="space-y-4">
-                  <Card>
-                    <CardContent className="p-4">
-                      <div className="text-center space-y-4">
-                        <TestTube className="h-12 w-12 mx-auto text-blue-500" />
-                        <div>
-                          <h4 className="font-medium">Test Your Trigger</h4>
-                          <p className="text-sm text-gray-500 mt-1">
-                            Run a test to verify your trigger is working correctly
-                          </p>
-                        </div>
-                        <Button 
-                          onClick={handleTestTrigger} 
-                          disabled={testLoading}
-                          className="w-full"
-                        >
-                          {testLoading ? (
-                            <>
-                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                              Testing...
-                            </>
-                          ) : (
-                            <>
-                              <Play className="h-4 w-4 mr-2" />
-                              Run Test
-                            </>
-                          )}
-                        </Button>
                       </div>
-                    </CardContent>
-                  </Card>
+                    </div>
+                  </TabsContent>
 
-                  {/* Test Results */}
-                  {testResult && (
-                    <Card>
-                      <CardContent className="p-4">
-                        <h4 className="font-medium mb-3">Test Results</h4>
-                        {testResult.error ? (
-                          <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
-                            <div className="flex items-center space-x-2">
-                              <AlertCircle className="h-4 w-4 text-red-500" />
-                              <p className="text-sm text-red-700">Test failed: {testResult.error}</p>
-                            </div>
+                  {/* Config Tab */}
+                  <TabsContent value="config" className="absolute inset-0 data-[state=inactive]:hidden">
+                    <div className="h-full overflow-y-auto px-6 py-4">
+                      <div className="space-y-6">
+                        <h3 className="text-lg font-medium">Configure Trigger</h3>
+                        
+                        {/* Trigger Name */}
+                        <div className="space-y-2">
+                          <Label htmlFor="trigger-name">Trigger Name</Label>
+                          <Input
+                            id="trigger-name"
+                            value={triggerName}
+                            onChange={(e) => setTriggerName(e.target.value)}
+                            placeholder="Give this trigger a descriptive name"
+                            className={validationErrors.name ? 'border-red-300' : ''}
+                          />
+                          {validationErrors.name && (
+                            <p className="text-xs text-red-500">{validationErrors.name[0]}</p>
+                          )}
+                        </div>
+
+                        {/* Configuration Options */}
+                        <div className="space-y-4">
+                          <div className="flex items-center space-x-2">
+                            <Settings className="h-4 w-4 text-gray-500" />
+                            <h4 className="font-medium">Configuration Options</h4>
                           </div>
-                        ) : (
-                          <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
-                            <div className="flex items-center space-x-2">
-                              <CheckCircle className="h-4 w-4 text-green-500" />
-                              <p className="text-sm text-green-700">Test completed successfully!</p>
+                          
+                          {selectedTriggerEvent?.props && Object.keys(selectedTriggerEvent.props).length > 0 ? (
+                            <Card>
+                              <CardContent className="p-4 space-y-4">
+                                {Object.values(selectedTriggerEvent.props).map((field) => (
+                                  <TriggerConfigField
+                                    key={field.key}
+                                    field={field}
+                                    value={configuration[field.key]}
+                                    onChange={(value) => setConfiguration(prev => ({ ...prev, [field.key]: value }))}
+                                    appKey={selectedApp?.key || ''}
+                                    integrationId={selectedIntegration?.id}
+                                    error={validationErrors[field.key]?.[0]}
+                                    requiresAuth={selectedTriggerEvent?.requires_auth || false}
+                                  />
+                                ))}
+                              </CardContent>
+                            </Card>
+                          ) : (
+                            <Card>
+                              <CardContent className="p-4">
+                                <div className="text-center py-8 text-gray-500">
+                                  <Settings className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                                  <p className="text-lg font-medium">No configuration required</p>
+                                  <p className="text-sm">This trigger doesn't need any additional configuration</p>
+                                </div>
+                              </CardContent>
+                            </Card>
+                          )}
+                          
+                          {/* Configuration Preview */}
+                          {Object.keys(configuration).length > 0 && (
+                            <div className="space-y-2">
+                              <div className="flex items-center space-x-2">
+                                <Settings className="h-4 w-4 text-gray-500" />
+                                <h4 className="font-medium">Configuration Preview</h4>
+                              </div>
+                              <Card>
+                                <CardContent className="p-4">
+                                  <pre className="text-xs bg-gray-50 p-3 rounded overflow-auto max-h-64 whitespace-pre-wrap">
+                                    {JSON.stringify(configuration, null, 2)}
+                                  </pre>
+                                </CardContent>
+                              </Card>
                             </div>
-                            <pre className="mt-2 text-xs bg-white p-2 rounded border overflow-auto">
-                              {JSON.stringify(testResult, null, 2)}
-                            </pre>
-                          </div>
-                        )}
-                      </CardContent>
-                    </Card>
-                  )}
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </TabsContent>
+
+                  {/* Test Tab */}
+                  <TestStep 
+                    testResult={testResult}
+                    testLoading={testLoading}
+                    handleTestTrigger={handleTestTrigger}
+                  />
                 </div>
-              </TabsContent>
-            </Tabs>
+              </Tabs>
+            </div>
 
-            {/* Save Button */}
-            <div className="flex justify-end pt-4 border-t">
-              <Button onClick={handleSave} disabled={loading}>
-                {loading ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Saving...
-                  </>
-                ) : (
-                  'Save Trigger'
+            {/* Wizard Navigation */}
+            <div className="px-6 py-4 border-t bg-gray-50 flex justify-between">
+              <div>
+                {activeTab !== 'setup' && (
+                  <Button onClick={handlePreviousStep} variant="outline">
+                    Previous
+                  </Button>
                 )}
-              </Button>
+              </div>
+              
+              <div className="flex space-x-2">
+                {activeTab === 'setup' && (
+                  <Button 
+                    onClick={handleNextStep} 
+                    disabled={!setupComplete || loading}
+                  >
+                    {loading ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Saving...
+                      </>
+                    ) : (
+                      'Next'
+                    )}
+                  </Button>
+                )}
+                
+                {activeTab === 'config' && (
+                  <Button 
+                    onClick={handleSave} 
+                    disabled={!configComplete || loading}
+                  >
+                    {loading ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Saving...
+                      </>
+                    ) : (
+                      'Save & Continue'
+                    )}
+                  </Button>
+                )}
+                
+                {activeTab === 'test' && (
+                  <>
+                    {!testComplete && (
+                      <div className="text-sm text-orange-600 flex items-center mr-4">
+                        <AlertCircle className="h-4 w-4 mr-1" />
+                        Test required to finish
+                      </div>
+                    )}
+                    {testComplete && (
+                      <Button onClick={handleFinish}>
+                        Finish
+                      </Button>
+                    )}
+                  </>
+                )}
+              </div>
             </div>
 
             {/* App Selector Modal */}

@@ -2,8 +2,10 @@
 
 namespace App\Apps\Plandalf\Resources;
 
+use App\Models\Store\Offer;
 use App\Workflows\Attributes\IsResource;
 use App\Workflows\Automation\Resource as BaseResource;
+use Illuminate\Support\Facades\Auth;
 
 #[IsResource(
     key: 'offer',
@@ -16,14 +18,16 @@ class OfferResource extends BaseResource
 
     public function search(array $query = []): array
     {
-        // search per "org"
-
-        return [
-            [
-                'value' => 1,
-                'label' => 2,
-            ],
-        ];
+        return Auth::user()
+            ->currentOrganization
+            ->offers
+            ->map(function (Offer $offer) {
+                return [
+                    'value' => $offer->id,
+                    'label' => $offer->name,
+                ];
+            })
+            ->toArray();
     }
 
     public function get(string $id): ?array

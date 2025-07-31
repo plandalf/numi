@@ -147,11 +147,11 @@ export default function Index({ orders, filters, showOrdersTutorial }: OrdersInd
           title="Getting Started with Orders"
           description="Orders are customer purchases that flow through your offers. Track payment status, view customer details, and manage fulfillment. <b>Monitor your revenue</b> and analyze purchasing patterns to optimize your business."
           actions={[
-            {
-              label: 'View Analytics',
-              onClick: () => router.get('/analytics'),
-              icon: FileText
-            },
+            // {
+            //   label: 'View Analytics',
+            //   onClick: () => router.get('/analytics'),
+            //   icon: FileText
+            // },
             {
               label: 'Learn More',
               onClick: () => window.open('https://www.plandalf.dev/docs/orders', '_blank'),

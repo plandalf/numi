@@ -17,14 +17,14 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { TutorialCard } from '@/components/onboarding/TutorialCard';
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogDescription, 
-  DialogFooter, 
-  DialogHeader, 
-  DialogTitle, 
-  DialogTrigger 
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -85,7 +85,7 @@ export default function Index({ auth, sequences, workflows }: SequencesIndexProp
   useEffect(() => {
     if (debouncedSearch) {
       router.get(
-        route('sequences.index'),
+        route('automation.sequences.index'),
         { search: debouncedSearch },
         { preserveState: true, preserveScroll: true }
       );
@@ -94,7 +94,7 @@ export default function Index({ auth, sequences, workflows }: SequencesIndexProp
 
   const handleCreateSequence = (e: React.FormEvent) => {
     e.preventDefault();
-    post(route('sequences.store'), {
+    post(route('automation.sequences.store'), {
       onSuccess: () => {
         setIsCreateDialogOpen(false);
         reset();
@@ -125,16 +125,13 @@ export default function Index({ auth, sequences, workflows }: SequencesIndexProp
     <AppLayout breadcrumbs={breadcrumbs}>
       <Head title="Sequences" />
 
-      <div className="container mx-auto py-8 px-4 sm:px-6 lg:px-8">
+      <div className="container mx-auto py-8 px-4 sm:px-6 lg:px-8 mb-4">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between mb-4">
           <div>
             <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">
               Sequences
             </h1>
-            <p className="text-gray-500 dark:text-gray-400">
-              Create and manage automated workflows for your business
-            </p>
           </div>
           <Button onClick={() => setIsCreateDialogOpen(true)}>
             <Plus className="h-4 w-4 mr-2" />
@@ -151,94 +148,77 @@ export default function Index({ auth, sequences, workflows }: SequencesIndexProp
           />
         )}
 
-        {/* Search */}
-        {sequences.length > 0 && (
-          <div className="flex items-center gap-4">
-            <div className="relative flex-1 max-w-sm">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-              <Input
-                placeholder="Search sequences..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="pl-9"
-              />
-            </div>
-          </div>
-        )}
-
         {/* Sequences Table */}
         {filteredSequences.length > 0 ? (
-          <Card>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Description</TableHead>
-                  <TableHead>Triggers</TableHead>
-                  <TableHead>Actions</TableHead>
-                  <TableHead>Last Updated</TableHead>
-                  <TableHead className="w-[100px]">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredSequences.map((sequence) => (
-                  <TableRow key={sequence.id}>
-                    <TableCell>
-                      <Link
-                        href={route('sequences.edit', sequence.id)}
-                        className="font-medium text-blue-600 hover:text-blue-800"
-                      >
-                        {sequence.name}
-                      </Link>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={sequence.is_active ? 'default' : 'secondary'}>
-                        {sequence.is_active ? (
-                          <>
-                            <Play className="h-3 w-3 mr-1" />
-                            Active
-                          </>
-                        ) : (
-                          <>
-                            <Pause className="h-3 w-3 mr-1" />
-                            Inactive
-                          </>
-                        )}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="max-w-xs">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Name</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Description</TableHead>
+                <TableHead>Triggers</TableHead>
+                <TableHead>Actions</TableHead>
+                <TableHead>Last Updated</TableHead>
+                <TableHead className="w-[100px]">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredSequences.map((sequence) => (
+                <TableRow key={sequence.id}>
+                  <TableCell>
+                    <Link
+                      href={route('automation.sequences.edit', sequence.id)}
+                      className="font-medium text-blue-600 hover:text-blue-800"
+                    >
+                      {sequence.name}
+                    </Link>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant={sequence.is_active ? 'default' : 'secondary'}>
+                      {sequence.is_active ? (
+                        <>
+                          <Play className="h-3 w-3 mr-1" />
+                          Active
+                        </>
+                      ) : (
+                        <>
+                          <Pause className="h-3 w-3 mr-1" />
+                          Inactive
+                        </>
+                      )}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="max-w-xs">
                       <span className="text-sm text-gray-600 truncate">
                         {sequence.description || 'No description'}
                       </span>
-                    </TableCell>
-                    <TableCell>
+                  </TableCell>
+                  <TableCell>
                       <span className="text-sm text-gray-500">
                         {sequence.triggers_count || 0} triggers
                       </span>
-                    </TableCell>
-                    <TableCell>
+                  </TableCell>
+                  <TableCell>
                       <span className="text-sm text-gray-500">
                         {sequence.nodes_count || 0} actions
                       </span>
-                    </TableCell>
-                    <TableCell>
+                  </TableCell>
+                  <TableCell>
                       <span className="text-sm text-gray-500">
                         {formatDate(sequence.updated_at)}
                       </span>
-                    </TableCell>
-                    <TableCell>
-                      <Link href={route('sequences.edit', sequence.id)}>
-                        <Button size="sm" variant="outline">
-                          <Settings className="h-4 w-4" />
-                        </Button>
-                      </Link>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </Card>
+                  </TableCell>
+                  <TableCell>
+                    <Link href={route('automation.sequences.edit', sequence.id)}>
+                      <Button size="sm" variant="outline">
+                        <Settings className="h-4 w-4" />
+                      </Button>
+                    </Link>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
         ) : sequences.length === 0 ? null : (
           <Card>
             <CardContent className="py-8">
@@ -269,7 +249,7 @@ export default function Index({ auth, sequences, workflows }: SequencesIndexProp
                       </Badge>
                     </div>
                     <div className="text-sm text-gray-600">
-                      Logs: {workflow.logs.length} | 
+                      Logs: {workflow.logs.length} |
                       Exceptions: {workflow.exceptions.length}
                     </div>
                   </div>

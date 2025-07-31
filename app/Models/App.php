@@ -3,6 +3,8 @@
 namespace App\Models;
 
 use App\Database\Model;
+use App\Models\Automation\Trigger;
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 
@@ -18,12 +20,15 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
  * @property bool $is_active
  * @property bool $is_built_in
  * @property string|null $documentation_url
- * @property \Carbon\Carbon $created_at
- * @property \Carbon\Carbon $updated_at
+ *
+ * @property Carbon $created_at
+ * @property Carbon $updated_at
  */
 class App extends Model
 {
     use HasFactory;
+
+    protected $table = 'automation_apps';
 
     protected $fillable = [
         'key',
@@ -42,17 +47,6 @@ class App extends Model
         'is_active' => 'boolean',
         'is_built_in' => 'boolean',
     ];
-
-    // Relationships
-    public function triggers(): HasMany
-    {
-        return $this->hasMany(AppTrigger::class);
-    }
-
-    public function actions(): HasMany
-    {
-        return $this->hasMany(AppAction::class);
-    }
 
     public function integrations(): HasMany
     {

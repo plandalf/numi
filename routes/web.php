@@ -14,13 +14,10 @@ use App\Http\Controllers\OrganizationController;
 use App\Http\Controllers\PriceController;
 use App\Http\Controllers\ProductsController;
 use App\Http\Controllers\ReusableBlockController;
-use App\Http\Controllers\SequencesController;
 use App\Http\Controllers\Settings\ProfileController;
 use App\Http\Controllers\ThemeController;
 use App\Http\Controllers\TemplateController;
 use App\Http\Controllers\WebhookController;
-use App\Workflows\Automation\Events\SystemEvent;
-use App\Workflows\Automation\TemplateResolver;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use App\Http\Controllers\OrdersController;
@@ -29,85 +26,8 @@ use App\Http\Controllers\OfferItemPriceController;
 use App\Http\Controllers\OnboardingController;
 use App\Http\Controllers\ApiKeysController;
 use App\Http\Controllers\ImpersonationController;
-use Workflow\Serializers\Serializer;
 
 Route::redirect('/', '/dashboard')->name('home');
-
-Route::get('wf', function () {
-
-    $wf = \App\Models\Automation\StoredWorkflow::query()
-        ->latest()
-        ->first();
-
-    dd(
-        $wf->id,
-        get_class($wf->status),
-        Serializer::unserialize($wf->arguments),
-        $wf->logs()->get(),
-        $wf->toWorkflow()->exceptions()
-        ->map(function (\Workflow\Models\StoredWorkflowException $e) {
-            return Serializer::unserialize($e->exception);
-        })->toArray()
-    );
-});
-
-Route::get('test', function () {
-    $sequence = \App\Models\Automation\Sequence::query()->find(4);
-    $order = \App\Models\Order\Order::find(50);
-
-
-    $node = \App\Models\Automation\Node::query()->find(2);
-    $bundle = new \App\Workflows\Automation\Bundle(
-        input: [
-            'xyz' => '123',
-        ],
-        integration: \App\Models\Integration::find(6),
-    );
-    $wf = \App\Models\Automation\StoredWorkflow::query()
-        ->latest()
-        ->first();
-
-    $a = new \App\Workflows\Automation\NodeActivities\ActionActivity(
-        0,
-        now(),
-        $wf,
-        $node,
-        $bundle,
-    );
-
-    dd(
-        $a->handle()
-    );
-
-//    ::dispatchSync($node,$bundle);
-
-//    $configuration = $node->configuration ?? $node->arguments ?? [];
-//
-//    // Use the enhanced template resolver for workflow context
-//    $r = TemplateResolver::resolveForWorkflow(
-//        $configuration,
-//        100,
-//        \App\Models\Automation\TriggerEvent::query()->find(152)
-//    );
-//    dd(
-//        $r
-//    );
-
-    // Fire the system event - this will automatically find and process matching triggers
-    event(
-        new SystemEvent(
-            type: 'order_created',
-            app: 'plandalf',
-            organization: $order->organization,
-            props: [
-                'order_id' => $order->id,
-                'offer_id' => $order->checkoutSession->offer_id,
-                'triggered_at' => now()->toISOString(),
-                'event_type' => 'order_created',
-            ]
-        )
-    );
-});
 
 Route::middleware(['frame-embed'])->group(function () {
     Route::get('/o/{offer}/{environment?}', [CheckoutController::class, 'initialize'])
@@ -342,6 +262,7 @@ if (app()->environment('local')) {
     });
 }
 
+require __DIR__.'/auth.php';
 require __DIR__.'/settings.php';
 require __DIR__.'/automation.php';
 

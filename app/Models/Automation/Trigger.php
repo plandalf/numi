@@ -3,6 +3,7 @@
 namespace App\Models\Automation;
 
 use App\Database\Traits\HasSqids;
+use App\Models\App;
 use App\Models\Integration;
 use App\Models\Organization;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -18,6 +19,7 @@ use Illuminate\Support\Str;
  * @property int|null $integration_id
  * @property string|null $trigger_key
  * @property array|null $configuration
+ * @property array|null $test_result
  * @property array|null $conditions
  * @property string|null $webhook_url
  * @property string|null $webhook_secret
@@ -42,6 +44,7 @@ class Trigger extends Model
 
     protected $casts = [
         'configuration' => 'json',
+        'test_result' => 'json',
         'conditions' => 'json',
         'webhook_auth_config' => 'json',
         'metadata' => 'json',
@@ -58,7 +61,7 @@ class Trigger extends Model
 
     public function nextNode(): BelongsTo
     {
-        return $this->belongsTo(Node::class);
+        return $this->belongsTo(Action::class);
     }
 
     public function sequence(): BelongsTo
@@ -69,6 +72,16 @@ class Trigger extends Model
     public function integration(): BelongsTo
     {
         return $this->belongsTo(Integration::class);
+    }
+
+    public function app()
+    {
+        return $this->belongsTo(App::class);
+    }
+
+    public function triggerEvents()
+    {
+        return $this->hasMany(AutomationEvent::class);
     }
 
     /**

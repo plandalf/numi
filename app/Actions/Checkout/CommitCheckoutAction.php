@@ -10,6 +10,7 @@ use App\Exceptions\CheckoutException;
 use App\Models\Checkout\CheckoutSession;
 use App\Models\Order\Order;
 use App\Models\PaymentMethod;
+use App\Workflows\Automation\Events\SystemEvent;
 use Illuminate\Support\Facades\Log;
 
 class CommitCheckoutAction
@@ -82,6 +83,20 @@ class CommitCheckoutAction
         }
 
         $processed = $process($order);
+
+        event(
+            new SystemEvent(
+                type: 'order_created',
+                app: 'plandalf',
+                organization: $order->organization,
+                props: [
+                    'order_id' => $order->id,
+                    'offer_id' => $order->checkoutSession->offer_id,
+                    'triggered_at' => now()->toISOString(),
+                    'event_type' => 'order_created',
+                ]
+            )
+        );
 
         $session->markAsClosed(true);
 

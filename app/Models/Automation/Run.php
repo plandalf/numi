@@ -9,9 +9,9 @@ use Workflow\Models\StoredWorkflow as BaseStoredWorkflow;
 /**
  * @property
  */
-class StoredWorkflow extends BaseStoredWorkflow
+class Run extends BaseStoredWorkflow
 {
-    protected $table = 'workflows';
+    protected $table = 'workflow_runs';
 
     public function sequence(): BelongsTo
     {
@@ -20,6 +20,6 @@ class StoredWorkflow extends BaseStoredWorkflow
 
     public function event(): BelongsTo
     {
-        return $this->belongsTo(ResourceEvent::class);
+        return $this->belongsTo(AutomationEvent::class);
     }
 }

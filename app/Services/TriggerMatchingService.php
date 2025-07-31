@@ -3,7 +3,7 @@
 namespace App\Services;
 
 use App\Models\Automation\Trigger;
-use App\Models\Automation\TriggerEvent;
+use App\Models\Automation\AutomationEvent;
 use App\Workflows\Automation\Events\SystemEvent;
 use App\Workflows\RunSequenceWorkflow;
 use Illuminate\Support\Facades\Log;
@@ -89,16 +89,16 @@ class TriggerMatchingService
         }
 
         // Create trigger event record
-        $triggerEvent = TriggerEvent::create([
+        $triggerEvent = AutomationEvent::create([
             'trigger_id' => $trigger->id,
             'integration_id' => $trigger->integration_id,
-            'event_source' => TriggerEvent::SOURCE_DATABASE,
+            'event_source' => AutomationEvent::SOURCE_DATABASE,
             'event_data' => $event->props,
             'metadata' => [
                 'event_type' => $event->type,
                 'triggered_at' => now()->toISOString(),
             ],
-            'status' => TriggerEvent::STATUS_RECEIVED,
+            'status' => AutomationEvent::STATUS_RECEIVED,
         ]);
 
         try {
@@ -119,7 +119,7 @@ class TriggerMatchingService
             Log::info('Trigger executed successfully', [
                 'trigger_id' => $trigger->id,
                 'trigger_name' => $trigger->name,
-                'workflow_execution_id' => $workflowExecution->id ?? null
+                'run_id' => $workflowExecution->id ?? null
             ]);
 
         } catch (\Exception $e) {
@@ -153,7 +153,7 @@ class TriggerMatchingService
         // Create trigger instance with integration and configuration
         $integration = $trigger->integration;
         $configuration = $trigger->configuration ?? [];
-        
+
         $triggerInstance = new $triggerClass($integration, $configuration);
 
         // Create bundle with event data
@@ -220,4 +220,4 @@ class TriggerMatchingService
                 return true;
         }
     }
-} 
+}

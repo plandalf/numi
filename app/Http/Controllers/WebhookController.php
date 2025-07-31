@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Automation\Trigger;
-use App\Models\Automation\TriggerEvent;
+use App\Models\Automation\AutomationEvent;
 use App\Models\Organization;
 use App\Workflows\RunSequenceWorkflow;
 use Illuminate\Http\Request;
@@ -23,11 +23,11 @@ class WebhookController extends Controller
             $payload = $request->all();
 
             // Log the trigger event
-            $triggerEvent = TriggerEvent::query()
+            $triggerEvent = AutomationEvent::query()
                 ->create([
                     'trigger_id' => $trigger->id,
                     'integration_id' => null, // Webhook triggers don't have integrations
-                    'event_source' => TriggerEvent::SOURCE_WEBHOOK,
+                    'event_source' => AutomationEvent::SOURCE_WEBHOOK,
                     'event_data' => $payload,
                     'metadata' => [
                         'headers' => $this->getRelevantHeaders($request),
@@ -36,7 +36,7 @@ class WebhookController extends Controller
                         'method' => $request->method(),
                         'url' => $request->fullUrl(),
                     ],
-                    'status' => TriggerEvent::STATUS_RECEIVED,
+                    'status' => AutomationEvent::STATUS_RECEIVED,
                 ]);
 
             // Process the webhook trigger
@@ -195,7 +195,7 @@ class WebhookController extends Controller
     /**
      * Process the trigger and start workflow execution
      */
-    private function processTrigger(Trigger $trigger, array $payload, TriggerEvent $triggerEvent): array
+    private function processTrigger(Trigger $trigger, array $payload, AutomationEvent $triggerEvent): array
     {
         try {
             // Prepare trigger data

@@ -3,13 +3,15 @@
 namespace App\Workflows\Automation;
 
 use App\Apps\Plandalf\Triggers\OrderCreated;
+use App\Models\Automation\Run;
 use App\Models\Automation\Trigger;
-use App\Models\Automation\TriggerEvent;
+use App\Models\Automation\AutomationEvent;
 use App\Workflows\Automation\Events\AutomationTriggerEvent;
 use App\Workflows\Automation\Events\SystemEvent;
 use App\Workflows\RunSequenceWorkflow;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
+use Workflow\Workflow;
 use Workflow\WorkflowStub;
 
 class AutomationEventListener
@@ -82,45 +84,50 @@ class AutomationEventListener
 
         $processedData = $e($bundle);
 
+        // trigger event ?
+        // data = the processed data!
+
         try {
-            // Create trigger event record
-            $triggerEvent = TriggerEvent::create([
+            /* @var AutomationEvent $triggerEvent */
+            // Create trigger event record with initial status
+            $triggerEvent = AutomationEvent::create([
                 'trigger_id' => $trigger->id,
                 'integration_id' => $trigger->integration_id,
-                'event_source' => TriggerEvent::SOURCE_DATABASE,
+                'event_source' => AutomationEvent::SOURCE_DATABASE,
                 'event_data' => $processedData,
                 'event_raw' => $event->props,
-                'status' => TriggerEvent::STATUS_PROCESSED,
+                'status' => AutomationEvent::STATUS_RECEIVED,
             ]);
         } catch (\Throwable $e) {
             dd($e);
         }
-//        dd($triggerEvent);
 
         try {
+            $run = Run::create([
+                'class' => RunSequenceWorkflow::class,
+                'sequence_id' => $trigger->sequence->id,
+                'trigger_event_id' => $triggerEvent->id,
+            ]);
 
-            $workflow = WorkflowStub::make(RunSequenceWorkflow::class);
+            // Link the trigger event to the workflow execution
+            $triggerEvent->markAsProcessed($run);
 
-            $workflowExecution = $workflow->start($trigger, $triggerEvent);
+            $workflow = WorkflowStub::fromStoredWorkflow($run);
 
-            // its starting itself here
-
-            return;
-            dd($workflow, $workflowExecution);
-
+            $workflow->start($trigger, $triggerEvent);
 
             // Update trigger stats
-            $trigger->increment('trigger_count');
-            $trigger->update(['last_triggered_at' => now()]);
+//            $trigger->increment('trigger_count');
+//            $trigger->update(['last_triggered_at' => now()]);
+//
+//            Log::info('Trigger executed successfully', [
+//                'trigger_id' => $trigger->id,
+//                'trigger_name' => $trigger->name,
+//                'workflow_id' => $run->id,
+//                'trigger_event_id' => $triggerEvent->id
+//            ]);
 
-            // Mark trigger event as processed
-            $triggerEvent->markAsProcessed($workflowExecution);
-
-            Log::info('Trigger executed successfully', [
-                'trigger_id' => $trigger->id,
-                'trigger_name' => $trigger->name,
-                'workflow_execution_id' => $workflowExecution->id ?? null
-            ]);
+            return;
 
         } catch (\Exception $e) {
             $triggerEvent->markAsFailed($e->getMessage());

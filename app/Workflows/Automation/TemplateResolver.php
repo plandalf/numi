@@ -2,7 +2,7 @@
 
 namespace App\Workflows\Automation;
 
-use App\Models\Automation\TriggerEvent;
+use App\Models\Automation\AutomationEvent;
 use App\Models\WorkflowStep;
 use Illuminate\Support\Facades\Cache;
 
@@ -30,9 +30,9 @@ class TemplateResolver
      */
     public static function resolveForWorkflow(
         string|array|null $template,
-        int $executionId,
-        TriggerEvent $triggerEvent,
-        array $additionalContext = []
+        int               $executionId,
+        AutomationEvent   $triggerEvent,
+        array             $additionalContext = []
     ): mixed {
 
         $context = self::buildWorkflowContext($executionId, $triggerEvent, $additionalContext);
@@ -54,9 +54,8 @@ class TemplateResolver
     /**
      * Build comprehensive context for workflow template resolution
      */
-    private static function buildWorkflowContext(int $executionId, TriggerEvent $triggerEvent, array $additionalContext = []): array
+    private static function buildWorkflowContext(int $executionId, AutomationEvent $triggerEvent, array $additionalContext = []): array
     {
-        $cacheKey = "workflow_context_{$executionId}";
 
         $context = [
             'trigger' => $triggerEvent->event_data ?? [],
@@ -64,7 +63,7 @@ class TemplateResolver
 
         // Get all completed workflow steps for this execution
         $completedSteps = WorkflowStep::query()
-            ->where('execution_id', $executionId)
+            ->where('run_id', $executionId)
             ->where('status', WorkflowStep::STATUS_COMPLETED)
             ->orderBy('created_at', 'asc')
             ->get(['id', 'node_id', 'output_data', 'processed_output']);
@@ -79,15 +78,12 @@ class TemplateResolver
 
         // Merge additional context
         return array_merge($context, $additionalContext);
-//        return Cache::remember($cacheKey, 300, function () use ($executionId, $triggerEvent, $additionalContext) {
-//
-//        });
     }
 
     /**
      * Resolve template variables in a value with enhanced Zapier-style support
      */
-    private static function resolveValue($value, array $context): mixed
+    public static function resolveValue($value, array $context): mixed
     {
         if (is_array($value)) {
             return array_map(fn($item) => self::resolveValue($item, $context), $value);
@@ -115,25 +111,14 @@ class TemplateResolver
         }
 
         // Handle action__id_key syntax (previous action output)
-        if (preg_match('/^action__(\d+)_(.+)$/', $variable, $matches)) {
+        if (preg_match('/^action_(\d+)__([\w_]+)$/', $variable, $matches)) {
             $actionId = $matches[1];
-            $key = $matches[2];
+            $keyPath = str_replace('_', '.', $matches[2]); // Convert to dot notation
 
-            // Try to find the action data by ID
             $actionData = self::findActionData($actionId, $context);
+
             if ($actionData !== null) {
-                return self::getNestedValue($actionData, $key) ?? '';
-            }
-        }
-
-        // Handle step__id_key syntax (alternative to action__)
-        if (preg_match('/^step__(\d+)_(.+)$/', $variable, $matches)) {
-            $stepId = $matches[1];
-            $key = $matches[2];
-
-            $stepData = self::findStepData($stepId, $context);
-            if ($stepData !== null) {
-                return self::getNestedValue($stepData, $key) ?? '';
+                return data_get($actionData, $keyPath, '');
             }
         }
 
@@ -159,29 +144,6 @@ class TemplateResolver
         // Try step__node_id
         if (isset($context["step__{$actionId}"])) {
             return $context["step__{$actionId}"];
-        }
-
-        // Try step_node_id
-        if (isset($context["step_{$actionId}"])) {
-            return $context["step_{$actionId}"];
-        }
-
-        return null;
-    }
-
-    /**
-     * Find step data by ID
-     */
-    private static function findStepData(string $stepId, array $context): ?array
-    {
-        // Try step__step_id
-        if (isset($context["step__{$stepId}"])) {
-            return $context["step__{$stepId}"];
-        }
-
-        // Try action__step_id
-        if (isset($context["action__{$stepId}"])) {
-            return $context["action__{$stepId}"];
         }
 
         return null;
@@ -215,58 +177,5 @@ class TemplateResolver
 
         // Direct key access
         return $data[$key] ?? null;
-    }
-
-    /**
-     * Clear workflow context cache
-     */
-    public static function clearWorkflowContext(int $executionId): void
-    {
-        Cache::forget("workflow_context_{$executionId}");
-    }
-
-    /**
-     * Extract all template variables from a string or array
-     */
-    public static function extractTemplateVariables(string|array $template): array
-    {
-        $variables = [];
-
-        if (is_array($template)) {
-            foreach ($template as $value) {
-                $variables = array_merge($variables, self::extractTemplateVariables($value));
-            }
-            return array_unique($variables);
-        }
-
-        if (!is_string($template) || !str_contains($template, '{{')) {
-            return [];
-        }
-
-        preg_match_all('/{{\s*(.*?)\s*}}/', $template, $matches);
-        return array_unique($matches[1] ?? []);
-    }
-
-    /**
-     * Validate template variables against available context
-     */
-    public static function validateTemplateVariables(array $templateVariables, array $context): array
-    {
-        $invalid = [];
-        $valid = [];
-
-        foreach ($templateVariables as $variable) {
-            $resolved = self::resolveVariable($variable, $context);
-            if ($resolved === '') {
-                $invalid[] = $variable;
-            } else {
-                $valid[] = $variable;
-            }
-        }
-
-        return [
-            'valid' => $valid,
-            'invalid' => $invalid,
-        ];
     }
 }

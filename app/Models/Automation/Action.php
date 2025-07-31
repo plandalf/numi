@@ -14,30 +14,28 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string $type
  * @property array $arguments
  * @property array $configuration
+ * @property array|null $test_result
  * @property string|null $description
  * @property int|null $integration_id
  * @property string|null $action_key
  * @property array|null $position
  * @property array|null $metadata
- * @property array|null $retry_config
- * @property int $timeout_seconds
- * @property array|null $loop_actions
- * @property array|null $parallel_actions
- * @property int|null $parent_node_id
+ *
  * @property \Carbon\Carbon $created_at
  * @property \Carbon\Carbon $updated_at
  */
-class Node extends Model
+class Action extends Model
 {
     use HasFactory;
 
-    protected $table = 'automation_nodes';
+    protected $table = 'automation_actions';
 
     protected $guarded = [];
 
     protected $casts = [
         'arguments' => 'json',
         'configuration' => 'json',
+        'test_result' => 'json',
         'position' => 'json',
         'metadata' => 'json',
         'retry_config' => 'json',
@@ -69,30 +67,16 @@ class Node extends Model
 
     public function parentNode(): BelongsTo
     {
-        return $this->belongsTo(Node::class, 'parent_node_id');
+        return $this->belongsTo(Action::class, 'parent_node_id');
     }
 
     public function childNodes(): HasMany
     {
-        return $this->hasMany(Node::class, 'parent_node_id');
+        return $this->hasMany(Action::class, 'parent_node_id');
     }
 
     public function app(): BelongsTo
     {
         return $this->belongsTo(\App\Models\App::class);
-    }
-
-    /**
-     * Get the executable action for this node
-     */
-    public function getExecutableAction(): ActionInterface
-    {
-        // Use arguments for backward compatibility, fall back to configuration
-        $config = $this->configuration ?? $this->arguments ?? [];
-
-        return match($this->type) {
-            'email' => new EmailActionExecutor($config),
-            default => throw new \Exception("No executor available for node type: {$this->type}")
-        };
     }
 }

@@ -33,13 +33,20 @@ class AppDiscoveryService
             if (class_exists($appClass) && is_subclass_of($appClass, AutomationApp::class)) {
                 $app = new $appClass();
                 $automationMetadata = $this->getAutomationMetadata($appClass);
-                
+
                 // Use automation key if available, otherwise fall back to app name
                 $automationKey = $automationMetadata['key'] ?? $appName;
-                
+
                 // Look up the app in the database using the automation key
-                $dbApp = \App\Models\App::where('key', $automationKey)->first();
-                
+                $dbApp = \App\Models\App::query()
+                    ->where('key', $automationKey)
+                    ->first();
+
+                // If the app doesn't exist in the database, create it
+                if (!$dbApp) {
+                    $dbApp = $this->createAppRecord($automationKey, $automationMetadata, $appName);
+                }
+
                 $apps[$appName] = [
                     'name' => $appName,
                     'class' => $appClass,
@@ -88,7 +95,7 @@ class AppDiscoveryService
     public function getApp(string $key): ?array
     {
         $apps = $this->discoverApps();
-        
+
         // Find the app by automation key
         foreach ($apps as $appName => $app) {
             $automationKey = $app['automation']['key'] ?? $appName;
@@ -96,7 +103,7 @@ class AppDiscoveryService
                 // Use automation metadata for consistent naming
                 $automationName = $app['automation']['name'] ?? $app['name'];
                 $automationDescription = $app['automation']['description'] ?? null;
-                
+
                 return array_merge([
                     'key' => $automationKey,
                     'name' => $automationName,
@@ -106,7 +113,7 @@ class AppDiscoveryService
                 ], $app);
             }
         }
-        
+
         return null;
     }
 
@@ -118,7 +125,7 @@ class AppDiscoveryService
         $app = new $appClass();
         $actionClasses = $app->actions();
         $actions = [];
-        
+
         // Check if this app requires authentication
         $authRequirements = $app->authRequirements();
         $requiresAuth = $authRequirements['type'] !== 'none' && !empty($authRequirements['fields']);
@@ -150,7 +157,7 @@ class AppDiscoveryService
         $app = new $appClass();
         $triggerClasses = $app->triggers();
         $triggers = [];
-        
+
         // Check if this app requires authentication
         $authRequirements = $app->authRequirements();
         $requiresAuth = $authRequirements['type'] !== 'none' && !empty($authRequirements['fields']);
@@ -209,7 +216,7 @@ class AppDiscoveryService
 
         foreach ($apps as $appName => $app) {
             $automationKey = $app['automation']['key'] ?? $appName;
-            
+
             foreach ($app['actions'] as $action) {
                 $action['app'] = $automationKey;
                 $action['app_metadata'] = $app['automation'];
@@ -230,7 +237,7 @@ class AppDiscoveryService
 
         foreach ($apps as $appName => $app) {
             $automationKey = $app['automation']['key'] ?? $appName;
-            
+
             foreach ($app['triggers'] as $trigger) {
                 $trigger['app'] = $automationKey;
                 $trigger['app_metadata'] = $app['automation'];
@@ -251,7 +258,7 @@ class AppDiscoveryService
 
         foreach ($apps as $appName => $app) {
             $automationKey = $app['automation']['key'] ?? $appName;
-            
+
             foreach ($app['resources'] as $resource) {
                 $resource['app'] = $automationKey;
                 $resource['app_metadata'] = $app['automation'];
@@ -273,7 +280,7 @@ class AppDiscoveryService
             $automationKey = $app['automation']['key'] ?? $appName;
             $automationName = $app['automation']['name'] ?? $app['name'];
             $automationDescription = $app['automation']['description'] ?? null;
-            
+
             return array_merge([
                 'key' => $automationKey,
                 'name' => $automationName,
@@ -291,18 +298,21 @@ class AppDiscoveryService
                     (isset($app['description']) && str_contains(strtolower($app['description']), $q));
             });
         }
+
         // Filter: category
         if (!empty($filters['category'])) {
             $result = $result->filter(function ($app) use ($filters) {
                 return isset($app['category']) && $app['category'] === $filters['category'];
             });
         }
+
         // Filter: provider
         if (!empty($filters['provider'])) {
             $result = $result->filter(function ($app) use ($filters) {
                 return isset($app['provider']) && $app['provider'] === $filters['provider'];
             });
         }
+
         // Filter: has_triggers
         if (isset($filters['has_triggers'])) {
             $hasTriggers = filter_var($filters['has_triggers'], FILTER_VALIDATE_BOOLEAN);
@@ -313,5 +323,24 @@ class AppDiscoveryService
 
         // Optionally paginate here if needed
         return $result->values()->all();
+    }
+
+    /**
+     * Create a new App database record for a discovered app
+     */
+    private function createAppRecord(string $automationKey, ?array $automationMetadata, string $appName): \App\Models\App
+    {
+        return \App\Models\App::create([
+            'key' => $automationKey,
+            'name' => $automationMetadata['name'] ?? $appName,
+            'description' => $automationMetadata['description'] ?? null,
+            'version' => $automationMetadata['version'] ?? '1.0.0',
+            'documentation_url' => $automationMetadata['provider_url'] ?? null,
+            'is_active' => true,
+            'is_built_in' => true, // Apps discovered in the codebase are considered built-in
+            'category' => 'automation', // Default category, can be customized per app
+            'color' => null, // Can be set later or customized per app
+            'icon_url' => null, // Can be set later or customized per app
+        ]);
     }
 }

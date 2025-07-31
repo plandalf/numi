@@ -100,4 +100,17 @@ abstract class AppTrigger
     {
         // Override in subclasses if needed
     }
+
+    /**
+     * Provide example data for testing when no real trigger events exist
+     * Subclasses can override this to provide realistic example data
+     */
+    public function example(Bundle $bundle): array
+    {
+        return [
+            'example' => true,
+            'message' => 'This is example data for testing purposes',
+            'timestamp' => now()->toISOString(),
+        ];
+    }
 }

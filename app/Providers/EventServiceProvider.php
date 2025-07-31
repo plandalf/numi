@@ -21,7 +21,11 @@ class EventServiceProvider extends ServiceProvider
         ],
         AutomationTriggerEvent::class => [
             AutomationEventListener::class,
-        ]
+        ],
+    ];
+
+    protected $subscribe = [
+        \App\Workflows\WorkflowEventListener::class,
     ];
 
     /**

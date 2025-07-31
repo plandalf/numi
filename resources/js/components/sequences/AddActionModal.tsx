@@ -8,6 +8,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Loader2, AlertCircle, Settings, TestTube, Play, Webhook, User, ExternalLink, ChevronDown } from 'lucide-react';
 import axios from 'axios';
 import { TriggerConfigField } from './TriggerConfigField';
+import { AppSelectorModal } from '@/components/sequences/AppSelectorModal';
+import { cx } from 'class-variance-authority';
+import { Popover, PopoverAnchor, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Combobox } from '@/components/combobox';
 
 interface AddActionModalProps {
   open: boolean;
@@ -30,15 +34,6 @@ interface CreatedAction {
   };
 }
 
-interface App {
-  key: string;
-  name: string;
-  description?: string;
-  icon_url?: string;
-  color?: string;
-  actions?: ActionDefinition[];
-  id: number;
-}
 
 interface ActionDefinition {
   key: string;
@@ -86,27 +81,27 @@ export function AddActionModal({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [validationErrors, setValidationErrors] = useState<Record<string, string[]>>({});
-  
+
   // Setup tab state
   const [selectedApp, setSelectedApp] = useState<App | null>(null);
   const [selectedAction, setSelectedAction] = useState<ActionDefinition | null>(null);
   const [selectedIntegration, setSelectedIntegration] = useState<Integration | null>(null);
-  const [apps, setApps] = useState<App[]>([]);
+
   const [integrations, setIntegrations] = useState<Integration[]>([]);
   const [showAppSelector, setShowAppSelector] = useState(false);
   const [showActionSelector, setShowActionSelector] = useState(false);
-  
-  // Config tab state  
+
+  // Config tab state
   const [actionName, setActionName] = useState('');
   const [configuration, setConfiguration] = useState<Record<string, unknown>>({});
-  
+
   // Test tab state
   const [testResult, setTestResult] = useState<{ error?: string; [key: string]: unknown } | null>(null);
   const [testLoading, setTestLoading] = useState(false);
 
   useEffect(() => {
     if (open) {
-      loadApps();
+      // loadApps();
       loadIntegrations();
       if (editingAction) {
         setActionName(editingAction.name);
@@ -123,14 +118,6 @@ export function AddActionModal({
     }
   }, [open, editingAction]);
 
-  const loadApps = async () => {
-    try {
-      const response = await axios.get('/automation/apps');
-      setApps(response.data.data || []);
-    } catch (error) {
-      console.error('Failed to load apps:', error);
-    }
-  };
 
   const loadIntegrations = async () => {
     try {
@@ -146,24 +133,26 @@ export function AddActionModal({
     setSelectedAction(null);
     setSelectedIntegration(null);
     setShowAppSelector(false);
+
+    // note: should SAVE now.
   };
 
   const handleActionSelect = (action: ActionDefinition) => {
     setSelectedAction(action);
     setActionName(action.label);
     setShowActionSelector(false);
-    
+
     // Check if this action requires auth
     if (action.requires_auth) {
-      const appIntegrations = integrations.filter(integration => 
+      const appIntegrations = integrations.filter(integration =>
         integration.app.key === selectedApp?.key
       );
-      const hasActiveIntegration = appIntegrations.some(integration => 
+      const hasActiveIntegration = appIntegrations.some(integration =>
         integration.current_state === 'active'
       );
-      
+
       if (hasActiveIntegration) {
-        const activeIntegration = appIntegrations.find(integration => 
+        const activeIntegration = appIntegrations.find(integration =>
           integration.current_state === 'active'
         );
         if (activeIntegration) {
@@ -175,10 +164,10 @@ export function AddActionModal({
 
   const openIntegrationSetup = () => {
     if (!selectedApp) return;
-    
+
     const integrationName = `${selectedApp.name} Integration`;
     const setupUrl = `/automation/integrations/setup?app_key=${selectedApp.key}&integration_name=${encodeURIComponent(integrationName)}`;
-    
+
     window.open(setupUrl, 'integration_setup', 'width=600,height=700,scrollbars=yes,resizable=yes');
   };
 
@@ -202,7 +191,7 @@ export function AddActionModal({
       setLoading(true);
       setError(null);
       setValidationErrors({});
-      
+
       const payload = {
         sequence_id: sequenceId,
         name: actionName,
@@ -211,7 +200,7 @@ export function AddActionModal({
         app_name: selectedApp.name,
         configuration: configuration,
       };
-      
+
       if (editingAction) {
         const response = await axios.put(`/automation/actions/${editingAction.id}`, payload);
         onActionUpdated?.(response.data.data);
@@ -219,11 +208,11 @@ export function AddActionModal({
         const response = await axios.post(`/automation/actions`, payload);
         onActionAdded(response.data.data);
       }
-      
+
       handleClose();
     } catch (error) {
       console.error('Failed to save action:', error);
-      
+
       if (axios.isAxiosError(error) && error.response?.status === 422) {
         setValidationErrors(error.response.data.errors || {});
       } else if (axios.isAxiosError(error)) {
@@ -242,14 +231,14 @@ export function AddActionModal({
     try {
       setTestLoading(true);
       setTestResult(null);
-      
+
       const payload = {
         sequence_id: sequenceId,
         app_action_key: selectedAction.key,
         app_name: selectedApp.name,
         configuration: configuration,
       };
-      
+
       const response = await axios.post(`/automation/actions/test`, payload);
       setTestResult(response.data);
     } catch (error) {
@@ -272,12 +261,10 @@ export function AddActionModal({
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>{isEditing ? 'Edit Action' : 'Add Action'}</DialogTitle>
-          <DialogDescription>
-            {isEditing ? 'Modify the configuration for this action' : 'Configure an action to execute when this workflow runs'}
-          </DialogDescription>
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto p-0">
+
+        <DialogHeader className="bg-gray-100 clear-both py-2 px-4">
+          <DialogTitle className="text-base">{isEditing ? 'Edit Action' : 'Add Action'}</DialogTitle>
         </DialogHeader>
 
         {/* Error Display */}
@@ -290,30 +277,30 @@ export function AddActionModal({
           </div>
         )}
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="setup">Setup</TabsTrigger>
-            <TabsTrigger value="config">Config</TabsTrigger>
-            <TabsTrigger value="test">Test</TabsTrigger>
-          </TabsList>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full ">
+          <div className="px-4">
+            <TabsList className="grid w-full grid-cols-3 ">
+              <TabsTrigger value="setup">Setup</TabsTrigger>
+              <TabsTrigger value="config" disabled>Config</TabsTrigger>
+              <TabsTrigger value="test" disabled>Test</TabsTrigger>
+            </TabsList>
+          </div>
 
           {/* Setup Tab */}
           <TabsContent value="setup" className="space-y-4">
-            <h3 className="text-lg font-medium">Setup Action</h3>
-            
             {/* App Selection */}
-            <div className="space-y-2">
-              <Label className="text-sm font-medium">App *</Label>
+            <div className="space-y-2 px-4">
+              <Label className="text-sm font-medium mb-1 block">App <span className="text-orange-700">*</span></Label>
               {selectedApp ? (
-                <Card className="border border-blue-300 bg-blue-50">
-                  <CardContent className="p-3">
+                <div className="border border-blue-300 bg-blue-50">
+                  <div className="px-3 py-1">
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-3">
+                      <div className="flex items-center space-x-3 fle">
                         {selectedApp.icon_url ? (
                           <img src={selectedApp.icon_url} alt={selectedApp.name} className="w-8 h-8 rounded" />
                         ) : (
                           <div
-                            className="w-8 h-8 rounded flex items-center justify-center text-white font-bold text-sm"
+                            className="flex-shrink-0 w-8 h-8 rounded flex items-center justify-center text-white font-bold text-sm"
                             style={{ backgroundColor: selectedApp.color || '#3b82f6' }}
                           >
                             {selectedApp.name.charAt(0).toUpperCase()}
@@ -324,19 +311,19 @@ export function AddActionModal({
                           <p className="text-xs text-gray-500">{selectedApp.description}</p>
                         </div>
                       </div>
-                      <Button 
-                        variant="outline" 
+                      <Button
+                        variant="outline"
                         size="sm"
                         onClick={() => setShowAppSelector(true)}
                       >
                         Change
                       </Button>
                     </div>
-                  </CardContent>
-                </Card>
+                  </div>
+                </div>
               ) : (
-                <Card className="border-2 border-dashed border-gray-300 hover:border-gray-400 transition-colors cursor-pointer" onClick={() => setShowAppSelector(true)}>
-                  <CardContent className="p-4">
+                <div className="border-2 border-dashed border-gray-300 hover:border-gray-400 transition-colors cursor-pointer" onClick={() => setShowAppSelector(true)}>
+                  <div className="p-2">
                     <div className="flex items-center space-x-3">
                       <div className="w-8 h-8 bg-gray-100 rounded flex items-center justify-center">
                         <Webhook className="h-4 w-4 text-gray-400" />
@@ -346,56 +333,73 @@ export function AddActionModal({
                         <p className="text-xs text-gray-500">Select the app that will execute this action</p>
                       </div>
                     </div>
-                  </CardContent>
-                </Card>
+                  </div>
+                </div>
               )}
             </div>
 
             {/* Action Selection */}
-            <div className="space-y-2">
+            <div className={cx(
+              'space-y-2 px-4',
+              !selectedApp && 'opacity-50 pointer-events-none cursor-not-allowed'
+            )}>
               <Label className="text-sm font-medium">Action *</Label>
-              {selectedAction ? (
-                <Card className="border border-blue-300 bg-blue-50">
-                  <CardContent className="p-3">
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <h4 className="font-medium text-sm">{selectedAction.label}</h4>
-                        <p className="text-xs text-gray-500">{selectedAction.description}</p>
-                      </div>
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => setShowActionSelector(true)}
-                        disabled={!selectedApp}
-                      >
-                        Change
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              ) : (
-                <Card className={`border-2 border-dashed transition-colors ${
-                  selectedApp 
-                    ? 'border-gray-300 hover:border-gray-400 cursor-pointer' 
-                    : 'border-gray-200 cursor-not-allowed'
-                }`} onClick={() => selectedApp && setShowActionSelector(true)}>
-                  <CardContent className="p-4">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-8 h-8 bg-gray-100 rounded flex items-center justify-center">
-                        <Play className="h-4 w-4 text-gray-400" />
-                      </div>
-                      <div>
-                        <p className={`font-medium text-sm ${!selectedApp ? 'text-gray-400' : 'text-gray-700'}`}>
-                          Choose an action
-                        </p>
-                        <p className="text-xs text-gray-500">
-                          {selectedApp ? 'Select the action to execute' : 'Select an app first'}
-                        </p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
+              {/*{selectedAction ? (*/}
+              {/*  <div className="border border-blue-300 bg-blue-50">*/}
+              {/*    <CardContent className="p-3">*/}
+              {/*      <div className="flex items-center justify-between">*/}
+              {/*        <div className="flex-1">*/}
+              {/*          <h4 className="font-medium text-sm">{selectedAction.label}</h4>*/}
+              {/*          <p className="text-xs text-gray-500">{selectedAction.description}</p>*/}
+              {/*        </div>*/}
+              {/*        <Button*/}
+              {/*          variant="outline"*/}
+              {/*          size="sm"*/}
+              {/*          onClick={() => setShowActionSelector(true)}*/}
+              {/*          disabled={!selectedApp}*/}
+              {/*        >*/}
+              {/*          Change*/}
+              {/*        </Button>*/}
+              {/*      </div>*/}
+              {/*    </CardContent>*/}
+              {/*  </div>*/}
+              {/*) : (*/}
+              {/*  <div*/}
+              {/*    className={`border-2 border-dashed transition-colors border-gray-300 hover:border-gray-400 cursor-pointer'`}*/}
+              {/*    onClick={() => selectedApp && setShowActionSelector(true)}*/}
+              {/*  >*/}
+              {/*    <div className="p-2">*/}
+              {/*      <div className="flex items-center space-x-3">*/}
+              {/*        <div className="w-8 h-8 bg-gray-100 rounded flex items-center justify-center">*/}
+              {/*          <Play className="h-4 w-4 text-gray-400" />*/}
+              {/*        </div>*/}
+              {/*        <div>*/}
+              {/*          <p className={`font-medium text-sm ${!selectedApp ? 'text-gray-400' : 'text-gray-700'}`}>*/}
+              {/*            Choose an action*/}
+              {/*          </p>*/}
+              {/*          <p className="text-xs text-gray-500">*/}
+              {/*            {selectedApp ? 'Select the action to execute' : 'Select an app first'}*/}
+              {/*          </p>*/}
+              {/*        </div>*/}
+              {/*      </div>*/}
+              {/*    </div>*/}
+              {/*  </div>*/}
+              {/*)}*/}
+
+              <div className="">
+                <Combobox
+                  name="user"
+                  placeholder={"Choose an action"}
+                  items={[]}
+                  displayValue={(user) => user?.name}
+                  defaultValue={null}>
+                  {(user) => (
+                    <ComboboxOption value={user}>
+                      <ComboboxLabel>{user.name}</ComboboxLabel>
+                    </ComboboxOption>
+                  )}
+                </Combobox>
+              </div>
             </div>
 
             {/* Integration Selection - SIMPLIFIED */}
@@ -464,7 +468,7 @@ export function AddActionModal({
           {/* Config Tab */}
           <TabsContent value="config" className="space-y-6">
             <h3 className="text-lg font-medium">Configure Action</h3>
-            
+
             {/* Action Name */}
             <div className="space-y-2">
               <Label htmlFor="action-name">Action Name</Label>
@@ -486,7 +490,7 @@ export function AddActionModal({
                 <Settings className="h-4 w-4 text-gray-500" />
                 <h4 className="font-medium">Configuration Options</h4>
               </div>
-              
+
               {selectedAction?.props && Object.keys(selectedAction.props).length > 0 ? (
                 <Card>
                   <CardContent className="p-4 space-y-4">
@@ -499,6 +503,7 @@ export function AddActionModal({
                           appKey={selectedApp?.key || ''}
                           integrationId={selectedIntegration?.id}
                           error={validationErrors[field.key]?.[0]}
+                          requiresAuth={selectedAction?.requires_auth || false}
                         />
                     ))}
                   </CardContent>
@@ -520,7 +525,7 @@ export function AddActionModal({
           {/* Test Tab */}
           <TabsContent value="test" className="space-y-6">
             <h3 className="text-lg font-medium">Test Action</h3>
-            
+
             <div className="space-y-4">
               <Card>
                 <CardContent className="p-4">
@@ -532,8 +537,8 @@ export function AddActionModal({
                         Run a test to verify your action is working correctly
                       </p>
                     </div>
-                    <Button 
-                      onClick={handleTestAction} 
+                    <Button
+                      onClick={handleTestAction}
                       disabled={testLoading}
                       className="w-full"
                     >
@@ -597,99 +602,14 @@ export function AddActionModal({
           </Button>
         </div>
 
-        {/* App Selector Modal */}
-        {showAppSelector && (
-          <Dialog open={showAppSelector} onOpenChange={setShowAppSelector}>
-            <DialogContent className="max-w-2xl">
-              <DialogHeader>
-                <DialogTitle>Choose App</DialogTitle>
-                <DialogDescription>
-                  Select the app that will execute this action.
-                </DialogDescription>
-              </DialogHeader>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {apps.map((app) => (
-                  <Card
-                    key={app.id}
-                    className={`cursor-pointer transition-colors ${
-                      selectedApp?.id === app.id ? 'border-blue-500 bg-blue-50' : 'hover:border-gray-300'
-                    }`}
-                    onClick={() => handleAppSelect(app)}
-                  >
-                    <CardContent className="p-3">
-                      <div className="flex items-center space-x-3">
-                        {app.icon_url ? (
-                          <img src={app.icon_url} alt={app.name} className="w-8 h-8 rounded-lg" />
-                        ) : (
-                          <div
-                            className="w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold"
-                            style={{ backgroundColor: app.color || '#3b82f6' }}
-                          >
-                            {app.name.charAt(0).toUpperCase()}
-                          </div>
-                        )}
-                        <div className="flex-1">
-                          <h4 className="font-medium text-sm">{app.name}</h4>
-                          <p className="text-xs text-gray-500">{app.description}</p>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-              <div className="flex justify-end pt-4">
-                <Button onClick={() => setShowAppSelector(false)} variant="outline">
-                  Cancel
-                </Button>
-              </div>
-            </DialogContent>
-          </Dialog>
-        )}
-
-        {/* Action Selector Modal */}
-        {showActionSelector && (
-          <Dialog open={showActionSelector} onOpenChange={setShowActionSelector}>
-            <DialogContent className="max-w-2xl">
-              <DialogHeader>
-                <DialogTitle>Choose Action</DialogTitle>
-                <DialogDescription>
-                  Select the action to execute.
-                </DialogDescription>
-              </DialogHeader>
-              {selectedApp ? (
-                <div className="space-y-2">
-                  {selectedApp.actions?.map((action) => (
-                    <Card
-                      key={action.key}
-                      className={`cursor-pointer transition-colors ${
-                        selectedAction?.key === action.key ? 'border-blue-500 bg-blue-50' : 'hover:border-gray-300'
-                      }`}
-                      onClick={() => handleActionSelect(action)}
-                    >
-                      <CardContent className="p-3">
-                        <div className="flex items-center justify-between">
-                          <div className="flex-1">
-                            <h4 className="font-medium text-sm">{action.label}</h4>
-                            <p className="text-xs text-gray-500">{action.description}</p>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center p-4 bg-gray-50 rounded-lg">
-                  <p className="text-sm text-gray-600">Please select an app first.</p>
-                </div>
-              )}
-              <div className="flex justify-end pt-4">
-                <Button onClick={() => setShowActionSelector(false)} variant="outline">
-                  Cancel
-                </Button>
-              </div>
-            </DialogContent>
-          </Dialog>
-        )}
+        <AppSelectorModal
+          type="actions"
+          open={showAppSelector}
+          onClose={() => setShowAppSelector(false)}
+          onSelect={handleAppSelect}
+          selectedApp={selectedApp}
+          selectedAction={selectedAction}
+        />
       </DialogContent>
     </Dialog>
   );

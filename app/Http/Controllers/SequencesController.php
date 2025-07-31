@@ -3,9 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\Automation\Sequence;
-use App\Models\Automation\StoredWorkflow;
+use App\Models\Automation\Run;
 use App\Models\Automation\Trigger;
-use App\Models\Automation\Node;
+use App\Models\Automation\Action;
 use App\Models\App;
 use App\Models\Integration;
 use App\Services\AppDiscoveryService;
@@ -26,21 +26,20 @@ class SequencesController extends Controller
 
         $sequences = Sequence::query()
             ->where('organization_id', $organizationId)
-            ->with(['triggers', 'nodes', 'edges'])
+            ->with(['triggers', 'actions'])
             ->latest()
             ->get();
 
-        $workflows = StoredWorkflow::query()
+        $workflows = Run::query()
             ->where('organization_id', $organizationId)
             ->latest()
             ->with(['logs', 'exceptions'])
             ->paginate();
 
-        $workflows->transform(function (StoredWorkflow $wf) {
+        $workflows->transform(function (Run $wf) {
 
             return [
                 'id' => $wf->id,
-
                 'logs' => collect($wf->logs)
                     ->map(function (\Workflow\Models\StoredWorkflowLog $log) {
                         return [
@@ -93,7 +92,7 @@ class SequencesController extends Controller
         // Ensure the sequence belongs to the current organization
         $this->authorize('update', $sequence);
 
-        $sequence->load(['triggers', 'nodes', 'edges']);
+        $sequence->load(['triggers', 'actions']);
 
         // Get discovered apps instead of hardcoded ones
         $discoveryService = new AppDiscoveryService();
@@ -116,20 +115,25 @@ class SequencesController extends Controller
             ];
         })->values();
 
-        $integrations = Integration::where('organization_id', Auth::user()->currentOrganization->id)
+        $integrations = Integration::query()
+            ->where('organization_id', Auth::user()->currentOrganization->id)
             ->with('app')
             ->get(['id', 'app_id', 'name', 'type']);
 
         if (request()->expectsJson()) {
             return response()->json([
-                'sequence' => $sequence->load('triggers.integration.app',  'nodes'),
+                'sequence' => $sequence->load('triggers.integration.app',  'actions'),
                 'apps' => $apps,
                 'integrations' => $integrations,
             ]);
         }
 
         return Inertia::render('sequences/Edit', [
-            'sequence' => $sequence->load('triggers.integration.app',  'nodes'),
+            'sequence' => $sequence->load([
+                'triggers.app',
+                'triggers.integration.app',
+                'actions',
+            ]),
             'apps' => $apps,
             'integrations' => $integrations,
         ]);
@@ -689,7 +693,7 @@ class SequencesController extends Controller
     /**
      * Show a specific action
      */
-    public function showAction(Sequence $sequence, Node $node): JsonResponse
+    public function showAction(Sequence $sequence, Action $node): JsonResponse
     {
         $this->authorize('update', $sequence);
 
@@ -885,7 +889,7 @@ class SequencesController extends Controller
             ];
         }
 
-        $node = Node::create($nodeData);
+        $node = Action::create($nodeData);
 
         return response()->json([
             'action' => $node,
@@ -896,7 +900,7 @@ class SequencesController extends Controller
     /**
      * Update an existing action/node
      */
-    public function updateAction(Request $request, Sequence $sequence, Node $node): JsonResponse
+    public function updateAction(Request $request, Sequence $sequence, Action $node): JsonResponse
     {
         $this->authorize('update', $sequence);
 
@@ -927,7 +931,7 @@ class SequencesController extends Controller
     /**
      * Delete an action/node
      */
-    public function destroyAction(Sequence $sequence, Node $node): JsonResponse
+    public function destroyAction(Sequence $sequence, Action $node): JsonResponse
     {
         $this->authorize('update', $sequence);
 
@@ -1037,7 +1041,7 @@ class SequencesController extends Controller
     /**
      * Test an action using its configured settings
      */
-    public function testAction(Request $request, Sequence $sequence, Node $node): JsonResponse
+    public function testAction(Request $request, Sequence $sequence, Action $node): JsonResponse
     {
         $this->authorize('update', $sequence);
 
@@ -1093,9 +1097,9 @@ class SequencesController extends Controller
     /**
      * Get actions that come before the current action in the sequence
      */
-    private function getPreviousActions(Sequence $sequence, Node $currentNode): array
+    private function getPreviousActions(Sequence $sequence, Action $currentNode): array
     {
-        $allNodes = $sequence->nodes()->orderBy('id')->get();
+        $allNodes = $sequence->actions()->orderBy('id')->get();
         $currentIndex = $allNodes->search(function ($node) use ($currentNode) {
             return $node->id === $currentNode->id;
         });
@@ -1168,7 +1172,7 @@ class SequencesController extends Controller
     /**
      * Execute the test action using Laravel Workflow approach
      */
-    private function executeTestAction(Node $node): array
+    private function executeTestAction(Action $node): array
     {
         try {
             // For app actions, use the new app discovery system
@@ -1297,7 +1301,7 @@ class SequencesController extends Controller
     /**
      * Generate sample test data for actions
      */
-    private function generateActionTestData(Node $node, array $actionData): array
+    private function generateActionTestData(Action $node, array $actionData): array
     {
         $arguments = $node->arguments ?? [];
 

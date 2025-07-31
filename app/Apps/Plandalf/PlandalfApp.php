@@ -5,6 +5,7 @@ namespace App\Apps\Plandalf;
 use App\Apps\AutomationApp;
 use App\Apps\Plandalf\Actions\SendEmailAction;
 use App\Apps\Plandalf\Actions\SendWebhookAction;
+use App\Apps\Plandalf\Resources\OfferResource;
 use App\Apps\Plandalf\Triggers\OrderCreated;
 use App\Apps\Plandalf\Triggers\WebhookTrigger;
 use App\Workflows\Attributes\IsAutomation;
@@ -31,6 +32,13 @@ class PlandalfApp extends AutomationApp
         return [
             WebhookTrigger::class,
             OrderCreated::class,
+        ];
+    }
+
+    public function resources(): array
+    {
+        return [
+            OfferResource::class,
         ];
     }
 }

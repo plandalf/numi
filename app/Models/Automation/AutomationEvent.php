@@ -14,15 +14,14 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property array $event_data
  * @property array|null $metadata
  * @property \Carbon\Carbon|null $processed_at
- * @property int|null $workflow_execution_id
  * @property string $status
  * @property string|null $error_message
  * @property \Carbon\Carbon $created_at
  * @property \Carbon\Carbon $updated_at
  */
-class TriggerEvent extends Model
+class AutomationEvent extends Model
 {
-    protected $table = 'trigger_events';
+    protected $table = 'automation_events';
 
     protected $guarded = [];
 
@@ -59,11 +58,6 @@ class TriggerEvent extends Model
         return $this->belongsTo(Integration::class);
     }
 
-    public function workflowExecution(): BelongsTo
-    {
-        return $this->belongsTo(\App\Models\Automation\WorkflowExecution::class);
-    }
-
     // Helper methods
     public function shouldProcess(): bool
     {
@@ -75,7 +69,6 @@ class TriggerEvent extends Model
         $this->update([
             'status' => self::STATUS_PROCESSED,
             'processed_at' => now(),
-            'workflow_execution_id' => $execution?->id,
         ]);
     }
 

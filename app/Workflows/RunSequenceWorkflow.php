@@ -2,28 +2,30 @@
 
 namespace App\Workflows;
 
-use App\Models\Automation\Node;
-use App\Models\Automation\StoredWorkflow;
+use App\Models\Automation\Action;
+use App\Models\Automation\Run;
 use App\Models\Automation\Trigger;
-use App\Models\Automation\TriggerEvent;
+use App\Models\Automation\AutomationEvent;
 use App\Models\WorkflowStep;
 use App\Workflows\Automation\ActivitySchemaRegistry;
 use App\Workflows\Automation\Bundle;
 use App\Workflows\Automation\NodeActivities\ActionActivity;
 use App\Workflows\Automation\TemplateResolver;
 use Carbon\Carbon;
+use Carbon\CarbonPeriod;
+use Illuminate\Support\Facades\Log;
 use Workflow\ActivityStub;
 use Workflow\Workflow;
 
 /**
- * @property StoredWorkflow $storedWorkflow
+ * @property Run $storedWorkflow
  * @property Carbon $now
  */
 class RunSequenceWorkflow extends Workflow
 {
     public function execute(
-        Trigger $trigger,
-        TriggerEvent $event,
+        Trigger         $trigger,
+        AutomationEvent $event,
     ) {
         foreach ($trigger->sequence->nodes as $node) {
             // Resolve template variables in node configuration
@@ -37,28 +39,49 @@ class RunSequenceWorkflow extends Workflow
 
             $startTime = $this->now;
 
-            // Execute the action
-            $output = yield ActivityStub::make(ActionActivity::class, $node, $bundle);
-
-            // Create workflow step record
-            WorkflowStep::query()->create([
-                'execution_id' => $this->storedWorkflow->id,
-                'node_id' => $node->id,
+            $step = WorkflowStep::query()->firstOrCreate([
+                'run_id' => $this->storedWorkflow->id,
+                'action_id' => $node->id,
+            ], [
                 'step_name' => $node->name ?? "Node {$node->id}",
                 'input_data' => $resolvedConfiguration,
-                'output_data' => $output,
-                'status' => WorkflowStep::STATUS_COMPLETED,
+                'status' => WorkflowStep::STATUS_RUNNING,
                 'started_at' => $startTime,
-                'completed_at' => $this->now,
-                'duration_ms' => $this->now->sub($startTime)->totalMilliseconds,
                 'max_retries' => $node->retry_config['max_retries'] ?? 0,
-                'parent_step_id' => null, // for parallel/loop actions
-                'loop_iteration' => null, // for loop actions
-                'loop_action_index' => null, // for loop actions
             ]);
 
-            // Clear the workflow context cache to ensure fresh data for next steps
-//            TemplateResolver::clearWorkflowContext($this->storedWorkflow->id);
+            Log::info(logname(), [
+                'note' => 'event: '.$event->id. ' node: '.$node->id. ' step: '.$step->id,
+            ]);
+
+            // Execute the action
+            try {
+                $output = yield ActivityStub::make(ActionActivity::class, $node, $bundle);
+            } catch (\Exception $e) {
+                Log::error(logname('workflow_error'), [
+                    'workflow_id' => $this->storedWorkflow->id,
+                    'node_id' => $node->id,
+                    'error' => $e->getMessage(),
+                ]);
+
+                // Update step status to failed
+                $step->update([
+                    'status' => WorkflowStep::STATUS_FAILED,
+                    'error_message' => $e->getMessage(),
+                    'completed_at' => $this->now,
+                    'duration_ms' => $startTime->diffInMilliseconds($this->now),
+                ]);
+
+                // note; check if we can skip?
+                continue; // Skip to the next node
+            }
+
+            $step->update([
+                'output_data' => $output,
+                'status' => WorkflowStep::STATUS_COMPLETED,
+                'completed_at' => $this->now,
+                'duration_ms' => $startTime->diffInMilliseconds($this->now),
+            ]);
         }
 
         return true;
@@ -67,7 +90,7 @@ class RunSequenceWorkflow extends Workflow
     /**
      * Resolve template variables in node configuration
      */
-    private function resolveNodeConfiguration(Node $node, TriggerEvent $event): array
+    private function resolveNodeConfiguration(Action $node, AutomationEvent $event): array
     {
         $configuration = $node->configuration ?? $node->arguments ?? [];
 
@@ -79,7 +102,7 @@ class RunSequenceWorkflow extends Workflow
         );
     }
 
-    protected function runNode(Node $node, $event)
+    protected function runNode(Action $node, $event)
     {
         // for now, will always be actionactivity until we have loops
         $activityClass = ActionActivity::class;

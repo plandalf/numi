@@ -10,6 +10,7 @@ interface NavGroup {
 export function NavMain({ groups = [] }: { groups: NavGroup[] }) {
     return (
         <>
+          {route().current()}
             {groups.map((group, groupIndex) => (
                 <SidebarGroup key={groupIndex} className="px-3">
                     {group.label && <SidebarGroupLabel>{group.label}</SidebarGroupLabel>}
@@ -17,7 +18,7 @@ export function NavMain({ groups = [] }: { groups: NavGroup[] }) {
                         {group.items.map((item) => (
                             <SidebarMenuItem key={item.title}>
                                 <SidebarMenuButton
-                                    asChild 
+                                    asChild
                                     isActive={route().current(item.route)}
                                     tooltip={{ children: item.title }}
                                 >

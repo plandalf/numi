@@ -3,9 +3,11 @@
 namespace App\Http\Controllers\Automation;
 
 use App\Http\Controllers\Controller;
+use App\Models\Integration;
 use App\Services\AppDiscoveryService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Validation\Rule;
 
 class ResourceController extends Controller
 {
@@ -16,19 +18,29 @@ class ResourceController extends Controller
     /**
      * Search for resources based on app, resource type, and query
      */
-    public function search(Request $request): JsonResponse
+    public function search(Request $request, string $app, string $resource): JsonResponse
     {
+        $request->merge([
+            'app_key' => $app,
+            'resource_key' => $resource,
+        ]);
+
         $request->validate([
-            'app_key' => 'required|string',
-            'resource_key' => 'required|string',
-            'integration_id' => 'required|integer|exists:integrations,id',
+            'integration_id' => [
+                'nullable',
+                'integer',
+                Rule::exists(Integration::class, 'id')
+                    ->where(function ($query) use ($request) {
+                        return $query->where('organization_id', $request->user()->currentOrganization->id);
+                    }),
+            ],
             'search' => 'sometimes|nullable|string',
         ]);
 
         try {
             $apps = $this->appDiscoveryService->getApps();
             $app = collect($apps)->firstWhere('key', $request->app_key);
-            
+
             if (!$app) {
                 return response()->json(['error' => 'App not found'], 404);
             }
@@ -39,15 +51,11 @@ class ResourceController extends Controller
                 ->where('id', $request->integration_id)
                 ->first();
 
-            if (!$integration) {
-                return response()->json(['error' => 'Integration not found'], 404);
-            }
-
             // Get the app class and find the resource
             $appClass = $app['class'];
             $appInstance = new $appClass();
             $resourceClasses = $appInstance->resources();
-            
+
             $resourceClass = null;
             foreach ($resourceClasses as $class) {
                 $metadata = $class::getMetadata();
@@ -97,7 +105,7 @@ class ResourceController extends Controller
         try {
             $apps = $this->appDiscoveryService->getApps();
             $app = collect($apps)->firstWhere('key', $request->app_key);
-            
+
             if (!$app) {
                 return response()->json(['error' => 'App not found'], 404);
             }
@@ -116,7 +124,7 @@ class ResourceController extends Controller
             $appClass = $app['class'];
             $appInstance = new $appClass();
             $resourceClasses = $appInstance->resources();
-            
+
             $resourceClass = null;
             foreach ($resourceClasses as $class) {
                 $metadata = $class::getMetadata();
@@ -150,4 +158,4 @@ class ResourceController extends Controller
             ], 500);
         }
     }
-} 
+}

@@ -8,9 +8,9 @@ use ReflectionClass;
 
 abstract class Resource
 {
-    protected Integration $integration;
+    protected ?Integration $integration;
 
-    public function __construct(Integration $integration)
+    public function __construct(?Integration $integration)
     {
         $this->integration = $integration;
     }

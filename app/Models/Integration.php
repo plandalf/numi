@@ -29,6 +29,7 @@ use Illuminate\Support\Arr;
  * @property \Carbon\Carbon $created_at
  * @property \Carbon\Carbon $updated_at
  * @property \Carbon\Carbon|null $deleted_at
+ * @property App|null $app
  */
 class Integration extends Model
 {

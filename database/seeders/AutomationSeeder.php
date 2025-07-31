@@ -6,11 +6,7 @@ use App\Models\Organization;
 use App\Models\User;
 use App\Models\App;
 use App\Models\Automation\Sequence;
-use App\Models\Automation\Node;
-use App\Models\Automation\Edge;
-use App\Models\Automation\Trigger;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Str;
 
 class AutomationSeeder extends Seeder
 {
@@ -21,7 +17,7 @@ class AutomationSeeder extends Seeder
     {
         $demoOrg = Organization::where('name', 'Demo Organization')->first();
         $adminUser = User::where('email', 'dev@plandalf.com')->first();
-        
+
         if (!$demoOrg || !$adminUser) {
             $this->command->error('Demo organization or admin user not found. Please run OrganizationSeeder first.');
             return;
@@ -31,10 +27,10 @@ class AutomationSeeder extends Seeder
 
         // Create Apps
         $apps = $this->createApps($demoOrg);
-        
+
         // Create Integrations
         $integrations = $this->createIntegrations($demoOrg, $apps);
-        
+
         // Create Automation Sequences
         $this->createAutomationSequences($demoOrg, $adminUser, $integrations);
 
@@ -346,4 +342,4 @@ class AutomationSeeder extends Seeder
             ]
         );
     }
-} 
+}

@@ -9,8 +9,8 @@ use App\Models\App;
 use App\Models\Integration;
 use App\Models\Automation\Sequence;
 use App\Models\Automation\Trigger;
-use App\Models\Automation\Node;
-use App\Models\Automation\TriggerEvent;
+use App\Models\Automation\Action;
+use App\Models\Automation\AutomationEvent;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\ActivityEmail;
@@ -303,7 +303,7 @@ class AutomationWorkflowTest extends TestCase
         ]);
 
         // Step 7: Verify the trigger event contains the correct data
-        $triggerEvent = TriggerEvent::find($webhookResult['trigger_event_id']);
+        $triggerEvent = AutomationEvent::find($webhookResult['trigger_event_id']);
         $this->assertNotNull($triggerEvent);
         $this->assertEquals($fakeKajabiPayload, $triggerEvent->event_data);
 
@@ -315,7 +315,7 @@ class AutomationWorkflowTest extends TestCase
 
         // Step 7.5: Verify workflow execution and email action
         echo "=== WORKFLOW EXECUTION VERIFICATION ===\n";
-        
+
         // Check if the workflow execution was logged
         $logFile = storage_path('logs/laravel.log');
         if (file_exists($logFile)) {
@@ -332,36 +332,36 @@ class AutomationWorkflowTest extends TestCase
                     fclose($handle);
                 }
             }
-            
+
             // Check for workflow execution logs
             if (str_contains($logContent, 'Executing app action')) {
                 echo "✅ Workflow execution logged\n";
             } else {
                 echo "❌ Workflow execution not found in logs\n";
             }
-            
+
             // Check for email action logs
             if (str_contains($logContent, 'Sending email via workflow')) {
                 echo "✅ Email action execution logged\n";
             } else {
                 echo "❌ Email action execution not found in logs\n";
             }
-            
+
             // Check for email data logs
             if (str_contains($logContent, 'Email would be sent')) {
                 echo "✅ Email data logged\n";
-                
+
                 // Extract and verify email content from logs
                 if (preg_match('/Email would be sent.*?\{.*?"to":"([^"]+)".*?"subject":"([^"]+)".*?"body":"([^"]+)".*?\}/s', $logContent, $matches)) {
                     $emailTo = $matches[1] ?? 'not found';
                     $emailSubject = $matches[2] ?? 'not found';
                     $emailBody = $matches[3] ?? 'not found';
-                    
+
                     echo "📧 Email Details:\n";
                     echo "   To: {$emailTo}\n";
                     echo "   Subject: {$emailSubject}\n";
                     echo "   Body: " . substr($emailBody, 0, 100) . "...\n";
-                    
+
                     // Verify template variables were resolved
                     $this->assertStringContainsString('test.customer@example.com', $emailTo, 'Email recipient should contain resolved template variable');
                     $this->assertStringContainsString('Premium Course Bundle', $emailSubject, 'Email subject should contain resolved template variable');
@@ -376,19 +376,19 @@ class AutomationWorkflowTest extends TestCase
         } else {
             echo "⚠️  Log file not found\n";
         }
-        
+
         // Verify the trigger event was processed
         $triggerEvent->refresh();
         $this->assertEquals('processed', $triggerEvent->status);
         echo "✅ Trigger event status: {$triggerEvent->status}\n";
-        
+
         // Check if workflow execution ID was set
         if ($triggerEvent->workflow_execution_id) {
             echo "✅ Workflow execution ID: {$triggerEvent->workflow_execution_id}\n";
         } else {
             echo "⚠️  No workflow execution ID found\n";
         }
-        
+
         echo "\n";
 
         // Step 8: Test webhook authentication failure
@@ -431,7 +431,7 @@ class AutomationWorkflowTest extends TestCase
         echo "Webhook Trigger: {$finalSequence['sequence']['triggers'][0]['name']}\n";
         echo "Webhook URL: {$finalSequence['sequence']['triggers'][0]['webhook_url']}\n";
         echo "Action: {$finalSequence['sequence']['nodes'][0]['name']}\n";
-        echo "Total Trigger Events: " . TriggerEvent::where('trigger_id', $webhookTriggerId)->count() . "\n\n";
+        echo "Total Trigger Events: " . AutomationEvent::where('trigger_id', $webhookTriggerId)->count() . "\n\n";
 
         echo "=== WORKFLOW TEST COMPLETED ===\n";
         echo "✅ Webhook trigger created successfully\n";
@@ -456,4 +456,4 @@ class AutomationWorkflowTest extends TestCase
         });
         echo "✅ Email was sent and template variables resolved\n";
     }
-} 
+}
