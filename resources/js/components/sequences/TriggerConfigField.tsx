@@ -10,6 +10,8 @@ import { Loader2, ChevronDown } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from '@/components/ui/command';
 import { MapField } from './MapField';
+import { TemplateVariableInput } from './TemplateVariableInput';
+import { useTemplateVariables } from '@/hooks/useTemplateVariables';
 import axios from 'axios';
 
 interface FieldSchema {
@@ -26,6 +28,27 @@ interface FieldSchema {
   resource?: string;
 }
 
+interface SequenceData {
+  triggers?: Array<{
+    id: number;
+    name?: string;
+    trigger_key?: string;
+    test_result?: Record<string, unknown>;
+    app?: {
+      name: string;
+    };
+  }>;
+  actions?: Array<{
+    id: number;
+    name?: string;
+    action_key?: string;
+    test_result?: Record<string, unknown>;
+    app?: {
+      name: string;
+    };
+  }>;
+}
+
 interface TriggerConfigFieldProps {
   field: FieldSchema;
   value: unknown;
@@ -34,6 +57,8 @@ interface TriggerConfigFieldProps {
   integrationId?: number;
   error?: string;
   requiresAuth?: boolean;
+  sequenceData?: SequenceData;
+  currentActionId?: number;
 }
 
 interface ResourceOption {
@@ -49,13 +74,22 @@ export function TriggerConfigField({
   appKey, 
   integrationId, 
   error,
-  requiresAuth = false 
+  requiresAuth = false,
+  sequenceData,
+  currentActionId
 }: TriggerConfigFieldProps) {
   const [loading, setLoading] = useState(false);
   const [resourceOptions, setResourceOptions] = useState<ResourceOption[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [showCombobox, setShowCombobox] = useState(false);
   const [resourceError, setResourceError] = useState<string | null>(null);
+
+  // Generate template variables from sequence data
+  const templateVariables = useTemplateVariables({
+    triggers: sequenceData?.triggers || [],
+    actions: sequenceData?.actions || [],
+    currentActionId
+  });
 
   const loadResourceData = useCallback(async (search?: string) => {
     if (!field.dynamicSource || (requiresAuth && !integrationId)) return;
@@ -172,6 +206,19 @@ export function TriggerConfigField({
             </Popover>
           );
         } else {
+          // Use TemplateVariableInput if we have sequence data and template variables
+          if (sequenceData && templateVariables.length > 0) {
+            return (
+              <TemplateVariableInput
+                value={String(value || '')}
+                onChange={onChange}
+                placeholder={field.description || `Enter ${field.label.toLowerCase()}`}
+                className={error ? 'border-red-300' : ''}
+                variables={templateVariables}
+              />
+            );
+          }
+          
           // Regular text input
           return (
             <Input
@@ -195,6 +242,19 @@ export function TriggerConfigField({
         );
 
       case 'email':
+        // Use TemplateVariableInput for email fields too since they often use template variables
+        if (sequenceData && templateVariables.length > 0) {
+          return (
+            <TemplateVariableInput
+              value={String(value || '')}
+              onChange={onChange}
+              placeholder={field.description || `Enter ${field.label.toLowerCase()}`}
+              className={error ? 'border-red-300' : ''}
+              variables={templateVariables}
+            />
+          );
+        }
+        
         return (
           <Input
             type="email"
@@ -366,6 +426,19 @@ export function TriggerConfigField({
       }
 
       default:
+        // For string-type fields, use TemplateVariableInput if we have sequence data
+        if (field.type === 'string' && sequenceData && templateVariables.length > 0) {
+          return (
+            <TemplateVariableInput
+              value={String(value || '')}
+              onChange={onChange}
+              placeholder={field.description || `Enter ${field.label.toLowerCase()}`}
+              className={error ? 'border-red-300' : ''}
+              variables={templateVariables}
+            />
+          );
+        }
+        
         return (
           <Input
             value={String(value || '')}

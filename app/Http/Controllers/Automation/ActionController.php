@@ -14,6 +14,7 @@ use Illuminate\Http\JsonResponse;
 use App\Models\Automation\Action;
 use App\Models\Automation\Sequence;
 use App\Models\App;
+use Illuminate\Validation\Rule;
 
 class ActionController extends Controller
 {
@@ -23,7 +24,12 @@ class ActionController extends Controller
     public function index(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'sequence_id' => 'required|integer|exists:automation_sequences,id',
+            'sequence_id' => [
+                'required',
+                'integer',
+                Rule::exists(Sequence::class, 'id')
+                    ->where('organization_id', auth()->user()->currentOrganization->id),
+            ],
         ]);
 
         try {
@@ -44,10 +50,15 @@ class ActionController extends Controller
     /**
      * Store a newly created action.
      */
-    public function store(Request $request): JsonResponse
+    public function store(Request $request)
     {
         $validated = $request->validate([
-            'sequence_id' => 'required|integer|exists:automation_sequences,id',
+            'sequence_id' => [
+                'required',
+                'integer',
+                Rule::exists(Sequence::class, 'id')
+                    ->where('organization_id', auth()->user()->currentOrganization->id),
+            ],
             'name' => 'required|string|max:255',
             'type' => 'required|string',
             'app_action_key' => 'required|string',
@@ -77,10 +88,7 @@ class ActionController extends Controller
                 // 'position_y' => 0, // Default position
             ]);
 
-            return response()->json([
-                'data' => $action->load('app'),
-                'message' => 'Action created successfully'
-            ], 201);
+            return $action->load('app');
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Failed to create action: ' . $e->getMessage()
@@ -116,9 +124,20 @@ class ActionController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'app_id' => 'sometimes|integer|exists:apps,id',
+            'app_id' => [
+                'required',
+                'integer',
+                Rule::exists(App::class, 'id'),
+            ],
             'action_key' => 'sometimes|string',
             'configuration' => 'nullable|array',
+
+//            'sequence_id' => [
+//                'required',
+//                'integer',
+//                Rule::exists(Sequence::class, 'id')
+//                    ->where('organization_id', auth()->user()->currentOrganization->id),
+//            ],
         ]);
 
         try {
@@ -206,6 +225,12 @@ class ActionController extends Controller
             );
 
             $configuration = $actionNode->configuration;
+
+            if ($actionNode->sequence->triggers->isEmpty()) {
+                return response()->json([
+                    'message' => 'No trigger found for this action. Please ensure the sequence has a trigger defined.'
+                ], 422);
+            }
 
             $r = AutomationEvent::query()
                 ->where('trigger_id', $actionNode->sequence->triggers->first()->id)

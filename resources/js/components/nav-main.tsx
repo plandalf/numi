@@ -10,7 +10,6 @@ interface NavGroup {
 export function NavMain({ groups = [] }: { groups: NavGroup[] }) {
     return (
         <>
-          {route().current()}
             {groups.map((group, groupIndex) => (
                 <SidebarGroup key={groupIndex} className="px-3">
                     {group.label && <SidebarGroupLabel>{group.label}</SidebarGroupLabel>}

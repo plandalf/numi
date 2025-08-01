@@ -14,6 +14,7 @@ use App\Models\Automation\Trigger;
 use App\Models\Automation\AutomationEvent;
 use App\Models\App;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class TriggersController extends Controller
 {
@@ -167,19 +168,22 @@ class TriggersController extends Controller
                         }
                     }
                 } catch (\Exception $e) {
-                    // If example generation fails, provide basic fallback
-                    $eventData = [
-                        'example' => true,
-                        'message' => 'Example data not available for this trigger type',
-                        'error' => 'Could not generate example: ' . $e->getMessage()
-                    ];
-                    $isExample = true;
-                    $eventMetadata = [
-                        'type' => 'fallback',
-                        'source' => 'Basic fallback example',
-                        'created_at' => now()->toISOString(),
-                        'status' => 'fallback'
-                    ];
+                    throw ValidationException::withMessages([
+                        'message' => 'Failed to generate example data: ' . $e->getMessage()
+                    ]);
+//                    // If example generation fails, provide basic fallback
+//                    $eventData = [
+//                        'example' => true,
+//                        'message' => 'Example data not available for this trigger type',
+//                        'error' => 'Could not generate example: ' . $e->getMessage()
+//                    ];
+//                    $isExample = true;
+//                    $eventMetadata = [
+//                        'type' => 'fallback',
+//                        'source' => 'Basic fallback example',
+//                        'created_at' => now()->toISOString(),
+//                        'status' => 'fallback'
+//                    ];
                 }
 
                 if (!$eventData) {
@@ -194,22 +198,22 @@ class TriggersController extends Controller
             $jsonSchema = $schemaService->generateJsonSchema($eventData, "Trigger {$trigger->name} Event");
 
             // Store test result with schema and metadata
-            $testResultData = [
-                'data' => $eventData,
-                'schema' => $jsonSchema,
-                'tested_at' => now()->toISOString(),
-                'is_example' => $isExample,
-            ];
+//            $testResultData = [
+//                'data' => $eventData,
+//                'schema' => $jsonSchema,
+//                'tested_at' => now()->toISOString(),
+//                'is_example' => $isExample,
+//            ];
 
-            if ($eventMetadata) {
-                $testResultData = array_merge($testResultData, [
-                    'event_id' => $eventMetadata['id'] ?? null,
-                    'event_source' => $eventMetadata['source'] ?? 'unknown',
-                    'event_created_at' => $eventMetadata['created_at'] ?? now()->toISOString()
-                ]);
-            }
+//            if ($eventMetadata) {
+//                $testResultData = array_merge($testResultData, [
+//                    'event_id' => $eventMetadata['id'] ?? null,
+//                    'event_source' => $eventMetadata['source'] ?? 'unknown',
+//                    'event_created_at' => $eventMetadata['created_at'] ?? now()->toISOString()
+//                ]);
+//            }
 
-            $trigger->update(['test_result' => $testResultData]);
+            $trigger->update(['test_result' => $eventData]);
 
             // Update sequence schema with the trigger data (store as trigger instead of action)
             $currentSchema = $trigger->sequence->node_schema ?? [];

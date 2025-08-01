@@ -3,7 +3,6 @@
 namespace App\Apps\Plandalf\Triggers;
 
 use App\Workflows\Attributes\IsTrigger;
-use App\Workflows\Attributes\Trigger;
 use App\Workflows\Automation\AppTrigger;
 use App\Workflows\Automation\Bundle;
 use App\Workflows\Automation\Field;
@@ -21,11 +20,22 @@ class OrderCreated extends AppTrigger
     {
         $input = $bundle->input;
 
+        $order = Order::find($input['order_id'] ?? null);
+
         return [
-            'order_id' => $input['order_id'] ?? null,
-            'offer_id' => $input['offer_id'] ?? null,
-            'triggered_at' => $input['triggered_at'] ?? now()->toISOString(),
-            'event_type' => $input['event_type'],
+            'order_id' => $order->id,
+            'order_uuid' => $order->uuid,
+            'customer_id' => $order->customer_id,
+            'customer_email' => $order->customer?->email,
+            'total_amount' => $order->total_amount,
+            'currency' => $order->currency,
+            'status' => $order->status->value ?? $order->status,
+            'items_count' => $order->items->count(),
+            'created_at' => $order->created_at->toISOString(),
+            'triggered_at' => now()->toISOString(),
+            'event_type' => 'order_created',
+            'example' => true,
+            'example_note' => 'This is real order data from your most recent order, used as an example for testing.',
         ];
     }
 

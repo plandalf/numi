@@ -141,11 +141,11 @@ function IntegrationSetupModal({ open, onClose, app, onIntegrationCreated }: Int
 
   const handleOAuthFlow = () => {
     if (!app) return;
-    
+
     // Open OAuth flow in new window
     const oauthUrl = `/automation/integrations/setup/oauth?app=${app.key}&integration_name=${encodeURIComponent(integrationName)}`;
     const oauthWindow = window.open(oauthUrl, 'oauth_flow', 'width=600,height=700,scrollbars=yes,resizable=yes');
-    
+
     // Listen for OAuth completion
     const checkOAuthComplete = setInterval(() => {
       if (oauthWindow?.closed) {
@@ -196,14 +196,14 @@ function IntegrationSetupModal({ open, onClose, app, onIntegrationCreated }: Int
   const checkIntegrationStatus = async () => {
     try {
       const response = await axios.get('/automation/integrations');
-      const appIntegrations = response.data.data?.filter((integration: Integration) => 
+      const appIntegrations = response.data.data?.filter((integration: Integration) =>
         integration.app.key === app?.key
       ) || [];
-      
-      const hasActiveIntegration = appIntegrations.some((integration: Integration) => 
+
+      const hasActiveIntegration = appIntegrations.some((integration: Integration) =>
         integration.current_state === 'active'
       );
-      
+
       if (hasActiveIntegration) {
         onIntegrationCreated();
         onClose();
@@ -505,17 +505,17 @@ function safeStringify(data: unknown): string {
 
 // Helper function to check if test result has example error
 function hasExampleError(testResult: unknown): boolean {
-  return Boolean(testResult && 
-    typeof testResult === 'object' && 
+  return Boolean(testResult &&
+    typeof testResult === 'object' &&
     testResult !== null &&
     'data' in testResult &&
     testResult.data &&
     typeof testResult.data === 'object' &&
     testResult.data !== null &&
     'result' in testResult.data &&
-    testResult.data.result && 
-    typeof testResult.data.result === 'object' && 
-    testResult.data.result !== null && 
+    testResult.data.result &&
+    typeof testResult.data.result === 'object' &&
+    testResult.data.result !== null &&
     'error' in testResult.data.result);
 }
 
@@ -537,7 +537,7 @@ function TestStep({ testResult, testLoading, handleTestTrigger }: TestStepProps)
           <div>
             <h3 className="text-lg font-medium mb-4">Test Trigger</h3>
           </div>
-          
+
           <div className="space-y-4">
             <Card>
               <CardContent className="p-4">
@@ -549,8 +549,8 @@ function TestStep({ testResult, testLoading, handleTestTrigger }: TestStepProps)
                       Find and analyze the most recent trigger event to verify your trigger is working correctly
                     </p>
                   </div>
-                  <Button 
-                    onClick={handleTestTrigger} 
+                  <Button
+                    onClick={handleTestTrigger}
                     disabled={testLoading}
                     className="w-full"
                   >
@@ -598,7 +598,7 @@ function TestStep({ testResult, testLoading, handleTestTrigger }: TestStepProps)
                           </div>
                         </div>
                       </div>
-                      
+
                       {/* Error Details */}
                       {testResult.error_details && typeof testResult.error_details === 'object' && testResult.error_details !== null ? (
                         <details className="group">
@@ -620,8 +620,8 @@ function TestStep({ testResult, testLoading, handleTestTrigger }: TestStepProps)
                         <div className="flex items-center space-x-2">
                           <CheckCircle className="h-4 w-4 text-green-500" />
                           <p className="text-sm text-green-700">
-                            {testResult.data?.is_example 
-                              ? 'Test completed with example data!' 
+                            {testResult.data?.is_example
+                              ? 'Test completed with example data!'
                               : 'Test completed successfully!'
                             }
                           </p>
@@ -635,7 +635,7 @@ function TestStep({ testResult, testLoading, handleTestTrigger }: TestStepProps)
                           <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded text-xs">
                             <p className="text-blue-700 font-medium">📋 Using Example Data</p>
                             <p className="text-blue-600">
-                              No real trigger events found, so we're showing example data for testing. 
+                              No real trigger events found, so we're showing example data for testing.
                               This gives you an idea of what data will be available when the trigger actually fires.
                             </p>
                           </div>
@@ -654,8 +654,8 @@ function TestStep({ testResult, testLoading, handleTestTrigger }: TestStepProps)
                             </h5>
                           </div>
                           <div className={`rounded-lg p-3 border ${
-                            testResult.data.is_example 
-                              ? 'bg-blue-50 border-blue-200' 
+                            testResult.data.is_example
+                              ? 'bg-blue-50 border-blue-200'
                               : 'bg-purple-50 border-purple-200'
                           }`}>
                             <div className="grid grid-cols-2 gap-2 text-xs">
@@ -686,11 +686,11 @@ function TestStep({ testResult, testLoading, handleTestTrigger }: TestStepProps)
                               {testResult.data.result !== undefined ? safeStringify(testResult.data.result) : 'No event data'}
                             </pre>
                           </div>
-                          
+
                           {/* Example Data Note */}
-                          {testResult.data.is_example && 
-                            testResult.data.result && 
-                            typeof testResult.data.result === 'object' && 
+                          {testResult.data.is_example &&
+                            testResult.data.result &&
+                            typeof testResult.data.result === 'object' &&
                             testResult.data.result !== null &&
                             'example_note' in testResult.data.result && (
                              <div className="text-xs text-blue-600 bg-blue-50 p-2 rounded border border-blue-200">
@@ -698,7 +698,7 @@ function TestStep({ testResult, testLoading, handleTestTrigger }: TestStepProps)
                                <p>{String((testResult.data.result as Record<string, unknown>).example_note)}</p>
                              </div>
                            )}
-                          
+
                           {/* Available Fields Info */}
                           <div className="text-xs text-gray-500 bg-blue-50 p-2 rounded border border-blue-200">
                             <p className="font-medium text-blue-700 mb-1">💡 JSON Schema Generated:</p>
@@ -737,12 +737,12 @@ export function EditTriggerModal({ open, onClose, trigger, onTriggerUpdated }: E
   const [initializing, setInitializing] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [validationErrors, setValidationErrors] = useState<Record<string, string[]>>({});
-  
+
   // Step completion tracking
   const [setupComplete, setSetupComplete] = useState(false);
   const [configComplete, setConfigComplete] = useState(false);
   const [testComplete, setTestComplete] = useState(false);
-  
+
   // Setup tab state
   const [selectedApp, setSelectedApp] = useState<App | null>(null);
   const [selectedTriggerEvent, setSelectedTriggerEvent] = useState<TriggerEvent | null>(null);
@@ -754,11 +754,11 @@ export function EditTriggerModal({ open, onClose, trigger, onTriggerUpdated }: E
   const [showAppSelector, setShowAppSelector] = useState(false);
   const [showTriggerSelector, setShowTriggerSelector] = useState(false);
   const [showAccountSelector, setShowAccountSelector] = useState(false);
-  
+
   // Config tab state
   const [triggerName, setTriggerName] = useState('');
   const [configuration, setConfiguration] = useState<Record<string, unknown>>({});
-  
+
   // Test tab state
   const [testResult, setTestResult] = useState<{ error?: string; [key: string]: unknown } | null>(null);
   const [testLoading, setTestLoading] = useState(false);
@@ -788,7 +788,7 @@ export function EditTriggerModal({ open, onClose, trigger, onTriggerUpdated }: E
       if (trigger) {
         setTriggerName(trigger.name);
         setConfiguration(trigger.configuration || {});
-        
+
         // Initialize selected app, trigger event, and integration from existing trigger data
         if (trigger.app_id && trigger.app_id > 0) {
           // Find the app that matches the trigger's app_id
@@ -796,15 +796,15 @@ export function EditTriggerModal({ open, onClose, trigger, onTriggerUpdated }: E
             try {
               const response = await axios.get('/automation/apps');
               const availableApps = response.data.data || [];
-              
+
               // Find app by ID
-              const matchingApp = availableApps.find((app: App) => 
+              const matchingApp = availableApps.find((app: App) =>
                 app.id === trigger.app_id
               );
-              
+
               if (matchingApp) {
                 setSelectedApp(matchingApp);
-                
+
                 // Update the trigger object with app info if it was missing
                 if (!trigger.app) {
                   trigger.app = {
@@ -813,15 +813,15 @@ export function EditTriggerModal({ open, onClose, trigger, onTriggerUpdated }: E
                     color: matchingApp.color,
                   };
                 }
-                
+
                 // Find the trigger event by trigger_key
-                const triggerEvent = matchingApp.triggers?.find((t: TriggerEvent) => 
+                const triggerEvent = matchingApp.triggers?.find((t: TriggerEvent) =>
                   t.key === trigger.trigger_key
                 );
-                
+
                 if (triggerEvent) {
                   setSelectedTriggerEvent(triggerEvent);
-                  
+
                   // If this trigger requires auth, check for existing integrations
                   if (triggerEvent.requires_auth) {
                     // This will be handled by the separate integration effect
@@ -834,12 +834,12 @@ export function EditTriggerModal({ open, onClose, trigger, onTriggerUpdated }: E
               setInitializing(false);
             }
           };
-          
+
           findAndSetApp();
         } else {
           setInitializing(false);
         }
-        
+
         // If there's integration data, find and set the integration
         // This will be set once integrations are loaded
       } else {
@@ -860,21 +860,21 @@ export function EditTriggerModal({ open, onClose, trigger, onTriggerUpdated }: E
   useEffect(() => {
     if (trigger && integrations.length > 0) {
       let matchingIntegration = null;
-      
+
       // Try to find integration by app name first (most reliable since we have it from trigger.app.name)
       if (trigger.app?.name) {
-        matchingIntegration = integrations.find((integration: Integration) => 
+        matchingIntegration = integrations.find((integration: Integration) =>
           integration?.app?.name === trigger.app?.name
         );
       }
-      
+
       // If not found and we have app_id, try to find by app_id
       if (!matchingIntegration && trigger.app_id) {
-        matchingIntegration = integrations.find((integration: Integration) => 
+        matchingIntegration = integrations.find((integration: Integration) =>
           integration?.app?.id === trigger.app_id
         );
       }
-      
+
       if (matchingIntegration) {
         setSelectedIntegration(matchingIntegration);
       }
@@ -884,7 +884,7 @@ export function EditTriggerModal({ open, onClose, trigger, onTriggerUpdated }: E
   // Check step completion
   useEffect(() => {
     // Setup step is complete when we have app, trigger event, and integration (if required)
-    const setupValid = selectedApp && selectedTriggerEvent && 
+    const setupValid = selectedApp && selectedTriggerEvent &&
       (!selectedTriggerEvent.requires_auth || selectedIntegration);
     setSetupComplete(!!setupValid);
 
@@ -926,16 +926,16 @@ export function EditTriggerModal({ open, onClose, trigger, onTriggerUpdated }: E
 
   const handleTriggerEventSelect = (triggerEvent: TriggerEvent) => {
     setSelectedTriggerEvent(triggerEvent);
-    
+
     // Check if this trigger requires auth
     if (triggerEvent.requires_auth) {
-      const appIntegrations = integrations.filter(integration => 
+      const appIntegrations = integrations.filter(integration =>
         integration.app.key === selectedApp?.key
       );
-      const hasActiveIntegration = appIntegrations.some(integration => 
+      const hasActiveIntegration = appIntegrations.some(integration =>
         integration.current_state === 'active'
       );
-      
+
       if (!hasActiveIntegration) {
         setShowIntegrationSetup(true);
       }
@@ -963,30 +963,30 @@ export function EditTriggerModal({ open, onClose, trigger, onTriggerUpdated }: E
       setLoading(true);
       setError(null);
       setValidationErrors({});
-      
+
       const payload = {
         name: triggerName,
         app_id: selectedApp?.id,
         trigger_key: selectedTriggerEvent?.key,
         configuration: configuration,
       };
-      
+
       const response = await axios.put(`/automation/triggers/${trigger.id}`, payload);
-      
+
       // Don't call onTriggerUpdated here - only on final finish
       // onTriggerUpdated(response.data.data);
-      
+
       // Progress to next step instead of closing
       if (activeTab === 'setup' && setupComplete) {
         setActiveTab('config');
       } else if (activeTab === 'config' && configComplete) {
         setActiveTab('test');
       }
-      
+
       return response.data.data; // Return the updated trigger for handleFinish
     } catch (error) {
       console.error('Failed to update trigger:', error);
-      
+
       if (axios.isAxiosError(error) && error.response?.status === 422) {
         setValidationErrors(error.response.data.errors || {});
       } else if (axios.isAxiosError(error)) {
@@ -1005,24 +1005,24 @@ export function EditTriggerModal({ open, onClose, trigger, onTriggerUpdated }: E
     try {
       setTestLoading(true);
       setTestResult(null);
-      
+
       const response = await axios.post(`/automation/triggers/${trigger.id}/tests`);
       setTestResult(response.data);
-      
+
       // Mark test as complete if successful
       // Check for errors in both the main response and nested in example result data
       const hasMainError = response.data.error;
       const hasExampleErrorResult = hasExampleError(response.data);
-      
+
       if (response.data && !hasMainError && !hasExampleErrorResult) {
         setTestComplete(true);
       }
     } catch (error: unknown) {
       console.error('Failed to test trigger:', error);
-      
+
       let errorMessage = 'Test failed';
       let errorDetails = null;
-      
+
       if (axios.isAxiosError(error)) {
         // Extract error message from response
         if (error.response?.data?.message) {
@@ -1030,14 +1030,14 @@ export function EditTriggerModal({ open, onClose, trigger, onTriggerUpdated }: E
         } else if (error.response?.data?.error) {
           errorMessage = error.response.data.error;
         }
-        
+
         // Include error details if available
         if (error.response?.data?.error_details) {
           errorDetails = error.response.data.error_details;
         }
       }
-      
-      setTestResult({ 
+
+      setTestResult({
         error: errorMessage,
         success: false,
         error_details: errorDetails,
@@ -1090,7 +1090,7 @@ export function EditTriggerModal({ open, onClose, trigger, onTriggerUpdated }: E
 
   const openIntegrationManager = () => {
     if (!selectedApp) return;
-    
+
     const managerUrl = `/automation/integrations?app_key=${selectedApp.key}`;
     window.open(managerUrl, 'integration_manager', 'width=800,height=700,scrollbars=yes,resizable=yes');
   };
@@ -1100,7 +1100,7 @@ export function EditTriggerModal({ open, onClose, trigger, onTriggerUpdated }: E
       openIntegrationManager();
       return;
     }
-    
+
     const editUrl = `/automation/integrations/${integration.id}/edit`;
     window.open(editUrl, 'integration_edit', 'width=600,height=700,scrollbars=yes,resizable=yes');
   };
@@ -1155,14 +1155,13 @@ export function EditTriggerModal({ open, onClose, trigger, onTriggerUpdated }: E
                   <TabsContent value="setup" className="absolute inset-0 data-[state=inactive]:hidden">
                     <div className="h-full overflow-y-auto px-6 py-4">
                       <div className="space-y-6">
-                        <h3 className="text-lg font-medium">Setup Trigger</h3>
-                        
+
                         {/* App Selection */}
                         <div className="space-y-2">
                           <Label className="text-sm font-medium">App *</Label>
                           {selectedApp ? (
-                            <Card className="border border-blue-300 bg-blue-50">
-                              <CardContent className="p-3">
+                            <div className="border border-blue-300 bg-blue-50">
+                              <div className="p-3">
                                 <div className="flex items-center justify-between">
                                   <div className="flex items-center space-x-3">
                                     {selectedApp.icon_url ? (
@@ -1180,19 +1179,19 @@ export function EditTriggerModal({ open, onClose, trigger, onTriggerUpdated }: E
                                       <p className="text-xs text-gray-500">{selectedApp.description}</p>
                                     </div>
                                   </div>
-                                  <Button 
-                                    variant="outline" 
+                                  <Button
+                                    variant="outline"
                                     size="sm"
                                     onClick={() => setShowAppSelector(true)}
                                   >
                                     Change
                                   </Button>
                                 </div>
-                              </CardContent>
-                            </Card>
+                              </div>
+                            </div>
                           ) : (
-                            <Card className="border-2 border-dashed border-gray-300 hover:border-gray-400 transition-colors cursor-pointer" onClick={() => setShowAppSelector(true)}>
-                              <CardContent className="p-4">
+                            <div className="border-2 border-dashed border-gray-300 hover:border-gray-400 transition-colors cursor-pointer" onClick={() => setShowAppSelector(true)}>
+                              <div className="p-4">
                                 <div className="flex items-center space-x-3">
                                   <div className="w-8 h-8 bg-gray-100 rounded flex items-center justify-center">
                                     <Zap className="h-4 w-4 text-gray-400" />
@@ -1202,8 +1201,8 @@ export function EditTriggerModal({ open, onClose, trigger, onTriggerUpdated }: E
                                     <p className="text-xs text-gray-500">Select the app that will trigger this automation</p>
                                   </div>
                                 </div>
-                              </CardContent>
-                            </Card>
+                              </div>
+                            </div>
                           )}
                         </div>
 
@@ -1211,8 +1210,8 @@ export function EditTriggerModal({ open, onClose, trigger, onTriggerUpdated }: E
                         <div className="space-y-2">
                   <Label className="text-sm font-medium">Trigger event *</Label>
                   {selectedTriggerEvent ? (
-                    <Card className="border border-blue-300 bg-blue-50">
-                      <CardContent className="p-3">
+                    <div className="border border-blue-300 bg-blue-50">
+                      <div className="p-3">
                         <div className="flex items-center justify-between">
                           <div className="flex-1">
                             <h4 className="font-medium text-sm">{selectedTriggerEvent.label}</h4>
@@ -1228,8 +1227,8 @@ export function EditTriggerModal({ open, onClose, trigger, onTriggerUpdated }: E
                               </Badge>
                             </div>
                           </div>
-                          <Button 
-                            variant="outline" 
+                          <Button
+                            variant="outline"
                             size="sm"
                             onClick={() => setShowTriggerSelector(true)}
                             disabled={!selectedApp}
@@ -1237,15 +1236,15 @@ export function EditTriggerModal({ open, onClose, trigger, onTriggerUpdated }: E
                             Change
                           </Button>
                         </div>
-                      </CardContent>
-                    </Card>
+                      </div>
+                    </div>
                   ) : (
-                    <Card className={`border-2 border-dashed transition-colors ${
-                      selectedApp 
-                        ? 'border-gray-300 hover:border-gray-400 cursor-pointer' 
+                    <div className={`border-2 border-dashed transition-colors ${
+                      selectedApp
+                        ? 'border-gray-300 hover:border-gray-400 cursor-pointer'
                         : 'border-gray-200 cursor-not-allowed'
                     }`} onClick={() => selectedApp && setShowTriggerSelector(true)}>
-                      <CardContent className="p-4">
+                      <div className="p-4">
                         <div className="flex items-center space-x-3">
                           <div className="w-8 h-8 bg-gray-100 rounded flex items-center justify-center">
                             <Play className="h-4 w-4 text-gray-400" />
@@ -1259,8 +1258,8 @@ export function EditTriggerModal({ open, onClose, trigger, onTriggerUpdated }: E
                             </p>
                           </div>
                         </div>
-                      </CardContent>
-                    </Card>
+                      </div>
+                    </div>
                   )}
                 </div>
 
@@ -1340,7 +1339,7 @@ export function EditTriggerModal({ open, onClose, trigger, onTriggerUpdated }: E
                     <div className="h-full overflow-y-auto px-6 py-4">
                       <div className="space-y-6">
                         <h3 className="text-lg font-medium">Configure Trigger</h3>
-                        
+
                         {/* Trigger Name */}
                         <div className="space-y-2">
                           <Label htmlFor="trigger-name">Trigger Name</Label>
@@ -1362,7 +1361,7 @@ export function EditTriggerModal({ open, onClose, trigger, onTriggerUpdated }: E
                             <Settings className="h-4 w-4 text-gray-500" />
                             <h4 className="font-medium">Configuration Options</h4>
                           </div>
-                          
+
                           {selectedTriggerEvent?.props && Object.keys(selectedTriggerEvent.props).length > 0 ? (
                             <Card>
                               <CardContent className="p-4 space-y-4">
@@ -1391,7 +1390,7 @@ export function EditTriggerModal({ open, onClose, trigger, onTriggerUpdated }: E
                               </CardContent>
                             </Card>
                           )}
-                          
+
                           {/* Configuration Preview */}
                           {Object.keys(configuration).length > 0 && (
                             <div className="space-y-2">
@@ -1414,7 +1413,7 @@ export function EditTriggerModal({ open, onClose, trigger, onTriggerUpdated }: E
                   </TabsContent>
 
                   {/* Test Tab */}
-                  <TestStep 
+                  <TestStep
                     testResult={testResult}
                     testLoading={testLoading}
                     handleTestTrigger={handleTestTrigger}
@@ -1432,11 +1431,11 @@ export function EditTriggerModal({ open, onClose, trigger, onTriggerUpdated }: E
                   </Button>
                 )}
               </div>
-              
+
               <div className="flex space-x-2">
                 {activeTab === 'setup' && (
-                  <Button 
-                    onClick={handleNextStep} 
+                  <Button
+                    onClick={handleNextStep}
                     disabled={!setupComplete || loading}
                   >
                     {loading ? (
@@ -1449,10 +1448,10 @@ export function EditTriggerModal({ open, onClose, trigger, onTriggerUpdated }: E
                     )}
                   </Button>
                 )}
-                
+
                 {activeTab === 'config' && (
-                  <Button 
-                    onClick={handleSave} 
+                  <Button
+                    onClick={handleSave}
                     disabled={!configComplete || loading}
                   >
                     {loading ? (
@@ -1465,7 +1464,7 @@ export function EditTriggerModal({ open, onClose, trigger, onTriggerUpdated }: E
                     )}
                   </Button>
                 )}
-                
+
                 {activeTab === 'test' && (
                   <>
                     {!testComplete && (
@@ -1496,7 +1495,7 @@ export function EditTriggerModal({ open, onClose, trigger, onTriggerUpdated }: E
                   </DialogHeader>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {apps.map((app) => (
-                      <Card
+                      <div
                         key={app.id}
                         className={`cursor-pointer transition-colors ${
                           selectedApp?.id === app.id ? 'border-blue-500 bg-blue-50' : 'hover:border-gray-300'
@@ -1521,7 +1520,7 @@ export function EditTriggerModal({ open, onClose, trigger, onTriggerUpdated }: E
                             </div>
                           </div>
                         </CardContent>
-                      </Card>
+                      </div>
                     ))}
                   </div>
                   <div className="flex justify-end pt-4">
@@ -1617,7 +1616,7 @@ export function EditTriggerModal({ open, onClose, trigger, onTriggerUpdated }: E
                                   <div>
                                     <h4 className="font-medium text-sm">{integration.name}</h4>
                                     <p className="text-xs text-gray-500">{integration.app.name}</p>
-                                    <Badge 
+                                    <Badge
                                       variant={integration.current_state === 'active' ? 'default' : 'secondary'}
                                       className="text-xs mt-1"
                                     >
@@ -1629,16 +1628,16 @@ export function EditTriggerModal({ open, onClose, trigger, onTriggerUpdated }: E
                             </CardContent>
                           </Card>
                         ))}
-                      <Button 
-                        onClick={() => setShowAccountSelector(false)} 
-                        variant="outline" 
+                      <Button
+                        onClick={() => setShowAccountSelector(false)}
+                        variant="outline"
                         className="w-full"
                       >
                         Cancel
                       </Button>
-                      <Button 
-                        onClick={() => setShowIntegrationSetup(true)} 
-                        variant="outline" 
+                      <Button
+                        onClick={() => setShowIntegrationSetup(true)}
+                        variant="outline"
                         className="w-full"
                       >
                         + Create New Integration
@@ -1680,4 +1679,4 @@ export function EditTriggerModal({ open, onClose, trigger, onTriggerUpdated }: E
       </DialogContent>
     </Dialog>
   );
-} 
+}

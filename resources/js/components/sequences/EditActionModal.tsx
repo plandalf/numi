@@ -145,153 +145,150 @@ function SetupStep({
     <TabsContent value="setup" className="absolute inset-0 data-[state=inactive]:hidden">
       <div className="h-full overflow-y-auto px-6 py-4">
         <div className="space-y-6">
-          <div>
-            <h3 className="text-lg font-medium mb-4">Setup Action</h3>
+
+          {/* App Selection */}
+          <div className="space-y-2">
+            <Label className="text-sm font-medium">App *</Label>
+            {selectedApp ? (
+              <div className="border border-blue-300 bg-blue-50">
+                <CardContent className="p-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      {selectedApp.icon_url ? (
+                        <img src={selectedApp.icon_url} alt={selectedApp.name} className="w-8 h-8 rounded" />
+                      ) : (
+                        <div
+                          className="w-8 h-8 rounded flex items-center justify-center text-white font-bold text-sm"
+                          style={{ backgroundColor: selectedApp.color || '#3b82f6' }}
+                        >
+                          {selectedApp.name.charAt(0).toUpperCase()}
+                        </div>
+                      )}
+                      <div>
+                        <h4 className="font-medium text-sm">{selectedApp.name}</h4>
+                        <p className="text-xs text-gray-500">{selectedApp.description}</p>
+                      </div>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowAppSelector(true)}
+                    >
+                      Change
+                    </Button>
+                  </div>
+                </CardContent>
+              </div>
+            ) : (
+              <div className="border-2 border-dashed border-gray-300 hover:border-gray-400 transition-colors cursor-pointer" onClick={() => setShowAppSelector(true)}>
+                <CardContent className="p-4">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-8 h-8 bg-gray-100 rounded flex items-center justify-center">
+                      <Webhook className="h-4 w-4 text-gray-400" />
+                    </div>
+                    <div>
+                      <p className="font-medium text-sm text-gray-700">Choose an app</p>
+                      <p className="text-xs text-gray-500">Select the app that will execute this action</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </div>
+            )}
           </div>
 
-                {/* App Selection */}
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">App *</Label>
-                  {selectedApp ? (
-                    <Card className="border border-blue-300 bg-blue-50">
-                      <CardContent className="p-3">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center space-x-3">
-                            {selectedApp.icon_url ? (
-                              <img src={selectedApp.icon_url} alt={selectedApp.name} className="w-8 h-8 rounded" />
-                            ) : (
-                              <div
-                                className="w-8 h-8 rounded flex items-center justify-center text-white font-bold text-sm"
-                                style={{ backgroundColor: selectedApp.color || '#3b82f6' }}
-                              >
-                                {selectedApp.name.charAt(0).toUpperCase()}
-                              </div>
-                            )}
-                            <div>
-                              <h4 className="font-medium text-sm">{selectedApp.name}</h4>
-                              <p className="text-xs text-gray-500">{selectedApp.description}</p>
-                            </div>
-                          </div>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setShowAppSelector(true)}
-                          >
-                            Change
-                          </Button>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ) : (
-                    <Card className="border-2 border-dashed border-gray-300 hover:border-gray-400 transition-colors cursor-pointer" onClick={() => setShowAppSelector(true)}>
-                      <CardContent className="p-4">
-                        <div className="flex items-center space-x-3">
-                          <div className="w-8 h-8 bg-gray-100 rounded flex items-center justify-center">
-                            <Webhook className="h-4 w-4 text-gray-400" />
-                          </div>
-                          <div>
-                            <p className="font-medium text-sm text-gray-700">Choose an app</p>
-                            <p className="text-xs text-gray-500">Select the app that will execute this action</p>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  )}
-                </div>
-
-                {/* Action Selection */}
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">Action *</Label>
-                  {selectedAction ? (
-                    <Card className="border border-blue-300 bg-blue-50">
-                      <CardContent className="p-3">
-                        <div className="flex items-center justify-between">
-                          <div className="flex-1">
-                            <h4 className="font-medium text-sm">{selectedAction.label}</h4>
-                            <p className="text-xs text-gray-500">{selectedAction.description}</p>
-                          </div>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setShowActionSelector(true)}
-                            disabled={!selectedApp}
-                          >
-                            Change
-                          </Button>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ) : (
-                    <Card className={`border-2 border-dashed transition-colors ${
-                      selectedApp
-                        ? 'border-gray-300 hover:border-gray-400 cursor-pointer'
-                        : 'border-gray-200 cursor-not-allowed'
-                    }`} onClick={() => selectedApp && setShowActionSelector(true)}>
-                      <CardContent className="p-4">
-                        <div className="flex items-center space-x-3">
-                          <div className="w-8 h-8 bg-gray-100 rounded flex items-center justify-center">
-                            <Play className="h-4 w-4 text-gray-400" />
-                          </div>
-                          <div>
-                            <p className={`font-medium text-sm ${!selectedApp ? 'text-gray-400' : 'text-gray-700'}`}>
-                              Choose an action
-                            </p>
-                            <p className="text-xs text-gray-500">
-                              {selectedApp ? 'Select the action to execute' : 'Select an app first'}
-                            </p>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  )}
-                </div>
-
-                {/* Integration Selection - ENHANCED */}
-                {selectedAction && selectedAction.requires_auth && (
-                  <div className="space-y-2">
-                    <Label className="text-sm font-medium">Account *</Label>
-                    {selectedIntegration ? (
-                      <Card className="border border-blue-300 bg-blue-50">
-                        <CardContent className="p-3">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center space-x-3">
-                              <User className="h-8 w-8 p-1.5 bg-blue-100 text-blue-600 rounded" />
-                              <div>
-                                <p className="text-sm font-medium text-blue-900">{selectedIntegration.name}</p>
-                                <p className="text-xs text-blue-700">
-                                  {selectedIntegration.app.name} • {selectedIntegration.current_state}
-                                </p>
-                              </div>
-                            </div>
-                            <div className="flex space-x-2">
-                              <Button onClick={() => openIntegrationManager()} variant="outline" size="sm">
-                                <List className="h-3 w-3 mr-1" />
-                                Change
-                              </Button>
-                              <Button onClick={() => openIntegrationEdit(selectedIntegration)} variant="outline" size="sm">
-                                <ExternalLink className="h-3 w-3 mr-1" />
-                                Edit
-                              </Button>
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ) : (
-                      <Card className="border-2 border-dashed border-gray-300 bg-gray-50 cursor-pointer hover:border-gray-400 transition-colors" onClick={() => setShowIntegrationSelector(true)}>
-                        <CardContent className="p-3">
-                          <div className="flex items-center justify-center space-x-2 text-gray-600">
-                            <User className="h-4 w-4" />
-                            <span className="text-sm">Select {selectedApp?.name} integration</span>
-                            <ChevronDown className="h-3 w-3" />
-                          </div>
-                        </CardContent>
-                      </Card>
-                    )}
+          {/* Action Selection */}
+          <div className="space-y-2">
+            <Label className="text-sm font-medium">Action *</Label>
+            {selectedAction ? (
+              <div className="border border-blue-300 bg-blue-50">
+                <CardContent className="p-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <h4 className="font-medium text-sm">{selectedAction.label}</h4>
+                      <p className="text-xs text-gray-500">{selectedAction.description}</p>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowActionSelector(true)}
+                      disabled={!selectedApp}
+                    >
+                      Change
+                    </Button>
                   </div>
-                )}
+                </CardContent>
+              </div>
+            ) : (
+              <div className={`border-2 border-dashed transition-colors ${
+                selectedApp
+                  ? 'border-gray-300 hover:border-gray-400 cursor-pointer'
+                  : 'border-gray-200 cursor-not-allowed'
+              }`} onClick={() => selectedApp && setShowActionSelector(true)}>
+                <CardContent className="p-4">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-8 h-8 bg-gray-100 rounded flex items-center justify-center">
+                      <Play className="h-4 w-4 text-gray-400" />
+                    </div>
+                    <div>
+                      <p className={`font-medium text-sm ${!selectedApp ? 'text-gray-400' : 'text-gray-700'}`}>
+                        Choose an action
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        {selectedApp ? 'Select the action to execute' : 'Select an app first'}
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </div>
+            )}
+          </div>
 
-                {/* Progress Message */}
-                <div className="space-y-3">
+          {/* Integration Selection - ENHANCED */}
+          {selectedAction && selectedAction.requires_auth && (
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Account *</Label>
+              {selectedIntegration ? (
+                <div className="border border-blue-300 bg-blue-50">
+                  <CardContent className="p-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-3">
+                        <User className="h-8 w-8 p-1.5 bg-blue-100 text-blue-600 rounded" />
+                        <div>
+                          <p className="text-sm font-medium text-blue-900">{selectedIntegration.name}</p>
+                          <p className="text-xs text-blue-700">
+                            {selectedIntegration.app.name} • {selectedIntegration.current_state}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex space-x-2">
+                        <Button onClick={() => openIntegrationManager()} variant="outline" size="sm">
+                          <List className="h-3 w-3 mr-1" />
+                          Change
+                        </Button>
+                        <Button onClick={() => openIntegrationEdit(selectedIntegration)} variant="outline" size="sm">
+                          <ExternalLink className="h-3 w-3 mr-1" />
+                          Edit
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </div>
+              ) : (
+                <div className="border-2 border-dashed border-gray-300 bg-gray-50 cursor-pointer hover:border-gray-400 transition-colors" onClick={() => setShowIntegrationSelector(true)}>
+                  <CardContent className="p-3">
+                    <div className="flex items-center justify-center space-x-2 text-gray-600">
+                      <User className="h-4 w-4" />
+                      <span className="text-sm">Select {selectedApp?.name} integration</span>
+                      <ChevronDown className="h-3 w-3" />
+                    </div>
+                  </CardContent>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Progress Message */}
+          <div className="space-y-3">
                   {!selectedApp && (
                     <div className="text-center p-3 bg-gray-50 rounded text-sm text-gray-600">
                       To continue, choose an app
@@ -409,7 +406,7 @@ function SetupStep({
           </DialogContent>
         </Dialog>
       )}
-              </TabsContent>
+    </TabsContent>
   );
 }
 
@@ -422,6 +419,8 @@ function ConfigStep({
   selectedAction,
   selectedApp,
   selectedIntegration,
+  sequenceData,
+  action,
   validationErrors,
 }: ConfigStepProps) {
   return (
@@ -467,6 +466,8 @@ function ConfigStep({
                       integrationId={selectedIntegration?.id}
                       error={validationErrors[field.key]?.[0]}
                       requiresAuth={selectedAction?.requires_auth || false}
+                      sequenceData={sequenceData}
+                      currentActionId={action?.id}
                     />
                   ))}
                 </CardContent>
@@ -625,14 +626,36 @@ function TestStep({ testResult, testLoading, handleTestAction }: TestStepProps) 
   );
 }
 
+interface SequenceData {
+  triggers?: Array<{
+    id: number;
+    name?: string;
+    trigger_key?: string;
+    test_result?: Record<string, any>;
+    app?: {
+      name: string;
+    };
+  }>;
+  actions?: Array<{
+    id: number;
+    name?: string;
+    action_key?: string;
+    test_result?: Record<string, any>;
+    app?: {
+      name: string;
+    };
+  }>;
+}
+
 interface EditActionModalProps {
   open: boolean;
   onClose: () => void;
-  action: CreatedAction;
+  action?: CreatedAction;
   onActionUpdated: (action: CreatedAction) => void;
+  sequenceData?: SequenceData;
 }
 
-export function EditActionModal({ open, onClose, action, onActionUpdated }: EditActionModalProps) {
+export function EditActionModal({ open, onClose, action, onActionUpdated, sequenceData }: EditActionModalProps) {
   const [activeTab, setActiveTab] = useState('setup');
   const [loading, setLoading] = useState(false);
   const [initializing, setInitializing] = useState(true);
@@ -947,17 +970,16 @@ export function EditActionModal({ open, onClose, action, onActionUpdated }: Edit
     onClose();
   };
 
+  console.log('EditActionModal', { open, action });
+
   if (!action) return null;
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent variant="wizard" className="overflow-hidden">
-        <DialogHeader className="px-6 pt-6 pb-4 border-b">
-          <DialogTitle>Edit Action</DialogTitle>
-                    <DialogDescription>
-            Configure and test your action settings
-                    </DialogDescription>
-                  </DialogHeader>
+        <DialogHeader className="bg-gray-100 clear-both py-2 px-4">
+          <DialogTitle className="text-base">Edit Action</DialogTitle>
+        </DialogHeader>
 
         {/* Show loading state while initializing */}
         {initializing ? (
@@ -1018,6 +1040,8 @@ export function EditActionModal({ open, onClose, action, onActionUpdated }: Edit
                     selectedApp={selectedApp}
                     selectedIntegration={selectedIntegration}
                     validationErrors={validationErrors}
+                    sequenceData={sequenceData}
+                    action={action}
                   />
 
                   <TestStep

@@ -42,7 +42,6 @@ class IntegrationController extends Controller
             ->where('organization_id', $request->user()->currentOrganization->id)
             ->where('app_id', $app->id)
             ->get();
-//        dd($app,$integrations);
 
         return \Inertia\Inertia::render('Automation/Integrations/Index', [
             'integrations' => $integrations,
@@ -238,16 +237,19 @@ class IntegrationController extends Controller
                 ->with('app')
                 ->findOrFail($id);
 
-            // Test the integration based on its type
-            $result = match($integration->type) {
-                'oauth_client_credentials' => $this->testOAuthIntegration($integration),
-                'api_keys' => $this->testApiKeyIntegration($integration),
-                default => throw new \Exception('Unsupported integration type')
-            };
+            // Use the app's test method instead of hardcoded type checking
+            $appClass = "App\\Apps\\{$integration->app->name}\\{$integration->app->name}App";
+
+            if (!class_exists($appClass)) {
+                throw new \Exception("App class not found: {$appClass}");
+            }
+
+            $app = new $appClass();
+            $result = $app->test($integration);
 
             return response()->json([
                 'success' => true,
-                'message' => 'Integration test successful',
+                'message' => $result['message'] ?? 'Integration test successful',
                 'data' => $result
             ]);
 
@@ -257,35 +259,6 @@ class IntegrationController extends Controller
                 'message' => 'Integration test failed: ' . $e->getMessage()
             ], 422);
         }
-    }
-
-    private function testOAuthIntegration(Integration $integration): array
-    {
-        // Test OAuth integration by making a simple API call
-        $appClass = "App\\Apps\\{$integration->app->name}\\{$integration->app->name}App";
-
-        if (!class_exists($appClass)) {
-            throw new \Exception("App class not found: {$appClass}");
-        }
-
-        $app = new $appClass();
-        $connector = $app->auth($integration);
-
-        // Make a test request (this would be app-specific)
-        // For now, just verify the connector was created
-        return [
-            'status' => 'connected',
-            'test_time' => now()->toISOString()
-        ];
-    }
-
-    private function testApiKeyIntegration(Integration $integration): array
-    {
-        // Similar test for API key integrations
-        return [
-            'status' => 'connected',
-            'test_time' => now()->toISOString()
-        ];
     }
 
     private function performAuthCheck(Integration $integration): array
@@ -299,27 +272,15 @@ class IntegrationController extends Controller
             }
 
             $app = new $appClass();
+            
+            // Use the app's test method instead of hardcoded logic
+            $result = $app->test($integration);
 
-            // Test authentication based on integration type
-            if ($integration->type === 'oauth_client_credentials') {
-                // Test OAuth client credentials
-                $connector = $app->auth($integration);
-
-                // Make a simple test request to verify credentials
-                // This is app-specific - for now we'll just verify the connector was created
-                return [
-                    'success' => true,
-                    'message' => 'Authentication successful',
-                    'tested_at' => now()->toISOString()
-                ];
-            } else {
-                // For other integration types, mark as active by default
-                return [
-                    'success' => true,
-                    'message' => 'Integration created successfully',
-                    'tested_at' => now()->toISOString()
-                ];
-            }
+            return [
+                'success' => true,
+                'message' => $result['message'] ?? 'Authentication successful',
+                'tested_at' => now()->toISOString()
+            ];
 
         } catch (\Exception $e) {
             return [

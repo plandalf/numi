@@ -17,5 +17,6 @@ class WebhookTrigger extends AppTrigger
     public function __invoke(Bundle $bundle): array
     {
         // TODO: Implement __invoke() method.
+        // return the input basically!
     }
 }

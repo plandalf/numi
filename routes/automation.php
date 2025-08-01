@@ -28,8 +28,8 @@ Route::middleware(['auth', 'organization', 'subscription'])
         Route::get('actions/fields/available', [ActionController::class, 'getAvailableFields']);
 
         // Integration management routes
+        Route::resource('integrations', IntegrationController::class);
         Route::prefix('integrations')->group(function () {
-            Route::resource('/', IntegrationController::class);
             Route::post('/{id}/test', [IntegrationController::class, 'test'])->name('automation.integrations.test');
 
             // Legacy setup routes (can be removed later)

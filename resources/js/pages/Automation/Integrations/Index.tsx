@@ -11,7 +11,8 @@ import {
   CheckCircle,
   AlertCircle,
   User,
-  RefreshCw
+  RefreshCw,
+  X
 } from 'lucide-react';
 import axios from 'axios';
 
@@ -38,6 +39,13 @@ interface Props {
 export default function IntegrationsIndex({ integrations, appKey }: Props) {
   const [testing, setTesting] = useState<Record<number, boolean>>({});
   const [deleting, setDeleting] = useState<Record<number, boolean>>({});
+  const [testResult, setTestResult] = useState<{
+    integration: Integration;
+    success: boolean;
+    message: string;
+    data?: any;
+    timestamp?: string;
+  } | null>(null);
 
   const getStatusBadge = (status: string) => {
     const variants = {
@@ -88,14 +96,28 @@ export default function IntegrationsIndex({ integrations, appKey }: Props) {
     try {
       const response = await axios.post(`/automation/integrations/${integration.id}/test`);
 
-      if (response.data.success) {
-        alert('Integration test successful!');
-      } else {
-        alert('Integration test failed: ' + response.data.message);
-      }
-    } catch (error) {
+      const result = {
+        integration,
+        success: response.data.success,
+        message: response.data.message || 'Test completed',
+        data: response.data.data || null,
+        timestamp: new Date().toLocaleString()
+      };
+
+      setTestResult(result);
+
+    } catch (error: any) {
       console.error('Integration test failed:', error);
-      alert('Integration test failed. Please check your configuration.');
+      
+      const result = {
+        integration,
+        success: false,
+        message: error.response?.data?.message || 'Connection test failed. Please check your configuration.',
+        data: null,
+        timestamp: new Date().toLocaleString()
+      };
+
+      setTestResult(result);
     } finally {
       setTesting(prev => ({ ...prev, [integration.id]: false }));
     }
@@ -133,6 +155,122 @@ export default function IntegrationsIndex({ integrations, appKey }: Props) {
       <Head title={`${appName} Integrations`} />
 
       <div className="min-h-screen bg-gray-50 p-4">
+        {/* Test Result Modal */}
+        {testResult && (
+          <div 
+            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+            onClick={() => setTestResult(null)}
+          >
+            <div 
+              className="bg-white rounded-lg max-w-md w-full p-6"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold">
+                  Integration Test Result
+                </h3>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setTestResult(null)}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+
+              <div className="space-y-4">
+                {/* Integration Info */}
+                <div className="flex items-center space-x-3">
+                  {testResult.integration.app.icon_url ? (
+                    <img
+                      src={testResult.integration.app.icon_url}
+                      alt={testResult.integration.app.name}
+                      className="w-10 h-10 rounded-lg"
+                    />
+                  ) : (
+                    <div
+                      className="w-10 h-10 rounded-lg flex items-center justify-center text-white font-bold"
+                      style={{ backgroundColor: testResult.integration.app.color || '#3b82f6' }}
+                    >
+                      {testResult.integration.app.name.charAt(0).toUpperCase()}
+                    </div>
+                  )}
+                  <div>
+                    <p className="font-medium">{testResult.integration.name}</p>
+                    <p className="text-sm text-gray-500">{testResult.integration.app.name}</p>
+                  </div>
+                </div>
+
+                {/* Test Result */}
+                <div className={`p-4 rounded-lg border ${
+                  testResult.success 
+                    ? 'bg-green-50 border-green-200' 
+                    : 'bg-red-50 border-red-200'
+                }`}>
+                  <div className="flex items-center space-x-2 mb-2">
+                    {testResult.success ? (
+                      <CheckCircle className="h-5 w-5 text-green-600" />
+                    ) : (
+                      <AlertCircle className="h-5 w-5 text-red-600" />
+                    )}
+                    <span className={`font-medium ${
+                      testResult.success ? 'text-green-800' : 'text-red-800'
+                    }`}>
+                      {testResult.success ? 'Test Successful' : 'Test Failed'}
+                    </span>
+                  </div>
+                  
+                  <p className={`text-sm ${
+                    testResult.success ? 'text-green-700' : 'text-red-700'
+                  }`}>
+                    {testResult.message}
+                  </p>
+
+                  {/* Additional Info for Successful Tests */}
+                  {testResult.success && testResult.data && (
+                    <div className="mt-3 pt-3 border-t border-green-200">
+                      {testResult.data.user_info && (
+                        <div className="space-y-1">
+                          <p className="text-xs text-green-600 font-medium">Connected Account:</p>
+                          {testResult.data.user_info.email && (
+                            <p className="text-xs text-green-700">
+                              📧 {testResult.data.user_info.email}
+                            </p>
+                          )}
+                          {testResult.data.user_info.name && (
+                            <p className="text-xs text-green-700">
+                              👤 {testResult.data.user_info.name}
+                            </p>
+                          )}
+                        </div>
+                      )}
+                      
+                      {testResult.data.status && (
+                        <p className="text-xs text-green-700 mt-2">
+                          Status: {testResult.data.status}
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* Timestamp */}
+                <p className="text-xs text-gray-500 text-center">
+                  Tested at {testResult.timestamp}
+                </p>
+
+                {/* Close Button */}
+                <Button
+                  onClick={() => setTestResult(null)}
+                  className="w-full"
+                >
+                  Close
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="w-full max-w-4xl mx-auto">
           <div className="mb-6">
             <div className="flex items-center justify-between">

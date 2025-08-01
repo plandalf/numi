@@ -5,6 +5,7 @@ namespace App\Apps\Kajabi;
 use App\Apps\AutomationApp;
 use App\Apps\Kajabi\Actions\CreateContactTag;
 use App\Apps\Kajabi\Actions\CreateMember;
+use App\Apps\Kajabi\Actions\FindOrCreateContact;
 use App\Apps\Kajabi\Resources\ContactResource;
 use App\Apps\Kajabi\Resources\OfferResource;
 use App\Apps\Kajabi\Triggers\NewPurchase;
@@ -26,6 +27,7 @@ class KajabiApp extends AutomationApp
         return [
             CreateContactTag::class,
             CreateMember::class,
+            FindOrCreateContact::class,
         ];
     }
 
@@ -85,7 +87,47 @@ class KajabiApp extends AutomationApp
                     'placeholder' => 'Enter your Kajabi Client Secret',
                     'help' => 'Your Kajabi API Client Secret from your app settings'
                 ],
+                [
+                    'key' => 'site_id',
+                    'label' => 'Site ID',
+                    'type' => 'text',
+                    'required' => true,
+                    'placeholder' => 'Enter your Kajabi Site ID',
+                    'help' => 'Your Kajabi Site ID, found in your Kajabi account settings'
+                ]
             ]
         ];
+    }
+
+    /**
+     * Test Kajabi integration by making a real API call
+     */
+    public function test($integration): array
+    {
+        try {
+            $connector = $this->auth($integration);
+
+            // Test with MeRequest to verify credentials work
+            $meRequest = new \App\Apps\Kajabi\Requests\MeRequest();
+            $response = $connector->send($meRequest);
+
+            if ($response->failed()) {
+                throw new \Exception('Failed to authenticate with Kajabi: ' . $response->body());
+            }
+
+            $data = $response->json();
+            return [
+                'status' => 'connected',
+                'test_time' => now()->toISOString(),
+                'user_info' => [
+                    'id' => $data['id'] ?? null,
+                    'email' => $data['email'] ?? null,
+                    'name' => $data['name'] ?? null,
+                ],
+                'message' => 'Successfully connected to Kajabi and verified credentials'
+            ];
+        } catch (\Exception $e) {
+            throw new \Exception('Kajabi connection test failed: ' . $e->getMessage());
+        }
     }
 }

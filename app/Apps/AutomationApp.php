@@ -28,4 +28,23 @@ abstract class AutomationApp
             'fields' => []
         ];
     }
+
+    /**
+     * Test the integration connection
+     * Apps can override this to provide their own testing logic
+     */
+    public function test($integration): array
+    {
+        // Default implementation - just verify auth method exists
+        try {
+            $connector = $this->auth($integration);
+            return [
+                'status' => 'connected',
+                'test_time' => now()->toISOString(),
+                'message' => 'App connector created successfully'
+            ];
+        } catch (\Exception $e) {
+            throw new \Exception('Connection test failed: ' . $e->getMessage());
+        }
+    }
 }

@@ -2,6 +2,10 @@
 
 namespace App\Apps\Kajabi\Actions;
 
+use App\Apps\Kajabi\KajabiApp;
+use App\Apps\Kajabi\Requests\AddTagsToContactRequest;
+use App\Apps\Kajabi\Requests\CreateTagRequest;
+use App\Apps\Kajabi\Requests\FindTagByNameRequest;
 use App\Models\Integration;
 use App\Workflows\Attributes\IsAction;
 use App\Workflows\Automation\AppAction;
@@ -21,36 +25,85 @@ class CreateContactTag extends AppAction
     {
         return [
             Field::string('name', 'Tag Name')->required()->help('The tag\'s name.'),
-            Field::string('contact', 'Contact')
-                ->dynamic('contact.id,name')
+            Field::string('contact_id', 'Contact ID')
                 ->required()
                 ->help('the contact to tag'),
         ];
     }
 
     /**
-     * @param Bundle{input: array{name: string, contact: string}} $bundle
+     * @param Bundle{input: array{name: string, contact_id: string}} $bundle
      */
     public function __invoke(Bundle $bundle): array
     {
-        // For testing purposes, just return a mock response
-        // In a real implementation, this would make an API call to Kajabi
+        $kajabi = new KajabiApp();
+        $connector = $kajabi->auth($bundle->integration);
+
+        $tagName = $bundle->input['name'];
+        $contactId = $bundle->input['contact_id'];
+        $siteId = $bundle->integration->connection_config['site_id'] ?? null;
+
+        // First, try to find existing tag by name
+        $findTagRequest = new FindTagByNameRequest($tagName, $siteId);
+        $findTagResponse = $connector->send($findTagRequest);
+
+        if ($findTagResponse->failed()) {
+            throw new \Exception('Failed to search for tags in Kajabi: ' . $findTagResponse->body());
+        }
+
+        $existingTags = $findTagResponse->json('data', []);
+        $tagId = null;
+
+        // If tag exists, use it
+        if (!empty($existingTags)) {
+            $tag = collect($existingTags)->firstWhere('attributes.name', $tagName);
+            $tagId = $tag['id'];
+            $action = 'found';
+        } else {
+            // Tag doesn't exist, create it
+            $createTagRequest = new CreateTagRequest($tagName, $siteId);
+            $createTagResponse = $connector->send($createTagRequest);
+
+            if ($createTagResponse->failed()) {
+                throw new \Exception('Failed to create tag in Kajabi: ' . $createTagResponse->body());
+            }
+
+            $newTag = $createTagResponse->json('data');
+            $tagId = $newTag['id'];
+            $action = 'created';
+        }
+
+        // Now add the tag to the contact
+        $addTagRequest = new AddTagsToContactRequest($contactId, [$tagId]);
+        $addTagResponse = $connector->send($addTagRequest);
+
+        if ($addTagResponse->failed()) {
+            throw new \Exception('Failed to add tag to contact in Kajabi: ' . $addTagResponse->body());
+        }
+
         return [
-            'tag_name' => $bundle->input['name'],
-            'contact_id' => $bundle->input['contact'],
-            'status' => 'created',
+            'tag_id' => $tagId,
+            'tag_name' => $tagName,
+            'contact_id' => $contactId,
+            'site_id' => $siteId,
+            'tag_action' => $action,
+            'status' => 'assigned',
             'created_at' => now()->toISOString(),
-            'message' => 'Contact tag created successfully (test mode)',
+            'message' => "Tag '{$tagName}' {$action} and assigned to contact successfully",
         ];
     }
 
     public function sample(): array
     {
         return [
+            'tag_id' => '789',
             'tag_name' => 'VIP Customer',
             'contact_id' => '12345',
-            'status' => 'created',
+            'site_id' => 'your-kajabi-site',
+            'tag_action' => 'created',
+            'status' => 'assigned',
             'created_at' => now()->toISOString(),
+            'message' => "Tag 'VIP Customer' created and assigned to contact successfully",
         ];
     }
 }

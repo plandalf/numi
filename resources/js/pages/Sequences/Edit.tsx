@@ -12,6 +12,7 @@ import { EditActionModal } from '@/components/sequences/EditActionModal';
 import { TestActionModal } from '@/components/sequences/TestActionModal';
 import { WorkflowRunsModal } from '@/components/sequences/WorkflowRunsModal';
 import axios from 'axios';
+import { Inertia } from '@inertiajs/inertia';
 
 interface Sequence {
   id: number;
@@ -106,12 +107,14 @@ export default function Edit() {
   const [showAddTriggerModal, setShowAddTriggerModal] = useState(false);
   const [showEditTriggerModal, setShowEditTriggerModal] = useState(false);
   const [showAddActionModal, setShowAddActionModal] = useState(false);
-  const [showEditActionModal, setShowEditActionModal] = useState(false);
-  const [showTestActionModal, setShowTestActionModal] = useState(false);
+  // const [showEditActionModal, setShowEditActionModal] = useState(false);
+  // const [showTestActionModal, setShowTestActionModal] = useState(false);
   const [showWorkflowRunsModal, setShowWorkflowRunsModal] = useState(false);
+
   const [editingAction, setEditingAction] = useState<Action | null>(null);
-  const [testingAction, setTestingAction] = useState<Action | null>(null);
+
   const [editingTrigger, setEditingTrigger] = useState<CreatedTrigger | null>(null);
+
   const [triggers, setTriggers] = useState<Trigger[]>(sequence.triggers || []);
   const [actions, setActions] = useState<Action[]>(sequence.actions || []);
 
@@ -228,29 +231,24 @@ export default function Edit() {
     setShowEditTriggerModal(true);
   };
 
-  const handleActionAdded = (newAction: CreatedAction) => {
-    // Add to actions list
-    setActions(prev => [...prev, newAction as Action]);
+  const handleActionAdded = (newAction: Action) => {
+    setEditingAction(newAction);
 
-    // Close add modal and show edit modal
-    setShowAddActionModal(false);
-    setEditingAction(newAction as Action);
-    setShowEditActionModal(true);
+    console.log('handleActionAdded!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!', newAction);
   };
-
-
 
   const handleEditAction = (action: Action) => {
     setEditingAction(action);
-    setShowEditActionModal(true);
+    // setShowEditActionModal(true);
   };
 
   const handleEditActionModalClose = () => {
-    setShowEditActionModal(false);
+    // setShowEditActionModal(false);
     setEditingAction(null);
   };
 
   const handleActionUpdatedFromEdit = (updatedAction: CreatedAction) => {
+    console.log('handleActionUpdatedFromEdit')
     // Convert CreatedAction back to Action format for the state
     const actionForState: Action = {
       id: updatedAction.id,
@@ -268,23 +266,12 @@ export default function Edit() {
     };
 
     setActions(prev => prev.map(a => a.id === actionForState.id ? actionForState : a));
-    setShowEditActionModal(false);
+    // setShowEditActionModal(false);
     setEditingAction(null);
-  };
-
-  const handleTestAction = (action: Action) => {
-    setTestingAction(action);
-    setShowTestActionModal(true);
   };
 
   const handleCloseActionModal = () => {
     setShowAddActionModal(false);
-    setEditingAction(null);
-  };
-
-  const handleCloseTestModal = () => {
-    setShowTestActionModal(false);
-    setTestingAction(null);
   };
 
   const deleteTrigger = async (triggerId: number) => {
@@ -339,6 +326,8 @@ export default function Edit() {
     <AppLayout>
       <Head title={`Edit ${sequence.name}`} />
 
+      {/* <pre>{JSON.stringify(editingAction, null, 2)}</pre> */}
+
       <div className="p-6 space-y-4">
         {/* Header */}
         <div className="flex justify-between items-start">
@@ -347,25 +336,25 @@ export default function Edit() {
           </div>
 
           <div className="flex space-x-2">
-            <Button
+            {/* <Button
               onClick={() => setShowWorkflowRunsModal(true)}
               variant="outline"
             >
               <Activity className="h-4 w-4 mr-2" />
               View Runs
-            </Button>
-            <Button className="bg-green-600 hover:bg-green-700">
+            </Button> */}
+            {/* <Button className="bg-green-600 hover:bg-green-700">
               <Play className="h-4 w-4 mr-2" />
               Test Workflow
-            </Button>
+            </Button> */}
           </div>
         </div>
 
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {/* Triggers */}
-          <Card>
-            <CardHeader>
+          <div className="space-y-2">
+            <div>
               <div>
                 <div className="flex justify-between items-center">
                   <CardTitle>Triggers</CardTitle>
@@ -377,16 +366,10 @@ export default function Edit() {
                     }
                   </Button>
                 </div>
-                <CardDescription>
-                  {existingTriggerConstraints && (
-                    <span className="block text-xs text-orange-600 mt-1">
-                        Note: All triggers must use {existingTriggerConstraints.appName} • {existingTriggerConstraints.triggerKey}
-                      </span>
-                  )}
-                </CardDescription>
+
               </div>
-            </CardHeader>
-            <CardContent className="space-y-3">
+            </div>
+            <div className="space-y-3">
               {triggers.length === 0 ? (
                 <div className="text-center py-8 text-gray-500">
                   <Zap className="h-12 w-12 mx-auto mb-4 text-gray-300" />
@@ -447,24 +430,30 @@ export default function Edit() {
                   </div>
                 ))
               )}
-            </CardContent>
-          </Card>
+            </div>
+            <div>
+              {existingTriggerConstraints && (
+                <span className="block text-xs text-orange-600 mt-1">
+                        Note: All triggers must use {existingTriggerConstraints.appName} • {existingTriggerConstraints.triggerKey}
+                      </span>
+              )}
+            </div>
+          </div>
 
           {/* Actions */}
-          <Card>
-            <CardHeader>
+          <div className="space-y-2">
+            <div>
               <div className="flex justify-between items-center">
                 <div>
                   <CardTitle>Actions</CardTitle>
-                  <CardDescription>What happens when triggers fire</CardDescription>
                 </div>
                 <Button onClick={() => setShowAddActionModal(true)} size="sm">
-                  <Plus className="h-4 w-4 mr-2" />
+                <Plus className="h-4 w-4 mr-2" />
                   Add Action
                 </Button>
               </div>
-            </CardHeader>
-            <CardContent className="space-y-3">
+            </div>
+            <div className="space-y-3">
               {actions.length === 0 ? (
                 <div className="text-center py-8 text-gray-500">
                   <Play className="h-12 w-12 mx-auto mb-4 text-gray-300" />
@@ -485,7 +474,8 @@ export default function Edit() {
                   return (
                     <div key={action.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                       <div className="flex items-center space-x-3">
-                        <div className={`w-8 h-8 rounded flex items-center justify-center ${getActionColor(action.type)}`}>
+                        <div
+                          className={`w-8 h-8 rounded flex items-center justify-center ${getActionColor(action.type)}`}>
                           <ActionIcon className="h-4 w-4" />
                         </div>
                         <div>
@@ -495,15 +485,7 @@ export default function Edit() {
                       </div>
                       <div className="flex items-center space-x-2">
                         <Badge variant="secondary" className="text-xs">Active</Badge>
-                        <Button
-                          onClick={() => handleTestAction(action)}
-                          size="sm"
-                          variant="ghost"
-                          className="text-green-600 hover:text-green-700 hover:bg-green-50"
-                          title="Test action"
-                        >
-                          <TestTube className="h-4 w-4" />
-                        </Button>
+
                         <Button
                           onClick={() => handleEditAction(action)}
                           size="sm"
@@ -527,8 +509,8 @@ export default function Edit() {
                   );
                 })
               )}
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </div>
 
       </div>
@@ -556,35 +538,20 @@ export default function Edit() {
         onClose={handleCloseActionModal}
         sequenceId={sequence.id}
         onActionAdded={handleActionAdded}
-        editingAction={null}
-        onActionUpdated={() => {}}
       />
       {/* make this the select event with filter on actions modal */}
 
+
       {editingAction && (
         <EditActionModal
-          open={showEditActionModal}
+          open={editingAction !== null}
           onClose={handleEditActionModalClose}
-          action={{
-            id: editingAction.id,
-            name: editingAction.name,
-            type: editingAction.type,
-            app_id: editingAction.app_id,
-            action_key: editingAction.action_key,
-            configuration: editingAction.configuration || {},
-            app: editingAction.app
-          }}
+          action={editingAction}
           onActionUpdated={handleActionUpdatedFromEdit}
-        />
-      )}
-
-      {testingAction && (
-        <TestActionModal
-          open={showTestActionModal}
-          onClose={handleCloseTestModal}
-          action={testingAction}
-          sequenceId={sequence.id}
-          allActions={actions}
+          sequenceData={{
+            triggers: triggers,
+            actions: actions
+          }}
         />
       )}
 

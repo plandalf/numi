@@ -112,13 +112,15 @@ class TemplateResolver
 
         // Handle action__id_key syntax (previous action output)
         if (preg_match('/^action_(\d+)__([\w_]+)$/', $variable, $matches)) {
+
             $actionId = $matches[1];
             $keyPath = str_replace('_', '.', $matches[2]); // Convert to dot notation
 
             $actionData = self::findActionData($actionId, $context);
 
             if ($actionData !== null) {
-                return data_get($actionData, $keyPath, '');
+                return data_get($actionData, $keyPath)
+                    ?? data_get($actionData, $matches[2]);
             }
         }
 

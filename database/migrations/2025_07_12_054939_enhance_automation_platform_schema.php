@@ -153,6 +153,7 @@ return new class extends Migration
         Schema::table('automation_triggers', function (Blueprint $table) {
 
             $table->dropColumn('event_name'); // ? filter?
+            $table->string('target_type')->nullable()->change();
 
             $table->foreignId('integration_id')->nullable()->after('sequence_id')->constrained('integrations')->onDelete('set null');
             $table->foreignId('app_id')->nullable()->after('integration_id')->constrained('automation_apps')->onDelete('set null');

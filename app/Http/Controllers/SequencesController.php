@@ -83,7 +83,7 @@ class SequencesController extends Controller
             'created_by' => Auth::id(),
         ]);
 
-        return redirect()->route('sequences.edit', $sequence)
+        return redirect()->route('automation.sequences.edit', $sequence)
             ->with('success', 'Sequence created successfully!');
     }
 

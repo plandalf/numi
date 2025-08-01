@@ -3,14 +3,14 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
-import { 
-  Loader2, 
-  Plus, 
-  Edit, 
-  Trash2, 
-  TestTube, 
-  CheckCircle, 
-  AlertCircle, 
+import {
+  Loader2,
+  Plus,
+  Edit,
+  Trash2,
+  TestTube,
+  CheckCircle,
+  AlertCircle,
   User,
   RefreshCw
 } from 'lucide-react';
@@ -60,14 +60,14 @@ interface IntegrationCardProps {
   app: App | null;
 }
 
-function IntegrationCard({ 
-  integration, 
-  selected, 
-  onSelect, 
-  onTest, 
-  onEdit, 
-  onDelete, 
-  app 
+function IntegrationCard({
+  integration,
+  selected,
+  onSelect,
+  onTest,
+  onEdit,
+  onDelete,
+  app
 }: IntegrationCardProps) {
   const [testing, setTesting] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -75,11 +75,11 @@ function IntegrationCard({
   const getStatusBadge = (status: string) => {
     const variants = {
       active: 'bg-green-100 text-green-800 border-green-200',
-      inactive: 'bg-gray-100 text-gray-800 border-gray-200', 
+      inactive: 'bg-gray-100 text-gray-800 border-gray-200',
       created: 'bg-blue-100 text-blue-800 border-blue-200',
       error: 'bg-red-100 text-red-800 border-red-200'
     };
-    
+
     return (
       <Badge variant="outline" className={variants[status as keyof typeof variants] || variants.inactive}>
         <div className="flex items-center space-x-1">
@@ -92,10 +92,10 @@ function IntegrationCard({
   };
 
   return (
-    <Card 
+    <Card
       className={`cursor-pointer transition-all ${
-        selected 
-          ? 'border-blue-500 bg-blue-50 shadow-sm' 
+        selected
+          ? 'border-blue-500 bg-blue-50 shadow-sm'
           : 'hover:border-gray-300 hover:shadow-sm'
       }`}
       onClick={onSelect}
@@ -107,14 +107,14 @@ function IntegrationCard({
             {app?.icon_url ? (
               <img src={app.icon_url} alt={app.name} className="w-10 h-10 rounded-lg" />
             ) : (
-              <div 
+              <div
                 className="w-10 h-10 rounded-lg flex items-center justify-center text-white font-bold"
                 style={{ backgroundColor: app?.color || '#3b82f6' }}
               >
                 {app?.name.charAt(0).toUpperCase()}
               </div>
             )}
-            
+
             <div className="flex-1">
               <div className="flex items-center space-x-2">
                 <h4 className="font-medium">{integration.name}</h4>
@@ -122,12 +122,12 @@ function IntegrationCard({
                   <Badge variant="secondary" className="text-xs">Selected</Badge>
                 )}
               </div>
-              
+
               <div className="flex items-center space-x-2 mt-1">
                 {getStatusBadge(integration.current_state)}
                 <span className="text-xs text-gray-500">ID: {integration.id}</span>
               </div>
-              
+
               <p className="text-xs text-gray-500 mt-1">
                 Created {new Date(integration.created_at).toLocaleDateString()}
               </p>
@@ -221,31 +221,31 @@ export function IntegrationSelector({
   }
 
   // Filter integrations for the selected app
-  const appIntegrations = integrations.filter(integration => 
+  const appIntegrations = integrations.filter(integration =>
     integration?.app?.key === selectedApp.key
   );
 
   const openIntegrationSetup = (integration?: Integration) => {
     if (!selectedApp) return;
-    
-    const integrationName = integration 
-      ? integration.name 
+
+    const integrationName = integration
+      ? integration.name
       : `${selectedApp.name} Integration`;
-    
-    let setupUrl = `/automation/integrations/setup?app_key=${selectedApp.key}&integration_name=${encodeURIComponent(integrationName)}`;
-    
+
+    let setupUrl = `/automation/integrations/create?app_key=${selectedApp.key}&integration_name=${encodeURIComponent(integrationName)}`;
+
     // Add edit mode if editing existing integration
     if (integration) {
       setupUrl += `&edit_integration_id=${integration.id}`;
     }
-    
+
     window.open(setupUrl, 'integration_setup', 'width=600,height=700,scrollbars=yes,resizable=yes');
   };
 
   const testIntegration = async (integration: Integration) => {
     try {
       const response = await axios.post(`/automation/integrations/${integration.id}/test`);
-      
+
       if (response.data.success) {
         alert('Integration test successful!');
       } else {
@@ -261,18 +261,18 @@ export function IntegrationSelector({
     if (!confirm(`Are you sure you want to delete "${integration.name}"? This action cannot be undone.`)) {
       return;
     }
-    
+
     try {
       await axios.delete(`/automation/integrations/${integration.id}`);
-      
+
       // If this was the selected integration, clear selection
       if (selectedIntegration?.id === integration.id) {
         onIntegrationSelected(null);
       }
-      
+
       // Refresh integrations list
       onIntegrationsUpdated();
-      
+
     } catch (error) {
       console.error('Failed to delete integration:', error);
       alert('Failed to delete integration. Please try again.');
@@ -305,15 +305,15 @@ export function IntegrationSelector({
 
           {/* Quick Actions */}
           <div className="flex items-center space-x-2">
-            <Button 
-              onClick={() => openIntegrationSetup()} 
+            <Button
+              onClick={() => openIntegrationSetup()}
               className="flex-1"
             >
               <Plus className="h-4 w-4 mr-2" />
               Create New {selectedApp.name} Integration
             </Button>
-            <Button 
-              onClick={onIntegrationsUpdated} 
+            <Button
+              onClick={onIntegrationsUpdated}
               variant="outline"
               title="Refresh integrations"
             >
@@ -326,7 +326,7 @@ export function IntegrationSelector({
             <h4 className="font-medium text-sm text-gray-700 sticky top-0 bg-white py-2">
               Available Integrations ({appIntegrations.length})
             </h4>
-            
+
             {appIntegrations.length === 0 ? (
               <Card>
                 <CardContent className="p-8">
@@ -340,7 +340,7 @@ export function IntegrationSelector({
             ) : (
               <div className="space-y-2">
                 {appIntegrations.map((integration) => (
-                  <IntegrationCard 
+                  <IntegrationCard
                     key={integration.id}
                     integration={integration}
                     selected={selectedIntegration?.id === integration.id}
@@ -358,14 +358,14 @@ export function IntegrationSelector({
 
         {/* Footer Actions */}
         <div className="flex justify-between pt-4 border-t">
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             onClick={() => onIntegrationSelected(null)}
             disabled={!selectedIntegration}
           >
             Clear Selection
           </Button>
-          
+
           <div className="space-x-2">
             <Button variant="outline" onClick={onClose}>
               Cancel
@@ -378,4 +378,4 @@ export function IntegrationSelector({
       </DialogContent>
     </Dialog>
   );
-} 
+}
