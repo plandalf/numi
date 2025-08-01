@@ -60,7 +60,7 @@ class SequencesController extends Controller
             ];
         });
 
-        return Inertia::render('sequences/Index', [
+        return Inertia::render('sequences/index', [
             'sequences' => $sequences,
             'workflows' => $workflows,
         ]);
@@ -83,7 +83,8 @@ class SequencesController extends Controller
             'created_by' => Auth::id(),
         ]);
 
-        return redirect()->route('automation.sequences.edit', $sequence)
+        return redirect()
+            ->route('automation.sequences.edit', $sequence)
             ->with('success', 'Sequence created successfully!');
     }
 
@@ -128,7 +129,7 @@ class SequencesController extends Controller
             ]);
         }
 
-        return Inertia::render('sequences/Edit', [
+        return Inertia::render('sequences/edit', [
             'sequence' => $sequence->load([
                 'triggers.app',
                 'triggers.integration.app',

@@ -34,7 +34,7 @@
 ### ✅ Phase 2: UI Implementation for Trigger Management (Priority: Critical) - COMPLETED
 
 #### 2.1 Enhanced Sequences Edit Page - COMPLETED
-- [x] **Updated Edit.tsx Component** → [Enhanced UI for Sequences](#enhanced-ui-for-sequences)
+- [x] **Updated edit.tsx Component** → [Enhanced UI for Sequences](#enhanced-ui-for-sequences)
   - [x] Added quick stats dashboard showing triggers, actions, apps, and integrations count
   - [x] Enhanced trigger display with app branding and detailed information
   - [x] Added functional "Add Trigger" buttons throughout the interface
