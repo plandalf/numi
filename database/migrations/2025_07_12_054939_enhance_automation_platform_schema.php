@@ -15,29 +15,31 @@ return new class extends Migration
         // ====================================
         // 1. CREATE APPS TABLE FIRST
         // ====================================
-        Schema::create('automation_apps', function (Blueprint $table) {
-            $table->id();
-            $table->string('key', 100)->unique();
-            $table->string('name');
-            $table->text('description')->nullable();
-            $table->string('icon_url', 500)->nullable();
-            $table->string('color', 7)->nullable();
-            $table->string('category', 100)->nullable();
-            $table->string('version', 20)->default('1.0.0');
-            $table->boolean('is_active')->default(true);
-            $table->boolean('is_built_in')->default(false);
-            $table->string('documentation_url', 500)->nullable();
-            $table->timestamps();
+        if (!Schema::hasTable('automation_apps')) {
+            Schema::create('automation_apps', function (Blueprint $table) {
+                $table->id();
+                $table->string('key', 100)->unique();
+                $table->string('name');
+                $table->text('description')->nullable();
+                $table->string('icon_url', 500)->nullable();
+                $table->string('color', 7)->nullable();
+                $table->string('category', 100)->nullable();
+                $table->string('version', 20)->default('1.0.0');
+                $table->boolean('is_active')->default(true);
+                $table->boolean('is_built_in')->default(false);
+                $table->string('documentation_url', 500)->nullable();
+                $table->timestamps();
 
-            $table->index('key');
-            $table->index('category');
-            $table->index('is_active');
-            $table->index('is_built_in');
-            $table->index('version');
-        });
+                $table->index('key');
+                $table->index('category');
+                $table->index('is_active');
+                $table->index('is_built_in');
+                $table->index('version');
+            });
+        }
 
         Schema::table('integrations', function (Blueprint $table) {
-            $table->uuid()->unique()->after('id');
+            $table->uuid()->after('id');
             $table->string('lookup_key', 64)->nullable()->change();
             $table->foreignId('app_id')->nullable()->after('organization_id')->constrained('automation_apps')->onDelete('set null');
             $table->json('connection_config')->nullable();
@@ -151,9 +153,9 @@ return new class extends Migration
 
         // Enhance automation_triggers table
         Schema::table('automation_triggers', function (Blueprint $table) {
-
             $table->dropColumn('event_name'); // ? filter?
             $table->string('target_type')->nullable()->change();
+            $table->bigInteger('target_id')->nullable()->change();
 
             $table->foreignId('integration_id')->nullable()->after('sequence_id')->constrained('integrations')->onDelete('set null');
             $table->foreignId('app_id')->nullable()->after('integration_id')->constrained('automation_apps')->onDelete('set null');
