@@ -59,12 +59,12 @@ const navGroups = [
     {
         label: 'Settings',
         items: [
-            {
-                title: 'Themes',
-                href: '/organizations/themes',
-                route: 'organizations.themes.*',
-                icon: PaletteIcon,
-            },
+            // {
+            //     title: 'Themes',
+            //     href: '/organizations/themes',
+            //     route: 'organizations.themes.*',
+            //     icon: PaletteIcon,
+            // },
             {
                 title: 'Integrations',
                 href: '/integrations',
@@ -86,7 +86,7 @@ const navGroups = [
 
 export function AppSidebar() {
     const { auth } = usePage().props as unknown as SharedData;
-    
+
     // Hide notifications if user has seen the respective tutorials
     const showProductsNotification = !auth.user?.onboarding_info?.has_seen_products_tutorial;
     const showOrdersNotification = !auth.user?.onboarding_info?.has_seen_orders_tutorial;
@@ -98,7 +98,7 @@ export function AppSidebar() {
         ...group,
         items: group.items.map(item => ({
             ...item,
-            hasNotification: 
+            hasNotification:
                 item.title === 'Products' ? showProductsNotification :
                 item.title === 'Orders' ? showOrdersNotification :
                 item.title === 'Integrations' ? showIntegrationsNotification :
@@ -111,10 +111,10 @@ export function AppSidebar() {
             <SidebarHeader className="p-3">
                 <OrganizationSwitcher />
             </SidebarHeader>
-            
+
             <SidebarContent>
-                <NavMain 
-                groups={dynamicNavGroups} 
+                <NavMain
+                groups={dynamicNavGroups}
                 />
             </SidebarContent>
 
