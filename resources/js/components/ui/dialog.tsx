@@ -47,8 +47,19 @@ function DialogOverlay({
 function DialogContent({
   className,
   children,
+  variant = "default",
   ...props
-}: React.ComponentProps<typeof DialogPrimitive.Content>) {
+}: React.ComponentProps<typeof DialogPrimitive.Content> & {
+  variant?: "default" | "full-height" | "wizard"
+}) {
+
+  const contentClasses = cn(
+    "bg-background data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed z-50 grid gap-4 border shadow-lg duration-200",
+    variant === "default" && "top-[50%] left-[50%] w-full max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] rounded-lg p-6 sm:max-w-lg",
+    variant === "full-height" && "top-10 left-10 right-10 bottom-10 w-auto h-auto translate-x-0 translate-y-0 rounded-lg p-6",
+    variant === "wizard" && "top-[50%] left-[50%] w-full max-w-4xl h-[85vh] translate-x-[-50%] translate-y-[-50%] rounded-lg p-0 flex flex-col",
+    className
+  )
 
   return (
     <DialogPortal data-slot="dialog-portal">
@@ -60,10 +71,7 @@ function DialogContent({
         }}
         data-slot="dialog-content"
         onWheel={(e) => e.stopPropagation()}
-        className={cn(
-          "bg-background data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed top-[50%] left-[50%] z-50 grid w-full max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] gap-4 rounded-lg border p-6 shadow-lg duration-200 sm:max-w-lg",
-          className
-        )}
+        className={contentClasses}
         {...props}
       >
         {children}

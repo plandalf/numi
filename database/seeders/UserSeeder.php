@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Models\User;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Hash;
 
 class UserSeeder extends Seeder
 {
@@ -15,13 +16,19 @@ class UserSeeder extends Seeder
     public function run(): void
     {
         // Create admin user
-        User::factory()->create([
-            'name' => 'Admin User',
-            'email' => 'dev@plandalf.com',
-            'password' => bcrypt('password'),
-        ]);
+        User::updateOrCreate(
+            ['email' => 'dev@plandalf.com'],
+            [
+                'name' => 'Admin User',
+                'password' => Hash::make('password'),
+            ]
+        );
 
-        // Create regular users
-        User::factory(10)->create();
+        // Create regular users (only if they don't exist)
+        $existingUsersCount = User::where('email', '!=', 'dev@plandalf.com')->count();
+        if ($existingUsersCount < 10) {
+            $usersToCreate = 10 - $existingUsersCount;
+            User::factory($usersToCreate)->create();
+        }
     }
 }

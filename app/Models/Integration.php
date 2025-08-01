@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Database\Traits\UuidRouteKey;
 use App\Enums\IntegrationType;
 use App\Modules\Integrations\AbstractIntegration;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -11,6 +12,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Arr;
 
 /**
+ * @property string $uuid
  * @property string $lookup_key
  * @property string $type
  * @property string $organization_id
@@ -18,10 +20,24 @@ use Illuminate\Support\Arr;
  * @property string $secret
  * @property array $config
  * @property string $current_state
+ * @property int|null $app_id
+ * @property string|null $webhook_url
+ * @property string|null $webhook_secret
+ * @property array|null $connection_config
+ * @property \Carbon\Carbon|null $last_sync_at
+ * @property array|null $sync_errors
+ * @property \Carbon\Carbon $created_at
+ * @property \Carbon\Carbon $updated_at
+ * @property \Carbon\Carbon|null $deleted_at
+ * @property App|null $app
  */
 class Integration extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory,
+        SoftDeletes,
+        UuidRouteKey;
+
+    protected $table = 'integrations';
 
     /**
      * The attributes that are mass assignable.
@@ -37,6 +53,8 @@ class Integration extends Model
         'config',
         'current_state',
         'environment',
+        'app_id',
+        'connection_config',
     ];
 
     /**
@@ -46,6 +64,7 @@ class Integration extends Model
      */
     protected $casts = [
         'config' => 'array',
+        'connection_config' => 'json',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
         'deleted_at' => 'datetime',
@@ -181,5 +200,157 @@ class Integration extends Model
     public function isPaymentMethodEnabled(string $paymentMethod): bool
     {
         return in_array($paymentMethod, $this->getEnabledPaymentMethods());
+    }
+
+    /**
+     * Get the app that this integration belongs to (for automation integrations)
+     */
+    public function app(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\App::class);
+    }
+
+    /**
+     * Get Kajabi client ID from config
+     */
+    public function getKajabiClientId(): ?string
+    {
+        if ($this->type !== IntegrationType::KAJABI) {
+            return null;
+        }
+
+        return Arr::get($this->config, 'client_id');
+    }
+
+    /**
+     * Get Kajabi client secret from config
+     */
+    public function getKajabiClientSecret(): ?string
+    {
+        if ($this->type !== IntegrationType::KAJABI) {
+            return null;
+        }
+
+        return Arr::get($this->config, 'client_secret');
+    }
+
+    /**
+     * Get Kajabi subdomain from config
+     */
+    public function getKajabiSubdomain(): ?string
+    {
+        if ($this->type !== IntegrationType::KAJABI) {
+            return null;
+        }
+
+        return Arr::get($this->config, 'subdomain');
+    }
+
+    /**
+     * Set Kajabi credentials
+     */
+    public function setKajabiCredentials(string $clientId, string $clientSecret, string $subdomain): void
+    {
+        if ($this->type !== IntegrationType::KAJABI) {
+            throw new \InvalidArgumentException('This integration is not a Kajabi integration');
+        }
+
+        $config = $this->config ?? [];
+        $config['client_id'] = $clientId;
+        $config['client_secret'] = $clientSecret;
+        $config['subdomain'] = $subdomain;
+
+        $this->update(['config' => $config]);
+    }
+
+    /**
+     * Test Kajabi connection
+     */
+    public function testKajabiConnection(): bool
+    {
+        if ($this->type !== IntegrationType::KAJABI) {
+            return false;
+        }
+
+        try {
+            $kajabiService = \App\Services\KajabiService::fromIntegration($this);
+            $result = $kajabiService->testConnection();
+
+            return $result['success'];
+        } catch (\Exception $e) {
+            logger()->error('Kajabi connection test failed', [
+                'integration_id' => $this->id,
+                'error' => $e->getMessage()
+            ]);
+            return false;
+        }
+    }
+
+    /**
+     * Make a Kajabi API call
+     */
+    public function makeKajabiApiCall(string $method, string $endpoint, array $data = []): ?array
+    {
+        if ($this->type !== IntegrationType::KAJABI) {
+            throw new \InvalidArgumentException('This integration is not a Kajabi integration');
+        }
+
+        try {
+            $kajabiService = \App\Services\KajabiService::fromIntegration($this);
+            $result = $kajabiService->makeRequest($method, $endpoint, $data);
+
+            if ($result['success']) {
+                return $result['data'];
+            }
+
+            throw new \Exception($result['error'] ?? 'API request failed');
+        } catch (\Exception $e) {
+            logger()->error('Kajabi API call failed', [
+                'integration_id' => $this->id,
+                'method' => $method,
+                'endpoint' => $endpoint,
+                'error' => $e->getMessage()
+            ]);
+            throw $e;
+        }
+    }
+
+    /**
+     * Get Kajabi site information
+     */
+    public function getKajabiSiteInfo(): ?array
+    {
+        try {
+            $kajabiService = \App\Services\KajabiService::fromIntegration($this);
+            $result = $kajabiService->getSiteInfo();
+
+            return $result['success'] ? $result['data'] : null;
+        } catch (\Exception $e) {
+            logger()->error('Failed to get Kajabi site info', [
+                'integration_id' => $this->id,
+                'error' => $e->getMessage()
+            ]);
+            return null;
+        }
+    }
+
+    /**
+     * Check if this is an automation integration (has app_id)
+     */
+    public function isAutomationIntegration(): bool
+    {
+        return !is_null($this->app_id);
+    }
+
+    /**
+     * Get integration display name
+     */
+    public function getDisplayName(): string
+    {
+        if ($this->isAutomationIntegration() && $this->app) {
+            return $this->name ?: $this->app->name;
+        }
+
+        return $this->name ?: $this->type->label();
     }
 }

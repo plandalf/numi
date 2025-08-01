@@ -55,7 +55,7 @@ export default function Show({ integration }: Props) {
     const handleSave = async () => {
         setSaving(true);
         try {
-            await router.put(`/integrations/${integration.id}/payment-methods`, {
+            await router.put(`/integrations/${integration.uuid}/payment-methods`, {
                 payment_methods: enabledPaymentMethods,
             });
         } finally {

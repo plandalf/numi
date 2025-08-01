@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-use App\Models\Automation\StoredWorkflow;
+use App\Models\Automation\Run;
 
 return [
     // overridden
-    'stored_workflow_model' => StoredWorkflow::class,
+    'stored_workflow_model' => Run::class,
 
     // defaults
     'workflows_folder' => 'Workflows',

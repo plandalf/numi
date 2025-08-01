@@ -1,5 +1,6 @@
 export type Integration = {
     id: number;
+    uuid: string;
     name: string;
     type: string;
     lookup_key: string;

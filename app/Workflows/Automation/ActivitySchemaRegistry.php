@@ -14,6 +14,9 @@ class ActivitySchemaRegistry
 
     public function register(string $activityClass, ?string $type = null): void
     {
+        // note: this is reflecting wrong now!
+
+
         // If type is not explicitly provided, try to get it from class attribute
         if ($type === null) {
             $reflection = new ReflectionClass($activityClass);
@@ -31,6 +34,7 @@ class ActivitySchemaRegistry
 
     public static function getActivityClassForType(string $type): ?string
     {
+        dd(self::$typeMap);
         return self::$typeMap[$type] ?? null;
     }
 

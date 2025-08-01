@@ -14,10 +14,10 @@ use App\Http\Controllers\OrganizationController;
 use App\Http\Controllers\PriceController;
 use App\Http\Controllers\ProductsController;
 use App\Http\Controllers\ReusableBlockController;
-use App\Http\Controllers\SequencesController;
 use App\Http\Controllers\Settings\ProfileController;
 use App\Http\Controllers\ThemeController;
 use App\Http\Controllers\TemplateController;
+use App\Http\Controllers\WebhookController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use App\Http\Controllers\OrdersController;
@@ -25,10 +25,17 @@ use App\Http\Controllers\FeedbackController;
 use App\Http\Controllers\OfferItemPriceController;
 use App\Http\Controllers\OnboardingController;
 use App\Http\Controllers\ApiKeysController;
+use App\Http\Controllers\ImpersonationController;
 
 Route::redirect('/', '/dashboard')->name('home');
 
-Route::get('test', function () {
+Route::middleware(['frame-embed'])->group(function () {
+    Route::get('/o/{offer}/{environment?}', [CheckoutController::class, 'initialize'])
+        ->name('offers.show')
+        ->where('environment', 'live|test');
+
+    Route::get('/checkout/{checkout}', [CheckoutController::class, 'show'])
+        ->name('checkouts.show');
 });
 
 Route::middleware(['frame-embed'])
@@ -124,7 +131,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::middleware(['organization', 'subscription'])->group(function () {
 
         Route::resource('products', ProductsController::class);
-        Route::resource('sequences', SequencesController::class);
         Route::post('products/{product}/prices/import', [PriceController::class, 'import'])->name('products.prices.import');
         Route::resource('products.prices', PriceController::class);
 
@@ -215,7 +221,16 @@ Route::middleware(['auth'])->group(function () {
 });
 
 Route::get('m/{dir}/{media}.{extension}', function (string $dir, \App\Models\Media $media) {
-    return redirect()->away($media->getSignedUrl(60));
+    $url = config('app.s3_url') . $media->path;
+
+    return redirect($url);
+})->name('media.show')->where('extension', '[a-zA-Z]+');
+
+// Webhook endpoints (public, no authentication required)
+Route::prefix('webhooks')->name('webhooks.')->group(function () {
+    Route::any('/{trigger_uuid}', [WebhookController::class, 'handleTrigger'])
+        ->name('trigger')
+        ->where('trigger_uuid', '[0-9a-f-]{36}');
 });
 
 Route::post('/feedback', [FeedbackController::class, 'submit'])->name('feedback.submit');
@@ -233,5 +248,21 @@ Route::get('/test-receipt/{uuid}', function($uuid) {
     return redirect($order->getReceiptUrl());
 })->name('test.receipt');
 
-require __DIR__.'/settings.php';
+
+
+// Impersonation routes - LOCAL DEVELOPMENT ONLY
+if (app()->environment('local')) {
+    Route::prefix('dev')->group(function () {
+        Route::get('/impersonate', [ImpersonationController::class, 'impersonate'])
+            ->name('impersonate')
+            ->middleware('signed');
+
+        Route::post('/stop-impersonation', [ImpersonationController::class, 'stopImpersonation'])
+            ->name('stop-impersonation');
+    });
+}
+
 require __DIR__.'/auth.php';
+require __DIR__.'/settings.php';
+require __DIR__.'/automation.php';
+

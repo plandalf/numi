@@ -3,6 +3,9 @@
 namespace App\Providers;
 
 use App\Observers\ExtendSocialiteObserver;
+use App\Workflows\Automation\AutomationEventListener;
+use App\Workflows\Automation\Events\AutomationTriggerEvent;
+use App\Workflows\Automation\Events\SystemEvent;
 use Illuminate\Foundation\Support\Providers\EventServiceProvider as ServiceProvider;
 
 class EventServiceProvider extends ServiceProvider
@@ -16,6 +19,13 @@ class EventServiceProvider extends ServiceProvider
         \SocialiteProviders\Manager\SocialiteWasCalled::class => [
             ExtendSocialiteObserver::class,
         ],
+        AutomationTriggerEvent::class => [
+            AutomationEventListener::class,
+        ],
+    ];
+
+    protected $subscribe = [
+        \App\Workflows\WorkflowEventListener::class,
     ];
 
     /**

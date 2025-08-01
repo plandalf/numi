@@ -17,7 +17,7 @@ export function NavMain({ groups = [] }: { groups: NavGroup[] }) {
                         {group.items.map((item) => (
                             <SidebarMenuItem key={item.title}>
                                 <SidebarMenuButton
-                                    asChild 
+                                    asChild
                                     isActive={route().current(item.route)}
                                     tooltip={{ children: item.title }}
                                 >

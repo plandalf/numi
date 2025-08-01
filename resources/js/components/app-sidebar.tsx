@@ -48,12 +48,12 @@ const navGroups = [
                 route: 'templates.*',
                 icon: ComponentIcon,
             },
-            // {
-            //     title: 'Automation',
-            //     href: '/sequences',
-            //     route: 'sequences.*',
-            //     icon: BotIcon,
-            // },
+            {
+                title: 'Automation',
+                href: '/automation/sequences',
+                route: 'automation.sequences.*',
+                icon: BotIcon,
+            },
         ]
     },
     {

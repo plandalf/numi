@@ -2,7 +2,7 @@
 
 namespace App\Workflows\Automation;
 
-use App\Models\Automation\Node;
+use App\Models\Automation\Action;
 use App\Models\ResourceEvent;
 use App\Workflows\Automation\Attributes\Activity;
 use Illuminate\Support\Arr;
@@ -16,7 +16,7 @@ use Workflow\Activity as WorkflowActivity;
 )]
 class WebhookActivity extends WorkflowActivity
 {
-    public function execute(Node $node, ResourceEvent $event)
+    public function execute(Action $node, ResourceEvent $event)
     {
         $url = TemplateResolver::get($event, Arr::get($node->arguments, 'url'));
         $method = TemplateResolver::get($event, Arr::get($node->arguments, 'method', 'POST'));

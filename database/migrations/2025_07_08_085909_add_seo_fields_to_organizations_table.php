@@ -16,7 +16,7 @@ return new class extends Migration
             $table->string('website_url')->nullable()->after('description');
             $table->foreignId('logo_media_id')->nullable()->after('website_url')->constrained('medias')->nullOnDelete();
             $table->foreignId('favicon_media_id')->nullable()->after('logo_media_id')->constrained('medias')->nullOnDelete();
-            $table->string('primary_color', 7)->nullable()->after('favicon_url'); // #RRGGBB format
+            $table->string('primary_color', 7)->nullable()->after('favicon_media_id'); // #RRGGBB format
             $table->json('social_media')->nullable()->after('primary_color'); // Store social media URLs
         });
     }

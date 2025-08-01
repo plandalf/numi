@@ -6,6 +6,11 @@ enum IntegrationType: string
 {
     case STRIPE = 'stripe';
     case STRIPE_TEST = 'stripe_test';
+    case KAJABI = 'kajabi';
+    case OAUTH = 'oauth';
+    case OAUTH_CLIENT_CREDENTIALS = 'oauth_client_credentials';
+    case API_KEYS = 'api_keys';
+    case WEBHOOK = 'webhook';
 
     /**
      * Get all available charge types as an array of values.
@@ -23,7 +28,13 @@ enum IntegrationType: string
     public function label(): string
     {
         return match ($this) {
-            self::STRIPE => 'Stripe'
+            self::STRIPE => 'Stripe',
+            self::STRIPE_TEST => 'Stripe (Test)',
+            self::KAJABI => 'Kajabi',
+            self::OAUTH => 'OAuth',
+            self::OAUTH_CLIENT_CREDENTIALS => 'OAuth Client Credentials',
+            self::API_KEYS => 'API Keys',
+            self::WEBHOOK => 'Webhook'
         };
     }
 }
