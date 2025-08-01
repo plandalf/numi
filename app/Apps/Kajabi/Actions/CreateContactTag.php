@@ -61,12 +61,13 @@ class CreateContactTag extends AppAction
             $action = 'found';
         } else {
             // Tag doesn't exist, create it
-            $createTagRequest = new CreateTagRequest($tagName, $siteId);
-            $createTagResponse = $connector->send($createTagRequest);
+//            $createTagRequest = new CreateTagRequest($tagName, $siteId);
+//            $createTagResponse = $connector->send($createTagRequest);
 
-            if ($createTagResponse->failed()) {
-                throw new \Exception('Failed to create tag in Kajabi: ' . $createTagResponse->body());
-            }
+            throw new \Exception('Failed to create tag in Kajabi: ');
+            // . $createTagResponse->body()
+//            if ($createTagResponse->failed()) {
+//            }
 
             $newTag = $createTagResponse->json('data');
             $tagId = $newTag['id'];

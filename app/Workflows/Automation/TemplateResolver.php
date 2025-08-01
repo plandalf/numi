@@ -105,13 +105,13 @@ class TemplateResolver
     private static function resolveVariable(string $variable, array $context): string
     {
         // Handle trigger__key syntax (trigger data)
-        if (preg_match('/^trigger__(.+)$/', $variable, $matches)) {
+        if (preg_match('/^trigger.(.+)$/', $variable, $matches)) {
             $key = $matches[1];
             return self::getNestedValue($context['trigger'] ?? [], $key) ?? '';
         }
 
         // Handle action__id_key syntax (previous action output)
-        if (preg_match('/^action_(\d+)__([\w_]+)$/', $variable, $matches)) {
+        if (preg_match('/^action_(\d+).([\w.]+)$/', $variable, $matches)) {
 
             $actionId = $matches[1];
             $keyPath = str_replace('_', '.', $matches[2]); // Convert to dot notation

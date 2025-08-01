@@ -40,7 +40,7 @@ export function useTemplateVariables({
   actions = [],
   currentActionId
 }: UseTemplateVariablesOptions): TemplateVariable[] {
-  
+
   return useMemo(() => {
     const variables: TemplateVariable[] = [];
 
@@ -56,13 +56,13 @@ export function useTemplateVariables({
     });
 
     // Generate action variables - only from actual test results (only for actions before the current one)
-    const availableActions = currentActionId 
+    const availableActions = currentActionId
       ? actions.filter(action => action.id < currentActionId)
       : actions;
 
     availableActions.forEach((action, index) => {
       const actionNumber = index + 1; // Actions are numbered from 1
-      
+
       if (action.test_result && typeof action.test_result === 'object') {
         // Generate variables from actual test result data only
         generateVariablesFromObject(action.test_result, 'action', variables, {
@@ -94,10 +94,10 @@ function generateVariablesFromObject(
   if (currentDepth >= maxDepth) return;
 
   Object.entries(data).forEach(([key, value]) => {
-    const variableKey = prefix ? `${prefix}_${key}` : key;
-    const fullKey = category === 'trigger' 
-      ? `trigger__${variableKey}`
-      : `action_${context.actionId}__${variableKey}`;
+    const variableKey = prefix ? `${prefix}.${key}` : key;
+    const fullKey = category === 'trigger'
+      ? `trigger.${variableKey}`
+      : `action_${context.actionId}.${variableKey}`;
 
     if (value && typeof value === 'object' && !Array.isArray(value)) {
       // Recurse into nested objects

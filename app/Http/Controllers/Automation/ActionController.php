@@ -250,7 +250,7 @@ class ActionController extends Controller
                 ->get();
 
             foreach ($actions as $step) {
-                $props[implode('__', ['action', strval($step->id)])] = $step->test_result;
+                $props[implode('_', ['action', strval($step->id)])] = $step->test_result;
             }
 
             // Use the enhanced template resolver for workflow context

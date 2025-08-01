@@ -56,19 +56,19 @@ export function TemplateVariableInput({
     const beforeCursor = value.slice(0, cursorPosition);
     const afterCursor = value.slice(cursorPosition);
     const variableText = `{{${variable.key}}}`;
-    
+
     const newValue = beforeCursor + variableText + afterCursor;
     const newPosition = cursorPosition + variableText.length;
-    
+
     onChange(newValue);
-    
+
     // Set cursor position after insertion
     setTimeout(() => {
       input.focus();
       input.setSelectionRange(newPosition, newPosition);
       setCursorPosition(newPosition);
     }, 0);
-    
+
     setShowVariables(false);
   };
 
@@ -103,7 +103,7 @@ export function TemplateVariableInput({
           className={`pr-10 ${hasTemplateVariables ? 'border-blue-200 bg-blue-50/30' : ''} ${className}`}
           disabled={disabled}
         />
-        
+
         {/* Variables button */}
         <Popover open={showVariables} onOpenChange={setShowVariables}>
           <PopoverTrigger asChild>
@@ -123,27 +123,24 @@ export function TemplateVariableInput({
                 value={searchTerm}
                 onValueChange={setSearchTerm}
               />
-              <CommandList>
+              <CommandList >
                 <CommandEmpty>No template variables found.</CommandEmpty>
-                
+
                 {triggerVariables.length > 0 && (
-                  <CommandGroup heading="Trigger Data">
+                  <CommandGroup heading="Trigger Data" >
                     {triggerVariables.map((variable) => (
                       <CommandItem
                         key={variable.key}
                         onSelect={() => insertVariable(variable)}
-                        className="flex flex-col items-start p-3 cursor-pointer"
+                        className="flex flex-col items-start p-2 cursor-pointer leading-none border-b rounded-none"
                       >
                         <div className="flex items-center justify-between w-full">
                           <div className="flex items-center space-x-2">
-                            <Badge variant="outline" className="text-xs">
-                              trigger
-                            </Badge>
-                            <span className="font-medium">{variable.label}</span>
+                            <Badge variant="outline" className="text-xs">trigger</Badge>
+                            <code className="text-xs bg-gray-100 px-1 rounded">
+                              {`{{${variable.key}}}`}
+                            </code>
                           </div>
-                          <code className="text-xs bg-gray-100 px-1 rounded">
-                            {`{{${variable.key}}}`}
-                          </code>
                         </div>
                         {variable.description && (
                           <p className="text-xs text-gray-500 mt-1">
@@ -198,7 +195,7 @@ export function TemplateVariableInput({
           </PopoverContent>
         </Popover>
       </div>
-      
+
       {/* Help text */}
       {hasTemplateVariables ? (
         <p className="text-xs text-blue-600 mt-1">
@@ -206,8 +203,8 @@ export function TemplateVariableInput({
         </p>
       ) : (
         <p className="text-xs text-gray-500 mt-1">
-          Use template variables like <code className="bg-gray-100 px-1 rounded">{'{{trigger__email}}'}</code> or{' '}
-          <code className="bg-gray-100 px-1 rounded">{'{{action_1__id}}'}</code> for dynamic values.
+          Use template variables like <code className="bg-gray-100 px-1 rounded">{'{{trigger.email}}'}</code> or{' '}
+          <code className="bg-gray-100 px-1 rounded">{'{{action_1.id}}'}</code> for dynamic values.
         </p>
       )}
     </div>
