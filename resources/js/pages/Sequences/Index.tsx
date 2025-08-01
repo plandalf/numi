@@ -1,13 +1,12 @@
 import { Link, Head, router } from '@inertiajs/react';
 import AppLayout from "@/layouts/app-layout";
 import { formatDate } from '@/lib/utils';
-import { Search, Plus, ExternalLink, Play, Pause, Settings } from 'lucide-react';
+import { Plus, ExternalLink, Play, Pause, Settings } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { useDebounce } from '@/hooks/use-debounce';
 import { useEffect, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Table,
   TableBody,
@@ -16,7 +15,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { TutorialCard } from '@/components/onboarding/TutorialCard';
 import {
   Dialog,
   DialogContent,
@@ -24,12 +22,12 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useForm } from '@inertiajs/react';
 import { type BreadcrumbItem, type PageProps } from '@/types';
+import { CardContent, CardTitle } from '@/components/ui/card';
 
 interface Sequence {
   id: number;
@@ -139,15 +137,6 @@ export default function Index({ auth, sequences, workflows }: SequencesIndexProp
           </Button>
         </div>
 
-        {/* Tutorial Card */}
-        {sequences.length === 0 && (
-          <TutorialCard
-            title="Welcome to Sequences!"
-            description="Sequences are automated workflows that help you streamline your business processes. Create your first sequence to get started."
-            actions={tutorialActions}
-          />
-        )}
-
         {/* Sequences Table */}
         {filteredSequences.length > 0 ? (
           <Table>
@@ -220,25 +209,22 @@ export default function Index({ auth, sequences, workflows }: SequencesIndexProp
             </TableBody>
           </Table>
         ) : sequences.length === 0 ? null : (
-          <Card>
-            <CardContent className="py-8">
+          <div>
+            <div className="py-8">
               <div className="text-center">
                 <p className="text-gray-500">No sequences found matching your search.</p>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         )}
 
         {/* Workflows Debug Section (temporary) */}
         {workflows.data.length > 0 && (
-          <Card>
-            <CardHeader>
+          <div>
+            <div>
               <CardTitle>Recent Workflow Executions</CardTitle>
-              <CardDescription>
-                Debug information for workflow executions
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
+            </div>
+            <div>
               <div className="space-y-4">
                 {workflows.data.slice(0, 5).map((workflow) => (
                   <div key={workflow.id} className="p-4 border rounded-lg">
@@ -255,8 +241,8 @@ export default function Index({ auth, sequences, workflows }: SequencesIndexProp
                   </div>
                 ))}
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         )}
       </div>
 

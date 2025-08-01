@@ -3,7 +3,7 @@ import { Head, router } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+import { CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ArrowLeft, Save, RotateCcw } from 'lucide-react';
 import { showToast } from '@/lib/notifications';
@@ -182,7 +182,7 @@ export default function Edit({ theme, fonts, weights }: Props) {
                         <div className="col-span-1">
                             <Label htmlFor={field.key}>{label}</Label>
                         </div>
-                        <div className="col-span-3">     
+                        <div className="col-span-3">
                             <Select
                                 value={value as string || ''}
                                 onValueChange={(newValue) => handleFieldChange(field.key, newValue)}

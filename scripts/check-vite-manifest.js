@@ -9,6 +9,8 @@ console.log('Checking Vite manifest...');
 try {
   const manifest = JSON.parse(readFileSync(manifestPath, 'utf-8'));
 
+  console.log(manifest);
+
   const missing = requiredEntries.filter(entry => !manifest[entry]);
 
   if (missing.length > 0) {
