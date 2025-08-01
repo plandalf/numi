@@ -6,11 +6,12 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
+        if (Schema::hasTable('reusable_blocks')) {
+            return; // Migration already applied
+        }
+
         Schema::create('reusable_blocks', function (Blueprint $table) {
             $table->id();
             $table->foreignId('organization_id')->constrained('organizations')->cascadeOnDelete();
@@ -23,9 +24,6 @@ return new class extends Migration
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('reusable_blocks');
