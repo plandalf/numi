@@ -39,7 +39,7 @@ return new class extends Migration
         }
 
         Schema::table('integrations', function (Blueprint $table) {
-            $table->uuid()->after('id');
+//            $table->uuid()->after('id');
             $table->string('lookup_key', 64)->nullable()->change();
             $table->foreignId('app_id')->nullable()->after('organization_id')->constrained('automation_apps')->onDelete('set null');
             $table->json('connection_config')->nullable();
