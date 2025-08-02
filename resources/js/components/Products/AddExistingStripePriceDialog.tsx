@@ -46,7 +46,6 @@ export default function AddExistingStripePriceDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="sm:max-w-[600px]">
         <PriceStep
           integrationId={product.integration_id!}
           productId={product.gateway_product_id!}
@@ -55,7 +54,6 @@ export default function AddExistingStripePriceDialog({
           onClickSave={handleSave}
           onClickBack={() => void 0}
         />
-      </DialogContent>
     </Dialog>
   );
 }

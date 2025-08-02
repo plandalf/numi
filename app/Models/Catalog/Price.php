@@ -29,7 +29,7 @@ use Parental\HasChildren;
  * @property int $product_id
  * @property int $organization_id
  * @property int|null $parent_list_price_id If scope=custom, points to list price base
- * @property string $scope list or custom
+ * @property string $scope list, custom, or variant
  * @property ChargeType $type one_time|graduated|standard|volume|package
  * @property Money $amount Base price/amount in cents
  * @property Currency $currency 3-letter ISO currency code
@@ -43,6 +43,7 @@ use Parental\HasChildren;
  * @property string|null $gateway_provider Payment gateway provider (e.g., stripe)
  * @property string|null $gateway_price_id ID of the price on the payment gateway
  * @property bool $is_active Whether the price is currently active
+ *
  * @property Carbon|null $archived_at
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
@@ -59,12 +60,29 @@ class Price extends Model
 
     const MAX_QUANTITY = 1_000_000_000_000; // 1 trillion
 
+    protected static function boot()
+    {
+        parent::boot();
+        
+        // Validate that child prices have the same type as their parent
+        static::saving(function ($price) {
+            if ($price->parent_list_price_id && $price->isDirty(['parent_list_price_id', 'type'])) {
+                $parentPrice = static::find($price->parent_list_price_id);
+                if ($parentPrice && $price->type !== $parentPrice->type) {
+                    throw new \InvalidArgumentException(
+                        "Child price type '{$price->type}' must match parent price type '{$parentPrice->type}'"
+                    );
+                }
+            }
+        });
+    }
+
     protected $fillable = [
         'product_id',
         'organization_id',
         'parent_list_price_id',
 
-        'scope', // list or custom
+        'scope', // list, custom, or variant
         'type',  // one_time|graduated|standard|volume|package
 
         'amount',
@@ -132,6 +150,12 @@ class Price extends Model
     public function scopeCustom($query)
     {
         return $query->where('scope', 'custom');
+    }
+
+    // Scope to get only variant prices
+    public function scopeVariant($query)
+    {
+        return $query->where('scope', 'variant');
     }
 
     // Scope to get only active prices

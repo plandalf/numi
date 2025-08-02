@@ -13,6 +13,7 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 use Laravel\Socialite\Facades\Socialite;
+use Laravel\Socialite\Two\AbstractProvider;
 use Laravel\Socialite\Two\InvalidStateException;
 
 /** @todo implement actual stripe client */

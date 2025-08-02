@@ -27,8 +27,8 @@ export interface Price {
     id: number;
     product_id: number;
     parent_list_price_id: number | null;
-    scope: 'list' | 'custom';
-    pricing_model: 'one_time' | 'recurring' | 'tiered' | 'volume' | 'graduated';
+    scope: 'list' | 'custom' | 'variant';
+    pricing_model: 'one_time' | 'recurring' | 'tiered' | 'volume' | 'graduated' | 'package';
     amount: number;
     currency: string;
     recurring_interval: string | null;

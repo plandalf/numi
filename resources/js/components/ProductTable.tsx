@@ -2,7 +2,7 @@ import { Link, router } from '@inertiajs/react';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { cx } from 'class-variance-authority';
-import { ProductStatus } from '@/types/product';
+import { ProductStatus, Price } from '@/types/product';
 import { formatDate, pluralize } from '@/lib/utils';
 import { useState } from 'react';
 import { toast } from 'sonner';
@@ -27,7 +27,7 @@ type Product = {
   integration?: {
     name: string;
   };
-  prices?: any[];
+  prices?: Price[];
 };
 
 interface ProductTableProps {
@@ -98,7 +98,52 @@ export function ProductTable({ products }: ProductTableProps) {
                   {product.integration?.name || 'Plandalf'}
                 </TableCell>
                 <TableCell className="whitespace-nowrap">
-                  {product.prices?.length || 0} {pluralize('price', product.prices?.length || 0)}
+                  {product.prices && product.prices.length > 0 ? (
+                    <div className="space-y-1">
+                      {(() => {
+                        const listPrices = product.prices.filter(p => p.scope === 'list');
+                        const customPrices = product.prices.filter(p => p.scope === 'custom');
+                        const variantPrices = product.prices.filter(p => p.scope === 'variant');
+                        
+                        return (
+                          <div className="flex flex-col space-y-0.5">
+                            {listPrices.length > 0 && (
+                              <div className="flex items-center space-x-2">
+                                <Badge variant="outline" className="text-xs bg-green-50 border-green-200 text-green-700">
+                                  List
+                                </Badge>
+                                <span className="text-sm text-gray-600">
+                                  {listPrices.length} {pluralize('price', listPrices.length)}
+                                </span>
+                              </div>
+                            )}
+                            {customPrices.length > 0 && (
+                              <div className="flex items-center space-x-2">
+                                <Badge variant="outline" className="text-xs bg-blue-50 border-blue-200 text-blue-700">
+                                  Custom
+                                </Badge>
+                                <span className="text-sm text-gray-600">
+                                  {customPrices.length} {pluralize('price', customPrices.length)}
+                                </span>
+                              </div>
+                            )}
+                            {variantPrices.length > 0 && (
+                              <div className="flex items-center space-x-2">
+                                <Badge variant="outline" className="text-xs bg-purple-50 border-purple-200 text-purple-700">
+                                  Variant
+                                </Badge>
+                                <span className="text-sm text-gray-600">
+                                  {variantPrices.length} {pluralize('price', variantPrices.length)}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  ) : (
+                    <span className="text-sm text-gray-500">No prices</span>
+                  )}
                 </TableCell>
                 <TableCell>
                   <Button variant="ghost" size="icon" onClick={() => setProductToDelete(product)} title="Delete Price">

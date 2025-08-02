@@ -2,11 +2,11 @@
 
 namespace App\Models;
 
+use App\Database\Model;
 use App\Database\Traits\UuidRouteKey;
 use App\Enums\IntegrationType;
 use App\Modules\Integrations\AbstractIntegration;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Arr;

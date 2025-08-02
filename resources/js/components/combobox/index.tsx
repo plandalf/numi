@@ -27,6 +27,8 @@ export type ComboboxProps = {
     label: string;
     badge?: React.ReactNode;
     disabled?: boolean;
+    subtitle?: string;
+    metadata?: React.ReactNode;
   }[];
   placeholderIcon?: React.ReactNode;
   placeholder?: string;
@@ -170,7 +172,7 @@ export function Combobox({
         </Button>
       </PopoverTrigger>
       <PopoverContent
-        className={cn("p-0", popoverClassName)}
+        className={cn("p-0 z-[9999]", popoverClassName)}
         style={{ width: "var(--radix-popover-trigger-width)" }}
         align="start"
         onMouseLeave={handleMouseLeave}
@@ -224,7 +226,7 @@ export function Combobox({
               {items.map((item) => (
                 <CommandItem
                   key={item.value}
-                  value={`${item.label} ${item.value}`}
+                  value={`${item.label} ${item.subtitle || ''} ${item.value}`}
                   onSelect={(currentValue) => {
                     if (item.disabled) return;
                     handleSelect(item.value);
@@ -236,10 +238,18 @@ export function Combobox({
                     item.disabled && "opacity-50 cursor-not-allowed"
                   )}
                 >
-                  <div className="flex items-center gap-2">
-                    {item.label}
+                  <div className="flex items-start justify-between w-full gap-2">
+                    <div className="flex flex-col gap-1 min-w-0 flex-1">
+                      <div className="font-medium truncate">{item.label}</div>
+                      {item.subtitle && (
+                        <div className="text-sm text-muted-foreground truncate">{item.subtitle}</div>
+                      )}
+                      {item.metadata && (
+                        <div className="flex items-center gap-2">{item.metadata}</div>
+                      )}
+                    </div>
                     {item.badge && (
-                      <span className="ml-auto">{item.badge}</span>
+                      <div className="flex-shrink-0">{item.badge}</div>
                     )}
                   </div>
                   <Check

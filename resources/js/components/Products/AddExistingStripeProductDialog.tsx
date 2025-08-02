@@ -215,7 +215,8 @@ export const PriceStep = ({ integrationId, onClickSave, onClickBack, selectedPri
   useEffect(() => {
     const fetchPrices = async () => {
       try {
-        const response = await axios.get(`/integrations/${integrationId}/products/${productId}/prices`);
+        // const response = await axios.get(`/integrations/${integrationId}/products/${productId}/prices`);
+        const response = await axios.get(`/products/${productId}/prices`);
         setPrices(response.data);
       } catch (error) {
         console.error('Error fetching prices:', error);

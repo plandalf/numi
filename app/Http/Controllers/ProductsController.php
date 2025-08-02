@@ -140,7 +140,7 @@ class ProductsController extends Controller
         $product = null;
         if ($request->has('integration_id') && $request->input('integration_id') !== null) {
             /** @var Integration $integration */
-            $integration = Integration::find($request->input('integration_id'));
+            $integration = Integration::retrieve($request->input('integration_id'));
             $integrationClient = $integration->integrationClient();
 
             $product = $integrationClient->importProduct($validated);
