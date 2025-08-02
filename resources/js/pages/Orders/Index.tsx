@@ -204,10 +204,10 @@ export default function Index({ orders, filters, showOrdersTutorial }: OrdersInd
                       >
                         <TableCell className="font-medium">
                           <Link
-                            href={route('orders.show', order.uuid)}
+                            href={route('orders.show', order.id)}
                             className="hover:underline"
                           >
-                            {order.uuid}
+                            Order #{order.order_number}
                           </Link>
                           {needsFulfillment && (
                             <div className="flex items-center gap-1 mt-1">
@@ -254,7 +254,7 @@ export default function Index({ orders, filters, showOrdersTutorial }: OrdersInd
                           </div>
                           {needsFulfillment && (
                             <Link
-                              href={route('orders.fulfillment', order.uuid)}
+                              href={route('orders.fulfillment', order.id)}
                               className="inline-flex items-center gap-1 mt-1 text-xs text-blue-600 hover:text-blue-800 font-medium"
                             >
                               <Package className="h-3 w-3" />
