@@ -20,6 +20,6 @@ class Run extends BaseStoredWorkflow
 
     public function event(): BelongsTo
     {
-        return $this->belongsTo(AutomationEvent::class);
+        return $this->belongsTo(AutomationEvent::class, 'event_id');
     }
 }

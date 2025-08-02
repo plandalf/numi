@@ -106,7 +106,7 @@ class AutomationEventListener
             $run = Run::create([
                 'class' => RunSequenceWorkflow::class,
                 'sequence_id' => $trigger->sequence->id,
-                'trigger_event_id' => $triggerEvent->id,
+                'event_id' => $triggerEvent->id,
             ]);
 
             // Link the trigger event to the workflow execution
