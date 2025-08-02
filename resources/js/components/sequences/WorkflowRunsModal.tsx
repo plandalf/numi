@@ -14,7 +14,10 @@ import {
   Eye,
   Timer,
   Activity,
-  RotateCcw
+  RotateCcw,
+  Pause,
+  Plus,
+  AlertTriangle
 } from 'lucide-react';
 import axios from 'axios';
 
@@ -124,6 +127,10 @@ function getStatusColor(status: string): string {
       return 'bg-blue-100 text-blue-800 border-blue-200';
     case 'pending':
       return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+    case 'waiting':
+      return 'bg-orange-100 text-orange-800 border-orange-200';
+    case 'created':
+      return 'bg-indigo-100 text-indigo-800 border-indigo-200';
     default:
       return 'bg-gray-100 text-gray-800 border-gray-200';
   }
@@ -140,6 +147,10 @@ function getStatusIcon(status: string) {
       return <Clock className="h-4 w-4" />;
     case 'pending':
       return <Timer className="h-4 w-4" />;
+    case 'waiting':
+      return <Pause className="h-4 w-4" />;
+    case 'created':
+      return <Plus className="h-4 w-4" />;
     default:
       return <Activity className="h-4 w-4" />;
   }
@@ -151,6 +162,7 @@ function WorkflowRunDetailsModal({ open, onClose, workflowId }: WorkflowRunDetai
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [rerunning, setRerunning] = useState(false);
+  const [forceRerunning, setForceRerunning] = useState(false);
 
   const loadWorkflowDetails = useCallback(async () => {
     if (!workflowId) return;
@@ -182,9 +194,10 @@ function WorkflowRunDetailsModal({ open, onClose, workflowId }: WorkflowRunDetai
       const response = await axios.post(`/automation/workflows/${workflowId}/rerun`);
       
       if (response.data.success) {
-        // Show success message and optionally close modal
+        // Show success message and refresh workflow details
         alert('Workflow rerun started successfully!');
-        onClose();
+        // Refresh the workflow details to show the updated status
+        loadWorkflowDetails();
       } else {
         setError(response.data.message || 'Failed to rerun workflow');
       }
@@ -197,9 +210,45 @@ function WorkflowRunDetailsModal({ open, onClose, workflowId }: WorkflowRunDetai
     }
   };
 
+  const handleForceRerun = async () => {
+    if (!workflowId) return;
+
+    // Show confirmation dialog for force rerun
+    const confirmed = window.confirm(
+      'Force rerun will immediately fail the current workflow, clear its progress, and restart it from the beginning. This should only be used for stuck workflows. Are you sure?'
+    );
+    
+    if (!confirmed) return;
+
+    try {
+      setForceRerunning(true);
+      const response = await axios.post(`/automation/workflows/${workflowId}/force-rerun`);
+      
+      if (response.data.success) {
+        // Show success message and refresh workflow details
+        alert('Workflow force rerun started successfully! The workflow has been reset and restarted.');
+        // Refresh the workflow details to show the updated status
+        loadWorkflowDetails();
+      } else {
+        setError(response.data.message || 'Failed to force rerun workflow');
+      }
+    } catch (error) {
+      console.error('Failed to force rerun workflow:', error);
+      if (axios.isAxiosError(error)) {
+        setError(error.response?.data?.message || 'Failed to force rerun workflow');
+      } else {
+        setError('An unexpected error occurred');
+      }
+    } finally {
+      setForceRerunning(false);
+    }
+  };
+
   const handleClose = () => {
     setWorkflow(null);
     setError(null);
+    setRerunning(false);
+    setForceRerunning(false);
     onClose();
   };
 
@@ -220,20 +269,43 @@ function WorkflowRunDetailsModal({ open, onClose, workflowId }: WorkflowRunDetai
                 </Badge>
               )}
             </div>
-            {workflow && ['failed', 'waiting'].includes(workflow.status) && (
-              <Button
-                onClick={handleRerun}
-                disabled={rerunning}
-                variant="outline"
-                size="sm"
-              >
-                {rerunning ? (
-                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                ) : (
-                  <RotateCcw className="h-4 w-4 mr-2" />
+            {workflow && (
+              <div className="flex space-x-2">
+                {/* Regular Rerun Button - for failed/waiting workflows */}
+                {['failed', 'waiting'].includes(workflow.status) && (
+                  <Button
+                    onClick={handleRerun}
+                    disabled={rerunning || forceRerunning}
+                    variant="outline"
+                    size="sm"
+                  >
+                    {rerunning ? (
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    ) : (
+                      <RotateCcw className="h-4 w-4 mr-2" />
+                    )}
+                    {rerunning ? 'Rerunning...' : 'Rerun Workflow'}
+                  </Button>
                 )}
-                {rerunning ? 'Rerunning...' : 'Rerun Workflow'}
-              </Button>
+                
+                {/* Force Rerun Button - for pending/running workflows */}
+                {['pending', 'running'].includes(workflow.status) && (
+                  <Button
+                    onClick={handleForceRerun}
+                    disabled={rerunning || forceRerunning}
+                    variant="outline"
+                    size="sm"
+                    className="border-orange-300 text-orange-700 hover:bg-orange-50"
+                  >
+                    {forceRerunning ? (
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    ) : (
+                      <AlertTriangle className="h-4 w-4 mr-2" />
+                    )}
+                    {forceRerunning ? 'Force Rerunning...' : 'Force Rerun'}
+                  </Button>
+                )}
+              </div>
             )}
           </div>
           <DialogDescription>

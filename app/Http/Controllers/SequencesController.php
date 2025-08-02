@@ -51,8 +51,8 @@ class SequencesController extends Controller
                         return Serializer::unserialize($e->exception);
                     })
                     ->toArray(),
-                'arguments' => Serializer::unserialize($wf->arguments),
-                'output' => $wf->output ? Serializer::unserialize($wf->output) : 'no-output',
+                'arguments' => $wf->arguments ? Serializer::unserialize($wf->arguments) : null,
+                'output' => $wf->output ? Serializer::unserialize($wf->output) : null,
             ];
         });
 
