@@ -28,7 +28,7 @@ class WorkflowsController extends Controller
 
         $workflows = $sequence
             ->runs()
-            ->with(['triggerEvent', 'sequence'])
+            ->with(['event', 'sequence'])
             ->orderBy('created_at', 'desc')
             ->limit($limit)
             ->get();
@@ -66,10 +66,10 @@ class WorkflowsController extends Controller
 
                 'arguments' => $workflow->arguments ? Serializer::unserialize($workflow->arguments) : null,
                 'output' => $workflow->output ? Serializer::unserialize($workflow->output) : null,
-                'event' => $workflow->triggerEvent ? [
-                    'id' => $workflow->triggerEvent->id,
-                    'event_source' => $workflow->triggerEvent->event_source ?? null,
-                    'event_data' => $workflow->triggerEvent->event_data ?? null,
+                'event' => $workflow->event ? [
+                    'id' => $workflow->event->id,
+                    'event_source' => $workflow->event->event_source ?? null,
+                    'event_data' => $workflow->event->event_data ?? null,
                 ] : null,
                 'steps' => $steps->map(function (WorkflowStep $step) {
                     return [
@@ -109,7 +109,7 @@ class WorkflowsController extends Controller
 
     public function show(Request $request, int $workflowId): JsonResponse
     {
-        $workflow = Run::with(['triggerEvent', 'sequence'])->findOrFail($workflowId);
+        $workflow = Run::with(['event', 'sequence'])->findOrFail($workflowId);
 
         // Verify workflow belongs to user's organization sequence
         if ($workflow->sequence->organization_id !== auth()->user()->currentOrganization->id) {
@@ -152,11 +152,11 @@ class WorkflowsController extends Controller
                 // 'finished_at' => $workflow->finished_at,
                 'arguments' => $workflow->arguments ? Serializer::unserialize($workflow->arguments) : null,
                 'output' => $workflow->output ? Serializer::unserialize($workflow->output) : null,
-                'event' => $workflow->triggerEvent ? [
-                    'id' => $workflow->triggerEvent->id,
-                    'event_source' => $workflow->triggerEvent->event_source ?? null,
-                    'event_data' => $workflow->triggerEvent->event_data ?? null,
-                    'created_at' => $workflow->triggerEvent->created_at,
+                'event' => $workflow->event ? [
+                    'id' => $workflow->event->id,
+                    'event_source' => $workflow->event->event_source ?? null,
+                    'event_data' => $workflow->event->event_data ?? null,
+                    'created_at' => $workflow->event->created_at,
                 ] : null,
                 'sequence' => [
                     'id' => $workflow->sequence->id,
