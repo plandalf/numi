@@ -298,7 +298,6 @@ class Stripe extends AbstractIntegration implements CanCreateSubscription, CanSe
 
         // Create payment intent with explicit payment method types
         $paymentIntentData = array_filter([
-            'amount' => (int) $amount,
             'currency' => strtolower($currency),
             'customer' => $customer->reference_id,
             'metadata' => [
@@ -306,6 +305,7 @@ class Stripe extends AbstractIntegration implements CanCreateSubscription, CanSe
             ],
             'payment_method_types' => $paymentMethodTypes->all(),
         ]);
+        $paymentIntentData['amount'] = (int) $amount;
 
         // Create a more specific idempotency key that includes key parameters
         // This prevents conflicts when parameters change (e.g., payment method types)
