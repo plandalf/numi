@@ -124,6 +124,7 @@ class IntegrationController extends Controller
             'type' => $request->type,
             'connection_config' => $request->connection_config,
             'current_state' => 'created',
+            'environment' => 'live',
         ]);
 
         // Perform auth check after creation
@@ -272,7 +273,7 @@ class IntegrationController extends Controller
             }
 
             $app = new $appClass();
-            
+
             // Use the app's test method instead of hardcoded logic
             $result = $app->test($integration);
 
