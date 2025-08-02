@@ -21,6 +21,7 @@ class OrderResource extends JsonResource
         return [
             'id' => $this->id,
             'uuid' => $this->uuid,
+            'order_number' => $this->order_number,
             'status' => [
                 'value' => $this->status->value,
                 'label' => $this->status->label() ?? ucfirst($this->status->value),

@@ -28,6 +28,7 @@ use Illuminate\Support\Facades\URL;
  * @property Customer|null $customer
  * @property int|null $customer_id
  * @property int $organization_id
+ * @property int $order_number
  * @property CheckoutSession $checkoutSession
  * @property float $total_amount
  */
@@ -45,6 +46,7 @@ class Order extends Model
     protected $fillable = [
         'organization_id',
         'customer_id',
+        'order_number',
         'status',
         'currency',
         'subtotal',
@@ -244,5 +246,34 @@ class Order extends Model
     public function hasPaymentInformation(): bool
     {
         return !empty($this->payment_id);
+    }
+
+    /**
+     * Generate the next order number for the given organization.
+     */
+    public static function generateNextOrderNumber(int $organizationId): int
+    {
+        return \DB::transaction(function () use ($organizationId) {
+            $latestOrder = static::where('organization_id', $organizationId)
+                ->lockForUpdate()
+                ->orderBy('order_number', 'desc')
+                ->first();
+
+            return $latestOrder ? $latestOrder->order_number + 1 : 1;
+        });
+    }
+
+    /**
+     * Boot the model.
+     */
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::creating(function ($order) {
+            if (!$order->order_number) {
+                $order->order_number = static::generateNextOrderNumber($order->organization_id);
+            }
+        });
     }
 }
