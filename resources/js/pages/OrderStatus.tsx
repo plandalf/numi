@@ -21,8 +21,8 @@ const formatCurrency = (amount: number, currency: string = 'USD'): string => {
 
 interface OrderStatusProps {
   order: {
-    id: number;
-    uuid: string;
+    id: string; // UUID from getRouteKey()
+    order_number: number;
     status: {
       value: string;
       label: string;
@@ -59,6 +59,11 @@ interface OrderStatusProps {
       name: string;
       email: string;
     } | null;
+    organization?: {
+      id: number;
+      name: string;
+      subdomain: string;
+    };
     items: Array<{
       id: number;
       quantity: number;
@@ -158,12 +163,14 @@ const OrderStatus: React.FC<OrderStatusProps> = ({ order }) => {
         <div className="flex flex-col md:flex-row md:items-center md:justify-between px-8 pt-8 pb-4 bg-[#f6f7f5]">
           <div className="flex items-center gap-4">
             <img src="/logo.svg" alt="Logo" className="h-10 w-10" />
-            <span className="text-2xl font-bold tracking-tight text-green-900">PLANT</span>
+            <span className="text-2xl font-bold tracking-tight text-green-900">
+              {order.organization?.name || 'Store'}
+            </span>
             <span className="ml-6 text-gray-400 font-medium">Orders</span>
           </div>
           <div className="flex gap-2 mt-4 md:mt-0">
-            <Button variant="outline" className="font-semibold">Go to store</Button>
-            <Button variant="default" className="font-semibold">Buy again</Button>
+            {/* <Button variant="outline" className="font-semibold">Go to store</Button> */}
+            {/* <Button variant="default" className="font-semibold">Buy again</Button> */}
           </div>
         </div>
 
@@ -181,7 +188,7 @@ const OrderStatus: React.FC<OrderStatusProps> = ({ order }) => {
             {/* Order Header */}
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 mb-2">
               <div>
-                <h2 className="text-2xl font-bold text-gray-900">Order <span className="text-gray-700">#{order.uuid}</span></h2>
+                <h2 className="text-2xl font-bold text-gray-900">Order <span className="text-gray-700">#{order.order_number}</span></h2>
                 <p className="text-gray-500 text-sm mt-1">Confirmed {formatDate(order.created_at)}</p>
               </div>
               <div className="flex items-center gap-2 mt-2 md:mt-0">
@@ -354,7 +361,7 @@ const OrderStatus: React.FC<OrderStatusProps> = ({ order }) => {
               <div className="mb-4 text-base font-semibold text-gray-900">Actions</div>
               <div className="space-y-3">
                 <Button variant="outline" className="w-full" asChild>
-                  <a href={`mailto:${order.customer?.email || ''}?subject=Order ${order.uuid}`}>
+                  <a href={`mailto:${order.customer?.email || ''}?subject=Order ${order.order_number}`}>
                     <Mail className="h-4 w-4 mr-2" />
                     Contact Support
                   </a>

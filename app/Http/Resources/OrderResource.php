@@ -66,6 +66,13 @@ class OrderResource extends JsonResource
                     'email' => $this->customer->email,
                 ];
             }),
+            'organization' => $this->whenLoaded('organization', function () {
+                return [
+                    'id' => $this->organization->id,
+                    'name' => $this->organization->name,
+                    'subdomain' => $this->organization->subdomain,
+                ];
+            }),
             'items' => OrderItemResource::collection($this->whenLoaded('items')),
             'checkout_session' => $this->when($this->checkoutSession, function () {
                 return [

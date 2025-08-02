@@ -68,7 +68,8 @@ class OrdersController extends Controller
             'items.price.product',
             'customer',
             'checkoutSession',
-            'events.user'
+            'events.user',
+            'organization'
         ]);
 
         return Inertia::render('Orders/Show', [
@@ -87,7 +88,8 @@ class OrdersController extends Controller
             'items.price.product',
             'items.fulfilledBy',
             'customer',
-            'events.user'
+            'events.user',
+            'organization'
         ]);
 
         return Inertia::render('Orders/Fulfillment', [
