@@ -23,7 +23,7 @@ export const isEvaluatedVisible = (
   if (typeof visibility === 'object' && 'conditional' in visibility) {
     const condition = visibility.conditional;
 
-    if(condition.rules.length === 0 || Object.keys(context.fields ?? {}).length === 0) return true;
+    if(condition.rules?.length === 0 || Object.keys(context.fields ?? {}).length === 0) return true;
     // console.log('condition-visibility', condition, context);
 
     try {
