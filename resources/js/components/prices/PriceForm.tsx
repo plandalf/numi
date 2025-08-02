@@ -1,7 +1,7 @@
 import { useForm, usePage } from "@inertiajs/react";
 import { Button } from "@/components/ui/button";
 import {
-  Dialog, DialogActions, DialogBody,
+  Dialog, DialogActions, DialogBody, DialogContent,
   DialogTitle
 } from '@/components/ui/dialog';
 import { Input } from "@/components/ui/input";
@@ -17,7 +17,7 @@ import { toast } from "sonner";
 import { formatMoney, slugify, getSupportedCurrencies } from "@/lib/utils"; // Import slugify and getSupportedCurrencies
 import { type Price, type Product } from '@/types/offer';
 import axios from '@/lib/axios';
-import { SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+
 
 // Placeholder Types if not globally defined
 type User = { id: number; name: string; email: string; /* ... other user fields */ };
@@ -633,7 +633,7 @@ export default function PriceForm({
               <Select
                 name="scope"
                 value={data.scope}
-                onChange={(value: PriceScope) => setData('scope', value)}
+                onChange={(event) => setData('scope', event.target.value as PriceScope)}
                 disabled={processing}
                 className="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:cursor-not-allowed disabled:bg-gray-50"
               >
@@ -792,7 +792,7 @@ export default function PriceForm({
               <Select
                 name="type"
                 value={data.type}
-                onChange={(value: PriceType) => setData('type', value)}
+                onChange={(event) => setData('type', event.target.value as PriceType)}
                 disabled={isEditing || !!data.parent_list_price_id}
                 className="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:cursor-not-allowed disabled:bg-gray-50"
               >
@@ -850,22 +850,17 @@ export default function PriceForm({
                   />
                   {/* Currency Abbreviation Suffix with Dropdown */}
                   <Select
+                    name="currency"
                     value={data.currency}
-                    onValueChange={(value) => setData('currency', value.toLowerCase())}
+                    onChange={(event) => setData('currency', event.target.value.toLowerCase())}
                     disabled={processing || isEditing}
+                    className="rounded-none border-0 bg-transparent px-3 h-9 min-w-[64px] w-auto text-base focus:ring-0 focus:border-none"
                   >
-                    <SelectTrigger id="amount-currency-addon" className="rounded-none border-0 bg-transparent px-3 h-9 min-w-[64px] w-auto text-base focus:ring-0 focus:border-none">
-                      <SelectValue>{data.currency?.toUpperCase?.()}</SelectValue>
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectGroup>
-                        {getSupportedCurrencies().map((currency) => (
-                          <SelectItem key={currency.code} value={currency.code.toLowerCase()}>
-                            {currency.code} - {currency.name}
-                          </SelectItem>
-                        ))}
-                      </SelectGroup>
-                    </SelectContent>
+                    {getSupportedCurrencies().map((currency) => (
+                      <option key={currency.code} value={currency.code.toLowerCase()}>
+                        {currency.code} - {currency.name}
+                      </option>
+                    ))}
                   </Select>
                 </div>
                 {errors.amount && <p className="text-sm text-red-500">{errors.amount}</p>}
@@ -921,19 +916,17 @@ export default function PriceForm({
                         <div className="flex flex-col gap-2 w-full">
                           <Label htmlFor="renew_interval">Billing Interval</Label>
                           <Select
+                            name="renew_interval"
                             value={data.renew_interval || 'month'}
-                            onValueChange={(value: RecurringInterval) => setData('renew_interval', value)}
+                            onChange={(event) => setData('renew_interval', event.target.value as RecurringInterval)}
                             disabled={processing || data.gateway_price_id !== null} // If price is already created in gateway, we can't change the interval
+                            className="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:cursor-not-allowed disabled:bg-gray-50"
                           >
-                            <SelectTrigger id="renew_interval">
-                              <SelectValue placeholder="Select interval" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="day">Daily</SelectItem>
-                              <SelectItem value="week">Weekly</SelectItem>
-                              <SelectItem value="month">Monthly</SelectItem>
-                              <SelectItem value="year">Yearly</SelectItem>
-                            </SelectContent>
+                            <option value="">Select interval</option>
+                            <option value="day">Daily</option>
+                            <option value="week">Weekly</option>
+                            <option value="month">Monthly</option>
+                            <option value="year">Yearly</option>
                           </Select>
                           {errors.renew_interval && <p className="text-sm text-red-500">{errors.renew_interval}</p>}
                           <p className="text-xs text-muted-foreground">How often customers will be billed</p>
@@ -1251,8 +1244,10 @@ export default function PriceForm({
   }
 
   return (
-    <Dialog open={open} size={"xl"} position={"center"} onClose={() => onOpenChange(false)} className="p-0 rounded-2xl overflow-hidden">
-      {content}
+    <Dialog open={open} onOpenChange={() => onOpenChange(false)}>
+      <DialogContent className="p-0 rounded-2xl overflow-hidden max-w-4xl">
+        {content}
+      </DialogContent>
     </Dialog>
   );
 }
