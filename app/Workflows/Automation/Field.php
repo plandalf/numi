@@ -78,7 +78,7 @@ class Field
         return $field;
     }
 
-    public static function resource(string $key, string $label, string $description = '', string $resource): self
+    public static function resource(string $key, string $label, string $resource, string $description = '', ): self
     {
         $field = new self();
         $field->key = $key;
@@ -109,7 +109,7 @@ class Field
         return $field;
     }
 
-    public function dynamic(string $source = null): self
+    public function dynamic(?string $source): self
     {
         $this->dynamic = true;
         $this->dynamicSource = $source;

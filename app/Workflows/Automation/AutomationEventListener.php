@@ -106,6 +106,7 @@ class AutomationEventListener
             $run = Run::create([
                 'class' => RunSequenceWorkflow::class,
                 'sequence_id' => $trigger->sequence->id,
+                'organization_id' => $trigger->sequence->organization_id,
                 'event_id' => $triggerEvent->id,
             ]);
 

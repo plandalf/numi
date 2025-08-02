@@ -159,7 +159,7 @@ class OrderItem extends Model
     /**
      * Mark the order item as fulfilled.
      */
-    public function markAsFulfilled(int $quantity = null, array $fulfillmentData = [], string $notes = null): void
+    public function markAsFulfilled(?int $quantity, array $fulfillmentData = [], string $notes = null): void
     {
         $quantityToFulfill = $quantity ?? $this->quantity;
 
