@@ -426,19 +426,6 @@ const CheckoutController = ({ offer, session }: { offer: OfferConfiguration, ses
 export default function CheckoutPage({ offer, fonts, error, checkoutSession }: CheckoutPageProps) {
   const firstPage = offer.view.pages[offer.view.first_page];
 
-  // Find and load all unique fonts
-  const viewFonts = findUniqueFontsFromView(offer.view);
-  const themeFonts = findUniqueFontsFromTheme(offer.theme);
-
-  const uniqueFonts = fonts
-    .filter(f => ['Inter', ...viewFonts, ...themeFonts].includes(f.name))
-    .map(font => `${font.name}:${font.weights.join(',')}`);
-
-
-  if(uniqueFonts.length > 0) {
-    WebFont.load({ google: { families: uniqueFonts }});
-  }
-
   const containerStyle = useMemo(() => {
     if (offer?.is_hosted) {
       return {

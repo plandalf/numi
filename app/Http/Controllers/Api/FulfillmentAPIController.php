@@ -82,7 +82,7 @@ class FulfillmentAPIController extends Controller
         $organization = $request->user()->currentOrganization;
 
         $orders = Order::where('organization_id', $organization->id)
-            ->with(['items.fulfilledBy', 'items.price', 'items.offerItem', 'customer'])
+            ->with(['items.fulfilledBy', 'items.price', 'items.offerItem', 'customer', 'organization'])
             ->when($request->status, function ($query, $status) {
                 $query->whereHas('items', function ($q) use ($status) {
                     $q->where('fulfillment_status', $status);

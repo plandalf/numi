@@ -12,6 +12,7 @@ use App\Models\Checkout\CheckoutSession;
 use App\Models\PaymentMethod;
 use App\Models\Store\Offer;
 use App\Models\Theme;
+use App\Services\FontExtractionService;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -28,7 +29,8 @@ class CheckoutController extends Controller
     use HandlesLandingPageDomains;
 
     public function __construct(
-        private readonly CreateCheckoutSessionAction $createCheckoutSessionAction
+        private readonly CreateCheckoutSessionAction $createCheckoutSessionAction,
+        private readonly FontExtractionService $fontExtractionService
     ) {}
 
     public function initialize(string $offerId, Request $request, string $environment = 'live')
@@ -115,10 +117,17 @@ class CheckoutController extends Controller
         $json['page_history'] = data_get($checkout->metadata, 'page_history', []);
         $offer->view = $json;
 
+        // Extract fonts for preloading
+        $customFonts = $this->fontExtractionService->extractAllFontsForOffer($offer);
+        $googleFontsUrl = $this->fontExtractionService->buildGoogleFontsUrl($customFonts);
+
         return Inertia::render('checkout', [
             'fonts' => FontResource::collection(FontElement::cases()),
             'offer' => new OfferResource($offer),
             'checkoutSession' => new CheckoutSessionResource($checkout),
+        ])->with([
+            'customFonts' => $customFonts,
+            'googleFontsUrl' => $googleFontsUrl,
         ]);
     }
 

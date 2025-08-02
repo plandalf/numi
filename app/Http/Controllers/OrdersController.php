@@ -36,7 +36,7 @@ class OrdersController extends Controller
                         });
                 });
             })
-            ->with(['items.price.product', 'customer', 'checkoutSession'])
+            ->with(['items.price.product', 'customer', 'checkoutSession', 'organization'])
             ->latest()
             ->paginate(10)
             ->withQueryString();
