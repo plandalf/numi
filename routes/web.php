@@ -221,9 +221,7 @@ Route::middleware(['auth'])->group(function () {
 });
 
 Route::get('m/{dir}/{media}.{extension}', function (string $dir, \App\Models\Media $media) {
-    $url = config('app.s3_url') . $media->path;
-
-    return redirect($url);
+    return redirect()->away($media->getSignedUrl());
 })->name('media.show')->where('extension', '[a-zA-Z]+');
 
 // Webhook endpoints (public, no authentication required)
