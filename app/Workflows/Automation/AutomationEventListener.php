@@ -99,7 +99,8 @@ class AutomationEventListener
                 'status' => AutomationEvent::STATUS_RECEIVED,
             ]);
         } catch (\Throwable $e) {
-            dd($e);
+            report($e);
+            return;
         }
 
         try {

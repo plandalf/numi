@@ -53,26 +53,6 @@ class Action extends Model
         return $this->belongsTo(\App\Models\Integration::class);
     }
 
-    public function outgoingEdges(): HasMany
-    {
-        return $this->hasMany(Edge::class, 'from_node_id');
-    }
-
-    public function incomingEdges(): HasMany
-    {
-        return $this->hasMany(Edge::class, 'to_node_id');
-    }
-
-    public function parentNode(): BelongsTo
-    {
-        return $this->belongsTo(Action::class, 'parent_node_id');
-    }
-
-    public function childNodes(): HasMany
-    {
-        return $this->hasMany(Action::class, 'parent_node_id');
-    }
-
     public function app(): BelongsTo
     {
         return $this->belongsTo(\App\Models\App::class);

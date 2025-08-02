@@ -60,7 +60,7 @@ class RunSequenceWorkflow extends Workflow
             } catch (\Exception $e) {
                 Log::error(logname('workflow_error'), [
                     'workflow_id' => $this->storedWorkflow->id,
-                    'node_id' => $action->id,
+                    'action_id' => $action->id,
                     'error' => $e->getMessage(),
                 ]);
 

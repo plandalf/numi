@@ -28,8 +28,6 @@ class ActionActivity extends WorkflowActivity
 
     public function execute(Action $node, Bundle $bundle)
     {
-        dump(logname($node->action_key));
-
         // Get discovered apps to find the action
         $discoveryService = new AppDiscoveryService();
         $data = $discoveryService->getApp($node->app->key);

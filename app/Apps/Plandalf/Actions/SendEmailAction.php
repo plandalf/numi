@@ -9,6 +9,7 @@ use App\Workflows\Automation\Bundle;
 use App\Workflows\Automation\Field;
 use Illuminate\Mail\SentMessage;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Arr;
 
 #[IsAction(
     key: 'send_email',
@@ -47,10 +48,10 @@ class SendEmailAction extends AppAction
     public function __invoke(Bundle $bundle): array
     {
         // Extract input values from the bundle
-        $to = $bundle->input['to'];
-        $subject = $bundle->input['subject'];
-        $body = $bundle->input['body'];
-        $from = $bundle->input['from'];
+        $to = Arr::get($bundle->input, 'to');
+        $subject = Arr::get($bundle->input, 'subject');
+        $body = Arr::get($bundle->input, 'body');
+        $from = Arr::get($bundle->input, 'from');
 
         // Validate required fields
         if (empty($to) || empty($subject) || empty($body) || empty($from)) {

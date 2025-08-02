@@ -77,7 +77,7 @@ class WorkflowsController extends Controller
                 'steps' => $steps->map(function (WorkflowStep $step) {
                     return [
                         'id' => $step->id,
-                        'node_id' => $step->node_id,
+                        'action_id' => $step->action_id,
                         'node_name' => $step->node_name ?? $step->step_name,
                         'node_type' => $step->node->type ?? 'unknown',
                         'status' => $step->status,
@@ -168,7 +168,7 @@ class WorkflowsController extends Controller
                 'steps' => $steps->map(function (WorkflowStep $step) {
                     return [
                         'id' => $step->id,
-                        'node_id' => $step->node_id,
+                        'action_id' => $step->action_id,
                         'node_name' => $step->node_name ?? $step->step_name,
                         'node_type' => $step->node->type ?? 'unknown',
                         'status' => $step->status,
@@ -241,25 +241,15 @@ class WorkflowsController extends Controller
             ], 400);
         }
 
-        // Create a new workflow run (start with default state per state machine)
-        $newRun = Run::create([
-            'class' => RunSequenceWorkflow::class,
-            'sequence_id' => $originalRun->sequence_id,
-            'organization_id' => $originalRun->organization_id,
-            'event_id' => $originalEvent->id,
-            // Don't set status manually - let state machine handle transitions
-        ]);
-
         try {
             // Create workflow stub and start execution
             // Use start() for rerun (new execution) rather than resume() (continue existing)
             // This follows state machine: created -> pending -> running
-            $workflow = WorkflowStub::fromStoredWorkflow($newRun);
+            $workflow = WorkflowStub::fromStoredWorkflow($originalRun);
             $workflow->start($trigger, $originalEvent);
 
             Log::info('Workflow rerun initiated', [
                 'original_workflow_id' => $originalRun->id,
-                'new_workflow_id' => $newRun->id,
                 'sequence_id' => $originalRun->sequence_id,
                 'original_status' => $originalRun->status,
                 'user_id' => auth()->id(),
@@ -270,8 +260,7 @@ class WorkflowsController extends Controller
                 'message' => 'Workflow rerun started successfully',
                 'data' => [
                     'original_workflow_id' => $originalRun->id,
-                    'new_workflow_id' => $newRun->id,
-                    'status' => $newRun->fresh()->status ?? 'pending'
+                    'status' => $originalRun->fresh()->status ?? 'pending'
                 ]
             ]);
 
@@ -332,14 +321,14 @@ class WorkflowsController extends Controller
                 'user_id' => auth()->id(),
             ]);
 
-            // Clear existing logs and exceptions to reset the workflow
-            $originalRun->logs()->delete();
-            $originalRun->exceptions()->delete();
+            // // Clear existing logs and exceptions to reset the workflow
+            // $originalRun->logs()->delete();
+            // $originalRun->exceptions()->delete();
 
-            // Reset the workflow arguments to restart fresh
-            $originalRun->arguments = null;
-            $originalRun->output = null;
-            $originalRun->save();
+            // // Reset the workflow arguments to restart fresh
+            // $originalRun->arguments = null;
+            // $originalRun->output = null;
+            // $originalRun->save();
 
             // Restart the same workflow (recycle the existing run)
             $workflow = WorkflowStub::fromStoredWorkflow($originalRun->fresh());

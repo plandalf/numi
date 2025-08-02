@@ -49,7 +49,6 @@ class AutomationRoutesTest extends TestCase
 
         // Debug: Let's see what's actually returned
         $data = $response->json();
-        dump('Discovered apps response:', $data);
 
         // Check if we have any apps at all
         $this->assertNotEmpty($data, 'Response should not be empty');
