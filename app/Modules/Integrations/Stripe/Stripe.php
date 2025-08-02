@@ -18,6 +18,7 @@ use App\Modules\Integrations\Contracts\HasPrices;
 use App\Modules\Integrations\Contracts\HasProducts;
 use App\Modules\Integrations\Stripe\Actions\ImportStripePriceAction;
 use App\Modules\Integrations\Stripe\Actions\ImportStripeProductAction;
+use Illuminate\Support\Arr;
 use Stripe\PaymentIntent;
 use Stripe\SetupIntent;
 use Stripe\StripeClient;
@@ -310,8 +311,8 @@ class Stripe extends AbstractIntegration implements CanCreateSubscription, CanSe
         // This prevents conflicts when parameters change (e.g., payment method types)
         $idempotencyKeyData = [
             'session_id' => $session->getRouteKey(),
-            'amount' => $paymentIntentData['amount'],
-            'currency' => $paymentIntentData['currency'],
+            'amount' => Arr::get($paymentIntentData, 'amount'),
+            'currency' => Arr::get($paymentIntentData, 'currency'),
             'customer' => $paymentIntentData['customer'] ?? null,
             'payment_method_types' => $paymentIntentData['payment_method_types'] ?? [],
         ];
