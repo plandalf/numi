@@ -227,7 +227,7 @@ class CheckoutSessionController extends Controller
         abort_if($session->hasACompletedOrder(), 400, 'Checkout session is already completed');
 
         abort_if(
-            !$session->intent_id || !$session->client_secret,
+            $session->intent_type !== 'free' && (!$session->intent_id || !$session->client_secret),
             400,
             'No payment intent found. Payment must be prepared first.'
         );

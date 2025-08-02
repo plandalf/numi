@@ -288,6 +288,20 @@ class Stripe extends AbstractIntegration implements CanCreateSubscription, CanSe
         $amount = $session->total;
         $currency = $session->currency;
 
+        if ($amount === 0) {
+            return PaymentIntent::constructFrom([
+                'id' => 'skipped',
+                'client_secret' => 'skipped',
+                'amount' => 0,
+                'currency' => strtolower($currency),
+                'status' => 'succeeded',
+                'customer' => $customer->reference_id,
+                'metadata' => [
+                    'checkout_session_id' => $session->getRouteKey(),
+                ],
+            ]);
+        }
+
         // Get payment method types from data or fall back to session enabled methods
         $paymentMethodTypes = $paymentMethods ?? $session->enabled_payment_methods ?? ['card'];
 

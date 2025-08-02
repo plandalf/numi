@@ -861,7 +861,28 @@ function PaymentForm({
           };
         }
 
-        const { client_secret, intent_type, return_url, is_redirect_method, supported_payment_methods } = prepareResponse.data;
+        const {
+          client_secret,
+          intent_type,
+          return_url,
+          is_redirect_method,
+          supported_payment_methods,
+          checkout_session,
+        } = prepareResponse.data;
+
+
+        if (checkout_session.total === 0) {
+          addDebugMessage('Step 2: Checkout session amount is 0, skipping payment confirmation');
+          setIsProcessing(false);
+          if (onSuccess) onSuccess();
+
+          return {
+            payment_confirmed: true,
+            email: emailAddress,
+            intent_type: intent_type,
+            jit_process: 'completed',
+          };
+        }
 
         if (!client_secret) {
           setError('Payment preparation failed - no client secret returned');
