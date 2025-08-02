@@ -34,7 +34,7 @@ class ActionController extends Controller
 
         try {
             $sequence = Sequence::findOrFail($validated['sequence_id']);
-            $actions = $sequence->nodes()->where('type', 'action')->get();
+            $actions = $sequence->actions()->where('type', 'action')->get();
 
             return response()->json([
                 'data' => $actions,
