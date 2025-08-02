@@ -117,20 +117,30 @@ class SequencesController extends Controller
             ->with('app')
             ->get(['id', 'app_id', 'name', 'type']);
 
+        // Load triggers with their relationships
+        $sequence->load([
+            'triggers.app',
+            'triggers.integration.app',
+            'actions',
+        ]);
+
+        // Add webhook URLs for Plandalf webhook triggers
+        $sequence->triggers->each(function ($trigger) {
+            if ($trigger->isPlandalfWebhookTrigger()) {
+                $trigger->webhook_url = $trigger->generateWebhookUrl();
+            }
+        });
+
         if (request()->expectsJson()) {
             return response()->json([
-                'sequence' => $sequence->load('triggers.integration.app',  'actions'),
+                'sequence' => $sequence,
                 'apps' => $apps,
                 'integrations' => $integrations,
             ]);
         }
 
         return Inertia::render('sequences/edit', [
-            'sequence' => $sequence->load([
-                'triggers.app',
-                'triggers.integration.app',
-                'actions',
-            ]),
+            'sequence' => $sequence,
             'apps' => $apps,
             'integrations' => $integrations,
         ]);

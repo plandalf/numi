@@ -18,6 +18,7 @@ Route::middleware(['auth', 'organization', 'subscription'])
 
         Route::get('workflows', [WorkflowsController::class, 'index']);
         Route::get('workflows/{workflow}', [WorkflowsController::class, 'show']);
+        Route::post('workflows/{workflow}/rerun', [WorkflowsController::class, 'rerun']);
 
         Route::resource('triggers', TriggersController::class);
         Route::any('triggers/{trigger}/tests', [TriggersController::class, 'test']);

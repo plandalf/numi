@@ -6,10 +6,13 @@ use App\Http\Controllers\Controller;
 use App\Models\Automation\Sequence;
 use App\Models\Automation\Run;
 use App\Models\WorkflowStep;
+use App\Workflows\RunSequenceWorkflow;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Log;
 use Workflow\Serializers\Serializer;
+use Workflow\WorkflowStub;
 
 class WorkflowsController extends Controller
 {
@@ -205,5 +208,82 @@ class WorkflowsController extends Controller
                 ]
             ]
         ]);
+    }
+
+    public function rerun(Request $request, int $workflowId): JsonResponse
+    {
+        try {
+            // Find the workflow run
+            $originalRun = Run::with(['event', 'sequence.triggers', 'sequence.actions'])
+                ->findOrFail($workflowId);
+
+            // Verify workflow belongs to user's organization
+            if ($originalRun->sequence->organization_id !== auth()->user()->currentOrganization->id) {
+                return response()->json(['message' => 'Workflow not found'], 404);
+            }
+
+            // Check if workflow can be retried based on state machine rules
+            $retryableStatuses = ['failed', 'waiting'];
+            if (!in_array($originalRun->status, $retryableStatuses)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => "Cannot rerun workflow in '{$originalRun->status}' status. Only failed or waiting workflows can be retried."
+                ], 400);
+            }
+
+            // Get the original trigger and event data
+            $trigger = $originalRun->sequence->triggers->first();
+            $originalEvent = $originalRun->event;
+
+            if (!$trigger || !$originalEvent) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Cannot rerun workflow: Missing trigger or event data'
+                ], 400);
+            }
+
+            // Create a new workflow run
+            $newRun = Run::create([
+                'class' => RunSequenceWorkflow::class,
+                'sequence_id' => $originalRun->sequence_id,
+                'organization_id' => $originalRun->organization_id,
+                'event_id' => $originalEvent->id,
+                'status' => 'pending', // Start as pending per state machine
+            ]);
+
+            // Create workflow stub and start execution
+            $workflow = WorkflowStub::fromStoredWorkflow($newRun);
+            $workflow->start($trigger, $originalEvent);
+
+            Log::info('Workflow rerun initiated', [
+                'original_workflow_id' => $originalRun->id,
+                'new_workflow_id' => $newRun->id,
+                'sequence_id' => $originalRun->sequence_id,
+                'original_status' => $originalRun->status,
+                'user_id' => auth()->id(),
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Workflow rerun started successfully',
+                'data' => [
+                    'original_workflow_id' => $originalRun->id,
+                    'new_workflow_id' => $newRun->id,
+                    'status' => 'pending'
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Failed to rerun workflow', [
+                'workflow_id' => $workflowId,
+                'error' => $e->getMessage(),
+                'user_id' => auth()->id(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to rerun workflow: ' . $e->getMessage()
+            ], 500);
+        }
     }
 }

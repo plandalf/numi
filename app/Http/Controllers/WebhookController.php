@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Automation\Run;
+use App\Models\Automation\Sequence;
 use App\Models\Automation\Trigger;
 use App\Models\Automation\AutomationEvent;
 use App\Models\Organization;
@@ -16,9 +18,8 @@ class WebhookController extends Controller
     /**
      * Handle incoming webhook trigger
      */
-    public function handleTrigger(Request $request, Organization $organization, Trigger $trigger): JsonResponse
+    public function handleTrigger(Request $request, Sequence $sequence, Trigger $trigger): JsonResponse
     {
-
         try {
             $payload = $request->all();
 
@@ -67,96 +68,6 @@ class WebhookController extends Controller
                 'error' => 'Internal server error'
             ], 500);
         }
-    }
-
-    /**
-     * Validate webhook authentication
-     */
-    private function validateWebhookAuth(Request $request, Trigger $trigger): bool
-    {
-        $authConfig = $trigger->webhook_auth_config;
-
-        if (!$authConfig) {
-            // No authentication required
-            return true;
-        }
-
-        $authType = $authConfig['type'] ?? null;
-
-        switch ($authType) {
-            case 'api_key':
-                return $this->validateApiKeyAuth($request, $authConfig);
-            case 'signature':
-                return $this->validateSignatureAuth($request, $trigger, $authConfig);
-            case 'basic':
-                return $this->validateBasicAuth($request, $authConfig);
-            default:
-                return true; // Unknown auth type, allow through
-        }
-    }
-
-    /**
-     * Validate API key authentication
-     */
-    private function validateApiKeyAuth(Request $request, array $authConfig): bool
-    {
-        $headerName = $authConfig['header'] ?? 'X-API-Key';
-        $expectedKey = $authConfig['expected_key'] ?? null;
-
-        if (!$expectedKey) {
-            return true; // No key configured
-        }
-
-        $providedKey = $request->header($headerName);
-        return $providedKey === $expectedKey;
-    }
-
-    /**
-     * Validate signature authentication
-     */
-    private function validateSignatureAuth(Request $request, Trigger $trigger, array $authConfig): bool
-    {
-        $headerName = $authConfig['header'] ?? 'X-Signature';
-        $algorithm = $authConfig['algorithm'] ?? 'sha256';
-        $secret = $trigger->webhook_secret;
-
-        $providedSignature = $request->header($headerName);
-        if (!$providedSignature) {
-            return false;
-        }
-
-        $payload = $request->getContent();
-        $expectedSignature = hash_hmac($algorithm, $payload, $secret);
-
-        // Handle different signature formats
-        if (str_starts_with($providedSignature, 'sha256=')) {
-            $expectedSignature = 'sha256=' . $expectedSignature;
-        }
-
-        return hash_equals($expectedSignature, $providedSignature);
-    }
-
-    /**
-     * Validate basic authentication
-     */
-    private function validateBasicAuth(Request $request, array $authConfig): bool
-    {
-        $expectedUsername = $authConfig['username'] ?? null;
-        $expectedPassword = $authConfig['password'] ?? null;
-
-        if (!$expectedUsername || !$expectedPassword) {
-            return true; // No credentials configured
-        }
-
-        $authHeader = $request->header('Authorization');
-        if (!$authHeader || !str_starts_with($authHeader, 'Basic ')) {
-            return false;
-        }
-
-        $credentials = base64_decode(substr($authHeader, 6));
-        [$username, $password] = explode(':', $credentials, 2);
-
-        return $username === $expectedUsername && $password === $expectedPassword;
     }
 
     /**
@@ -216,16 +127,18 @@ class WebhookController extends Controller
                 ];
             }
 
-            // Start workflow execution
-            $workflow = WorkflowStub::make(RunSequenceWorkflow::class);
-            $workflowExecution = $workflow->start($triggerData, $trigger->sequence);
+            $run = Run::create([
+                'class' => RunSequenceWorkflow::class,
+                'sequence_id' => $trigger->sequence->id,
+                'organization_id' => $trigger->sequence->organization_id,
+                'event_id' => $triggerEvent->id,
+            ]);
+            // Link the trigger event to the workflow execution
+            $triggerEvent->markAsProcessed($run);
 
-            // Update trigger stats
-            $trigger->increment('trigger_count');
-            $trigger->update(['last_triggered_at' => now()]);
+            $workflow = WorkflowStub::fromStoredWorkflow($run);
 
-            // Mark trigger event as processed
-            $triggerEvent->markAsProcessed($workflowExecution);
+            $workflow->start($triggerData, $trigger->sequence);
 
             return [
                 'success' => true,

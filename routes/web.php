@@ -225,11 +225,12 @@ Route::get('m/{dir}/{media}.{extension}', function (string $dir, \App\Models\Med
 })->name('media.show')->where('extension', '[a-zA-Z]+');
 
 // Webhook endpoints (public, no authentication required)
-Route::prefix('webhooks')->name('webhooks.')->group(function () {
-    Route::any('/{trigger_uuid}', [WebhookController::class, 'handleTrigger'])
-        ->name('trigger')
-        ->where('trigger_uuid', '[0-9a-f-]{36}');
-});
+Route::prefix('hooks')
+    ->name('webhooks.')
+    ->group(function () {
+        Route::any('catch/{sequence}/{trigger}', [WebhookController::class, 'handleTrigger'])
+            ->name('trigger');
+    });
 
 Route::post('/feedback', [FeedbackController::class, 'submit'])->name('feedback.submit');
 

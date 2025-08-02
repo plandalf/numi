@@ -101,11 +101,21 @@ class Trigger extends Model
     }
 
     /**
+     * Check if this is a Plandalf webhook trigger
+     */
+    public function isPlandalfWebhookTrigger(): bool
+    {
+        return $this->trigger_key === 'webhook' &&
+               $this->app &&
+               $this->app->key === 'plandalf';
+    }
+
+    /**
      * Generate a unique webhook URL for this trigger
      */
     public function generateWebhookUrl(): string
     {
-        return route('webhooks.trigger', [$this->organization, $this]);
+        return route('webhooks.trigger', [$this->sequence, $this]);
     }
 
     /**

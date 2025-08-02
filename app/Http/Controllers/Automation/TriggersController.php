@@ -55,8 +55,18 @@ class TriggersController extends Controller
                 'configuration' => $validated['configuration'] ?? [],
             ]);
 
+            // Load the app relationship for webhook URL generation
+            $trigger->load('app');
+
+            $triggerData = $trigger->toArray();
+            
+            // Add webhook URL for Plandalf webhook triggers
+            if ($trigger->isPlandalfWebhookTrigger()) {
+                $triggerData['webhook_url'] = $trigger->generateWebhookUrl();
+            }
+
             return response()->json([
-                'data' => $trigger,
+                'data' => $triggerData,
                 'message' => 'Trigger created successfully'
             ], 201);
         } catch (\Exception $e) {
@@ -92,8 +102,18 @@ class TriggersController extends Controller
                 'configuration' => $validated['configuration'] ?? [],
             ]);
 
+            // Load the app relationship for webhook URL generation
+            $trigger->load('app');
+
+            $triggerData = $trigger->toArray();
+            
+            // Add webhook URL for Plandalf webhook triggers
+            if ($trigger->isPlandalfWebhookTrigger()) {
+                $triggerData['webhook_url'] = $trigger->generateWebhookUrl();
+            }
+
             return response()->json([
-                'data' => $trigger,
+                'data' => $triggerData,
                 'message' => 'Trigger updated successfully'
             ], 200);
         } catch (\Exception $e) {

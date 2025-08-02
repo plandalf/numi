@@ -28,6 +28,7 @@ interface Trigger {
   name: string;
   trigger_key?: string;
   app_id?: number; // Added for new style triggers
+  webhook_url?: string; // Added for Plandalf webhook triggers
   app: {
     id: number;
     name: string;
@@ -77,6 +78,7 @@ interface CreatedTrigger {
   app_id: number;
   trigger_key: string;
   configuration: Record<string, unknown>;
+  webhook_url?: string;
   app?: {
     name: string;
     icon_url?: string;
@@ -195,6 +197,7 @@ export default function Edit() {
         app_id: trigger.integration.app.id,
         trigger_key: trigger.trigger_key || '',
         configuration: {},
+        webhook_url: trigger.webhook_url,
         app: {
           name: trigger.integration.app.name,
           icon_url: trigger.integration.app.icon_url,
@@ -209,6 +212,7 @@ export default function Edit() {
         app_id: trigger.app_id,
         trigger_key: trigger.trigger_key || '',
         configuration: {},
+        webhook_url: trigger.webhook_url,
         // We'll set the app info after finding it from the apps list
       };
     } else {
@@ -219,6 +223,7 @@ export default function Edit() {
         app_id: 0,
         trigger_key: trigger.trigger_key || '',
         configuration: {},
+        webhook_url: trigger.webhook_url,
         app: {
           name: 'Unknown App',
           icon_url: undefined,
