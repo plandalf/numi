@@ -100,49 +100,13 @@ class Organization extends Model
         'should_apply_region_currency' => 'boolean',
     ];
 
-    public const AVAILABLE_CURRENCIES = [
-        'USD' => 'US Dollar',
-        'EUR' => 'Euro',
-        'GBP' => 'British Pound',
-        'CAD' => 'Canadian Dollar',
-        'AUD' => 'Australian Dollar',
-    ];
-
-    public const COUNTRY_TO_CURRENCY = [
-        // North America
-        'US' => 'USD',
-        'CA' => 'CAD',
-        
-        // Europe (Eurozone)
-        'AT' => 'EUR', // Austria
-        'BE' => 'EUR', // Belgium
-        'CY' => 'EUR', // Cyprus
-        'EE' => 'EUR', // Estonia
-        'FI' => 'EUR', // Finland
-        'FR' => 'EUR', // France
-        'DE' => 'EUR', // Germany
-        'GR' => 'EUR', // Greece
-        'IE' => 'EUR', // Ireland
-        'IT' => 'EUR', // Italy
-        'LV' => 'EUR', // Latvia
-        'LT' => 'EUR', // Lithuania
-        'LU' => 'EUR', // Luxembourg
-        'MT' => 'EUR', // Malta
-        'NL' => 'EUR', // Netherlands
-        'PT' => 'EUR', // Portugal
-        'SK' => 'EUR', // Slovakia
-        'SI' => 'EUR', // Slovenia
-        'ES' => 'EUR', // Spain
-        
-        // United Kingdom
-        'GB' => 'GBP',
-        
-        // Oceania
-        'AU' => 'AUD',
-        'NZ' => 'NZD', // New Zealand - using AUD as fallback
-        
-        // Default fallback for other countries
-    ];
+    /**
+     * Get available currencies from config
+     */
+    public static function getAvailableCurrencies(): array
+    {
+        return config('currencies.available', []);
+    }
 
     protected static function boot()
     {
@@ -346,10 +310,13 @@ class Organization extends Model
             return null;
         }
 
-        $currency = self::COUNTRY_TO_CURRENCY[$countryCode] ?? null;
+        $countryMapping = config('currencies.country_mapping', []);
+        $availableCurrencies = config('currencies.available', []);
+        
+        $currency = $countryMapping[$countryCode] ?? null;
         
         // Only return currencies that are available for this organization
-        if ($currency && array_key_exists($currency, self::AVAILABLE_CURRENCIES)) {
+        if ($currency && array_key_exists($currency, $availableCurrencies)) {
             return $currency;
         }
 

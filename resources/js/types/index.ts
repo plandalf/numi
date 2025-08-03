@@ -23,6 +23,7 @@ export interface Organization {
     invite_link: string;
     join_token: string;
     default_currency: string;
+    should_apply_region_currency?: boolean;
     subdomain: string;
     users?: (User & {
         pivot: {
@@ -40,6 +41,7 @@ export interface Organization {
     fulfillment_config?: Record<string, unknown>;
     external_platform_config?: Record<string, unknown>;
     subscriptions?: Subscription[];
+    available_currencies?: Record<string, string>;
 }
 
 export interface Subscription {

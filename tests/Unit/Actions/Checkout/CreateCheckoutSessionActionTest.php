@@ -91,7 +91,7 @@ class CreateCheckoutSessionActionTest extends TestCase
             });
 
         // Act
-        $checkoutSession = $this->action->execute($offer);
+        $checkoutSession = $this->action->execute($offer, []);
 
         // Assert
         $this->assertInstanceOf(CheckoutSession::class, $checkoutSession);
@@ -100,5 +100,174 @@ class CreateCheckoutSessionActionTest extends TestCase
 
         // Verify that line items were created for offerItems with default_price_id
         $this->assertEquals(2, $checkoutSession->lineItems()->count());
+    }
+
+    public function test_it_applies_interval_override_to_offer_items(): void
+    {
+        // Arrange
+        $organization = Organization::factory()->create();
+        $offer = Offer::factory()->create([
+            'organization_id' => $organization->id,
+        ]);
+
+        // Parent price (monthly)
+        $parentPrice = Price::factory()->create([
+            'organization_id' => $organization->id,
+            'amount' => 1000,
+            'renew_interval' => 'month',
+            'currency' => 'USD',
+            'type' => 'recurring',
+            'is_active' => true,
+        ]);
+
+        // Child price (yearly)
+        $childPrice = Price::factory()->create([
+            'organization_id' => $organization->id,
+            'amount' => 10000,
+            'renew_interval' => 'year',
+            'currency' => 'USD',
+            'parent_list_price_id' => $parentPrice->id,
+            'type' => 'recurring',
+            'is_active' => true,
+        ]);
+
+        $offerItem = OfferItem::factory()->create([
+            'offer_id' => $offer->id,
+            'default_price_id' => $parentPrice->id,
+            'is_required' => true,
+        ]);
+
+        // Mock the CreateCheckoutLineItemAction - expect it to be called with child price
+        $this->createCheckoutLineItemAction
+            ->expects('execute')
+            ->once()
+            ->with(
+                Mockery::type(CheckoutSession::class),
+                $offerItem,
+                Mockery::on(function ($priceId) use ($childPrice) {
+                    return $priceId === $childPrice->id;
+                }),
+                1
+            )
+            ->andReturn(CheckoutLineItem::factory()->create([
+                'price_id' => $childPrice->id,
+                'offer_item_id' => $offerItem->id,
+                'quantity' => 1,
+            ]));
+
+        // Act - call with interval override (empty checkoutItems will use offer items)
+        $checkoutSession = $this->action->execute($offer, [], false, 'year', null);
+
+        // Assert
+        $this->assertInstanceOf(CheckoutSession::class, $checkoutSession);
+    }
+
+    public function test_it_applies_currency_override_to_offer_items(): void
+    {
+        // Arrange
+        $organization = Organization::factory()->create();
+        $offer = Offer::factory()->create([
+            'organization_id' => $organization->id,
+        ]);
+
+        // Parent price (USD)
+        $parentPrice = Price::factory()->create([
+            'organization_id' => $organization->id,
+            'amount' => 1000,
+            'renew_interval' => 'month',
+            'currency' => 'USD',
+            'type' => 'recurring',
+            'is_active' => true,
+        ]);
+
+        // Child price (EUR)
+        $childPrice = Price::factory()->create([
+            'organization_id' => $organization->id,
+            'amount' => 900,
+            'renew_interval' => 'month',
+            'currency' => 'EUR',
+            'parent_list_price_id' => $parentPrice->id,
+            'type' => 'recurring',
+            'is_active' => true,
+        ]);
+
+        $offerItem = OfferItem::factory()->create([
+            'offer_id' => $offer->id,
+            'default_price_id' => $parentPrice->id,
+            'is_required' => true,
+        ]);
+
+        // Mock the CreateCheckoutLineItemAction - expect it to be called with child price
+        $this->createCheckoutLineItemAction
+            ->expects('execute')
+            ->once()
+            ->with(
+                Mockery::type(CheckoutSession::class),
+                $offerItem,
+                Mockery::on(function ($priceId) use ($childPrice) {
+                    return $priceId === $childPrice->id;
+                }),
+                1
+            )
+            ->andReturn(CheckoutLineItem::factory()->create([
+                'price_id' => $childPrice->id,
+                'offer_item_id' => $offerItem->id,
+                'quantity' => 1,
+            ]));
+
+        // Act - call with currency override
+        $checkoutSession = $this->action->execute($offer, [], false, null, 'eur');
+
+        // Assert
+        $this->assertInstanceOf(CheckoutSession::class, $checkoutSession);
+    }
+
+    public function test_it_uses_parent_price_when_already_matching_overrides(): void
+    {
+        // Arrange
+        $organization = Organization::factory()->create();
+        $offer = Offer::factory()->create([
+            'organization_id' => $organization->id,
+        ]);
+
+        // Parent price already matches the requested interval
+        $parentPrice = Price::factory()->create([
+            'organization_id' => $organization->id,
+            'amount' => 10000,
+            'renew_interval' => 'year', // Already yearly
+            'currency' => 'USD',
+            'type' => 'recurring',
+            'is_active' => true,
+        ]);
+
+        $offerItem = OfferItem::factory()->create([
+            'offer_id' => $offer->id,
+            'default_price_id' => $parentPrice->id,
+            'is_required' => true,
+        ]);
+
+        // Mock the CreateCheckoutLineItemAction - expect it to be called with parent price
+        $this->createCheckoutLineItemAction
+            ->expects('execute')
+            ->once()
+            ->with(
+                Mockery::type(CheckoutSession::class),
+                $offerItem,
+                Mockery::on(function ($priceId) use ($parentPrice) {
+                    return $priceId === $parentPrice->id;
+                }),
+                1
+            )
+            ->andReturn(CheckoutLineItem::factory()->create([
+                'price_id' => $parentPrice->id,
+                'offer_item_id' => $offerItem->id,
+                'quantity' => 1,
+            ]));
+
+        // Act - call with interval override that parent already matches
+        $checkoutSession = $this->action->execute($offer, [], false, 'year', null);
+
+        // Assert
+        $this->assertInstanceOf(CheckoutSession::class, $checkoutSession);
     }
 }

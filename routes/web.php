@@ -30,10 +30,6 @@ use App\Http\Controllers\ImpersonationController;
 
 
 Route::get('test', function (\Illuminate\Http\Request $request) {
-
-    $integration = Integration::retrieve($request->input('integration_id'));
-
-    dd($integration);
 });
 
 Route::redirect('/', '/dashboard')->name('home');

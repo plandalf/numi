@@ -19,7 +19,24 @@ class CheckoutSessionAPIController
      */
     public function index(Request $request)
     {
+        $organization = request('api_organization');
+        
         $sessions = CheckoutSession::query()
+            ->where('organization_id', $organization->id)
+            ->with([
+                'lineItems.price',
+                'order' => function ($query) {
+                    $query->with([
+                        'items.price.product.integration',
+                        'items.offerItem',
+                        'items.fulfilledBy:id,name,email',
+                        'customer:id,name,email',
+                        'organization:id,name,subdomain'
+                    ]);
+                },
+                'customer:id,name,email',
+                'paymentMethod'
+            ])
             ->cursorPaginate($request->integer('per_page', 15));
 
         return CheckoutSessionApiResponse::collection($sessions);
@@ -31,14 +48,29 @@ class CheckoutSessionAPIController
      * @param CheckoutSession $session
      * @return CheckoutSessionApiResponse
      */
-    public function show(CheckoutSession $session)
+    public function show(CheckoutSession $checkout)
     {
-        $session->loadMissing([
-            'lineItems'
+        $checkout->loadMissing([
+            'lineItems.price',
+            'customer',
+            'order' => function ($query) {
+                $query->with([
+                    'items.price.product.integration',
+                    'items.offerItem',
+                    'items.fulfilledBy:id,name,email',
+                    'customer:id,name,email',
+                    'organization:id,name,subdomain',
+                    'events.user:id,name,email'
+                ]);
+            },
+            'paymentMethod',
+            'organization:id,name,subdomain'
         ]);
 
-        return new CheckoutSessionApiResponse($session);
+        return new CheckoutSessionApiResponse($checkout);
     }
+
+
 
     /**
      * Create a checkout session.

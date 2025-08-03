@@ -2,6 +2,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
 import {
     Select,
     SelectContent,
@@ -24,18 +25,19 @@ const breadcrumbs = [
     { title: 'General', href: route('organizations.settings.general') },
 ];
 
-const AVAILABLE_CURRENCIES = {
-    USD: 'US Dollar',
-    EUR: 'Euro',
-    GBP: 'British Pound',
-    CAD: 'Canadian Dollar',
-    AUD: 'Australian Dollar',
-} as const;
-
 export default function General({ organization }: Props) {
+    // Use currencies from organization data or fallback to default
+    const availableCurrencies = organization.available_currencies || {
+        USD: 'US Dollar',
+        EUR: 'Euro',
+        GBP: 'British Pound',
+        CAD: 'Canadian Dollar',
+        AUD: 'Australian Dollar',
+    };
     const form = useForm({
         name: organization.name,
         default_currency: organization.default_currency,
+        should_apply_region_currency: organization.should_apply_region_currency || false,
         checkout_success_url: organization.checkout_success_url,
         checkout_cancel_url: organization.checkout_cancel_url,
         subdomain: organization.subdomain || '',
@@ -78,13 +80,27 @@ export default function General({ organization }: Props) {
                               <SelectValue placeholder="Select currency" />
                             </SelectTrigger>
                             <SelectContent>
-                              {Object.entries(AVAILABLE_CURRENCIES).map(([code, name]) => (
+                              {Object.entries(availableCurrencies).map(([code, name]) => (
                                 <SelectItem key={code} value={code}>
                                   {code} - {name}
                                 </SelectItem>
                               ))}
                             </SelectContent>
                           </Select>
+                        </div>
+
+                        <div className="flex items-center justify-between">
+                          <div className="space-y-0.5">
+                            <Label htmlFor="regional-currency">Auto-detect Regional Currency</Label>
+                            <p className="text-sm text-muted-foreground">
+                              Automatically detect customer's currency based on their location when no currency is specified
+                            </p>
+                          </div>
+                          <Switch
+                            id="regional-currency"
+                            checked={form.data.should_apply_region_currency}
+                            onCheckedChange={(checked) => form.setData('should_apply_region_currency', checked)}
+                          />
                         </div>
 
                         <div className="space-y-2">

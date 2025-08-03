@@ -16,6 +16,14 @@ class CustomerApiResponse extends JsonResource
     {
         return [
             'id' => $this->getRouteKey(),
+            'reference_id' => $this->reference_id,
+            'name' => $this->name,
+            'email' => $this->email,
+            'currency' => $this->currency,
+            'timezone' => $this->timezone,
+            'has_default_payment_method' => $this->hasDefaultPaymentMethod(),
+            'is_new_customer' => $this->isNewCustomer(),
+            'created_at' => $this->created_at,
         ];
     }
 }

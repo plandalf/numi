@@ -40,6 +40,7 @@ class OrganizationResource extends JsonResource
             'social_media' => $this->social_media,
             'invite_link' => $this->invite_link,
             'default_currency' => $this->default_currency,
+            'should_apply_region_currency' => $this->should_apply_region_currency,
             'subdomain' => $this->subdomain,
             'created_at' => $this->created_at?->toISOString(),
             'updated_at' => $this->updated_at?->toISOString(),
@@ -71,6 +72,7 @@ class OrganizationResource extends JsonResource
             'users' => $this->whenLoaded('users', function () {
                 return $this->users;
             }, null),
+            'available_currencies' => $this->resource->getAvailableCurrencies(),
         ];
     }
 }

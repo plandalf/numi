@@ -33,9 +33,8 @@ class CheckoutController extends Controller
         private readonly FontExtractionService $fontExtractionService
     ) {}
 
-    public function initialize(string $offerId, Request $request, string $environment = 'live')
+    public function initialize(Offer $offer, Request $request, string $environment = 'live')
     {
-        $offer = Offer::retrieve($offerId);
         $offer->load('organization');
         $checkoutItems = $request->get('items', []);
 
@@ -52,12 +51,7 @@ class CheckoutController extends Controller
             }
         }
 
-        $search = [
-            'interval' => $intervalOverride ?: 'month',
-            'currency' => $currencyOverride ?: 'auto',
-        ];
-
-        // Only process checkout items and overrides if items are present
+        // Process any explicit checkout items from query string
         if (!empty($checkoutItems)) {
             foreach ($checkoutItems as $key => $item) {
                 if (!isset($item['lookup_key'])) {
@@ -78,33 +72,13 @@ class CheckoutController extends Controller
                     ];
                 }
 
-                // Only attempt overrides if we have items to process and override parameters
-                if ($intervalOverride || $currencyOverride) {
-                    // Check if parent price already matches the requested criteria
-                    $parentMatches = true;
-                    if ($intervalOverride && $price->renew_interval !== $intervalOverride) {
-                        $parentMatches = false;
-                    }
-                    if ($currencyOverride && $currencyOverride !== 'auto' && strtoupper($price->currency) !== strtoupper($currencyOverride)) {
-                        $parentMatches = false;
-                    }
-                    
-                    // Only look for child prices if parent doesn't match
-                    if (!$parentMatches) {
-                        $childPrice = $this->findChildPriceWithOverrides($price, $intervalOverride, $currencyOverride);
-                        if ($childPrice) {
-                            $price = $childPrice;
-                        }
-                    }
-                }
-
                 $checkoutItems[$key]['price_id'] = $price->id;
             }
         }
 
         $testMode = $environment === 'test';
 
-        $checkoutSession = $this->createCheckoutSessionAction->execute($offer, $checkoutItems, $testMode);
+        $checkoutSession = $this->createCheckoutSessionAction->execute($offer, $checkoutItems, $testMode, $intervalOverride, $currencyOverride);
         $this->handleInvalidDomain($request, $checkoutSession);
 
         $params = array_filter(array_merge([
