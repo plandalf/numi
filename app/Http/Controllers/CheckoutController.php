@@ -38,6 +38,16 @@ class CheckoutController extends Controller
         $offer = Offer::retrieve($offerId);
         $checkoutItems = $request->get('items', []);
 
+        // Get override parameters from query string
+        $intervalOverride = $request->query('interval');
+        $currencyOverride = $request->query('currency');
+
+        $search = [
+            'interval' => $intervalOverride ?: 'month',
+            'currency' => $currencyOverride ?: 'auto',
+        ];
+
+        // Only process checkout items and overrides if items are present
         if (!empty($checkoutItems)) {
             foreach ($checkoutItems as $key => $item) {
                 if (!isset($item['lookup_key'])) {
@@ -52,13 +62,21 @@ class CheckoutController extends Controller
                     ->where('is_active', true)
                     ->first();
 
-                if ($price) {
-                    $checkoutItems[$key]['price_id'] = $price->id;
-                } else {
+                if (!$price) {
                     return [
                         'items' => ["Price with lookup_key '{$item['lookup_key']}' not found"],
                     ];
                 }
+
+                // Only attempt overrides if we have items to process and override parameters
+                if ($intervalOverride || $currencyOverride) {
+                    $childPrice = $this->findChildPriceWithOverrides($price, $intervalOverride, $currencyOverride);
+                    if ($childPrice) {
+                        $price = $childPrice;
+                    }
+                }
+
+                $checkoutItems[$key]['price_id'] = $price->id;
             }
         }
 
@@ -263,5 +281,29 @@ class CheckoutController extends Controller
 
             return redirect()->away($returnUrl);
         }
+    }
+
+    /**
+     * Find a child price that matches the given interval and/or currency overrides
+     */
+    private function findChildPriceWithOverrides(Price $parentPrice, ?string $intervalOverride, ?string $currencyOverride): ?Price
+    {
+        // Build query to find child prices
+        $query = Price::query()
+            ->where('parent_list_price_id', $parentPrice->id)
+            ->where('is_active', true);
+
+        // Filter by interval (renew_interval) if provided
+        if ($intervalOverride) {
+            $query->where('renew_interval', $intervalOverride);
+        }
+
+        // Filter by currency if provided
+        if ($currencyOverride && $currencyOverride !== 'auto') {
+            $query->where('currency', strtoupper($currencyOverride));
+        }
+
+        // Return the first matching child price
+        return $query->first();
     }
 }

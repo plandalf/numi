@@ -60,12 +60,6 @@ export default function Integrate({ integrations, showIntegrationsTutorial }: In
               onClick: () => document.getElementById('stripe-connect-button')?.click(),
               icon: PlugZap
             },
-            // {
-            //   label: 'Learn More',
-            //   onClick: () => window.open('https://www.plandalf.dev/docs/integrations', '_blank'),
-            //   variant: 'outline' as const,
-            //   icon: ExternalLink
-            // }
           ]}
           onboardingKey="integrations_tutorial"
           show={showIntegrationsTutorial}
