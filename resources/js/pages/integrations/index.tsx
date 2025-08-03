@@ -35,7 +35,7 @@ export default function Integrate({ integrations, showIntegrationsTutorial }: In
             Integrations
           </h1>
           <div className="flex gap-2">
-            <Link href="/integrations/stripe/authorizations" method="post" as="button">
+            <Link href="/integrations/stripe/authorizations" method="post" id="stripe-connect-button" as="button">
               <Button>
                 <Plus className="w-4 h-4 mr-2" />
                 Create Stripe Live Integration
@@ -57,15 +57,15 @@ export default function Integrate({ integrations, showIntegrationsTutorial }: In
           actions={[
             {
               label: 'Connect Stripe',
-              onClick: () => window.location.href = '/integrations/stripe/authorizations',
+              onClick: () => document.getElementById('stripe-connect-button')?.click(),
               icon: PlugZap
             },
-            {
-              label: 'Learn More',
-              onClick: () => window.open('https://www.plandalf.dev/docs/integrations', '_blank'),
-              variant: 'outline' as const,
-              icon: ExternalLink
-            }
+            // {
+            //   label: 'Learn More',
+            //   onClick: () => window.open('https://www.plandalf.dev/docs/integrations', '_blank'),
+            //   variant: 'outline' as const,
+            //   icon: ExternalLink
+            // }
           ]}
           onboardingKey="integrations_tutorial"
           show={showIntegrationsTutorial}

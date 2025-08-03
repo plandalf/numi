@@ -143,30 +143,31 @@ export default function Index({ orders, filters, showOrdersTutorial }: OrdersInd
         </header>
 
         {/* Orders Tutorial */}
-        <TutorialCard
-          title="Getting Started with Orders"
-          description="Orders are customer purchases that flow through your offers. Track payment status, view customer details, and manage fulfillment. <b>Monitor your revenue</b> and analyze purchasing patterns to optimize your business."
-          actions={[
-            // {
-            //   label: 'View Analytics',
-            //   onClick: () => router.get('/analytics'),
-            //   icon: FileText
-            // },
-            {
-              label: 'Learn More',
-              onClick: () => window.open('https://www.plandalf.dev/docs/orders', '_blank'),
-              variant: 'outline' as const,
-              icon: ExternalLink
-            }
-          ]}
-          onboardingKey="orders_tutorial"
-          show={showOrdersTutorial}
-          backgroundColor="bg-orange-50"
-          borderColor="border-orange-200"
-          textColor="text-amber-700 dark:text-amber-300"
-          accentColor="bg-orange-600"
-          accentHoverColor="hover:bg-orange-700"
-        />
+        {/*<TutorialCard*/}
+        {/*  */}
+        {/*  title="Getting Started with Orders"*/}
+        {/*  description="Orders are customer purchases that flow through your offers. Track payment status, view customer details, and manage fulfillment. <b>Monitor your revenue</b> and analyze purchasing patterns to optimize your business."*/}
+        {/*  actions={[*/}
+        {/*    // {*/}
+        {/*    //   label: 'View Analytics',*/}
+        {/*    //   onClick: () => router.get('/analytics'),*/}
+        {/*    //   icon: FileText*/}
+        {/*    // },*/}
+        {/*    {*/}
+        {/*      label: 'Learn More',*/}
+        {/*      onClick: () => window.open('https://www.plandalf.dev/docs/orders', '_blank'),*/}
+        {/*      variant: 'outline' as const,*/}
+        {/*      icon: ExternalLink*/}
+        {/*    }*/}
+        {/*  ]}*/}
+        {/*  onboardingKey="orders_tutorial"*/}
+        {/*  show={showOrdersTutorial}*/}
+        {/*  backgroundColor="bg-orange-50"*/}
+        {/*  borderColor="border-orange-200"*/}
+        {/*  textColor="text-amber-700 dark:text-amber-300"*/}
+        {/*  accentColor="bg-orange-600"*/}
+        {/*  accentHoverColor="hover:bg-orange-700"*/}
+        {/*/>*/}
 
         {!orders.data || orders.data.length === 0 ? (
           <div className="flex flex-col items-center justify-center bg-[#F7F9FF] rounded-md p-8">
