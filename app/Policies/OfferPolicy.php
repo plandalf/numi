@@ -12,7 +12,7 @@ class OfferPolicy
      */
     public function viewAny(User $user): bool
     {
-        return false;
+        return true;
     }
 
     /**
@@ -20,7 +20,7 @@ class OfferPolicy
      */
     public function view(User $user, Offer $offer): bool
     {
-        return false;
+        return $user->currentOrganization->id === $offer->organization_id;
     }
 
     /**
@@ -28,7 +28,7 @@ class OfferPolicy
      */
     public function create(User $user): bool
     {
-        return false;
+        return true;
     }
 
     /**
@@ -36,7 +36,7 @@ class OfferPolicy
      */
     public function update(User $user, Offer $offer): bool
     {
-        return false;
+        return $user->currentOrganization->id === $offer->organization_id;
     }
 
     /**
@@ -44,7 +44,7 @@ class OfferPolicy
      */
     public function delete(User $user, Offer $offer): bool
     {
-        return false;
+        return $user->currentOrganization->id === $offer->organization_id;
     }
 
     /**

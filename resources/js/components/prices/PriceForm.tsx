@@ -589,11 +589,11 @@ export default function PriceForm({
   // --- End Tiered/Package Handlers ---
 
   const content = (
-    <form onSubmit={handleSubmit} className="flex flex-col flex-grow ">
-      <DialogTitle className="bg-gray-100 px-4 py-2">{isEditing ? 'Edit' : 'Add'} Price</DialogTitle>
+    <form onSubmit={handleSubmit} autoComplete="off" className="flex flex-col flex-grow ">
+      <DialogTitle className="bg-gray-100 text-base px-4 py-2">{isEditing ? 'Edit' : 'Add'} Price</DialogTitle>
 
     <DialogBody>
-        <div className="flex-grow h-full overflow-auto px-4">
+        <div className="flex-grow h-full overflow-auto p-4">
           <div className="flex flex-col gap-4 pb-4">
             <div className="flex flex-col gap-2">
               <Label htmlFor="name">Name</Label>
@@ -798,11 +798,11 @@ export default function PriceForm({
               >
                 <option value="">Select pricing model</option>
                 <option value="one_time">One Time</option>
+                <option value="recurring">Flat Rate (Recurring)</option>
                 <option value="package">Package (Recurring)</option>
                 <option value="tiered">Tiered (Recurring)</option>
                 <option value="volume">Volume (Recurring)</option>
-                <option value="graduated">Graduated (Recurring)</option>
-                <option value="recurring">Flat Rate (Recurring)</option>
+                {/*<option value="graduated">Graduated (Recurring)</option>*/}
               </Select>
               {errors.type && <p className="text-sm text-red-500">{errors.type}</p>}
               {data.parent_list_price_id && listPrices && (
@@ -816,7 +816,7 @@ export default function PriceForm({
             </div>
 
             {/* Amount + Currency Composite Input */}
-            {data.type !== 'volume' && (
+            {['one_time', 'recurring'].includes(data.type) && (
               <div className="flex flex-col gap-2 w-full">
                 <Label htmlFor="amount">Amount <span className="text-xs text-muted-foreground">(required)</span></Label>
                 <div className={`flex w-full items-center rounded-md border border-input transition-colors ${
@@ -889,8 +889,8 @@ export default function PriceForm({
 
             {/* Recurring Fields */}
             {['recurring', 'tiered', 'volume', 'graduated', 'package'].includes(data.type) && (
-              <Card className="bg-[#F7F9FF]">
-                <CardContent className="px-4 space-y-4">
+              <div className="bg-[#F7F9FF]">
+                <div className="px-4 py-2 space-y-4">
                   <div
                     className="flex items-center justify-between cursor-pointer"
                     onClick={() => setIsRecurringSettingsExpanded(!isRecurringSettingsExpanded)}
@@ -954,23 +954,23 @@ export default function PriceForm({
                       </div>
                     </div>
                   )}
-                </CardContent>
-              </Card>
+                </div>
+              </div>
             )}
 
             {/* Tiered Pricing Fields */}
             {data.type === "tiered" && (
-              <Card className="bg-[#F7F9FF]">
-                <CardContent className="px-4 space-y-4">
+              <div className="bg-[#F7F9FF]">
+                <div className="px-4 py-2 space-y-4">
                   <div>
                     <div className="text-sm font-medium">Tiered Pricing Configuration</div>
                     <p className="text-xs text-muted-foreground mt-1">Configure different prices based on quantity. Overrides the simple amount above.</p>
                   </div>
-                  <div className="flex flex-col gap-4">
+                  <div className="flex flex-col gap-2">
                     {tiers.map((tier, index) => (
                       <div
                         key={index}
-                        className="flex space-x-2 items-end rounded-md border bg-background p-2"
+                        className="flex space-x-2 items-end rounded-md"
                       >
                         <div className="grid gap-1 flex-1">
                           <Label className="text-xs">From (Units)</Label>
@@ -1040,14 +1040,14 @@ export default function PriceForm({
                     </Button>
                     {errors.properties && <p className="text-sm text-red-500">{errors.properties}</p>}
                   </div>
-                </CardContent>
-              </Card>
+                </div>
+              </div>
             )}
 
             {/* Package Pricing Fields */}
             {data.type === "package" && (
-              <Card className="bg-[#F7F9FF]">
-                <CardContent className="px-4 space-y-4">
+              <div className="bg-[#F7F9FF]">
+                <div className="px-4 py-2 space-y-4">
                   <div>
                     <div className="text-sm font-medium">Package Pricing Configuration</div>
                     <p className="text-xs text-muted-foreground mt-1">Sell in fixed packages. Overrides the simple amount above.</p>
@@ -1087,23 +1087,23 @@ export default function PriceForm({
                     Charge per package of {packageConfig.size || 1} units.
                   </p>
                   {errors.properties && <p className="text-sm text-red-500">{errors.properties}</p>}
-                </CardContent>
-              </Card>
+                </div>
+              </div>
             )}
 
             {/* Volume Pricing Fields */}
             {data.type === "volume" && (
-              <Card className="bg-[#F7F9FF]">
-                <CardContent className="px-4 space-y-4">
+              <div className="bg-[#F7F9FF]">
+                <div className="px-4 py-2 space-y-4">
                   <div>
                     <div className="text-sm font-medium">Volume Pricing Configuration</div>
                     <p className="text-xs text-muted-foreground mt-1">Set different prices for quantity ranges. Entire order uses the tier price. Overrides the simple amount above.</p>
                   </div>
-                  <div className="flex flex-col gap-4">
+                  <div className="flex flex-col gap-2">
                     {tiers.map((tier, index) => (
                       <div
                         key={index}
-                        className="flex space-x-2 items-end rounded-md border bg-background p-2"
+                        className="flex space-x-2 items-end"
                       >
                         <div className="grid gap-1 flex-1">
                           <Label className="text-xs">Minimum Quantity</Label>
@@ -1182,8 +1182,8 @@ export default function PriceForm({
 
                     {errors.properties && <p className="text-sm text-red-500">{errors.properties}</p>}
                   </div>
-                </CardContent>
-              </Card>
+                </div>
+              </div>
             )}
 
             {/* Is Active Switch */}
@@ -1212,15 +1212,8 @@ export default function PriceForm({
 
     </DialogBody>
 
-    <DialogActions className="bg-gray-100 p-4">
-      <Button
-        type="button"
-        variant="outline"
-        onClick={() => onOpenChange(false)}
-        disabled={processing}
-      >
-        Cancel
-      </Button>
+    <DialogActions className="bg-gray-100 p-4 flex justify-between gap-2">
+
       <Button
         type="submit"
         disabled={processing}
@@ -1234,6 +1227,14 @@ export default function PriceForm({
             <Loader2 className="w-4 h-4 animate-spin" />
           </div>
         )}
+      </Button>
+      <Button
+        type="button"
+        variant="outline"
+        onClick={() => onOpenChange(false)}
+        disabled={processing}
+      >
+        Cancel
       </Button>
     </DialogActions>
   </form>

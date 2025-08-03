@@ -213,33 +213,6 @@ export default function Index({ sequences, workflows }: SequencesIndexProps) {
             </div>
           </div>
         )}
-
-        {/* Workflows Debug Section (temporary) */}
-        {workflows.data.length > 0 && (
-          <div>
-            <div>
-              <CardTitle>Recent Workflow Executions</CardTitle>
-            </div>
-            <div>
-              <div className="space-y-4">
-                {workflows.data.slice(0, 5).map((workflow) => (
-                  <div key={workflow.id} className="p-4 border rounded-lg">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="font-medium">Workflow {workflow.id}</span>
-                      <Badge variant="outline">
-                        {workflow.exceptions.length > 0 ? 'Failed' : 'Completed'}
-                      </Badge>
-                    </div>
-                    <div className="text-sm text-gray-600">
-                      Logs: {workflow.logs.length} |
-                      Exceptions: {workflow.exceptions.length}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
       </div>
 
       {/* Create Sequence Dialog */}
