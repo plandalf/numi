@@ -28,7 +28,7 @@ class TakeOfferScreenshotJob extends QueueableJob
             ->withToken(config('services.cloudflare.auth_token'), 'Bearer')
             ->acceptJson()
             ->post('/browser-rendering/screenshot', [
-                'url' => route('offers.show', [$this->offer, 'test']),
+                'url' => route('offers.show', ['offer' => $this->offer, 'test' => true, 'hide_test' => true]),
                 'addStyleTag' => [
                     [
                         'content' => ' * { scrollbar-width: none; -ms-overflow-style: none; } *::-webkit-scrollbar { display: none; }',

@@ -19,8 +19,8 @@ class OrderResource extends JsonResource
     public function toArray(Request $request): array
     {
         return [
-            'id' => $this->id,
-            'uuid' => $this->uuid,
+            'id' => $this->getRouteKey(),
+            'order_number' => $this->order_number,
             'status' => [
                 'value' => $this->status->value,
                 'label' => $this->status->label() ?? ucfirst($this->status->value),
@@ -64,6 +64,13 @@ class OrderResource extends JsonResource
                     'id' => $this->customer->id,
                     'name' => $this->customer->name,
                     'email' => $this->customer->email,
+                ];
+            }),
+            'organization' => $this->whenLoaded('organization', function () {
+                return [
+                    'id' => $this->organization->id,
+                    'name' => $this->organization->name,
+                    'subdomain' => $this->organization->subdomain,
                 ];
             }),
             'items' => OrderItemResource::collection($this->whenLoaded('items')),

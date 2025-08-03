@@ -88,7 +88,6 @@ class SocialImageController extends Controller
                 'style' => $offer->hostedPage->style,
             ] : null,
         ];
-        // dd($socialImageData);
 
         return Inertia::render('social-image', $socialImageData);
     }

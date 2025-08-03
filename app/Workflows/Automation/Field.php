@@ -16,6 +16,7 @@ class Field
     protected array $options = [];
     protected ?string $description = null;
     protected ?string $resource = null;
+    protected ?string $placeholder = null;
 
     public static function string(string $key, string $label, string $description = ''): self
     {
@@ -78,7 +79,7 @@ class Field
         return $field;
     }
 
-    public static function resource(string $key, string $label, string $description = '', string $resource): self
+    public static function resource(string $key, string $label, string $resource, string $description = '', ): self
     {
         $field = new self();
         $field->key = $key;
@@ -109,7 +110,7 @@ class Field
         return $field;
     }
 
-    public function dynamic(string $source = null): self
+    public function dynamic(?string $source): self
     {
         $this->dynamic = true;
         $this->dynamicSource = $source;
@@ -146,6 +147,12 @@ class Field
         return $this;
     }
 
+    public function placeholder(string $text): self
+    {
+        $this->placeholder = $text;
+        return $this;
+    }
+
     public function getKey(): string
     {
         return $this->key;
@@ -163,6 +170,10 @@ class Field
 
         if ($this->help) {
             $field['help'] = $this->help;
+        }
+
+        if ($this->placeholder) {
+            $field['placeholder'] = $this->placeholder;
         }
 
         if ($this->dynamic) {

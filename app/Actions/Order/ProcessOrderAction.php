@@ -39,7 +39,6 @@ class ProcessOrderAction
         $this->paymentValidationService = $paymentValidationService;
         $this->autoFulfillOrderAction = $autoFulfillOrderAction;
         $this->sendOrderNotificationAction = $sendOrderNotificationAction;
-
         $this->stripeClient = $this->session->paymentsIntegration->integrationClient()->getStripeClient();
     }
 
@@ -62,6 +61,7 @@ class ProcessOrderAction
 
         // if Payment
         $paidOrder = match($this->session->intent_type) {
+            'free' => $this->processFreeOrder($order),
             'payment' => $this->processPaymentIntent($order),
             'setup' => $this->processSetupIntent($order),
         };
@@ -78,6 +78,10 @@ class ProcessOrderAction
         return $order;
     }
 
+    public function processFreeOrder(Order $order)
+    {
+        return $order;
+    }
 
     protected function processPaymentIntent(Order $order): ?Order
     {

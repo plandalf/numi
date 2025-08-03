@@ -50,11 +50,13 @@ class PreparePaymentAction
         // Create the appropriate Stripe intent
         $intent = $this->createStripeIntent($customer, $intentMode, $paymentType);
 
-        // if success, we can bail out?
+        if (filled($intent)) {
+            // if success, we can bail out?
+            $this->session->intent_id = $intent->id;
+            $this->session->client_secret = $intent->client_secret;
+        }
 
-        $this->session->intent_id = $intent->id;
         $this->session->intent_type = $intentMode;
-        $this->session->client_secret = $intent->client_secret;
         $this->session->save();
 
         try {
@@ -83,10 +85,10 @@ class PreparePaymentAction
         $isRedirectMethod = $paymentType && in_array($paymentType, $redirectMethods);
 
         $response = [
-            'intent_state' => $intent->status,
-            'intent_id' => $intent->id,
             'intent_type' => $intentMode,
-            'client_secret' => $intent->client_secret,
+            'intent_state' => $intent?->status,
+            'intent_id' => $intent?->id,
+            'client_secret' => $intent?->client_secret,
             'is_redirect_method' => $isRedirectMethod,
             'return_url' => route('checkout.redirect.callback', [$this->session]),
         ];
@@ -94,12 +96,15 @@ class PreparePaymentAction
         return $response;
     }
 
-
     /**
      * Determine the stripe intent mode based on cart contents
      */
     private function determineIntentMode(): string
     {
+        if ($this->session->total === 0) {
+            return 'free';
+        }
+
         $hasSubscriptionItems = $this->session
             ->lineItems()
             ->whereHas('price', function ($query) {
@@ -140,6 +145,10 @@ class PreparePaymentAction
      */
     private function createStripeIntent(?Customer $customer, string $intentMode, string $selectedPmType): PaymentIntent|SetupIntent|null
     {
+        if ($intentMode === 'free') {
+            return null;
+        }
+
         if ($intentMode === 'payment') {
             return $this->createPaymentIntent($customer, $selectedPmType);
         }

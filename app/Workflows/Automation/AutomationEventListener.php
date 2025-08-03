@@ -99,14 +99,16 @@ class AutomationEventListener
                 'status' => AutomationEvent::STATUS_RECEIVED,
             ]);
         } catch (\Throwable $e) {
-            dd($e);
+            report($e);
+            return;
         }
 
         try {
             $run = Run::create([
                 'class' => RunSequenceWorkflow::class,
                 'sequence_id' => $trigger->sequence->id,
-                'trigger_event_id' => $triggerEvent->id,
+                'organization_id' => $trigger->sequence->organization_id,
+                'event_id' => $triggerEvent->id,
             ]);
 
             // Link the trigger event to the workflow execution

@@ -8,11 +8,9 @@ use App\Apps\Kajabi\Actions\CreateMember;
 use App\Apps\Kajabi\Actions\FindOrCreateContact;
 use App\Apps\Kajabi\Resources\ContactResource;
 use App\Apps\Kajabi\Resources\OfferResource;
-use App\Apps\Kajabi\Triggers\NewPurchase;
 use App\Models\Integration;
 use App\Workflows\Attributes\IsAutomation;
 
-// allow this to register itself
 #[IsAutomation(
     key: 'kajabi',
     name: 'Kajabi',
@@ -34,7 +32,6 @@ class KajabiApp extends AutomationApp
     public function triggers(): array
     {
         return [
-            NewPurchase::class,
         ];
     }
 

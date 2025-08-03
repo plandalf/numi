@@ -16,6 +16,17 @@
         <link rel="preconnect" href="https://fonts.bunny.net">
         <link href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600" rel="stylesheet" />
         <link href="https://fonts.bunny.net/css?family=sora:800" rel="stylesheet" />
+        
+        {{-- Google Fonts preconnect for better performance --}}
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        
+        {{-- Custom fonts for checkout pages --}}
+        @if(isset($page['props']['googleFontsUrl']) && $page['props']['googleFontsUrl'])
+            <link rel="preload" as="style" href="{{ $page['props']['googleFontsUrl'] }}">
+            <link rel="stylesheet" href="{{ $page['props']['googleFontsUrl'] }}" media="print" onload="this.media='all'">
+            <noscript><link rel="stylesheet" href="{{ $page['props']['googleFontsUrl'] }}"></noscript>
+        @endif
 
         @routes
         @viteReactRefresh

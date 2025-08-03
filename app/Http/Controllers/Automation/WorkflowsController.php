@@ -6,10 +6,13 @@ use App\Http\Controllers\Controller;
 use App\Models\Automation\Sequence;
 use App\Models\Automation\Run;
 use App\Models\WorkflowStep;
+use App\Workflows\RunSequenceWorkflow;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Log;
 use Workflow\Serializers\Serializer;
+use Workflow\WorkflowStub;
 
 class WorkflowsController extends Controller
 {
@@ -28,7 +31,7 @@ class WorkflowsController extends Controller
 
         $workflows = $sequence
             ->runs()
-            ->with(['triggerEvent', 'sequence'])
+            ->with(['event', 'sequence'])
             ->orderBy('created_at', 'desc')
             ->limit($limit)
             ->get();
@@ -66,15 +69,15 @@ class WorkflowsController extends Controller
 
                 'arguments' => $workflow->arguments ? Serializer::unserialize($workflow->arguments) : null,
                 'output' => $workflow->output ? Serializer::unserialize($workflow->output) : null,
-                'event' => $workflow->triggerEvent ? [
-                    'id' => $workflow->triggerEvent->id,
-                    'event_source' => $workflow->triggerEvent->event_source ?? null,
-                    'event_data' => $workflow->triggerEvent->event_data ?? null,
+                'event' => $workflow->event ? [
+                    'id' => $workflow->event->id,
+                    'event_source' => $workflow->event->event_source ?? null,
+                    'event_data' => $workflow->event->event_data ?? null,
                 ] : null,
                 'steps' => $steps->map(function (WorkflowStep $step) {
                     return [
                         'id' => $step->id,
-                        'node_id' => $step->node_id,
+                        'action_id' => $step->action_id,
                         'node_name' => $step->node_name ?? $step->step_name,
                         'node_type' => $step->node->type ?? 'unknown',
                         'status' => $step->status,
@@ -109,7 +112,7 @@ class WorkflowsController extends Controller
 
     public function show(Request $request, int $workflowId): JsonResponse
     {
-        $workflow = Run::with(['triggerEvent', 'sequence'])->findOrFail($workflowId);
+        $workflow = Run::with(['event', 'sequence'])->findOrFail($workflowId);
 
         // Verify workflow belongs to user's organization sequence
         if ($workflow->sequence->organization_id !== auth()->user()->currentOrganization->id) {
@@ -152,11 +155,11 @@ class WorkflowsController extends Controller
                 // 'finished_at' => $workflow->finished_at,
                 'arguments' => $workflow->arguments ? Serializer::unserialize($workflow->arguments) : null,
                 'output' => $workflow->output ? Serializer::unserialize($workflow->output) : null,
-                'event' => $workflow->triggerEvent ? [
-                    'id' => $workflow->triggerEvent->id,
-                    'event_source' => $workflow->triggerEvent->event_source ?? null,
-                    'event_data' => $workflow->triggerEvent->event_data ?? null,
-                    'created_at' => $workflow->triggerEvent->created_at,
+                'event' => $workflow->event ? [
+                    'id' => $workflow->event->id,
+                    'event_source' => $workflow->event->event_source ?? null,
+                    'event_data' => $workflow->event->event_data ?? null,
+                    'created_at' => $workflow->event->created_at,
                 ] : null,
                 'sequence' => [
                     'id' => $workflow->sequence->id,
@@ -165,7 +168,7 @@ class WorkflowsController extends Controller
                 'steps' => $steps->map(function (WorkflowStep $step) {
                     return [
                         'id' => $step->id,
-                        'node_id' => $step->node_id,
+                        'action_id' => $step->action_id,
                         'node_name' => $step->node_name ?? $step->step_name,
                         'node_type' => $step->node->type ?? 'unknown',
                         'status' => $step->status,
@@ -205,5 +208,161 @@ class WorkflowsController extends Controller
                 ]
             ]
         ]);
+    }
+
+    public function rerun(Request $request, int $workflowId): JsonResponse
+    {
+        // Find the workflow run
+        $originalRun = Run::with(['event', 'sequence.triggers', 'sequence.actions'])
+            ->findOrFail($workflowId);
+
+        // Verify workflow belongs to user's organization
+        if ($originalRun->sequence->organization_id !== auth()->user()->currentOrganization->id) {
+            return response()->json(['message' => 'Workflow not found'], 404);
+        }
+
+        // Check if workflow can be retried based on state machine rules
+        $retryableStatuses = ['failed', 'waiting'];
+        if (!in_array($originalRun->status, $retryableStatuses)) {
+            return response()->json([
+                'success' => false,
+                'message' => "Cannot rerun workflow in '{$originalRun->status}' status. Only failed or waiting workflows can be retried."
+            ], 400);
+        }
+
+        // Get the original trigger and event data
+        $trigger = $originalRun->sequence->triggers->first();
+        $originalEvent = $originalRun->event;
+
+        if (!$trigger || !$originalEvent) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Cannot rerun workflow: Missing trigger or event data'
+            ], 400);
+        }
+
+        try {
+            // Create workflow stub and start execution
+            // Use start() for rerun (new execution) rather than resume() (continue existing)
+            // This follows state machine: created -> pending -> running
+            $workflow = WorkflowStub::fromStoredWorkflow($originalRun);
+            $workflow->start($trigger, $originalEvent);
+
+            Log::info('Workflow rerun initiated', [
+                'original_workflow_id' => $originalRun->id,
+                'sequence_id' => $originalRun->sequence_id,
+                'original_status' => $originalRun->status,
+                'user_id' => auth()->id(),
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Workflow rerun started successfully',
+                'data' => [
+                    'original_workflow_id' => $originalRun->id,
+                    'status' => $originalRun->fresh()->status ?? 'pending'
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Failed to rerun workflow', [
+                'workflow_id' => $workflowId,
+                'error' => $e->getMessage(),
+                'user_id' => auth()->id(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to rerun workflow: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function forceRerun(Request $request, int $workflowId): JsonResponse
+    {
+        // Find the workflow run
+        $originalRun = Run::with(['event', 'sequence.triggers', 'sequence.actions'])
+            ->findOrFail($workflowId);
+
+        // Verify workflow belongs to user's organization
+        if ($originalRun->sequence->organization_id !== auth()->user()->currentOrganization->id) {
+            return response()->json(['message' => 'Workflow not found'], 404);
+        }
+
+        // Check if workflow can be force retried (pending, running)
+        $forceRetryableStatuses = ['pending', 'running'];
+        if (!in_array($originalRun->status, $forceRetryableStatuses)) {
+            return response()->json([
+                'success' => false,
+                'message' => "Cannot force rerun workflow in '{$originalRun->status}' status. Only pending or running workflows can be force retried."
+            ], 400);
+        }
+
+        // Get the original trigger and event data
+        $trigger = $originalRun->sequence->triggers->first();
+        $originalEvent = $originalRun->event;
+
+        if (!$trigger || !$originalEvent) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Cannot rerun workflow: Missing trigger or event data'
+            ], 400);
+        }
+
+        try {
+            // First, fail the current workflow to follow state machine transitions
+            $currentWorkflow = WorkflowStub::fromStoredWorkflow($originalRun);
+            $forceFailedException = new \Exception("Workflow force-failed by user for rerun");
+            $currentWorkflow->fail($forceFailedException);
+
+            Log::info('Workflow force-failed for rerun', [
+                'workflow_id' => $originalRun->id,
+                'original_status' => $originalRun->status,
+                'user_id' => auth()->id(),
+            ]);
+
+            // // Clear existing logs and exceptions to reset the workflow
+            // $originalRun->logs()->delete();
+            // $originalRun->exceptions()->delete();
+
+            // // Reset the workflow arguments to restart fresh
+            // $originalRun->arguments = null;
+            // $originalRun->output = null;
+            // $originalRun->save();
+
+            // Restart the same workflow (recycle the existing run)
+            $workflow = WorkflowStub::fromStoredWorkflow($originalRun->fresh());
+            $workflow->start($trigger, $originalEvent);
+
+            Log::info('Workflow force rerun initiated (recycled)', [
+                'workflow_id' => $originalRun->id,
+                'sequence_id' => $originalRun->sequence_id,
+                'original_status' => $originalRun->status,
+                'user_id' => auth()->id(),
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Workflow force rerun started successfully',
+                'data' => [
+                    'workflow_id' => $originalRun->id,
+                    'status' => $originalRun->fresh()->status ?? 'pending',
+                    'force_rerun' => true,
+                    'recycled' => true
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Failed to force rerun workflow', [
+                'workflow_id' => $workflowId,
+                'error' => $e->getMessage(),
+                'user_id' => auth()->id(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to force rerun workflow: ' . $e->getMessage()
+            ], 500);
+        }
     }
 }

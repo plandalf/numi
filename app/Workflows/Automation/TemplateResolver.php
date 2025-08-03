@@ -66,14 +66,14 @@ class TemplateResolver
             ->where('run_id', $executionId)
             ->where('status', WorkflowStep::STATUS_COMPLETED)
             ->orderBy('created_at', 'asc')
-            ->get(['id', 'node_id', 'output_data', 'processed_output']);
+            ->get(['id', 'action_id', 'output_data', 'processed_output']);
 
         // Build step context with both node_id and step_id references
         foreach ($completedSteps as $step) {
             $stepData = $step->processed_output ?? $step->output_data ?? [];
 
             // Reference by node_id (e.g., action__1_key)
-            $context["action__{$step->node_id}"] = $stepData;
+            $context["action__{$step->action_id}"] = $stepData;
         }
 
         // Merge additional context

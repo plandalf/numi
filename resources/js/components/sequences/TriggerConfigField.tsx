@@ -21,6 +21,7 @@ interface FieldSchema {
   required: boolean;
   description?: string;
   help?: string;
+  placeholder?: string;
   dynamic?: boolean;
   dynamicSource?: string;
   default?: unknown;
@@ -212,7 +213,7 @@ export function TriggerConfigField({
               <TemplateVariableInput
                 value={String(value || '')}
                 onChange={onChange}
-                placeholder={field.description || `Enter ${field.label.toLowerCase()}`}
+                placeholder={field.placeholder || field.description || `Enter ${field.label.toLowerCase()}`}
                 className={error ? 'border-red-300' : ''}
                 variables={templateVariables}
               />
@@ -224,7 +225,7 @@ export function TriggerConfigField({
             <Input
               value={String(value || '')}
               onChange={(e) => onChange(e.target.value)}
-              placeholder={field.description || `Enter ${field.label.toLowerCase()}`}
+              placeholder={field.placeholder || field.description || `Enter ${field.label.toLowerCase()}`}
               className={error ? 'border-red-300' : ''}
             />
           );
@@ -235,7 +236,7 @@ export function TriggerConfigField({
           <Textarea
             value={String(value || '')}
             onChange={(e) => onChange(e.target.value)}
-            placeholder={field.description || `Enter ${field.label.toLowerCase()}`}
+            placeholder={field.placeholder || field.description || `Enter ${field.label.toLowerCase()}`}
             className={error ? 'border-red-300' : ''}
             rows={3}
           />
@@ -248,7 +249,7 @@ export function TriggerConfigField({
             <TemplateVariableInput
               value={String(value || '')}
               onChange={onChange}
-              placeholder={field.description || `Enter ${field.label.toLowerCase()}`}
+              placeholder={field.placeholder || field.description || `Enter ${field.label.toLowerCase()}`}
               className={error ? 'border-red-300' : ''}
               variables={templateVariables}
             />
@@ -260,7 +261,7 @@ export function TriggerConfigField({
             type="email"
             value={String(value || '')}
             onChange={(e) => onChange(e.target.value)}
-            placeholder={field.description || `Enter ${field.label.toLowerCase()}`}
+            placeholder={field.placeholder || field.description || `Enter ${field.label.toLowerCase()}`}
             className={error ? 'border-red-300' : ''}
           />
         );
@@ -271,7 +272,7 @@ export function TriggerConfigField({
             type="number"
             value={String(value || '')}
             onChange={(e) => onChange(Number(e.target.value))}
-            placeholder={field.description || `Enter ${field.label.toLowerCase()}`}
+            placeholder={field.placeholder || field.description || `Enter ${field.label.toLowerCase()}`}
             className={error ? 'border-red-300' : ''}
           />
         );
@@ -329,7 +330,7 @@ export function TriggerConfigField({
                   onChange(e.target.value);
                 }
               }}
-              placeholder={field.description || 'Enter valid JSON'}
+              placeholder={field.placeholder || field.description || 'Enter valid JSON'}
               className={`font-mono text-sm ${error ? 'border-red-300' : ''}`}
               rows={6}
             />
@@ -418,7 +419,7 @@ export function TriggerConfigField({
             <Input
               value={String(value || '')}
               onChange={(e) => onChange(e.target.value)}
-              placeholder={field.description || `Enter ${field.label.toLowerCase()}`}
+              placeholder={field.placeholder || field.description || `Enter ${field.label.toLowerCase()}`}
               className={error ? 'border-red-300' : ''}
             />
           );
@@ -432,7 +433,7 @@ export function TriggerConfigField({
             <TemplateVariableInput
               value={String(value || '')}
               onChange={onChange}
-              placeholder={field.description || `Enter ${field.label.toLowerCase()}`}
+              placeholder={field.placeholder || field.description || `Enter ${field.label.toLowerCase()}`}
               className={error ? 'border-red-300' : ''}
               variables={templateVariables}
             />
@@ -443,7 +444,7 @@ export function TriggerConfigField({
           <Input
             value={String(value || '')}
             onChange={(e) => onChange(e.target.value)}
-            placeholder={field.description || `Enter ${field.label.toLowerCase()}`}
+            placeholder={field.placeholder || field.description || `Enter ${field.label.toLowerCase()}`}
             className={error ? 'border-red-300' : ''}
           />
         );

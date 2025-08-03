@@ -15,17 +15,17 @@ A new order has been placed and requires fulfillment attention.
 
 ## Order Details
 
-**Order ID:** #{{ $order->id }}  
-**Order Status:** {{ $order->status->label() }}  
-**Fulfillment Method:** {{ $order->fulfillment_method?->label() ?? 'Not Set' }}  
-**Order Total:** ${{ number_format($order->total_amount / 100, 2) }}  
-**Currency:** {{ strtoupper($order->currency) }}  
+**Order ID:** #{{ $order->order_number }}
+**Order Status:** {{ $order->status->label() }}
+**Fulfillment Method:** {{ $order->fulfillment_method?->label() ?? 'Not Set' }}
+**Order Total:** ${{ number_format($order->total_amount / 100, 2) }}
+**Currency:** {{ strtoupper($order->currency) }}
 
 @if($customer)
 ## Customer Information
 
-**Name:** {{ $customer->name }}  
-**Email:** {{ $customer->email }}  
+**Name:** {{ $customer->name }}
+**Email:** {{ $customer->email }}
 @endif
 
 ## Order Items
@@ -73,4 +73,4 @@ If you have any questions about this order or need assistance with fulfillment, 
 
 Thanks,<br>
 {{ $organization->name }} Fulfillment System
-</x-mail::message> 
+</x-mail::message>

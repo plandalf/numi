@@ -60,6 +60,11 @@ class WorkflowStep extends Model
 
     public function node(): BelongsTo
     {
+        return $this->belongsTo(\App\Models\Automation\Action::class, 'action_id');
+    }
+
+    public function action(): BelongsTo
+    {
         return $this->belongsTo(\App\Models\Automation\Action::class);
     }
 

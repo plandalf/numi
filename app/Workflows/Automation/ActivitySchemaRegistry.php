@@ -34,7 +34,6 @@ class ActivitySchemaRegistry
 
     public static function getActivityClassForType(string $type): ?string
     {
-        dd(self::$typeMap);
         return self::$typeMap[$type] ?? null;
     }
 

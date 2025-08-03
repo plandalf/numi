@@ -81,7 +81,7 @@ class AutomationEvent extends Model
         ]);
     }
 
-    public function markAsIgnored(string $reason = null): void
+    public function markAsIgnored(?string $reason): void
     {
         $this->update([
             'status' => self::STATUS_IGNORED,

@@ -22,7 +22,7 @@ class CheckoutSessionResource extends JsonResource
             'currency' => $this->currency,
             'total' => $this->total,
             'subtotal' => $this->subtotal,
-            'is_test_mode' => $this->test_mode,
+            'is_test_mode' => $this->test_mode && !$request->boolean('hide_test'),
             'publishable_key' => $this->publishable_key,
             'integration_client' => $this->integration?->type?->value,
             'client_secret' => $this->client_secret,

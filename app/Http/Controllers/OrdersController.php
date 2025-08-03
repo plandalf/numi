@@ -36,7 +36,7 @@ class OrdersController extends Controller
                         });
                 });
             })
-            ->with(['items.price.product', 'customer', 'checkoutSession'])
+            ->with(['items.price.product', 'customer', 'checkoutSession', 'organization'])
             ->latest()
             ->paginate(10)
             ->withQueryString();
@@ -68,7 +68,8 @@ class OrdersController extends Controller
             'items.price.product',
             'customer',
             'checkoutSession',
-            'events.user'
+            'events.user',
+            'organization'
         ]);
 
         return Inertia::render('Orders/Show', [
@@ -87,7 +88,8 @@ class OrdersController extends Controller
             'items.price.product',
             'items.fulfilledBy',
             'customer',
-            'events.user'
+            'events.user',
+            'organization'
         ]);
 
         return Inertia::render('Orders/Fulfillment', [

@@ -27,9 +27,9 @@ class OrderNotificationEmail extends Mailable implements ShouldQueue
      */
     public function envelope(): Envelope
     {
-        $subject = $this->isTest 
-            ? "TEST: New Order #{$this->order->id} - Fulfillment Required" 
-            : "New Order #{$this->order->id} - Fulfillment Required";
+        $subject = $this->isTest
+            ? "TEST: New Order #{$this->order->order_number} - Fulfillment Required"
+            : "New Order #{$this->order->order_number} - Fulfillment Required";
 
         return new Envelope(
             subject: $subject,
@@ -70,4 +70,4 @@ class OrderNotificationEmail extends Mailable implements ShouldQueue
     {
         return [];
     }
-} 
+}

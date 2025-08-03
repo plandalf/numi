@@ -27,7 +27,7 @@ class TestAppTrigger extends AppTrigger
                 ['value' => 'webhook', 'label' => 'Webhook'],
                 ['value' => 'polling', 'label' => 'Polling'],
             ]),
-            Field::resource('offer', 'Offer', 'Select an offer', 'offer'),
+            Field::resource('offer', 'Offer', 'offer', 'Select an offer'),
         ];
     }
 

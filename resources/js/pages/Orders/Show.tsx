@@ -20,10 +20,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { 
-  Package, 
-  CheckCircle, 
-  XCircle, 
+import {
+  Package,
+  CheckCircle,
+  XCircle,
   User,
   Truck,
   Download,
@@ -148,16 +148,16 @@ const getEventIcon = (type: string) => {
   }
 };
 
-const UpdateFulfillmentDialog = ({ 
-    item, 
-    orderUuid, 
-    onClose, 
-    errors, 
-    flash 
-}: { 
-    item: OrderItem; 
-    orderUuid: string; 
-    onClose: () => void; 
+const UpdateFulfillmentDialog = ({
+    item,
+    orderUuid,
+    onClose,
+    errors,
+    flash
+}: {
+    item: OrderItem;
+    orderUuid: string;
+    onClose: () => void;
     errors?: Record<string, string>;
     flash?: { success?: string; error?: string };
 }) => {
@@ -272,8 +272,8 @@ const UpdateFulfillmentDialog = ({
                             onChange={(e) => setData('fulfillment_status', e.target.value)}
                             className={cx(
                                 "mt-1 block w-full rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500",
-                                getError('fulfillment_status') 
-                                    ? "border-red-300" 
+                                getError('fulfillment_status')
+                                    ? "border-red-300"
                                     : "border-gray-300"
                             )}
                             required
@@ -466,7 +466,7 @@ const UpdateFulfillmentDialog = ({
                                 {data.delivery_assets.map((asset, index) => {
                                     const nameError = getDeliveryAssetError(index, 'name');
                                     const urlError = getDeliveryAssetError(index, 'url');
-                                    
+
                                     return (
                                         <div key={index} className="space-y-2 mb-3 p-2 border rounded">
                                             <div className="flex items-center justify-between">
@@ -536,7 +536,7 @@ const ItemFulfillmentCard = ({ item, orderUuid, errors, flash }: { item: OrderIt
                         </Badge>
                     </div>
                 </div>
-                
+
                 <div className="mt-3">
                     <div className="flex justify-between text-sm text-gray-500 mb-1">
                         <span>Progress: {item.quantity_fulfilled} of {item.quantity} fulfilled</span>
@@ -629,14 +629,14 @@ const ItemFulfillmentCard = ({ item, orderUuid, errors, flash }: { item: OrderIt
 export default function Show({ order, errors, flash }: OrdersShowProps) {
     return (
         <AppLayout>
-            <Head title={`Order ${order.uuid}`} />
+            <Head title={`Order #${order.order_number}`} />
 
             <div className="container max-w-[100vw] mx-auto py-6 sm:py-8 px-4 sm:px-6 lg:px-8">
                 <header className="mb-8">
                     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                         <div>
                             <h1 className="text-xl sm:text-2xl font-semibold text-gray-900 dark:text-white">
-                                Order {order.uuid}
+                                Order #{order.order_number}
                             </h1>
                             <p className="text-sm text-gray-500 dark:text-gray-400">
                                 Created on {formatDate(order.created_at)}
@@ -653,7 +653,7 @@ export default function Show({ order, errors, flash }: OrdersShowProps) {
                             <Button
                                 variant="outline"
                                 size="sm"
-                                onClick={() => window.open(route('order-status.public-url', order.uuid), '_blank')}
+                                onClick={() => window.open(route('order-status.public-url', order.id), '_blank')}
                             >
                                 <ExternalLink className="h-4 w-4 mr-2" />
                                 View Public Status
@@ -669,13 +669,10 @@ export default function Show({ order, errors, flash }: OrdersShowProps) {
                         <TabsTrigger value="events">Events</TabsTrigger>
                     </TabsList>
 
-                    <TabsContent value="overview" className="space-y-6">
+                    <TabsContent value="overview" className="space-y-6 py-4">
                         {/* Order Summary */}
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Order Summary</CardTitle>
-                            </CardHeader>
-                            <CardContent>
+                        <div>
+                            <div>
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                                     <div>
                                         <p className="text-sm font-medium text-gray-500">Customer</p>
@@ -701,15 +698,12 @@ export default function Show({ order, errors, flash }: OrdersShowProps) {
                                         <p className="text-lg font-semibold">{formatDate(order.created_at)}</p>
                                     </div>
                                 </div>
-                            </CardContent>
-                        </Card>
+                            </div>
+                        </div>
 
                         {/* Order Items */}
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Order Items</CardTitle>
-                            </CardHeader>
-                            <CardContent>
+                        <div>
+                            <div>
                                 <Table>
                                     <TableHeader>
                                         <TableRow>
@@ -744,16 +738,14 @@ export default function Show({ order, errors, flash }: OrdersShowProps) {
                                         ))}
                                     </TableBody>
                                 </Table>
-                            </CardContent>
-                        </Card>
+                            </div>
+                        </div>
 
                         {/* Discounts */}
                         {order.checkout_session?.discounts && order.checkout_session.discounts.length > 0 && (
-                            <Card>
-                                <CardHeader>
-                                    <CardTitle>Discounts Applied</CardTitle>
-                                </CardHeader>
-                                <CardContent>
+                            <div className="space-y-4">
+                                <CardTitle>Discounts Applied</CardTitle>
+                                <div>
                                     <div className="space-y-2">
                                         {order.checkout_session.discounts.map((discount, index) => (
                                             <div key={index} className="flex justify-between items-center p-2 bg-green-50 rounded-lg">
@@ -772,8 +764,8 @@ export default function Show({ order, errors, flash }: OrdersShowProps) {
                                             </div>
                                         ))}
                                     </div>
-                                </CardContent>
-                            </Card>
+                                </div>
+                            </div>
                         )}
                     </TabsContent>
 
@@ -802,7 +794,7 @@ export default function Show({ order, errors, flash }: OrdersShowProps) {
                                         <div className="text-sm text-gray-500">Unprovisionable</div>
                                     </div>
                                 </div>
-                                
+
                                 <div className="space-y-2">
                                     <div className="flex justify-between text-sm">
                                         <span>Progress</span>
@@ -810,11 +802,11 @@ export default function Show({ order, errors, flash }: OrdersShowProps) {
                                             {order.fulfillment_summary.fulfilled_items} of {order.fulfillment_summary.total_items} items fulfilled
                                         </span>
                                     </div>
-                                    <Progress 
-                                        value={order.fulfillment_summary.total_items > 0 
+                                    <Progress
+                                        value={order.fulfillment_summary.total_items > 0
                                             ? (order.fulfillment_summary.fulfilled_items / order.fulfillment_summary.total_items) * 100
-                                            : 0} 
-                                        className="h-2" 
+                                            : 0}
+                                        className="h-2"
                                     />
                                 </div>
                             </CardContent>
@@ -824,18 +816,18 @@ export default function Show({ order, errors, flash }: OrdersShowProps) {
                         <div className="space-y-4">
                             <div className="flex justify-between items-center">
                                 <h3 className="text-lg font-medium">Items to Fulfill</h3>
-                                <Link href={route('orders.fulfillment', order.uuid)}>
+                                <Link href={route('orders.fulfillment', order.id)}>
                                     <Button size="sm" variant="outline">
                                         Full Fulfillment Page
                                     </Button>
                                 </Link>
                             </div>
-                            
+
                             {order.items.map((item) => (
                                 <ItemFulfillmentCard
                                     key={item.id}
                                     item={item}
-                                    orderUuid={order.uuid}
+                                    orderUuid={order.id}
                                     errors={errors}
                                     flash={flash}
                                 />

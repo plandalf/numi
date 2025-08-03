@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Dialog, DialogContent, DialogDescription, DialogHeader } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -9,13 +9,15 @@ import {
   AlertCircle,
   CheckCircle,
   Clock,
-  Play,
   XCircle,
   ChevronDown,
   Eye,
-  Calendar,
   Timer,
-  Activity
+  Activity,
+  RotateCcw,
+  Pause,
+  Plus,
+  AlertTriangle
 } from 'lucide-react';
 import axios from 'axios';
 
@@ -28,14 +30,14 @@ interface WorkflowStep {
   started_at: string;
   completed_at: string | null;
   duration_ms: number | null;
-  input_data: any;
-  output_data: any;
-  raw_response: any;
-  processed_output: any;
+  input_data: unknown;
+  output_data: unknown;
+  raw_response: unknown;
+  processed_output: unknown;
   error_message: string | null;
   error_code: string | null;
   retry_count: number;
-  debug_info: any;
+  debug_info: unknown;
   node: {
     id: number;
     name: string;
@@ -54,26 +56,35 @@ interface WorkflowRun {
   id: number;
   status: string;
   created_at: string;
-  started_at: string | null;
-  finished_at: string | null;
-  arguments: any;
-  output: any;
-  event: {
+  started_at?: string | null;
+  finished_at?: string | null;
+  arguments?: unknown;
+  output?: unknown;
+  event?: {
     id: number;
     event_source: string;
-    event_data: any;
+    event_data: unknown;
     created_at: string;
   } | null;
-  steps: WorkflowStep[];
-  logs: any[];
-  exceptions: any[];
-  summary: {
+  steps?: WorkflowStep[];
+  logs?: Array<{
+    id: string;
+    created_at: string;
+    class: string;
+    content: unknown;
+  }>;
+  exceptions?: unknown[];
+  summary?: {
     total_steps: number;
     completed_steps: number;
     failed_steps: number;
     total_duration_ms: number;
     avg_step_duration_ms: number;
   };
+  // Fields from the list API
+  total_steps?: number;
+  completed_steps?: number;
+  failed_steps?: number;
 }
 
 interface WorkflowRunDetailsModalProps {
@@ -98,6 +109,13 @@ function safeStringify(data: unknown): string {
   }
 }
 
+// Helper function to check if data should be displayed
+function shouldShowData(data: unknown): boolean {
+  return data != null && 
+         typeof data === 'object' && 
+         Object.keys(data as Record<string, unknown>).length > 0;
+}
+
 // Get status color
 function getStatusColor(status: string): string {
   switch (status.toLowerCase()) {
@@ -109,6 +127,10 @@ function getStatusColor(status: string): string {
       return 'bg-blue-100 text-blue-800 border-blue-200';
     case 'pending':
       return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+    case 'waiting':
+      return 'bg-orange-100 text-orange-800 border-orange-200';
+    case 'created':
+      return 'bg-indigo-100 text-indigo-800 border-indigo-200';
     default:
       return 'bg-gray-100 text-gray-800 border-gray-200';
   }
@@ -125,6 +147,10 @@ function getStatusIcon(status: string) {
       return <Clock className="h-4 w-4" />;
     case 'pending':
       return <Timer className="h-4 w-4" />;
+    case 'waiting':
+      return <Pause className="h-4 w-4" />;
+    case 'created':
+      return <Plus className="h-4 w-4" />;
     default:
       return <Activity className="h-4 w-4" />;
   }
@@ -135,14 +161,10 @@ function WorkflowRunDetailsModal({ open, onClose, workflowId }: WorkflowRunDetai
   const [workflow, setWorkflow] = useState<WorkflowRun | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [rerunning, setRerunning] = useState(false);
+  const [forceRerunning, setForceRerunning] = useState(false);
 
-  useEffect(() => {
-    if (open && workflowId) {
-      loadWorkflowDetails();
-    }
-  }, [open, workflowId]);
-
-  const loadWorkflowDetails = async () => {
+  const loadWorkflowDetails = useCallback(async () => {
     if (!workflowId) return;
 
     try {
@@ -156,30 +178,136 @@ function WorkflowRunDetailsModal({ open, onClose, workflowId }: WorkflowRunDetai
     } finally {
       setLoading(false);
     }
+  }, [workflowId]);
+
+  useEffect(() => {
+    if (open && workflowId) {
+      loadWorkflowDetails();
+    }
+  }, [open, workflowId, loadWorkflowDetails]);
+
+  const handleRerun = async () => {
+    if (!workflowId) return;
+
+    try {
+      setRerunning(true);
+      const response = await axios.post(`/automation/workflows/${workflowId}/rerun`);
+      
+      if (response.data.success) {
+        // Show success message and refresh workflow details
+        alert('Workflow rerun started successfully!');
+        // Refresh the workflow details to show the updated status
+        loadWorkflowDetails();
+      } else {
+        setError(response.data.message || 'Failed to rerun workflow');
+      }
+    } catch (error: unknown) {
+      console.error('Failed to rerun workflow:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to rerun workflow';
+      setError(errorMessage);
+    } finally {
+      setRerunning(false);
+    }
+  };
+
+  const handleForceRerun = async () => {
+    if (!workflowId) return;
+
+    // Show confirmation dialog for force rerun
+    const confirmed = window.confirm(
+      'Force rerun will immediately fail the current workflow, clear its progress, and restart it from the beginning. This should only be used for stuck workflows. Are you sure?'
+    );
+    
+    if (!confirmed) return;
+
+    try {
+      setForceRerunning(true);
+      const response = await axios.post(`/automation/workflows/${workflowId}/force-rerun`);
+      
+      if (response.data.success) {
+        // Show success message and refresh workflow details
+        alert('Workflow force rerun started successfully! The workflow has been reset and restarted.');
+        // Refresh the workflow details to show the updated status
+        loadWorkflowDetails();
+      } else {
+        setError(response.data.message || 'Failed to force rerun workflow');
+      }
+    } catch (error) {
+      console.error('Failed to force rerun workflow:', error);
+      if (axios.isAxiosError(error)) {
+        setError(error.response?.data?.message || 'Failed to force rerun workflow');
+      } else {
+        setError('An unexpected error occurred');
+      }
+    } finally {
+      setForceRerunning(false);
+    }
   };
 
   const handleClose = () => {
     setWorkflow(null);
     setError(null);
+    setRerunning(false);
+    setForceRerunning(false);
     onClose();
   };
 
   if (!open) return null;
 
   return (
-    <Dialog open={open} onOpenChange={handleClose} variant={"full-height"}>
-      <DialogContent className="w-full max-h-[90vh] overflow-y-auto">
+    <Dialog open={open} onOpenChange={handleClose}>
+      <DialogContent variant="full-height" className="max-w-[95vw] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="flex items-center space-x-2">
-            <Activity className="h-5 w-5" />
-            <span>Workflow Run Details</span>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <Activity className="h-5 w-5" />
+              <span className="text-lg leading-none font-semibold">Workflow Run Details</span>
+              {workflow && (
+                <Badge className={getStatusColor(workflow.status)}>
+                  {getStatusIcon(workflow.status)}
+                  <span className="ml-1">{workflow.status}</span>
+                </Badge>
+              )}
+            </div>
             {workflow && (
-              <Badge className={getStatusColor(workflow.status)}>
-                {getStatusIcon(workflow.status)}
-                <span className="ml-1">{workflow.status}</span>
-              </Badge>
+              <div className="flex space-x-2">
+                {/* Regular Rerun Button - for failed/waiting workflows */}
+                {['failed', 'waiting'].includes(workflow.status) && (
+                  <Button
+                    onClick={handleRerun}
+                    disabled={rerunning || forceRerunning}
+                    variant="outline"
+                    size="sm"
+                  >
+                    {rerunning ? (
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    ) : (
+                      <RotateCcw className="h-4 w-4 mr-2" />
+                    )}
+                    {rerunning ? 'Rerunning...' : 'Rerun Workflow'}
+                  </Button>
+                )}
+                
+                {/* Force Rerun Button - for pending/running workflows */}
+                {['pending', 'running'].includes(workflow.status) && (
+                  <Button
+                    onClick={handleForceRerun}
+                    disabled={rerunning || forceRerunning}
+                    variant="outline"
+                    size="sm"
+                    className="border-orange-300 text-orange-700 hover:bg-orange-50"
+                  >
+                    {forceRerunning ? (
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    ) : (
+                      <AlertTriangle className="h-4 w-4 mr-2" />
+                    )}
+                    {forceRerunning ? 'Force Rerunning...' : 'Force Rerun'}
+                  </Button>
+                )}
+              </div>
             )}
-          </DialogTitle>
+          </div>
           <DialogDescription>
             View detailed execution information, step outputs, and logs
           </DialogDescription>
@@ -202,37 +330,90 @@ function WorkflowRunDetailsModal({ open, onClose, workflowId }: WorkflowRunDetai
         )}
 
         {workflow && (
-          <div className="space-y-6 max-w-full">
+          <div className="space-y-6 max-w-full overflow-hidden">
             {/* Summary */}
             <div>
               <CardContent className="p-4">
-                <h3 className="font-medium mb-3">Execution Summary</h3>
+                <h3 className="font-medium mb-4">Execution Summary</h3>
+                
+                {/* Timing Information */}
+                <div className="mb-4 p-3 bg-gray-50 rounded-lg">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
+                    <div>
+                      <p className="text-gray-500 text-xs">Started</p>
+                      <p className="font-medium">{new Date(workflow.created_at).toLocaleString()}</p>
+                    </div>
+                    {workflow.finished_at && (
+                      <div>
+                        <p className="text-gray-500 text-xs">Finished</p>
+                        <p className="font-medium">{new Date(workflow.finished_at).toLocaleString()}</p>
+                      </div>
+                    )}
+                    <div>
+                      <p className="text-gray-500 text-xs">Total Duration</p>
+                      <p className="font-medium">
+                        {workflow.summary?.total_duration_ms 
+                          ? `${(workflow.summary.total_duration_ms / 1000).toFixed(2)}s`
+                          : workflow.finished_at 
+                            ? `${((new Date(workflow.finished_at).getTime() - new Date(workflow.created_at).getTime()) / 1000).toFixed(2)}s`
+                            : 'Running...'
+                        }
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Step Statistics */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                  <div>
-                    <p className="text-gray-500">Total Steps</p>
-                    <p className="font-medium">{workflow.summary.total_steps}</p>
+                  <div className="text-center p-3 bg-blue-50 rounded-lg">
+                    <p className="text-blue-600 font-medium text-lg">{workflow.summary?.total_steps || 0}</p>
+                    <p className="text-blue-700 text-xs">Total Steps</p>
                   </div>
-                  <div>
-                    <p className="text-gray-500">Completed</p>
-                    <p className="font-medium text-green-600">{workflow.summary.completed_steps}</p>
+                  <div className="text-center p-3 bg-green-50 rounded-lg">
+                    <p className="text-green-600 font-medium text-lg">{workflow.summary?.completed_steps || 0}</p>
+                    <p className="text-green-700 text-xs">Completed</p>
                   </div>
-                  <div>
-                    <p className="text-gray-500">Failed</p>
-                    <p className="font-medium text-red-600">{workflow.summary.failed_steps}</p>
+                  <div className="text-center p-3 bg-red-50 rounded-lg">
+                    <p className="text-red-600 font-medium text-lg">{workflow.summary?.failed_steps || 0}</p>
+                    <p className="text-red-700 text-xs">Failed</p>
                   </div>
-                  <div>
-                    <p className="text-gray-500">Total Duration</p>
-                    <p className="font-medium">{workflow.summary.total_duration_ms}ms</p>
+                  <div className="text-center p-3 bg-yellow-50 rounded-lg">
+                    <p className="text-yellow-600 font-medium text-lg">
+                      {workflow.summary?.avg_step_duration_ms 
+                        ? `${(workflow.summary.avg_step_duration_ms / 1000).toFixed(2)}s`
+                        : '0s'
+                      }
+                    </p>
+                    <p className="text-yellow-700 text-xs">Avg Step Duration</p>
                   </div>
                 </div>
-                <div className="mt-3 text-xs text-gray-500">
-                  Started: {new Date(workflow.created_at).toLocaleString()} •
-                  {workflow.finished_at && ` Finished: ${new Date(workflow.finished_at).toLocaleString()}`}
-                </div>
+
+                {/* Status and Progress */}
+                {(workflow.summary?.total_steps || 0) > 0 && (
+                  <div className="mt-4">
+                    <div className="flex items-center justify-between text-xs text-gray-500 mb-1">
+                      <span>Progress</span>
+                      <span>
+                        {workflow.summary?.completed_steps || 0} / {workflow.summary?.total_steps || 0} steps
+                      </span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div 
+                        className={`h-2 rounded-full transition-all duration-300 ${
+                          workflow.status === 'failed' ? 'bg-red-500' :
+                          workflow.status === 'completed' ? 'bg-green-500' : 'bg-blue-500'
+                        }`}
+                        style={{ 
+                          width: `${((workflow.summary?.completed_steps || 0) / (workflow.summary?.total_steps || 1)) * 100}%` 
+                        }}
+                      />
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </div>
 
-            <Tabs defaultValue="steps" className="w-full">
+            <Tabs defaultValue="steps" className="w-full overflow-hidden">
               <TabsList className="grid w-full grid-cols-4">
                 <TabsTrigger value="steps">Steps</TabsTrigger>
                 <TabsTrigger value="trigger">Trigger Event</TabsTrigger>
@@ -241,8 +422,8 @@ function WorkflowRunDetailsModal({ open, onClose, workflowId }: WorkflowRunDetai
               </TabsList>
 
               {/* Steps Tab */}
-              <TabsContent value="steps" className="space-y-4">
-                {workflow.steps.map((step, index) => (
+              <TabsContent value="steps" className="space-y-4 overflow-hidden">
+                {workflow.steps?.map((step, index) => (
                   <Card key={step.id}>
                     <CardContent className="p-4">
                       <div className="flex items-center justify-between mb-3">
@@ -277,14 +458,14 @@ function WorkflowRunDetailsModal({ open, onClose, workflowId }: WorkflowRunDetai
 
                       <div className="space-y-3">
                         {/* Input Data */}
-                        {step.input_data && Object.keys(step.input_data).length > 0 && (
+                        {shouldShowData(step.input_data) && (
                           <details className="group">
                             <summary className="cursor-pointer text-sm font-medium text-gray-600 hover:text-gray-900 flex items-center space-x-1">
                               <ChevronDown className="h-3 w-3 transition-transform group-open:rotate-180" />
                               <span>Input Data</span>
                             </summary>
-                            <div className="mt-2 bg-gray-50 rounded p-3 border">
-                              <pre className="text-xs overflow-auto max-h-32">
+                            <div className="mt-2 bg-gray-50 rounded p-3 border overflow-hidden">
+                              <pre className="text-xs overflow-auto max-h-32 whitespace-pre-wrap break-words">
                                 {safeStringify(step.input_data)}
                               </pre>
                             </div>
@@ -292,14 +473,14 @@ function WorkflowRunDetailsModal({ open, onClose, workflowId }: WorkflowRunDetai
                         )}
 
                         {/* Output Data */}
-                        {step.output_data && Object.keys(step.output_data).length > 0 && (
+                        {shouldShowData(step.output_data) && (
                           <details className="group">
                             <summary className="cursor-pointer text-sm font-medium text-gray-600 hover:text-gray-900 flex items-center space-x-1">
                               <ChevronDown className="h-3 w-3 transition-transform group-open:rotate-180" />
                               <span>Output Data</span>
                             </summary>
-                            <div className="mt-2 bg-green-50 rounded p-3 border">
-                              <pre className="text-xs overflow-auto max-h-32">
+                            <div className="mt-2 bg-green-50 rounded p-3 border overflow-hidden">
+                              <pre className="text-xs overflow-auto max-h-32 whitespace-pre-wrap break-words">
                                 {safeStringify(step.output_data)}
                               </pre>
                             </div>
@@ -307,14 +488,14 @@ function WorkflowRunDetailsModal({ open, onClose, workflowId }: WorkflowRunDetai
                         )}
 
                         {/* Raw Response */}
-                        {step.raw_response && Object.keys(step.raw_response).length > 0 && (
+                        {shouldShowData(step.raw_response) && (
                           <details className="group">
                             <summary className="cursor-pointer text-sm font-medium text-gray-600 hover:text-gray-900 flex items-center space-x-1">
                               <ChevronDown className="h-3 w-3 transition-transform group-open:rotate-180" />
                               <span>Raw Response</span>
                             </summary>
-                            <div className="mt-2 bg-blue-50 rounded p-3 border">
-                              <pre className="text-xs overflow-auto max-h-32">
+                            <div className="mt-2 bg-blue-50 rounded p-3 border overflow-hidden">
+                              <pre className="text-xs overflow-auto max-h-32 whitespace-pre-wrap break-words">
                                 {safeStringify(step.raw_response)}
                               </pre>
                             </div>
@@ -327,7 +508,7 @@ function WorkflowRunDetailsModal({ open, onClose, workflowId }: WorkflowRunDetai
               </TabsContent>
 
               {/* Trigger Event Tab */}
-              <TabsContent value="trigger">
+              <TabsContent value="trigger" className="overflow-hidden">
                 <Card>
                   <CardContent className="p-4">
                     {workflow.event ? (
@@ -344,8 +525,8 @@ function WorkflowRunDetailsModal({ open, onClose, workflowId }: WorkflowRunDetai
                         </div>
                         <div>
                           <p className="text-sm font-medium text-gray-700 mb-2">Event Data</p>
-                          <div className="bg-gray-50 rounded p-3 border">
-                            <pre className="text-xs overflow-auto max-h-48">
+                          <div className="bg-gray-50 rounded p-3 border overflow-hidden">
+                            <pre className="text-xs overflow-auto max-h-48 whitespace-pre-wrap break-words">
                               {safeStringify(workflow.event.event_data)}
                             </pre>
                           </div>
@@ -359,18 +540,18 @@ function WorkflowRunDetailsModal({ open, onClose, workflowId }: WorkflowRunDetai
               </TabsContent>
 
               {/* Logs Tab */}
-              <TabsContent value="logs" className="w-full border">
+              <TabsContent value="logs" className="overflow-hidden">
                 <Card>
-                  <CardContent className="p-4 overflow-scroll">
-                    {workflow.logs.length > 0 ? (
+                  <CardContent className="p-4 overflow-hidden">
+                    {workflow.logs && workflow.logs.length > 0 ? (
                       <div className="space-y-2">
                         {workflow.logs.map((log, index) => (
                           <div key={log.id || index} className="border-l-2 border-gray-200 pl-3">
                             <div className="text-xs text-gray-500">{new Date(log.created_at).toLocaleString()}</div>
                             <div className="text-sm font-medium">{log.class}</div>
-                            {log.content && (
-                              <div className="mt-1 bg-gray-50 rounded p-2 whitespace-pre-wrap text-wrap">
-                                <pre className="text-xs overflow-auto ">{safeStringify(log.content)}</pre>
+                            {log.content != null && (
+                              <div className="mt-1 bg-gray-50 rounded p-2 overflow-hidden">
+                                <pre className="text-xs overflow-auto whitespace-pre-wrap break-words max-w-full">{safeStringify(log.content)}</pre>
                               </div>
                             )}
                           </div>
@@ -384,12 +565,12 @@ function WorkflowRunDetailsModal({ open, onClose, workflowId }: WorkflowRunDetai
               </TabsContent>
 
               {/* Final Output Tab */}
-              <TabsContent value="output">
+              <TabsContent value="output" className="overflow-hidden">
                 <Card>
                   <CardContent className="p-4">
                     {workflow.output ? (
-                      <div className="bg-gray-50 rounded p-3 border">
-                        <pre className="text-xs overflow-auto max-h-64">
+                      <div className="bg-gray-50 rounded p-3 border overflow-hidden">
+                        <pre className="text-xs overflow-auto max-h-64 whitespace-pre-wrap break-words">
                           {safeStringify(workflow.output)}
                         </pre>
                       </div>
@@ -408,20 +589,15 @@ function WorkflowRunDetailsModal({ open, onClose, workflowId }: WorkflowRunDetai
 }
 
 // Main Workflow Runs Modal
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function WorkflowRunsModal({ open, onClose, sequenceId }: WorkflowRunsModalProps) {
-  const [workflows, setWorkflows] = useState<any[]>([]);
+  const [workflows, setWorkflows] = useState<WorkflowRun[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedWorkflowId, setSelectedWorkflowId] = useState<number | null>(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
 
-  useEffect(() => {
-    if (open && sequenceId) {
-      loadWorkflows();
-    }
-  }, [open, sequenceId]);
-
-  const loadWorkflows = async () => {
+  const loadWorkflows = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -435,7 +611,13 @@ export function WorkflowRunsModal({ open, onClose, sequenceId }: WorkflowRunsMod
     } finally {
       setLoading(false);
     }
-  };
+  }, [sequenceId]);
+
+  useEffect(() => {
+    if (open && sequenceId) {
+      loadWorkflows();
+    }
+  }, [open, sequenceId, loadWorkflows]);
 
   const handleViewDetails = (workflowId: number) => {
     setSelectedWorkflowId(workflowId);
@@ -447,15 +629,11 @@ export function WorkflowRunsModal({ open, onClose, sequenceId }: WorkflowRunsMod
     setSelectedWorkflowId(null);
   };
 
-  const handleClose = () => {
-    setWorkflows([]);
-    setError(null);
-    onClose();
-  };
+
 
   return (
     <>
-      <div className="px-6" open={open} onOpenChange={handleClose}>
+      <div className="px-6">
         <div className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <div className="mb-4">
             <div className="flex items-center space-x-2">
@@ -513,7 +691,7 @@ export function WorkflowRunsModal({ open, onClose, sequenceId }: WorkflowRunsMod
                             <p className="text-gray-500">
                               {workflow.completed_steps}/{workflow.total_steps} steps
                             </p>
-                            {workflow.failed_steps > 0 && (
+                            {(workflow.failed_steps || 0) > 0 && (
                               <p className="text-red-600">{workflow.failed_steps} failed</p>
                             )}
                           </div>

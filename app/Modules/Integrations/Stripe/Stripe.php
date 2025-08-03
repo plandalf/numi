@@ -18,6 +18,7 @@ use App\Modules\Integrations\Contracts\HasPrices;
 use App\Modules\Integrations\Contracts\HasProducts;
 use App\Modules\Integrations\Stripe\Actions\ImportStripePriceAction;
 use App\Modules\Integrations\Stripe\Actions\ImportStripeProductAction;
+use Illuminate\Support\Arr;
 use Stripe\PaymentIntent;
 use Stripe\SetupIntent;
 use Stripe\StripeClient;
@@ -287,6 +288,20 @@ class Stripe extends AbstractIntegration implements CanCreateSubscription, CanSe
         $amount = $session->total;
         $currency = $session->currency;
 
+        if ($amount === 0) {
+            return PaymentIntent::constructFrom([
+                'id' => 'skipped',
+                'client_secret' => 'skipped',
+                'amount' => 0,
+                'currency' => strtolower($currency),
+                'status' => 'succeeded',
+                'customer' => $customer->reference_id,
+                'metadata' => [
+                    'checkout_session_id' => $session->getRouteKey(),
+                ],
+            ]);
+        }
+
         // Get payment method types from data or fall back to session enabled methods
         $paymentMethodTypes = $paymentMethods ?? $session->enabled_payment_methods ?? ['card'];
 
@@ -297,7 +312,6 @@ class Stripe extends AbstractIntegration implements CanCreateSubscription, CanSe
 
         // Create payment intent with explicit payment method types
         $paymentIntentData = array_filter([
-            'amount' => (int) $amount,
             'currency' => strtolower($currency),
             'customer' => $customer->reference_id,
             'metadata' => [
@@ -305,13 +319,14 @@ class Stripe extends AbstractIntegration implements CanCreateSubscription, CanSe
             ],
             'payment_method_types' => $paymentMethodTypes->all(),
         ]);
+        $paymentIntentData['amount'] = (int) $amount;
 
         // Create a more specific idempotency key that includes key parameters
         // This prevents conflicts when parameters change (e.g., payment method types)
         $idempotencyKeyData = [
             'session_id' => $session->getRouteKey(),
-            'amount' => $paymentIntentData['amount'],
-            'currency' => $paymentIntentData['currency'],
+            'amount' => Arr::get($paymentIntentData, 'amount'),
+            'currency' => Arr::get($paymentIntentData, 'currency'),
             'customer' => $paymentIntentData['customer'] ?? null,
             'payment_method_types' => $paymentIntentData['payment_method_types'] ?? [],
         ];

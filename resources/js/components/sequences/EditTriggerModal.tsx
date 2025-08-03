@@ -75,6 +75,7 @@ interface CreatedTrigger {
   app_id: number;
   trigger_key: string;
   configuration: Record<string, unknown>;
+  webhook_url?: string;
   app?: {
     name: string;
     icon_url?: string;
@@ -732,6 +733,8 @@ function TestStep({ testResult, testLoading, handleTestTrigger }: TestStepProps)
 }
 
 export function EditTriggerModal({ open, onClose, trigger, onTriggerUpdated }: EditTriggerModalProps) {
+  console.log('EditTriggerModal', trigger);
+
   const [activeTab, setActiveTab] = useState('setup');
   const [loading, setLoading] = useState(false);
   const [initializing, setInitializing] = useState(true);
@@ -973,8 +976,8 @@ export function EditTriggerModal({ open, onClose, trigger, onTriggerUpdated }: E
 
       const response = await axios.put(`/automation/triggers/${trigger.id}`, payload);
 
-      // Don't call onTriggerUpdated here - only on final finish
-      // onTriggerUpdated(response.data.data);
+      // Update the local trigger object with the response data (includes webhook_url if applicable)
+      Object.assign(trigger, response.data.data);
 
       // Progress to next step instead of closing
       if (activeTab === 'setup' && setupComplete) {
@@ -1354,6 +1357,38 @@ export function EditTriggerModal({ open, onClose, trigger, onTriggerUpdated }: E
                             <p className="text-xs text-red-500">{validationErrors.name[0]}</p>
                           )}
                         </div>
+
+                        {/* Webhook URL for Plandalf webhook triggers */}
+                        {trigger && trigger.webhook_url 
+                        && selectedApp?.key === 'plandalf'
+                         && selectedTriggerEvent?.key === 'webhook' 
+                         && (
+                          <div className="space-y-2">
+                            <Label>Webhook URL</Label>
+                            <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                              <div className="flex items-center justify-between">
+                                <div className="flex-1 mr-3">
+                                  <p className="text-sm font-medium text-blue-900 mb-1">Send HTTP requests to this URL:</p>
+                                  <code className="text-xs bg-blue-100 px-2 py-1 rounded font-mono break-all">
+                                    {trigger.webhook_url}
+                                  </code>
+                                </div>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => navigator.clipboard.writeText(trigger.webhook_url || '')}
+                                  className="shrink-0"
+                                >
+                                  Copy
+                                </Button>
+                              </div>
+                              <div className="mt-3 text-xs text-blue-700">
+                                <p><strong>Supported methods:</strong> GET, POST, PUT, PATCH, DELETE</p>
+                                <p><strong>Content-Type:</strong> application/json, application/x-www-form-urlencoded, text/plain</p>
+                              </div>
+                            </div>
+                          </div>
+                        )}
 
                         {/* Configuration Options */}
                         <div className="space-y-4">

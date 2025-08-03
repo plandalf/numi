@@ -27,40 +27,40 @@ class RunSequenceWorkflow extends Workflow
         Trigger         $trigger,
         AutomationEvent $event,
     ) {
-        foreach ($trigger->sequence->nodes as $node) {
+        foreach ($trigger->sequence->actions as $action) {
             // Resolve template variables in node configuration
-            $resolvedConfiguration = $this->resolveNodeConfiguration($node, $event);
+            $resolvedConfiguration = $this->resolveNodeConfiguration($action, $event);
 
             // Create input bundle with resolved configuration
             $bundle = new Bundle(
                 input: $resolvedConfiguration,
-                integration: $node->integration,
+                integration: $action->integration,
             );
 
             $startTime = $this->now;
 
             $step = WorkflowStep::query()->firstOrCreate([
                 'run_id' => $this->storedWorkflow->id,
-                'action_id' => $node->id,
+                'action_id' => $action->id,
             ], [
-                'step_name' => $node->name ?? "Node {$node->id}",
+                'step_name' => $action->name ?? "Node {$action->id}",
                 'input_data' => $resolvedConfiguration,
                 'status' => WorkflowStep::STATUS_RUNNING,
                 'started_at' => $startTime,
-                'max_retries' => $node->retry_config['max_retries'] ?? 0,
+                'max_retries' => $action->retry_config['max_retries'] ?? 0,
             ]);
 
             Log::info(logname(), [
-                'note' => 'event: '.$event->id. ' node: '.$node->id. ' step: '.$step->id,
+                'note' => 'event: '.$event->id. ' node: '.$action->id. ' step: '.$step->id,
             ]);
 
             // Execute the action
             try {
-                $output = yield ActivityStub::make(ActionActivity::class, $node, $bundle);
+                $output = yield ActivityStub::make(ActionActivity::class, $action, $bundle);
             } catch (\Exception $e) {
                 Log::error(logname('workflow_error'), [
                     'workflow_id' => $this->storedWorkflow->id,
-                    'node_id' => $node->id,
+                    'action_id' => $action->id,
                     'error' => $e->getMessage(),
                 ]);
 
