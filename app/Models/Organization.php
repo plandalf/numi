@@ -77,6 +77,7 @@ class Organization extends Model
         'fulfillment_notification_email',
         'auto_fulfill_orders',
         'external_platform_config',
+        'should_apply_region_currency',
     ];
 
     protected $appends = [
@@ -85,6 +86,7 @@ class Organization extends Model
 
     protected $attributes = [
         'default_currency' => 'USD',
+        'should_apply_region_currency' => false,
     ];
 
     protected $casts = [
@@ -95,6 +97,7 @@ class Organization extends Model
         'fulfillment_config' => 'array',
         'auto_fulfill_orders' => 'boolean',
         'external_platform_config' => 'array',
+        'should_apply_region_currency' => 'boolean',
     ];
 
     public const AVAILABLE_CURRENCIES = [
@@ -103,6 +106,42 @@ class Organization extends Model
         'GBP' => 'British Pound',
         'CAD' => 'Canadian Dollar',
         'AUD' => 'Australian Dollar',
+    ];
+
+    public const COUNTRY_TO_CURRENCY = [
+        // North America
+        'US' => 'USD',
+        'CA' => 'CAD',
+        
+        // Europe (Eurozone)
+        'AT' => 'EUR', // Austria
+        'BE' => 'EUR', // Belgium
+        'CY' => 'EUR', // Cyprus
+        'EE' => 'EUR', // Estonia
+        'FI' => 'EUR', // Finland
+        'FR' => 'EUR', // France
+        'DE' => 'EUR', // Germany
+        'GR' => 'EUR', // Greece
+        'IE' => 'EUR', // Ireland
+        'IT' => 'EUR', // Italy
+        'LV' => 'EUR', // Latvia
+        'LT' => 'EUR', // Lithuania
+        'LU' => 'EUR', // Luxembourg
+        'MT' => 'EUR', // Malta
+        'NL' => 'EUR', // Netherlands
+        'PT' => 'EUR', // Portugal
+        'SK' => 'EUR', // Slovakia
+        'SI' => 'EUR', // Slovenia
+        'ES' => 'EUR', // Spain
+        
+        // United Kingdom
+        'GB' => 'GBP',
+        
+        // Oceania
+        'AU' => 'AUD',
+        'NZ' => 'NZD', // New Zealand - using AUD as fallback
+        
+        // Default fallback for other countries
     ];
 
     protected static function boot()
@@ -296,5 +335,24 @@ class Organization extends Model
     public function isOnboardingComplete(): bool
     {
         return count($this->getIncompleteOnboardingSteps()) === 0;
+    }
+
+    /**
+     * Get currency based on country code from CloudFlare header
+     */
+    public function getRegionalCurrency(?string $countryCode): ?string
+    {
+        if (!$countryCode || !$this->should_apply_region_currency) {
+            return null;
+        }
+
+        $currency = self::COUNTRY_TO_CURRENCY[$countryCode] ?? null;
+        
+        // Only return currencies that are available for this organization
+        if ($currency && array_key_exists($currency, self::AVAILABLE_CURRENCIES)) {
+            return $currency;
+        }
+
+        return null;
     }
 }

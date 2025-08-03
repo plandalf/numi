@@ -265,4 +265,73 @@ class CheckoutOverrideTest extends TestCase
         $response->assertRedirect();
         $response->assertSessionHasErrors(['items']);
     }
+
+    public function test_regional_currency_detection_when_enabled()
+    {
+        // Enable regional currency detection for the organization
+        $this->organization->update(['should_apply_region_currency' => true]);
+
+        $response = $this->get("/o/{$this->offer->getRouteKey()}?items[0][lookup_key]={$this->parentPrice->lookup_key}&items[0][quantity]=1", [
+            'CF-IPCountry' => 'DE' // Germany - should map to EUR
+        ]);
+
+        $response->assertRedirect();
+        
+        // Verify checkout session was created with EUR child price
+        $this->assertDatabaseHas('checkout_line_items', [
+            'price_id' => $this->childPriceEur->id,
+        ]);
+    }
+
+    public function test_regional_currency_detection_when_disabled()
+    {
+        // Keep regional currency detection disabled (default)
+        $this->organization->update(['should_apply_region_currency' => false]);
+
+        $response = $this->get("/o/{$this->offer->getRouteKey()}?items[0][lookup_key]={$this->parentPrice->lookup_key}&items[0][quantity]=1", [
+            'CF-IPCountry' => 'DE' // Germany - should NOT map to EUR when disabled
+        ]);
+
+        $response->assertRedirect();
+        
+        // Verify checkout session was created with original USD price
+        $this->assertDatabaseHas('checkout_line_items', [
+            'price_id' => $this->parentPrice->id,
+        ]);
+    }
+
+    public function test_explicit_currency_override_takes_precedence_over_regional()
+    {
+        // Enable regional currency detection
+        $this->organization->update(['should_apply_region_currency' => true]);
+
+        // Explicitly request USD despite being in Germany
+        $response = $this->get("/o/{$this->offer->getRouteKey()}?currency=usd&items[0][lookup_key]={$this->parentPrice->lookup_key}&items[0][quantity]=1", [
+            'CF-IPCountry' => 'DE' // Germany - would normally map to EUR
+        ]);
+
+        $response->assertRedirect();
+        
+        // Verify checkout session used explicit USD currency (parent price)
+        $this->assertDatabaseHas('checkout_line_items', [
+            'price_id' => $this->parentPrice->id,
+        ]);
+    }
+
+    public function test_regional_currency_detection_with_unsupported_country()
+    {
+        // Enable regional currency detection
+        $this->organization->update(['should_apply_region_currency' => true]);
+
+        $response = $this->get("/o/{$this->offer->getRouteKey()}?items[0][lookup_key]={$this->parentPrice->lookup_key}&items[0][quantity]=1", [
+            'CF-IPCountry' => 'JP' // Japan - not in our mapping
+        ]);
+
+        $response->assertRedirect();
+        
+        // Verify checkout session was created with original price (no regional match)
+        $this->assertDatabaseHas('checkout_line_items', [
+            'price_id' => $this->parentPrice->id,
+        ]);
+    }
 }

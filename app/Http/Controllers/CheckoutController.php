@@ -36,11 +36,21 @@ class CheckoutController extends Controller
     public function initialize(string $offerId, Request $request, string $environment = 'live')
     {
         $offer = Offer::retrieve($offerId);
+        $offer->load('organization');
         $checkoutItems = $request->get('items', []);
 
         // Get override parameters from query string
         $intervalOverride = $request->query('interval');
         $currencyOverride = $request->query('currency');
+
+        // If no currency override is provided, check for regional currency based on CloudFlare header
+        if (!$currencyOverride) {
+            $countryCode = $request->header('CF-IPCountry');
+            $regionalCurrency = $offer->organization->getRegionalCurrency($countryCode);
+            if ($regionalCurrency) {
+                $currencyOverride = strtolower($regionalCurrency);
+            }
+        }
 
         $search = [
             'interval' => $intervalOverride ?: 'month',
@@ -70,9 +80,21 @@ class CheckoutController extends Controller
 
                 // Only attempt overrides if we have items to process and override parameters
                 if ($intervalOverride || $currencyOverride) {
-                    $childPrice = $this->findChildPriceWithOverrides($price, $intervalOverride, $currencyOverride);
-                    if ($childPrice) {
-                        $price = $childPrice;
+                    // Check if parent price already matches the requested criteria
+                    $parentMatches = true;
+                    if ($intervalOverride && $price->renew_interval !== $intervalOverride) {
+                        $parentMatches = false;
+                    }
+                    if ($currencyOverride && $currencyOverride !== 'auto' && strtoupper($price->currency) !== strtoupper($currencyOverride)) {
+                        $parentMatches = false;
+                    }
+                    
+                    // Only look for child prices if parent doesn't match
+                    if (!$parentMatches) {
+                        $childPrice = $this->findChildPriceWithOverrides($price, $intervalOverride, $currencyOverride);
+                        if ($childPrice) {
+                            $price = $childPrice;
+                        }
                     }
                 }
 
