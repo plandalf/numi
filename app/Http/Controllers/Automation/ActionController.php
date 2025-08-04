@@ -7,6 +7,7 @@ namespace App\Http\Controllers\Automation;
 use App\Http\Controllers\Controller;
 use App\Models\Automation\AutomationEvent;
 use App\Models\WorkflowStep;
+use App\Workflows\Automation\Bundle;
 use App\Workflows\Automation\TemplateResolver;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -218,12 +219,6 @@ class ActionController extends Controller
                 ], 500);
             }
 
-            // Merge node configuration with request configuration (request overrides)
-            $configuration = array_merge(
-                $actionNode->configuration ?? [],
-                $validated['configuration'] ?? []
-            );
-
             $configuration = $actionNode->configuration;
 
             if ($actionNode->sequence->triggers->isEmpty()) {
@@ -257,8 +252,10 @@ class ActionController extends Controller
             $input = TemplateResolver::resolveValue($configuration, $props);
 
             // Create a Bundle with the test configuration
-            $bundle = new \App\Workflows\Automation\Bundle(
+            $bundle = new Bundle(
+                organization: $actionNode->sequence->organization,
                 input: $input,
+                configuration: $configuration,
                 integration: $integration
             );
 
