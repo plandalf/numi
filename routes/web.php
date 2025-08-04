@@ -30,6 +30,15 @@ use App\Http\Controllers\ImpersonationController;
 
 
 Route::get('test', function (\Illuminate\Http\Request $request) {
+
+    event(new \App\Workflows\Automation\Events\SystemEvent(
+        type: 'order_created',
+        app: 'plandalf',
+        organization: $request->user()->currentOrganization,
+        props: [
+            'order_id' => 1,
+        ]
+    ));
 });
 
 Route::redirect('/', '/dashboard')->name('home');

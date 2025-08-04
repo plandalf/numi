@@ -7,6 +7,7 @@ use App\Workflows\Automation\AppTrigger;
 use App\Workflows\Automation\Bundle;
 use App\Workflows\Automation\Field;
 use App\Models\Order\Order;
+use Illuminate\Support\Arr;
 
 #[IsTrigger(
     key: 'order_created',
@@ -20,7 +21,17 @@ class OrderCreated extends AppTrigger
     {
         $input = $bundle->input;
 
-        $order = Order::find($input['order_id'] ?? null);
+        /* @var Order $order */
+        $order = $bundle->organization
+            ->orders()
+            ->findOrFail($input['order_id']);
+
+        $offerIds = array_filter(Arr::wrap($bundle->configuration['offer']));
+
+        // if order isnt for offer, we should SKIP
+        if ($order->checkoutSession->offer_id && !in_array($order->checkoutSession->offer_id, $offerIds)) {
+            $this->skip();
+        }
 
         return [
             'order_id' => $order->id,
@@ -43,7 +54,7 @@ class OrderCreated extends AppTrigger
     {
         // Look up the most recent order for the organization
         $recentOrder = Order::with(['items', 'customer'])
-            ->where('organization_id', $bundle->integration?->organization_id ?? auth()->user()?->currentOrganization?->id)
+            ->where('organization_id', $bundle->organization->id)
             ->orderBy('created_at', 'desc')
             ->first();
 

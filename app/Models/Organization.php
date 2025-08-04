@@ -6,6 +6,7 @@ use App\Enums\OnboardingStep;
 use App\Enums\FulfillmentMethod;
 use App\Enums\DeliveryMethod;
 use App\Models\Catalog\Price;
+use App\Models\Order\Order;
 use App\Models\Store\Offer;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -324,5 +325,10 @@ class Organization extends Model
     public function prices(): HasMany
     {
         return $this->hasMany(Price::class);
+    }
+
+    public function orders(): HasMany
+    {
+        return $this->hasMany(Order::class);
     }
 }

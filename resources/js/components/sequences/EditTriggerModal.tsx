@@ -793,7 +793,7 @@ export function EditTriggerModal({ open, onClose, trigger, onTriggerUpdated }: E
         console.log('Initial trigger object:', trigger);
         console.log('Setting initial configuration:', trigger.configuration);
         setConfiguration(trigger.configuration || {});
-        
+
         // Fetch full trigger details to ensure we have complete configuration
         loadFullTriggerDetails();
 
@@ -953,7 +953,7 @@ export function EditTriggerModal({ open, onClose, trigger, onTriggerUpdated }: E
 
   const loadFullTriggerDetails = async () => {
     if (!trigger?.id) return;
-    
+
     console.log('loadFullTriggerDetails', trigger);
   };
 
@@ -1463,31 +1463,6 @@ export function EditTriggerModal({ open, onClose, trigger, onTriggerUpdated }: E
                             </div>
                           </div>
                         )}
-
-                        {/* Configuration Preview */}
-                        {Object.keys(configuration).length > 0 && (
-                          <div className="space-y-2">
-                            <div className="flex items-center space-x-2">
-                              <Settings className="h-4 w-4 text-gray-500" />
-                              <h4 className="font-medium">Configuration Preview</h4>
-                            </div>
-                            <div>
-                              <div className="">
-                                  <pre className="text-xs bg-gray-50 p-3 rounded overflow-auto max-h-64 whitespace-pre-wrap">
-                                    {JSON.stringify(configuration, null, 2)}
-                                  </pre>
-                              </div>
-                            </div>
-                          </div>
-                        )}
-                        
-                        {/* Debug Configuration State */}
-                        <div className="text-xs text-gray-500 bg-yellow-50 p-2 rounded border">
-                          <p><strong>Debug - Current Configuration:</strong></p>
-                          <pre>{JSON.stringify(configuration, null, 2)}</pre>
-                          <p><strong>Debug - Trigger Configuration:</strong></p>
-                          <pre>{JSON.stringify(trigger?.configuration, null, 2)}</pre>
-                        </div>
                       </div>
                     </div>
                   </div>

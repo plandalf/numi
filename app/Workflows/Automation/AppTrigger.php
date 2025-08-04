@@ -11,12 +11,14 @@ abstract class AppTrigger
     protected Integration $integration;
     protected array $configuration;
 
-    public function __construct(
-//        public Integration $integration,
-//        array $configuration = []
-    ) {
-//        $this->integration = $integration;
-//        $this->configuration = $configuration;
+
+    /**
+     * @throws TriggerSkippedException
+     * @return mixed
+     */
+    public function skip()
+    {
+        throw new TriggerSkippedException();
     }
 
     /**

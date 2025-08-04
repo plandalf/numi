@@ -2,6 +2,7 @@
 
 namespace App\Models\Automation;
 
+use App\Models\Organization;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -11,7 +12,6 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property Collection<Trigger> $nodes
  * @property Collection<Action> $actions
  * @property Collection<Run> $runs
-
  * @property string $name
  * @property string|null $description
  * @property bool $is_active
@@ -24,6 +24,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property int $run_count
  * @property \Carbon\Carbon $created_at
  * @property \Carbon\Carbon $updated_at
+ * @property Organization $organization
  */
 class Sequence extends Model
 {
