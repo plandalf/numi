@@ -24,7 +24,9 @@ class CreateContactTag extends AppAction
     public static function props(): array
     {
         return [
-            Field::string('name', 'Tag Name')->required()->help('The tag\'s name.'),
+            Field::string('name', 'Tag Name')
+                ->required()->help('The tag\'s name.')
+                ->help('Multiple, Comma separated Names will create multiple tags.'),
             Field::string('contact_id', 'Contact ID')
                 ->required()
                 ->help('the contact to tag'),

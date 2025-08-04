@@ -175,9 +175,7 @@ class ActionController extends Controller
      */
     public function test(Request $request, int $actionId): JsonResponse
     {
-        $validated = $request->validate([
-            'configuration' => 'nullable|array',
-        ]);
+        $props = [];
 
         try {
             // Find the action node
@@ -295,6 +293,7 @@ class ActionController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Action test failed: ' . $e->getMessage(),
+                'props' => $props,
                 'error_details' => [
                     'exception' => get_class($e),
                     'file' => $e->getFile(),
