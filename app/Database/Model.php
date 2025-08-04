@@ -44,7 +44,7 @@ class Model extends EloquentModel
         }
 
         return $query
-            ->where('organization_id', request()->user()?->organization_id)
+            ->where('organization_id', request()->user()?->current_organization_id)
             ->where($field ?? $this->getRouteKeyName(), $value);
     }
 }

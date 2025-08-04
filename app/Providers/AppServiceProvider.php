@@ -13,6 +13,7 @@ use App\Observers\ThemeObserver;
 use App\Models\Subscription;
 use App\Models\SubscriptionItem;
 use App\Models\Order\Order;
+use App\Models\Checkout\CheckoutSession;
 use App\Policies\OrderPolicy;
 use Carbon\CarbonImmutable;
 use Dedoc\Scramble\Scramble;

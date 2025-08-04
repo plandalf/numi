@@ -19,6 +19,18 @@ class CheckoutLineItemApiResource extends JsonResource
         return [
             'id' => $this->getRouteKey(),
             'quantity' => $this->quantity,
+            'price' => $this->whenLoaded('price', function () {
+                return [
+                    'id' => $this->price->id,
+                    'type' => $this->price->type,
+                    'amount' => $this->price->amount,
+                    'currency' => $this->price->currency,
+                    'name' => $this->price->name,
+                    'lookup_key' => $this->price->lookup_key,
+                    'renew_interval' => $this->price->renew_interval,
+                    'gateway_price_id' => $this->price->gateway_price_id,
+                ];
+            }),
         ];
     }
 }

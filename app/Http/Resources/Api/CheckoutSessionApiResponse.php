@@ -88,6 +88,39 @@ class CheckoutSessionApiResponse extends JsonResource
              * @example "USD"
              */
             'currency' => $this->currency,
+
+            // Payment Information  
+            'payment_confirmed_at' => $this->payment_confirmed_at,
+            'payment_method_locked' => $this->payment_method_locked,
+            'payment_method' => $this->whenLoaded('paymentMethod', function () {
+                return [
+                    'id' => $this->paymentMethod->id,
+                    'type' => $this->paymentMethod->type,
+                    'billing_details' => $this->paymentMethod->billing_details,
+                    'properties' => $this->paymentMethod->properties,
+                    'brand' => $this->paymentMethod->getCardBrandAttribute(),
+                    'last4' => $this->paymentMethod->getLast4Attribute(),
+                    'exp_month' => $this->paymentMethod->getExpMonthAttribute(),
+                    'exp_year' => $this->paymentMethod->getExpYearAttribute(),
+                    'display_name' => $this->paymentMethod->getDisplayNameAttribute(),
+                ];
+            }),
+
+            // Organization Information
+            'organization' => $this->whenLoaded('organization', function () {
+                return [
+                    'id' => $this->organization->id,
+                    'name' => $this->organization->name,
+                    'subdomain' => $this->organization->subdomain,
+                ];
+            }),
+
+            // Order Information for Provisioning
+            'order' => $this->whenLoaded('order', function () {
+                return new OrderApiResource($this->order);
+            }),
+
+
         ];
     }
 }

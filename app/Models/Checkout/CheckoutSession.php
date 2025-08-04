@@ -28,6 +28,7 @@ use Illuminate\Support\Arr;
  *
  * // todo :itnegration_id
  *
+ * @property int $offer_id
  * @property array<string, string> $properties
  * @property Carbon $expires_at
  * @property Collection<CheckoutLineItem> $lineItems

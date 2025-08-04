@@ -1,13 +1,15 @@
 <?php
 
-declare(strict_types=1);
-
 namespace App\Http\Resources;
 
+use App\Models\Catalog\Price;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Money\Money;
 
+/**
+ * @mixin Price
+ */
 class PriceResource extends JsonResource
 {
     public static $wrap = false;

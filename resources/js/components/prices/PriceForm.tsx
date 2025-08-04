@@ -1,31 +1,23 @@
 import { useForm, usePage } from "@inertiajs/react";
 import { Button } from "@/components/ui/button";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+  Dialog, DialogActions, DialogBody, DialogContent,
+  DialogTitle
+} from '@/components/ui/dialog';
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-  SelectGroup
-} from "@/components/ui/select";
+import { Select } from '@headlessui/react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
-import { Textarea } from "@/components/ui/textarea"; // If needed for properties JSON
-import { Plus, Trash2, Loader2 } from "lucide-react";
-import { useState, useEffect, useRef, useLayoutEffect } from "react";
+import { Badge } from "@/components/ui/badge";
+import { Plus, Trash2, Loader2, ChevronDown, ChevronUp } from "lucide-react";
+import { Combobox } from "@/components/combobox";
+import { useState, useEffect, useRef, useLayoutEffect, useCallback } from "react";
 import { toast } from "sonner";
 import { formatMoney, slugify, getSupportedCurrencies } from "@/lib/utils"; // Import slugify and getSupportedCurrencies
 import { type Price, type Product } from '@/types/offer';
-import axios from '@/lib/axios'; // Assuming types are centralized
+import axios from '@/lib/axios';
+
 
 // Placeholder Types if not globally defined
 type User = { id: number; name: string; email: string; /* ... other user fields */ };
@@ -42,7 +34,7 @@ interface PageProps {
 
 type PriceType = 'one_time' | 'recurring' | 'tiered' | 'volume' | 'graduated' | 'package';
 type RecurringInterval = 'day' | 'week' | 'month' | 'year';
-type PriceScope = 'list' | 'custom';
+type PriceScope = 'list' | 'custom' | 'variant';
 
 // Tier structure similar to VariantForm
 interface TierConfig {
@@ -63,7 +55,8 @@ interface MetadataEntry {
 }
 
 interface PriceFormData {
-  [key: string]: any; // Add index signature
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  [key: string]: any; // Add index signature for form compatibility
   name: string | null;
   lookup_key: string | null;
   scope: PriceScope;
@@ -75,6 +68,7 @@ interface PriceFormData {
   billing_anchor: string | null;
   recurring_interval_count: number | null;
   cancel_after_cycles: number | null;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   properties: Record<string, any> | null;
   is_active: boolean;
   gateway_provider: string | null;
@@ -93,7 +87,7 @@ interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   product: Product;
-  initialData?: Price; // For editing
+  initialData?: Partial<Price>; // For editing
   listPrices?: Price[]; // For custom scope parent selection
   onSuccess?: (price: Price) => void;
   hideDialog?: boolean;
@@ -101,13 +95,7 @@ interface Props {
   hideSuccessToast?: boolean;
 }
 
-// Add a type for Inertia page response
-interface InertiaPageResponse {
-  props: {
-    price?: Price;
-    [key: string]: any;
-  };
-}
+
 
 // Add this helper above the component
 const currencySymbols: Record<string, string> = {
@@ -142,7 +130,7 @@ export default function PriceForm({
   useJsonResponse = false,
   hideSuccessToast = false
 }: Props) {
-  const isEditing = !!initialData;
+  const isEditing = !!(initialData?.id);
   const { props: pageProps } = usePage<PageProps>();
   const defaultCurrency = product.currency || pageProps.config?.cashier_currency || 'usd'; // Get default currency
   const [isLookupKeyManuallyEdited, setIsLookupKeyManuallyEdited] = useState(!!initialData?.lookup_key); // Track manual edits
@@ -156,26 +144,37 @@ export default function PriceForm({
   // --- End State ---
 
   // Define initial state structure
-  const getInitialFormData = (): PriceFormData => ({
-    name: initialData?.name || null,
-    lookup_key: initialData?.lookup_key || null,
-    scope: initialData?.scope || 'list',
-    parent_list_price_id: initialData?.parent_list_price_id || null,
-    type: initialData?.type || 'one_time',
-    amount: initialData?.amount || 0,
-    currency: initialData?.currency || defaultCurrency,
-    renew_interval: initialData?.renew_interval || null,
-    billing_anchor: initialData?.billing_anchor || null,
-    recurring_interval_count: initialData?.recurring_interval_count || null,
-    cancel_after_cycles: initialData?.cancel_after_cycles || null,
-    properties: initialData?.properties || null,
-    is_active: initialData?.is_active === undefined ? true : initialData.is_active,
-    gateway_provider: initialData?.gateway_provider || null,
-    gateway_price_id: initialData?.gateway_price_id || null,
-    metadata: initialData?.metadata || [],
-  });
+  const getInitialFormData = useCallback((): PriceFormData => {
+    const type = initialData?.type || 'one_time';
+    const isRecurringType = ['recurring', 'tiered', 'volume', 'graduated', 'package'].includes(type);
+
+    return {
+      name: initialData?.name || null,
+      lookup_key: initialData?.lookup_key || null,
+      scope: initialData?.scope || 'list',
+      parent_list_price_id: initialData?.parent_list_price_id || null,
+      type,
+      amount: initialData?.amount || 0,
+      currency: initialData?.currency || defaultCurrency,
+      renew_interval: initialData?.renew_interval || (isRecurringType ? 'month' : null),
+      billing_anchor: initialData?.billing_anchor || null,
+      recurring_interval_count: initialData?.recurring_interval_count || null,
+      cancel_after_cycles: initialData?.cancel_after_cycles || null,
+      properties: initialData?.properties || null,
+      is_active: initialData?.is_active === undefined ? true : initialData.is_active,
+      gateway_provider: initialData?.gateway_provider || null,
+      gateway_price_id: initialData?.gateway_price_id || null,
+      metadata: initialData?.metadata || [],
+    };
+  }, [initialData, defaultCurrency]);
 
   const [showMetadata, setShowMetadata] = useState(getInitialFormData().metadata.length > 0);
+  const [isRecurringSettingsExpanded, setIsRecurringSettingsExpanded] = useState(() => {
+    // Auto-expand if there are existing values or errors
+    const formData = getInitialFormData();
+    return !!(formData.cancel_after_cycles ||
+              (formData.renew_interval && formData.renew_interval !== 'month'));
+  });
 
   const { data, setData, post, put, processing, errors, reset } = useForm<PriceFormData>(getInitialFormData());
 
@@ -187,6 +186,7 @@ export default function PriceForm({
       setPackageConfig({ size: 1, unit_amount: 0 });
       setIsLookupKeyManuallyEdited(false);
       setShowMetadata(false);
+      setIsRecurringSettingsExpanded(false);
       setAmountDisplay("0.00"); // Reset amount display
     } else {
       const initialFormState = getInitialFormData();
@@ -198,7 +198,7 @@ export default function PriceForm({
       setPackageConfig(initialData?.properties?.package || { size: 1, unit_amount: 0 });
       setIsLookupKeyManuallyEdited(!!initialData?.lookup_key);
     }
-  }, [open, initialData, reset, defaultCurrency, setData]);
+  }, [open, initialData, reset, defaultCurrency, setData, getInitialFormData]);
 
   // Sync data.amount (cents) to amountDisplay (formatted string)
   // This effect runs when data.amount changes, but avoids interference if the input is focused.
@@ -243,8 +243,20 @@ export default function PriceForm({
       setData('renew_interval', null);
       setData('recurring_interval_count', null);
       setData('billing_anchor', null);
+    } else if (['recurring', 'tiered', 'volume', 'graduated', 'package'].includes(data.type)) {
+      // Set sensible defaults for recurring types if not already set
+      if (!data.renew_interval) {
+        setData('renew_interval', 'month');
+      }
     }
-  }, [data.type, setData]);
+  }, [data.type, data.renew_interval, setData]);
+
+  // Auto-expand recurring settings if there are errors
+  useEffect(() => {
+    if (errors.renew_interval || errors.cancel_after_cycles) {
+      setIsRecurringSettingsExpanded(true);
+    }
+  }, [errors.renew_interval, errors.cancel_after_cycles]);
 
   // Update parent_list_price_id based on scope
   useEffect(() => {
@@ -273,16 +285,7 @@ export default function PriceForm({
     const rawValue = e.target.value;
     const currentCursor = e.target.selectionStart;
 
-    // Store the count of characters before the cursor that are not digits or a decimal point.
-    // This helps adjust the cursor if formatting characters (like commas) are added/removed.
-    let nonDigitCharsBeforeCursor = 0;
-    if (currentCursor !== null) {
-        for (let i = 0; i < currentCursor; i++) {
-            if (!/[\d.]/.test(rawValue[i])) {
-                nonDigitCharsBeforeCursor++;
-            }
-        }
-    }
+    // Store cursor position for later adjustment
 
     const valueNoCommas = stripCommas(rawValue);
 
@@ -362,19 +365,10 @@ export default function PriceForm({
 
     // Cursor position adjustment
     if (currentCursor !== null) {
-        // Calculate how many formatting chars (commas) are in the new display string *before* the equivalent raw input position
-        const newNonDigitCharsBeforeCursor = 0;
-        const strippedNewDisplay = stripCommas(newDisplayValue);
-
-        // Determine the length of the "prefix" of the new display value that corresponds to the original input's prefix
-        // This is complex because of dynamic formatting. A simpler approach:
-        // Count commas in the new string up to where the numeric content would align with the old cursor.
-
         // More direct approach:
         // After stripping commas from rawValue, the currentCursor effectively points to a position in a numbers-and-dot string.
         // We want to find that same relative position in the newDisplayValue, accounting for newly added/removed commas.
         let newCursor = currentCursor;
-        const newDisplayValueNoCommas = stripCommas(newDisplayValue);
         const oldPrefixNoCommas = stripCommas(rawValue.substring(0, currentCursor));
         let tempCursor = 0;
         let numEquivalentCharsCount = 0;
@@ -437,6 +431,12 @@ export default function PriceForm({
     e.preventDefault();
     const priceName = data.name || (isEditing ? 'this price' : 'new price');
     const toastId = !hideSuccessToast ? toast.loading(isEditing ? `Updating ${priceName}...` : `Creating ${priceName}...`) : undefined;
+
+    // Validate parent list price selection for custom/variant prices
+    if ((data.scope === 'custom' || data.scope === 'variant') && !data.parent_list_price_id) {
+      toast.error(`Please select a base list price for this ${data.scope} price`, { id: toastId });
+      return;
+    }
 
     // Prepare the data for submission
     const formData = { ...data };
@@ -589,310 +589,173 @@ export default function PriceForm({
   // --- End Tiered/Package Handlers ---
 
   const content = (
-    <form onSubmit={handleSubmit} className="flex flex-col flex-grow min-h-0">
-      <div className="flex-grow overflow-y-auto">
-        <div className="flex flex-col gap-4 pb-4">
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="name">Name</Label>
-            <Input
-              id="name"
-              autoComplete="off"
-              value={data.name || ''}
-              onChange={(e) => setData("name", e.target.value)}
-              placeholder="e.g., Monthly Standard"
-              disabled={processing}
-              required
-              className="bg-white"
-            />
-            {errors.name && <p className="text-sm text-red-500">{errors.name}</p>}
-          </div>
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="lookup_key">Lookup Key</Label>
-            <Input
-              id="lookup_key"
-              autoComplete="off"
-              value={data.lookup_key || ''}
-              onChange={handleLookupKeyChange}
-              onBlur={handleLookupKeyBlur}
-              placeholder="e.g., standard_monthly"
-              disabled={processing}
-              required
-              className="bg-white"
-            />
-            {errors.lookup_key && <p className="text-sm text-red-500">{errors.lookup_key}</p>}
-            <p className="text-xs text-muted-foreground">
-              A unique identifier for this product. Will update automatically based on name. {!isLookupKeyManuallyEdited && data.name && "Auto-generated from name."}
-            </p>
-          </div>
+    <form onSubmit={handleSubmit} autoComplete="off" className="flex flex-col flex-grow ">
+      <DialogTitle className="bg-gray-100 text-base px-4 py-2">{isEditing ? 'Edit' : 'Add'} Price</DialogTitle>
 
-          <div className="text-sm text-teal-600 cursor-pointer" onClick={() => {
-            const newShowMetadata = !showMetadata;
-            setShowMetadata(newShowMetadata);
-            if (newShowMetadata && data.metadata.length === 0) {
-              addMetadataEntry();
-            }
-          }}>
-            {showMetadata ? 'Hide Metadata' : 'Add Metadata tag'}
-          </div>
+    <DialogBody>
+        <div className="flex-grow h-full overflow-auto p-4">
+          <div className="flex flex-col gap-4 pb-4">
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="name">Name</Label>
+              <Input
+                id="name"
+                autoComplete="off"
+                value={data.name || ''}
+                onChange={(e) => setData("name", e.target.value)}
+                placeholder="e.g., Monthly Standard"
+                disabled={processing}
+                required
+                className="bg-white"
+              />
+              {errors.name && <p className="text-sm text-red-500">{errors.name}</p>}
+            </div>
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="lookup_key">Lookup Key</Label>
+              <Input
+                id="lookup_key"
+                autoComplete="off"
+                value={data.lookup_key || ''}
+                onChange={handleLookupKeyChange}
+                onBlur={handleLookupKeyBlur}
+                placeholder="e.g., standard_monthly"
+                disabled={processing}
+                required
+                className="bg-white"
+              />
+              {errors.lookup_key && <p className="text-sm text-red-500">{errors.lookup_key}</p>}
+              <p className="text-xs text-muted-foreground">
+                A unique identifier for this product. Will update automatically based on name. {!isLookupKeyManuallyEdited && data.name && "Auto-generated from name."}
+              </p>
+            </div>
 
-          {showMetadata && (
-            <Card className="bg-[#F7F9FF]">
-              <CardContent className="px-4 space-y-4">
-                {data.metadata.map((entry, index) => (
-                  <div key={index} className="flex flex-row gap-4 items-end">
-                    <div className="flex flex-col gap-2 w-full">
-                      <Label htmlFor={`tag_name_${index}`}>Tag name</Label>
-                      <Input
-                        id={`tag_name_${index}`}
-                        type="text"
-                        autoComplete="off"
-                        value={entry.tag_name}
-                        onChange={(e) => updateMetadataEntry(index, 'tag_name', e.target.value)}
-                        disabled={processing}
-                        className="bg-white"
-                      />
-                    </div>
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="scope">Price Type</Label>
+              <Select
+                name="scope"
+                value={data.scope}
+                onChange={(event) => setData('scope', event.target.value as PriceScope)}
+                disabled={processing}
+                className="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:cursor-not-allowed disabled:bg-gray-50"
+              >
+                <option value="">Select price type</option>
+                <option value="list">List Price</option>
+                <option value="custom">Custom Price</option>
+                <option value="variant">Variant Price</option>
+              </Select>
+              {errors.scope && <p className="text-sm text-red-500">{errors.scope}</p>}
+              <p className="text-xs text-muted-foreground">
+                {data.scope === 'list' && 'Default publicly listed price'}
+                {data.scope === 'custom' && 'One-off price for specific customers'}
+                {data.scope === 'variant' && 'Variant of a list price'}
+              </p>
+            </div>
 
-                    <div className="flex flex-col gap-2 w-full">
-                      <Label htmlFor={`copy_${index}`}>Copy</Label>
-                      <Input
-                        id={`copy_${index}`}
-                        type="text"
-                        autoComplete="off"
-                        value={entry.copy}
-                        onChange={(e) => updateMetadataEntry(index, 'copy', e.target.value)}
-                        disabled={processing}
-                        className="bg-white"
-                      />
-                    </div>
+            {/* Parent List Price Selection for Custom/Variant */}
+            {(data.scope === 'custom' || data.scope === 'variant') && listPrices && listPrices.length > 0 && (
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="parent_list_price_id">Base List Price</Label>
+                <Combobox
+                  items={listPrices.map((price) => ({
+                    value: price.id.toString(),
+                    label: price.name || `Price #${price.id}`,
+                    subtitle: `${price.type.replace('_', ' ')} • ${formatMoney(price.amount, price.currency)} ${price.currency.toUpperCase()}`,
+                    metadata: (
+                      <div className="flex items-center gap-2 text-xs">
+                        <Badge variant="secondary" className="text-xs px-1.5 py-0.5 h-auto">
+                          {price.type.replace('_', ' ')}
+                        </Badge>
+                        {price.lookup_key && (
+                          <span className="text-muted-foreground">Key: {price.lookup_key}</span>
+                        )}
+                        <span className={price.is_active ? "text-green-600" : "text-gray-500"}>
+                          {price.is_active ? "Active" : "Inactive"}
+                        </span>
+                      </div>
+                    ),
+                    badge: (
+                      <div className="flex flex-col items-end gap-1">
+                        <Badge className="bg-green-600 text-white text-xs">
+                          List
+                        </Badge>
+                        <span className="text-xs font-medium text-green-600">
+                          {formatMoney(price.amount, price.currency)}
+                        </span>
+                      </div>
+                    ),
+                    disabled: !price.is_active,
+                  }))}
+                  selected={data.parent_list_price_id?.toString() || ''}
+                  onSelect={(value) => {
+                    const parentId = value ? parseInt(value as string) : null;
+                    setData('parent_list_price_id', parentId);
 
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => removeMetadataEntry(index)}
-                      disabled={processing}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                ))}
-
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={addMetadataEntry}
+                    // Automatically set the type to match the parent price
+                    if (parentId && listPrices) {
+                      const parentPrice = listPrices.find(p => p.id === parentId);
+                      if (parentPrice) {
+                        setData('type', parentPrice.type);
+                      }
+                    }
+                  }}
+                  placeholder="Search and select base list price"
                   disabled={processing}
                   className="w-full"
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Another Metadata
-                </Button>
+                  popoverClassName="min-w-[500px]"
+                />
+                {errors.parent_list_price_id && <p className="text-sm text-red-500">{errors.parent_list_price_id}</p>}
+                <p className="text-xs text-muted-foreground">
+                  This {data.scope} price will be based on the selected list price and inherit its pricing model. Search by name or type.
+                </p>
+              </div>
+            )}
 
-                {errors.properties && <p className="text-sm text-red-500">{errors.properties}</p>}
-              </CardContent>
-            </Card>
-          )}
+            {/* Warning if no list prices exist for custom/variant */}
+            {(data.scope === 'custom' || data.scope === 'variant') && (!listPrices || listPrices.length === 0) && (
+              <div className="bg-yellow-50 border border-yellow-200 rounded-md p-3">
+                <p className="text-sm text-yellow-800">
+                  No list prices found. You need to create a list price first before creating {data.scope} prices.
+                </p>
+              </div>
+            )}
 
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="type">Pricing Model</Label>
-            <Select
-              value={data.type}
-              onValueChange={(value: PriceType) => setData('type', value)}
-              disabled={isEditing}
-            >
-              <SelectTrigger id="type">
-                <SelectValue placeholder="Select pricing model" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="one_time">One Time</SelectItem>
-                <SelectItem value="package">Package (Recurring)</SelectItem>
-                <SelectItem value="tiered">Tiered (Recurring)</SelectItem>
-                <SelectItem value="volume">Volume (Recurring)</SelectItem>
-                <SelectItem value="graduated">Graduated (Recurring)</SelectItem>
-                <SelectItem value="recurring">Flat Rate (Recurring)</SelectItem>
-              </SelectContent>
-            </Select>
-            {errors.type && <p className="text-sm text-red-500">{errors.type}</p>}
-          </div>
-
-          {/* Amount + Currency Composite Input */}
-          <div className="flex flex-col gap-2 w-full">
-            <Label htmlFor="amount">Amount <span className="text-xs text-muted-foreground">(required)</span></Label>
-            <div className="flex w-full items-center rounded-md border border-input bg-background focus-within:ring-2 focus-within:ring-ring/50 focus-within:border-ring transition-colors">
-              {/* Currency Symbol Prefix */}
-              <span className="flex items-center px-3 text-muted-foreground text-base select-none">
-                {currencySymbols[data.currency?.toLowerCase?.()] || data.currency?.toUpperCase?.() || '$'}
-              </span>
-              {/* Amount Input */}
-              <Input
-                id="amount"
-                autoComplete="off"
-                type="text"
-                inputMode="decimal"
-                value={amountDisplay}
-                onChange={handleAmountChange}
-                onBlur={handleAmountBlur}
-                ref={amountInputRef}
-                disabled={processing || ['tiered', 'volume', 'graduated', 'package'].includes(data.type)}
-                className="border-0 focus:ring-0 focus:border-none rounded-none flex-1 min-w-0 px-2 text-base bg-white shadow-none"
-                style={{ boxShadow: 'none' }}
-                aria-describedby="amount-currency-addon"
-              />
-              {/* Currency Abbreviation Suffix with Dropdown */}
-              <Select
-                value={data.currency}
-                onValueChange={(value) => setData('currency', value.toLowerCase())}
-                disabled={processing || isEditing}
-              >
-                <SelectTrigger id="amount-currency-addon" className="rounded-none border-0 bg-transparent px-3 h-9 min-w-[64px] w-auto text-base focus:ring-0 focus:border-none">
-                  <SelectValue>{data.currency?.toUpperCase?.()}</SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    {getSupportedCurrencies().map((currency) => (
-                      <SelectItem key={currency.code} value={currency.code.toLowerCase()}>
-                        {currency.code} - {currency.name}
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
+            <div className="text-sm text-teal-600 cursor-pointer" onClick={() => {
+              const newShowMetadata = !showMetadata;
+              setShowMetadata(newShowMetadata);
+              if (newShowMetadata && data.metadata.length === 0) {
+                addMetadataEntry();
+              }
+            }}>
+              {showMetadata ? 'Hide Metadata' : 'Add Metadata tag'}
             </div>
-            {errors.amount && <p className="text-sm text-red-500">{errors.amount}</p>}
-            {errors.currency && <p className="text-sm text-red-500">{errors.currency}</p>}
-            <p className="text-xs text-muted-foreground">Enter the price. Not used for complex models.</p>
-          </div>
 
-          {/* Recurring Fields */}
-          {['recurring', 'tiered', 'volume', 'graduated', 'package'].includes(data.type) && (
-            <Card className="bg-[#F7F9FF]">
-              <CardContent className="px-4 space-y-4">
-                <div className="text-sm font-medium">Recurring Settings</div>
-                <div className="flex flex-row gap-4 items-end">
-                  <div className="flex flex-col gap-2 w-full">
-                    <Label htmlFor="renew_interval">Interval</Label>
-                    <Select
-                      value={data.renew_interval || ''}
-                      onValueChange={(value: RecurringInterval) => setData('renew_interval', value)}
-                      disabled={processing || data.gateway_price_id !== null} // If price is already created in gateway, we can't change the interval
-                    >
-                      <SelectTrigger id="renew_interval">
-                        <SelectValue placeholder="Select interval" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="day">Day</SelectItem>
-                        <SelectItem value="week">Week</SelectItem>
-                        <SelectItem value="month">Month</SelectItem>
-                        <SelectItem value="year">Year</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    {errors.renew_interval && <p className="text-sm text-red-500">{errors.renew_interval}</p>}
-                  </div>
-                  {/* <div className="flex flex-col gap-2 w-full">
-                    <Label htmlFor="recurring_interval_count">Interval Count</Label>
-                    <Input
-                      id="recurring_interval_count"
-                      autoComplete="off"
-                      type="number"
-                      min="1"
-                      step="1"
-                      value={data.recurring_interval_count || ''}
-                      onChange={e => setData('recurring_interval_count', e.target.value ? Number(e.target.value) : null)}
-                      disabled={processing}
-                      placeholder="e.g., 1"
-                      className="bg-white"
-                    />
-                    {errors.recurring_interval_count && <p className="text-sm text-red-500">{errors.recurring_interval_count}</p>}
-                  </div> */}
-                </div>
-                {/* <div className="flex flex-col gap-2">
-                  <Label htmlFor="billing_anchor">Billing Anchor (Optional)</Label>
-                  <Input
-                    id="billing_anchor"
-                    autoComplete="off"
-                    value={data.billing_anchor || ''}
-                    onChange={e => setData('billing_anchor', e.target.value || null)}
-                    disabled={processing}
-                    placeholder="e.g., start_of_month"
-                    className="bg-white"
-                  />
-                  {errors.billing_anchor && <p className="text-sm text-red-500">{errors.billing_anchor}</p>}
-                </div> */}
-                <div className="flex flex-col gap-2">
-                  <Label htmlFor="cancel_after_cycles">Cancel After Cycles (Optional)</Label>
-                  <Input
-                    id="cancel_after_cycles"
-                    autoComplete="off"
-                    type="number"
-                    min="1"
-                    step="1"
-                    value={data.cancel_after_cycles || ''}
-                    onChange={e => setData('cancel_after_cycles', e.target.value ? Number(e.target.value) : null)}
-                    disabled={processing}
-                    placeholder="e.g., 12 (for 12 cycles)"
-                    className="bg-white"
-                  />
-                  {errors.cancel_after_cycles && <p className="text-sm text-red-500">{errors.cancel_after_cycles}</p>}
-                  <p className="text-xs text-muted-foreground">
-                    Automatically cancel after this many cycles. Leave blank for indefinite.
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Tiered Pricing Fields */}
-          {(data.type === "tiered" /* || data.type === "volume" || data.type === "graduated" */) && (
-            <Card className="bg-[#F7F9FF]">
-              <CardContent className="px-4 space-y-4">
-                <div className="text-sm font-medium">Tiered Pricing Configuration</div>
-                <div className="flex flex-col gap-4">
-                  {tiers.map((tier, index) => (
-                    <div
-                      key={index}
-                      className="flex space-x-2 items-end rounded-md border bg-background p-2"
-                    >
-                      <div className="grid gap-1 flex-1">
-                        <Label className="text-xs">From (Units)</Label>
+            {showMetadata && (
+              <Card className="bg-[#F7F9FF]">
+                <CardContent className="px-4 space-y-4">
+                  {data.metadata.map((entry, index) => (
+                    <div key={index} className="flex flex-row gap-4 items-end">
+                      <div className="flex flex-col gap-2 w-full">
+                        <Label htmlFor={`tag_name_${index}`}>Tag name</Label>
                         <Input
+                          id={`tag_name_${index}`}
+                          type="text"
                           autoComplete="off"
-                          type="number"
-                          min="0"
-                          step="1"
-                          value={tier.from}
-                          onChange={(e) => updateTier(index, 'from', Number(e.target.value))}
-                          disabled={index > 0 || processing}
-                          className="h-8 bg-white"
+                          value={entry.tag_name}
+                          onChange={(e) => updateMetadataEntry(index, 'tag_name', e.target.value)}
+                          disabled={processing}
+                          className="bg-white"
                         />
                       </div>
 
-                      <div className="grid gap-1 flex-1">
-                        <Label className="text-xs">To (Units)</Label>
+                      <div className="flex flex-col gap-2 w-full">
+                        <Label htmlFor={`copy_${index}`}>Copy</Label>
                         <Input
+                          id={`copy_${index}`}
+                          type="text"
                           autoComplete="off"
-                          type="number"
-                          min={tier.from + 1} // Ensure `to` is greater than `from`
-                          step="1"
-                          value={tier.to === null ? '' : tier.to}
-                          onChange={(e) => updateTier(index, 'to', e.target.value ? Number(e.target.value) : null)}
-                          placeholder="∞"
+                          value={entry.copy}
+                          onChange={(e) => updateMetadataEntry(index, 'copy', e.target.value)}
                           disabled={processing}
-                          className="h-8 bg-white"
-                        />
-                      </div>
-
-                      <div className="grid gap-1 flex-1">
-                        <Label className="text-xs">Unit Amount (¢)</Label>
-                        <Input
-                          autoComplete="off"
-                          type="number"
-                          min="0"
-                          step="1"
-                          value={tier.unit_amount}
-                          onChange={(e) => updateTier(index, 'unit_amount', Number(e.target.value))}
-                          disabled={processing}
-                          className="h-8 bg-white"
+                          className="bg-white"
                         />
                       </div>
 
@@ -900,9 +763,8 @@ export default function PriceForm({
                         type="button"
                         variant="ghost"
                         size="icon"
-                        onClick={() => removeTier(index)}
-                        disabled={tiers.length === 1 || processing}
-                        className="h-8 w-8 mt-6"
+                        onClick={() => removeMetadataEntry(index)}
+                        disabled={processing}
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -912,113 +774,473 @@ export default function PriceForm({
                   <Button
                     type="button"
                     variant="outline"
-                    onClick={addTier}
+                    onClick={addMetadataEntry}
                     disabled={processing}
                     className="w-full"
                   >
-                    <Plus className="w-4 h-4 mr-2" />
-                    Add Tier
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Another Metadata
                   </Button>
+
+                  {errors.properties && <p className="text-sm text-red-500">{errors.properties}</p>}
+                </CardContent>
+              </Card>
+            )}
+
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="type">Pricing Model</Label>
+              <Select
+                name="type"
+                value={data.type}
+                onChange={(event) => setData('type', event.target.value as PriceType)}
+                disabled={isEditing || !!data.parent_list_price_id}
+                className="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:cursor-not-allowed disabled:bg-gray-50"
+              >
+                <option value="">Select pricing model</option>
+                <option value="one_time">One Time</option>
+                <option value="recurring">Flat Rate (Recurring)</option>
+                <option value="package">Package (Recurring)</option>
+                <option value="tiered">Tiered (Recurring)</option>
+                <option value="volume">Volume (Recurring)</option>
+                {/*<option value="graduated">Graduated (Recurring)</option>*/}
+              </Select>
+              {errors.type && <p className="text-sm text-red-500">{errors.type}</p>}
+              {data.parent_list_price_id && listPrices && (
+                <p className="text-xs text-blue-600">
+                  ℹ️ Pricing model inherited from base list price:
+                  <span className="font-medium ml-1">
+                    {listPrices.find(p => p.id === data.parent_list_price_id)?.type.replace('_', ' ') || data.type.replace('_', ' ')}
+                  </span>
+                </p>
+              )}
+            </div>
+
+            {/* Amount + Currency Composite Input */}
+            {['one_time', 'recurring'].includes(data.type) && (
+              <div className="flex flex-col gap-2 w-full">
+                <Label htmlFor="amount">Amount <span className="text-xs text-muted-foreground">(required)</span></Label>
+                <div className={`flex w-full items-center rounded-md border border-input transition-colors ${
+                  processing
+                    ? 'bg-gray-50 opacity-50'
+                    : 'bg-white focus-within:ring-2 focus-within:ring-ring/50 focus-within:border-ring'
+                }`}>
+                  {/* Currency Symbol Prefix */}
+                  <span className="flex items-center px-3 text-muted-foreground text-base select-none">
+                {currencySymbols[data.currency?.toLowerCase?.()] || data.currency?.toUpperCase?.() || '$'}
+              </span>
+                  {/* Amount Input */}
+                  <Input
+                    id="amount"
+                    autoComplete="off"
+                    type="text"
+                    inputMode="decimal"
+                    value={amountDisplay}
+                    onChange={handleAmountChange}
+                    onBlur={handleAmountBlur}
+                    ref={amountInputRef}
+                    disabled={processing || isEditing}
+                    className={`border-0 focus:ring-0 focus:border-none rounded-none flex-1 min-w-0 px-2 text-base shadow-none ${
+                      processing
+                        ? '!bg-gray-100 !text-gray-600 cursor-not-allowed '
+                        : 'bg-white'
+                    } `}
+                    style={{ boxShadow: 'none' }}
+                    aria-describedby="amount-currency-addon"
+                    placeholder="0.00"
+                  />
+                  {/* Currency Abbreviation Suffix with Dropdown */}
+                  <Select
+                    name="currency"
+                    value={data.currency}
+                    onChange={(event) => setData('currency', event.target.value.toLowerCase())}
+                    disabled={processing || isEditing}
+                    className={`
+                    rounded-none border-0 bg-transparent px-3 h-9 min-w-[64px] w-auto text-base focus:ring-0 focus:border-none
+                    ${processing || isEditing ? 'cursor-not-allowed !bg-gray-100 text-gray-500' : 'bg-white'}
+                    `}
+                  >
+                    {getSupportedCurrencies().map((currency) => (
+                      <option key={currency.code} value={currency.code.toLowerCase()}>
+                        {currency.code} - {currency.name}
+                      </option>
+                    ))}
+                  </Select>
+                </div>
+                {errors.amount && <p className="text-sm text-red-500">{errors.amount}</p>}
+                {errors.currency && <p className="text-sm text-red-500">{errors.currency}</p>}
+                {['tiered', 'graduated', 'package'].includes(data.type) ? (
+                  <p className="text-xs text-blue-600">
+                    💡 For complex pricing models, you can set a simple amount here OR configure the detailed pricing below.
+                  </p>
+                ) : (
+                  <p className="text-xs text-muted-foreground">Enter the price for this product.</p>
+                )}
+              </div>
+            )}
+
+            {/* Volume Pricing Notice */}
+            {data.type === 'volume' && (
+              <div className="flex flex-col gap-2 w-full">
+                <div className="bg-blue-50 border border-blue-200 rounded-md p-3">
+                  <div className="text-sm font-medium text-blue-800 mb-1">Volume Pricing</div>
+                  <p className="text-xs text-blue-700">
+                    Configure your volume pricing tiers below. The entire order will be charged at the tier price that matches the quantity.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Recurring Fields */}
+            {['recurring', 'tiered', 'volume', 'graduated', 'package'].includes(data.type) && (
+              <div className="bg-[#F7F9FF]">
+                <div className="px-4 py-2 space-y-4">
+                  <div
+                    className="flex items-center justify-between cursor-pointer"
+                    onClick={() => setIsRecurringSettingsExpanded(!isRecurringSettingsExpanded)}
+                  >
+                    <div className="flex items-center gap-2">
+                      <div className="text-sm font-medium">Recurring Settings</div>
+                      <Badge variant="secondary" className="text-xs">
+                        {data.renew_interval || 'month'} billing
+                      </Badge>
+                    </div>
+                    <div className="flex items-center text-muted-foreground">
+                      {isRecurringSettingsExpanded ? (
+                        <ChevronUp className="h-4 w-4" />
+                      ) : (
+                        <ChevronDown className="h-4 w-4" />
+                      )}
+                    </div>
+                  </div>
+
+                  {isRecurringSettingsExpanded && (
+                    <div className="space-y-4 pt-2">
+                      <div className="flex flex-row gap-4 items-end">
+                        <div className="flex flex-col gap-2 w-full">
+                          <Label htmlFor="renew_interval">Billing Interval</Label>
+                          <Select
+                            name="renew_interval"
+                            value={data.renew_interval || 'month'}
+                            onChange={(event) => setData('renew_interval', event.target.value as RecurringInterval)}
+                            disabled={processing || data.gateway_price_id !== null} // If price is already created in gateway, we can't change the interval
+                            className="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:cursor-not-allowed disabled:bg-gray-50"
+                          >
+                            <option value="">Select interval</option>
+                            <option value="day">Daily</option>
+                            <option value="week">Weekly</option>
+                            <option value="month">Monthly</option>
+                            <option value="year">Yearly</option>
+                          </Select>
+                          {errors.renew_interval && <p className="text-sm text-red-500">{errors.renew_interval}</p>}
+                          <p className="text-xs text-muted-foreground">How often customers will be billed</p>
+                        </div>
+                      </div>
+
+                      <div className="flex flex-col gap-2">
+                        <Label htmlFor="cancel_after_cycles">Cancel After (Optional)</Label>
+                        <Input
+                          id="cancel_after_cycles"
+                          autoComplete="off"
+                          type="number"
+                          min="1"
+                          step="1"
+                          value={data.cancel_after_cycles || ''}
+                          onChange={e => setData('cancel_after_cycles', e.target.value ? Number(e.target.value) : null)}
+                          disabled={processing}
+                          placeholder="e.g., 12 cycles"
+                          className="bg-white"
+                        />
+                        {errors.cancel_after_cycles && <p className="text-sm text-red-500">{errors.cancel_after_cycles}</p>}
+                        <p className="text-xs text-muted-foreground">
+                          Automatically cancel subscription after this many billing cycles. Leave blank for indefinite billing.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Tiered Pricing Fields */}
+            {data.type === "tiered" && (
+              <div className="bg-[#F7F9FF]">
+                <div className="px-4 py-2 space-y-4">
+                  <div>
+                    <div className="text-sm font-medium">Tiered Pricing Configuration</div>
+                    <p className="text-xs text-muted-foreground mt-1">Configure different prices based on quantity. Overrides the simple amount above.</p>
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    {tiers.map((tier, index) => (
+                      <div
+                        key={index}
+                        className="flex space-x-2 items-end rounded-md"
+                      >
+                        <div className="grid gap-1 flex-1">
+                          <Label className="text-xs">From (Units)</Label>
+                          <Input
+                            autoComplete="off"
+                            type="number"
+                            min="0"
+                            step="1"
+                            value={tier.from}
+                            onChange={(e) => updateTier(index, 'from', Number(e.target.value))}
+                            disabled={index > 0 || processing}
+                            className="h-8 bg-white"
+                          />
+                        </div>
+
+                        <div className="grid gap-1 flex-1">
+                          <Label className="text-xs">To (Units)</Label>
+                          <Input
+                            autoComplete="off"
+                            type="number"
+                            min={tier.from + 1} // Ensure `to` is greater than `from`
+                            step="1"
+                            value={tier.to === null ? '' : tier.to}
+                            onChange={(e) => updateTier(index, 'to', e.target.value ? Number(e.target.value) : null)}
+                            placeholder="∞"
+                            disabled={processing}
+                            className="h-8 bg-white"
+                          />
+                        </div>
+
+                        <div className="grid gap-1 flex-1">
+                          <Label className="text-xs">Unit Amount (¢)</Label>
+                          <Input
+                            autoComplete="off"
+                            type="number"
+                            min="0"
+                            step="1"
+                            value={tier.unit_amount}
+                            onChange={(e) => updateTier(index, 'unit_amount', Number(e.target.value))}
+                            disabled={processing}
+                            className="h-8 bg-white"
+                          />
+                        </div>
+
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => removeTier(index)}
+                          disabled={tiers.length === 1 || processing}
+                          className="h-8 w-8 mt-6"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))}
+
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={addTier}
+                      disabled={processing}
+                      className="w-full"
+                    >
+                      <Plus className="w-4 h-4 mr-2" />
+                      Add Tier
+                    </Button>
+                    {errors.properties && <p className="text-sm text-red-500">{errors.properties}</p>}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Package Pricing Fields */}
+            {data.type === "package" && (
+              <div className="bg-[#F7F9FF]">
+                <div className="px-4 py-2 space-y-4">
+                  <div>
+                    <div className="text-sm font-medium">Package Pricing Configuration</div>
+                    <p className="text-xs text-muted-foreground mt-1">Sell in fixed packages. Overrides the simple amount above.</p>
+                  </div>
+                  <div className="flex flex-row gap-4">
+                    <div className="flex flex-col gap-2 w-full">
+                      <Label htmlFor="package_size">Package Size (Units)</Label>
+                      <Input
+                        id="package_size"
+                        autoComplete="off"
+                        type="number"
+                        min="1"
+                        step="1"
+                        value={packageConfig.size}
+                        onChange={(e) => setPackageConfig({ ...packageConfig, size: Number(e.target.value) })}
+                        disabled={processing}
+                        className="bg-white"
+                      />
+                    </div>
+
+                    <div className="flex flex-col gap-2 w-full">
+                      <Label htmlFor="package_price">Package Price (¢)</Label>
+                      <Input
+                        id="package_price"
+                        autoComplete="off"
+                        type="number"
+                        min="0"
+                        step="1"
+                        value={packageConfig.unit_amount}
+                        onChange={(e) => setPackageConfig({ ...packageConfig, unit_amount: Number(e.target.value) })}
+                        disabled={processing}
+                        className="bg-white"
+                      />
+                    </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Charge per package of {packageConfig.size || 1} units.
+                  </p>
                   {errors.properties && <p className="text-sm text-red-500">{errors.properties}</p>}
                 </div>
-              </CardContent>
-            </Card>
-          )}
+              </div>
+            )}
 
-          {/* Package Pricing Fields */}
-          {data.type === "package" && (
-            <Card className="bg-[#F7F9FF]">
-              <CardContent className="px-4 space-y-4">
-                <div className="text-sm font-medium">Package Pricing Configuration</div>
-                <div className="flex flex-row gap-4">
-                  <div className="flex flex-col gap-2 w-full">
-                    <Label htmlFor="package_size">Package Size (Units)</Label>
-                    <Input
-                      id="package_size"
-                      autoComplete="off"
-                      type="number"
-                      min="1"
-                      step="1"
-                      value={packageConfig.size}
-                      onChange={(e) => setPackageConfig({ ...packageConfig, size: Number(e.target.value) })}
-                      disabled={processing}
-                      className="bg-white"
-                    />
+            {/* Volume Pricing Fields */}
+            {data.type === "volume" && (
+              <div className="bg-[#F7F9FF]">
+                <div className="px-4 py-2 space-y-4">
+                  <div>
+                    <div className="text-sm font-medium">Volume Pricing Configuration</div>
+                    <p className="text-xs text-muted-foreground mt-1">Set different prices for quantity ranges. Entire order uses the tier price. Overrides the simple amount above.</p>
                   </div>
+                  <div className="flex flex-col gap-2">
+                    {tiers.map((tier, index) => (
+                      <div
+                        key={index}
+                        className="flex space-x-2 items-end"
+                      >
+                        <div className="grid gap-1 flex-1">
+                          <Label className="text-xs">Minimum Quantity</Label>
+                          <Input
+                            autoComplete="off"
+                            type="number"
+                            min="0"
+                            step="1"
+                            value={tier.from}
+                            onChange={(e) => updateTier(index, 'from', Number(e.target.value))}
+                            disabled={index > 0 || processing}
+                            className="h-8 bg-white"
+                          />
+                        </div>
 
-                  <div className="flex flex-col gap-2 w-full">
-                    <Label htmlFor="package_price">Package Price (¢)</Label>
-                    <Input
-                      id="package_price"
-                      autoComplete="off"
-                      type="number"
-                      min="0"
-                      step="1"
-                      value={packageConfig.unit_amount}
-                      onChange={(e) => setPackageConfig({ ...packageConfig, unit_amount: Number(e.target.value) })}
+                        <div className="grid gap-1 flex-1">
+                          <Label className="text-xs">Maximum Quantity</Label>
+                          <Input
+                            autoComplete="off"
+                            type="number"
+                            min={tier.from + 1}
+                            step="1"
+                            value={tier.to === null ? '' : tier.to}
+                            onChange={(e) => updateTier(index, 'to', e.target.value ? Number(e.target.value) : null)}
+                            placeholder="∞"
+                            disabled={processing}
+                            className="h-8 bg-white"
+                          />
+                        </div>
+
+                        <div className="grid gap-1 flex-1">
+                          <Label className="text-xs">Price Per Unit (¢)</Label>
+                          <Input
+                            autoComplete="off"
+                            type="number"
+                            min="0"
+                            step="1"
+                            value={tier.unit_amount}
+                            onChange={(e) => updateTier(index, 'unit_amount', Number(e.target.value))}
+                            disabled={processing}
+                            className="h-8 bg-white"
+                          />
+                        </div>
+
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => removeTier(index)}
+                          disabled={tiers.length === 1 || processing}
+                          className="h-8 w-8 mt-6"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))}
+
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={addTier}
                       disabled={processing}
-                      className="bg-white"
-                    />
+                      className="w-full"
+                    >
+                      <Plus className="w-4 h-4 mr-2" />
+                      Add Volume Tier
+                    </Button>
+
+                    <div className="bg-blue-50 p-3 rounded-md">
+                      <div className="text-xs font-medium text-blue-800 mb-1">Volume Pricing Example:</div>
+                      <div className="text-xs text-blue-700">
+                        If customer orders 25 units and tiers are: 1-10 ($5/unit), 11-50 ($4/unit),
+                        then entire order is charged at $4/unit = $100 total.
+                      </div>
+                    </div>
+
+                    {errors.properties && <p className="text-sm text-red-500">{errors.properties}</p>}
                   </div>
                 </div>
-                <p className="text-xs text-muted-foreground">
-                  Charge per package of {packageConfig.size || 1} units.
-                </p>
-                {errors.properties && <p className="text-sm text-red-500">{errors.properties}</p>}
-              </CardContent>
-            </Card>
-          )}
+              </div>
+            )}
 
-          {/* Is Active Switch */}
-          <div className="flex items-center space-x-2 pt-2">
-            <Switch
-              id="is_active"
-              checked={data.is_active}
-              onCheckedChange={(checked) => setData('is_active', checked)}
-              disabled={processing}
-            />
-            <Label htmlFor="is_active">Price Active</Label>
-            {errors.is_active && <p className="text-sm text-red-500 ml-4">{errors.is_active}</p>}
-          </div>
-          <p className="text-xs text-muted-foreground">
-            Inactive prices cannot be used in new checkouts or subscriptions.
-          </p>
-
-        </div>
-      </div>
-
-      {/* Display general properties error if not caught above */}
-      {errors.properties &&
-        !['tiered', 'volume', 'graduated', 'package'].includes(data.type) && (
-          <p className="text-sm text-red-500 pt-2">{errors.properties}</p>
-        )}
-
-      {/* Submit Button */}
-      <div className="flex justify-end space-x-2 pt-4 border-t">
-        <Button
-          type="button"
-          variant="outline"
-          onClick={() => onOpenChange(false)}
-          disabled={processing}
-        >
-          Cancel
-        </Button>
-        <Button
-          type="submit"
-          disabled={processing}
-          className="relative transition-all duration-200 active:scale-95"
-        >
-          <div className={`${processing ? "opacity-0" : "opacity-100"} transition-opacity`}>
-            {isEditing ? "Update" : "Create"} Price
-          </div>
-          {processing && (
-            <div className="absolute inset-0 flex items-center justify-center">
-              <Loader2 className="w-4 h-4 animate-spin" />
+            {/* Is Active Switch */}
+            <div className="flex items-center space-x-2 pt-2">
+              <Switch
+                id="is_active"
+                checked={data.is_active}
+                onCheckedChange={(checked) => setData('is_active', checked)}
+                disabled={processing}
+              />
+              <Label htmlFor="is_active">Price Active</Label>
+              {errors.is_active && <p className="text-sm text-red-500 ml-4">{errors.is_active}</p>}
             </div>
+            <p className="text-xs text-muted-foreground">
+              Inactive prices cannot be used in new checkouts or subscriptions.
+            </p>
+
+        {/* Display general properties error if not caught above */}
+        {errors.properties &&
+          !['tiered', 'volume', 'graduated', 'package'].includes(data.type) && (
+            <p className="text-sm text-red-500 pt-2">{errors.properties}</p>
           )}
-        </Button>
-      </div>
-    </form>
+
+          </div>
+        </div>
+
+    </DialogBody>
+
+    <DialogActions className="bg-gray-100 p-4 flex justify-between gap-2">
+
+      <Button
+        type="submit"
+        disabled={processing}
+        className="relative transition-all duration-200 active:scale-95"
+      >
+        <div className={`${processing ? "opacity-0" : "opacity-100"} transition-opacity`}>
+          {isEditing ? "Update" : "Create"} Price
+        </div>
+        {processing && (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <Loader2 className="w-4 h-4 animate-spin" />
+          </div>
+        )}
+      </Button>
+      <Button
+        type="button"
+        variant="outline"
+        onClick={() => onOpenChange(false)}
+        disabled={processing}
+      >
+        Cancel
+      </Button>
+    </DialogActions>
+  </form>
   );
 
   if (hideDialog) {
@@ -1026,16 +1248,8 @@ export default function PriceForm({
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[95vh] flex flex-col">
-        <DialogHeader>
-          <DialogTitle>{isEditing ? 'Edit' : 'Add'} Price</DialogTitle>
-          <DialogDescription>
-            {isEditing
-              ? `Update the details for this price on ${product.name}.`
-              : `Add a new price for ${product.name}.`}
-          </DialogDescription>
-        </DialogHeader>
+    <Dialog open={open} onOpenChange={() => onOpenChange(false)}>
+      <DialogContent className="p-0">
         {content}
       </DialogContent>
     </Dialog>

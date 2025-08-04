@@ -123,7 +123,13 @@ class ProductsController extends Controller
                 'search' => $search,
                 'tab' => $tab,
             ],
-            'integrations' => $integrations,
+            'integrations' => $integrations->map(function (Integration $integration) {
+                return [
+                    'id' => $integration->getRouteKey(),
+                    'name' => $integration->name,
+                    'type' => $integration->type,
+                ];
+            }),
             'showProductsTutorial' => !Auth::user()->hasSeenOnboardingInfo(OnboardingInfo::PRODUCTS_TUTORIAL),
         ]);
     }
@@ -140,7 +146,7 @@ class ProductsController extends Controller
         $product = null;
         if ($request->has('integration_id') && $request->input('integration_id') !== null) {
             /** @var Integration $integration */
-            $integration = Integration::find($request->input('integration_id'));
+            $integration = Integration::retrieve($request->input('integration_id'));
             $integrationClient = $integration->integrationClient();
 
             $product = $integrationClient->importProduct($validated);
@@ -170,6 +176,7 @@ class ProductsController extends Controller
             'prices' => function ($query) {
                 $query->latest();
             },
+            'integration',
         ]);
 
         $listPrices = $product->prices()
@@ -185,7 +192,13 @@ class ProductsController extends Controller
             'product' => new ProductResource($product),
             'prices' => PriceResource::collection($product->prices),
             'listPrices' => PriceResource::collection($listPrices),
-            'integrations' => $integrations,
+            'integrations' => $integrations->map(function (Integration $integration) {
+                return [
+                    'id' => $integration->getRouteKey(),
+                    'name' => $integration->name,
+                    'type' => $integration->type,
+                ];
+            }),
         ]);
     }
 

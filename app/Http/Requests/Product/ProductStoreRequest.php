@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Product;
 
 use App\Models\Catalog\Product;
+use App\Models\Integration;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
@@ -37,14 +38,20 @@ class ProductStoreRequest extends FormRequest
                     return $query->where('organization_id', $organizationId)->whereNull('deleted_at');
                 }),
             ],
-            'integration_id' => ['nullable', 'exists:integrations,id'],
+            'integration_id' => [
+                'nullable',
+                Rule::exists(Integration::class, 'uuid')
+                    ->where(function ($query) use ($organizationId) {
+                        return $query->where('organization_id', $organizationId);
+                    }),
+            ],
             'gateway_prices' => ['required_with:integration_id', 'array'],
             'gateway_prices.*' => ['string', 'max:255'],
             'gateway_product_id' => ['required_with:integration_id', 'string', 'max:255'],
 
             // Add validation for other fields from migration if needed (e.g., gateway)
             'gateway_provider' => ['nullable', 'string', 'max:255'],
-            'gateway_product_id' => ['nullable', 'string', 'max:255'],
+//            'gateway_product_id' => ['nullable', 'string', 'max:255'],
             'image' => ['nullable', 'string', 'max:255'],
         ];
     }

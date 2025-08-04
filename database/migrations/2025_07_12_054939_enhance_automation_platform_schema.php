@@ -41,7 +41,6 @@ return new class extends Migration
         }
 
         Schema::table('integrations', function (Blueprint $table) {
-            $table->uuid('uuid')->nullable()->after('id');
             $table->string('lookup_key', 64)->nullable()->change();
             $table->foreignId('app_id')->nullable()->after('organization_id')->constrained('automation_apps')->onDelete('set null');
             $table->json('connection_config')->nullable();
@@ -51,13 +50,6 @@ return new class extends Migration
             $table->index(['organization_id', 'app_id']);
             $table->index('last_sync_at');
         });
-
-        $rows = DB::table('integrations')->whereNull('uuid')->get();
-        foreach ($rows as $row) {
-            DB::table('integrations')->where('id', $row->id)->update([
-                'uuid' => Str::uuid(),
-            ]);
-        }
 
         Schema::table('workflows', function (Blueprint $table) {
             $table->bigInteger('sequence_id')->nullable()->after('id');

@@ -12,6 +12,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Str;
 
 /**
+ * @property Sequence $sequence
+ * @property Integration $integration
+ *
  * @property int $id
  * @property int $sequence_id
  * @property string|null $name
@@ -31,7 +34,6 @@ use Illuminate\Support\Str;
  * @property \Carbon\Carbon $created_at
  * @property \Carbon\Carbon $updated_at
  *
- * @property Sequence $sequence
  */
 class Trigger extends Model
 {

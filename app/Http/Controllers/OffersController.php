@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 namespace App\Http\Controllers;
 
 use App\Enums\IntegrationType;
@@ -28,6 +26,7 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -79,6 +78,8 @@ class OffersController extends Controller
 
     public function edit(Offer $offer, Request $request): Response
     {
+        Gate::authorize('view', $offer);
+
         $organizationThemes = $this->themeService->getOrganizationThemes(
             $request->user()->current_organization_id
         );

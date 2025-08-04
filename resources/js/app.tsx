@@ -37,7 +37,8 @@ NProgress.configure({
 let timeout: NodeJS.Timeout | null = null;
 
 // Add event listeners for Inertia navigation
-router.on('start', () => {
+router.on('start', (e) => {
+  console.log(e);
     // Clear any existing timeout
     if (timeout) {
         clearTimeout(timeout);

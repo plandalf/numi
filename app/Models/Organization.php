@@ -5,6 +5,8 @@ namespace App\Models;
 use App\Enums\OnboardingStep;
 use App\Enums\FulfillmentMethod;
 use App\Enums\DeliveryMethod;
+use App\Models\Catalog\Price;
+use App\Models\Order\Order;
 use App\Models\Store\Offer;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -18,9 +20,6 @@ use Laravel\Cashier\Billable;
 use function Illuminate\Events\queueable;
 
 /**
- * @property string|null $checkout_success_url
- * @property string|null $checkout_cancel_url
- *
  * @property mixed $name
  * @property mixed $description
  * @property mixed $website_url
@@ -77,6 +76,7 @@ class Organization extends Model
         'fulfillment_notification_email',
         'auto_fulfill_orders',
         'external_platform_config',
+        'should_apply_region_currency',
     ];
 
     protected $appends = [
@@ -85,6 +85,7 @@ class Organization extends Model
 
     protected $attributes = [
         'default_currency' => 'USD',
+        'should_apply_region_currency' => false,
     ];
 
     protected $casts = [
@@ -95,15 +96,16 @@ class Organization extends Model
         'fulfillment_config' => 'array',
         'auto_fulfill_orders' => 'boolean',
         'external_platform_config' => 'array',
+        'should_apply_region_currency' => 'boolean',
     ];
 
-    public const AVAILABLE_CURRENCIES = [
-        'USD' => 'US Dollar',
-        'EUR' => 'Euro',
-        'GBP' => 'British Pound',
-        'CAD' => 'Canadian Dollar',
-        'AUD' => 'Australian Dollar',
-    ];
+    /**
+     * Get available currencies from config
+     */
+    public static function getAvailableCurrencies(): array
+    {
+        return config('currencies.available', []);
+    }
 
     protected static function boot()
     {
@@ -296,5 +298,37 @@ class Organization extends Model
     public function isOnboardingComplete(): bool
     {
         return count($this->getIncompleteOnboardingSteps()) === 0;
+    }
+
+    /**
+     * Get currency based on country code from CloudFlare header
+     */
+    public function getRegionalCurrency(?string $countryCode): ?string
+    {
+        if (!$countryCode || !$this->should_apply_region_currency) {
+            return null;
+        }
+
+        $countryMapping = config('currencies.country_mapping', []);
+        $availableCurrencies = config('currencies.available', []);
+
+        $currency = $countryMapping[$countryCode] ?? null;
+
+        // Only return currencies that are available for this organization
+        if ($currency && array_key_exists($currency, $availableCurrencies)) {
+            return $currency;
+        }
+
+        return null;
+    }
+
+    public function prices(): HasMany
+    {
+        return $this->hasMany(Price::class);
+    }
+
+    public function orders(): HasMany
+    {
+        return $this->hasMany(Order::class);
     }
 }

@@ -33,7 +33,9 @@ class RunSequenceWorkflow extends Workflow
 
             // Create input bundle with resolved configuration
             $bundle = new Bundle(
+                organization: $trigger->sequence->organization,
                 input: $resolvedConfiguration,
+                configuration: $action->configuration ?? [],
                 integration: $action->integration,
             );
 

@@ -33,13 +33,27 @@ class CheckoutController extends Controller
         private readonly FontExtractionService $fontExtractionService
     ) {}
 
-    public function initialize(string $offerId, Request $request, string $environment = 'live')
+    public function initialize(Offer $offer, Request $request, string $environment = 'live')
     {
-        $offer = Offer::retrieve($offerId);
+        $offer->load('organization');
         $checkoutItems = $request->get('items', []);
 
-        if (!empty($checkoutItems)) {
-            foreach ($checkoutItems as $key => $item) {
+        // Get override parameters from query string
+        $intervalOverride = $request->query('interval');
+        $currencyOverride = $request->query('currency');
+
+        // If no currency override is provided, check for regional currency based on CloudFlare header
+        if (!$currencyOverride) {
+            $countryCode = $request->header('CF-IPCountry');
+            $regionalCurrency = $offer->organization->getRegionalCurrency($countryCode);
+            if ($regionalCurrency) {
+                $currencyOverride = strtolower($regionalCurrency);
+            }
+        }
+
+        // Process any explicit checkout items from query string
+        $checkoutItems = collect(Arr::wrap($checkoutItems))
+            ->map(function ($item, $key) use ($offer) {
                 if (!isset($item['lookup_key'])) {
                     throw ValidationException::withMessages([
                         'items' => ['Each item must have a lookup_key'],
@@ -52,19 +66,22 @@ class CheckoutController extends Controller
                     ->where('is_active', true)
                     ->first();
 
-                if ($price) {
-                    $checkoutItems[$key]['price_id'] = $price->id;
-                } else {
+                if (!$price) {
                     return [
                         'items' => ["Price with lookup_key '{$item['lookup_key']}' not found"],
                     ];
                 }
-            }
-        }
+
+                return ['price_id' => $price->id];
+            })
+            ->all();
+
 
         $testMode = $environment === 'test';
 
-        $checkoutSession = $this->createCheckoutSessionAction->execute($offer, $checkoutItems, $testMode);
+        $checkoutSession = $this->createCheckoutSessionAction
+            ->execute($offer, $checkoutItems, $testMode, $intervalOverride, $currencyOverride);
+
         $this->handleInvalidDomain($request, $checkoutSession);
 
         $params = array_filter(array_merge([
@@ -263,5 +280,29 @@ class CheckoutController extends Controller
 
             return redirect()->away($returnUrl);
         }
+    }
+
+    /**
+     * Find a child price that matches the given interval and/or currency overrides
+     */
+    private function findChildPriceWithOverrides(Price $parentPrice, ?string $intervalOverride, ?string $currencyOverride): ?Price
+    {
+        // Build query to find child prices
+        $query = Price::query()
+            ->where('parent_list_price_id', $parentPrice->id)
+            ->where('is_active', true);
+
+        // Filter by interval (renew_interval) if provided
+        if ($intervalOverride) {
+            $query->where('renew_interval', $intervalOverride);
+        }
+
+        // Filter by currency if provided
+        if ($currencyOverride && $currencyOverride !== 'auto') {
+            $query->where('currency', strtoupper($currencyOverride));
+        }
+
+        // Return the first matching child price
+        return $query->first();
     }
 }

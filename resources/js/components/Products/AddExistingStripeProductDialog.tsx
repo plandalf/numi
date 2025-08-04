@@ -216,6 +216,7 @@ export const PriceStep = ({ integrationId, onClickSave, onClickBack, selectedPri
     const fetchPrices = async () => {
       try {
         const response = await axios.get(`/integrations/${integrationId}/products/${productId}/prices`);
+        // const response = await axios.get(`/products/${productId}/prices`);
         setPrices(response.data);
       } catch (error) {
         console.error('Error fetching prices:', error);
@@ -252,7 +253,7 @@ export const PriceStep = ({ integrationId, onClickSave, onClickBack, selectedPri
   }
 
   return (
-    <>
+    <Dialog>
       <DialogHeader>
         <DialogTitle>Select prices</DialogTitle>
         <p className="text-sm text-gray-500 dark:text-gray-400">Which prices associated with this product do you wish to display</p>
@@ -309,7 +310,7 @@ export const PriceStep = ({ integrationId, onClickSave, onClickBack, selectedPri
           </div>
         )}
       </div>
-    </>
+    </Dialog>
   );
 };
 

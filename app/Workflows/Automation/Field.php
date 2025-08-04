@@ -195,6 +195,10 @@ class Field
             $field['resource'] = $this->resource;
         }
 
+        if ($this->multiple) {
+            $field['multiple'] = true;
+        }
+
         return $field;
     }
 

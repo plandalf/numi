@@ -6,9 +6,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, ChevronDown } from 'lucide-react';
+import { Loader2, ChevronDown, Plus, X, Check } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from '@/components/ui/command';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { MapField } from './MapField';
 import { TemplateVariableInput } from './TemplateVariableInput';
 import { useTemplateVariables } from '@/hooks/useTemplateVariables';
@@ -27,6 +27,7 @@ interface FieldSchema {
   default?: unknown;
   options?: Record<string, string> | Array<{ value: string; label: string; }>;
   resource?: string;
+  multiple?: boolean;
 }
 
 interface SequenceData {
@@ -68,12 +69,12 @@ interface ResourceOption {
   data?: Record<string, unknown>;
 }
 
-export function TriggerConfigField({ 
-  field, 
-  value, 
-  onChange, 
-  appKey, 
-  integrationId, 
+export function TriggerConfigField({
+  field,
+  value,
+  onChange,
+  appKey,
+  integrationId,
   error,
   requiresAuth = false,
   sequenceData,
@@ -98,10 +99,10 @@ export function TriggerConfigField({
     try {
       setLoading(true);
       setResourceError(null);
-      
+
       // Parse the dynamic source (e.g., "offer.id,name")
       const [resourceKey] = field.dynamicSource.split('.');
-      
+
       //apps/{app}/resources/{resource}
       // const response = await axios.get('/automation/resources/search', {
       const response = await axios.get(`/automation/apps/${appKey}/resources/${resourceKey}`, {
@@ -150,13 +151,219 @@ export function TriggerConfigField({
     }
   };
 
+  // Helper function to render multi-select for dynamic fields
+  const renderMultiSelect = () => {
+    const values = Array.isArray(value) ? value : [];
+    const selectedOptions = resourceOptions.filter(opt => values.includes(opt.value));
+
+    return (
+      <Popover open={showCombobox} onOpenChange={setShowCombobox}>
+        <PopoverTrigger asChild>
+          <Button
+            variant="outline"
+            role="combobox"
+            aria-expanded={showCombobox}
+            className={`w-full justify-between min-h-[2.5rem] h-auto ${error ? 'border-red-300' : ''}`}
+            disabled={requiresAuth && !integrationId}
+          >
+            <div className="flex flex-wrap gap-1 flex-1">
+              {selectedOptions.length > 0 ? (
+                selectedOptions.map((option) => (
+                  <Badge key={option.value} variant="secondary" className="text-xs">
+                    {option.label}
+                    <button
+                      type="button"
+                      className="ml-1 hover:bg-gray-200 rounded-full"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        const newValues = values.filter(v => v !== option.value);
+                        onChange(newValues);
+                      }}
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </Badge>
+                ))
+              ) : (
+                <span className="text-gray-500">Select {field.label.toLowerCase()}...</span>
+              )}
+            </div>
+            <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-full p-0">
+          <Command>
+            <CommandInput
+              placeholder={`Search ${field.label.toLowerCase()}...`}
+              value={searchTerm}
+              onValueChange={handleSearch}
+            />
+            <CommandEmpty>
+              {loading ? (
+                <div className="flex items-center justify-center py-2">
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  Loading...
+                </div>
+              ) : (
+                `No ${field.label.toLowerCase()} found.`
+              )}
+            </CommandEmpty>
+            <CommandList>
+              <CommandGroup>
+                {resourceOptions.map((option) => (
+                  <CommandItem
+                    key={option.value}
+                    value={`${option.value}-${option.label}`}
+                    onSelect={() => {
+                      const newValues = values.includes(option.value)
+                        ? values.filter(v => v !== option.value)
+                        : [...values, option.value];
+                      onChange(newValues);
+                    }}
+                  >
+                    <Check className={`mr-2 h-4 w-4 ${values.includes(option.value) ? 'opacity-100' : 'opacity-0'}`} />
+                    {option.label}
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            </CommandList>
+          </Command>
+        </PopoverContent>
+      </Popover>
+    );
+  };
+
+  // Helper function to render multi-value inputs (for non-dynamic fields)
+  const renderMultipleInputs = (inputRenderer: (val: string, index: number) => React.ReactNode) => {
+    const values = Array.isArray(value) ? value : value ? [value] : [''];
+    
+    return (
+      <div className="space-y-2">
+        {values.map((val, index) => (
+          <div key={index} className="flex gap-2 items-start">
+            <div className="flex-1">
+              {inputRenderer(String(val), index)}
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="mt-0 h-10 w-10 p-0"
+              onClick={() => {
+                const newValues = values.filter((_, i) => i !== index);
+                onChange(newValues.length === 0 ? [''] : newValues);
+              }}
+              disabled={values.length === 1}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+        ))}
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="w-full"
+          onClick={() => {
+            const newValues = [...values, ''];
+            onChange(newValues);
+          }}
+        >
+          <Plus className="h-4 w-4 mr-2" />
+          Add {field.label}
+        </Button>
+      </div>
+    );
+  };
+
   const renderField = () => {
+    console.log('TriggerConfigField@renderField', field, 'value:', value);
+
+    // Handle multiple values for select fields with static options
+    if (field.multiple && field.type === 'select') {
+      const values = Array.isArray(value) ? value : [];
+      const normalizedOptions = field.options ?
+        Array.isArray(field.options)
+          ? field.options
+          : Object.entries(field.options).map(([key, value]) => ({ value: key, label: value }))
+        : [];
+
+      return (
+        <Popover open={showCombobox} onOpenChange={setShowCombobox}>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              role="combobox"
+              aria-expanded={showCombobox}
+              className={`w-full justify-between min-h-[2.5rem] h-auto ${error ? 'border-red-300' : ''}`}
+            >
+              <div className="flex flex-wrap gap-1 flex-1">
+                {values.length > 0 ? (
+                  values.map((val) => {
+                    const option = normalizedOptions.find(opt => opt.value === val);
+                    return option ? (
+                      <Badge key={val} variant="secondary" className="text-xs">
+                        {option.label}
+                        <button
+                          type="button"
+                          className="ml-1 hover:bg-gray-200 rounded-full"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            const newValues = values.filter(v => v !== val);
+                            onChange(newValues);
+                          }}
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </Badge>
+                    ) : null;
+                  })
+                ) : (
+                  <span className="text-gray-500">Select {field.label.toLowerCase()}...</span>
+                )}
+              </div>
+              <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-full p-0">
+            <Command>
+              <CommandInput placeholder={`Search ${field.label.toLowerCase()}...`} />
+              <CommandEmpty>No options found.</CommandEmpty>
+              <CommandList>
+                <CommandGroup>
+                  {normalizedOptions.map((option) => (
+                    <CommandItem
+                      key={option.value}
+                      value={`${option.value}-${option.label}`}
+                      onSelect={() => {
+                        const newValues = values.includes(option.value)
+                          ? values.filter(v => v !== option.value)
+                          : [...values, option.value];
+                        onChange(newValues);
+                      }}
+                    >
+                      <Check className={`mr-2 h-4 w-4 ${values.includes(option.value) ? 'opacity-100' : 'opacity-0'}`} />
+                      {option.label}
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              </CommandList>
+            </Command>
+          </PopoverContent>
+        </Popover>
+      );
+    }
+
     switch (field.type) {
       case 'string':
         if (field.dynamic && field.dynamicSource) {
           // Dynamic select/combobox
+          if (field.multiple) {
+            return renderMultiSelect();
+          }
+
           const selectedOption = resourceOptions.find(opt => opt.value === value);
-          
+
           return (
             <Popover open={showCombobox} onOpenChange={setShowCombobox}>
               <PopoverTrigger asChild>
@@ -173,7 +380,7 @@ export function TriggerConfigField({
               </PopoverTrigger>
               <PopoverContent className="w-full p-0">
                 <Command>
-                  <CommandInput 
+                  <CommandInput
                     placeholder={`Search ${field.label.toLowerCase()}...`}
                     value={searchTerm}
                     onValueChange={handleSearch}
@@ -192,9 +399,9 @@ export function TriggerConfigField({
                     {resourceOptions.map((option) => (
                       <CommandItem
                         key={option.value}
-                        value={option.value}
-                        onSelect={(currentValue) => {
-                          onChange(currentValue === value ? "" : currentValue);
+                        value={`${option.value}-${option.label}`}
+                        onSelect={() => {
+                          onChange(option.value === value ? "" : option.value);
                           setShowCombobox(false);
                         }}
                       >
@@ -207,6 +414,41 @@ export function TriggerConfigField({
             </Popover>
           );
         } else {
+          if (field.multiple) {
+            return renderMultipleInputs((val, index) => {
+              const values = Array.isArray(value) ? value : value ? [value] : [''];
+              
+              if (sequenceData && templateVariables.length > 0) {
+                return (
+                  <TemplateVariableInput
+                    value={val}
+                    onChange={(newVal) => {
+                      const newValues = [...values];
+                      newValues[index] = newVal;
+                      onChange(newValues);
+                    }}
+                    placeholder={field.placeholder || field.description || `Enter ${field.label.toLowerCase()}`}
+                    className={error ? 'border-red-300' : ''}
+                    variables={templateVariables}
+                  />
+                );
+              }
+
+              return (
+                <Input
+                  value={val}
+                  onChange={(e) => {
+                    const newValues = [...values];
+                    newValues[index] = e.target.value;
+                    onChange(newValues);
+                  }}
+                  placeholder={field.placeholder || field.description || `Enter ${field.label.toLowerCase()}`}
+                  className={error ? 'border-red-300' : ''}
+                />
+              );
+            });
+          }
+
           // Use TemplateVariableInput if we have sequence data and template variables
           if (sequenceData && templateVariables.length > 0) {
             return (
@@ -219,7 +461,7 @@ export function TriggerConfigField({
               />
             );
           }
-          
+
           // Regular text input
           return (
             <Input
@@ -232,6 +474,26 @@ export function TriggerConfigField({
         }
 
       case 'text':
+        if (field.multiple) {
+          return renderMultipleInputs((val, index) => {
+            const values = Array.isArray(value) ? value : value ? [value] : [''];
+            
+            return (
+              <Textarea
+                value={val}
+                onChange={(e) => {
+                  const newValues = [...values];
+                  newValues[index] = e.target.value;
+                  onChange(newValues);
+                }}
+                placeholder={field.placeholder || field.description || `Enter ${field.label.toLowerCase()}`}
+                className={error ? 'border-red-300' : ''}
+                rows={3}
+              />
+            );
+          });
+        }
+
         return (
           <Textarea
             value={String(value || '')}
@@ -243,6 +505,42 @@ export function TriggerConfigField({
         );
 
       case 'email':
+        if (field.multiple) {
+          return renderMultipleInputs((val, index) => {
+            const values = Array.isArray(value) ? value : value ? [value] : [''];
+            
+            if (sequenceData && templateVariables.length > 0) {
+              return (
+                <TemplateVariableInput
+                  value={val}
+                  onChange={(newVal) => {
+                    const newValues = [...values];
+                    newValues[index] = newVal;
+                    onChange(newValues);
+                  }}
+                  placeholder={field.placeholder || field.description || `Enter ${field.label.toLowerCase()}`}
+                  className={error ? 'border-red-300' : ''}
+                  variables={templateVariables}
+                />
+              );
+            }
+
+            return (
+              <Input
+                type="email"
+                value={val}
+                onChange={(e) => {
+                  const newValues = [...values];
+                  newValues[index] = e.target.value;
+                  onChange(newValues);
+                }}
+                placeholder={field.placeholder || field.description || `Enter ${field.label.toLowerCase()}`}
+                className={error ? 'border-red-300' : ''}
+              />
+            );
+          });
+        }
+
         // Use TemplateVariableInput for email fields too since they often use template variables
         if (sequenceData && templateVariables.length > 0) {
           return (
@@ -255,7 +553,7 @@ export function TriggerConfigField({
             />
           );
         }
-        
+
         return (
           <Input
             type="email"
@@ -267,6 +565,26 @@ export function TriggerConfigField({
         );
 
       case 'number':
+        if (field.multiple) {
+          return renderMultipleInputs((val, index) => {
+            const values = Array.isArray(value) ? value : value ? [value] : [''];
+            
+            return (
+              <Input
+                type="number"
+                value={val}
+                onChange={(e) => {
+                  const newValues = [...values];
+                  newValues[index] = Number(e.target.value);
+                  onChange(newValues);
+                }}
+                placeholder={field.placeholder || field.description || `Enter ${field.label.toLowerCase()}`}
+                className={error ? 'border-red-300' : ''}
+              />
+            );
+          });
+        }
+
         return (
           <Input
             type="number"
@@ -279,9 +597,9 @@ export function TriggerConfigField({
 
       case 'select': {
         // Normalize options to array format
-        const normalizedOptions = field.options ? 
-          Array.isArray(field.options) 
-            ? field.options 
+        const normalizedOptions = field.options ?
+          Array.isArray(field.options)
+            ? field.options
             : Object.entries(field.options).map(([key, value]) => ({ value: key, label: value }))
           : [];
 
@@ -343,7 +661,7 @@ export function TriggerConfigField({
 
       case 'map': {
         const mapValue = (value as Record<string, string>) || {};
-        
+
         return (
           <div className="space-y-2">
             <MapField
@@ -362,8 +680,12 @@ export function TriggerConfigField({
       case 'resource': {
         if (field.dynamic && field.dynamicSource) {
           // Dynamic resource select/combobox - similar to dynamic string but specifically for resources
+          if (field.multiple) {
+            return renderMultiSelect();
+          }
+
           const selectedOption = resourceOptions.find(opt => opt.value === value);
-          
+
           return (
             <Popover open={showCombobox} onOpenChange={setShowCombobox}>
               <PopoverTrigger asChild>
@@ -380,7 +702,7 @@ export function TriggerConfigField({
               </PopoverTrigger>
               <PopoverContent className="w-full p-0">
                 <Command>
-                  <CommandInput 
+                  <CommandInput
                     placeholder={`Search ${field.label.toLowerCase()}...`}
                     value={searchTerm}
                     onValueChange={handleSearch}
@@ -399,9 +721,9 @@ export function TriggerConfigField({
                     {resourceOptions.map((option) => (
                       <CommandItem
                         key={option.value}
-                        value={option.value}
-                        onSelect={(currentValue) => {
-                          onChange(currentValue === value ? "" : currentValue);
+                        value={`${option.value}-${option.label}`}
+                        onSelect={() => {
+                          onChange(option.value === value ? "" : option.value);
                           setShowCombobox(false);
                         }}
                       >
@@ -414,6 +736,25 @@ export function TriggerConfigField({
             </Popover>
           );
         } else {
+          if (field.multiple) {
+            return renderMultipleInputs((val, index) => {
+              const values = Array.isArray(value) ? value : value ? [value] : [''];
+              
+              return (
+                <Input
+                  value={val}
+                  onChange={(e) => {
+                    const newValues = [...values];
+                    newValues[index] = e.target.value;
+                    onChange(newValues);
+                  }}
+                  placeholder={field.placeholder || field.description || `Enter ${field.label.toLowerCase()}`}
+                  className={error ? 'border-red-300' : ''}
+                />
+              );
+            });
+          }
+
           // Static resource input
           return (
             <Input
@@ -427,6 +768,41 @@ export function TriggerConfigField({
       }
 
       default:
+        if (field.multiple) {
+          return renderMultipleInputs((val, index) => {
+            const values = Array.isArray(value) ? value : value ? [value] : [''];
+            
+            if (field.type === 'string' && sequenceData && templateVariables.length > 0) {
+              return (
+                <TemplateVariableInput
+                  value={val}
+                  onChange={(newVal) => {
+                    const newValues = [...values];
+                    newValues[index] = newVal;
+                    onChange(newValues);
+                  }}
+                  placeholder={field.placeholder || field.description || `Enter ${field.label.toLowerCase()}`}
+                  className={error ? 'border-red-300' : ''}
+                  variables={templateVariables}
+                />
+              );
+            }
+
+            return (
+              <Input
+                value={val}
+                onChange={(e) => {
+                  const newValues = [...values];
+                  newValues[index] = e.target.value;
+                  onChange(newValues);
+                }}
+                placeholder={field.placeholder || field.description || `Enter ${field.label.toLowerCase()}`}
+                className={error ? 'border-red-300' : ''}
+              />
+            );
+          });
+        }
+
         // For string-type fields, use TemplateVariableInput if we have sequence data
         if (field.type === 'string' && sequenceData && templateVariables.length > 0) {
           return (
@@ -439,7 +815,7 @@ export function TriggerConfigField({
             />
           );
         }
-        
+
         return (
           <Input
             value={String(value || '')}
@@ -463,24 +839,27 @@ export function TriggerConfigField({
         {field.dynamic && (
           <Badge variant="secondary" className="text-xs">Dynamic</Badge>
         )}
+        {field.multiple && (
+          <Badge variant="secondary" className="text-xs">Multiple</Badge>
+        )}
       </div>
-      
+
       {renderField()}
-      
+
       {field.help && (
         <p className="text-xs text-gray-500">{field.help}</p>
       )}
-      
+
       {error && (
         <p className="text-xs text-red-500">{error}</p>
       )}
-      
+
       {resourceError && (
         <p className="text-xs text-red-500">
           <span className="font-medium">Resource Error:</span> {resourceError}
         </p>
       )}
-      
+
       {field.dynamic && !integrationId && requiresAuth && (
         <p className="text-xs text-orange-500">
           Integration required to load dynamic options
@@ -488,4 +867,4 @@ export function TriggerConfigField({
       )}
     </div>
   );
-} 
+}

@@ -60,17 +60,26 @@ class UpdateRequest extends FormRequest
             'amount' => ['sometimes', 'required', 'integer', 'min:0'],
             'parent_list_price_id' => [
                 'sometimes',
-                new RequiredIf($this->input('scope', $price->scope) === 'custom'),
+                new RequiredIf(in_array($this->input('scope', $price->scope), ['custom', 'variant'])),
                 'nullable',
                 'integer',
                 Rule::exists('catalog_prices', 'id')->where(function ($query) use ($product) {
                     return $query->where('product_id', $product->id)
                         ->where('scope', 'list');
                 }),
+                // Custom validation to ensure type matches parent
+                function ($attribute, $value, $fail) use ($price) {
+                    if ($value && in_array($this->input('scope', $price->scope), ['custom', 'variant'])) {
+                        $parentPrice = \App\Models\Catalog\Price::find($value);
+                        if ($parentPrice && $this->input('type', $price->type) !== $parentPrice->type) {
+                            $fail("The selected type must match the parent price type ({$parentPrice->type}).");
+                        }
+                    }
+                },
             ],
             'renew_interval' => [
                 'sometimes',
-                new RequiredIf($this->input('type', $price->type) === 'recurring'),
+                new RequiredIf(in_array($this->input('type', $price->type), ['recurring', 'tiered', 'volume', 'graduated', 'package'])),
                 'nullable',
                 Rule::in(['day', 'week', 'month', 'year']),
             ],
@@ -88,7 +97,13 @@ class UpdateRequest extends FormRequest
             ],
             'cancel_after_cycles' => ['sometimes', 'nullable', 'integer'],
             'properties' => ['sometimes', 'nullable', 'array'],
-            // Add tiered/package properties validation if applicable
+            'properties.tiers' => ['sometimes', 'array'],
+            'properties.tiers.*.from' => ['sometimes', 'integer', 'min:0'],
+            'properties.tiers.*.to' => ['sometimes', 'nullable', 'integer', 'min:1'],
+            'properties.tiers.*.unit_amount' => ['sometimes', 'integer', 'min:0'],
+            'properties.package' => ['sometimes', 'array'],
+            'properties.package.size' => ['sometimes', 'integer', 'min:1'],
+            'properties.package.unit_amount' => ['sometimes', 'integer', 'min:0'],
             'gateway_provider' => ['sometimes', 'nullable', 'string', 'max:255'],
             'gateway_price_id' => ['sometimes', 'nullable', 'string', 'max:255'],
             'is_active' => ['sometimes', 'boolean'],
@@ -114,6 +129,43 @@ class UpdateRequest extends FormRequest
                 'billing_anchor' => null,
             ]);
         }
-        // TODO: Add logic similar to VariantForm for properties based on pricing_model
+
+        // Validate and prepare properties for complex pricing models
+        $price = $this->route('price');
+        $type = $this->input('type', $price->type);
+        if (in_array($type, ['tiered', 'volume', 'graduated', 'package'])) {
+            $properties = $this->input('properties');
+            
+            // For tier-based pricing (tiered, volume, graduated)
+            if (in_array($type, ['tiered', 'volume', 'graduated']) && $properties) {
+                if (isset($properties['tiers']) && is_array($properties['tiers'])) {
+                    // Validate tiers structure
+                    $validTiers = array_filter($properties['tiers'], function ($tier) {
+                        return is_array($tier) && 
+                               isset($tier['from']) && is_numeric($tier['from']) &&
+                               isset($tier['unit_amount']) && is_numeric($tier['unit_amount']);
+                    });
+                    
+                    if (!empty($validTiers)) {
+                        $this->merge(['properties' => ['tiers' => array_values($validTiers)]]);
+                    } else {
+                        $this->merge(['properties' => null]);
+                    }
+                }
+            }
+            
+            // For package pricing
+            if ($type === 'package' && $properties) {
+                if (isset($properties['package']) && is_array($properties['package'])) {
+                    $package = $properties['package'];
+                    if (isset($package['size'], $package['unit_amount']) && 
+                        is_numeric($package['size']) && is_numeric($package['unit_amount'])) {
+                        $this->merge(['properties' => ['package' => $package]]);
+                    } else {
+                        $this->merge(['properties' => null]);
+                    }
+                }
+            }
+        }
     }
 }

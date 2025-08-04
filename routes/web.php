@@ -18,6 +18,7 @@ use App\Http\Controllers\Settings\ProfileController;
 use App\Http\Controllers\ThemeController;
 use App\Http\Controllers\TemplateController;
 use App\Http\Controllers\WebhookController;
+use App\Models\Integration;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use App\Http\Controllers\OrdersController;
@@ -26,6 +27,10 @@ use App\Http\Controllers\OfferItemPriceController;
 use App\Http\Controllers\OnboardingController;
 use App\Http\Controllers\ApiKeysController;
 use App\Http\Controllers\ImpersonationController;
+
+
+Route::get('test', function (\Illuminate\Http\Request $request) {
+});
 
 Route::redirect('/', '/dashboard')->name('home');
 

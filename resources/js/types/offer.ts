@@ -102,8 +102,8 @@ export interface Price {
     product_id: number;
     organization_id: number;
     parent_list_price_id?: number | null;
-    scope: 'list' | 'custom';
-    type: 'one_time' | 'recurring' | 'graduated' | 'volume' | 'package';
+    scope: 'list' | 'custom' | 'variant';
+    type: 'one_time' | 'recurring' | 'tiered' | 'volume' | 'graduated' | 'package';
     amount: number;
     currency: string;
     properties?: Record<string, any> | null;

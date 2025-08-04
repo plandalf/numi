@@ -4,9 +4,13 @@ declare(strict_types=1);
 
 namespace App\Http\Resources;
 
+use App\Models\Catalog\Product;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
+/**
+ * @mixin Product
+ */
 class ProductResource extends JsonResource
 {
     public static $wrap = false;
@@ -19,7 +23,7 @@ class ProductResource extends JsonResource
     public function toArray(Request $request): array
     {
         return [
-            'id' => $this->id,
+            'id' => $this->getRouteKey(),
             'name' => $this->name,
             'lookup_key' => $this->lookup_key,
             'image' => $this->image,
@@ -39,7 +43,7 @@ class ProductResource extends JsonResource
             // Include integration data if loaded
             'integration' => $this->whenLoaded('integration', function() {
                 return [
-                    'id' => $this->integration->id,
+                    'id' => $this->integration->getRouteKey(),
                     'name' => $this->integration->name,
                     'type' => $this->integration->type,
                 ];

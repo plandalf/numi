@@ -35,7 +35,7 @@ class UpdateOrganizationRequest extends FormRequest
             'social_media.instagram' => ['nullable', 'url', 'max:255'],
             'social_media.linkedin' => ['nullable', 'url', 'max:255'],
             'default_currency' => [
-                Rule::in(['USD', 'GBP', 'AUD', 'NZD', 'JPY', 'EUR'])
+                Rule::in(array_keys(config('currencies.available', [])))
             ],
             'checkout_success_url' => [
                 'nullable',
@@ -59,6 +59,7 @@ class UpdateOrganizationRequest extends FormRequest
                     }
                 },
             ],
+            'should_apply_region_currency' => ['boolean'],
         ];
     }
 }

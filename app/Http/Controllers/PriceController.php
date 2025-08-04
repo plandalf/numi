@@ -8,12 +8,23 @@ use App\Actions\Price\UpdatePrice;
 use App\Http\Requests\Price\ImportRequest;
 use App\Http\Requests\Price\StoreRequest as PriceStoreRequest;
 use App\Http\Requests\Price\UpdateRequest as PriceUpdateRequest;
+use App\Http\Resources\PriceResource;
 use App\Models\Catalog\Price;
 use App\Models\Catalog\Product;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Gate;
 
 class PriceController extends Controller
 {
+    public function index($product)
+    {
+        $product = Product::retrieve($product);
+
+        Gate::authorize('view', $product);
+
+        return PriceResource::collection($product->prices);
+    }
+
     /**
      * Store a newly created resource in storage.
      * Handles both standard form submissions (redirect) and JSON API requests (modal).

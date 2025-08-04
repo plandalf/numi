@@ -1,24 +1,28 @@
-import { Head, Link, router, usePage } from "@inertiajs/react";
+import { Head, router, usePage } from "@inertiajs/react";
 import AppLayout from "@/layouts/app-layout";
 import { Product, type Price } from '@/types/offer';
+import { Product as ProductType } from '@/types/product';
 import { type BreadcrumbItem } from '@/types';
 import { type PageProps as InertiaPageProps } from '@inertiajs/core';
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useState } from "react";
-import { Plus, Edit, Trash2 } from "lucide-react";
-import { formatMoney } from "@/lib/utils";
+import { Plus, Edit, Trash2, ChevronDown } from "lucide-react";
 import PriceForm from "@/components/prices/PriceForm";
 import { toast } from "sonner";
 import { Integration } from "@/types/integration";
 import AddExistingStripePriceDialog from "@/components/Products/AddExistingStripePriceDialog";
 import PriceTable from '@/components/prices/PriceTable';
 import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import ProductForm from "@/components/Products/ProductForm";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -38,25 +42,36 @@ interface ProductShowPageProps extends InertiaPageProps {
 }
 
 export default function Show() {
-  const { product, prices, listPrices, integrations, errors } = usePage<ProductShowPageProps>().props;
+  const { product, prices, listPrices } = usePage<ProductShowPageProps>().props;
 
   const [isPriceFormOpen, setIsPriceFormOpen] = useState(false);
   const [editingPrice, setEditingPrice] = useState<Price | undefined>(undefined);
+  const [newPriceScope, setNewPriceScope] = useState<'list' | 'custom' | 'variant'>('list');
+  const [parentPriceForChild, setParentPriceForChild] = useState<Price | undefined>(undefined);
   const [isProductFormOpen, setIsProductFormOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [priceToDelete, setPriceToDelete] = useState<Price | undefined>(undefined);
 
   const [isAddExistingStripePriceDialogOpen, setIsAddExistingStripePriceDialogOpen] = useState(false);
-  const openPriceForm = (price?: Price) => {
-    setEditingPrice(price);
 
-    /** Check if product is connected to an integration */
-    if (product.integration_id && !price) {
-      setIsAddExistingStripePriceDialogOpen(true);
+  const openPriceForm = (price?: Price, scope: 'list' | 'custom' | 'variant' = 'list') => {
+    // If creating a new price (no price parameter), clear editing state
+    if (!price) {
+      setEditingPrice(undefined);
+      setNewPriceScope(scope);
+      setParentPriceForChild(undefined); // Clear parent when using regular form
     } else {
-      setIsPriceFormOpen(true);
+      // If editing existing price, set it
+      setEditingPrice(price);
+      setNewPriceScope(price.scope); // Use the price's existing scope
+      setParentPriceForChild(undefined); // Clear parent when editing
     }
+
+    /** Always open PriceForm for direct price creation */
+    setIsPriceFormOpen(true);
   }
+
+  const canCreateCustomOrVariant = listPrices && listPrices.length > 0;
 
   const handleDeletePrice = () => {
     if (!priceToDelete) return;
@@ -100,8 +115,8 @@ export default function Show() {
     <AppLayout breadcrumbs={breadcrumbs}>
       <Head title={product.name} />
 
-      <div className="container mx-auto py-10 px-4 sm:px-6 lg:px-8">
-        {/* Product Header */}
+              <div className="container mx-auto py-10 px-4 sm:px-6 lg:px-8">
+          {/* Product Header */}
         <div className="mb-8 flex justify-between text-sm">
           <div className="flex flex-col gap-4">
             <div className="grid gap-2">
@@ -166,26 +181,94 @@ export default function Show() {
               <h2 className="text-lg font-medium">Pricing</h2>
               <p className="text-sm text-muted-foreground">Shows all prices for this product.</p>
             </div>
-            <Button onClick={() => openPriceForm()}>
-              <Plus className="w-4 h-4 mr-2" /> Add Price
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add Price
+                  <ChevronDown className="w-4 h-4 ml-2" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => openPriceForm(undefined, 'list')}>
+                  <div className="flex flex-col">
+                    <span className="font-medium">List Price</span>
+                    <span className="text-xs text-muted-foreground">Default publicly listed price</span>
+                  </div>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={() => openPriceForm(undefined, 'custom')}
+                  disabled={!canCreateCustomOrVariant}
+                >
+                  <div className="flex flex-col">
+                    <span className="font-medium">Custom Price</span>
+                    <span className="text-xs text-muted-foreground">
+                      {canCreateCustomOrVariant ? 'One-off price for specific customers' : 'Requires list price first'}
+                    </span>
+                  </div>
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => openPriceForm(undefined, 'variant')}
+                  disabled={!canCreateCustomOrVariant}
+                >
+                  <div className="flex flex-col">
+                    <span className="font-medium">Variant Price</span>
+                    <span className="text-xs text-muted-foreground">
+                      {canCreateCustomOrVariant ? 'Variant of a list price' : 'Requires list price first'}
+                    </span>
+                  </div>
+                </DropdownMenuItem>
+                {product.integration_id && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={() => setIsAddExistingStripePriceDialogOpen(true)}>
+                      <div className="flex flex-col">
+                        <span className="font-medium">Import from Stripe</span>
+                        <span className="text-xs text-muted-foreground">Add existing Stripe prices</span>
+                      </div>
+                    </DropdownMenuItem>
+                  </>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
+
           <PriceTable
             prices={prices}
             onEdit={openPriceForm}
             onDelete={(price) => setPriceToDelete(price)}
+            onCreateChild={(parentPrice, scope) => {
+              setEditingPrice(undefined);
+              setNewPriceScope(scope);
+              setParentPriceForChild(parentPrice);
+              setIsPriceFormOpen(true);
+            }}
             showActions
           />
         </div>
 
         {/* Price Form Dialog */}
-        {isPriceFormOpen && <PriceForm
-          open
-          onOpenChange={setIsPriceFormOpen}
-          product={product as any}
-          initialData={editingPrice}
+        <PriceForm
+          key={editingPrice ? `edit-${editingPrice.id}` : `create-${newPriceScope}-${parentPriceForChild?.id || 'none'}`}
+          open={isPriceFormOpen}
+          onOpenChange={(open) => {
+            setIsPriceFormOpen(open);
+            if (!open) {
+              // Clear editing state when dialog closes
+              setEditingPrice(undefined);
+              setNewPriceScope('list');
+              setParentPriceForChild(undefined);
+            }
+          }}
+          product={product}
+          initialData={editingPrice || (parentPriceForChild ? {
+            scope: newPriceScope,
+            parent_list_price_id: parentPriceForChild.id,
+            type: parentPriceForChild.type
+          } : { scope: newPriceScope })}
           listPrices={listPrices || []}
-        /> }
+        />
 
         {/* Delete Price Dialog */}
         <AlertDialog open={!!priceToDelete} onOpenChange={(open) => !open && setPriceToDelete(undefined)}>
@@ -212,14 +295,14 @@ export default function Show() {
         <AddExistingStripePriceDialog
           open={isAddExistingStripePriceDialogOpen}
           onOpenChange={setIsAddExistingStripePriceDialogOpen}
-          product={product as any}
+          product={product as ProductType}
         />
 
         {/* Product Form Dialog */}
         <ProductForm
           open={isProductFormOpen}
           onOpenChange={setIsProductFormOpen}
-          initialData={product as any}
+          initialData={product}
         />
 
         <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>

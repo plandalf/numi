@@ -1,6 +1,6 @@
 import {
   Dialog,
-  DialogContent,
+  DialogContent, DialogDescription, DialogHeader, DialogTitle
 } from '@/components/ui/dialog';
 import { useState } from 'react';
 import { router } from '@inertiajs/react';
@@ -46,14 +46,14 @@ export default function AddExistingStripePriceDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="sm:max-w-[600px]">
+      <DialogContent>
         <PriceStep
-          integrationId={product.integration_id!}
+          integrationId={product.integration?.id!}
           productId={product.gateway_product_id!}
           selectedPrices={selectedPrices}
           setSelectedPrices={setSelectedPrices}
           onClickSave={handleSave}
-          onClickBack={() => void 0}
+          onClickBack={() => handleOpenChange(false)}
         />
       </DialogContent>
     </Dialog>

@@ -24,7 +24,7 @@ class OfferResource extends BaseResource
             ->map(function (Offer $offer) {
                 return [
                     'value' => $offer->id,
-                    'label' => $offer->name,
+                    'label' => $offer->name ?? 'Untitled Offer',
                 ];
             })
             ->toArray();

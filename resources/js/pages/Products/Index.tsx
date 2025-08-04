@@ -34,7 +34,6 @@ interface PaginatedResponse<T> {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Plus, ExternalLink } from 'lucide-react';
-// Trying capitalized path based on linter error context
 import ProductForm from '@/components/Products/ProductForm';
 import { Integration } from '@/types/integration';
 import { Product, ProductStatus } from '@/types/product';
@@ -76,6 +75,9 @@ export default function Index({ auth, products, filters, integrations, prices, s
   const debouncedSearch = useDebounce(search, 300);
 
   const hasIntegrations = integrations.length > 0;
+
+  // todo:
+
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const integrationIdParam = urlParams.get('integration_id');
@@ -116,7 +118,7 @@ export default function Index({ auth, products, filters, integrations, prices, s
       }
     }
     return (
-      <Button className="w-full bg-[#6772E5] hover:bg-[#6772E5]/80" onClick={handleClick}>
+      <Button  className="w-full" variant="secondary" onClick={handleClick}>
         <img src="/assets/icons/stripe.svg" alt="Stripe" className="w-4 h-4 mr-2" />
         {hasIntegrations ? 'Import an existing product' : 'Connect to Stripe'}
       </Button>
@@ -284,7 +286,7 @@ export default function Index({ auth, products, filters, integrations, prices, s
           <AddExistingStripeProductDialog
             open={isAddExistingStripeProductDialogOpen}
             onOpenChange={setIsAddExistingStripeProductDialogOpen}
-            integrationId={integrationId ? Number(integrationId) : undefined}
+            integrationId={integrationId}
             integrations={integrations}
           />
         )}

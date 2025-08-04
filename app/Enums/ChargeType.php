@@ -5,10 +5,11 @@ namespace App\Enums;
 enum ChargeType: string
 {
     case ONE_TIME = 'one_time';
-    case GRADUATED = 'graduated';
-    case VOLUME = 'volume';
-    case PACKAGE = 'package';
     case RECURRING = 'recurring';
+    case TIERED = 'tiered';
+    case VOLUME = 'volume';
+    case GRADUATED = 'graduated';
+    case PACKAGE = 'package';
 
     /**
      * Get all available charge types as an array of values.
@@ -23,10 +24,11 @@ enum ChargeType: string
     public static function recurringTypes()
     {
         return [
-            self::GRADUATED,
-            self::VOLUME,
-            self::PACKAGE,
             self::RECURRING,
+            self::TIERED,
+            self::VOLUME,
+            self::GRADUATED,
+            self::PACKAGE,
         ];
     }
 
@@ -37,16 +39,17 @@ enum ChargeType: string
     {
         return match ($this) {
             self::ONE_TIME => 'One Time',
-            self::GRADUATED => 'Graduated',
-            self::VOLUME => 'Volume',
-            self::PACKAGE => 'Package',
             self::RECURRING => 'Recurring',
+            self::TIERED => 'Tiered',
+            self::VOLUME => 'Volume',
+            self::GRADUATED => 'Graduated',
+            self::PACKAGE => 'Package',
         };
     }
 
     public function isSubscription(): bool
     {
-        return in_array($this, [self::GRADUATED, self::VOLUME, self::PACKAGE, self::RECURRING]);
+        return in_array($this, [self::RECURRING, self::TIERED, self::VOLUME, self::GRADUATED, self::PACKAGE]);
     }
 
     public function isOneTime(): bool

@@ -6,6 +6,7 @@ use App\Apps\Plandalf\Triggers\OrderCreated;
 use App\Models\Automation\Run;
 use App\Models\Automation\Trigger;
 use App\Models\Automation\AutomationEvent;
+use App\Services\AppDiscoveryService;
 use App\Workflows\Automation\Events\AutomationTriggerEvent;
 use App\Workflows\Automation\Events\SystemEvent;
 use App\Workflows\RunSequenceWorkflow;
@@ -16,9 +17,7 @@ use Workflow\WorkflowStub;
 
 class AutomationEventListener
 {
-    public function __construct(
-        private \App\Services\AppDiscoveryService $appDiscoveryService,
-    )
+    public function __construct(private AppDiscoveryService $appDiscoveryService)
     {
     }
 
@@ -80,12 +79,18 @@ class AutomationEventListener
 
         $e = new $trig['class'];
 
-        $bundle = new Bundle($event->props);
+        $bundle = new Bundle(
+            organization: $event->organization,
+            input: $event->props,
+            configuration: $trigger->configuration,
+            integration: $trigger->integration,
+        );
 
-        $processedData = $e($bundle);
-
-        // trigger event ?
-        // data = the processed data!
+        try {
+            $processedData = $e($bundle);
+        } catch (TriggerSkippedException $e) {
+            return;
+        }
 
         try {
             /* @var AutomationEvent $triggerEvent */
@@ -118,61 +123,12 @@ class AutomationEventListener
 
             $workflow->start($trigger, $triggerEvent);
 
-            // Update trigger stats
-//            $trigger->increment('trigger_count');
-//            $trigger->update(['last_triggered_at' => now()]);
-//
-//            Log::info('Trigger executed successfully', [
-//                'trigger_id' => $trigger->id,
-//                'trigger_name' => $trigger->name,
-//                'workflow_id' => $run->id,
-//                'trigger_event_id' => $triggerEvent->id
-//            ]);
-
             return;
 
         } catch (\Exception $e) {
             $triggerEvent->markAsFailed($e->getMessage());
             throw $e;
         }
-    }
-
-    /**
-     * Execute the trigger class to get processed event data
-     */
-    private function executeTriggerClass(Trigger $trigger, array $eventProps): array
-    {
-        // Find the trigger class from app discovery
-        $apps = $this->appDiscoveryService->discoverApps();
-        $triggerClass = null;
-
-        foreach ($apps as $appData) {
-            foreach ($appData['triggers'] as $triggerData) {
-                if ($triggerData['key'] === $trigger->trigger_key) {
-                    $triggerClass = $triggerData['class'];
-                    break 2;
-                }
-            }
-        }
-
-        if (!$triggerClass || !class_exists($triggerClass)) {
-            throw new \Exception("Trigger class not found for key: {$trigger->trigger_key}");
-        }
-
-        // Create trigger instance with integration and configuration
-        $integration = $trigger->integration;
-        $configuration = $trigger->configuration ?? [];
-
-        $triggerInstance = new $triggerClass($integration, $configuration);
-
-        // Create bundle with event data
-        $bundle = new \App\Workflows\Automation\Bundle([
-            'input' => $eventProps,
-            'configuration' => $configuration
-        ]);
-
-        // Execute the trigger
-        return $triggerInstance->__invoke($bundle);
     }
 
     /**
@@ -183,7 +139,7 @@ class AutomationEventListener
         $conditions = $trigger->conditions;
 
         if (!$conditions || empty($conditions)) {
-            return true; // No conditions means always trigger
+            return true;
         }
 
         foreach ($conditions as $field => $condition) {

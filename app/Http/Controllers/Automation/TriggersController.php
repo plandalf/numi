@@ -24,7 +24,6 @@ class TriggersController extends Controller
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
-//            'sequence_id' => 'required|integer|exists:automation_sequences,id',
             'sequence_id' => [
                 'required',
                 'integer',
@@ -59,7 +58,7 @@ class TriggersController extends Controller
             $trigger->load('app');
 
             $triggerData = $trigger->toArray();
-            
+
             // Add webhook URL for Plandalf webhook triggers
             if ($trigger->isPlandalfWebhookTrigger()) {
                 $triggerData['webhook_url'] = $trigger->generateWebhookUrl();
@@ -106,7 +105,7 @@ class TriggersController extends Controller
             $trigger->load('app');
 
             $triggerData = $trigger->toArray();
-            
+
             // Add webhook URL for Plandalf webhook triggers
             if ($trigger->isPlandalfWebhookTrigger()) {
                 $triggerData['webhook_url'] = $trigger->generateWebhookUrl();
@@ -170,7 +169,9 @@ class TriggersController extends Controller
 
                             // Create a Bundle with trigger configuration
                             $bundle = new \App\Workflows\Automation\Bundle(
+                                organization: $trigger->sequence->organization,
                                 input: $trigger->configuration ?? [],
+                                configuration: $trigger->configuration,
                                 integration: $integration
                             );
 
@@ -191,19 +192,6 @@ class TriggersController extends Controller
                     throw ValidationException::withMessages([
                         'message' => 'Failed to generate example data: ' . $e->getMessage()
                     ]);
-//                    // If example generation fails, provide basic fallback
-//                    $eventData = [
-//                        'example' => true,
-//                        'message' => 'Example data not available for this trigger type',
-//                        'error' => 'Could not generate example: ' . $e->getMessage()
-//                    ];
-//                    $isExample = true;
-//                    $eventMetadata = [
-//                        'type' => 'fallback',
-//                        'source' => 'Basic fallback example',
-//                        'created_at' => now()->toISOString(),
-//                        'status' => 'fallback'
-//                    ];
                 }
 
                 if (!$eventData) {
@@ -216,22 +204,6 @@ class TriggersController extends Controller
             // Generate JSON Schema for the event data
             $schemaService = new \App\Services\DataSchemaService();
             $jsonSchema = $schemaService->generateJsonSchema($eventData, "Trigger {$trigger->name} Event");
-
-            // Store test result with schema and metadata
-//            $testResultData = [
-//                'data' => $eventData,
-//                'schema' => $jsonSchema,
-//                'tested_at' => now()->toISOString(),
-//                'is_example' => $isExample,
-//            ];
-
-//            if ($eventMetadata) {
-//                $testResultData = array_merge($testResultData, [
-//                    'event_id' => $eventMetadata['id'] ?? null,
-//                    'event_source' => $eventMetadata['source'] ?? 'unknown',
-//                    'event_created_at' => $eventMetadata['created_at'] ?? now()->toISOString()
-//                ]);
-//            }
 
             $trigger->update(['test_result' => $eventData]);
 

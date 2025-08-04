@@ -142,7 +142,7 @@ function SetupStep({
   };
 
   return (
-    <TabsContent value="setup" className="absolute inset-0 data-[state=inactive]:hidden">
+    <TabsContent value="setup" className="">
       <div className="h-full overflow-y-auto px-6 py-4">
         <div className="space-y-6">
 
@@ -151,7 +151,7 @@ function SetupStep({
             <Label className="text-sm font-medium">App *</Label>
             {selectedApp ? (
               <div className="border border-blue-300 bg-blue-50">
-                <CardContent className="p-3">
+                <div className="p-3">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-3">
                       {selectedApp.icon_url ? (
@@ -177,11 +177,11 @@ function SetupStep({
                       Change
                     </Button>
                   </div>
-                </CardContent>
+                </div>
               </div>
             ) : (
               <div className="border-2 border-dashed border-gray-300 hover:border-gray-400 transition-colors cursor-pointer" onClick={() => setShowAppSelector(true)}>
-                <CardContent className="p-4">
+                <div className="p-4">
                   <div className="flex items-center space-x-3">
                     <div className="w-8 h-8 bg-gray-100 rounded flex items-center justify-center">
                       <Webhook className="h-4 w-4 text-gray-400" />
@@ -191,7 +191,7 @@ function SetupStep({
                       <p className="text-xs text-gray-500">Select the app that will execute this action</p>
                     </div>
                   </div>
-                </CardContent>
+                </div>
               </div>
             )}
           </div>
@@ -201,7 +201,7 @@ function SetupStep({
             <Label className="text-sm font-medium">Action *</Label>
             {selectedAction ? (
               <div className="border border-blue-300 bg-blue-50">
-                <CardContent className="p-3">
+                <div className="p-3">
                   <div className="flex items-center justify-between">
                     <div className="flex-1">
                       <h4 className="font-medium text-sm">{selectedAction.label}</h4>
@@ -216,7 +216,7 @@ function SetupStep({
                       Change
                     </Button>
                   </div>
-                </CardContent>
+                </div>
               </div>
             ) : (
               <div className={`border-2 border-dashed transition-colors ${
@@ -224,7 +224,7 @@ function SetupStep({
                   ? 'border-gray-300 hover:border-gray-400 cursor-pointer'
                   : 'border-gray-200 cursor-not-allowed'
               }`} onClick={() => selectedApp && setShowActionSelector(true)}>
-                <CardContent className="p-4">
+                <div className="p-4">
                   <div className="flex items-center space-x-3">
                     <div className="w-8 h-8 bg-gray-100 rounded flex items-center justify-center">
                       <Play className="h-4 w-4 text-gray-400" />
@@ -238,7 +238,7 @@ function SetupStep({
                       </p>
                     </div>
                   </div>
-                </CardContent>
+                </div>
               </div>
             )}
           </div>
@@ -249,7 +249,7 @@ function SetupStep({
               <Label className="text-sm font-medium">Account *</Label>
               {selectedIntegration ? (
                 <div className="border border-blue-300 bg-blue-50">
-                  <CardContent className="p-3">
+                  <div className="p-3">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-3">
                         <User className="h-8 w-8 p-1.5 bg-blue-100 text-blue-600 rounded" />
@@ -271,17 +271,17 @@ function SetupStep({
                         </Button>
                       </div>
                     </div>
-                  </CardContent>
+                  </div>
                 </div>
               ) : (
                 <div className="border-2 border-dashed border-gray-300 bg-gray-50 cursor-pointer hover:border-gray-400 transition-colors" onClick={() => setShowIntegrationSelector(true)}>
-                  <CardContent className="p-3">
+                  <div className="p-3">
                     <div className="flex items-center justify-center space-x-2 text-gray-600">
                       <User className="h-4 w-4" />
                       <span className="text-sm">Select {selectedApp?.name} integration</span>
                       <ChevronDown className="h-3 w-3" />
                     </div>
-                  </CardContent>
+                  </div>
                 </div>
               )}
             </div>
@@ -289,27 +289,27 @@ function SetupStep({
 
           {/* Progress Message */}
           <div className="space-y-3">
-                  {!selectedApp && (
-                    <div className="text-center p-3 bg-gray-50 rounded text-sm text-gray-600">
-                      To continue, choose an app
-                    </div>
-                  )}
-                  {selectedApp && !selectedAction && (
-                    <div className="text-center p-3 bg-gray-50 rounded text-sm text-gray-600">
-                      To continue, choose an action
-                    </div>
-                  )}
-                  {selectedApp && selectedAction && selectedAction.requires_auth && !selectedIntegration && (
-                    <div className="text-center p-3 bg-orange-50 rounded text-sm text-orange-600">
-                      To continue, setup your {selectedApp.name} integration above
-                    </div>
-                  )}
-                  {selectedApp && selectedAction && (!selectedAction.requires_auth || selectedIntegration) && (
-                    <div className="text-center p-3 bg-green-50 rounded text-sm text-green-600">
-                      ✓ Setup complete! You can now configure and test your action.
-                    </div>
-                  )}
-                </div>
+            {!selectedApp && (
+              <div className="text-center p-3 bg-gray-50 rounded text-sm text-gray-600">
+                To continue, choose an app
+              </div>
+            )}
+            {selectedApp && !selectedAction && (
+              <div className="text-center p-3 bg-gray-50 rounded text-sm text-gray-600">
+                To continue, choose an action
+              </div>
+            )}
+            {selectedApp && selectedAction && selectedAction.requires_auth && !selectedIntegration && (
+              <div className="text-center p-3 bg-orange-50 rounded text-sm text-orange-600">
+                To continue, setup your {selectedApp.name} integration above
+              </div>
+            )}
+            {selectedApp && selectedAction && (!selectedAction.requires_auth || selectedIntegration) && (
+              <div className="text-center p-3 bg-green-50 rounded text-sm text-green-600">
+                ✓ Setup complete! You can now configure and test your action.
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -325,14 +325,14 @@ function SetupStep({
             </DialogHeader>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {apps.map((app) => (
-                <Card
+                <div
                   key={app.id}
                   className={`cursor-pointer transition-colors ${
                     selectedApp?.id === app.id ? 'border-blue-500 bg-blue-50' : 'hover:border-gray-300'
                   }`}
                   onClick={() => handleAppSelect(app)}
                 >
-                  <CardContent className="p-3">
+                  <div className="p-3">
                     <div className="flex items-center space-x-3">
                       {app.icon_url ? (
                         <img src={app.icon_url} alt={app.name} className="w-8 h-8 rounded-lg" />
@@ -349,8 +349,8 @@ function SetupStep({
                         <p className="text-xs text-gray-500">{app.description}</p>
                       </div>
                     </div>
-                  </CardContent>
-                </Card>
+                  </div>
+                </div>
               ))}
             </div>
             <div className="flex justify-end pt-4">
@@ -424,12 +424,9 @@ function ConfigStep({
   validationErrors,
 }: ConfigStepProps) {
   return (
-    <TabsContent value="config" className="absolute inset-0 data-[state=inactive]:hidden">
+    <TabsContent value="config" className="">
       <div className="h-full overflow-y-auto px-6 py-4">
         <div className="space-y-6">
-          <div>
-            <h3 className="text-lg font-medium mb-4">Configure Action</h3>
-          </div>
 
           {/* Action Name */}
           <div className="space-y-2">
@@ -454,8 +451,8 @@ function ConfigStep({
             </div>
 
             {selectedAction?.props && Object.keys(selectedAction.props).length > 0 ? (
-              <Card>
-                <CardContent className="p-4 space-y-4">
+              <div>
+                <div className="space-y-4">
                   {Object.values(selectedAction.props).map((field) => (
                     <TriggerConfigField
                       key={field.key}
@@ -470,18 +467,18 @@ function ConfigStep({
                       currentActionId={action?.id}
                     />
                   ))}
-                </CardContent>
-              </Card>
+                </div>
+              </div>
             ) : (
-              <Card>
-                <CardContent className="p-4">
+              <div>
+                <div className="p-4">
                   <div className="text-center py-8 text-gray-500">
                     <Settings className="h-12 w-12 mx-auto mb-4 text-gray-300" />
                     <p className="text-lg font-medium">No configuration required</p>
                     <p className="text-sm">This action doesn't need any additional configuration</p>
                   </div>
-                </CardContent>
-              </Card>
+                </div>
+              </div>
             )}
           </div>
         </div>
@@ -503,14 +500,14 @@ function safeStringify(data: unknown): string {
 // Test Step Component
 function TestStep({ testResult, testLoading, handleTestAction }: TestStepProps) {
   return (
-    <TabsContent value="test" className="absolute inset-0 data-[state=inactive]:hidden">
+    <TabsContent value="test" className="">
       <div className="h-full overflow-y-auto px-6 py-4">
         <div className="space-y-6">
           <h3 className="text-lg font-medium">Test Action</h3>
 
           <div className="space-y-4">
-            <Card>
-              <CardContent className="p-4">
+            <div>
+              <div className="p-4">
                 <div className="text-center space-y-4">
                   <TestTube className="h-12 w-12 mx-auto text-blue-500" />
                   <div>
@@ -537,13 +534,13 @@ function TestStep({ testResult, testLoading, handleTestAction }: TestStepProps) 
                     )}
                   </Button>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
 
             {/* Test Results */}
             {testResult && (
-              <Card>
-                <CardContent className="p-4">
+              <div>
+                <div className="p-4">
                   <h4 className="font-medium mb-3">Test Results</h4>
                   {testResult.error ? (
                     <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
@@ -616,8 +613,8 @@ function TestStep({ testResult, testLoading, handleTestAction }: TestStepProps) 
                       </details>
                     </div>
                   )}
-                </CardContent>
-              </Card>
+                </div>
+              </div>
             )}
           </div>
         </div>
@@ -976,8 +973,8 @@ export function EditActionModal({ open, onClose, action, onActionUpdated, sequen
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent variant="wizard" className="overflow-hidden">
-        <DialogHeader className="bg-gray-100 clear-both py-2 px-4">
+      <DialogContent variant="wizard" className="!max-w-2xl p-0">
+        <DialogHeader className="bg-gray-100 clear-both py-2 px-4 rounded-t-lg">
           <DialogTitle className="text-base">Edit Action</DialogTitle>
         </DialogHeader>
 
@@ -1001,9 +998,9 @@ export function EditActionModal({ open, onClose, action, onActionUpdated, sequen
                           </div>
             )}
 
-            <div className="flex-1 flex flex-col min-h-0">
-              <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
-                <TabsList className="grid w-full grid-cols-3 mx-6">
+            <div className="">
+              <Tabs value={activeTab} onValueChange={setActiveTab} className="">
+                <TabsList className="grid grid-cols-3 mx-6">
                   <TabsTrigger value="setup" disabled={false}>
                     1. Setup
                   </TabsTrigger>
@@ -1054,14 +1051,14 @@ export function EditActionModal({ open, onClose, action, onActionUpdated, sequen
             </div>
 
             {/* Wizard Navigation */}
-            <div className="px-6 py-4 border-t bg-gray-50 flex justify-between">
+            <div className="px-6 py-4 border-t bg-gray-50 flex justify-between rounded-b-lg">
               <div>
                 {activeTab !== 'setup' && (
                   <Button onClick={handlePreviousStep} variant="outline">
                     Previous
                     </Button>
                 )}
-                  </div>
+              </div>
 
               <div className="flex space-x-2">
                 {activeTab === 'setup' && (
