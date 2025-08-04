@@ -61,7 +61,7 @@ export function useTemplateVariables({
       : actions;
 
     availableActions.forEach((action, index) => {
-      const actionNumber = index + 1; // Actions are numbered from 1
+      const actionNumber = action.id;
 
       if (action.test_result && typeof action.test_result === 'object') {
         // Generate variables from actual test result data only
