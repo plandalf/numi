@@ -838,12 +838,12 @@ export default function PriceForm({
                     onChange={handleAmountChange}
                     onBlur={handleAmountBlur}
                     ref={amountInputRef}
-                    disabled={processing}
+                    disabled={processing || isEditing}
                     className={`border-0 focus:ring-0 focus:border-none rounded-none flex-1 min-w-0 px-2 text-base shadow-none ${
                       processing
-                        ? 'bg-gray-50 cursor-not-allowed'
+                        ? '!bg-gray-100 !text-gray-600 cursor-not-allowed '
                         : 'bg-white'
-                    }`}
+                    } `}
                     style={{ boxShadow: 'none' }}
                     aria-describedby="amount-currency-addon"
                     placeholder="0.00"
@@ -854,7 +854,10 @@ export default function PriceForm({
                     value={data.currency}
                     onChange={(event) => setData('currency', event.target.value.toLowerCase())}
                     disabled={processing || isEditing}
-                    className="rounded-none border-0 bg-transparent px-3 h-9 min-w-[64px] w-auto text-base focus:ring-0 focus:border-none"
+                    className={`
+                    rounded-none border-0 bg-transparent px-3 h-9 min-w-[64px] w-auto text-base focus:ring-0 focus:border-none
+                    ${processing || isEditing ? 'cursor-not-allowed !bg-gray-100 text-gray-500' : 'bg-white'}
+                    `}
                   >
                     {getSupportedCurrencies().map((currency) => (
                       <option key={currency.code} value={currency.code.toLowerCase()}>
@@ -1246,7 +1249,7 @@ export default function PriceForm({
 
   return (
     <Dialog open={open} onOpenChange={() => onOpenChange(false)}>
-      <DialogContent className="p-0 rounded-2xl overflow-hidden max-w-4xl">
+      <DialogContent className="p-0">
         {content}
       </DialogContent>
     </Dialog>

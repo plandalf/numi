@@ -38,12 +38,15 @@ class CreateCheckoutSessionAction
                 }
 
                 $priceId = $offerItem->default_price_id;
-                
+
                 // Apply interval/currency overrides if provided
                 if ($intervalOverride || $currencyOverride) {
-                    $defaultPrice = Price::find($offerItem->default_price_id);
+                    /* @var Price|null $defaultPrice */
+                    $defaultPrice = $offer->organization->prices()->find($offerItem->default_price_id);
+
                     if ($defaultPrice) {
                         $overriddenPrice = $this->findPriceWithOverrides($defaultPrice, $intervalOverride, $currencyOverride);
+
                         if ($overriddenPrice) {
                             $priceId = $overriddenPrice->id;
                         }
@@ -61,7 +64,7 @@ class CreateCheckoutSessionAction
             // Process explicit checkout items with overrides
             foreach ($checkoutItems as $item) {
                 $priceId = $item['price_id'];
-                
+
                 // Apply interval/currency overrides if provided
                 if ($intervalOverride || $currencyOverride) {
                     $originalPrice = Price::find($item['price_id']);
@@ -72,7 +75,7 @@ class CreateCheckoutSessionAction
                         }
                     }
                 }
-                
+
                 $this->createCheckoutLineItemAction->execute(
                     $checkoutSession,
                     null,
@@ -98,7 +101,7 @@ class CreateCheckoutSessionAction
         if ($currencyOverride && $currencyOverride !== 'auto' && strtoupper($parentPrice->currency) !== strtoupper($currencyOverride)) {
             $parentMatches = false;
         }
-        
+
         // Return parent if it already matches
         if ($parentMatches) {
             return $parentPrice;

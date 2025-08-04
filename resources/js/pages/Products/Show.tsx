@@ -233,6 +233,7 @@ export default function Show() {
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
+
           <PriceTable
             prices={prices}
             onEdit={openPriceForm}

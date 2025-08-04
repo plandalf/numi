@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Enums\OnboardingStep;
 use App\Enums\FulfillmentMethod;
 use App\Enums\DeliveryMethod;
+use App\Models\Catalog\Price;
 use App\Models\Store\Offer;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -18,9 +19,6 @@ use Laravel\Cashier\Billable;
 use function Illuminate\Events\queueable;
 
 /**
- * @property string|null $checkout_success_url
- * @property string|null $checkout_cancel_url
- *
  * @property mixed $name
  * @property mixed $description
  * @property mixed $website_url
@@ -312,14 +310,19 @@ class Organization extends Model
 
         $countryMapping = config('currencies.country_mapping', []);
         $availableCurrencies = config('currencies.available', []);
-        
+
         $currency = $countryMapping[$countryCode] ?? null;
-        
+
         // Only return currencies that are available for this organization
         if ($currency && array_key_exists($currency, $availableCurrencies)) {
             return $currency;
         }
 
         return null;
+    }
+
+    public function prices(): HasMany
+    {
+        return $this->hasMany(Price::class);
     }
 }

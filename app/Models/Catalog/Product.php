@@ -14,15 +14,19 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
+ * @property Integration|null $integration
+ *
  * @property string $lookup_key
  * @property string $gateway_product_id
  * @property string $name
  * @property string $description
  * @property ProductStatus $status
+ * @property int $organization_id
  */
-class Product extends Model
+class Product extends \App\Database\Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory,
+        SoftDeletes;
 
     protected $table = 'catalog_products';
 
@@ -44,6 +48,11 @@ class Product extends Model
         'gateway_provider' => IntegrationType::class,
         'status' => ProductStatus::class,
     ];
+
+    public function getRouteKeyName()
+    {
+        return 'lookup_key';
+    }
 
     public function organization(): BelongsTo
     {

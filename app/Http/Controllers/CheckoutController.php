@@ -52,8 +52,8 @@ class CheckoutController extends Controller
         }
 
         // Process any explicit checkout items from query string
-        if (!empty($checkoutItems)) {
-            foreach ($checkoutItems as $key => $item) {
+        $checkoutItems = collect(Arr::wrap($checkoutItems))
+            ->map(function ($item, $key) use ($offer) {
                 if (!isset($item['lookup_key'])) {
                     throw ValidationException::withMessages([
                         'items' => ['Each item must have a lookup_key'],
@@ -72,13 +72,16 @@ class CheckoutController extends Controller
                     ];
                 }
 
-                $checkoutItems[$key]['price_id'] = $price->id;
-            }
-        }
+                return ['price_id' => $price->id];
+            })
+            ->all();
+
 
         $testMode = $environment === 'test';
 
-        $checkoutSession = $this->createCheckoutSessionAction->execute($offer, $checkoutItems, $testMode, $intervalOverride, $currencyOverride);
+        $checkoutSession = $this->createCheckoutSessionAction
+            ->execute($offer, $checkoutItems, $testMode, $intervalOverride, $currencyOverride);
+
         $this->handleInvalidDomain($request, $checkoutSession);
 
         $params = array_filter(array_merge([
