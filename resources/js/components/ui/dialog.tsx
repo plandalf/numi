@@ -79,7 +79,6 @@ function DialogContent({
   return (
     <DialogPortal data-slot="dialog-portal">
       <DialogOverlay className="DialogOverlay" position={position}>
-        {position}
       <DialogPrimitive.Content
         data-slot="dialog-content"
         className={cn(
