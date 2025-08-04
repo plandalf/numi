@@ -23,6 +23,7 @@ class SequencesController extends Controller
         $sequences = Sequence::query()
             ->where('organization_id', $organizationId)
             ->with(['triggers', 'actions'])
+            ->withCount(['triggers', 'actions'])
             ->latest()
             ->get();
 
