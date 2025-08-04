@@ -973,8 +973,8 @@ export function EditActionModal({ open, onClose, action, onActionUpdated, sequen
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent variant="wizard" className="!max-w-2xl p-0">
-        <DialogHeader className="bg-gray-100 clear-both py-2 px-4 rounded-t-lg">
+      <DialogContent variant="wizard" className="!max-w-2xl p-0" position="sticky">
+        <DialogHeader className="bg-gray-100 clear-both py-2 px-4 rounded-t-lg mb-4">
           <DialogTitle className="text-base">Edit Action</DialogTitle>
         </DialogHeader>
 

@@ -228,7 +228,7 @@ function IntegrationSetupModal({ open, onClose, app, onIntegrationCreated }: Int
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-2xl" position="sticky">
         <DialogHeader>
           <DialogTitle>Setup {app.name} Integration</DialogTitle>
           <DialogDescription>
@@ -1147,7 +1147,7 @@ export function EditTriggerModal({ open, onClose, trigger, onTriggerUpdated }: E
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent variant="wizsard" className="!max-w-2xl p-0">
+      <DialogContent variant="wizsard" className="!max-w-2xl p-0" position="sticky">
         <DialogHeader className="px-6 pt-6 pb-4 border-b">
           <DialogTitle>Edit Trigger</DialogTitle>
           <DialogDescription>
@@ -1175,7 +1175,7 @@ export function EditTriggerModal({ open, onClose, trigger, onTriggerUpdated }: E
               </div>
             )}
 
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col pt-4">
               <TabsList className="grid  grid-cols-3 mx-6">
                 <TabsTrigger value="setup" disabled={false}>
                   1. Setup
@@ -1478,7 +1478,7 @@ export function EditTriggerModal({ open, onClose, trigger, onTriggerUpdated }: E
             </Tabs>
 
             {/* Wizard Navigation */}
-            <div className="px-6 py-4 border-t bg-gray-50 flex justify-between">
+            <div className="px-6 py-4 border-t bg-gray-50 flex justify-between rounded-b-lg">
               <div>
                 {activeTab !== 'setup' && (
                   <Button onClick={handlePreviousStep} variant="outline">
@@ -1540,7 +1540,7 @@ export function EditTriggerModal({ open, onClose, trigger, onTriggerUpdated }: E
 
             {/* App Selector Modal */}
             {showAppSelector && (
-              <Dialog open={showAppSelector} onOpenChange={setShowAppSelector}>
+              <Dialog open={showAppSelector} onOpenChange={setShowAppSelector} >
                 <DialogContent className="max-w-2xl">
                   <DialogHeader>
                     <DialogTitle>Choose App</DialogTitle>
@@ -1645,7 +1645,7 @@ export function EditTriggerModal({ open, onClose, trigger, onTriggerUpdated }: E
             {/* Account Selector Modal */}
             {showAccountSelector && (
               <Dialog open={showAccountSelector} onOpenChange={setShowAccountSelector}>
-                <DialogContent className="max-w-2xl">
+                <DialogContent className="max-w-2xl" >
                   <DialogHeader>
                     <DialogTitle>Choose Account</DialogTitle>
                     <DialogDescription>

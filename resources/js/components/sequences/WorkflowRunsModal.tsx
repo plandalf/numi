@@ -111,8 +111,8 @@ function safeStringify(data: unknown): string {
 
 // Helper function to check if data should be displayed
 function shouldShowData(data: unknown): boolean {
-  return data != null && 
-         typeof data === 'object' && 
+  return data != null &&
+         typeof data === 'object' &&
          Object.keys(data as Record<string, unknown>).length > 0;
 }
 
@@ -192,7 +192,7 @@ function WorkflowRunDetailsModal({ open, onClose, workflowId }: WorkflowRunDetai
     try {
       setRerunning(true);
       const response = await axios.post(`/automation/workflows/${workflowId}/rerun`);
-      
+
       if (response.data.success) {
         // Show success message and refresh workflow details
         alert('Workflow rerun started successfully!');
@@ -217,13 +217,13 @@ function WorkflowRunDetailsModal({ open, onClose, workflowId }: WorkflowRunDetai
     const confirmed = window.confirm(
       'Force rerun will immediately fail the current workflow, clear its progress, and restart it from the beginning. This should only be used for stuck workflows. Are you sure?'
     );
-    
+
     if (!confirmed) return;
 
     try {
       setForceRerunning(true);
       const response = await axios.post(`/automation/workflows/${workflowId}/force-rerun`);
-      
+
       if (response.data.success) {
         // Show success message and refresh workflow details
         alert('Workflow force rerun started successfully! The workflow has been reset and restarted.');
@@ -256,7 +256,7 @@ function WorkflowRunDetailsModal({ open, onClose, workflowId }: WorkflowRunDetai
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent variant="full-height" className="max-w-[95vw] max-h-[90vh] overflow-y-auto">
+      <DialogContent variant="full-height" className="max-w-[95vw] max-h-[90vh] overflow-y-auto" position="sticky">
         <DialogHeader>
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
@@ -287,7 +287,7 @@ function WorkflowRunDetailsModal({ open, onClose, workflowId }: WorkflowRunDetai
                     {rerunning ? 'Rerunning...' : 'Rerun Workflow'}
                   </Button>
                 )}
-                
+
                 {/* Force Rerun Button - for pending/running workflows */}
                 {['pending', 'running'].includes(workflow.status) && (
                   <Button
@@ -335,7 +335,7 @@ function WorkflowRunDetailsModal({ open, onClose, workflowId }: WorkflowRunDetai
             <div>
               <CardContent className="p-4">
                 <h3 className="font-medium mb-4">Execution Summary</h3>
-                
+
                 {/* Timing Information */}
                 <div className="mb-4 p-3 bg-gray-50 rounded-lg">
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
@@ -352,9 +352,9 @@ function WorkflowRunDetailsModal({ open, onClose, workflowId }: WorkflowRunDetai
                     <div>
                       <p className="text-gray-500 text-xs">Total Duration</p>
                       <p className="font-medium">
-                        {workflow.summary?.total_duration_ms 
+                        {workflow.summary?.total_duration_ms
                           ? `${(workflow.summary.total_duration_ms / 1000).toFixed(2)}s`
-                          : workflow.finished_at 
+                          : workflow.finished_at
                             ? `${((new Date(workflow.finished_at).getTime() - new Date(workflow.created_at).getTime()) / 1000).toFixed(2)}s`
                             : 'Running...'
                         }
@@ -379,7 +379,7 @@ function WorkflowRunDetailsModal({ open, onClose, workflowId }: WorkflowRunDetai
                   </div>
                   <div className="text-center p-3 bg-yellow-50 rounded-lg">
                     <p className="text-yellow-600 font-medium text-lg">
-                      {workflow.summary?.avg_step_duration_ms 
+                      {workflow.summary?.avg_step_duration_ms
                         ? `${(workflow.summary.avg_step_duration_ms / 1000).toFixed(2)}s`
                         : '0s'
                       }
@@ -398,13 +398,13 @@ function WorkflowRunDetailsModal({ open, onClose, workflowId }: WorkflowRunDetai
                       </span>
                     </div>
                     <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div 
+                      <div
                         className={`h-2 rounded-full transition-all duration-300 ${
                           workflow.status === 'failed' ? 'bg-red-500' :
                           workflow.status === 'completed' ? 'bg-green-500' : 'bg-blue-500'
                         }`}
-                        style={{ 
-                          width: `${((workflow.summary?.completed_steps || 0) / (workflow.summary?.total_steps || 1)) * 100}%` 
+                        style={{
+                          width: `${((workflow.summary?.completed_steps || 0) / (workflow.summary?.total_steps || 1)) * 100}%`
                         }}
                       />
                     </div>

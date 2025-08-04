@@ -32,15 +32,21 @@ function DialogClose({
 
 function DialogOverlay({
                          className,
+  position = 'center',
                          ...props
                        }: React.ComponentProps<typeof DialogPrimitive.Overlay>) {
+
+  const centered = position !== 'sticky';
   return (
     <DialogPrimitive.Overlay
       data-slot="dialog-overlay"
       className={cn(
         // "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fixed inset-0 z-50 bg-black/50",
         'z-50 py-10',
-        className
+        className,
+        {
+          'grid': centered,
+        }
       )}
       {...props}
     />
@@ -62,25 +68,30 @@ function DialogBody({ children }) {
 }
 
 function DialogContent({
-                         className,
-                         children,
-                         showCloseButton = true,
-                         ...props
+  className,
+  children,
+  showCloseButton = true,
+  position = 'center',
+  ...props
                        }: React.ComponentProps<typeof DialogPrimitive.Content> & {
   showCloseButton?: boolean
 }) {
   return (
     <DialogPortal data-slot="dialog-portal">
-      <DialogOverlay className="DialogOverlay">
+      <DialogOverlay className="DialogOverlay" position={position}>
+        {position}
       <DialogPrimitive.Content
         data-slot="dialog-content"
         className={cn(
           'bg-background data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0',
-          'data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fisxed topx-[50%] xleft-[50%] z-50 grid w-full max-w-[calc(100%-2rem)]',
+          'data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fisxed topx-[50%] xleft-[50%] z-50  w-full max-w-[calc(100%-2rem)]',
           'XXstranslate-x-[-50%] XXtranslaste-y-[-50%] duration-200',
           'gap-4 rounded-lg border shadow-lg sm:max-w-lg p-4',
           className,
           'DialogContent relative',
+          {
+            'grid' : position !== 'sticky'
+          }
         )}
         {...props}
       >
