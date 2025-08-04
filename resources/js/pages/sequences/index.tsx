@@ -37,7 +37,7 @@ interface Sequence {
   created_at: string;
   updated_at: string;
   triggers_count?: number;
-  nodes_count?: number;
+  actions_count?: number;
 }
 
 interface Workflow {
@@ -185,7 +185,7 @@ export default function Index({ sequences, workflows }: SequencesIndexProps) {
                   </TableCell>
                   <TableCell>
                       <span className="text-sm text-gray-500">
-                        {sequence.nodes_count || 0} actions
+                        {sequence.actions_count || 0} actions
                       </span>
                   </TableCell>
                   <TableCell>
