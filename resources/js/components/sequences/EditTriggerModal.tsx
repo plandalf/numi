@@ -532,7 +532,7 @@ function getExampleErrorMessage(testResult: unknown): string {
 // Enhanced Test Step Component
 function TestStep({ testResult, testLoading, handleTestTrigger }: TestStepProps) {
   return (
-    <TabsContent value="test" className="absolute inset-0 data-[state=inactive]:hidden">
+    <TabsContent value="test" className="">
       <div className="h-full overflow-y-auto px-6 py-4">
         <div className="space-y-6">
           <div>
@@ -1110,7 +1110,7 @@ export function EditTriggerModal({ open, onClose, trigger, onTriggerUpdated }: E
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent variant="wizard" className="overflow-hidden">
+      <DialogContent variant="wizsard" className="!max-w-2xl p-0">
         <DialogHeader className="px-6 pt-6 pb-4 border-b">
           <DialogTitle>Edit Trigger</DialogTitle>
           <DialogDescription>
@@ -1138,234 +1138,232 @@ export function EditTriggerModal({ open, onClose, trigger, onTriggerUpdated }: E
               </div>
             )}
 
-            <div className="flex-1 flex flex-col min-h-0">
-              <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
-                <TabsList className="grid w-full grid-cols-3 mx-6">
-                  <TabsTrigger value="setup" disabled={false}>
-                    1. Setup
-                  </TabsTrigger>
-                  <TabsTrigger value="config" disabled={!setupComplete}>
-                    2. Config
-                  </TabsTrigger>
-                  <TabsTrigger value="test" disabled={!configComplete}>
-                    3. Test
-                  </TabsTrigger>
-                </TabsList>
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
+              <TabsList className="grid  grid-cols-3 mx-6">
+                <TabsTrigger value="setup" disabled={false}>
+                  1. Setup
+                </TabsTrigger>
+                <TabsTrigger value="config" disabled={!setupComplete}>
+                  2. Config
+                </TabsTrigger>
+                <TabsTrigger value="test" disabled={!configComplete}>
+                  3. Test
+                </TabsTrigger>
+              </TabsList>
 
-                <div className="flex-1 relative min-h-0">
+              <div className="">
 
-                  {/* Setup Tab */}
-                  <TabsContent value="setup" className="absolute inset-0 data-[state=inactive]:hidden">
-                    <div className="h-full overflow-y-auto px-6 py-4">
-                      <div className="space-y-6">
+                {/* Setup Tab */}
+                <TabsContent value="setup" className="">
+                  <div className="h-full overflow-y-auto px-6 py-4">
+                    <div className="space-y-6">
 
-                        {/* App Selection */}
+                      {/* App Selection */}
+                      <div className="space-y-2">
+                        <Label className="text-sm font-medium">App *</Label>
+                        {selectedApp ? (
+                          <div className="border border-blue-300 bg-blue-50">
+                            <div className="p-3">
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center space-x-3">
+                                  {selectedApp.icon_url ? (
+                                    <img src={selectedApp.icon_url} alt={selectedApp.name} className="w-8 h-8 rounded" />
+                                  ) : (
+                                    <div
+                                      className="w-8 h-8 rounded flex items-center justify-center text-white font-bold text-sm"
+                                      style={{ backgroundColor: selectedApp.color || '#3b82f6' }}
+                                    >
+                                      {selectedApp.name.charAt(0).toUpperCase()}
+                                    </div>
+                                  )}
+                                  <div>
+                                    <h4 className="font-medium text-sm">{selectedApp.name}</h4>
+                                    <p className="text-xs text-gray-500">{selectedApp.description}</p>
+                                  </div>
+                                </div>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => setShowAppSelector(true)}
+                                >
+                                  Change
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="border-2 border-dashed border-gray-300 hover:border-gray-400 transition-colors cursor-pointer" onClick={() => setShowAppSelector(true)}>
+                            <div className="p-4">
+                              <div className="flex items-center space-x-3">
+                                <div className="w-8 h-8 bg-gray-100 rounded flex items-center justify-center">
+                                  <Zap className="h-4 w-4 text-gray-400" />
+                                </div>
+                                <div>
+                                  <p className="font-medium text-sm text-gray-700">Choose an app</p>
+                                  <p className="text-xs text-gray-500">Select the app that will trigger this automation</p>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Trigger Event Selection */}
+                      <div className="space-y-2">
+                        <Label className="text-sm font-medium">Trigger event *</Label>
+                        {selectedTriggerEvent ? (
+                          <div className="border border-blue-300 bg-blue-50">
+                            <div className="p-3">
+                              <div className="flex items-center justify-between">
+                                <div className="flex-1">
+                                  <h4 className="font-medium text-sm">{selectedTriggerEvent.label}</h4>
+                                  <p className="text-xs text-gray-500">{selectedTriggerEvent.description}</p>
+                                  <div className="flex items-center space-x-2 mt-1">
+                                    {selectedTriggerEvent.requires_auth && (
+                                      <Badge variant="outline" className="text-xs">
+                                        Requires Auth
+                                      </Badge>
+                                    )}
+                                    <Badge variant="secondary" className="text-xs">
+                                      {selectedTriggerEvent.key}
+                                    </Badge>
+                                  </div>
+                                </div>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => setShowTriggerSelector(true)}
+                                  disabled={!selectedApp}
+                                >
+                                  Change
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className={`border-2 border-dashed transition-colors ${
+                            selectedApp
+                              ? 'border-gray-300 hover:border-gray-400 cursor-pointer'
+                              : 'border-gray-200 cursor-not-allowed'
+                          }`} onClick={() => selectedApp && setShowTriggerSelector(true)}>
+                            <div className="p-4">
+                              <div className="flex items-center space-x-3">
+                                <div className="w-8 h-8 bg-gray-100 rounded flex items-center justify-center">
+                                  <Play className="h-4 w-4 text-gray-400" />
+                                </div>
+                                <div>
+                                  <p className={`font-medium text-sm ${!selectedApp ? 'text-gray-400' : 'text-gray-700'}`}>
+                                    Choose an event
+                                  </p>
+                                  <p className="text-xs text-gray-500">
+                                    {selectedApp ? 'Select the event that will trigger this automation' : 'Select an app first'}
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Account/Integration Selection - ENHANCED */}
+                      {selectedTriggerEvent && selectedTriggerEvent.requires_auth && (
                         <div className="space-y-2">
-                          <Label className="text-sm font-medium">App *</Label>
-                          {selectedApp ? (
-                            <div className="border border-blue-300 bg-blue-50">
-                              <div className="p-3">
+                          <Label className="text-sm font-medium">Account *</Label>
+                          {selectedIntegration ? (
+                            <Card className="border border-blue-300 bg-blue-50">
+                              <CardContent className="p-3">
                                 <div className="flex items-center justify-between">
                                   <div className="flex items-center space-x-3">
-                                    {selectedApp.icon_url ? (
-                                      <img src={selectedApp.icon_url} alt={selectedApp.name} className="w-8 h-8 rounded" />
-                                    ) : (
-                                      <div
-                                        className="w-8 h-8 rounded flex items-center justify-center text-white font-bold text-sm"
-                                        style={{ backgroundColor: selectedApp.color || '#3b82f6' }}
-                                      >
-                                        {selectedApp.name.charAt(0).toUpperCase()}
-                                      </div>
-                                    )}
+                                    <User className="h-8 w-8 p-1.5 bg-blue-100 text-blue-600 rounded" />
                                     <div>
-                                      <h4 className="font-medium text-sm">{selectedApp.name}</h4>
-                                      <p className="text-xs text-gray-500">{selectedApp.description}</p>
+                                      <p className="text-sm font-medium text-blue-900">{selectedIntegration.name}</p>
+                                      <p className="text-xs text-blue-700">
+                                        {selectedIntegration.app.name} • {selectedIntegration.current_state}
+                                      </p>
                                     </div>
                                   </div>
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => setShowAppSelector(true)}
-                                  >
-                                    Change
-                                  </Button>
+                                  <div className="flex space-x-2">
+                                    <Button onClick={() => openIntegrationManager()} variant="outline" size="sm">
+                                      <List className="h-3 w-3 mr-1" />
+                                      Change
+                                    </Button>
+                                    <Button onClick={() => openIntegrationEdit(selectedIntegration)} variant="outline" size="sm">
+                                      <ExternalLink className="h-3 w-3 mr-1" />
+                                      Edit
+                                    </Button>
+                                  </div>
                                 </div>
-                              </div>
-                            </div>
+                              </CardContent>
+                            </Card>
                           ) : (
-                            <div className="border-2 border-dashed border-gray-300 hover:border-gray-400 transition-colors cursor-pointer" onClick={() => setShowAppSelector(true)}>
-                              <div className="p-4">
-                                <div className="flex items-center space-x-3">
-                                  <div className="w-8 h-8 bg-gray-100 rounded flex items-center justify-center">
-                                    <Zap className="h-4 w-4 text-gray-400" />
-                                  </div>
-                                  <div>
-                                    <p className="font-medium text-sm text-gray-700">Choose an app</p>
-                                    <p className="text-xs text-gray-500">Select the app that will trigger this automation</p>
-                                  </div>
+                            <Card className="border-2 border-dashed border-gray-300 bg-gray-50 cursor-pointer hover:border-gray-400 transition-colors" onClick={() => openIntegrationManager()}>
+                              <CardContent className="p-3">
+                                <div className="flex items-center justify-center space-x-2 text-gray-600">
+                                  <User className="h-4 w-4" />
+                                  <span className="text-sm">Select {selectedApp?.name} integration</span>
+                                  <ChevronDown className="h-3 w-3" />
                                 </div>
-                              </div>
-                            </div>
+                              </CardContent>
+                            </Card>
                           )}
                         </div>
+                      )}
 
-                        {/* Trigger Event Selection */}
-                        <div className="space-y-2">
-                  <Label className="text-sm font-medium">Trigger event *</Label>
-                  {selectedTriggerEvent ? (
-                    <div className="border border-blue-300 bg-blue-50">
-                      <div className="p-3">
-                        <div className="flex items-center justify-between">
-                          <div className="flex-1">
-                            <h4 className="font-medium text-sm">{selectedTriggerEvent.label}</h4>
-                            <p className="text-xs text-gray-500">{selectedTriggerEvent.description}</p>
-                            <div className="flex items-center space-x-2 mt-1">
-                              {selectedTriggerEvent.requires_auth && (
-                                <Badge variant="outline" className="text-xs">
-                                  Requires Auth
-                                </Badge>
-                              )}
-                              <Badge variant="secondary" className="text-xs">
-                                {selectedTriggerEvent.key}
-                              </Badge>
-                            </div>
+                      {/* Progress Message */}
+                      <div className="space-y-3">
+                        {!selectedApp && (
+                          <div className="text-center p-3 bg-gray-50 rounded text-sm text-gray-600">
+                            To continue, choose an app
                           </div>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setShowTriggerSelector(true)}
-                            disabled={!selectedApp}
-                          >
-                            Change
-                          </Button>
-                        </div>
+                        )}
+                        {selectedApp && !selectedTriggerEvent && (
+                          <div className="text-center p-3 bg-gray-50 rounded text-sm text-gray-600">
+                            To continue, choose an event
+                          </div>
+                        )}
+                        {selectedApp && selectedTriggerEvent && selectedTriggerEvent.requires_auth && !selectedIntegration && (
+                          <div className="text-center p-3 bg-orange-50 rounded text-sm text-orange-600">
+                            To continue, setup your {selectedApp.name} integration above
+                          </div>
+                        )}
+                        {selectedApp && selectedTriggerEvent && (!selectedTriggerEvent.requires_auth || selectedIntegration) && (
+                          <div className="text-center p-3 bg-green-50 rounded text-sm text-green-600">
+                            ✓ Setup complete! You can now configure and test your trigger.
+                          </div>
+                        )}
                       </div>
                     </div>
-                  ) : (
-                    <div className={`border-2 border-dashed transition-colors ${
-                      selectedApp
-                        ? 'border-gray-300 hover:border-gray-400 cursor-pointer'
-                        : 'border-gray-200 cursor-not-allowed'
-                    }`} onClick={() => selectedApp && setShowTriggerSelector(true)}>
-                      <div className="p-4">
-                        <div className="flex items-center space-x-3">
-                          <div className="w-8 h-8 bg-gray-100 rounded flex items-center justify-center">
-                            <Play className="h-4 w-4 text-gray-400" />
-                          </div>
-                          <div>
-                            <p className={`font-medium text-sm ${!selectedApp ? 'text-gray-400' : 'text-gray-700'}`}>
-                              Choose an event
-                            </p>
-                            <p className="text-xs text-gray-500">
-                              {selectedApp ? 'Select the event that will trigger this automation' : 'Select an app first'}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Account/Integration Selection - ENHANCED */}
-                {selectedTriggerEvent && selectedTriggerEvent.requires_auth && (
-                  <div className="space-y-2">
-                    <Label className="text-sm font-medium">Account *</Label>
-                    {selectedIntegration ? (
-                      <Card className="border border-blue-300 bg-blue-50">
-                        <CardContent className="p-3">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center space-x-3">
-                              <User className="h-8 w-8 p-1.5 bg-blue-100 text-blue-600 rounded" />
-                              <div>
-                                <p className="text-sm font-medium text-blue-900">{selectedIntegration.name}</p>
-                                <p className="text-xs text-blue-700">
-                                  {selectedIntegration.app.name} • {selectedIntegration.current_state}
-                                </p>
-                              </div>
-                            </div>
-                            <div className="flex space-x-2">
-                              <Button onClick={() => openIntegrationManager()} variant="outline" size="sm">
-                                <List className="h-3 w-3 mr-1" />
-                                Change
-                              </Button>
-                              <Button onClick={() => openIntegrationEdit(selectedIntegration)} variant="outline" size="sm">
-                                <ExternalLink className="h-3 w-3 mr-1" />
-                                Edit
-                              </Button>
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ) : (
-                      <Card className="border-2 border-dashed border-gray-300 bg-gray-50 cursor-pointer hover:border-gray-400 transition-colors" onClick={() => openIntegrationManager()}>
-                        <CardContent className="p-3">
-                          <div className="flex items-center justify-center space-x-2 text-gray-600">
-                            <User className="h-4 w-4" />
-                            <span className="text-sm">Select {selectedApp?.name} integration</span>
-                            <ChevronDown className="h-3 w-3" />
-                          </div>
-                        </CardContent>
-                      </Card>
-                    )}
                   </div>
-                )}
+                </TabsContent>
 
-                {/* Progress Message */}
-                <div className="space-y-3">
-                  {!selectedApp && (
-                    <div className="text-center p-3 bg-gray-50 rounded text-sm text-gray-600">
-                      To continue, choose an app
-                    </div>
-                  )}
-                  {selectedApp && !selectedTriggerEvent && (
-                    <div className="text-center p-3 bg-gray-50 rounded text-sm text-gray-600">
-                      To continue, choose an event
-                    </div>
-                  )}
-                  {selectedApp && selectedTriggerEvent && selectedTriggerEvent.requires_auth && !selectedIntegration && (
-                    <div className="text-center p-3 bg-orange-50 rounded text-sm text-orange-600">
-                      To continue, setup your {selectedApp.name} integration above
-                    </div>
-                  )}
-                  {selectedApp && selectedTriggerEvent && (!selectedTriggerEvent.requires_auth || selectedIntegration) && (
-                    <div className="text-center p-3 bg-green-50 rounded text-sm text-green-600">
-                      ✓ Setup complete! You can now configure and test your trigger.
-                    </div>
-                  )}
-                        </div>
+                {/* Config Tab */}
+                <TabsContent value="config" className="">
+                  <div className="h-full overflow-y-auto px-6 py-4">
+                    <div className="space-y-6">
+
+                      {/* Trigger Name */}
+                      <div className="space-y-2">
+                        <Label htmlFor="trigger-name">Trigger Name</Label>
+                        <Input
+                          id="trigger-name"
+                          value={triggerName}
+                          onChange={(e) => setTriggerName(e.target.value)}
+                          placeholder="Give this trigger a descriptive name"
+                          className={validationErrors.name ? 'border-red-300' : ''}
+                        />
+                        {validationErrors.name && (
+                          <p className="text-xs text-red-500">{validationErrors.name[0]}</p>
+                        )}
                       </div>
-                    </div>
-                  </TabsContent>
 
-                  {/* Config Tab */}
-                  <TabsContent value="config" className="absolute inset-0 data-[state=inactive]:hidden">
-                    <div className="h-full overflow-y-auto px-6 py-4">
-                      <div className="space-y-6">
-                        <h3 className="text-lg font-medium">Configure Trigger</h3>
-
-                        {/* Trigger Name */}
-                        <div className="space-y-2">
-                          <Label htmlFor="trigger-name">Trigger Name</Label>
-                          <Input
-                            id="trigger-name"
-                            value={triggerName}
-                            onChange={(e) => setTriggerName(e.target.value)}
-                            placeholder="Give this trigger a descriptive name"
-                            className={validationErrors.name ? 'border-red-300' : ''}
-                          />
-                          {validationErrors.name && (
-                            <p className="text-xs text-red-500">{validationErrors.name[0]}</p>
-                          )}
-                        </div>
-
-                        {/* Webhook URL for Plandalf webhook triggers */}
-                        {trigger && trigger.webhook_url 
+                      {/* Webhook URL for Plandalf webhook triggers */}
+                      {trigger && trigger.webhook_url
                         && selectedApp?.key === 'plandalf'
-                         && selectedTriggerEvent?.key === 'webhook' 
-                         && (
+                        && selectedTriggerEvent?.key === 'webhook'
+                        && (
                           <div className="space-y-2">
                             <Label>Webhook URL</Label>
-                            <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                            <div className="p-3 bg-blue-50 border border-blue-200 ">
                               <div className="flex items-center justify-between">
                                 <div className="flex-1 mr-3">
                                   <p className="text-sm font-medium text-blue-900 mb-1">Send HTTP requests to this URL:</p>
@@ -1390,72 +1388,71 @@ export function EditTriggerModal({ open, onClose, trigger, onTriggerUpdated }: E
                           </div>
                         )}
 
-                        {/* Configuration Options */}
-                        <div className="space-y-4">
-                          <div className="flex items-center space-x-2">
-                            <Settings className="h-4 w-4 text-gray-500" />
-                            <h4 className="font-medium">Configuration Options</h4>
+                      {/* Configuration Options */}
+                      <div className="space-y-4">
+                        <div className="flex items-center space-x-2">
+                          <Settings className="h-4 w-4 text-gray-500" />
+                          <h4 className="font-medium">Configuration Options</h4>
+                        </div>
+
+                        {selectedTriggerEvent?.props && Object.keys(selectedTriggerEvent.props).length > 0 ? (
+                          <div>
+                            <div className="space-y-4 border bg-gray-50 px-4 py-2">
+                              {Object.values(selectedTriggerEvent.props).map((field) => (
+                                <TriggerConfigField
+                                  key={field.key}
+                                  field={field}
+                                  value={configuration[field.key]}
+                                  onChange={(value) => setConfiguration(prev => ({ ...prev, [field.key]: value }))}
+                                  appKey={selectedApp?.key || ''}
+                                  integrationId={selectedIntegration?.id}
+                                  error={validationErrors[field.key]?.[0]}
+                                  requiresAuth={selectedTriggerEvent?.requires_auth || false}
+                                />
+                              ))}
+                            </div>
                           </div>
-
-                          {selectedTriggerEvent?.props && Object.keys(selectedTriggerEvent.props).length > 0 ? (
-                            <Card>
-                              <CardContent className="p-4 space-y-4">
-                                {Object.values(selectedTriggerEvent.props).map((field) => (
-                                  <TriggerConfigField
-                                    key={field.key}
-                                    field={field}
-                                    value={configuration[field.key]}
-                                    onChange={(value) => setConfiguration(prev => ({ ...prev, [field.key]: value }))}
-                                    appKey={selectedApp?.key || ''}
-                                    integrationId={selectedIntegration?.id}
-                                    error={validationErrors[field.key]?.[0]}
-                                    requiresAuth={selectedTriggerEvent?.requires_auth || false}
-                                  />
-                                ))}
-                              </CardContent>
-                            </Card>
-                          ) : (
-                            <Card>
-                              <CardContent className="p-4">
-                                <div className="text-center py-8 text-gray-500">
-                                  <Settings className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                                  <p className="text-lg font-medium">No configuration required</p>
-                                  <p className="text-sm">This trigger doesn't need any additional configuration</p>
-                                </div>
-                              </CardContent>
-                            </Card>
-                          )}
-
-                          {/* Configuration Preview */}
-                          {Object.keys(configuration).length > 0 && (
-                            <div className="space-y-2">
-                              <div className="flex items-center space-x-2">
-                                <Settings className="h-4 w-4 text-gray-500" />
-                                <h4 className="font-medium">Configuration Preview</h4>
+                        ) : (
+                          <div>
+                            <div className="p-4">
+                              <div className="text-center py-8 text-gray-500">
+                                <Settings className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                                <p className="text-lg font-medium">No configuration required</p>
+                                <p className="text-sm">This trigger doesn't need any additional configuration</p>
                               </div>
-                              <Card>
-                                <CardContent className="p-4">
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Configuration Preview */}
+                        {Object.keys(configuration).length > 0 && (
+                          <div className="space-y-2">
+                            <div className="flex items-center space-x-2">
+                              <Settings className="h-4 w-4 text-gray-500" />
+                              <h4 className="font-medium">Configuration Preview</h4>
+                            </div>
+                            <div>
+                              <div className="p-4">
                                   <pre className="text-xs bg-gray-50 p-3 rounded overflow-auto max-h-64 whitespace-pre-wrap">
                                     {JSON.stringify(configuration, null, 2)}
                                   </pre>
-                                </CardContent>
-                              </Card>
+                              </div>
                             </div>
-                          )}
-                        </div>
+                          </div>
+                        )}
                       </div>
                     </div>
-                  </TabsContent>
+                  </div>
+                </TabsContent>
 
-                  {/* Test Tab */}
-                  <TestStep
-                    testResult={testResult}
-                    testLoading={testLoading}
-                    handleTestTrigger={handleTestTrigger}
-                  />
-                </div>
-              </Tabs>
-            </div>
+                {/* Test Tab */}
+                <TestStep
+                  testResult={testResult}
+                  testLoading={testLoading}
+                  handleTestTrigger={handleTestTrigger}
+                />
+              </div>
+            </Tabs>
 
             {/* Wizard Navigation */}
             <div className="px-6 py-4 border-t bg-gray-50 flex justify-between">

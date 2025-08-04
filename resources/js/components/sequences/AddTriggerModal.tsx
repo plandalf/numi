@@ -69,7 +69,7 @@ export function AddTriggerModal({ open, onClose, sequenceId, onTriggerAdded, exi
   useEffect(() => {
     if (open) {
       loadApps();
-      
+
       // Handle existing trigger constraints
       if (existingTriggerConstraints) {
         setIsConstrained(true);
@@ -79,7 +79,7 @@ export function AddTriggerModal({ open, onClose, sequenceId, onTriggerAdded, exi
         setIsConstrained(false);
         setStep('select-app');
       }
-      
+
       // Reset state
       setSelectedApp(null);
       setSelectedTrigger(null);
@@ -125,8 +125,6 @@ export function AddTriggerModal({ open, onClose, sequenceId, onTriggerAdded, exi
     }
   };
 
-
-
   const handleAppSelect = async (app: App) => {
     setSelectedApp(app);
     setSelectedTrigger(null);
@@ -140,8 +138,6 @@ export function AddTriggerModal({ open, onClose, sequenceId, onTriggerAdded, exi
     setStep('configure');
   };
 
-
-
   const createTrigger = async () => {
     if (!selectedApp || !selectedTrigger) {
       console.error('Missing required data:', { selectedApp, selectedTrigger });
@@ -153,7 +149,7 @@ export function AddTriggerModal({ open, onClose, sequenceId, onTriggerAdded, exi
       setLoading(true);
       setError(null);
       setValidationErrors({});
-      
+
       const payload = {
         sequence_id: sequenceId,
         app_id: selectedApp.id,
@@ -161,9 +157,9 @@ export function AddTriggerModal({ open, onClose, sequenceId, onTriggerAdded, exi
         name: triggerName,
         configuration: {},
       };
-      
+
       console.log('Creating trigger with payload:', payload);
-      
+
       const response = await axios.post(`/automation/triggers`, payload);
 
       // Pass the created trigger to parent and close modal
@@ -171,7 +167,7 @@ export function AddTriggerModal({ open, onClose, sequenceId, onTriggerAdded, exi
       handleClose();
     } catch (error) {
       console.error('Failed to create trigger:', error);
-      
+
       if (axios.isAxiosError(error) && error.response?.status === 422) {
         setValidationErrors(error.response.data.errors || {});
       } else if (axios.isAxiosError(error)) {
@@ -225,16 +221,11 @@ export function AddTriggerModal({ open, onClose, sequenceId, onTriggerAdded, exi
         <div className="flex-1 overflow-y-auto">
           {/* Step indicator */}
           <div className="flex items-center space-x-2 mb-4">
-          {(step !== 'select-app' && !(step === 'select-trigger' && isConstrained)) && (
-            <Button variant="ghost" size="sm" onClick={goBack}>
-              <ArrowLeft className="h-4 w-4 mr-1" />
-              Back
-            </Button>
-          )}
+
           <div className="flex-1">
             <div className="flex items-center space-x-2">
               <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs ${
-                isConstrained ? 'bg-green-600 text-white' : 
+                isConstrained ? 'bg-green-600 text-white' :
                 step === 'select-app' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-600'
               }`}>
                 {isConstrained ? '✓' : '1'}
@@ -243,16 +234,16 @@ export function AddTriggerModal({ open, onClose, sequenceId, onTriggerAdded, exi
                 isConstrained ? 'text-green-600 font-medium' :
                 step === 'select-app' ? 'text-blue-600 font-medium' : 'text-gray-500'
               }`}>
-                {isConstrained ? 'App (Auto-selected)' : 'Select App'}
+                {isConstrained ? 'App' : 'Select App'}
               </span>
               <div className="flex-1 h-px bg-gray-200" />
               <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs ${
-                step === 'select-trigger' ? 'bg-blue-600 text-white' : 
+                step === 'select-trigger' ? 'bg-blue-600 text-white' :
                 step === 'configure' ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-600'
               }`}>
                 2
               </div>
-              <span className={`text-sm ${step === 'select-trigger' ? 'text-blue-600 font-medium' : 
+              <span className={`text-sm ${step === 'select-trigger' ? 'text-blue-600 font-medium' :
                 step === 'configure' ? 'text-green-600 font-medium' : 'text-gray-500'}`}>
                 Select Trigger
               </span>
@@ -283,15 +274,15 @@ export function AddTriggerModal({ open, onClose, sequenceId, onTriggerAdded, exi
                 <p>No apps with triggers available</p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {apps.map((app) => (
-                  <Card
+              <div className="flex flex-col gap-4">
+                {apps.filter(app => app.triggers.length > 0).map((app) => (
+                  <div
                     key={app.key}
-                    className="cursor-pointer hover:border-primary transition-colors"
+                    className="cursor-pointer hover:border-primary transition-colors border"
                     onClick={() => handleAppSelect(app)}
                   >
-                    <CardContent className="p-4">
-                      <div className="flex items-center space-x-3">
+                    <div className="p-4">
+                      <div className="flex items-start space-x-3">
                         {app.icon_url ? (
                           <img
                             src={app.icon_url}
@@ -306,10 +297,8 @@ export function AddTriggerModal({ open, onClose, sequenceId, onTriggerAdded, exi
                             {app.name.charAt(0).toUpperCase()}
                           </div>
                         )}
-                        <div className="flex-1">
-                          <h4 className="font-medium">{app.name}</h4>
-                          <p className="text-sm text-gray-500">{app.description}</p>
-                          <div className="flex items-center space-x-2 mt-2">
+                        <div className="flex-1 relative">
+                          <div className="flex items-center space-x-2 absolute top-0 right-0">
                             <Badge variant="outline" className="text-xs">
                               {app.triggers_count} triggers
                             </Badge>
@@ -319,22 +308,25 @@ export function AddTriggerModal({ open, onClose, sequenceId, onTriggerAdded, exi
                               </Badge>
                             )}
                           </div>
+
+                          <h4 className="font-medium">{app.name}</h4>
+                          <p className="text-sm text-gray-500">{app.description}</p>
                         </div>
                       </div>
-                    </CardContent>
-                  </Card>
+                    </div>
+                  </div>
                 ))}
               </div>
             )}
           </div>
         )}
 
-        {/* Step 2: Select Trigger */}
-        {step === 'select-trigger' && selectedApp && (
-          <div className="space-y-4">
-            {/* Show constraint message if applicable */}
-            {isConstrained && existingTriggerConstraints && (
-              <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+          {/* Step 2: Select Trigger */}
+          {step === 'select-trigger' && selectedApp && (
+            <div className="space-y-4">
+              {/* Show constraint message if applicable */}
+              {isConstrained && existingTriggerConstraints && (
+                <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
                 <div className="flex items-center space-x-2">
                   <AlertCircle className="h-4 w-4 text-blue-600" />
                   <div>
@@ -348,7 +340,7 @@ export function AddTriggerModal({ open, onClose, sequenceId, onTriggerAdded, exi
                 </div>
               </div>
             )}
-            
+
             <div className="flex items-center space-x-3">
               {selectedApp.icon_url ? (
                 <img
@@ -382,19 +374,19 @@ export function AddTriggerModal({ open, onClose, sequenceId, onTriggerAdded, exi
             ) : (
               <div className="space-y-2">
                 {selectedApp.triggers
-                  .filter((trigger: Trigger) => 
+                  .filter((trigger: Trigger) =>
                     // If constrained, only show the matching trigger
                     !isConstrained || !existingTriggerConstraints || trigger.key === existingTriggerConstraints.triggerKey
                   )
                   .map((trigger: Trigger) => (
-                  <Card
+                  <div
                     key={trigger.key}
-                    className={`cursor-pointer transition-colors ${
+                    className={`cursor-pointer transition-colors border ${
                       isConstrained ? 'border-blue-300 bg-blue-50' : 'hover:border-primary'
                     }`}
                     onClick={() => handleTriggerSelect(trigger)}
                   >
-                    <CardContent className="p-4">
+                    <div className="p-4">
                       <div className="flex items-center justify-between">
                         <div className="flex-1">
                           <h4 className="font-medium">{trigger.label}</h4>
@@ -416,8 +408,8 @@ export function AddTriggerModal({ open, onClose, sequenceId, onTriggerAdded, exi
                           </Badge>
                         </div>
                       </div>
-                    </CardContent>
-                  </Card>
+                    </div>
+                  </div>
                 ))}
               </div>
             )}

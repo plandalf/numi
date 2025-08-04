@@ -75,28 +75,25 @@ function DialogContent({
       <DialogPrimitive.Content
         data-slot="dialog-content"
         className={cn(
-          // "    ",
           'bg-background data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0',
           'data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fisxed topx-[50%] xleft-[50%] z-50 grid w-full max-w-[calc(100%-2rem)]',
-          'stranslate-x-[-50%] translaste-y-[-50%] duration-200',
-
+          'XXstranslate-x-[-50%] XXtranslaste-y-[-50%] duration-200',
           'gap-4 rounded-lg border shadow-lg sm:max-w-lg p-4',
-
           className,
-          'DialogContent',
+          'DialogContent relative',
         )}
         {...props}
       >
         {children}
-        {/*{showCloseButton && (*/}
-        {/*  <DialogPrimitive.Close*/}
-        {/*    data-slot="dialog-close"*/}
-        {/*    className="ring-offset-background focus:ring-ring data-[state=open]:bg-accent data-[state=open]:text-muted-foreground absolute top-2 right-3 rounded-xs opacity-70 transition-opacity hover:opacity-100 focus:ring-2 focus:ring-offset-2 focus:outline-hidden disabled:pointer-events-none [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-5 hover:bg-accent/80 focus:bg-accent/80 active:bg-accent/90 disabled:bg-muted disabled:text-muted-foreground cursor-pointer"*/}
-        {/*  >*/}
-        {/*    <XIcon />*/}
-        {/*    <span className="sr-only">Close</span>*/}
-        {/*  </DialogPrimitive.Close>*/}
-        {/*)}*/}
+        {showCloseButton && (
+          <DialogPrimitive.Close
+            data-slot="dialog-close"
+            className="ring-offset-background focus:ring-ring data-[state=open]:bg-accent data-[state=open]:text-muted-foreground absolute top-2 right-3 rounded-xs opacity-70 transition-opacity hover:opacity-100 focus:ring-2 focus:ring-offset-2 focus:outline-hidden disabled:pointer-events-none [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-5 hover:bg-accent/80 focus:bg-accent/80 active:bg-accent/90 disabled:bg-muted disabled:text-muted-foreground cursor-pointer p-1"
+          >
+            <XIcon />
+            <span className="sr-only">Close</span>
+          </DialogPrimitive.Close>
+        )}
       </DialogPrimitive.Content>
       </DialogOverlay>
     </DialogPortal>

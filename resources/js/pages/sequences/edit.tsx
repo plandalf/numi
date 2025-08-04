@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Head, usePage } from '@inertiajs/react';
+import { Head, router, usePage } from '@inertiajs/react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -117,8 +117,8 @@ export default function Edit() {
 
   const [editingTrigger, setEditingTrigger] = useState<CreatedTrigger | null>(null);
 
-  const [triggers, setTriggers] = useState<Trigger[]>(sequence.triggers || []);
-  const [actions, setActions] = useState<Action[]>(sequence.actions || []);
+  const triggers = sequence.triggers;
+  const actions = sequence.actions;
 
   // Get existing trigger constraints for new trigger restrictions
   const getExistingTriggerConstraints = () => {
@@ -155,27 +155,23 @@ export default function Edit() {
 
   const existingTriggerConstraints = getExistingTriggerConstraints();
 
+  function reload() {
+    router.reload({
+      preserveState: true,
+      preserveScroll: true,
+      only: ['sequence'],
+    });
+  }
+
   const handleTriggerAdded = (newTrigger: CreatedTrigger) => {
-    // Close add modal and show edit modal
+    reload();
     setShowAddTriggerModal(false);
     setEditingTrigger(newTrigger);
     setShowEditTriggerModal(true);
   };
 
   const handleTriggerUpdated = (updatedTrigger: CreatedTrigger) => {
-    // Update the trigger in the list (replace if exists, add if new)
-    setTriggers(prev => {
-      const existingIndex = prev.findIndex(t => t.id === updatedTrigger.id);
-      if (existingIndex >= 0) {
-        // Update existing trigger
-        const newTriggers = [...prev];
-        newTriggers[existingIndex] = updatedTrigger as Trigger;
-        return newTriggers;
-      } else {
-        // Add new trigger
-        return [...prev, updatedTrigger as Trigger];
-      }
-    });
+    reload();
     setShowEditTriggerModal(false);
     setEditingTrigger(null);
   };
@@ -238,40 +234,18 @@ export default function Edit() {
 
   const handleActionAdded = (newAction: Action) => {
     setEditingAction(newAction);
-
-    console.log('handleActionAdded!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!', newAction);
   };
 
   const handleEditAction = (action: Action) => {
     setEditingAction(action);
-    // setShowEditActionModal(true);
   };
 
   const handleEditActionModalClose = () => {
-    // setShowEditActionModal(false);
     setEditingAction(null);
   };
 
   const handleActionUpdatedFromEdit = (updatedAction: CreatedAction) => {
-    console.log('handleActionUpdatedFromEdit')
-    // Convert CreatedAction back to Action format for the state
-    const actionForState: Action = {
-      id: updatedAction.id,
-      name: updatedAction.name,
-      type: updatedAction.type,
-      app_id: updatedAction.app_id,
-      action_key: updatedAction.action_key,
-      configuration: updatedAction.configuration,
-      app: updatedAction.app ? {
-        id: updatedAction.app_id || 0, // Use app_id as fallback for app.id
-        name: updatedAction.app.name,
-        icon_url: updatedAction.app.icon_url,
-        color: updatedAction.app.color
-      } : undefined
-    };
-
-    setActions(prev => prev.map(a => a.id === actionForState.id ? actionForState : a));
-    // setShowEditActionModal(false);
+    reload();
     setEditingAction(null);
   };
 
@@ -282,7 +256,7 @@ export default function Edit() {
   const deleteTrigger = async (triggerId: number) => {
     try {
       await axios.delete(`/automation/triggers/${triggerId}`);
-      setTriggers(prev => prev.filter(t => t.id !== triggerId));
+      reload();
     } catch (error) {
       console.error('Failed to delete trigger:', error);
     }
@@ -291,7 +265,7 @@ export default function Edit() {
   const deleteAction = async (actionId: number) => {
     try {
       await axios.delete(`/automation/actions/${actionId}`);
-      setActions(prev => prev.filter(a => a.id !== actionId));
+      reload();
     } catch (error) {
       console.error('Failed to delete action:', error);
     }
