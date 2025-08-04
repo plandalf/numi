@@ -213,11 +213,11 @@ export function TriggerConfigField({
                 {resourceOptions.map((option) => (
                   <CommandItem
                     key={option.value}
-                    value={option.value}
-                    onSelect={(currentValue) => {
-                      const newValues = values.includes(currentValue)
-                        ? values.filter(v => v !== currentValue)
-                        : [...values, currentValue];
+                    value={`${option.value}-${option.label}`}
+                    onSelect={() => {
+                      const newValues = values.includes(option.value)
+                        ? values.filter(v => v !== option.value)
+                        : [...values, option.value];
                       onChange(newValues);
                     }}
                   >
@@ -277,7 +277,7 @@ export function TriggerConfigField({
   };
 
   const renderField = () => {
-    console.log('TriggerConfigField@renderField', field);
+    console.log('TriggerConfigField@renderField', field, 'value:', value);
 
     // Handle multiple values for select fields with static options
     if (field.multiple && field.type === 'select') {
@@ -334,11 +334,11 @@ export function TriggerConfigField({
                   {normalizedOptions.map((option) => (
                     <CommandItem
                       key={option.value}
-                      value={option.value}
-                      onSelect={(currentValue) => {
-                        const newValues = values.includes(currentValue)
-                          ? values.filter(v => v !== currentValue)
-                          : [...values, currentValue];
+                      value={`${option.value}-${option.label}`}
+                      onSelect={() => {
+                        const newValues = values.includes(option.value)
+                          ? values.filter(v => v !== option.value)
+                          : [...values, option.value];
                         onChange(newValues);
                       }}
                     >
@@ -358,6 +358,10 @@ export function TriggerConfigField({
       case 'string':
         if (field.dynamic && field.dynamicSource) {
           // Dynamic select/combobox
+          if (field.multiple) {
+            return renderMultiSelect();
+          }
+
           const selectedOption = resourceOptions.find(opt => opt.value === value);
 
           return (
@@ -395,9 +399,9 @@ export function TriggerConfigField({
                     {resourceOptions.map((option) => (
                       <CommandItem
                         key={option.value}
-                        value={option.value}
-                        onSelect={(currentValue) => {
-                          onChange(currentValue === value ? "" : currentValue);
+                        value={`${option.value}-${option.label}`}
+                        onSelect={() => {
+                          onChange(option.value === value ? "" : option.value);
                           setShowCombobox(false);
                         }}
                       >
@@ -410,6 +414,41 @@ export function TriggerConfigField({
             </Popover>
           );
         } else {
+          if (field.multiple) {
+            return renderMultipleInputs((val, index) => {
+              const values = Array.isArray(value) ? value : value ? [value] : [''];
+              
+              if (sequenceData && templateVariables.length > 0) {
+                return (
+                  <TemplateVariableInput
+                    value={val}
+                    onChange={(newVal) => {
+                      const newValues = [...values];
+                      newValues[index] = newVal;
+                      onChange(newValues);
+                    }}
+                    placeholder={field.placeholder || field.description || `Enter ${field.label.toLowerCase()}`}
+                    className={error ? 'border-red-300' : ''}
+                    variables={templateVariables}
+                  />
+                );
+              }
+
+              return (
+                <Input
+                  value={val}
+                  onChange={(e) => {
+                    const newValues = [...values];
+                    newValues[index] = e.target.value;
+                    onChange(newValues);
+                  }}
+                  placeholder={field.placeholder || field.description || `Enter ${field.label.toLowerCase()}`}
+                  className={error ? 'border-red-300' : ''}
+                />
+              );
+            });
+          }
+
           // Use TemplateVariableInput if we have sequence data and template variables
           if (sequenceData && templateVariables.length > 0) {
             return (
@@ -435,6 +474,26 @@ export function TriggerConfigField({
         }
 
       case 'text':
+        if (field.multiple) {
+          return renderMultipleInputs((val, index) => {
+            const values = Array.isArray(value) ? value : value ? [value] : [''];
+            
+            return (
+              <Textarea
+                value={val}
+                onChange={(e) => {
+                  const newValues = [...values];
+                  newValues[index] = e.target.value;
+                  onChange(newValues);
+                }}
+                placeholder={field.placeholder || field.description || `Enter ${field.label.toLowerCase()}`}
+                className={error ? 'border-red-300' : ''}
+                rows={3}
+              />
+            );
+          });
+        }
+
         return (
           <Textarea
             value={String(value || '')}
@@ -446,6 +505,42 @@ export function TriggerConfigField({
         );
 
       case 'email':
+        if (field.multiple) {
+          return renderMultipleInputs((val, index) => {
+            const values = Array.isArray(value) ? value : value ? [value] : [''];
+            
+            if (sequenceData && templateVariables.length > 0) {
+              return (
+                <TemplateVariableInput
+                  value={val}
+                  onChange={(newVal) => {
+                    const newValues = [...values];
+                    newValues[index] = newVal;
+                    onChange(newValues);
+                  }}
+                  placeholder={field.placeholder || field.description || `Enter ${field.label.toLowerCase()}`}
+                  className={error ? 'border-red-300' : ''}
+                  variables={templateVariables}
+                />
+              );
+            }
+
+            return (
+              <Input
+                type="email"
+                value={val}
+                onChange={(e) => {
+                  const newValues = [...values];
+                  newValues[index] = e.target.value;
+                  onChange(newValues);
+                }}
+                placeholder={field.placeholder || field.description || `Enter ${field.label.toLowerCase()}`}
+                className={error ? 'border-red-300' : ''}
+              />
+            );
+          });
+        }
+
         // Use TemplateVariableInput for email fields too since they often use template variables
         if (sequenceData && templateVariables.length > 0) {
           return (
@@ -470,6 +565,26 @@ export function TriggerConfigField({
         );
 
       case 'number':
+        if (field.multiple) {
+          return renderMultipleInputs((val, index) => {
+            const values = Array.isArray(value) ? value : value ? [value] : [''];
+            
+            return (
+              <Input
+                type="number"
+                value={val}
+                onChange={(e) => {
+                  const newValues = [...values];
+                  newValues[index] = Number(e.target.value);
+                  onChange(newValues);
+                }}
+                placeholder={field.placeholder || field.description || `Enter ${field.label.toLowerCase()}`}
+                className={error ? 'border-red-300' : ''}
+              />
+            );
+          });
+        }
+
         return (
           <Input
             type="number"
@@ -565,6 +680,10 @@ export function TriggerConfigField({
       case 'resource': {
         if (field.dynamic && field.dynamicSource) {
           // Dynamic resource select/combobox - similar to dynamic string but specifically for resources
+          if (field.multiple) {
+            return renderMultiSelect();
+          }
+
           const selectedOption = resourceOptions.find(opt => opt.value === value);
 
           return (
@@ -602,9 +721,9 @@ export function TriggerConfigField({
                     {resourceOptions.map((option) => (
                       <CommandItem
                         key={option.value}
-                        value={option.value}
-                        onSelect={(currentValue) => {
-                          onChange(currentValue === value ? "" : currentValue);
+                        value={`${option.value}-${option.label}`}
+                        onSelect={() => {
+                          onChange(option.value === value ? "" : option.value);
                           setShowCombobox(false);
                         }}
                       >
@@ -617,6 +736,25 @@ export function TriggerConfigField({
             </Popover>
           );
         } else {
+          if (field.multiple) {
+            return renderMultipleInputs((val, index) => {
+              const values = Array.isArray(value) ? value : value ? [value] : [''];
+              
+              return (
+                <Input
+                  value={val}
+                  onChange={(e) => {
+                    const newValues = [...values];
+                    newValues[index] = e.target.value;
+                    onChange(newValues);
+                  }}
+                  placeholder={field.placeholder || field.description || `Enter ${field.label.toLowerCase()}`}
+                  className={error ? 'border-red-300' : ''}
+                />
+              );
+            });
+          }
+
           // Static resource input
           return (
             <Input
@@ -630,6 +768,41 @@ export function TriggerConfigField({
       }
 
       default:
+        if (field.multiple) {
+          return renderMultipleInputs((val, index) => {
+            const values = Array.isArray(value) ? value : value ? [value] : [''];
+            
+            if (field.type === 'string' && sequenceData && templateVariables.length > 0) {
+              return (
+                <TemplateVariableInput
+                  value={val}
+                  onChange={(newVal) => {
+                    const newValues = [...values];
+                    newValues[index] = newVal;
+                    onChange(newValues);
+                  }}
+                  placeholder={field.placeholder || field.description || `Enter ${field.label.toLowerCase()}`}
+                  className={error ? 'border-red-300' : ''}
+                  variables={templateVariables}
+                />
+              );
+            }
+
+            return (
+              <Input
+                value={val}
+                onChange={(e) => {
+                  const newValues = [...values];
+                  newValues[index] = e.target.value;
+                  onChange(newValues);
+                }}
+                placeholder={field.placeholder || field.description || `Enter ${field.label.toLowerCase()}`}
+                className={error ? 'border-red-300' : ''}
+              />
+            );
+          });
+        }
+
         // For string-type fields, use TemplateVariableInput if we have sequence data
         if (field.type === 'string' && sequenceData && templateVariables.length > 0) {
           return (
@@ -665,6 +838,9 @@ export function TriggerConfigField({
         )}
         {field.dynamic && (
           <Badge variant="secondary" className="text-xs">Dynamic</Badge>
+        )}
+        {field.multiple && (
+          <Badge variant="secondary" className="text-xs">Multiple</Badge>
         )}
       </div>
 

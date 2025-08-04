@@ -790,7 +790,12 @@ export function EditTriggerModal({ open, onClose, trigger, onTriggerUpdated }: E
       loadIntegrations();
       if (trigger) {
         setTriggerName(trigger.name);
+        console.log('Initial trigger object:', trigger);
+        console.log('Setting initial configuration:', trigger.configuration);
         setConfiguration(trigger.configuration || {});
+        
+        // Fetch full trigger details to ensure we have complete configuration
+        loadFullTriggerDetails();
 
         // Initialize selected app, trigger event, and integration from existing trigger data
         if (trigger.app_id && trigger.app_id > 0) {
@@ -824,6 +829,12 @@ export function EditTriggerModal({ open, onClose, trigger, onTriggerUpdated }: E
 
                 if (triggerEvent) {
                   setSelectedTriggerEvent(triggerEvent);
+
+                  // Re-set configuration after trigger event is loaded to ensure fields are available
+                  if (trigger.configuration && Object.keys(trigger.configuration).length > 0) {
+                    console.log('Re-setting configuration after trigger event loaded:', trigger.configuration);
+                    setConfiguration(trigger.configuration);
+                  }
 
                   // If this trigger requires auth, check for existing integrations
                   if (triggerEvent.requires_auth) {
@@ -884,6 +895,26 @@ export function EditTriggerModal({ open, onClose, trigger, onTriggerUpdated }: E
     }
   }, [trigger, integrations]);
 
+  // Ensure configuration is restored when trigger event is loaded
+  useEffect(() => {
+    if (trigger && selectedTriggerEvent && open) {
+      console.log('Restoring configuration from trigger:', trigger.configuration);
+      console.log('Selected trigger event props:', selectedTriggerEvent.props);
+      if (trigger.configuration && Object.keys(trigger.configuration).length > 0) {
+        console.log('Setting configuration in restoration useEffect:', trigger.configuration);
+        setConfiguration(trigger.configuration);
+      }
+    }
+  }, [trigger, selectedTriggerEvent, open]);
+
+  // Additional effect to watch for trigger.configuration changes
+  useEffect(() => {
+    if (trigger?.configuration && open) {
+      console.log('Trigger configuration updated, setting:', trigger.configuration);
+      setConfiguration(trigger.configuration);
+    }
+  }, [trigger?.configuration, open]);
+
   // Check step completion
   useEffect(() => {
     // Setup step is complete when we have app, trigger event, and integration (if required)
@@ -918,6 +949,12 @@ export function EditTriggerModal({ open, onClose, trigger, onTriggerUpdated }: E
     } catch (error) {
       console.error('Failed to load integrations:', error);
     }
+  };
+
+  const loadFullTriggerDetails = async () => {
+    if (!trigger?.id) return;
+    
+    console.log('loadFullTriggerDetails', trigger);
   };
 
   const handleAppSelect = (app: App) => {
@@ -1403,7 +1440,10 @@ export function EditTriggerModal({ open, onClose, trigger, onTriggerUpdated }: E
                                   key={field.key}
                                   field={field}
                                   value={configuration[field.key]}
-                                  onChange={(value) => setConfiguration(prev => ({ ...prev, [field.key]: value }))}
+                                  onChange={(value) => {
+                                    console.log('TriggerConfigField onChange:', field.key, value);
+                                    setConfiguration(prev => ({ ...prev, [field.key]: value }));
+                                  }}
                                   appKey={selectedApp?.key || ''}
                                   integrationId={selectedIntegration?.id}
                                   error={validationErrors[field.key]?.[0]}
@@ -1432,7 +1472,7 @@ export function EditTriggerModal({ open, onClose, trigger, onTriggerUpdated }: E
                               <h4 className="font-medium">Configuration Preview</h4>
                             </div>
                             <div>
-                              <div className="p-4">
+                              <div className="">
                                   <pre className="text-xs bg-gray-50 p-3 rounded overflow-auto max-h-64 whitespace-pre-wrap">
                                     {JSON.stringify(configuration, null, 2)}
                                   </pre>
@@ -1440,6 +1480,14 @@ export function EditTriggerModal({ open, onClose, trigger, onTriggerUpdated }: E
                             </div>
                           </div>
                         )}
+                        
+                        {/* Debug Configuration State */}
+                        <div className="text-xs text-gray-500 bg-yellow-50 p-2 rounded border">
+                          <p><strong>Debug - Current Configuration:</strong></p>
+                          <pre>{JSON.stringify(configuration, null, 2)}</pre>
+                          <p><strong>Debug - Trigger Configuration:</strong></p>
+                          <pre>{JSON.stringify(trigger?.configuration, null, 2)}</pre>
+                        </div>
                       </div>
                     </div>
                   </div>

@@ -117,8 +117,8 @@ export default function Edit() {
 
   const [editingTrigger, setEditingTrigger] = useState<CreatedTrigger | null>(null);
 
-  const triggers = sequence.triggers;
-  const actions = sequence.actions;
+  const triggers = sequence.triggers || [];
+  const actions = sequence.actions || [];
 
   // Get existing trigger constraints for new trigger restrictions
   const getExistingTriggerConstraints = () => {
@@ -182,53 +182,7 @@ export default function Edit() {
   };
 
   const handleEditTrigger = (trigger: Trigger) => {
-    // Convert Trigger to CreatedTrigger format for the edit modal
-    let triggerForEdit: CreatedTrigger;
-
-    if (trigger.integration?.app) {
-      // Trigger has integration data (old style)
-      triggerForEdit = {
-        id: trigger.id,
-        name: trigger.name,
-        app_id: trigger.integration.app.id,
-        trigger_key: trigger.trigger_key || '',
-        configuration: {},
-        webhook_url: trigger.webhook_url,
-        app: {
-          name: trigger.integration.app.name,
-          icon_url: trigger.integration.app.icon_url,
-          color: trigger.integration.app.color,
-        }
-      };
-    } else if (trigger.app_id) {
-      // Trigger has app_id directly (new style) - we'll need to find the app name
-      triggerForEdit = {
-        id: trigger.id,
-        name: trigger.name,
-        app_id: trigger.app_id,
-        trigger_key: trigger.trigger_key || '',
-        configuration: {},
-        webhook_url: trigger.webhook_url,
-        // We'll set the app info after finding it from the apps list
-      };
-    } else {
-      // Fallback case
-      triggerForEdit = {
-        id: trigger.id,
-        name: trigger.name,
-        app_id: 0,
-        trigger_key: trigger.trigger_key || '',
-        configuration: {},
-        webhook_url: trigger.webhook_url,
-        app: {
-          name: 'Unknown App',
-          icon_url: undefined,
-          color: undefined,
-        }
-      };
-    }
-
-    setEditingTrigger(triggerForEdit);
+    setEditingTrigger(trigger);
     setShowEditTriggerModal(true);
   };
 
