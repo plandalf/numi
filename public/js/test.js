@@ -92,28 +92,6 @@ function useNumiFrame({
   }), [iframeUrl.toString(), origin, embedId]);
 }
 
-// Debug hook to capture all messages
-function useMessageDebug() {
-  // useEffect(() => {
-  //   const debugListener = (event) => {
-  //     if (event.data && typeof event.data === 'object') {
-  //       console.log("🔍 All messages:", {
-  //         type: event.data.type,
-  //         source: event.data.source,
-  //         embedId: event.data.embedId,
-  //         origin: event.origin,
-  //         data: event.data,
-  //         hasEmbedId: !!event.data.embedId,
-  //         embedIdType: typeof event.data.embedId
-  //       });
-  //     }
-  //   };
-
-  //   window.addEventListener("message", debugListener);
-  //   return () => window.removeEventListener("message", debugListener);
-  // }, []);
-}
-
 var useMessageListener = (embed, eventName, fn, options) => {
   const enabled = !(options == null ? void 0 : options.disabled);
   // console.log("useMessageListener", { eventName, enabled, embed: embed ? { origin: embed.origin, embedId: embed.embedId } : null });
