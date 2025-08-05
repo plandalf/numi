@@ -20,6 +20,7 @@ import { OnInit } from '@/events/OnInit';
 import { useEffect } from 'react';
 import { PageChanged } from '@/events/PageChanged';
 import { PaymentInitialized } from '@/events/PaymentInitialized';
+import { CheckoutCancel } from '@/events/CheckoutCancel';
 import { getLayoutJSONConfig } from '@/config/layouts';
 
 // Helper function to generate meta tags
@@ -449,7 +450,26 @@ export default function CheckoutPage({ offer, fonts, error, checkoutSession }: C
 
   useEffect(() => {
     sendMessage(new OnInit(checkoutSession));
-  }, []);
+    
+    // Track checkout cancellation on page unload
+    const handleBeforeUnload = () => {
+      // Only send cancel if checkout hasn't been completed
+      if (!checkoutSession.order?.id) {
+        sendMessage(new CheckoutCancel(checkoutSession, 'page_unload'));
+      }
+    };
+
+    // Track when user navigates away or closes browser
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      // Send cancel event on component unmount if not completed
+      if (!checkoutSession.order?.id) {
+        sendMessage(new CheckoutCancel(checkoutSession, 'component_unmount'));
+      }
+    };
+  }, [checkoutSession]);
   const metaTags = generateMetaTags(offer);
 
   if (!firstPage) {

@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useCallback, ReactNode, CSSProperties } from "react";
-import { createPortal } from "react-dom";
 
-// #style-inject:#style-inject
-function styleInject(css: string, { insertAt }: { insertAt?: string } = {}) {
+const BASE_URL = import.meta.env.VITE_PLANDALF_BASE_URL || 'https://checkout.plandalf.dev';
+
+// Style injection function
+function styleInject(css, { insertAt } = {}) {
   if (!css || typeof document === "undefined") return;
   const head = document.head || document.getElementsByTagName("head")[0];
   const style = document.createElement("style");
@@ -16,154 +16,58 @@ function styleInject(css: string, { insertAt }: { insertAt?: string } = {}) {
   } else {
     head.appendChild(style);
   }
-  if ((style as any).styleSheet) {
-    (style as any).styleSheet.cssText = css;
+  if (style.styleSheet) {
+    style.styleSheet.cssText = css;
   } else {
     style.appendChild(document.createTextNode(css));
   }
 }
 
-// src/style.css
-styleInject(`@keyframes fillout-embed-loading {
-  0% {
-    transform: rotate(0deg);
-  }
-  100% {
-    transform: rotate(360deg);
-  }
-}
-.fillout-embed-popup-container {
-  padding: 40px 80px;
-}
-.fillout-embed-popup-iframe {
-  border-radius: 10px;
-  height: 100%;
-}
-.fillout-embed-popup-close {
-  position: absolute;
-  top: -15px;
-  right: -15px;
-  background: #171717;
-}
-.fillout-embed-popup-close:hover {
-  background: #272727;
-}
-.fillout-embed-slider-main {
-  position: relative;
-}
-.fillout-embed-slider-close {
-  padding: 20px 4px;
-}
-@media screen and (max-width: 480px) {
-  .fillout-embed-popup-container {
-    padding: 0;
-  }
-  .fillout-embed-popup-main {
-    display: flex;
-    flex-flow: column;
-    width: 100% !important;
-    height: 100% !important;
-  }
-  .fillout-embed-popup-iframe {
-    border-radius: 0;
-    height: unset;
-    flex-grow: 1;
-  }
-  .fillout-embed-popup-close {
-    position: unset;
-    top: 0;
-    right: 0;
-    margin: 4px 8px 4px auto;
-  }
-  .fillout-embed-slider-main {
-    flex-flow: column-reverse !important;
-    position: unset;
-    left: 0 !important;
-    right: 0 !important;
-  }
-  .fillout-embed-slider-iframe {
-    width: 100% !important;
-  }
-  .fillout-embed-slider-close {
-    padding: 6px;
-    border-radius: 50% !important;
-    margin: 4px 8px 4px auto;
-  }
-}
-`);
+// Inject styles
+styleInject("@keyframes numi-embed-loading {\n  0% {\n    transform: rotate(0deg);\n  }\n  100% {\n    transform: rotate(360deg);\n  }\n}\n.numi-embed-popup-container {\n  padding: 40px 80px;\n}\n.numi-embed-popup-iframe {\n  border-radius: 10px;\n  height: 100%;\n}\n.numi-embed-popup-close {\n  position: absolute;\n  top: -15px;\n  right: -15px;\n  background: #171717;\n}\n.numi-embed-popup-close:hover {\n  background: #272727;\n}\n.numi-embed-slider-main {\n  position: relative;\n}\n.numi-embed-slider-close {\n  padding: 20px 4px;\n}\n@media screen and (max-width: 480px) {\n  .numi-embed-popup-container {\n    padding: 0;\n  }\n  .numi-embed-popup-main {\n    display: flex;\n    flex-flow: column;\n    width: 100% !important;\n    height: 100% !important;\n  }\n  .numi-embed-popup-iframe {\n    border-radius: 0;\n    height: unset;\n    flex-grow: 1;\n  }\n  .numi-embed-popup-close {\n    position: unset;\n    top: 0;\n    right: 0;\n    margin: 4px 8px 4px auto;\n  }\n  .numi-embed-slider-main {\n    flex-flow: column-reverse !important;\n    position: unset;\n    left: 0 !important;\n    right: 0 !important;\n  }\n  .numi-embed-slider-iframe {\n    width: 100% !important;\n  }\n  .numi-embed-slider-close {\n    padding: 6px;\n    border-radius: 50% !important;\n    margin: 4px 8px 4px auto;\n  }\n}\n");
 
-// Utility Types
-interface FilloutEmbedProps {
-  filloutId: string;
-  domain?: string;
-  inheritParameters?: boolean;
-  parameters?: Record<string, string>;
-  dynamicResize?: boolean;
-  onInit?: (submissionUuid: string) => void;
-  onPageChange?: (submissionUuid: string, stepId: string) => void;
-  onSubmit?: (submissionUuid: string) => void;
-}
-
-interface PopupProps extends FilloutEmbedProps {
-  isOpen: boolean;
-  onClose: () => void;
-  width?: string | number;
-  height?: string | number;
-}
-
-interface ButtonProps {
-  onClick: () => void;
-  text?: string;
-  color?: string;
-  size?: 'small' | 'medium' | 'large';
-  float?: 'bottomRight' | 'bottomLeft';
-}
-
-interface PortalProps {
-  children: ReactNode;
-}
-
-// Embed logic
-const FILLOUT_BASE_URL = "https://embed.fillout.com";
-const generateEmbedId = (): string => {
+var generateEmbedId = () => {
   const min = 1e13;
   const max = 99999999999999;
   const randomNumber = Math.floor(Math.random() * (max - min + 1)) + min;
   return `${randomNumber}`;
 };
 
-type UseFilloutEmbedArgs = {
-  filloutId: string;
+function useNumiFrame({
+                        offerId,
+                        domain,
+                        inheritParameters,
+                        parameters,
+                        dynamicResize
+                      }: {
+  offerId: string;
   domain?: string;
   inheritParameters?: boolean;
-  parameters?: Record<string, string>;
+  parameters?: Record<string, any>;
   dynamicResize?: boolean;
-};
+}) {
 
-type FilloutEmbed = {
-  iframeUrl: string;
-  origin: string;
-  embedId: string;
-};
-
-function useFilloutEmbed({
-  filloutId,
-  domain,
-  inheritParameters,
-  parameters,
-  dynamicResize,
-}: UseFilloutEmbedArgs): FilloutEmbed | undefined {
-  const [searchParams, setSearchParams] = useState<URLSearchParams>();
-  const [embedId, setEmbedId] = useState<string>();
+  const [searchParams, setSearchParams] = useState();
+  const [embedId, setEmbedId] = useState();
 
   useEffect(() => {
     setSearchParams(new URLSearchParams(window.location.search));
     setEmbedId(generateEmbedId());
   }, []);
 
-  if (!searchParams || !embedId) return;
-  const origin = domain ? `https://${domain}` : FILLOUT_BASE_URL;
-  const iframeUrl = new URL(`${origin}/t/${encodeURIComponent(filloutId)}`);
+  // note: could be NOT https?
+  let origin: string;
+  if (domain) {
+    if (/^https?:\/\//i.test(domain)) {
+      origin = domain;
+    } else {
+      origin = `https://${domain}`;
+    }
+  } else {
+    origin = BASE_URL;
+  }
+  const iframeUrl = new URL(`${origin}/o/${encodeURIComponent(offerId)}`);
+
   if (inheritParameters && searchParams) {
     for (const [key, value] of searchParams.entries()) {
       iframeUrl.searchParams.set(key, value);
@@ -174,19 +78,171 @@ function useFilloutEmbed({
       if (value) iframeUrl.searchParams.set(key, value);
     }
   }
-  iframeUrl.searchParams.set("fillout-embed-id", embedId);
+
+  iframeUrl.searchParams.set("numi-embed-id", embedId);
   if (dynamicResize) {
-    iframeUrl.searchParams.set("fillout-embed-dynamic-resize", "true");
+    iframeUrl.searchParams.set("numi-embed-dynamic-resize", "true");
   }
-  return {
-    iframeUrl: iframeUrl.toString(),
+
+  // Memoize the return object to prevent unnecessary re-renders
+  return useMemo(() => ({
+    iframeUrl,
     origin,
-    embedId,
-  };
+    embedId
+  }), [iframeUrl.toString(), origin, embedId]);
 }
 
-// Loading Spinner
-const Loading: React.FC = () => (
+// Debug hook to capture all messages
+function useMessageDebug() {
+  // useEffect(() => {
+  //   const debugListener = (event) => {
+  //     if (event.data && typeof event.data === 'object') {
+  //       console.log("🔍 All messages:", {
+  //         type: event.data.type,
+  //         source: event.data.source,
+  //         embedId: event.data.embedId,
+  //         origin: event.origin,
+  //         data: event.data,
+  //         hasEmbedId: !!event.data.embedId,
+  //         embedIdType: typeof event.data.embedId
+  //       });
+  //     }
+  //   };
+
+  //   window.addEventListener("message", debugListener);
+  //   return () => window.removeEventListener("message", debugListener);
+  // }, []);
+}
+
+var useMessageListener = (embed, eventName, fn, options) => {
+  const enabled = !(options == null ? void 0 : options.disabled);
+  // console.log("useMessageListener", { eventName, enabled, embed: embed ? { origin: embed.origin, embedId: embed.embedId } : null });
+  useEffect(() => {
+    if (embed && embed.embedId && enabled) {
+      const debug = location.href.includes("NUMI_EMBED_DEBUG");
+
+      const listener = (event) => {
+        // Only log if this event is relevant to our listener
+        if (event.data?.type === eventName) {
+          console.log(`Received message event: ${event.data?.type}, source: ${event.data?.source}, embedId: ${event.data?.embedId}`, {
+            data: event.data,
+            expectedEmbedId: embed.embedId,
+            actualOrigin: event.origin
+          });
+
+          try {
+            // Check for plandalf source and correct event type
+            const sourceMatch = event.data.source === 'plandalf';
+            const typeMatch = event.data.type === eventName;
+
+            // Embed ID is required to ensure events are routed to the correct component
+            // Temporarily make it optional if server doesn't send it
+            const embedIdMatch = !event.data.embedId || event.data.embedId === embed.embedId;
+
+            if (sourceMatch && typeMatch && embedIdMatch) {
+              console.log(`✅ Matched event: ${eventName}`, event.data);
+              fn(event.data);
+            } else {
+              console.log(`❌ Event mismatch for ${eventName}:`, {
+                sourceMatch,
+                typeMatch,
+                embedIdMatch,
+                expectedSource: 'plandalf',
+                actualSource: event.data.source,
+                expectedType: eventName,
+                actualType: event.data.type,
+                expectedEmbedId: embed.embedId,
+                actualEmbedId: event.data.embedId
+              });
+            }
+          } catch (err) {
+            console.error("Error in message listener:", err);
+          }
+        }
+      };
+      console.log(`🎧 Mounting listener for event: ${eventName}`);
+      window.addEventListener("message", listener);
+      return () => {
+        console.log(`🔇 Unmounting listener for event: ${eventName}`, { embed, eventName, fn, enabled });
+        window.removeEventListener("message", listener);
+      };
+    }
+  }, [embed, eventName, fn, enabled]);
+};
+
+function useNumiEvents(embed, events) {
+  // Memoize the event handlers to prevent unnecessary re-renders
+  const handleInit = useCallback((data) => {
+    if (events.onInit) {
+      events.onInit(data.checkoutId);
+    }
+  }, [events.onInit]);
+
+  const handlePageChange = useCallback((data) => {
+    if (events.onPageChange) {
+      events.onPageChange(data.checkoutId, data.pageId);
+    }
+  }, [events.onPageChange]);
+
+  const handleSubmit = useCallback((data) => {
+    if (events.onSubmit) {
+      events.onSubmit(data.checkoutId);
+    }
+  }, [events.onSubmit]);
+
+  const handleSuccess = useCallback((data) => {
+    if (events.onSuccess) {
+      events.onSuccess(data);
+    }
+  }, [events.onSuccess]);
+
+  const handleComplete = useCallback((data) => {
+    if (events.onComplete) {
+      events.onComplete(data);
+    }
+  }, [events.onComplete]);
+
+  // Memoize the options objects to prevent unnecessary re-renders
+  const initOptions = useMemo(() => ({ disabled: !events.onInit }), [events.onInit]);
+  const pageChangeOptions = useMemo(() => ({ disabled: !events.onPageChange }), [events.onPageChange]);
+  const submitOptions = useMemo(() => ({ disabled: !events.onSubmit }), [events.onSubmit]);
+  const successOptions = useMemo(() => ({ disabled: !events.onSuccess }), [events.onSuccess]);
+  const completeOptions = useMemo(() => ({ disabled: !events.onComplete }), [events.onComplete]);
+
+  useMessageListener(
+    embed,
+    "on_init",
+    handleInit,
+    initOptions
+  );
+  useMessageListener(
+    embed,
+    "page_change",
+    handlePageChange,
+    pageChangeOptions
+  );
+  useMessageListener(
+    embed,
+    "checkout_submit",
+    handleSubmit,
+    submitOptions
+  );
+  useMessageListener(
+    embed,
+    "checkout_success",
+    handleSuccess,
+    successOptions
+  );
+  useMessageListener(
+    embed,
+    "checkout_complete",
+    handleComplete,
+    completeOptions
+  );
+}
+
+// Loading component
+const Loading = () => (
   <div
     style={{
       border: "solid 2px #aaa",
@@ -194,285 +250,66 @@ const Loading: React.FC = () => (
       borderRadius: "50%",
       width: 32,
       height: 32,
-      animation: "fillout-embed-loading 1s infinite linear",
+      animation: "numi-embed-loading 1s infinite linear"
     }}
   />
 );
 
-// Message Listener
-function useMessageListener(
-  embed: FilloutEmbed | undefined,
-  eventName: string,
-  fn: (data: any) => void,
-  options?: { disabled?: boolean }
-) {
-  const enabled = !(options?.disabled);
-  useEffect(() => {
-    if (embed && enabled) {
-      const debug = location.href.includes("FILLOUT_EMBED_DEBUG");
-      const listener = (event: MessageEvent) => {
-        try {
-          if (
-            event.origin === embed.origin &&
-            event.data.embedId === embed.embedId &&
-            event.data.type === eventName
-          ) {
-            if (debug) {
-              // eslint-disable-next-line no-console
-              console.log(["fillout embed MESSAGE", eventName, event.data]);
-            }
-            fn(event.data);
-          }
-        } catch (err) {}
-      };
-      if (debug) console.log(["fillout embed MOUNT", eventName]);
-      window.addEventListener("message", listener);
-      return () => {
-        if (debug) console.log(["fillout embed UNMOUNT", eventName]);
-        window.removeEventListener("message", listener);
-      };
-    }
-  }, [embed, eventName, fn, enabled]);
-}
+// Portal component
+const Portal = ({ children }) => {
+  return ReactDOM.createPortal(children, document.body);
+};
 
-// Fillout Events
-function useFilloutEvents(
-  embed: FilloutEmbed | undefined,
-  events: {
-    onInit?: (submissionUuid: string) => void;
-    onPageChange?: (submissionUuid: string, stepId: string) => void;
-    onSubmit?: (submissionUuid: string) => void;
-  }
-) {
-  useMessageListener(
-    embed,
-    "form_init",
-    (data) => events.onInit?.(data.submissionUuid),
-    { disabled: !events.onInit }
-  );
-  useMessageListener(
-    embed,
-    "page_change",
-    (data) => events.onPageChange?.(data.submissionUuid, data.stepId),
-    { disabled: !events.onPageChange }
-  );
-  useMessageListener(
-    embed,
-    "form_submit",
-    (data) => events.onSubmit?.(data.submissionUuid),
-    { disabled: !events.onSubmit }
-  );
-}
-
-// Standard Embed
-export const FilloutStandardEmbed: React.FC<FilloutEmbedProps> = ({
-  filloutId,
-  domain,
-  inheritParameters,
-  parameters,
-  dynamicResize,
-  onInit,
-  onPageChange,
-  onSubmit,
-}) => {
-  const [loading, setLoading] = useState(true);
-  const embed = useFilloutEmbed({
-    filloutId,
-    domain,
-    inheritParameters,
-    parameters,
-    dynamicResize,
-  });
-  useFilloutEvents(embed, { onInit, onPageChange, onSubmit });
-  const [height, setHeight] = useState<number>();
-  useMessageListener(
-    embed,
-    "form_resized",
-    (data) => {
-      const newHeight = data.size;
-      if (typeof newHeight === "number") {
-        setHeight(newHeight);
-      }
-    },
-    { disabled: !dynamicResize }
-  );
-  return (
-    <div
-      className="fillout-standard-embed"
-      style={{
-        height: !dynamicResize ? "100%" : typeof height === "number" ? height : 256,
-        transition: dynamicResize ? "height 150ms ease" : undefined,
-      }}
+// Close button component
+const CloseButton = ({ onClick }) => (
+  <button
+    onClick={(e) => {
+      e.stopPropagation();
+      onClick();
+    }}
+    className="numi-embed-popup-close"
+    style={{
+      width: 24,
+      height: 24,
+      textAlign: "center",
+      cursor: "pointer",
+      transition: "opacity 0.5s ease-in-out",
+      textDecoration: "none",
+      color: "white",
+      borderRadius: "50%",
+      padding: 6,
+      boxSizing: "content-box",
+      border: 0
+    }}
+  >
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      strokeWidth="2"
     >
-      {loading && (
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            width: "100%",
-            height: "100%",
-            minHeight: 256,
-          }}
-        >
-          <Loading />
-        </div>
-      )}
-      {embed && (
-        <iframe
-          src={embed.iframeUrl}
-          allow="microphone; camera; geolocation"
-          title="Embedded Form"
-          onLoad={() => setLoading(false)}
-          style={{
-            width: !loading ? "100%" : 0,
-            height: !loading ? "100%" : 0,
-            opacity: !loading ? 1 : 0,
-            borderRadius: 10,
-            border: 0,
-            minHeight: 256,
-          }}
-        />
-      )}
-    </div>
-  );
-};
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M6 18L18 6M6 6l12 12"
+      />
+    </svg>
+  </button>
+);
 
-// FullScreen Embed
-export const FilloutFullScreenEmbed: React.FC<FilloutEmbedProps> = ({
-  filloutId,
-  domain,
-  inheritParameters,
-  parameters,
-  onInit,
-  onPageChange,
-  onSubmit,
-}) => {
-  const [loading, setLoading] = useState(true);
-  const embed = useFilloutEmbed({
-    filloutId,
-    domain,
-    inheritParameters,
-    parameters,
-  });
-  useFilloutEvents(embed, { onInit, onPageChange, onSubmit });
-  return (
-    <div
-      style={{
-        position: "fixed",
-        top: 0,
-        left: 0,
-        width: "100%",
-        height: "100%",
-      }}
-    >
-      {loading && (
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            width: "100%",
-            height: "100%",
-          }}
-        >
-          <Loading />
-        </div>
-      )}
-      {embed && (
-        <iframe
-          src={embed.iframeUrl}
-          allow="microphone; camera; geolocation"
-          title="Embedded Form"
-          style={{
-            border: 0,
-            width: !loading ? "100%" : 0,
-            height: !loading ? "100%" : 0,
-            opacity: !loading ? 1 : 0,
-          }}
-          onLoad={() => setLoading(false)}
-        />
-      )}
-    </div>
-  );
-};
-
-// Portal
-const Portal: React.FC<PortalProps> = ({ children }) => {
-  const [render, setRender] = useState(false);
-  useEffect(() => {
-    setRender(true);
-  }, []);
-  return render ? createPortal(children, document.body) : <></>;
-};
-
-// Popup Embed
-const PopupContent: React.FC<FilloutEmbedProps & { onClose: () => void }> = ({
-  filloutId,
-  domain,
-  inheritParameters,
-  parameters,
-  onClose,
-  onInit,
-  onPageChange,
-  onSubmit,
-}) => {
-  const [loading, setLoading] = useState(true);
-  const embed = useFilloutEmbed({
-    filloutId,
-    domain,
-    inheritParameters,
-    parameters,
-  });
-  useFilloutEvents(embed, { onInit, onPageChange, onSubmit });
-  return (
-    <>
-      {!loading && <CloseButton onClick={onClose} />}
-      {embed && (
-        <iframe
-          src={embed.iframeUrl}
-          allow="microphone; camera; geolocation"
-          title="Embedded Form"
-          className="fillout-embed-popup-iframe"
-          style={{
-            border: 0,
-            width: "100%",
-            opacity: !loading ? 1 : 0,
-          }}
-          onLoad={() => setLoading(false)}
-        />
-      )}
-      {loading && (
-        <div
-          style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            width: "100%",
-            height: "100%",
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-          }}
-        >
-          <Loading />
-        </div>
-      )}
-    </>
-  );
-};
-
-const PopupContainer: React.FC<{
-  children: ReactNode;
-  isOpen: boolean;
-  isOpenAnimate: boolean;
-  onClose: () => void;
-  width?: string | number;
-  height?: string | number;
-}> = ({ children, isOpen, isOpenAnimate, onClose, width, height }) => (
+// Popup container component
+const PopupContainer = ({
+                          children,
+                          isOpen,
+                          isOpenAnimate,
+                          onClose,
+                          width,
+                          height
+                        }) => (
   <div
     onClick={onClose}
-    className="fillout-embed-popup-container"
+    className="numi-embed-popup-container"
     style={{
       position: "fixed",
       top: 0,
@@ -487,17 +324,17 @@ const PopupContainer: React.FC<{
       opacity: isOpenAnimate ? 1 : 0,
       display: isOpen ? "flex" : "none",
       justifyContent: "center",
-      alignItems: "center",
+      alignItems: "center"
     }}
   >
     <div
-      className="fillout-embed-popup-main"
+      className="numi-embed-popup-main"
       style={{
         position: "relative",
         width: width || "100%",
         height: height || "100%",
         maxWidth: "100%",
-        maxHeight: "100%",
+        maxHeight: "100%"
       }}
     >
       {children}
@@ -505,60 +342,99 @@ const PopupContainer: React.FC<{
   </div>
 );
 
-const CloseButton: React.FC<{ onClick: () => void }> = ({ onClick }) => (
-  <button
-    onClick={(e) => {
-      e.stopPropagation();
-      onClick();
-    }}
-    className="fillout-embed-popup-close"
-    style={{
-      width: 24,
-      height: 24,
-      textAlign: "center",
-      cursor: "pointer",
-      transition: "opacity 0.5s ease-in-out",
-      textDecoration: "none",
-      color: "white",
-      borderRadius: "50%",
-      padding: 6,
-      boxSizing: "content-box",
-      border: 0,
-    }}
-  >
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      fill="none"
-      viewBox="0 0 24 24"
-      stroke="currentColor"
-      strokeWidth={2}
-    >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M6 18L18 6M6 6l12 12"
-      />
-    </svg>
-  </button>
-);
+// Popup content component
+const PopupContent = ({
+                        offerId,
+                        domain,
+                        inheritParameters,
+                        parameters,
+                        onClose,
+                        onInit,
+                        onPageChange,
+                        onSubmit,
+                        onSuccess,
+                        onComplete
+                      }) => {
+  const [loading, setLoading] = useState(true);
+  const embed = useNumiFrame({
+    offerId,
+    domain,
+    inheritParameters,
+    parameters
+  });
 
-export const FilloutPopupEmbed: React.FC<PopupProps> = ({
-  isOpen: _isOpen,
-  onClose: _onClose,
-  width,
-  height,
-  ...props
-}) => {
+  // Debug all messages
+  useMessageDebug();
+
+  // Memoize the events object to prevent unnecessary re-renders
+  const events = useMemo(() => ({
+    onInit,
+    onPageChange,
+    onSubmit,
+    onSuccess,
+    onComplete
+  }), [onInit, onPageChange, onSubmit, onSuccess, onComplete]);
+
+  useNumiEvents(embed && embed.embedId ? embed : null, events);
+
+  return (
+    <>
+      {!loading && <CloseButton onClick={onClose} />}
+      {embed && embed.embedId && (
+        <iframe
+          src={embed.iframeUrl}
+          allow="microphone; camera; geolocation; payments;"
+          title="Embedded Form"
+          className="numi-embed-popup-iframe"
+          style={{
+            border: 0,
+            width: "100%",
+            opacity: !loading ? 1 : 0
+          }}
+          onLoad={() => setLoading(false)}
+        />
+      )}
+      {loading && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            width: "100%",
+            height: "100%",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center"
+          }}
+        >
+          <Loading />
+        </div>
+      )}
+    </>
+  );
+};
+
+// Main popup component
+const NumiPopupEmbed = ({
+                          isOpen: _isOpen,
+                          onClose: _onClose,
+                          width,
+                          height,
+                          ...props
+                        }) => {
   const [isOpen, setIsOpen] = useState(false);
+
   useEffect(() => {
     if (_isOpen) setTimeout(() => setIsOpen(true), 10);
     else setIsOpen(false);
   }, [_isOpen]);
-  const onClose = useCallback(() => {
+
+  const onClose = () => {
     if (!isOpen) return;
     setIsOpen(false);
     setTimeout(_onClose, 250);
-  }, [isOpen, _onClose]);
+  };
+
   return (
     <Portal>
       <PopupContainer
@@ -574,352 +450,87 @@ export const FilloutPopupEmbed: React.FC<PopupProps> = ({
   );
 };
 
-// Button
-const buttonSizeStyles: Record<string, CSSProperties> = {
-  small: {
-    padding: "8px 12px",
-    fontSize: 16,
-    borderRadius: 28,
-  },
-  medium: {
-    padding: "10px 14px",
-    fontSize: 18,
-    borderRadius: 32,
-  },
-  large: {
-    padding: "12px 14px",
-    fontSize: 20,
-    borderRadius: 32,
-  },
-};
-const buttonFloatStyles: Record<string, CSSProperties> = {
-  bottomRight: {
-    position: "fixed",
-    bottom: 32,
-    right: 32,
-    zIndex: 9999999,
-  },
-  bottomLeft: {
-    position: "fixed",
-    bottom: 32,
-    left: 32,
-    zIndex: 9999999,
-  },
-};
-const hexToRgb = (hex: string): [number, number, number] => {
-  if (typeof hex !== "string" || !/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/.test(hex)) {
-    return [59, 130, 246];
-  }
-  let bigint = parseInt(hex.slice(1), 16);
-  let r = (bigint >> 16) & 255;
-  let g = (bigint >> 8) & 255;
-  let b = bigint & 255;
-  return [r, g, b];
-};
-const getLuminance = (hexColor: string): number => {
-  let [r, g, b] = hexToRgb(hexColor);
-  const getComponent = (color: number) => {
-    color /= 255;
-    return color <= 0.03928 ? color / 12.92 : Math.pow((color + 0.055) / 1.055, 2.4);
-  };
-  r = getComponent(r);
-  g = getComponent(g);
-  b = getComponent(b);
-  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
-};
-const Button: React.FC<ButtonProps> = ({
-  onClick,
-  text = "Open form",
-  color = "#3b82f6",
-  size = "medium",
-  float,
-}) => {
-  const textColor = getLuminance(color) > 0.5 ? "black" : "white";
-  return (
-    <button
-      onClick={onClick}
-      style={{
-        cursor: "pointer",
-        fontFamily: "Helvetica, Arial, sans-serif",
-        display: "inline-block",
-        maxWidth: "100%",
-        overflow: "hidden",
-        textOverflow: "ellipsis",
-        textDecoration: "none",
-        fontWeight: "bold",
-        textAlign: "center",
-        margin: 0,
-        border: "medium",
-        boxShadow: "0px 2px 5px rgba(0, 0, 0, 0.2)",
-        backgroundColor: color,
-        color: textColor || "white",
-        ...buttonSizeStyles[size],
-        ...(float ? buttonFloatStyles[float] : {}),
-      }}
-    >
-      {text}
-    </button>
-  );
-};
+function NumiStandardEmbed({
+                             offer,
+                             onComplete,
+                             domain = null,
+                             inheritParameters = {},
+                             parameters = {},
+                             dynamicResize = true,
+                             onInit,
+                             onPageChange,
+                             onSubmit,
+                             onSuccess
+                           }: {
+  offer: string;
+  onInit: (checkoutId: string) => void;
+  onPageChange: (checkoutId: string, pageId: string) => void;
+  onSubmit: (checkoutId: string) => void;
+  onSuccess?: (data: any) => void;
+  onComplete: (checkout: any) => void;
+  domain?: string;
+  inheritParameters?: boolean;
+  parameters?: Record<string, any>;
+  dynamicResize?: boolean;
+}) {
 
-// PopupButton
-export const FilloutPopupEmbedButton: React.FC<FilloutEmbedProps & {
-  width?: string | number;
-  height?: string | number;
-  text?: string;
-  color?: string;
-  size?: 'small' | 'medium' | 'large';
-  float?: 'bottomRight' | 'bottomLeft';
-}> = ({
-  filloutId,
-  domain,
-  inheritParameters,
-  parameters,
-  width,
-  height,
-  onInit,
-  onPageChange,
-  onSubmit,
-  text,
-  color,
-  size,
-  float,
-}) => {
-  const [isOpen, setIsOpen] = useState(false);
-  return (
-    <>
-      <Button
-        onClick={() => setIsOpen(true)}
-        text={text}
-        color={color}
-        size={size}
-        float={float}
-      />
-      <FilloutPopupEmbed
-        filloutId={filloutId}
-        domain={domain}
-        inheritParameters={inheritParameters}
-        parameters={parameters}
-        isOpen={isOpen}
-        onClose={() => setIsOpen(false)}
-        onInit={onInit}
-        onPageChange={onPageChange}
-        onSubmit={onSubmit}
-        width={width}
-        height={height}
-      />
-    </>
-  );
-};
-
-// Slider Embed
-const SliderContainer: React.FC<{
-  children: ReactNode;
-  isOpen: boolean;
-  isOpenAnimate: boolean;
-  onClose: () => void;
-}> = ({ children, isOpen, isOpenAnimate, onClose }) => (
-  <div
-    onClick={onClose}
-    style={{
-      position: "fixed",
-      top: 0,
-      left: 0,
-      width: "100%",
-      height: "100%",
-      background: "rgba(0, 0, 0, 0.65)",
-      transition: "opacity 0.25s ease-in-out",
-      zIndex: 1e13,
-      opacity: isOpenAnimate ? 1 : 0,
-      display: isOpen ? "block" : "none",
-    }}
-  >
-    {children}
-  </div>
-);
-
-const CloseButton2: React.FC<{ onClick: () => void; sliderLeft?: boolean }> = ({ onClick, sliderLeft }) => (
-  <button
-    onClick={(e) => {
-      e.stopPropagation();
-      onClick();
-    }}
-    className="fillout-embed-slider-close"
-    style={{
-      border: 0,
-      display: "flex",
-      background: "#171717",
-      color: "white",
-      cursor: "pointer",
-      ...(sliderLeft
-        ? { borderTopRightRadius: 15, borderBottomRightRadius: 15 }
-        : { borderTopLeftRadius: 15, borderBottomLeftRadius: 15 }),
-    }}
-  >
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      fill="none"
-      viewBox="0 0 24 24"
-      stroke="currentColor"
-      strokeWidth={2}
-      style={{ width: 24, height: 24 }}
-    >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M6 18L18 6M6 6l12 12"
-      />
-    </svg>
-  </button>
-);
-
-const SliderContent: React.FC<FilloutEmbedProps & {
-  onClose: () => void;
-  sliderDirection?: 'left' | 'right';
-}> = ({
-  filloutId,
-  domain,
-  inheritParameters,
-  parameters,
-  sliderDirection = 'right',
-  onClose,
-  onInit,
-  onPageChange,
-  onSubmit,
-}) => {
   const [loading, setLoading] = useState(true);
-  const embed = useFilloutEmbed({
-    filloutId,
+
+  const embed = useNumiFrame({
+    offerId: offer,
     domain,
     inheritParameters,
     parameters,
+    dynamicResize
+
   });
-  useFilloutEvents(embed, { onInit, onPageChange, onSubmit });
-  const sliderLeft = sliderDirection === 'left';
-  const sliderOpen = !loading;
-  return (
-    <>
-      {loading && (
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            width: '100%',
-            height: '100%',
-          }}
-        >
-          <Loading />
-        </div>
-      )}
-      <div
-        className="fillout-embed-slider-main"
-        style={{
-          display: 'flex',
-          justifyContent: sliderLeft ? 'start' : 'end',
-          flexDirection: sliderLeft ? 'row' : 'row-reverse',
-          alignItems: 'center',
-          height: !loading ? '100%' : 0,
-          transitionProperty: sliderLeft ? 'left' : 'right',
-          transitionDuration: '0.25s',
-          transitionTimingFunction: 'ease-in-out',
-          ...(sliderLeft
-            ? { left: sliderOpen ? 0 : '-80%' }
-            : { right: sliderOpen ? 0 : '-80%' }),
-        }}
-      >
-        {embed && (
-          <iframe
-            src={embed.iframeUrl}
-            allow="microphone; camera; geolocation"
-            title="Embedded Form"
-            className="fillout-embed-slider-iframe"
-            style={{
-              border: 0,
-              width: !loading ? '80%' : 0,
-              height: !loading ? '100%' : 0,
-              opacity: !loading ? 1 : 0,
-            }}
-            onLoad={() => setLoading(false)}
-          />
-        )}
-        {!loading && <CloseButton2 onClick={onClose} sliderLeft={sliderLeft} />}
-      </div>
-    </>
-  );
-};
 
-export const FilloutSliderEmbed: React.FC<{
-  isOpen: boolean;
-  onClose: () => void;
-  sliderDirection?: 'left' | 'right';
-} & FilloutEmbedProps> = ({
-  isOpen: _isOpen,
-  onClose: _onClose,
-  sliderDirection,
-  ...props
-}) => {
-  const [isOpen, setIsOpen] = useState(false);
-  useEffect(() => {
-    if (_isOpen) setTimeout(() => setIsOpen(true), 10);
-    else setIsOpen(false);
-  }, [_isOpen]);
-  const onClose = useCallback(() => {
-    if (!isOpen) return;
-    setIsOpen(false);
-    setTimeout(_onClose, 250);
-  }, [isOpen, _onClose]);
-  return (
-    <Portal>
-      <SliderContainer isOpen={_isOpen} isOpenAnimate={isOpen} onClose={onClose}>
-        {_isOpen && <SliderContent onClose={onClose} sliderDirection={sliderDirection} {...props} />}
-      </SliderContainer>
-    </Portal>
-  );
-};
+  // Memoize the events object to prevent unnecessary re-renders
+  const events = useMemo(() => ({
+    onInit,
+    onPageChange,
+    onSubmit,
+    onSuccess
+  }), [onInit, onPageChange, onSubmit, onSuccess]);
 
-export const FilloutSliderEmbedButton: React.FC<FilloutEmbedProps & {
-  sliderDirection?: 'left' | 'right';
-  text?: string;
-  color?: string;
-  size?: 'small' | 'medium' | 'large';
-  float?: 'bottomRight' | 'bottomLeft';
-}> = ({
-  filloutId,
-  domain,
-  inheritParameters,
-  parameters,
-  sliderDirection,
-  onInit,
-  onPageChange,
-  onSubmit,
-  text,
-  color,
-  size,
-  float,
-}) => {
-  const [isOpen, setIsOpen] = useState(false);
-  return (
-    <>
-      <Button
-        onClick={() => setIsOpen(true)}
-        text={text}
-        color={color}
-        size={size}
-        float={float}
-      />
-      <FilloutSliderEmbed
-        filloutId={filloutId}
-        domain={domain}
-        inheritParameters={inheritParameters}
-        parameters={parameters}
-        sliderDirection={sliderDirection}
-        isOpen={isOpen}
-        onClose={() => setIsOpen(false)}
-        onInit={onInit}
-        onPageChange={onPageChange}
-        onSubmit={onSubmit}
-      />
-    </>
+  useNumiEvents(embed, events);
+  const [height, setHeight] = useState();
+
+  // Memoize the form resized handler and options
+  const handleFormResized = useCallback((data) => {
+    const newHeight = data.size;
+    if (typeof newHeight === "number") {
+      setHeight(newHeight);
+    }
+  }, []);
+
+  const formResizedOptions = useMemo(() => ({ disabled: !dynamicResize }), [dynamicResize]);
+
+  useMessageListener(
+    embed,
+    "form_resized",
+    handleFormResized,
+    formResizedOptions
   );
-};
+
+  const iframeProps = {
+    src: embed.iframeUrl,
+    allow: "microphone; camera; geolocation; payments;",
+    title: "Embedded Form",
+    onLoad: () => setLoading(false),
+    style: {
+      width: !loading ? "100%" : 0,
+      height: !loading ? "100%" : 0,
+      opacity: !loading ? 1 : 0,
+      borderRadius: 10,
+      border: 0,
+      minHeight: 256
+    }
+  }
+
+  return (
+    <div className="numi-standard-embed">
+      <iframe {...iframeProps} height={"700px"} style={{ height: '700px', width: '100%' }}></iframe>
+    </div>
+  )
+}

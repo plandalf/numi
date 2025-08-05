@@ -557,18 +557,33 @@ ${spinAnimationStyles}
                     // only for this iframe in question
                     return;
                 }
-                const newHeight = event.data.size;
-                iframeContainer.style.height = `${newHeight
-                    ? Math.min(newHeight + 48, window.innerHeight - 80)
-                    : window.innerHeight - 80}px`;
+                
+                // Handle dynamic resize (preserve existing functionality)
+                if (event.data.size !== undefined) {
+                    const newHeight = event.data.size;
+                    iframeContainer.style.height = `${newHeight
+                        ? Math.min(newHeight + 48, window.innerHeight - 80)
+                        : window.innerHeight - 80}px`;
+                }
             };
             window.addEventListener('message', receiveMessage, false);
         }
         iframe.src = iframeSrc.toString();
-        console.log('embedding plandalf iframe', iframeSrc.toString());
+        if (window.location.href.includes('PLANDALF_DEBUG') || window.PLANDALF_DEBUG) {
+            console.log('embedding plandalf iframe', iframeSrc.toString());
+            console.log(`[Plandalf] Popup created with embedId: ${embedId}`);
+        }
         iframe.allow = 'microphone; camera; geolocation';
         iframe.style.border = '0px';
         iframe.title = `${offerPublicIdentifier}`;
+        
+        // Store embed ID and offer ID for session tracking
+        target.setAttribute('data-numi-embed-id', embedId);
+        target.setAttribute('data-numi-offer', offerPublicIdentifier);
+        
+        // Register embed type for session tracking
+        embedTypeRegistry.set(embedId, embedType);
+        
         const closeIcon = document.createElement('a');
         closeIcon.className = `numi-embed-${embedType}-close-icon`;
         closeIcon.innerHTML = XIcon;
@@ -637,6 +652,48 @@ ${spinAnimationStyles}
         }
         // close handlers
         const closePopup = () => {
+            if (window.location.href.includes('PLANDALF_DEBUG') || window.PLANDALF_DEBUG) {
+                console.log(`[Plandalf] closePopup called with embedId: ${embedId}`);
+            }
+            // Fire cancel event before closing if there's an active session
+            // Use embedId from closure scope since it's not set on iframe
+            if (embedId && window.plandalf?.offers?._sessions?.has(embedId)) {
+                const session = window.plandalf.offers._sessions.get(embedId);
+                if (session) {
+                    // Fire checkout_closed event for popup/slider closures
+                    if (window.location.href.includes('PLANDALF_DEBUG') || window.PLANDALF_DEBUG) {
+                        console.log(`[Plandalf] Firing closed event for embedId: ${embedId}, completed: ${session.isCompleted}`);
+                    }
+                    session._triggerEvent('closed', {
+                        embedType: session.embedType,
+                        wasCompleted: session.isCompleted,
+                        embedId: embedId,
+                        sessionId: session.id
+                    });
+                    
+                    // Also fire cancel event if not completed
+                    if (!session.isCompleted && !session.isCancelled) {
+                        if (window.location.href.includes('PLANDALF_DEBUG') || window.PLANDALF_DEBUG) {
+                            console.log(`[Plandalf] Firing cancel event for embedId: ${embedId}`);
+                        }
+                        session._triggerEvent('cancel', {
+                            cancelReason: 'popup_closed',
+                            embedId: embedId,
+                            sessionId: session.id
+                        });
+                    }
+                } else if (window.location.href.includes('PLANDALF_DEBUG') || window.PLANDALF_DEBUG) {
+                    console.log(`[Plandalf] Session not found for embedId: ${embedId}`);
+                }
+            } else if (window.location.href.includes('PLANDALF_DEBUG') || window.PLANDALF_DEBUG) {
+                console.log(`[Plandalf] No active sessions found for embedId: ${embedId}`, { 
+                    embedId, 
+                    sessions: window.plandalf?.offers?._sessions, 
+                    hasSession: window.plandalf?.offers?._sessions?.has(embedId),
+                    sessionKeys: Array.from(window.plandalf?.offers?._sessions?.keys() || [])
+                });
+            }
+            
             document.body.classList.remove('noscroll');
             if (embedType === 'popup') {
                 popupContainer.style.opacity = '0';
@@ -746,10 +803,14 @@ ${spinAnimationStyles}
                     // only for this iframe in question
                     return;
                 }
+                
+                // Handle form resize (preserve existing functionality)
                 if (event.data.type === 'form_resized') {
                     const newHeight = event.data.size;
                     target.style.height = `${newHeight}px`;
                 }
+                
+                // Handle scroll up requests (preserve existing functionality)
                 if (event.data.type === 'check_scroll_up') {
                     const elementTopInParent = iframe.getBoundingClientRect().top;
                     // Scroll only if the top of the iframe is out of view
@@ -770,6 +831,14 @@ ${spinAnimationStyles}
             iframe.style.display = 'block';
         }
         iframe.title = `${offerPublicIdentifier}`;
+        
+        // Store embed ID and offer ID for session tracking
+        target.setAttribute('data-numi-embed-id', embedId);
+        target.setAttribute('data-numi-offer', offerPublicIdentifier);
+        
+        // Register embed type for session tracking  
+        embedTypeRegistry.set(embedId, isFullScreen ? 'fullscreen' : 'standard');
+        
         iframe.addEventListener('load', () => {
             if (standardLoading) {
                 standardLoading.style.display = 'none';
@@ -882,6 +951,560 @@ ${spinAnimationStyles}
         });
     }
     console.log(standardTargets);
+
+    // =============================================================================
+    // PLANDALF SESSION-BASED API
+    // =============================================================================
+    
+    // Global tracking of embed types by embedId
+    const embedTypeRegistry = new Map();
+    
+    // Checkout Session - represents one complete checkout flow
+    class CheckoutSession {
+        constructor(data) {
+            this.id = data.checkoutId;
+            this.embedId = data.embedId;
+            this.offerId = data.offerId;
+            this.embedType = data.embedType; // 'popup', 'slider', 'standard'
+            this.startTime = Date.now();
+            this.events = [];
+            this._callbacks = {};
+            this.isActive = true;
+            this.isCompleted = false;
+            this.isCancelled = false;
+            this.currentPage = null;
+            this.formHeight = null;
+        }
+        
+        // Unified event listener - supports callback or promise
+        on(events, callback) {
+            const eventArray = Array.isArray(events) ? events : [events];
+            
+            if (callback && typeof callback === 'function') {
+                // Callback style
+                eventArray.forEach(eventType => {
+                    if (!this._callbacks[eventType]) {
+                        this._callbacks[eventType] = [];
+                    }
+                    this._callbacks[eventType].push(callback);
+                });
+                return this;
+            } else {
+                // Promise style
+                return new Promise((resolve, reject) => {
+                    let resolved = false;
+                    
+                    const oneTimeCallback = (data) => {
+                        if (!resolved) {
+                            resolved = true;
+                            resolve({
+                                ...data,
+                                session: this,
+                                sessionDuration: Date.now() - this.startTime,
+                                eventType: data.type
+                            });
+                        }
+                    };
+                    
+                    eventArray.forEach(eventType => this.on(eventType, oneTimeCallback));
+                    
+                    setTimeout(() => {
+                        if (!resolved) {
+                            resolved = true;
+                            reject(new Error(`Session ${this.id} timeout waiting for: ${eventArray.join(', ')}`));
+                        }
+                    }, 600000); // 10 minutes
+                });
+            }
+        }
+        
+        // Specific event methods
+        onInit(callback) { return this.on('init', callback); }
+        onPageChange(callback) { return this.on('page_change', callback); }
+        onPaymentInit(callback) { return this.on('payment_init', callback); }
+        onSubmit(callback) { return this.on('submit', callback); }
+        onSuccess(callback) { return this.on('success', callback); }
+        onComplete(callback) { return this.on('complete', callback); }
+        onCancel(callback) { return this.on('cancel', callback); }
+        onClosed(callback) { return this.on('closed', callback); }
+        onLineItemChange(callback) { return this.on('lineitem_change', callback); }
+        onResize(callback) { return this.on('resize', callback); }
+        
+        // Convenience methods
+        async waitForCompletion() {
+            await this.on('success');
+            return this.on('complete');
+        }
+        
+        async waitForSubmission() {
+            return this.on('submit');
+        }
+        
+        async waitForSuccess() {
+            return this.on('success');
+        }
+        
+        async waitForAnyCompletion() {
+            return this.on(['success', 'complete']);
+        }
+        
+        // Get current session state
+        getState() {
+            return {
+                sessionId: this.id,
+                offerId: this.offerId,
+                embedId: this.embedId,
+                duration: Date.now() - this.startTime,
+                currentPage: this.currentPage,
+                formHeight: this.formHeight,
+                events: this.events,
+                isActive: this.isActive,
+                isInitialized: this.events.some(e => e.type === 'init'),
+                isSubmitted: this.events.some(e => e.type === 'submit'),
+                isSuccessful: this.events.some(e => e.type === 'success'),
+                isComplete: this.events.some(e => e.type === 'complete')
+            };
+        }
+        
+        // Internal: trigger event
+        _triggerEvent(eventType, data) {
+            const eventData = {
+                ...data,
+                type: eventType,
+                sessionId: this.id,
+                timestamp: Date.now()
+            };
+            
+            this.events.push(eventData);
+            
+            // Update session state
+            if (eventType === 'page_change') {
+                this.currentPage = data.pageId;
+            } else if (eventType === 'resize') {
+                this.formHeight = data.size;
+            } else if (eventType === 'success' || eventType === 'complete') {
+                this.isCompleted = true;
+                if (eventType === 'complete') {
+                    this.isActive = false;
+                }
+            } else if (eventType === 'cancel') {
+                this.isCancelled = true;
+                this.isActive = false;
+            }
+            
+            // Trigger callbacks
+            if (this._callbacks[eventType]) {
+                this._callbacks[eventType].forEach(callback => {
+                    try {
+                        callback(eventData);
+                    } catch (err) {
+                        console.error(`[Plandalf] Error in session ${this.id} ${eventType} callback:`, err);
+                    }
+                });
+            }
+        }
+    }
+
+    class OfferWaiter {
+        constructor(selector) {
+            this.selector = selector;
+            this._sessionCallbacks = [];
+            window.plandalf.offers._addWaiter(this);
+        }
+        
+        // Listen for new checkout sessions
+        onCheckout(callback) {
+            if (callback && typeof callback === 'function') {
+                this._sessionCallbacks.push(callback);
+                return this;
+            } else {
+                return new Promise((resolve, reject) => {
+                    const oneTimeCallback = (session) => resolve(session);
+                    this._sessionCallbacks.push(oneTimeCallback);
+                    
+                    setTimeout(() => {
+                        reject(new Error(`Timeout waiting for checkout on pattern: ${this.selector}`));
+                    }, 300000);
+                });
+            }
+        }
+        
+        // Convenience methods
+        async onAnyInit() {
+            const session = await this.onCheckout();
+            return session.onInit();
+        }
+        
+        async onAnySuccess() {
+            const session = await this.onCheckout();
+            return session.onSuccess();
+        }
+        
+        async onAnyComplete() {
+            const session = await this.onCheckout();
+            return session.onComplete();
+        }
+        
+        _matches(offerId) {
+            if (typeof this.selector === 'string') {
+                if (this.selector === '*') return true;
+                if (this.selector.includes('*')) {
+                    const pattern = this.selector.replace(/\*/g, '.*');
+                    return new RegExp(`^${pattern}$`).test(offerId);
+                }
+                return this.selector === offerId;
+            }
+            if (Array.isArray(this.selector)) {
+                return this.selector.includes(offerId);
+            }
+            return false;
+        }
+        
+        _checkSession(session) {
+            if (this._matches(session.offerId)) {
+                this._sessionCallbacks.forEach(callback => {
+                    try {
+                        callback(session);
+                    } catch (err) {
+                        console.error('[Plandalf] Error in session callback:', err);
+                    }
+                });
+            }
+        }
+    }
+
+    class PlandalfOffer {
+        constructor(offerId, options = {}) {
+            this.offerId = offerId;
+            this.options = options;
+            this.embedId = null;
+            this.isVisible = false;
+            this.currentSession = null;
+        }
+        
+        show(overrideOptions = {}) {
+            const finalOptions = { ...this.options, ...overrideOptions };
+            
+            if (!this.embedId) {
+                this.embedId = this._createEmbed(finalOptions);
+            }
+            
+            this._showEmbed();
+            this.isVisible = true;
+            
+            // Return promise that resolves with the checkout session
+            return new Promise((resolve, reject) => {
+                const checkForSession = () => {
+                    const session = window.plandalf.offers._sessions.get(this.embedId);
+                    if (session) {
+                        this.currentSession = session;
+                        resolve(session);
+                    } else {
+                        setTimeout(checkForSession, 100);
+                    }
+                };
+                checkForSession();
+                
+                setTimeout(() => reject(new Error('Timeout waiting for session')), 10000);
+            });
+        }
+        
+        hide() {
+            this._hideEmbed();
+            this.isVisible = false;
+            return this;
+        }
+        
+        getSession() {
+            return this.currentSession;
+        }
+        
+        // Placeholder methods - would be implemented with actual embed creation
+        _createEmbed(options) {
+            return generateEmbedId();
+        }
+        
+        _showEmbed() {
+            // Implementation would trigger the actual embed showing
+        }
+        
+        _hideEmbed() {
+            // Implementation would hide the embed
+        }
+    }
+
+    // Global Plandalf API
+    window.plandalf = {
+        offers: {
+            get(selector) {
+                return new OfferWaiter(selector);
+            },
+            
+            show(selector, options = {}) {
+                if (typeof selector === 'string' && !selector.includes('*') && !Array.isArray(selector)) {
+                    return this.create(selector, options).show();
+                } else {
+                    return this.get(selector).show(options);
+                }
+            },
+            
+            create(offerId, options = {}) {
+                if (!this._instances[offerId]) {
+                    this._instances[offerId] = new PlandalfOffer(offerId, options);
+                }
+                return this._instances[offerId];
+            },
+            
+            _instances: {},
+            _sessions: new Map(),
+            _waiters: [],
+            
+            _addWaiter(waiter) {
+                this._waiters.push(waiter);
+            },
+            
+            _notifyWaiters(session) {
+                this._waiters.forEach(waiter => waiter._checkSession(session));
+            }
+        }
+    };
+
+    // Enhanced message handler for session tracking
+    const plandalfReceiveMessage = (event) => {
+        if (!event.data || event.data.source !== 'plandalf') return;
+        
+        // ALWAYS log the full event structure for debugging
+        console.group(`🔍 [Plandalf] PostMessage Event: ${event.data.type}`);
+        console.log('📦 Full event.data:', JSON.stringify(event.data, null, 2));
+        console.log('📋 Raw event.data object:', event.data);
+        console.groupEnd();
+        
+        const { type, data } = event.data;
+        
+        // Try multiple ways to extract embedId with detailed logging
+        console.group('🔍 EmbedId Extraction Process');
+        console.log('Method 1 - event.data.embedId:', event.data.embedId);
+        console.log('Method 2 - data?.embedId:', data?.embedId);
+        console.log('Method 3 - data?.data?.embedId:', data?.data?.embedId);
+        
+        let embedId = event.data.embedId || data?.embedId || data?.data?.embedId;
+        console.log('🎯 Initial embedId result:', embedId);
+        
+        // If still no embedId, try to extract from the iframe source
+        if (!embedId && event.source && event.source.location) {
+            try {
+                const iframeUrl = new URL(event.source.location.href);
+                embedId = iframeUrl.searchParams.get('numi-embed-id');
+                console.log('Method 4 - From iframe URL:', embedId);
+            } catch (e) {
+                console.log('Method 4 - Failed:', e.message);
+            }
+        }
+        
+        // Last resort: try to find iframe by matching the event source
+        if (!embedId && event.source) {
+            const iframes = document.querySelectorAll('iframe[src*="numi-embed-id"]');
+            console.log('Method 5 - Found iframes:', iframes.length);
+            for (const iframe of iframes) {
+                if (iframe.contentWindow === event.source) {
+                    const srcUrl = new URL(iframe.src);
+                    embedId = srcUrl.searchParams.get('numi-embed-id');
+                    console.log('Method 5 - Matched iframe embedId:', embedId);
+                    break;
+                }
+            }
+        }
+        
+        console.log('🎯 Final embedId:', embedId);
+        console.groupEnd();
+        
+        // Debug logging (only when debugging)
+        if (window.location.href.includes('PLANDALF_DEBUG') || window.PLANDALF_DEBUG) {
+            console.log(`[Plandalf] Received message: ${type} with embedId: ${embedId}`);
+        }
+        if (window.location.href.includes('PLANDALF_DEBUG') || window.PLANDALF_DEBUG) {
+            console.log(`[Plandalf] Received: ${type}`, { embedId, data });
+        }
+        
+        // Handle session initialization
+        if (type === 'on_init') {
+            console.group('🚀 Session Initialization');
+            console.log('📊 Session data extraction:');
+            console.log('  - data.offerId:', data.offerId);
+            console.log('  - data.data?.offerId:', data.data?.offerId);
+            console.log('  - findOfferIdFromEmbedId(embedId):', findOfferIdFromEmbedId(embedId));
+            console.log('  - data.checkoutId:', data.checkoutId);
+            console.log('  - data.data?.checkoutId:', data.data?.checkoutId);
+            console.log('  - data.session?.id:', data.session?.id);
+            console.log('  - data.data?.session?.id:', data.data?.session?.id);
+            
+            const offerId = data.offerId || data.data?.offerId || findOfferIdFromEmbedId(embedId);
+            const checkoutId = data.checkoutId || data.data?.checkoutId || data.session?.id || data.data?.session?.id || embedId;
+            
+            console.log('🎯 Final session values:');
+            console.log('  - embedId:', embedId);
+            console.log('  - offerId:', offerId);
+            console.log('  - checkoutId:', checkoutId);
+            console.groupEnd();
+            
+            const session = new CheckoutSession({
+                checkoutId: checkoutId,
+                embedId: embedId,
+                offerId: offerId,
+                embedType: embedTypeRegistry.get(embedId) || 'unknown'
+            });
+            
+            window.plandalf.offers._sessions.set(embedId, session);
+            if (window.location.href.includes('PLANDALF_DEBUG') || window.PLANDALF_DEBUG) {
+                console.log(`[Plandalf] Session registered. Total sessions: ${window.plandalf.offers._sessions.size}`);
+            }
+            window.plandalf.offers._notifyWaiters(session);
+            
+            // Trigger init event with enhanced data
+            const eventData = {
+                ...data,
+                ...(data.data || {}),
+                checkoutId: checkoutId,
+                offerId: offerId,
+                embedId: embedId
+            };
+            session._triggerEvent('init', eventData);
+            return;
+        }
+        
+        // Route events to existing session
+        const session = window.plandalf.offers._sessions.get(embedId);
+        if (session) {
+            console.group(`🔄 Event Routing: ${type}`);
+            console.log('📍 Found session:', session.id);
+            
+            // Map event types
+            const eventMap = {
+                'page_change': 'page_change',
+                'payment_init': 'payment_init',
+                'checkout_submit': 'submit', 
+                'checkout_success': 'success',
+                'checkout_complete': 'complete',
+                'checkout_cancel': 'cancel',
+                'checkout_closed': 'closed',
+                'checkout_lineitem_changed': 'lineitem_change',
+                'form_resized': 'resize'
+            };
+            
+            const eventType = eventMap[type] || type;
+            console.log('🏷️ Event type mapping:', type, '->', eventType);
+            
+            // Enhance event data with session context
+            const eventData = {
+                ...data,
+                ...(data.data || {}),
+                sessionId: session.id,
+                offerId: session.offerId,
+                embedId: embedId
+            };
+            
+            console.log('📦 Enhanced event data:');
+            console.log('  - Original data:', data);
+            console.log('  - Enhanced data:', eventData);
+            console.log('  - Data structure:', JSON.stringify(eventData, null, 2));
+            console.groupEnd();
+            
+            session._triggerEvent(eventType, eventData);
+        } else {
+            console.warn(`⚠️ No session found for embedId: ${embedId}`);
+            console.log('Available sessions:', Array.from(window.plandalf?.offers?._sessions?.keys() || []));
+        }
+    };
+
+    // Helper to find offer ID from embed ID
+    const findOfferIdFromEmbedId = (embedId) => {
+        const element = document.querySelector(`[data-numi-embed-id="${embedId}"]`);
+        return element?.dataset.numiOffer || 'unknown';
+    };
+
+    // Install the enhanced message listener
+    if (!window.__plandalfSessionMessageListener) {
+        window.addEventListener('message', plandalfReceiveMessage);
+        window.__plandalfSessionMessageListener = true;
+    }
+
+    // =============================================================================
+    // END PLANDALF SESSION-BASED API
+    // =============================================================================
+
+    // Process global configuration if provided
+    const processGlobalConfig = () => {
+        const config = window.plandalfConfig || {};
+        
+        // Set up global event listeners from config
+        if (config.onInit) {
+            plandalf.offers.get('*').onCheckout((checkout) => {
+                checkout.onInit(config.onInit);
+            });
+        }
+        
+        if (config.onSuccess) {
+            plandalf.offers.get('*').onCheckout((checkout) => {
+                checkout.onSuccess(config.onSuccess);
+            });
+        }
+        
+        if (config.onComplete) {
+            plandalf.offers.get('*').onCheckout((checkout) => {
+                checkout.onComplete(config.onComplete);
+            });
+        }
+        
+        if (config.onSubmit) {
+            plandalf.offers.get('*').onCheckout((checkout) => {
+                checkout.onSubmit(config.onSubmit);
+            });
+        }
+        
+        if (config.onPageChange) {
+            plandalf.offers.get('*').onCheckout((checkout) => {
+                checkout.onPageChange(config.onPageChange);
+            });
+        }
+        
+        if (config.onCancel) {
+            plandalf.offers.get('*').onCheckout((checkout) => {
+                checkout.onCancel(config.onCancel);
+            });
+        }
+        
+        if (config.onLineItemChange) {
+            plandalf.offers.get('*').onCheckout((checkout) => {
+                checkout.onLineItemChange(config.onLineItemChange);
+            });
+        }
+        
+        if (config.onClosed) {
+            plandalf.offers.get('*').onCheckout((checkout) => {
+                checkout.onClosed(config.onClosed);
+            });
+        }
+        
+        // Per-offer configuration
+        if (config.offers) {
+            Object.entries(config.offers).forEach(([offerId, offerConfig]) => {
+                plandalf.offers.get(offerId).onCheckout((checkout) => {
+                    if (offerConfig.onInit) checkout.onInit(offerConfig.onInit);
+                    if (offerConfig.onSuccess) checkout.onSuccess(offerConfig.onSuccess);
+                    if (offerConfig.onComplete) checkout.onComplete(offerConfig.onComplete);
+                    if (offerConfig.onSubmit) checkout.onSubmit(offerConfig.onSubmit);
+                    if (offerConfig.onPageChange) checkout.onPageChange(offerConfig.onPageChange);
+                    if (offerConfig.onCancel) checkout.onCancel(offerConfig.onCancel);
+                    if (offerConfig.onClosed) checkout.onClosed(offerConfig.onClosed);
+                    if (offerConfig.onLineItemChange) checkout.onLineItemChange(offerConfig.onLineItemChange);
+                });
+            });
+        }
+    };
+
+    // Process configuration
+    processGlobalConfig();
+
     // @ts-ignore
     const fullScreenInitialized = window.__numiFullScreenInitialized;
     const fullScreenTargets = document.querySelectorAll("[data-numi-embed-type='fullscreen']");

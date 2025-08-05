@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plandalf Session API Test</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            max-width: 1000px; 
+            margin: 0 auto; 
+            padding: 20px; 
+            background: #f8fafc;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .log { 
+            background: #0f172a; 
+            color: #22c55e; 
+            padding: 15px; 
+            border-radius: 6px; 
+            font-family: 'SF Mono', 'Monaco', 'Cascadia Code', monospace; 
+            height: 250px; 
+            overflow-y: auto; 
+            margin: 15px 0;
+            font-size: 13px;
+            line-height: 1.4;
+            border: 1px solid #1e293b;
+        }
+        button { 
+            padding: 10px 20px; 
+            margin: 6px; 
+            border: none; 
+            border-radius: 6px; 
+            cursor: pointer; 
+            font-weight: 500;
+            font-size: 14px;
+            transition: all 0.15s;
+        }
+        button:hover { transform: translateY(-1px); }
+        .popup { background: #3b82f6; color: white; }
+        .standard { background: #10b981; color: white; }
+        .slider { background: #f59e0b; color: white; }
+        .test { background: #8b5cf6; color: white; }
+        .clear { background: #ef4444; color: white; font-size: 12px; padding: 6px 12px; }
+        h1 { color: #1e293b; text-align: center; margin-bottom: 20px; font-size: 24px; }
+        h2 { color: #334155; font-size: 18px; margin-bottom: 15px; }
+        .status { padding: 8px 12px; border-radius: 4px; margin: 10px 0; font-size: 14px; }
+        .status.info { background: #dbeafe; color: #1e40af; }
+        .stats { display: flex; gap: 10px; margin: 15px 0; }
+        .stat { background: #f1f5f9; padding: 8px 12px; border-radius: 4px; text-align: center; flex: 1; }
+        .stat-value { font-size: 18px; font-weight: bold; color: #1e293b; }
+        .stat-label { font-size: 12px; color: #64748b; }
+        .buttons { display: flex; flex-wrap: wrap; gap: 8px; margin: 15px 0; }
+        code { background: #f1f5f9; padding: 2px 6px; border-radius: 3px; font-family: monospace; font-size: 13px; }
+    </style>
+</head>
+<body>
+    <h1>🚀 Plandalf Session API Test Page</h1>
+    
+    <div class="container">
+        <div class="status info">
+            <strong>Status:</strong> <span id="status">Loading...</span>
+        </div>
+        
+        <div class="stats">
+            <div class="stat">
+                <div class="stat-value" id="activeSessions">0</div>
+                <div class="stat-label">Active Sessions</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value" id="completedSessions">0</div>
+                <div class="stat-label">Completed</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value" id="cancelledSessions">0</div>
+                <div class="stat-label">Cancelled</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value" id="totalEvents">0</div>
+                <div class="stat-label">Total Events</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <h2>📋 Event Log</h2>
+        <div class="log" id="log"></div>
+        <button onclick="clearLog()" class="clear">Clear Log</button>
+    </div>
+
+    <div class="container">
+        <h2>🧪 Embed Type Tests</h2>
+        <p>Test different embed types using offer: <code>bing-bong-1-8Di1dEf1LTe</code></p>
+        
+        <div class="buttons">
+            <button 
+                data-numi-popup-size="large" 
+                data-numi-offer="bing-bong-1-8Di1dEf1LTe/test" 
+                data-numi-embed-type="popup"
+                class="popup">
+                Popup (Large)
+            </button>
+            
+            <button 
+                data-numi-popup-size="medium" 
+                data-numi-offer="bing-bong-1-8Di1dEf1LTe" 
+                data-numi-embed-type="popup"
+                class="popup">
+                Popup (Medium)
+            </button>
+            
+            <button 
+                data-numi-popup-size="small" 
+                data-numi-offer="bing-bong-1-8Di1dEf1LTe" 
+                data-numi-embed-type="popup"
+                class="popup">
+                Popup (Small)
+            </button>
+            
+            <!-- <button 
+                data-numi-offer="bing-bong-1-8Di1dEf1LTe" 
+                data-numi-embed-type="standard"
+                class="standard">
+                Standard Embed
+            </button> -->
+            
+            <button 
+                data-numi-slider-direction="right" 
+                data-numi-offer="bing-bong-1-8Di1dEf1LTe" 
+                data-numi-embed-type="slider"
+                class="slider">
+                Slider (Right)
+            </button>
+            
+            <button 
+                data-numi-slider-direction="left" 
+                data-numi-offer="bing-bong-1-8Di1dEf1LTe" 
+                data-numi-embed-type="slider"
+                class="slider">
+                Slider (Left)
+            </button>
+        </div>
+    </div>
+
+    <div class="container">
+        <h2>⚡ Session API Tests</h2>
+        <div class="buttons">
+            <button onclick="testSessionTracking()" class="test">Session Tracking</button>
+            <button onclick="testPromiseAPI()" class="test">Promise API</button>
+            <button onclick="waitForAnyPurchase()" class="test">Wait for Purchase</button>
+            <button onclick="testWildcardMatching()" class="test">Wildcard Matching</button>
+            <button onclick="testAnalyticsSetup()" class="test">Analytics Setup</button>
+            <button onclick="testSessionState()" class="test">Session State</button>
+        </div>
+    </div>
+
+    <script>
+        // =============================================================================
+        // TEST UTILITIES
+        // =============================================================================
+        
+        let stats = {
+            activeSessions: 0,
+            completedSessions: 0,
+            cancelledSessions: 0,
+            totalEvents: 0
+        };
+        
+        function log(message, type = 'info') {
+            const logDiv = document.getElementById('log');
+            const time = new Date().toLocaleTimeString();
+            const emoji = type === 'error' ? '❌' : type === 'success' ? '✅' : type === 'warning' ? '⚠️' : '📝';
+            logDiv.innerHTML += `<div>[${time}] ${emoji} ${message}</div>`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+            
+            stats.totalEvents++;
+            updateStats();
+        }
+        
+        function clearLog() {
+            document.getElementById('log').innerHTML = '';
+            stats.totalEvents = 0;
+            updateStats();
+        }
+        
+        function updateStats() {
+            document.getElementById('activeSessions').textContent = stats.activeSessions;
+            document.getElementById('completedSessions').textContent = stats.completedSessions;
+            document.getElementById('cancelledSessions').textContent = stats.cancelledSessions;
+            document.getElementById('totalEvents').textContent = stats.totalEvents;
+        }
+        
+        function updateStatus(status) {
+            document.getElementById('status').textContent = status;
+        }
+
+        // =============================================================================
+        // PLANDALF CONFIG (runs before script loads)
+        // =============================================================================
+        
+        window.plandalfConfig = {
+            // Global event handlers
+            onInit: function(data) {
+                log(`🚀 Session started: ${data.sessionId}`, 'info');
+                stats.activeSessions++;
+                updateStats();
+            },
+            
+            onSuccess: function(data) {
+                log(`💰 Payment succeeded: ${data.orderNumber || 'N/A'}`, 'success');
+            },
+            
+            onComplete: function(data) {
+                log(`✅ Session completed: ${data.orderNumber || 'N/A'}`, 'success');
+                stats.activeSessions = Math.max(0, stats.activeSessions - 1);
+                stats.completedSessions++;
+                updateStats();
+            },
+            
+            onCancel: function(data) {
+                log(`❌ Session cancelled: ${data.cancelReason}`, 'error');
+                stats.activeSessions = Math.max(0, stats.activeSessions - 1);
+                stats.cancelledSessions = (stats.cancelledSessions || 0) + 1;
+                updateStats();
+            },
+            
+            onLineItemChange: function(data) {
+                const changeTypeEmoji = {
+                    'added': '➕',
+                    'removed': '➖', 
+                    'quantity_changed': '🔢',
+                    'price_changed': '💰'
+                };
+                log(`${changeTypeEmoji[data.changeType] || '🛒'} Cart updated: ${data.changeType} - Total: ${data.newTotal || 'N/A'} ${data.currency || ''}`, 'info');
+            },
+            
+            onClosed: function(data) {
+                const statusEmoji = data.wasCompleted ? '✅' : '🚪';
+                log(`${statusEmoji} ${data.embedType} closed - Completed: ${data.wasCompleted}`, data.wasCompleted ? 'success' : 'warning');
+            },
+            
+            // Specific offer configuration
+            offers: {
+                'bing-bong-1-8Di1dEf1LTe': {
+                    onComplete: function(data) {
+                        log('🎉 Offer completed successfully!', 'success');
+                        setTimeout(() => log('✨ Features activated!', 'success'), 800);
+                    }
+                }
+            }
+        };
+
+        // =============================================================================
+        // PROGRAMMATIC API TESTS
+        // =============================================================================
+        
+        async function testPromiseAPI() {
+            try {
+                log('🔄 Testing Promise API - waiting for any checkout...', 'info');
+                
+                const checkout = await plandalf.offers.get('*').onCheckout();
+                log(`🎯 Promise API: Caught session ${checkout.id} for ${checkout.offerId}`, 'success');
+                
+                const result = await checkout.waitForCompletion();
+                log(`🎉 Promise API: Session completed successfully!`, 'success');
+                
+            } catch (error) {
+                log(`⚠️ Promise API test cancelled: ${error.message}`, 'warning');
+            }
+        }
+        
+        async function testSessionTracking() {
+            log('📋 Setting up detailed session tracking...', 'info');
+            
+            plandalf.offers.get('*').onCheckout((checkout) => {
+                log(`📊 Session Tracker: Monitoring ${checkout.id}`, 'info');
+                
+                checkout
+                    .onPageChange((data) => {
+                        log(`📄 Session ${checkout.id}: Page changed to ${data.pageId}`, 'info');
+                    })
+                    .onSubmit((data) => {
+                        log(`📤 Session ${checkout.id}: Payment submitted`, 'info');
+                    })
+                    .onResize((data) => {
+                        log(`📏 Session ${checkout.id}: Form resized to ${data.size}px`, 'info');
+                    });
+            });
+            
+            log('✅ Session tracking active!', 'success');
+        }
+        
+        async function testWildcardMatching() {
+            log('🔍 Testing wildcard pattern matching...', 'info');
+            
+            // Test bing-bong wildcard
+            plandalf.offers.get('bing-bong-*').onCheckout((checkout) => {
+                log(`🎯 Wildcard matched: ${checkout.offerId}`, 'success');
+            });
+            
+            // Test universal wildcard
+            plandalf.offers.get('*').onCheckout((checkout) => {
+                log(`⭐ Universal wildcard matched: ${checkout.offerId}`, 'success');
+            });
+            
+            log('✅ Wildcard listeners active!', 'success');
+        }
+        
+        function testAnalyticsSetup() {
+            log('📈 Setting up analytics tracking...', 'info');
+            
+            plandalf.offers.get('*').onCheckout((checkout) => {
+                log(`📊 Analytics: Tracking session ${checkout.id}`, 'info');
+                
+                checkout
+                    .onInit((data) => {
+                        log(`📈 Analytics: begin_checkout for ${checkout.offerId}`, 'info');
+                        // gtag('event', 'begin_checkout', { checkout_id: checkout.id });
+                    })
+                    .onSubmit((data) => {
+                        log(`📈 Analytics: add_payment_info for ${checkout.id}`, 'info');
+                        // gtag('event', 'add_payment_info', { checkout_id: checkout.id });
+                    })
+                    .onSuccess((data) => {
+                        log(`📈 Analytics: purchase event for ${data.orderNumber}`, 'success');
+                        // gtag('event', 'purchase', { transaction_id: data.orderNumber });
+                    });
+            });
+            
+            log('✅ Analytics tracking setup complete!', 'success');
+        }
+
+        async function waitForAnyPurchase() {
+            try {
+                log('⏳ Waiting for any purchase to complete...', 'info');
+                
+                const result = await plandalf.offers.get('*').onAnyComplete();
+                
+                log(`🎉 Purchase completed!`, 'success');
+                log(`📦 Offer: ${result.session.offerId}`, 'info');
+                log(`🆔 Order: ${result.orderNumber || 'N/A'}`, 'info');
+                log(`⏱️ Duration: ${result.sessionDuration}ms`, 'info');
+                
+            } catch (error) {
+                log(`⚠️ No purchases completed: ${error.message}`, 'warning');
+            }
+        }
+        
+        async function testSessionState() {
+            try {
+                log('🔍 Testing session state tracking...', 'info');
+                
+                const checkout = await plandalf.offers.get('*').onCheckout();
+                log(`📋 Monitoring session state for ${checkout.id}`, 'info');
+                
+                // Monitor state changes
+                const interval = setInterval(() => {
+                    const state = checkout.getState();
+                    log(`📊 State: ${state.events.length} events, Active: ${state.isActive}`, 'info');
+                    
+                    if (!state.isActive) {
+                        clearInterval(interval);
+                        log(`📈 Final state: ${JSON.stringify(state, null, 2)}`, 'success');
+                    }
+                }, 2000);
+                
+            } catch (error) {
+                log(`⚠️ Session state test cancelled: ${error.message}`, 'warning');
+            }
+        }
+
+        // =============================================================================
+        // INITIALIZATION
+        // =============================================================================
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            updateStatus('Waiting for plandalf.js to load...');
+            
+            const checkPlandalf = () => {
+                if (window.plandalf) {
+                    updateStatus('✅ Ready');
+                    log('🎯 Test page ready! Click buttons to test.', 'success');
+                } else {
+                    setTimeout(checkPlandalf, 100);
+                }
+            };
+            
+            checkPlandalf();
+        });
+    </script>
+
+    <!-- Load the enhanced v1.js script -->
+    <script src="./js/v1.js"></script>
+</body>
+</html>
