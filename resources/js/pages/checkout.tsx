@@ -9,8 +9,6 @@ import {
 } from '@/pages/checkout-main';
 import type { OfferConfiguration, Page, PageSection } from '@/types/offer';
 import { CheckoutPageProps, CheckoutSession, NavigationBarProps, TailwindLayoutRendererProps } from '@/types/checkout';
-import { findUniqueFontsFromTheme, findUniqueFontsFromView } from '@/utils/font-finder';
-import WebFont from 'webfontloader';
 import { Theme } from '@/types/theme';
 import { ChevronLeftIcon } from 'lucide-react';
 import { useMemo, useState } from 'react';

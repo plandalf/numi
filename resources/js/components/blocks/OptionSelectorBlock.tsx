@@ -2,7 +2,7 @@ import Numi, { Style, BlockContext, Appearance, FontValue } from "@/contexts/Num
 import { BlockContextType } from "@/types/blocks";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useContext, useEffect, useMemo, useRef, useCallback } from "react";
-import { get } from "lodash";
+import get from "lodash/get";
 import { useEditor } from "@/contexts/offer/editor-context";
 import { Event, EVENT_LABEL_MAP } from "../editor/interaction-event-editor";
 import { useDebounce } from "@/hooks/use-debounce";

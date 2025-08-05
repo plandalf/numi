@@ -45,21 +45,22 @@
   .numi-embed-${embedType} .numi-embed-iframe-container,
   .numi-embed-dynamic-${embedType} .numi-embed-iframe-container {
     max-width: 100vw;
-    transition: unset;
+    animation-duration: 350ms !important;
 
     /* we make the iframe container full width on small screens, but not
     full height, because we do want to leave room for the X icon (for us we
     don't want to overlay it on top of logos or back buttons) */
     width: 100% !important;
 
-    /* we leave some wiggle room here (the icon is ~24px) */
+    /* we leave some wiggle room here (the icon is ~36px) */
     height: calc(100vh - 40px) !important;
     margin-top: 40px !important;
+    border-radius: 12px !important;
   }
 
   .numi-embed-${embedType} .numi-embed-iframe-container iframe,
   .numi-embed-dynamic-${embedType} .numi-embed-iframe-container iframe {
-    border-radius: 0;
+    border-radius: 12px;
   }
 
   /* on small devices we position the X above the form, and no right padding */
@@ -68,19 +69,30 @@
     color: #fff !important;
 
     position: absolute;
-    top: -38px !important;
+    top: -36px !important;
     right: 20px !important;
     left: unset !important;
 
-    width: 24px;
-    height: 24px;
+    width: 32px !important;
+    height: 32px !important;
     cursor: pointer;
 
     background: #171717;
     border-radius: 50%;
-    padding: 6px 6px 6px 6px;
+    padding: 8px !important;
+    z-index: 10000000000001;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+    display: flex;
+    align-items: center;
+    justify-content: center;
 
     ${contentBoxStyles}
+  }
+
+  .numi-embed-${embedType} .numi-embed-${embedType}-close-icon:hover,
+  .numi-embed-dynamic-${embedType} .numi-embed-${embedType}-close-icon:hover {
+    transform: scale(1.1);
+    background: #000;
   }
 
   .numi-embed-slider .numi-embed-iframe-container iframe {}
@@ -101,38 +113,119 @@
     const popupStyles = `
 ${spinAnimationStyles}
 
+/* Popup Animation Keyframes */
+@keyframes numi-popup-fade-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1.0);
+  }
+}
+
+@keyframes numi-popup-fade-out {
+  0% {
+    opacity: 1;
+    transform: scale(1.0);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+}
+
+@keyframes numi-backdrop-fade-in {
+  0% {
+    opacity: 0;
+    backdrop-filter: blur(0px);
+    -webkit-backdrop-filter: blur(0px);
+  }
+  100% {
+    opacity: 1;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+  }
+}
+
+@keyframes numi-backdrop-fade-out {
+  0% {
+    opacity: 1;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+  }
+  100% {
+    opacity: 0;
+    backdrop-filter: blur(0px);
+    -webkit-backdrop-filter: blur(0px);
+  }
+}
+
 .noscroll {
   overoffer: hidden;
 }
 
 .numi-embed-popup {
   ${popupBackgroundStyles}
-
   align-items: center;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  animation: numi-backdrop-fade-in 300ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.numi-embed-popup.closing {
+  animation: numi-backdrop-fade-out 250ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
 
 .numi-embed-dynamic-popup {
  ${popupBackgroundStyles}
-
   align-items: flex-start;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  animation: numi-backdrop-fade-in 300ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.numi-embed-dynamic-popup.closing {
+  animation: numi-backdrop-fade-out 250ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
 
 .numi-embed-popup .numi-embed-iframe-container {
   position: relative;
-  transition: opacity .25s ease-in-out;
   min-width: 360px;
-  min-height: 360px
+  min-height: 360px;
+  border-radius: 16px;
+  overflow: visible;
+  box-shadow: 
+    0 20px 25px -5px rgba(0, 0, 0, 0.1),
+    0 10px 10px -5px rgba(0, 0, 0, 0.04),
+    0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  animation: numi-popup-fade-in 300ms cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+  animation-delay: 10ms;
+}
+
+.numi-embed-popup.closing .numi-embed-iframe-container {
+  animation: numi-popup-fade-out 250ms cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
 }
 
 .numi-embed-dynamic-popup .numi-embed-iframe-container {
   position: relative;
-  transition: opacity .25s ease-in-out;
   min-width: 360px;
   min-height: 360px;
-
-  /* Symmetrical padding on top and bottom, fixed to prevent too much movement */
   margin-top: 40px;
   max-height: calc(100vh - 80px);
+  border-radius: 16px;
+  overflow: visible;
+  box-shadow: 
+    0 20px 25px -5px rgba(0, 0, 0, 0.1),
+    0 10px 10px -5px rgba(0, 0, 0, 0.04),
+    0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  animation: numi-popup-fade-in 300ms cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+  animation-delay: 10ms;
+}
+
+.numi-embed-dynamic-popup.closing .numi-embed-iframe-container {
+  animation: numi-popup-fade-out 250ms cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
 }
 
 .numi-embed-popup .numi-embed-iframe-container iframe,
@@ -141,31 +234,45 @@ ${spinAnimationStyles}
   height: 100%;
   border: none;
   overoffer: hidden;
-  border-radius: 10px;
+  border-radius: 16px;
+  opacity: 0;
+  transition: opacity 0.3s ease-in-out;
+}
+
+.numi-embed-popup .numi-embed-iframe-container iframe.loaded,
+.numi-embed-dynamic-popup .numi-embed-iframe-container iframe.loaded {
+  opacity: 1;
 }
 
 .numi-embed-popup .numi-embed-popup-close-icon,
 .numi-embed-dynamic-popup .numi-embed-popup-close-icon {
   position: absolute;
-  width: 24px;
-  height: 24px;
+  width: 32px;
+  height: 32px;
   text-align: center;
   cursor: pointer;
-  transition: opacity .5s ease-in-out;
+  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
   text-decoration: none;
   color: #fff !important;
-  top: -15px;
-  right: -15px;
+  top: -12px;
+  right: -12px;
   background: #171717;
   border-radius: 50%;
-  padding: 6px 6px 6px 6px;
+  padding: 8px;
+  z-index: 10000000000001;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 
   ${contentBoxStyles}
 }
 
 .numi-embed-popup .numi-embed-popup-close-icon:hover,
 .numi-embed-dynamic-popup .numi-embed-popup-close-icon:hover {
-  transform: scale(1.05);
+  transform: scale(1.1);
+  background: #000;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
 .numi-embed-popup .numi-embed-loading,
@@ -184,6 +291,7 @@ ${spinAnimationStyles}
 
 .numi-embed-slider {
   ${popupBackgroundStyles}
+  justify-content: flex-start;
 }
 
 .numi-embed-slider .numi-embed-iframe-container {
@@ -274,6 +382,10 @@ ${spinAnimationStyles}
 `;
     if (typeof window === 'undefined')
         return;
+    
+    // Global tracking of embed types by embedId - must be declared early
+    const embedTypeRegistry = new Map();
+    
     // as long as the window is valid (and not embedding in e.g. nextJS improperly
     // or something similar), we initialize:
     // - popups
@@ -524,7 +636,10 @@ ${spinAnimationStyles}
         popupContainer.className = dynamicResize
             ? `numi-embed-dynamic-${embedType}`
             : `numi-embed-${embedType}`;
-        popupContainer.style.opacity = '0';
+        // Only set opacity 0 for popups, sliders need to be visible for their transform animations
+        if (embedType === 'popup') {
+            popupContainer.style.opacity = '0';
+        }
         const popupLoading = document.createElement('div');
         popupLoading.className = 'numi-embed-loading';
         popupLoading.style.display = 'block';
@@ -597,6 +712,8 @@ ${spinAnimationStyles}
             if (closeIcon) {
                 closeIcon.style.opacity = '1';
             }
+            // Add loaded class for smooth iframe fade-in
+            iframe.classList.add('loaded');
             if (embedType === 'slider') {
                 iframeContainer.style.transform = 'translateX(0)';
             }
@@ -696,7 +813,8 @@ ${spinAnimationStyles}
             
             document.body.classList.remove('noscroll');
             if (embedType === 'popup') {
-                popupContainer.style.opacity = '0';
+                // Add closing class to trigger CSS exit animations
+                popupContainer.classList.add('closing');
             }
             else if (embedType === 'slider') {
                 if (sliderDirection === 'left') {
@@ -706,16 +824,25 @@ ${spinAnimationStyles}
                     iframeContainer.style.transform = 'translateX(100%)';
                 }
             }
-            // more time needed to slide away for slider
-            const timeout = embedType === 'popup' ? 250 : 350;
+            // Updated timing for enhanced animations: popup uses 300ms, slider uses 350ms
+            const timeout = embedType === 'popup' ? 300 : 350;
             setTimeout(() => {
                 // before removing it, reset the styles for everything so that they
                 // work nicely out of the box when it comes back up (since we're
                 // reusing the same container
                 popupLoading.style.display = 'block';
                 closeIcon.style.opacity = '0';
+                // Reset iframe class to ensure clean state for next popup
+                iframe.classList.remove('loaded');
+                // Remove closing class to ensure clean state for next popup
+                popupContainer.classList.remove('closing');
+                // Reset the target's initialized state so it can be opened again
+                target.removeAttribute('data-numi-initialized');
+                // Clean up embed tracking
+                target.removeAttribute('data-numi-embed-id');
+                embedTypeRegistry.delete(embedId);
                 popupContainer.remove();
-                // we give enough time for the opacity animation to finish
+                // we give enough time for the animation to finish
             }, timeout);
         };
         // onclick here, we also close the container (either the X or clicking
@@ -723,13 +850,18 @@ ${spinAnimationStyles}
         popupContainer.onclick = () => {
             closePopup();
         };
+        // Prevent closing when clicking inside the iframe container
+        iframeContainer.onclick = (e) => {
+            e.stopPropagation();
+        };
         closeIcon.onclick = () => {
             closePopup();
         };
         initializePopupButton(target, () => {
             document.body.appendChild(popupContainer);
             document.body.classList.add('noscroll');
-            popupContainer.style.opacity = '1';
+            // Remove the manual opacity setting - let CSS animations handle it
+            // The animations are already defined in CSS and will start automatically
         });
         target.setAttribute('data-numi-initialized', 'true');
     };
@@ -955,9 +1087,6 @@ ${spinAnimationStyles}
     // =============================================================================
     // PLANDALF SESSION-BASED API
     // =============================================================================
-    
-    // Global tracking of embed types by embedId
-    const embedTypeRegistry = new Map();
     
     // Checkout Session - represents one complete checkout flow
     class CheckoutSession {
