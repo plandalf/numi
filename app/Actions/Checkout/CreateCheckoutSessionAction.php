@@ -80,7 +80,7 @@ class CreateCheckoutSessionAction
                     $checkoutSession,
                     null,
                     $priceId,
-                    $item['quantity']
+                    Arr::get($item, 'quantity', 1)
                 );
             }
         }
