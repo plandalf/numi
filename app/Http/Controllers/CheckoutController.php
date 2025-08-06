@@ -42,6 +42,24 @@ class CheckoutController extends Controller
         $intervalOverride = $request->query('interval');
         $currencyOverride = $request->query('currency');
 
+        // Extract customer data from query string
+        $customerData = $request->query('customer', []);
+        $customerProperties = [];
+        
+        if (is_array($customerData) && !empty($customerData)) {
+            // Extract email and other customer fields
+            if (isset($customerData['email'])) {
+                $customerProperties['email'] = $customerData['email'];
+            }
+            
+            // You can add more customer fields here as needed
+            foreach (['name', 'phone', 'company'] as $field) {
+                if (isset($customerData[$field])) {
+                    $customerProperties[$field] = $customerData[$field];
+                }
+            }
+        }
+
         // If no currency override is provided, check for regional currency based on CloudFlare header
         if (!$currencyOverride) {
             $countryCode = $request->header('CF-IPCountry');
@@ -76,11 +94,19 @@ class CheckoutController extends Controller
             })
             ->all();
 
+        // Check for any errors in the checkout items
+        foreach ($checkoutItems as $item) {
+            if (isset($item['items'])) {
+                // This is an error, return it as JSON response
+                return response()->json($item);
+            }
+        }
+
 
         $testMode = $environment === 'test';
 
         $checkoutSession = $this->createCheckoutSessionAction
-            ->execute($offer, $checkoutItems, $testMode, $intervalOverride, $currencyOverride);
+            ->execute($offer, $checkoutItems, $testMode, $intervalOverride, $currencyOverride, $customerProperties);
 
         $this->handleInvalidDomain($request, $checkoutSession);
 

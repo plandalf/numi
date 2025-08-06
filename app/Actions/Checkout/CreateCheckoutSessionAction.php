@@ -6,6 +6,7 @@ use App\Enums\IntegrationType;
 use App\Models\Checkout\CheckoutSession;
 use App\Models\Store\Offer;
 use App\Models\Catalog\Price;
+use Illuminate\Support\Arr;
 
 class CreateCheckoutSessionAction
 {
@@ -13,7 +14,7 @@ class CreateCheckoutSessionAction
         private readonly CreateCheckoutLineItemAction $createCheckoutLineItemAction
     ) {}
 
-    public function execute(Offer $offer, array $checkoutItems, bool $testMode = false, ?string $intervalOverride = null, ?string $currencyOverride = null): CheckoutSession
+    public function execute(Offer $offer, array $checkoutItems, bool $testMode = false, ?string $intervalOverride = null, ?string $currencyOverride = null, array $customerProperties = []): CheckoutSession
     {
         $paymentIntegration = $offer->organization
             ->integrations()
@@ -28,6 +29,7 @@ class CreateCheckoutSessionAction
                 'offer_id' => $offer->id,
                 'payments_integration_id' => $paymentIntegration?->id,
                 'test_mode' => $testMode,
+                'properties' => $customerProperties,
             ]);
 
         // If no explicit checkout items provided, use offer's default items
