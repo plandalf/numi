@@ -89,7 +89,9 @@ function DialogContent({
           className,
           'DialogContent relative',
           {
-            'grid' : position !== 'sticky'
+            'grid' : position === 'center',
+            'flex' : position === 'sticky',
+            'flex flex-col' : position === 'full'
           }
         )}
         {...props}

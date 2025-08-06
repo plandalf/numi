@@ -1,7 +1,7 @@
 import Numi, { Style, BlockContext, Appearance, FontValue, IconValue } from "@/contexts/Numi";
 import { BlockContextType } from "@/types/blocks";
 import { useContext, useEffect, useMemo, useRef, useCallback } from "react";
-import { get } from "lodash";
+import get from "lodash/get";
 import { Event, EVENT_LABEL_MAP } from "../editor/interaction-event-editor";
 import { resolveThemeValue } from "@/lib/theme";
 import { Check } from "lucide-react";

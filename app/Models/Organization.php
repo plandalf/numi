@@ -209,6 +209,10 @@ class Organization extends Model
             return false;
         }
 
+        if ($this->subscribed()) {
+            return false;
+        }
+
         return $this->onGenericTrial();
     }
 

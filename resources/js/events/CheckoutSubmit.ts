@@ -1,23 +1,20 @@
 import { BaseEvent } from "./BaseEvent";
 import { CheckoutSession } from '@/types/checkout';
 
-export class OnInit extends BaseEvent {
-  public type: string = 'on_init';
+export class CheckoutSubmit extends BaseEvent {
+  public type: string = 'checkout_submit';
   public session: CheckoutSession;
   public checkoutId: string;
   public sessionId: string;
-  public offerId?: string;
 
   constructor(session: CheckoutSession) {
-    super('on_init', {
+    super('checkout_submit', {
       checkoutId: session.id,
       sessionId: session.id,
-      offerId: session.offer?.squid || session.offer?.id,
       session: session
     });
     this.session = session;
     this.checkoutId = session.id;
     this.sessionId = session.id;
-    this.offerId = session.offer?.squid || session.offer?.id;
   }
 }

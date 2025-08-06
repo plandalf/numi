@@ -56,13 +56,13 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { toast } from 'sonner';
-import { 
-    Plus, 
-    MoreHorizontal, 
-    Eye, 
-    Copy, 
-    Edit, 
-    Archive, 
+import {
+    Plus,
+    MoreHorizontal,
+    Eye,
+    Copy,
+    Edit,
+    Archive,
     Trash2,
     RotateCcw,
     AlertTriangle
@@ -187,7 +187,7 @@ export default function ApiKeys({ apiKeys }: Props) {
         } catch (error: unknown) {
             if (axios.isAxiosError(error) && error.response) {
                 const errorData = error.response.data as { errors?: { password?: string[] }; message?: string };
-                
+
                 // Handle validation errors
                 if (errorData.errors?.password) {
                     revealForm.setError('password', errorData.errors.password[0] || 'Invalid password');
@@ -247,7 +247,7 @@ export default function ApiKeys({ apiKeys }: Props) {
     return (
         <SettingsLayout>
             <Head title="API Keys" />
-            
+
             <div className="space-y-6">
                 <div className="flex justify-between items-start">
                     <div>
@@ -284,8 +284,8 @@ export default function ApiKeys({ apiKeys }: Props) {
                                 </div>
                                 <div>
                                     <Label htmlFor="prefix">Environment</Label>
-                                    <Select 
-                                        value={createForm.data.prefix} 
+                                    <Select
+                                        value={createForm.data.prefix}
                                         onValueChange={(value) => createForm.setData('prefix', value)}
                                     >
                                         <SelectTrigger>
@@ -298,9 +298,9 @@ export default function ApiKeys({ apiKeys }: Props) {
                                     </Select>
                                 </div>
                                 <div className="flex justify-end space-x-2">
-                                    <Button 
-                                        type="button" 
-                                        variant="outline" 
+                                    <Button
+                                        type="button"
+                                        variant="outline"
                                         onClick={() => setIsCreateDialogOpen(false)}
                                     >
                                         Cancel
@@ -316,7 +316,7 @@ export default function ApiKeys({ apiKeys }: Props) {
 
                 {/* Newly created API key alert */}
                 {newlyCreatedKey && (
-                    <Card className="border-green-200 bg-green-50">
+                    <div className="border-green-200 bg-green-50">
                         <CardHeader>
                             <CardTitle className="text-green-800 flex items-center">
                                 <AlertTriangle className="mr-2 h-5 w-5" />
@@ -326,7 +326,7 @@ export default function ApiKeys({ apiKeys }: Props) {
                                 Your new API key has been generated. Make sure to copy it now as you won't be able to see it again.
                             </CardDescription>
                         </CardHeader>
-                        <CardContent>
+                        <div>
                             <div className="flex items-center space-x-2">
                                 <code className="flex-1 p-2 bg-white border rounded text-sm font-mono">
                                     {newlyCreatedKey}
@@ -345,18 +345,18 @@ export default function ApiKeys({ apiKeys }: Props) {
                                     Dismiss
                                 </Button>
                             </div>
-                        </CardContent>
-                    </Card>
+                        </div>
+                    </div>
                 )}
 
-                <Card>
-                    <CardHeader>
+                <div>
+                    <div>
                         <CardTitle>API Keys</CardTitle>
                         <CardDescription>
                             {apiKeys.length === 0 ? 'No API keys created yet.' : `${apiKeys.length} API key(s)`}
                         </CardDescription>
-                    </CardHeader>
-                    <CardContent>
+                    </div>
+                    <div>
                         {apiKeys.length === 0 ? (
                             <div className="text-center py-6">
                                 <p className="text-muted-foreground mb-4">No API keys created yet.</p>
@@ -373,7 +373,7 @@ export default function ApiKeys({ apiKeys }: Props) {
                                         <TableHead>Key</TableHead>
                                         <TableHead>Environment</TableHead>
                                         <TableHead>Status</TableHead>
-                                        <TableHead>Last Used</TableHead>
+                                        {/*<TableHead>Last Used</TableHead>*/}
                                         <TableHead>Created</TableHead>
                                         <TableHead>Created By</TableHead>
                                         <TableHead className="w-[50px]"></TableHead>
@@ -400,12 +400,12 @@ export default function ApiKeys({ apiKeys }: Props) {
                                                     {apiKey.is_active ? 'Active' : 'Archived'}
                                                 </Badge>
                                             </TableCell>
-                                            <TableCell>
-                                                {apiKey.last_used_at 
-                                                    ? formatDistanceToNow(new Date(apiKey.last_used_at), { addSuffix: true })
-                                                    : 'Never'
-                                                }
-                                            </TableCell>
+                                            {/*<TableCell>*/}
+                                            {/*    {apiKey.last_used_at*/}
+                                            {/*        ? formatDistanceToNow(new Date(apiKey.last_used_at), { addSuffix: true })*/}
+                                            {/*        : 'Never'*/}
+                                            {/*    }*/}
+                                            {/*</TableCell>*/}
                                             <TableCell>
                                                 {formatDistanceToNow(new Date(apiKey.created_at), { addSuffix: true })}
                                             </TableCell>
@@ -461,7 +461,7 @@ export default function ApiKeys({ apiKeys }: Props) {
                                                                 </AlertDialogHeader>
                                                                 <AlertDialogFooter>
                                                                     <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                                                    <AlertDialogAction 
+                                                                    <AlertDialogAction
                                                                         onClick={() => deleteKey(apiKey)}
                                                                         className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                                                                     >
@@ -478,8 +478,8 @@ export default function ApiKeys({ apiKeys }: Props) {
                                 </TableBody>
                             </Table>
                         )}
-                    </CardContent>
-                </Card>
+                    </div>
+                </div>
 
                 {/* Edit Dialog */}
                 <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
@@ -502,9 +502,9 @@ export default function ApiKeys({ apiKeys }: Props) {
                                 />
                             </div>
                             <div className="flex justify-end space-x-2">
-                                <Button 
-                                    type="button" 
-                                    variant="outline" 
+                                <Button
+                                    type="button"
+                                    variant="outline"
                                     onClick={() => setIsEditDialogOpen(false)}
                                 >
                                     Cancel
@@ -540,9 +540,9 @@ export default function ApiKeys({ apiKeys }: Props) {
                                     />
                                 </div>
                                 <div className="flex justify-end space-x-2">
-                                    <Button 
-                                        type="button" 
-                                        variant="outline" 
+                                    <Button
+                                        type="button"
+                                        variant="outline"
                                         onClick={() => setIsRevealDialogOpen(false)}
                                     >
                                         Cancel
@@ -580,4 +580,4 @@ export default function ApiKeys({ apiKeys }: Props) {
             </div>
         </SettingsLayout>
     );
-} 
+}

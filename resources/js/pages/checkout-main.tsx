@@ -14,6 +14,10 @@ import { Theme } from '@/types/theme';
 import { sendMessage } from '@/utils/sendMessage';
 import { CheckoutSuccess } from '@/events/CheckoutSuccess';
 import { CheckoutResized } from '@/events/CheckoutResized';
+import { CheckoutSubmit } from '@/events/CheckoutSubmit';
+import { CheckoutComplete } from '@/events/CheckoutComplete';
+import { CheckoutCancel } from '@/events/CheckoutCancel';
+import { CheckoutLineItemChanged } from '@/events/CheckoutLineItemChanged';
 import { updateSessionLineItems } from '@/utils/editor-session';
 import { isEvaluatedVisible } from '@/lib/blocks';
 // Form and validation context
@@ -317,6 +321,9 @@ export function GlobalStateProvider({ offer, offerItems, session: defaultSession
       }
 
       if (action === 'commit') {
+        // Fire checkout submit event
+        sendMessage(new CheckoutSubmit(session));
+        
         const body = (await submissionProps?.() ?? {}) as { error?: string, confirmation_token?: string };
 
         console.log('action-submit', { body });
@@ -345,6 +352,11 @@ export function GlobalStateProvider({ offer, offerItems, session: defaultSession
 
       if (action === 'commit' && response.data?.checkout_session) {
         sendMessage(new CheckoutSuccess(response.data.checkout_session));
+        
+        // Fire checkout complete event after successful payment
+        setTimeout(() => {
+          sendMessage(new CheckoutComplete(response.data.checkout_session));
+        }, 100);
       }
 
       if (!nextPageId) {
@@ -379,8 +391,25 @@ export function GlobalStateProvider({ offer, offerItems, session: defaultSession
   };
 
   const updateLineItem = async ({ item, price, quantity, required }: SetItemActionValue) => {
+    // Store previous line items for comparison
+    const previousLineItems = session.line_items || [];
+    const previousTotal = session.total;
+    
     if (editor) {
-      setSession(updateSessionLineItems({ offerItems, item, price, quantity, required, checkoutSession: session }));
+      const updatedSession = updateSessionLineItems({ offerItems, item, price, quantity, required, checkoutSession: session });
+      setSession(updatedSession);
+      
+      // Determine change type based on line item count and total changes
+      const changeType = quantity === 0 ? 'removed' : 
+                        previousLineItems.length < (updatedSession.line_items || []).length ? 'added' :
+                        previousTotal !== updatedSession.total ? 'price_changed' : 'quantity_changed';
+      
+      sendMessage(new CheckoutLineItemChanged(updatedSession, changeType, { 
+        offer_item_id: item, 
+        price_id: price, 
+        quantity, 
+        required 
+      }));
       return;
     }
 
@@ -392,10 +421,24 @@ export function GlobalStateProvider({ offer, offerItems, session: defaultSession
       required: required ?? undefined
     });
 
-
     if (response.status === 200) {
-      // sendMessage(new CheckoutResized());
-      setSession(response.data);
+      const updatedSession = response.data;
+      setSession(updatedSession);
+      
+      // Determine change type based on line item count and total changes
+      const changeType = quantity === 0 ? 'removed' : 
+                        previousLineItems.length < (updatedSession.line_items || []).length ? 'added' :
+                        previousTotal !== updatedSession.total ? 'price_changed' : 'quantity_changed';
+      
+      sendMessage(new CheckoutLineItemChanged(updatedSession, changeType, { 
+        offer_item_id: item, 
+        price_id: price, 
+        quantity, 
+        required 
+      }));
+      
+      // Fire resize event to notify parent of potential height changes
+      sendMessage(new CheckoutResized());
     }
 
     return response.data;
@@ -414,7 +457,15 @@ export function GlobalStateProvider({ offer, offerItems, session: defaultSession
       });
 
       if (response.status === 200) {
-        setSession(response.data);
+        const updatedSession = response.data;
+        setSession(updatedSession);
+        
+        // Fire line item changed event for discount addition
+        sendMessage(new CheckoutLineItemChanged(updatedSession, 'price_changed', { 
+          discount: discount,
+          action: 'discount_added'
+        }));
+        
         return status;
       }
 
@@ -444,7 +495,15 @@ export function GlobalStateProvider({ offer, offerItems, session: defaultSession
       });
 
       if (response.status === 200) {
-        setSession(response.data);
+        const updatedSession = response.data;
+        setSession(updatedSession);
+        
+        // Fire line item changed event for discount removal
+        sendMessage(new CheckoutLineItemChanged(updatedSession, 'price_changed', { 
+          discount: discount,
+          action: 'discount_removed'
+        }));
+        
         return status;
       }
 

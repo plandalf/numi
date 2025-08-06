@@ -9,8 +9,6 @@ import {
 } from '@/pages/checkout-main';
 import type { OfferConfiguration, Page, PageSection } from '@/types/offer';
 import { CheckoutPageProps, CheckoutSession, NavigationBarProps, TailwindLayoutRendererProps } from '@/types/checkout';
-import { findUniqueFontsFromTheme, findUniqueFontsFromView } from '@/utils/font-finder';
-import WebFont from 'webfontloader';
 import { Theme } from '@/types/theme';
 import { ChevronLeftIcon } from 'lucide-react';
 import { useMemo, useState } from 'react';
@@ -20,6 +18,7 @@ import { OnInit } from '@/events/OnInit';
 import { useEffect } from 'react';
 import { PageChanged } from '@/events/PageChanged';
 import { PaymentInitialized } from '@/events/PaymentInitialized';
+import { CheckoutCancel } from '@/events/CheckoutCancel';
 import { getLayoutJSONConfig } from '@/config/layouts';
 
 // Helper function to generate meta tags
@@ -449,7 +448,26 @@ export default function CheckoutPage({ offer, fonts, error, checkoutSession }: C
 
   useEffect(() => {
     sendMessage(new OnInit(checkoutSession));
-  }, []);
+    
+    // Track checkout cancellation on page unload
+    const handleBeforeUnload = () => {
+      // Only send cancel if checkout hasn't been completed
+      if (!checkoutSession.order?.id) {
+        sendMessage(new CheckoutCancel(checkoutSession, 'page_unload'));
+      }
+    };
+
+    // Track when user navigates away or closes browser
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      // Send cancel event on component unmount if not completed
+      if (!checkoutSession.order?.id) {
+        sendMessage(new CheckoutCancel(checkoutSession, 'component_unmount'));
+      }
+    };
+  }, [checkoutSession]);
   const metaTags = generateMetaTags(offer);
 
   if (!firstPage) {

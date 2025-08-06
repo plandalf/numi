@@ -1034,7 +1034,7 @@ function PageLogicDialog() {
 
   return (
     <Dialog open={showPageLogic} onOpenChange={setShowPageLogic}>
-      <DialogContent className="w-screen h-screen flex flex-col p-0 m-0 rounded-none sm:max-w-none">
+      <DialogContent className="w-screen h-screen flex flex-col p-0 m-0 rounded-none sm:max-w-none" position="full">
         <div className="border-b border-border p-6">
           <DialogHeader>
             <DialogTitle>Page Logic</DialogTitle>

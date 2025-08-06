@@ -18,7 +18,7 @@ import { StyleEditor, StyleItem } from '../editor/style-editor';
 import { usePage } from '@inertiajs/react';
 import { EditProps } from '@/pages/offers/edit';
 import { SpacingEditor } from '../editor/spacing-editor';
-import { startCase } from 'lodash';
+import startCase from 'lodash/startCase';
 import { NumberEditor } from '../editor/number-editor';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';

@@ -57,4 +57,9 @@ return [
         'account_id' => env('CLOUDFLARE_ACCOUNT_ID'),
         'auth_token' => env('CLOUDFLARE_AUTH_TOKEN'),
     ],
+
+    'plandalf' => [
+        'api_token' => env('PLANDALF_API_TOKEN'),
+        'base_url' => env('PLANDALF_BASE_URL', 'https://admin.plandalf.dev'),
+    ],
 ];
