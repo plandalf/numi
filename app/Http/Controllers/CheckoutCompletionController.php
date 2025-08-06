@@ -40,9 +40,9 @@ class CheckoutCompletionController extends Controller
      */
     private function getCheckoutFromPlandalf(string $checkoutId): array
     {
-        $apiToken = 'live_t255nBTR9vN4xVrHZdwkftjJBKveQReW';
+        $apiToken = config('services.plandalf.api_token');
 
-        $response = Http::baseUrl('http://localhost:8001/api/')
+        $response = Http::baseUrl(config('services.plandalf.base_url') . '/api/')
             ->withHeaders([
                 'Content-Type' => 'application/json',
                 'Accept' => 'application/json',
