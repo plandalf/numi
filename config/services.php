@@ -60,6 +60,6 @@ return [
 
     'plandalf' => [
         'api_token' => env('PLANDALF_API_TOKEN'),
-        'base_url' => env('PLANDALF_BASE_URL', 'https://api.plandalf.com'),
+        'base_url' => env('PLANDALF_BASE_URL', 'https://admin.plandalf.dev'),
     ],
 ];
