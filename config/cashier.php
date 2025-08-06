@@ -18,7 +18,7 @@ return [
 
     'key' => env('STRIPE_CLIENT_ID'),
 
-    'secret' => env('STRIPE_CLIENT_SECRET'),
+    'secret' => env('CASHIER_STRIPE_SECRET'),
 
     /*
     |--------------------------------------------------------------------------
