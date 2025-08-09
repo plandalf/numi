@@ -262,27 +262,6 @@ export default function BillingPortalPage() {
   )
 }
 
-function SubscriptionStatusBadge() {
-  const { props } = usePage<{ subscription?: SubscriptionData | null }>()
-  const sub = props.subscription ?? null
-  if (!sub) {
-    return (
-      <div className="flex items-center gap-2">
-        <Badge variant="outline">No data</Badge>
-        <details className="text-xs text-muted-foreground">
-          <summary>debug</summary>
-          <pre className="max-w-[40ch] whitespace-pre-wrap">{JSON.stringify({ subscription: sub }, null, 2)}</pre>
-        </details>
-      </div>
-    )
-  }
-  return (
-    <Badge variant={sub.status === 'active' ? 'default' : 'secondary'}>
-      {sub.status === 'active' ? 'Active' : (sub.status.charAt(0).toUpperCase() + sub.status.slice(1))}
-    </Badge>
-  )
-}
-
 function SubscriptionDetails() {
   const { props } = usePage<{ subscription?: SubscriptionData | null }>()
   const sub = props.subscription ?? null

@@ -1,7 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\CheckoutSessionController;
-use App\Http\Controllers\Billing\CheckoutController as BillingCheckoutController;
+use App\Http\Controllers\Billing\BillingController as BillingCheckoutController;
 use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\Client\BillingPortalController;
 use App\Http\Controllers\DashboardController;
@@ -298,7 +298,6 @@ Route::get('/test-receipt/{uuid}', function($uuid) {
 // Impersonation routes - LOCAL DEVELOPMENT ONLY
 if (app()->environment('local')) {
     Route::prefix('dev')->group(function () {
-        Route::get('/billing/test-token', [BillingPortalController::class, 'testToken'])->name('dev.billing.test-token');
         Route::get('/impersonate', [ImpersonationController::class, 'impersonate'])
             ->name('impersonate')
             ->middleware('signed');

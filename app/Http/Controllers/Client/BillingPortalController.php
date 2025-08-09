@@ -20,42 +20,28 @@ class BillingPortalController extends Controller
 
     public function show(Request $request)
     {
-        $customer = array_filter([
-            'email' => $request->query('email'),
-            'name' => $request->query('name'),
-            'external_id' => $request->query('id'),
-        ]);
-
-        // Incoming must be a JWT (HS256) containing { customer_id: "cus_..." }
-        $token = $request->query('customer')
-            ?: $request->query('customer_id')
-            ?: $request->query('cid');
-
-        $customerId = null;
-        if ($token) {
-            try {
-                $customerId = $this->decodeCustomerToken($token);
-            } catch (\Throwable $e) {
-                Log::warning('Invalid billing portal token', ['error' => $e->getMessage()]);
-                return response()->json(['ok' => false, 'error' => 'Invalid token'], 403);
-            }
+        try {
+            [$apiKey, $customerId] = $this->decodeCustomerToken($request->query('customer'));
+        } catch (\Throwable $e) {
+            Log::warning('Invalid billing portal token', ['error' => $e->getMessage()]);
+            return response()->json(['ok' => false, 'error' => 'Invalid token'], 403);
         }
 
         $returnUrl = $request->query('return_url');
+        $orgId = $apiKey->organization_id;
 
-        // Find Stripe integration for the organization (hardcoded org_id = 1 per request)
+        // Find Stripe integration for the current organization
         $integration = Integration::query()
-            ->where('organization_id', 1)
+            ->where('organization_id', $orgId)
             ->whereIn('type', [IntegrationType::STRIPE, IntegrationType::STRIPE_TEST])
             ->latest()
             ->first();
 
         return Inertia::render('client/billing-portal', [
-            'customer' => $customer,
+            'customer' => null,
             'customerId' => $customerId,
             'returnUrl' => $returnUrl,
-            'testToken' => $this->generateTestCustomerToken('cus_TEST_12345'),
-            'subscription' => Inertia::defer(function () use ($integration, $customerId) {
+            'subscription' => Inertia::defer(function () use ($integration, $customerId, $orgId) {
                 if (! $integration || ! $customerId) {
                     return null;
                 }
@@ -122,8 +108,11 @@ class BillingPortalController extends Controller
                     // Try to resolve local product/price for nicer display
                     $local = null;
                     try {
+                        if (! $orgId) {
+                            throw new \RuntimeException('No organization');
+                        }
                         $localPrice = Price::query()
-                            ->where('organization_id', 1)
+                            ->where('organization_id', $orgId)
                             ->where(function ($q) use ($price) {
                                 $q->where('gateway_price_id', $price?->id ?? null);
                                 if (!empty($price?->lookup_key)) {
@@ -319,13 +308,13 @@ class BillingPortalController extends Controller
                     return [];
                 }
             }),
-            'orders' => Inertia::defer(function () use ($customerId) {
-                if (! $customerId) {
+            'orders' => Inertia::defer(function () use ($customerId, $orgId) {
+                if (! $customerId || ! $orgId) {
                     return [];
                 }
                 try {
                     $local = Customer::query()
-                        ->where('organization_id', 1)
+                        ->where('organization_id', $orgId)
                         ->where('reference_id', $customerId)
                         ->first();
                     if (! $local) {
@@ -351,7 +340,7 @@ class BillingPortalController extends Controller
                     return [];
                 }
             }),
-            'plans' => Inertia::defer(function () use ($integration, $customerId) {
+            'plans' => Inertia::defer(function () use ($integration, $customerId, $orgId) {
                 $targetCurrency = null;
                 $currentAmountMinor = null;
                 $currentCurrency = null;
@@ -359,10 +348,10 @@ class BillingPortalController extends Controller
                 $excludeGatewayProductId = null; // Stripe product id if available
 
                 // Prefer local customer currency if available
-                if ($customerId) {
+                if ($customerId && $orgId) {
                     try {
                         $local = Customer::query()
-                            ->where('organization_id', 1)
+                            ->where('organization_id', $orgId)
                             ->where('reference_id', $customerId)
                             ->first();
                         if ($local && !empty($local->currency)) {
@@ -395,8 +384,9 @@ class BillingPortalController extends Controller
 
                                 // Try to resolve to a local price to find local product_id
                                 try {
-                                    $localPrice = Price::query()
-                                        ->where('organization_id', 1)
+                                    if ($orgId) {
+                                        $localPrice = Price::query()
+                                        ->where('organization_id', $orgId)
                                         ->where(function ($q) use ($price) {
                                             $q->where('gateway_price_id', $price?->id ?? null);
                                             if (!empty($price?->lookup_key)) {
@@ -405,8 +395,9 @@ class BillingPortalController extends Controller
                                         })
                                         ->with('product')
                                         ->first();
-                                    if ($localPrice && $localPrice->product) {
-                                        $excludeLocalProductId = $localPrice->product->id;
+                                        if ($localPrice && $localPrice->product) {
+                                            $excludeLocalProductId = $localPrice->product->id;
+                                        }
                                     }
                                 } catch (\Throwable $e) {
                                     // ignore
@@ -423,8 +414,11 @@ class BillingPortalController extends Controller
                     $targetCurrency = (string) $currentCurrency;
                 }
 
+                if (! $orgId) {
+                    return [];
+                }
                 $query = Price::query()
-                    ->where('organization_id', 1)
+                    ->where('organization_id', $orgId)
                     ->list()
                     ->active();
 
@@ -483,60 +477,33 @@ class BillingPortalController extends Controller
      * Decode and validate the billing portal JWT using latest active ApiKey (HS256).
      * Payload must include customer_id; exp is honored by the JWT lib.
      */
-    private function decodeCustomerToken(string $jwt): string
+    private function decodeCustomerToken(string $jwt): array
     {
-        $secret = $this->getJwtSecretFromApiKey();
-        if ($secret === null) {
-            throw new \RuntimeException('No active API key secret available');
-        }
+        $headers = json_decode(JWT::urlsafeB64Decode(collect(explode('.', $jwt))->first()), true);
+        $kid = $headers['kid'] ?? null;
 
-        $decoded = JWT::decode($jwt, new Key($secret, 'HS256'));
-        $customerId = (string) ($decoded->customer_id ?? '');
-        if ($customerId === '') {
-            throw new \RuntimeException('Missing customer_id');
-        }
-        return $customerId;
+        $apiKey = ApiKey::retrieve($kid);
+
+        $keys = new Key($apiKey->key, 'HS256');
+
+        throw_if(empty($keys), new \RuntimeException('No active API key secret available'));
+
+        $decoded = JWT::decode($jwt, $keys);
+
+        throw_if(!isset($decoded->customer_id), new \RuntimeException('Invalid token payload'));
+
+        return [$apiKey, (string) $decoded->customer_id ?? ''];
     }
 
-    private static function urlsafeB64Decode(string $b64): string
+    private function getCurrentOrganizationIdOrNull(): ?int
     {
-        $remainder = strlen($b64) % 4;
-        if ($remainder) {
-            $b64 .= str_repeat('=', 4 - $remainder);
-        }
-        return base64_decode(strtr($b64, '-_', '+/')) ?: '';
-    }
-
-    private function getJwtSecretFromApiKey(): ?string
-    {
-        $apiKey = ApiKey::query()
-            ->where('organization_id', 1)
-            ->active()
-            ->latest('id')
-            ->first();
-
-        if (! $apiKey) {
+        $user = auth()->user();
+        if (! $user) {
             return null;
         }
-
-        return (string) $apiKey->key;
-    }
-
-    private function generateTestCustomerToken(?string $customerId): ?string
-    {
-        $secret = $this->getJwtSecretFromApiKey();
-        if ($secret === null || empty($customerId)) {
-            return null;
-        }
-
-        $now = time();
-        $payload = [
-            'customer_id' => $customerId,
-            'iat' => $now,
-            'exp' => $now + 3600,
-        ];
-
-        return JWT::encode($payload, $secret, 'HS256');
+        // Prefer an explicit accessor on User if present; fallback to property
+        $org = method_exists($user, 'currentOrganization') ? $user->currentOrganization : ($user->currentOrganization ?? null);
+        return $org?->id;
     }
 
     public function swapPlan(Request $request)
@@ -724,43 +691,8 @@ class BillingPortalController extends Controller
         }
     }
 
-    // LOCAL DEV: Generate and immediately decode a test token to verify flow
-    public function testToken(Request $request)
-    {
-        $customerId = (string) ($request->query('customer_id') ?? 'cus_SoZ2vVT96xqqU3');
-        $secret = $this->getJwtSecretFromApiKey();
-        if ($secret === null) {
-            return response()->json([
-                'ok' => false,
-                'error' => 'No active ApiKey found for organization_id=1',
-            ], 422);
-        }
-
-        $token = $this->generateTestCustomerToken($customerId);
-        if (! $token) {
-            return response()->json([
-                'ok' => false,
-                'error' => 'Failed to generate token',
-            ], 422);
-        }
-
-        try {
-            $decodedCustomerId = $this->decodeCustomerToken($token);
-        } catch (\Throwable $e) {
-            return response()->json([
-                'ok' => false,
-                'token' => $token,
-                'error' => $e->getMessage(),
-            ], 422);
-        }
-
-        return response()->json([
-            'ok' => true,
-            'token' => $token,
-            'decoded_customer_id' => $decodedCustomerId,
-            'example_url' => url('/billing/portal') . '?customer=' . urlencode($token),
-        ]);
-    }
+    // LOCAL DEV: Mint a sample token for quick testing
+    // removed testToken endpoint
 
     private function formatCurrency(int|float $amountMinor, string $currency): string
     {

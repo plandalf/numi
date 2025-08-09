@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Log;
 use App\Models\ApiKey;
 use Firebase\JWT\JWT;
 
-class CheckoutController extends Controller
+class BillingController extends Controller
 {
     public function billing(Request $request)
     {
@@ -69,19 +69,30 @@ class CheckoutController extends Controller
         $portalToken = null;
         $customerId = (string) ($organization->stripe_id ?? '');
         if ($customerId !== '') {
-            $apiKey = ApiKey::query()
-                ->forOrganization($organization->id)
-                ->active()
-                ->latest('id')
-                ->first();
-            if ($apiKey) {
-                $now = time();
-                $payload = [
-                    'customer_id' => $customerId,
-                    'iat' => $now,
-                    'exp' => $now + 3600,
-                ];
-                $portalToken = JWT::encode($payload, (string) $apiKey->key, 'HS256');
+            $now = time();
+            $payload = [
+                'customer_id' => $customerId,
+                'iat' => $now,
+                'exp' => $now + 3600,
+            ];
+
+            $secret = (string) (config('services.plandalf.billing_portal.secret') ?? '');
+            $kid = (string) (config('services.plandalf.billing_portal.kid') ?? '');
+
+            // dd($secret, $kid,$payload);
+
+            if ($secret !== '') {
+                $portalToken = JWT::encode($payload, $secret, 'HS256', $kid ?: null);
+            } else {
+                $apiKey = ApiKey::query()
+                    ->forOrganization($organization->id)
+                    ->active()
+                    ->latest('id')
+                    ->first();
+                if ($apiKey) {
+                    $headerKid = method_exists($apiKey, 'getSqid') ? $apiKey->getSqid() : null;
+                    $portalToken = JWT::encode($payload, (string) $apiKey->key, 'HS256', $headerKid);
+                }
             }
         }
 
@@ -89,12 +100,6 @@ class CheckoutController extends Controller
             'subscriptions' => $subscriptions,
             'portalCustomerToken' => $portalToken,
         ]);
-    }
-
-    public function portal(Request $request)
-    {
-        // Deprecated: use embedded billing portal on the billing settings page
-        return redirect()->route('organizations.settings.billing.index');
     }
 
     /**

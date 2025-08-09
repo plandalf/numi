@@ -32,13 +32,16 @@ class ApiKeysController extends Controller
         return Inertia::render('organizations/settings/api-keys', [
             'apiKeys' => $apiKeys->map(function ($key) {
                 return [
-                    'id' => $key->id,
+                    // Use the route key (slug-sqid) instead of the integer id
+                    'id' => $key->getRouteKey(),
                     'name' => $key->name,
                     'key_preview' => $key->key_preview,
                     'prefix' => $key->prefix,
                     'is_active' => $key->is_active,
                     'last_used_at' => $key->last_used_at?->toISOString(),
                     'created_at' => $key->created_at->toISOString(),
+                    // Expose SQID for use as JWT kid
+                    'kid' => method_exists($key, 'getSqid') ? $key->getSqid() : null,
                     'creator' => [
                         'id' => $key->creator->id,
                         'name' => $key->creator->name,
