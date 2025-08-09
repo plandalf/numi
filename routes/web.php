@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\CheckoutSessionController;
 use App\Http\Controllers\Billing\CheckoutController as BillingCheckoutController;
 use App\Http\Controllers\CheckoutController;
+use App\Http\Controllers\Client\BillingPortalController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\IntegrationsController;
 use App\Http\Controllers\MediaController;
@@ -27,6 +28,7 @@ use App\Http\Controllers\OfferItemPriceController;
 use App\Http\Controllers\OnboardingController;
 use App\Http\Controllers\ApiKeysController;
 use App\Http\Controllers\ImpersonationController;
+use App\Http\Controllers\Client\SubscriptionCancellationController;
 
 
 Route::get('test', function (\Illuminate\Http\Request $request) {
@@ -41,6 +43,9 @@ Route::middleware(['frame-embed'])->group(function () {
 
     Route::get('/checkout/{checkout}', [CheckoutController::class, 'show'])
         ->name('checkouts.show');
+
+    Route::get('/billing/portal', [BillingPortalController::class, 'show'])
+        ->name('client.billing-portal.show');
 });
 
 Route::middleware(['frame-embed'])
@@ -63,6 +68,20 @@ Route::middleware(['frame-embed'])
         Route::get('/order-status/{order}', OrderStatusController::class)
             ->name('order-status.show')
             ->middleware('signed');
+    });
+
+// Cancellation flow (separate tool, embed-safe)
+Route::prefix('billing/subscriptions')
+    ->middleware(['frame-embed'])
+    ->group(function () {
+        Route::get('{subscription}/cancel', [SubscriptionCancellationController::class, 'show'])
+            ->name('client.subscriptions.cancel');
+        Route::post('{subscription}/cancel/answers', [SubscriptionCancellationController::class, 'storeAnswers'])
+            ->name('client.subscriptions.cancel.answers');
+        Route::post('{subscription}/cancel/offer', [SubscriptionCancellationController::class, 'offer'])
+            ->name('client.subscriptions.cancel.offer');
+        Route::post('{subscription}/cancel/confirm', [SubscriptionCancellationController::class, 'confirm'])
+            ->name('client.subscriptions.cancel.confirm');
     });
 
 // Social image generation route (signed URL required)
@@ -231,6 +250,22 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/medias/{media}/finalize', [MediaController::class, 'finalizeUpload'])->name('medias.finalize');
 });
 
+// Public endpoints for client billing portal actions (embed-safe)
+Route::prefix('client/billing')
+    ->middleware(['frame-embed'])
+    ->group(function () {
+        Route::post('/setup-intent', [BillingPortalController::class, 'createSetupIntent'])
+            ->name('client.billing.setup-intent');
+        Route::post('/default-payment-method', [BillingPortalController::class, 'setDefaultPaymentMethod'])
+            ->name('client.billing.default-payment-method');
+        Route::post('/invoices/{invoice}/pay', [BillingPortalController::class, 'payInvoice'])
+            ->name('client.billing.pay-invoice');
+        Route::get('/invoices/{invoice}/url', [BillingPortalController::class, 'invoiceUrl'])
+            ->name('client.billing.invoice-url');
+        Route::post('/subscriptions/swap-plan', [BillingPortalController::class, 'swapPlan'])
+            ->name('client.billing.swap-plan');
+    });
+
 Route::get('m/{dir}/{media}.{extension}', function (string $dir, \App\Models\Media $media) {
     return redirect()->away($media->getSignedUrl());
 })->name('media.show')->where('extension', '[a-zA-Z]+');
@@ -263,6 +298,7 @@ Route::get('/test-receipt/{uuid}', function($uuid) {
 // Impersonation routes - LOCAL DEVELOPMENT ONLY
 if (app()->environment('local')) {
     Route::prefix('dev')->group(function () {
+        Route::get('/billing/test-token', [BillingPortalController::class, 'testToken'])->name('dev.billing.test-token');
         Route::get('/impersonate', [ImpersonationController::class, 'impersonate'])
             ->name('impersonate')
             ->middleware('signed');

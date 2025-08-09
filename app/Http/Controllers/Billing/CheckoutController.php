@@ -8,6 +8,8 @@ use Inertia\Inertia;
 use Stripe\Stripe;
 use Stripe\Price;
 use Illuminate\Support\Facades\Log;
+use App\Models\ApiKey;
+use Firebase\JWT\JWT;
 
 class CheckoutController extends Controller
 {
@@ -63,21 +65,36 @@ class CheckoutController extends Controller
                 ];
             });
 
+        // Generate a billing portal JWT for the org's Stripe customer (if available)
+        $portalToken = null;
+        $customerId = (string) ($organization->stripe_id ?? '');
+        if ($customerId !== '') {
+            $apiKey = ApiKey::query()
+                ->forOrganization($organization->id)
+                ->active()
+                ->latest('id')
+                ->first();
+            if ($apiKey) {
+                $now = time();
+                $payload = [
+                    'customer_id' => $customerId,
+                    'iat' => $now,
+                    'exp' => $now + 3600,
+                ];
+                $portalToken = JWT::encode($payload, (string) $apiKey->key, 'HS256');
+            }
+        }
+
         return Inertia::render('organizations/settings/billing', [
             'subscriptions' => $subscriptions,
+            'portalCustomerToken' => $portalToken,
         ]);
     }
 
     public function portal(Request $request)
     {
-        /** @var \App\Models\Organization $organization */
-        $organization = request()->user()->currentOrganization;
-
-        return Inertia::location(
-            $organization->billingPortalUrl(
-                route('organizations.settings.billing.index')
-            )
-        );
+        // Deprecated: use embedded billing portal on the billing settings page
+        return redirect()->route('organizations.settings.billing.index');
     }
 
     /**
@@ -115,7 +132,6 @@ class CheckoutController extends Controller
                 'formatted_with_interval' => $this->formatPriceWithInterval($price),
             ];
         } catch (\Exception $e) {
-            dd($e);
             Log::warning('Failed to fetch Stripe price information', [
                 'price_id' => $priceId,
                 'error' => $e->getMessage(),

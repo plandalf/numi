@@ -13,7 +13,7 @@ import {
   PopoverContent, 
   PopoverTrigger 
 } from '@/components/ui/popover';
-import { Edit, Trash2, Plus, ChevronDown, Info, CornerDownRight } from 'lucide-react';
+import { Edit, Trash2, Plus, Info, CornerDownRight, Check } from 'lucide-react';
 import { formatMoney } from '@/lib/utils';
 import { Price } from '@/types/offer';
 import React from 'react';
@@ -25,7 +25,7 @@ const getBasePrice = (price: Price): { amount: number; label: string } | null =>
     if (price.amount > 0) {
       return {
         amount: price.amount,
-        label: 'From'
+        label: 'starts at'
       };
     }
     return null;
@@ -40,7 +40,7 @@ const getBasePrice = (price: Price): { amount: number; label: string } | null =>
         if (firstTier && typeof firstTier.unit_amount === 'number') {
           return {
             amount: firstTier.unit_amount,
-            label: 'Start at'
+            label: 'starts at'
           };
         }
       }
@@ -51,7 +51,7 @@ const getBasePrice = (price: Price): { amount: number; label: string } | null =>
         if (typeof size === 'number' && typeof unit_amount === 'number') {
           return {
             amount: unit_amount * size,
-            label: `${size} pack for`
+            label: 'starts at'
           };
         }
       }
@@ -62,7 +62,7 @@ const getBasePrice = (price: Price): { amount: number; label: string } | null =>
   if (price.amount > 0) {
     return {
       amount: price.amount,
-      label: 'From'
+      label: 'starts at'
     };
   }
   
@@ -220,12 +220,11 @@ export const PriceTable: React.FC<PriceTableProps> = ({ prices, onEdit, onDelete
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="min-w-[150px]">Prices</TableHead>
+              <TableHead className="min-w-[200px]">Prices</TableHead>
               <TableHead className="min-w-[80px]">Scope</TableHead>
-              <TableHead className="min-w-[100px]">Status</TableHead>
-              <TableHead className="min-w-[100px]">Lookup Key</TableHead>
+              <TableHead className="min-w-[60px] text-center">Active</TableHead>
               <TableHead className="min-w-[80px]">Type</TableHead>
-              <TableHead className="min-w-[100px]">Price</TableHead>
+              <TableHead className="min-w-[120px]">Price</TableHead>
               {showActions && <TableHead className="text-right">Actions</TableHead>}
             </TableRow>
           </TableHeader>
@@ -247,6 +246,9 @@ export const PriceTable: React.FC<PriceTableProps> = ({ prices, onEdit, onDelete
                       {price.name || '-'}
                     </span>
                   </div>
+                  {price.lookup_key && (
+                    <div className="text-xs text-muted-foreground break-all">{price.lookup_key}</div>
+                  )}
                 </TableCell>
                 <TableCell className="whitespace-nowrap">
                   <Badge className={`whitespace-nowrap text-white ${
@@ -259,18 +261,19 @@ export const PriceTable: React.FC<PriceTableProps> = ({ prices, onEdit, onDelete
                      'Variant'}
                   </Badge>
                 </TableCell>
-                <TableCell className="whitespace-nowrap">
-                  <Badge className={`whitespace-nowrap text-white ${price.is_active ? 'bg-[#7EB500]' : 'bg-[#808ABF]'}`}>
-                    {price.is_active ? 'Active' : 'Inactive'}
-                  </Badge>
+                <TableCell className="text-center">
+                  {price.is_active ? (
+                    <Check className="h-4 w-4 text-green-600 inline-block" aria-label="Active" />
+                  ) : (
+                    <span className="text-muted-foreground">—</span>
+                  )}
                 </TableCell>
-                <TableCell className="whitespace-nowrap">{price.lookup_key || '-'}</TableCell>
                 <TableCell className="whitespace-nowrap capitalize">{price.type.replace('_', ' ')}</TableCell>
                 <TableCell className="whitespace-nowrap">
                   {(() => {
                     // Simple pricing types
                     if (['one_time', 'recurring'].includes(price.type)) {
-                      return `${formatMoney(price.amount, price.currency)} ${price.currency.toUpperCase()}`;
+                      return `${formatMoney(price.amount, price.currency)}`;
                     }
                     
                     // Complex pricing types
@@ -284,7 +287,7 @@ export const PriceTable: React.FC<PriceTableProps> = ({ prices, onEdit, onDelete
                         <div className="flex items-center gap-1">
                           <span className="text-xs text-muted-foreground">{basePrice.label}</span>
                           <span className="font-medium">
-                            {formatMoney(basePrice.amount, price.currency)} {price.currency.toUpperCase()}
+                            {formatMoney(basePrice.amount, price.currency)}
                           </span>
                           {hasBreakdown && (
                             <Info className="h-3 w-3 text-muted-foreground" />
