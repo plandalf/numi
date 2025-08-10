@@ -16,12 +16,12 @@ createServer((page) =>
             /* eslint-disable */
             // @ts-expect-error
             global.route<RouteName> = (name, params, absolute) =>
-                route(name, params as any, absolute, {
+                route(name, params as any, absolute, page?.props?.ziggy ? {
                     // @ts-expect-error
                     ...page.props.ziggy,
                     // @ts-expect-error
                     location: new URL(page.props.ziggy.location),
-                });
+                } : undefined);
             /* eslint-enable */
 
             return <App {...props} />;
