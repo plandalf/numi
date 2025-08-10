@@ -43,6 +43,8 @@ class PriceResource extends JsonResource
             'gateway_price_id' => $this->gateway_price_id,
             'is_active' => $this->is_active,
             'archived_at' => $this->archived_at?->toISOString(),
+            'activated_at' => $this->activated_at?->toISOString(),
+            'deactivated_at' => $this->deactivated_at?->toISOString(),
             'created_at' => $this->created_at?->toISOString(),
             'updated_at' => $this->updated_at?->toISOString(),
             'product' => new ProductResource($this->whenLoaded('product')),

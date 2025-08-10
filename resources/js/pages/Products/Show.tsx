@@ -39,10 +39,13 @@ interface ProductShowPageProps extends InertiaPageProps {
   prices: Price[];
   listPrices: Price[];
   integrations: Integration[];
+  filters?: { at?: string; currency?: string; interval?: 'month'|'year'|null };
+  children?: Product[];
+  parentCandidates?: Array<{ id: number; name: string; lookup_key: string }>
 }
 
 export default function Show() {
-  const { product, prices, listPrices } = usePage<ProductShowPageProps>().props;
+  const { product, prices, listPrices, filters, children, parentCandidates } = usePage<ProductShowPageProps>().props;
 
   const [isPriceFormOpen, setIsPriceFormOpen] = useState(false);
   const [editingPrice, setEditingPrice] = useState<Price | undefined>(undefined);
@@ -53,6 +56,12 @@ export default function Show() {
   const [priceToDelete, setPriceToDelete] = useState<Price | undefined>(undefined);
 
   const [isAddExistingStripePriceDialogOpen, setIsAddExistingStripePriceDialogOpen] = useState(false);
+  const [billingInterval, setBillingInterval] = useState<'month'|'year'>(filters?.interval || 'month');
+  const [pricingCurrency, setPricingCurrency] = useState<string>(filters?.currency || (product as any).currency || 'usd');
+  const [effectiveAt, setEffectiveAt] = useState<string>(filters?.at || '');
+
+  const availableIntervals = Array.from(new Set((prices || []).map(p => p.renew_interval).filter(Boolean))) as Array<'month'|'year'|'week'|'day'>;
+  const availableCurrencies = Array.from(new Set((prices || []).map(p => p.currency?.toLowerCase?.()).filter(Boolean) as string[]));
 
   const openPriceForm = (price?: Price, scope: 'list' | 'custom' | 'variant' = 'list') => {
     // If creating a new price (no price parameter), clear editing state
@@ -133,6 +142,12 @@ export default function Show() {
                 {product.lookup_key}
               </p>
             </div>
+            <div className="grid gap-2">
+              <Label className="font-medium">State</Label>
+              <div>
+                <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-gray-100">{(product as any).current_state || (product as any).status}</span>
+              </div>
+            </div>
           </div>
           <div className="flex flex-col gap-2">
             <div className="grid gap-2">
@@ -172,6 +187,32 @@ export default function Show() {
                 <Trash2 className="w-4 h-4 mr-2" /> Delete product
               </Button>
             </div>
+          </div>
+        </div>
+
+        {/* Filters */}
+        <div className="mb-6 flex flex-wrap items-center gap-3">
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-muted-foreground">Interval:</span>
+            {(['month','year','week','day'] as const).filter(i => availableIntervals.includes(i)).map(i => (
+              <Button key={i} variant={billingInterval===i ? 'default' : 'outline'} size="sm" onClick={() => setBillingInterval(i as any)}>
+                {i[0].toUpperCase()+i.slice(1)}
+              </Button>
+            ))}
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-muted-foreground">Currency:</span>
+            <div className="flex flex-wrap gap-2">
+              {availableCurrencies.map(c => (
+                <Button key={c} variant={pricingCurrency===c ? 'default' : 'outline'} size="sm" onClick={() => setPricingCurrency(c)}>
+                  {c.toUpperCase()}
+                </Button>
+              ))}
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-muted-foreground">Effective:</span>
+            <input className="border rounded-md h-8 px-2 text-sm" type="datetime-local" value={effectiveAt} onChange={(e)=> setEffectiveAt(e.target.value)} />
           </div>
         </div>
 
@@ -235,7 +276,18 @@ export default function Show() {
           </div>
 
           <PriceTable
-            prices={prices}
+            prices={prices.filter(p => {
+              const matchesInterval = (p.renew_interval ? p.renew_interval === billingInterval : billingInterval === 'month');
+              const matchesCurrency = p.currency?.toLowerCase?.() === pricingCurrency.toLowerCase();
+              const matchesAt = (() => {
+                if (!effectiveAt) return true;
+                const from = (p as any).activated_at ? new Date((p as any).activated_at) : null;
+                const until = (p as any).deactivated_at ? new Date((p as any).deactivated_at) : null;
+                const at = new Date(effectiveAt);
+                return (!from || from <= at) && (!until || until > at);
+              })();
+              return matchesInterval && matchesCurrency && matchesAt;
+            })}
             onEdit={openPriceForm}
             onDelete={(price) => setPriceToDelete(price)}
             onCreateChild={(parentPrice, scope) => {
@@ -246,6 +298,21 @@ export default function Show() {
             }}
             showActions
           />
+
+          {/* Children / Lineage */}
+          {children && children.length > 0 && (
+            <div className="mt-8">
+              <div className="text-sm font-medium mb-2">Versions</div>
+              <div className="flex flex-wrap gap-2 text-sm">
+                {children.map((c) => (
+                  <a key={c.id} href={route('products.show', c.id)} className="px-2 py-1 rounded-md border hover:bg-gray-50">
+                    {(c as any).current_state || 'unknown'} · {c.name}
+                  </a>
+                ))}
+                <Button variant="outline" size="sm" onClick={() => router.post(route('products.version', product.id))}>New Version</Button>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Price Form Dialog */}
@@ -303,6 +370,9 @@ export default function Show() {
           open={isProductFormOpen}
           onOpenChange={setIsProductFormOpen}
           initialData={product}
+          parentCandidates={parentCandidates || []}
+          // Expose parent candidates to the form through window pageProps so Combobox can read them
+          // This relies on the page being re-rendered with props. If needed, lift into context/store.
         />
 
         <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>

@@ -27,6 +27,7 @@ use App\Http\Controllers\OfferItemPriceController;
 use App\Http\Controllers\OnboardingController;
 use App\Http\Controllers\ApiKeysController;
 use App\Http\Controllers\ImpersonationController;
+use App\Http\Controllers\PricingController;
 
 
 Route::get('test', function (\Illuminate\Http\Request $request) {
@@ -142,6 +143,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::middleware(['organization', 'subscription'])->group(function () {
 
         Route::resource('products', ProductsController::class);
+        Route::post('products/{product}/transition', [ProductsController::class, 'transitionState'])->name('products.transition');
+        Route::post('products/{product}/version', [ProductsController::class, 'createVersion'])->name('products.version');
         Route::post('products/{product}/prices/import', [PriceController::class, 'import'])->name('products.prices.import');
         Route::resource('products.prices', PriceController::class);
 
@@ -167,6 +170,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         // Offers routes
         Route::resource('offers', OffersController::class)->except(['show', 'create']);
+
+        // Pricing table
+        Route::get('/pricing', [PricingController::class, 'index'])->name('pricing.index');
 
         Route::prefix('offers/{offer}')->name('offers.')->group(function () {
             Route::get('pricing', [OffersController::class, 'pricing'])->name('pricing');

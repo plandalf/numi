@@ -71,6 +71,10 @@ interface PriceFormData {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   properties: Record<string, any> | null;
   is_active: boolean;
+  active_from?: string | null;
+  active_until?: string | null;
+  activated_at?: string | null;
+  deactivated_at?: string | null;
   gateway_provider: string | null;
   gateway_price_id: string | null;
   metadata: MetadataEntry[];
@@ -162,6 +166,10 @@ export default function PriceForm({
       cancel_after_cycles: initialData?.cancel_after_cycles || null,
       properties: initialData?.properties || null,
       is_active: initialData?.is_active === undefined ? true : initialData.is_active,
+      active_from: undefined,
+      active_until: undefined,
+      activated_at: (initialData as any)?.activated_at || null,
+      deactivated_at: (initialData as any)?.deactivated_at || null,
       gateway_provider: initialData?.gateway_provider || null,
       gateway_price_id: initialData?.gateway_price_id || null,
       metadata: initialData?.metadata || [],
@@ -1197,12 +1205,38 @@ export default function PriceForm({
                 onCheckedChange={(checked) => setData('is_active', checked)}
                 disabled={processing}
               />
-              <Label htmlFor="is_active">Price Active</Label>
+              <Label htmlFor="is_active">Available for new purchases</Label>
               {errors.is_active && <p className="text-sm text-red-500 ml-4">{errors.is_active}</p>}
             </div>
             <p className="text-xs text-muted-foreground">
-              Inactive prices cannot be used in new checkouts or subscriptions.
+              Toggle availability for new subscriptions or purchases. Existing subscriptions remain unaffected.
             </p>
+
+            {/* Activation Window */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="activated_at">Activated At</Label>
+                <Input
+                  id="activated_at"
+                  type="datetime-local"
+                  value={data.activated_at || ''}
+                  onChange={(e) => setData('activated_at', e.target.value || null)}
+                  disabled={processing}
+                  className="bg-white"
+                />
+              </div>
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="deactivated_at">Deactivated At</Label>
+                <Input
+                  id="deactivated_at"
+                  type="datetime-local"
+                  value={data.deactivated_at || ''}
+                  onChange={(e) => setData('deactivated_at', e.target.value || null)}
+                  disabled={processing}
+                  className="bg-white"
+                />
+              </div>
+            </div>
 
         {/* Display general properties error if not caught above */}
         {errors.properties &&

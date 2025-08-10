@@ -13,6 +13,7 @@ use App\Models\Catalog\Price;
 use App\Models\Catalog\Product;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\DB;
 
 class PriceController extends Controller
 {
@@ -31,8 +32,29 @@ class PriceController extends Controller
      */
     public function store(PriceStoreRequest $request, Product $product, StorePrice $storePrice)
     {
-        // The StorePrice action likely handles the actual creation logic
-        $price = $storePrice($product, $request);
+        // Enforce atomic switch when setting a new active price for same dimension
+        $price = DB::transaction(function () use ($product, $request, $storePrice) {
+            $validated = $request->validated();
+
+            // When creating a list price marked active, end the current one by setting its active_until
+            if (($validated['scope'] ?? 'list') === 'list' && ($validated['is_active'] ?? false)) {
+                Price::query()
+                    ->where('product_id', $product->id)
+                    ->where('scope', 'list')
+                    ->where('type', $validated['type'])
+                    ->where('currency', $validated['currency'])
+                    ->when(isset($validated['renew_interval']), function ($q) use ($validated) {
+                        $q->where('renew_interval', $validated['renew_interval']);
+                    }, function ($q) {
+                        $q->whereNull('renew_interval');
+                    })
+                    ->whereNull('archived_at')
+                    ->whereNull('deactivated_at')
+                    ->update(['deactivated_at' => now()]);
+            }
+
+            return $storePrice($product, $request);
+        });
 
         if ($request->wantsJson()) {
             return response()->json([
@@ -57,8 +79,30 @@ class PriceController extends Controller
      */
     public function update(PriceUpdateRequest $request, Product $product, Price $price, UpdatePrice $updatePrice)
     {
-        // Authorization handled by PriceUpdateRequest
-        $price = $updatePrice($product, $price, $request);
+        $price = DB::transaction(function () use ($product, $price, $request, $updatePrice) {
+            $validated = $request->validated();
+            $isActive = $validated['is_active'] ?? null;
+
+            if ($isActive === true && $price->scope === 'list') {
+                // End current active price in same dimension
+                Price::query()
+                    ->where('product_id', $product->id)
+                    ->where('scope', 'list')
+                    ->where('type', $price->type)
+                    ->where('currency', $price->currency)
+                    ->when(!empty($price->renew_interval), function ($q) use ($price) {
+                        $q->where('renew_interval', $price->renew_interval);
+                    }, function ($q) {
+                        $q->whereNull('renew_interval');
+                    })
+                    ->where('id', '!=', $price->id)
+                    ->whereNull('archived_at')
+                    ->whereNull('deactivated_at')
+                    ->update(['deactivated_at' => now()]);
+            }
+
+            return $updatePrice($product, $price, $request);
+        });
 
         if ($request->wantsJson()) {
             return response()->json([

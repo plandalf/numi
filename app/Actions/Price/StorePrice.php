@@ -24,6 +24,11 @@ class StorePrice
         } else {
             $validated['organization_id'] = $organization->id;
 
+            // Default active_from if not provided
+            if (!array_key_exists('active_from', $validated)) {
+                $validated['active_from'] = now();
+            }
+
             $price = $product->prices()->create($validated);
 
             return $price;

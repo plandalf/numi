@@ -97,6 +97,8 @@ class StoreRequest extends FormRequest
             'gateway_prices' => ['array'],
             'gateway_prices.*' => ['string', 'max:255'],
             'is_active' => ['boolean'],
+            'activated_at' => ['nullable', 'date'],
+            'deactivated_at' => ['nullable', 'date', 'after:activated_at'],
             'metadata' => ['nullable', 'array'],
         ];
     }
@@ -104,6 +106,7 @@ class StoreRequest extends FormRequest
     protected function prepareForValidation()
     {
         $this->mergeIfMissing(['is_active' => true]);
+        $this->mergeIfMissing(['activated_at' => now()]);
 
         if ($this->input('scope') === 'list') {
             $this->merge(['parent_list_price_id' => null]);

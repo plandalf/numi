@@ -8,11 +8,14 @@ use App\Actions\Product\UpdateProduct;
 use App\Enums\OnboardingInfo;
 use App\Http\Requests\Product\ProductStoreRequest;
 use App\Http\Requests\Product\ProductUpdateRequest;
+use App\Http\Requests\Product\TransitionStateRequest;
+use App\Enums\ProductState;
 use App\Http\Resources\PriceResource;
 use App\Http\Resources\ProductResource;
 use App\Models\Catalog\Product;
 use App\Models\Catalog\Price;
 use App\Models\Integration;
+use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
@@ -33,6 +36,7 @@ class ProductsController extends Controller
         $search = request('search', '');
         $tab = request('tab', 'products');
 
+        $at = request('at') ? Carbon::parse(request('at')) : null;
         $products = Product::query()
             ->where('organization_id', $organizationId)
             ->when($search, function ($query) use ($search) {
@@ -40,6 +44,9 @@ class ProductsController extends Controller
                     $q->where('name', 'like', "%{$search}%")
                         ->orWhere('description', 'like', "%{$search}%");
                 });
+            })
+            ->when($at, function ($query) use ($at) {
+                $query->activeAt($at);
             })
             ->with(['prices', 'integration'])
             ->latest()
@@ -177,6 +184,7 @@ class ProductsController extends Controller
                 $query->latest();
             },
             'integration',
+            'children',
         ]);
 
         $listPrices = $product->prices()
@@ -187,6 +195,13 @@ class ProductsController extends Controller
         $integrations = Integration::query()
             ->where('organization_id', $organizationId)
             ->get();
+
+        // candidates for parent combobox: all products in org except current and children
+        $parentCandidates = Product::query()
+            ->where('organization_id', $organizationId)
+            ->where('id', '!=', $product->id)
+            ->orderBy('name')
+            ->get(['id', 'name', 'lookup_key']);
 
         return Inertia::render('Products/Show', [
             'product' => new ProductResource($product),
@@ -199,6 +214,17 @@ class ProductsController extends Controller
                     'type' => $integration->type,
                 ];
             }),
+            'children' => ProductResource::collection($product->children),
+            'parentCandidates' => $parentCandidates->map(fn($p) => [
+                'id' => $p->id,
+                'name' => $p->name,
+                'lookup_key' => $p->lookup_key,
+            ]),
+            'filters' => [
+                'at' => request('at'),
+                'currency' => request('currency'),
+                'interval' => request('interval'),
+            ],
         ]);
     }
 
@@ -228,6 +254,51 @@ class ProductsController extends Controller
         }
 
         return redirect()->route('products.show', $product);
+    }
+
+    public function transitionState(TransitionStateRequest $request, Product $product)
+    {
+        $this->authorizeOrganizationAccess($product);
+
+        $to = ProductState::from($request->input('to'));
+
+        // basic transition rules can be enforced here if needed
+        $product->update([
+            'current_state' => $to->value,
+            'activated_at' => $to === ProductState::active && empty($product->activated_at) ? now() : $product->activated_at,
+            'archived_at' => $to === ProductState::retired ? now() : ($to === ProductState::deprecated ? $product->archived_at : $product->archived_at),
+        ]);
+
+        if ($request->wantsJson()) {
+            return response()->json(['product' => new ProductResource($product->fresh())]);
+        }
+
+        return redirect()->back();
+    }
+
+    public function createVersion(Product $product)
+    {
+        $this->authorizeOrganizationAccess($product);
+
+        $new = $product->replicate([
+            'lookup_key', 'gateway_provider', 'gateway_product_id', 'archived_at', 'deleted_at', 'activated_at'
+        ]);
+        $new->parent_product_id = $product->id;
+        $new->current_state = ProductState::testing;
+        $new->activated_at = null;
+        $new->save();
+
+        // Optionally copy over list prices as inactive templates
+        foreach ($product->prices()->list()->get() as $price) {
+            $newPrice = $price->replicate(['gateway_price_id', 'archived_at', 'activated_at', 'deactivated_at']);
+            $newPrice->product_id = $new->id;
+            $newPrice->is_active = false;
+            $newPrice->activated_at = null;
+            $newPrice->deactivated_at = null;
+            $newPrice->save();
+        }
+
+        return redirect()->route('products.show', $new);
     }
 
     /**

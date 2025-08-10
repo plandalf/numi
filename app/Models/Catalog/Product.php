@@ -4,6 +4,7 @@ namespace App\Models\Catalog;
 
 use App\Enums\IntegrationType;
 use App\Enums\ProductStatus;
+use App\Enums\ProductState;
 use App\Models\Integration;
 use App\Models\Organization;
 use App\Modules\Integrations\AbstractIntegration;
@@ -41,12 +42,18 @@ class Product extends \App\Database\Model
         'description',
         'status',
         'image',
+        // lifecycle
+        'current_state',
+        'activated_at',
+        'parent_product_id',
     ];
 
     protected $casts = [
         'archived_at' => 'datetime',
         'gateway_provider' => IntegrationType::class,
         'status' => ProductStatus::class,
+        'current_state' => ProductState::class,
+        'activated_at' => 'datetime',
     ];
 
     public function getRouteKeyName()
@@ -62,6 +69,32 @@ class Product extends \App\Database\Model
     public function prices(): HasMany
     {
         return $this->hasMany(Price::class);
+    }
+
+    public function parent(): BelongsTo
+    {
+        return $this->belongsTo(Product::class, 'parent_product_id');
+    }
+
+    public function children(): HasMany
+    {
+        return $this->hasMany(Product::class, 'parent_product_id');
+    }
+
+    // Scopes
+    public function scopeActiveAt($query, ?\Carbon\CarbonInterface $at = null)
+    {
+        $at = $at ?: now();
+        return $query
+            ->where(function ($q) use ($at) {
+                $q->whereNull('activated_at')->orWhere('activated_at', '<=', $at);
+            })
+            ->whereNull('archived_at');
+    }
+
+    public function scopeMarketable($query)
+    {
+        return $query->whereIn('current_state', [ProductState::active->value, ProductState::testing->value, ProductState::deprecated->value]);
     }
 
     public function integration(): BelongsTo
