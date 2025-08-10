@@ -61,5 +61,9 @@ return [
     'plandalf' => [
         'api_token' => env('PLANDALF_API_TOKEN'),
         'base_url' => env('PLANDALF_BASE_URL', 'https://admin.plandalf.dev'),
+        'billing_portal' => [
+            'secret' => env('PLANDALF_BILLING_PORTAL_SECRET'),
+            'kid' => env('PLANDALF_BILLING_PORTAL_KID', 'plandalf'),
+        ],
     ],
 ];

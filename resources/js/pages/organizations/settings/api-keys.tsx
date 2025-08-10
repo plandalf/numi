@@ -70,7 +70,7 @@ import {
 import { formatDistanceToNow } from 'date-fns';
 
 interface ApiKey {
-    id: number;
+    id: string; // route key (slug-sqid)
     name: string;
     key_preview: string;
     prefix: string;
@@ -82,6 +82,7 @@ interface ApiKey {
         name: string;
         email: string;
     };
+    kid?: string | null; // SQID for JWT kid header
 }
 
 interface Props {
@@ -371,6 +372,7 @@ export default function ApiKeys({ apiKeys }: Props) {
                                     <TableRow>
                                         <TableHead>Name</TableHead>
                                         <TableHead>Key</TableHead>
+                                        <TableHead>Key ID</TableHead>
                                         <TableHead>Environment</TableHead>
                                         <TableHead>Status</TableHead>
                                         {/*<TableHead>Last Used</TableHead>*/}
@@ -388,6 +390,12 @@ export default function ApiKeys({ apiKeys }: Props) {
                                             <TableCell>
                                                 <code className="text-sm bg-muted px-2 py-1 rounded">
                                                     {apiKey.key_preview}
+                                                </code>
+                                            </TableCell>
+                                            {/* KID (SQID) */}
+                                            <TableCell>
+                                                <code className="text-xs bg-muted px-2 py-1 rounded" title="JWT kid (SQID)">
+                                                    {apiKey.kid || '—'}
                                                 </code>
                                             </TableCell>
                                             <TableCell>

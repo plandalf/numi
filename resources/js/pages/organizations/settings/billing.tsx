@@ -5,9 +5,10 @@ import { Separator } from '@/components/ui/separator';
 import SettingsLayout from '@/layouts/settings-layout';
 import { Head, router } from '@inertiajs/react';
 import React, { useState } from 'react';
-import { NumiPopupEmbed } from '@plandalf/react';
+import { NumiPopupEmbed, BillingPortalEmbed } from '@plandalf/react';
 import { CheckCircle, DollarSign, Users, Clock } from 'lucide-react';
 import { Link } from '@/components/ui/link';
+
 
 interface PriceInfo {
     id: string;
@@ -57,9 +58,10 @@ interface Subscription {
 
 interface BillingProps {
     subscriptions: Subscription[];
+    portalCustomerToken?: string | null;
 }
 
-export default function Billing({ subscriptions }: BillingProps) {
+export default function Billing({ subscriptions, portalCustomerToken }: BillingProps) {
     const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
     const [checkoutId, setCheckoutId] = useState<string | null>(null);
     
@@ -152,8 +154,13 @@ export default function Billing({ subscriptions }: BillingProps) {
     return (
         <SettingsLayout>
             <Head title="Billing & Subscription" />
+
+            <BillingPortalEmbed
+                domain={import.meta.env.VITE_PLANDALF_DOMAIN}
+                customerToken={portalCustomerToken || undefined}
+            />
             
-            <div className="space-y-6">
+            <div className="space-y-6 hidden">
                 {/* Header */}
                 <div className="space-y-2">
                     <h1 className="text-2xl font-semibold tracking-tight">Billing & Subscription</h1>
@@ -231,11 +238,16 @@ export default function Billing({ subscriptions }: BillingProps) {
                                 {isPaid ? 'Active' : 'Upgrade'}
                             </Button>
 
-                            <Link href="/organizations/settings/billing/portal">
-                                <Button variant="outline" size="sm">
-                                    Manage Subscription
-                                </Button>
-                            </Link>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                    const el = document.getElementById('billing-portal');
+                                    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                                }}
+                            >
+                                Manage Subscription
+                            </Button>
                         </div>
                     </div>
                 </div>
@@ -325,6 +337,8 @@ export default function Billing({ subscriptions }: BillingProps) {
                     </Alert>
                 )}
             </div>
+
+        
 
             {/* Numi Popup Embed */}
             <NumiPopupEmbed

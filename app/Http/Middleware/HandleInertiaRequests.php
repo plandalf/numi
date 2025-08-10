@@ -36,6 +36,27 @@ class HandleInertiaRequests extends Middleware
      *
      * @return array<string, mixed>
      */
+    /**
+     * Choose the Blade root view dynamically per request.
+     */
+    public function rootView(Request $request): string
+    {
+        if ($request->routeIs(
+            'client.billing-portal.show',
+            'client.billing*',
+            'client.subscriptions.cancel*',
+            'offers.show',
+            'checkouts.*',
+            'checkout.redirect.callback',
+            'checkouts.mutations.store',
+            'order-status.*'
+        )) {
+            return 'client';
+        }
+
+        return 'app';
+    }
+
     public function share(Request $request): array
     {
         [$message, $author] = str(Inspiring::quotes()->random())->explode('-');
@@ -60,7 +81,6 @@ class HandleInertiaRequests extends Middleware
                 ] : null,
             ],
             'ziggy' => fn (): array => [
-                //                ...(new Ziggy)->toArray(),
                 'location' => $request->url(),
             ],
             'flash' => [

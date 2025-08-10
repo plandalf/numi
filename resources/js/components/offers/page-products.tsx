@@ -18,7 +18,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
 import { EditableLabel } from '../ui/editable-label';
-import { cn } from '@/lib/utils';
+import { cn, formatMoney } from '@/lib/utils';
 
 
 const NewProductAndPricesOfferItem = ({ open, setOpen, offerItemsCount, type, offerId }: { offerId: number, offerItemsCount: number, type: OfferItemType, open: boolean, setOpen: (open: boolean) => void }) => {
@@ -311,6 +311,38 @@ export const PageProducts = () => {
         tab: 'pricing'
       });
     }
+    // Helper to compute a displayable base price for complex pricing
+    const getBasePrice = (price: Price): { amount: number; label: string } | null => {
+      if (!price.properties) {
+        if (price.amount > 0) {
+          return { amount: price.amount, label: 'starts at' };
+        }
+        return null;
+      }
+
+      if (price.type === 'package' && price.properties.package) {
+        const { size, unit_amount } = price.properties.package || {};
+        if (typeof size === 'number' && typeof unit_amount === 'number') {
+          return { amount: unit_amount * size, label: 'starts at' };
+        }
+      }
+
+      if (['tiered', 'volume', 'graduated'].includes(price.type)) {
+        const tiers = price.properties.tiers;
+        if (Array.isArray(tiers) && tiers.length > 0) {
+          const first = tiers[0];
+          if (first && typeof first.unit_amount === 'number') {
+            return { amount: first.unit_amount, label: 'starts at' };
+          }
+        }
+      }
+
+      if (price.amount > 0) {
+        return { amount: price.amount, label: 'starts at' };
+      }
+
+      return null;
+    };
 
     const handleMakeDefault = (price: Price) => {
       const toastId = toast.loading(`Updating product...`);
@@ -379,7 +411,22 @@ export const PageProducts = () => {
                   </Tooltip>
                 </TooltipProvider>
               </EditableLabel>
-              <div className="text-xs px-1">{price.currency.toUpperCase()} ${price.amount / 100}</div>
+              <div className="text-xs px-1">
+                {(['one_time', 'recurring'].includes(price.type)) ? (
+                  formatMoney(price.amount, price.currency)
+                ) : (
+                  (() => {
+                    const base = getBasePrice(price);
+                    return base ? (
+                      <span>
+                        <span className="text-muted-foreground">starts at</span> {formatMoney(base.amount, price.currency)}
+                      </span>
+                    ) : (
+                      <span className="text-muted-foreground italic">Complex</span>
+                    );
+                  })()
+                )}
+              </div>
               {price.lookup_key && <div className="text-xs px-1">{price.lookup_key}</div>}
               <div className="flex gap-2">
                 {price.id === offerItem.default_price_id && (
