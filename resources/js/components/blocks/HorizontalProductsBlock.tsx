@@ -96,7 +96,7 @@ function HorizontalProductsComponent({ context }: { context: BlockContextType })
   });
 
   const appearance = Numi.useAppearance([
-    Appearance.padding('padding', 'Padding', {}, '7px'),
+    Appearance.padding('padding', 'Padding', {}, '0px'),
     Appearance.margin('margin', 'Margin', {}),
     Appearance.spacing('spacing', 'Spacing', { config: { format: 'single' } }, '12px'),
     Appearance.padding('buttonPadding', 'Button Padding', {}, '7px'),
