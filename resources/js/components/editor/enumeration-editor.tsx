@@ -31,7 +31,7 @@ export const EnumerationEditor: React.FC<EnumerationEditorProps> = ({ label, pla
           <SelectValue placeholder={placeholder} />
         </SelectTrigger>
         <SelectContent>
-          {options.map(option => (
+          {options.filter(option => option !== '').map(option => (
             <SelectItem key={option} value={option}>
               {labels?.[option] ?? option}
             </SelectItem>
