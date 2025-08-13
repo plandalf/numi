@@ -71,7 +71,7 @@ const StyleItemValuePreview = ({
 }: StyleItemValuePreviewProps) => {
   const [isOpen, setIsOpen] = useState(false);
 
-  const value = item.value || item.defaultValue;
+  const value = item.value ?? item.defaultValue;
   switch (item.inspector) {
     case 'colorPicker': {
       // Check if the value is a gradient

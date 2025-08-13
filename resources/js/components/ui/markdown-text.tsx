@@ -11,6 +11,7 @@ interface MarkdownTextProps {
   style?: React.CSSProperties;
   className?: string;
   theme?: Theme;
+  listItemGap?: string;
 }
 
 const getTypographyStyle = ({
@@ -49,6 +50,7 @@ const getTypographyStyle = ({
 const Container = styled.div<{
   theme: Theme;
   style?: React.CSSProperties;
+  listItemGap?: string;
 }>`
   line-height: 0;
   ${({ theme, style }) => `
@@ -63,6 +65,12 @@ const Container = styled.div<{
     code { ${Object.entries(getTypographyStyle({ theme, element: 'body', style: {...style, fontFamily: theme?.mono_font} })).map(([k, v]) => `${k}: ${v}`).join(';')} }
     pre { ${Object.entries(getTypographyStyle({ theme, element: 'body', style: {...style, fontFamily: theme?.mono_font} })).map(([k, v]) => `${k}: ${v}`).join(';')} }
     ul,ol > li { ${Object.entries(getTypographyStyle({ theme, element: 'body', style })).map(([k, v]) => `${k}: ${v}`).join(';')} }
+    ul { list-style-type: disc; margin-left: 16px; margin-block-start: 0; margin-block-end: 0; }
+    ol { list-style-type: decimal; margin-left: 16px; margin-top: 0; margin-bottom: 0; }
+  `}
+  ${({ listItemGap }) => `
+    ul li, ol li { margin-bottom: ${listItemGap ?? '0'}; }
+    ul li:last-child, ol li:last-child { margin-bottom: 0; }
   `}
 `;
 
@@ -73,12 +81,13 @@ const preserveAllLineBreaks = (text: string) => {
   }).join('\n');
 };
 
-export const MarkdownText = ({ text, theme, style, className, ...props }: MarkdownTextProps) => {
+export const MarkdownText = ({ text, theme, style, className, listItemGap, ...props }: MarkdownTextProps) => {
   return (
     <Container
       theme={theme}
       style={style}
-      className={cn("numi-markdown whitespace-pre-line", className)}
+      listItemGap={listItemGap}
+      className={cn("numi-markdown whitespace-pre-lineX", className)}
       {...props}
     >
       <ReactMarkdown

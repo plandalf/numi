@@ -1,7 +1,6 @@
-import Numi, { Style, BlockContext, Appearance, FontValue, IconValue } from "@/contexts/Numi";
+import Numi, { Style, BlockContext, Appearance, FontValue, IconValue, JSONSchemaValue } from "@/contexts/Numi";
 import { BlockContextType } from "@/types/blocks";
 import { useContext, useEffect, useMemo, useRef, useCallback } from "react";
-import get from "lodash/get";
 import { Event, EVENT_LABEL_MAP } from "../editor/interaction-event-editor";
 import { resolveThemeValue } from "@/lib/theme";
 import { Check } from "lucide-react";
@@ -22,26 +21,26 @@ function VerticalProductsComponent({ context }: { context: BlockContextType }) {
 
   const defaultValue = [{
     key: 'basic',
-    icon: { icon: null, emoji: '🚀', url: null },
+    icon: { icon: null, emoji: null, url: null },
     title: 'Basic Plan',
     value: 'basic',
     description: 'Perfect for getting started',
   }, {
     key: 'pro',
-    icon: { icon: null, emoji: '⚡', url: null },
+    icon: { icon: null, emoji: null, url: null },
     title: 'Pro Plan',
     value: 'pro',
     description: 'For growing businesses',
   }, {
     key: 'enterprise',
-    icon: { icon: null, emoji: '🏢', url: null },
+    icon: { icon: null, emoji: null, url: null },
     title: 'Enterprise',
     value: 'enterprise',
     description: 'For large organizations',
   }];
 
   const blockContext = useContext(BlockContext);
-  const options = get(blockContext.blockConfig, `content.items`, defaultValue) as ProductItemType[];
+  const options = (blockContext?.blockConfig?.content?.items ?? defaultValue) as ProductItemType[];
 
   const [selectedProduct, setSelectedProduct, updateSelectedProductHook] = Numi.useStateEnumeration({
     name: 'value',
@@ -54,8 +53,10 @@ function VerticalProductsComponent({ context }: { context: BlockContextType }) {
 
   const [items] = Numi.useStateJsonSchema({
     name: 'items',
+    label: 'Items',
     defaultValue,
-    schema: {
+    // Cast schema through unknown to JSONSchemaValue to satisfy typing
+    schema: ({
       $schema: "http://json-schema.org/draft-07/schema#",
       type: "array",
       items: {
@@ -68,7 +69,6 @@ function VerticalProductsComponent({ context }: { context: BlockContextType }) {
           icon: {
             title: 'Icon',
             type: "object",
-            defaultValue: { icon: null, emoji: null, url: null } as IconValue,
             meta: { editor: "iconSelector" },
           },
           title: {
@@ -86,11 +86,11 @@ function VerticalProductsComponent({ context }: { context: BlockContextType }) {
         },
         required: ["key", "title", "value", "description"]
       }
-    }
+    } as unknown) as JSONSchemaValue
   });
 
   const appearance = Numi.useAppearance([
-    Appearance.padding('padding', 'Padding', {}, '0px'),
+    Appearance.padding('padding', 'Padding', {}, '7px'),
     Appearance.margin('margin', 'Margin', {}),
     Appearance.spacing('spacing', 'Spacing', { config: { format: 'single' } }, '16px'),
     Appearance.visibility('visibility', 'Visibility', {}, { conditional: [] }),
@@ -109,7 +109,7 @@ function VerticalProductsComponent({ context }: { context: BlockContextType }) {
     Style.borderRadius('borderRadius', 'Border Radius', {}, theme?.border_radius),
     Style.borderColor('borderColor', 'Border Color', {}, 'transparent'),
     Style.borderColor('highlightedBorderColor', 'Highlighted Border Color', {}, theme?.secondary_color),
-    Style.backgroundColor('checkColor', 'Check Color', {}, '#10B981'),
+    Style.backgroundColor('checkboxActiveBackgroundColor', 'Indicator Color', {}, theme?.secondary_color),
     Style.font('titleFont', 'Label Font & Color', fontConfig, {
       size: '16px',
       weight: '600'
@@ -139,9 +139,8 @@ function VerticalProductsComponent({ context }: { context: BlockContextType }) {
 
   const iconStyle = useMemo(() => ({
     alignSelf: 'start' as const,
-    color: resolveThemeValue(style.iconColor, theme, 'primary_color'),
-    height: style.iconSize?.height ?? '20px',
-    width: 'auto',
+    size: (style.iconSize?.height as string) ?? '20px',
+    color: resolveThemeValue(style.iconColor, theme, 'primary_color') as string,
   }), [style, theme]);
 
   const containerStyle = useMemo(() => ({
@@ -150,22 +149,22 @@ function VerticalProductsComponent({ context }: { context: BlockContextType }) {
   }), [appearance]);
 
   const itemStyle = useMemo(() => ({
-    backgroundColor: resolveThemeValue(style.backgroundColor, theme),
-    borderColor: resolveThemeValue(style.borderColor, theme),
+    backgroundColor: resolveThemeValue(style.backgroundColor, theme) as string,
+    borderColor: resolveThemeValue(style.borderColor, theme) as string,
     borderWidth: style.border?.width,
     borderStyle: style.border?.style,
     borderRadius: style.borderRadius,
-    padding: appearance.padding,
+    padding: appearance.padding || '7px',
     cursor: 'pointer',
     transition: 'all 0.2s ease-in-out',
-  }), [style, appearance.padding]);
+  }), [style, appearance.padding, theme]);
 
   const selectedItemStyle = useMemo(() => ({
     ...itemStyle,
-    borderColor: resolveThemeValue(style.highlightedBorderColor, theme),
+    borderColor: resolveThemeValue(style.highlightedBorderColor, theme) as string,
   }), [itemStyle, style.highlightedBorderColor, theme]);
 
-  const checkColor = resolveThemeValue(style.checkColor, theme, 'secondary_color') as string;
+  const checkColor = resolveThemeValue(style.checkboxActiveBackgroundColor, theme, 'secondary_color') as string;
 
   const checkStyle = useMemo(() => ({
     width: '24px',
@@ -202,7 +201,7 @@ function VerticalProductsComponent({ context }: { context: BlockContextType }) {
     setSelectedProduct(value);
     executeCallbacks(Event.onClick, value);
     updateSessionProperties(context.blockId, value);
-  }, [executeCallbacks, updateSessionProperties, context.blockId, selectedProduct]);
+  }, [executeCallbacks, updateSessionProperties, context.blockId, setSelectedProduct]);
 
   const prevItemsRef = useRef(items);
 
@@ -217,33 +216,33 @@ function VerticalProductsComponent({ context }: { context: BlockContextType }) {
 
       prevItemsRef.current = items;
     }
-  }, [items, updateSelectedProductHook]);
+  }, [items, updateSelectedProductHook, interactionElements, updateEventCallbackHook]);
 
   return (
-    <div className="w-full flex flex-col" style={containerStyle}>
+    <div className="w-full flex flex-col" style={containerStyle as React.CSSProperties}>
       {Array.isArray(items) && items.map((item) => {
         const isSelected = item.key === selectedProduct;
         
         return (
           <div
             key={item.key}
-            className="flex items-start justify-between"
-            style={isSelected ? selectedItemStyle : itemStyle}
+            className="flex items-start justify-between rounded-xl hover:bg-black/5 dark:hover:bg-white/5 hover:shadow-sm"
+            style={(isSelected ? selectedItemStyle : itemStyle) as React.CSSProperties}
             onClick={() => handleProductSelect(item.key)}
           >
-            <div className="flex-1 flex flex-col gap-2">
+            <div className="flex-1 flex flex-col gap-1">
               {/* Row 1: Icon and Title */}
               <div className="flex items-center gap-3">
-                <IconRenderer 
-                  icon={item.icon} 
-                  style={iconStyle} 
-                  defaultIcon={
-                    <span className="text-gray-500" style={iconStyle}>●</span>
-                  }
-                />
+                {!!(item.icon && (item.icon.icon || item.icon.emoji || item.icon.url)) && (
+                  <IconRenderer 
+                    icon={item.icon as IconValue} 
+                    style={iconStyle} 
+                    defaultIcon={null}
+                  />
+                )}
                 <span
                   style={{
-                    color: titleFont?.color,
+                    color: titleFont?.color as string,
                     fontSize: titleFont?.size,
                     fontWeight: titleFont?.weight,
                     fontFamily: titleFont?.font,
@@ -258,7 +257,7 @@ function VerticalProductsComponent({ context }: { context: BlockContextType }) {
               {/* Row 2: Description */}
               <div
                 style={{
-                  color: descriptionFont?.color,
+                  color: descriptionFont?.color as string,
                   fontSize: descriptionFont?.size,
                   fontWeight: descriptionFont?.weight,
                   fontFamily: descriptionFont?.font,
@@ -272,7 +271,7 @@ function VerticalProductsComponent({ context }: { context: BlockContextType }) {
             </div>
             
             {/* Check indicator */}
-            <div style={isSelected ? selectedCheckStyle : checkStyle}>
+            <div style={(isSelected ? selectedCheckStyle : checkStyle) as React.CSSProperties}>
               {isSelected && (
                 <Check size={16} color="white" />
               )}

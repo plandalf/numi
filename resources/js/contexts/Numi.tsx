@@ -513,14 +513,13 @@ const Numi = {
 
     // Calculate appearance using useMemo to prevent unnecessary recalculations
     return useMemo(() => {
-      const appearance: Record<string, any> = {};
+      const appearance: Record<string, unknown> = {};
 
-      // Get the value from block config or use default
+      // Get the value from block config or use default; preserve explicit falsy values like false/''/0
       appearanceProps.forEach(prop => {
         if (prop.type) {
-
-          const value = blockContext.blockConfig.appearance?.[prop.type] || prop.defaultValue
-          appearance[prop.type] = value;
+          const configured = blockContext.blockConfig.appearance?.[prop.type];
+          appearance[prop.type] = configured !== undefined ? configured : prop.defaultValue;
         }
       });
 
@@ -556,15 +555,13 @@ const Numi = {
 
     // Calculate styles using useMemo to prevent unnecessary recalculations
     return useMemo(() => {
-      const style: Record<string, any> = {};
+      const style: Record<string, unknown> = {};
 
-
-
-      // Get the value from block config or use default
+      // Get the value from block config or use default; preserve explicit falsy values like false/''/0
       styleProps.forEach(prop => {
         if (prop.type) {
-          style[prop.type] = blockContext.blockConfig.style?.[prop.type]
-          || prop.defaultValue;
+          const configured = blockContext.blockConfig.style?.[prop.type];
+          style[prop.type] = configured !== undefined ? configured : prop.defaultValue;
         }
       });
 
