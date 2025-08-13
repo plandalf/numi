@@ -27,7 +27,7 @@ class RunSequenceWorkflow extends Workflow
         Trigger         $trigger,
         AutomationEvent $event,
     ) {
-        foreach ($trigger->sequence->actions as $action) {
+        foreach (collect($trigger->sequence->actions) as $action) {
             // Resolve template variables in node configuration
             $resolvedConfiguration = $this->resolveNodeConfiguration($action, $event);
 

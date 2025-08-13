@@ -72,14 +72,14 @@ class UpdateRequest extends FormRequest
                     if ($value && in_array($this->input('scope', $price->scope), ['custom', 'variant'])) {
                         $parentPrice = \App\Models\Catalog\Price::find($value);
                         if ($parentPrice && $this->input('type', $price->type) !== $parentPrice->type) {
-                            $fail("The selected type must match the parent price type ({$parentPrice->type}).");
+                            $fail("The selected type must match the parent price type ({$parentPrice->type->value}).");
                         }
                     }
                 },
             ],
             'renew_interval' => [
                 'sometimes',
-                new RequiredIf(in_array($this->input('type', $price->type), ['recurring', 'tiered', 'volume', 'graduated', 'package'])),
+                new RequiredIf(in_array($this->input('type', $price->type->value), ['recurring', 'tiered', 'volume', 'graduated', 'package'])),
                 'nullable',
                 Rule::in(['day', 'week', 'month', 'year']),
             ],

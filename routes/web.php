@@ -114,13 +114,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
                         Route::prefix('billing')->name('billing.')->group(function () {
                             Route::get('/', [BillingCheckoutController::class, 'billing'])->name('index');
-                            Route::get('/portal', [BillingCheckoutController::class, 'portal'])->name('portal');
                         });
 
                         // Checkout completion routes
                         Route::prefix('checkout-completion')->name('checkout-completion.')->group(function () {
                             Route::get('/{checkoutId}', [\App\Http\Controllers\CheckoutCompletionController::class, 'show'])->name('show');
-                            Route::post('/{checkoutId}/process', [\App\Http\Controllers\CheckoutCompletionController::class, 'process'])->name('process');
                         });
 
                         Route::get('/fulfillment', [OrganizationController::class, 'fulfillment'])->name('fulfillment');
@@ -216,11 +214,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::post('/{order}/items/{orderItem}/unprovisionable', [OrdersController::class, 'markUnprovisionable'])->name('fulfillment.item.unprovisionable');
         });
     });
-});
-
-Route::middleware(['auth', 'organization'])->group(function () {
-    Route::get('organizations/settings/billing/checkout', [BillingCheckoutController::class, 'checkout'])
-        ->name('organizations.settings.billing.checkout');
 });
 
 // Media routes

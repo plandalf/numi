@@ -27,7 +27,6 @@ class CheckoutController extends Controller
             ->with('items')
             ->get()
             ->map(function ($subscription) {
-                // dd($subscription);
                 // Get price information from Stripe
                 $priceInfo = $this->getStripePriceInfo($subscription->stripe_price);
 
@@ -67,19 +66,6 @@ class CheckoutController extends Controller
             'subscriptions' => $subscriptions,
         ]);
     }
-
-    public function portal(Request $request)
-    {
-        /** @var \App\Models\Organization $organization */
-        $organization = request()->user()->currentOrganization;
-
-        return Inertia::location(
-            $organization->billingPortalUrl(
-                route('organizations.settings.billing.index')
-            )
-        );
-    }
-
     /**
      * Get Stripe price information for a given price ID
      */
