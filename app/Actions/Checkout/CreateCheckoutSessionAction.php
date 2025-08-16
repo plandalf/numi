@@ -3,9 +3,9 @@
 namespace App\Actions\Checkout;
 
 use App\Enums\IntegrationType;
+use App\Models\Catalog\Price;
 use App\Models\Checkout\CheckoutSession;
 use App\Models\Store\Offer;
-use App\Models\Catalog\Price;
 use Illuminate\Support\Arr;
 
 class CreateCheckoutSessionAction
@@ -14,7 +14,7 @@ class CreateCheckoutSessionAction
         private readonly CreateCheckoutLineItemAction $createCheckoutLineItemAction
     ) {}
 
-    public function execute(Offer $offer, array $checkoutItems, bool $testMode = false, ?string $intervalOverride = null, ?string $currencyOverride = null, array $customerProperties = []): CheckoutSession
+    public function execute(Offer $offer, array $checkoutItems, bool $testMode = false, ?string $intervalOverride = null, ?string $currencyOverride = null, array $customerProperties = [], string $intent = 'purchase', ?string $subscription = null): CheckoutSession
     {
         $paymentIntegration = $offer->organization
             ->integrations()
@@ -30,12 +30,14 @@ class CreateCheckoutSessionAction
                 'payments_integration_id' => $paymentIntegration?->id,
                 'test_mode' => $testMode,
                 'properties' => $customerProperties,
+                'intent' => $intent ?? 'purchase',
+                'subscription' => $intent === 'upgrade' ? $subscription : null,
             ]);
 
         // If no explicit checkout items provided, use offer's default items
         if (empty($checkoutItems)) {
             foreach ($offer->offerItems as $offerItem) {
-                if (! $offerItem->default_price_id || !$offerItem->is_required) {
+                if (! $offerItem->default_price_id || ! $offerItem->is_required) {
                     continue;
                 }
 
@@ -59,7 +61,7 @@ class CreateCheckoutSessionAction
                     $checkoutSession,
                     $offerItem,
                     $priceId,
-                     1
+                    1
                 );
             }
         } else {

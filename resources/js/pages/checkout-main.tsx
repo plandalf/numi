@@ -132,23 +132,6 @@ export function GlobalStateProvider({ offer, offerItems, session: defaultSession
         type: typeof value === 'boolean' ? 'boolean' : typeof value === 'number' ? 'number' : 'string'
       }
     }));
-    // basic key value instead of all block stuff
-    // setFieldStates(prev => ({
-    //   ...prev,
-    //   [`${blockId}:${fieldName}`]: {
-    //     value: value,
-    //   }
-    // }));
-
-    // setFieldStates(prev => ({
-    //   ...prev,
-    //   [`${blockId}:${fieldName}`]: {
-    //     blockId,
-    //     fieldName,
-    //     value,
-    //     type: typeof value === 'boolean' ? 'boolean' : typeof value === 'number' ? 'number' : 'string'
-    //   }
-    // }));
   };
 
   // Get field state function
@@ -323,7 +306,7 @@ export function GlobalStateProvider({ offer, offerItems, session: defaultSession
       if (action === 'commit') {
         // Fire checkout submit event
         sendMessage(new CheckoutSubmit(session));
-        
+
         const body = (await submissionProps?.() ?? {}) as { error?: string, confirmation_token?: string };
 
         console.log('action-submit', { body });
@@ -352,7 +335,7 @@ export function GlobalStateProvider({ offer, offerItems, session: defaultSession
 
       if (action === 'commit' && response.data?.checkout_session) {
         sendMessage(new CheckoutSuccess(response.data.checkout_session));
-        
+
         // Fire checkout complete event after successful payment
         setTimeout(() => {
           sendMessage(new CheckoutComplete(response.data.checkout_session));
@@ -394,21 +377,21 @@ export function GlobalStateProvider({ offer, offerItems, session: defaultSession
     // Store previous line items for comparison
     const previousLineItems = session.line_items || [];
     const previousTotal = session.total;
-    
+
     if (editor) {
       const updatedSession = updateSessionLineItems({ offerItems, item, price, quantity, required, checkoutSession: session });
       setSession(updatedSession);
-      
+
       // Determine change type based on line item count and total changes
-      const changeType = quantity === 0 ? 'removed' : 
+      const changeType = quantity === 0 ? 'removed' :
                         previousLineItems.length < (updatedSession.line_items || []).length ? 'added' :
                         previousTotal !== updatedSession.total ? 'price_changed' : 'quantity_changed';
-      
-      sendMessage(new CheckoutLineItemChanged(updatedSession, changeType, { 
-        offer_item_id: item, 
-        price_id: price, 
-        quantity, 
-        required 
+
+      sendMessage(new CheckoutLineItemChanged(updatedSession, changeType, {
+        offer_item_id: item,
+        price_id: price,
+        quantity,
+        required
       }));
       return;
     }
@@ -424,19 +407,19 @@ export function GlobalStateProvider({ offer, offerItems, session: defaultSession
     if (response.status === 200) {
       const updatedSession = response.data;
       setSession(updatedSession);
-      
+
       // Determine change type based on line item count and total changes
-      const changeType = quantity === 0 ? 'removed' : 
+      const changeType = quantity === 0 ? 'removed' :
                         previousLineItems.length < (updatedSession.line_items || []).length ? 'added' :
                         previousTotal !== updatedSession.total ? 'price_changed' : 'quantity_changed';
-      
-      sendMessage(new CheckoutLineItemChanged(updatedSession, changeType, { 
-        offer_item_id: item, 
-        price_id: price, 
-        quantity, 
-        required 
+
+      sendMessage(new CheckoutLineItemChanged(updatedSession, changeType, {
+        offer_item_id: item,
+        price_id: price,
+        quantity,
+        required
       }));
-      
+
       // Fire resize event to notify parent of potential height changes
       sendMessage(new CheckoutResized());
     }
@@ -459,13 +442,13 @@ export function GlobalStateProvider({ offer, offerItems, session: defaultSession
       if (response.status === 200) {
         const updatedSession = response.data;
         setSession(updatedSession);
-        
+
         // Fire line item changed event for discount addition
-        sendMessage(new CheckoutLineItemChanged(updatedSession, 'price_changed', { 
+        sendMessage(new CheckoutLineItemChanged(updatedSession, 'price_changed', {
           discount: discount,
           action: 'discount_added'
         }));
-        
+
         return status;
       }
 
@@ -497,13 +480,13 @@ export function GlobalStateProvider({ offer, offerItems, session: defaultSession
       if (response.status === 200) {
         const updatedSession = response.data;
         setSession(updatedSession);
-        
+
         // Fire line item changed event for discount removal
-        sendMessage(new CheckoutLineItemChanged(updatedSession, 'price_changed', { 
+        sendMessage(new CheckoutLineItemChanged(updatedSession, 'price_changed', {
           discount: discount,
           action: 'discount_removed'
         }));
-        
+
         return status;
       }
 
@@ -609,88 +592,6 @@ export const Section = ({
     ))
   );
 };
-
-export const layoutConfig = {
-  "name": "SplitCheckout@v1.1",
-  "template": {
-    "type": "grid",
-    "props": {
-      "className": "grid grid-cols-1 md:grid-cols-2 w-full h-full min-h-[inherit] max-h-[inherit]"
-    },
-    "children": [
-      {
-        "type": "box",
-        "props": {
-          "className": "h-full min-h-[inherit] max-h-[inherit] overflow-y-auto"
-        },
-        "children": [
-          {
-            "type": "flex",
-            "props": {
-              "className": "flex flex-col h-full"
-            },
-            "children": [
-              {
-                "type": "flex",
-                "props": {
-                  "className": "flex flex-col flex-grow overflow-y-auto"
-                },
-                "children": [
-                  {
-                    "id": "title",
-                    "type": "NavigationBar",
-                    "props": {
-                      "className": "space-y-1 p-6",
-                      "barStyle": "default"
-                    }
-                  },
-                  {
-                    "id": "content",
-                    "type": "flex",
-                    "props": {
-                      "className": "flex flex-col flex-grow space-y-2 p-6"
-                    }
-                  }
-                ]
-              },
-              {
-                "id": "action",
-                "type": "box",
-                "props": {
-                  "className": "p-6 flex flex-col"
-                },
-              }
-            ]
-          }
-        ]
-      },
-      {
-        "type": "box",
-        "id": "promo_box",
-        "props": {
-          "className": "hidden md:flex h-full overflow-y-auto flex-col  min-h-[inherit] max-h-[inherit]"
-        },
-        "children": [
-          {
-            "id": "promo_header",
-            "type": "box",
-            "props": {
-              "className": "h-auto p-6"
-            }
-          },
-          {
-            "id": "promo_content",
-            "type": "box",
-            "props": {
-              "className": "h-full flex flex-col flex-grow space-y-2 p-6 min-h-max"
-            }
-          }
-        ]
-      }
-    ]
-  }
-}
-
 
 export type CheckoutState = {
 
@@ -962,79 +863,6 @@ export const useValidateFields = () => {
 
   return { validateAllFields }
 }
-
-const DebugPanel = () => {
-  const [isOpen, setIsOpen] = useState(true);
-
-  return (
-    <div className="fixed bottom-4 right-4 z-50">
-      <div className="flex flex-col items-end">
-        <button
-          onClick={() => setIsOpen(!isOpen)}
-          className="mb-2 px-3 py-1 bg-gray-800 text-white text-sm rounded-md hover:bg-gray-700 transition-colors"
-        >
-          {isOpen ? 'Hide Debug' : 'Show Debug'}
-        </button>
-
-        {isOpen && (
-          <div className="w-96 max-h-[50vh] overflow-y-auto bg-white rounded-lg shadow-lg border border-gray-200 text-xs">
-            <StateDisplay />
-          </div>
-        )}
-      </div>
-    </div>
-  );
-};
-
-function StateDisplay() {
-  const globalState = useContext(GlobalStateContext);
-  const { pageHistory, completedPages, canGoBack, canGoForward, navigationHistory } = useNavigation();
-  if (!globalState) return null;
-
-  return (
-    <div className="p-1 bg-gray-100 rounded">
-      <table className="whitespace-pre-wrap">
-        <thead>
-          <tr className="text-xs text-left">
-            <th className="px-1 overflow-hidden">Field</th>
-            <th className="px-1">Value</th>
-          </tr>
-        </thead>
-        <tbody>
-          {Object.entries(globalState.fieldStates).map(([key, field]) => (
-            <tr key={key}>
-              <td className="px-1">{key}</td>
-              <td className="px-1">{JSON.stringify(field.value, null, 2)}</td>
-            </tr>
-          ))}
-        </tbody>
-        <tfoot>
-          <tr>
-            <td className="px-1">Page History</td>
-            <td className="px-1">{pageHistory.join(', ')}</td>
-          </tr>
-          <tr>
-            <td className="px-1">Completed Pages</td>
-            <td className="px-1">{completedPages.join(', ')}</td>
-          </tr>
-          <tr>
-            <td className="px-1">Navigation History</td>
-            <td className="px-1">
-              <div className="space-y-1">
-                {navigationHistory.map((entry: NavigationHistoryEntry, index: number) => (
-                  <div key={index} className="text-xs">
-                    {new Date(entry.timestamp).toLocaleTimeString()} - {entry.direction}: {entry.pageId}
-                  </div>
-                ))}
-              </div>
-            </td>
-          </tr>
-        </tfoot>
-      </table>
-    </div>
-  );
-}
-
 
 export function PageNotFound() {
   return (

@@ -1,5 +1,5 @@
 import Numi, { Appearance, Style } from "@/contexts/Numi";
-import { useMemo } from "react";
+import { useMemo, type CSSProperties } from "react";
 import { resolveThemeValue } from "@/lib/theme";
 
 function HtmlBlockComponent() {
@@ -9,6 +9,7 @@ function HtmlBlockComponent() {
     label: 'HTML Content',
     name: 'htmlContent',
     defaultValue: '<p>Enter your HTML content here</p>',
+    inspector: 'code',
   });
 
   const appearance = Numi.useAppearance([
@@ -28,14 +29,14 @@ function HtmlBlockComponent() {
   ]);
 
   const htmlStyles = useMemo(() => ({
-    padding: appearance.padding,
+    padding: (appearance.padding ?? '') as CSSProperties['padding'],
     width: style.alignment == 'expand' ? '100%' : 'auto',
     backgroundColor: resolveThemeValue(style.backgroundColor, theme) as string,
     borderColor: resolveThemeValue(style.borderColor, theme) as string,
     borderWidth: style.border?.width ?? '0px',
     borderStyle: style.border?.style,
     borderRadius : style.borderRadius,
-  }), [style, appearance, theme]);
+  }) as CSSProperties, [style, appearance, theme]);
 
   return (
     <div 

@@ -22,11 +22,13 @@ class CheckoutSessionResource extends JsonResource
             'currency' => $this->currency,
             'total' => $this->total,
             'subtotal' => $this->subtotal,
-            'is_test_mode' => $this->test_mode && !$request->boolean('hide_test'),
+            'is_test_mode' => $this->test_mode && ! $request->boolean('hide_test'),
             'publishable_key' => $this->publishable_key,
             'integration_client' => $this->integration?->type?->value,
             'client_secret' => $this->client_secret,
             'intent_type' => $this->intent_type,
+            'intent' => $this->intent,
+            'subscription' => $this->subscription,
             'intent_mode' => $this->intent_mode, // Computed from line items
             'has_subscription_items' => $this->has_subscription_items, // Computed from line items
             'has_onetime_items' => $this->has_onetime_items, // Computed from line items

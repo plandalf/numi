@@ -7,22 +7,17 @@ use App\Enums\Theme\FontElement;
 use App\Http\Resources\Checkout\CheckoutSessionResource;
 use App\Http\Resources\FontResource;
 use App\Http\Resources\OfferResource;
-use App\Http\Resources\ThemeResource;
+use App\Models\Catalog\Price;
 use App\Models\Checkout\CheckoutSession;
 use App\Models\PaymentMethod;
 use App\Models\Store\Offer;
-use App\Models\Theme;
 use App\Services\FontExtractionService;
-use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Str;
-use Illuminate\Support\Uri;
-use App\Models\Catalog\Price;
 use App\Traits\HandlesLandingPageDomains;
 use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\URL;
-use Inertia\Inertia;
 use Illuminate\Validation\ValidationException;
+use Inertia\Inertia;
 
 class CheckoutController extends Controller
 {
@@ -45,13 +40,13 @@ class CheckoutController extends Controller
         // Extract customer data from query string
         $customerData = $request->query('customer', []);
         $customerProperties = [];
-        
-        if (is_array($customerData) && !empty($customerData)) {
+
+        if (is_array($customerData) && ! empty($customerData)) {
             // Extract email and other customer fields
             if (isset($customerData['email'])) {
                 $customerProperties['email'] = $customerData['email'];
             }
-            
+
             // You can add more customer fields here as needed
             foreach (['name', 'phone', 'company'] as $field) {
                 if (isset($customerData[$field])) {
@@ -61,7 +56,7 @@ class CheckoutController extends Controller
         }
 
         // If no currency override is provided, check for regional currency based on CloudFlare header
-        if (!$currencyOverride) {
+        if (! $currencyOverride) {
             $countryCode = $request->header('CF-IPCountry');
             $regionalCurrency = $offer->organization->getRegionalCurrency($countryCode);
             if ($regionalCurrency) {
@@ -72,7 +67,7 @@ class CheckoutController extends Controller
         // Process any explicit checkout items from query string
         $checkoutItems = collect(Arr::wrap($checkoutItems))
             ->map(function ($item, $key) use ($offer) {
-                if (!isset($item['lookup_key'])) {
+                if (! isset($item['lookup_key'])) {
                     throw ValidationException::withMessages([
                         'items' => ['Each item must have a lookup_key'],
                     ]);
@@ -84,7 +79,7 @@ class CheckoutController extends Controller
                     ->where('is_active', true)
                     ->first();
 
-                if (!$price) {
+                if (! $price) {
                     return [
                         'items' => ["Price with lookup_key '{$item['lookup_key']}' not found"],
                     ];
@@ -102,11 +97,23 @@ class CheckoutController extends Controller
             }
         }
 
-
         $testMode = $environment === 'test';
 
+        // New: handle intent and subscription for upgrades
+        $intent = $request->query('intent', 'purchase');
+        $subscription = $intent === 'upgrade' ? $request->query('subscription') : null;
+
         $checkoutSession = $this->createCheckoutSessionAction
-            ->execute($offer, $checkoutItems, $testMode, $intervalOverride, $currencyOverride, $customerProperties);
+            ->execute(
+                $offer,
+                $checkoutItems,
+                $testMode,
+                $intervalOverride,
+                $currencyOverride,
+                $customerProperties,
+                $intent,
+                $subscription
+            );
 
         $this->handleInvalidDomain($request, $checkoutSession);
 
@@ -147,7 +154,7 @@ class CheckoutController extends Controller
             'lineItems.price.product',
             'organization.integrations',
             'paymentMethod',
-            'customer'
+            'customer',
         ]);
 
         $offer = $checkout->offer;
@@ -168,6 +175,8 @@ class CheckoutController extends Controller
             'fonts' => FontResource::collection(FontElement::cases()),
             'offer' => new OfferResource($offer),
             'checkoutSession' => new CheckoutSessionResource($checkout),
+
+            // if intent is different we need to defer load the existing subscription in
         ])->with([
             'customFonts' => $customFonts,
             'googleFontsUrl' => $googleFontsUrl,
@@ -186,9 +195,9 @@ class CheckoutController extends Controller
         $redirectStatus = $request->query('redirect_status');
         $sessionId = $request->query('session_id');
 
-        //? setup_intent=seti_1RnPRbFmvUKqVS2HaScBgV8o
-        //& setup_intent_client_secret=seti_1RnPRbFmvUKqVS2HaScBgV8o_secret_Sir9YRUPn3vjLQKzh0tTh8V0l7ibMDL
-        //& redirect_status=succeeded
+        // ? setup_intent=seti_1RnPRbFmvUKqVS2HaScBgV8o
+        // & setup_intent_client_secret=seti_1RnPRbFmvUKqVS2HaScBgV8o_secret_Sir9YRUPn3vjLQKzh0tTh8V0l7ibMDL
+        // & redirect_status=succeeded
         // Update checkout with redirect metadata
 
         $session->update([
@@ -196,7 +205,7 @@ class CheckoutController extends Controller
                 'redirect_return_at' => now()->toISOString(),
                 'redirect_status' => $redirectStatus,
                 'redirect_params' => $request->all(),
-            ])
+            ]),
         ]);
 
         if ($redirectStatus === 'failed') {
@@ -216,11 +225,12 @@ class CheckoutController extends Controller
 
             if ($currentUrl) {
                 // Redirect back to the original checkout page with error
-                return redirect()->away($currentUrl . '?numi-state=payment_failed&reason=' . urlencode($redirectStatus));
+                return redirect()->away($currentUrl.'?numi-state=payment_failed&reason='.urlencode($redirectStatus));
             } else {
                 // Fallback to signed checkout URL with error state
                 $signedUrl = URL::signedRoute('checkouts.show', ['checkout' => $session->getRouteKey()], now()->addDays(5));
-                return redirect()->away($signedUrl . '&numi-state=payment_failed&reason=' . urlencode($redirectStatus));
+
+                return redirect()->away($signedUrl.'&numi-state=payment_failed&reason='.urlencode($redirectStatus));
             }
         }
 
@@ -234,13 +244,13 @@ class CheckoutController extends Controller
                 ]);
         } else {
 
-        $intent = $session->paymentsIntegration
-            ->integrationClient()
-            ->getStripeClient()
-            ->paymentIntents
-            ->retrieve($session->intent_id, [
-                'expand' => ['payment_method', 'latest_charge'],
-            ]);
+            $intent = $session->paymentsIntegration
+                ->integrationClient()
+                ->getStripeClient()
+                ->paymentIntents
+                ->retrieve($session->intent_id, [
+                    'expand' => ['payment_method', 'latest_charge'],
+                ]);
         }
 
         $paymentMethod = PaymentMethod::query()
@@ -267,25 +277,25 @@ class CheckoutController extends Controller
             ]),
         ]);
 
-//        return redirect()->signedRoute('checkouts.show', [$session]);
+        //        return redirect()->signedRoute('checkouts.show', [$session]);
         return redirect()->signedRoute('checkouts.show', [
             'checkout' => $session,
             'next_action' => 'confirm_automatically',
         ]);
 
         // Get the current_url from checkout metadata for fallback
-//        $currentUrl = $session->metadata['current_url'] ?? null;
-//
-//        if ($currentUrl) {
-//            return redirect()
-//                ->away($currentUrl . '?numi-state=processing_failed&message=' . urlencode('Payment was successful but order processing failed. Please contact support.'));
-//        } else {
-//            // Fallback to signed checkout URL with error state
-//            $signedUrl = URL::signedRoute('checkouts.show', ['checkout' => $session->getRouteKey()], now()->addDays(5));
-//
-//            return redirect()
-//                ->away($signedUrl . '&numi-state=processing_failed&message=' . urlencode('Payment was successful but order processing failed. Please contact support.'));
-//        }
+        //        $currentUrl = $session->metadata['current_url'] ?? null;
+        //
+        //        if ($currentUrl) {
+        //            return redirect()
+        //                ->away($currentUrl . '?numi-state=processing_failed&message=' . urlencode('Payment was successful but order processing failed. Please contact support.'));
+        //        } else {
+        //            // Fallback to signed checkout URL with error state
+        //            $signedUrl = URL::signedRoute('checkouts.show', ['checkout' => $session->getRouteKey()], now()->addDays(5));
+        //
+        //            return redirect()
+        //                ->away($signedUrl . '&numi-state=processing_failed&message=' . urlencode('Payment was successful but order processing failed. Please contact support.'));
+        //        }
 
         // Determine the appropriate redirect based on context
         $currentUrl = $session->metadata['current_url'] ?? null;
@@ -296,7 +306,7 @@ class CheckoutController extends Controller
         if ($isPopup && $currentUrl) {
             // For popup scenarios, redirect back to the original page with success state
             // This allows the parent window to handle the success and close the popup
-            $successUrl = $currentUrl . '?numi-state=payment_completed&checkout_id=' . $session->getRouteKey();
+            $successUrl = $currentUrl.'?numi-state=payment_completed&checkout_id='.$session->getRouteKey();
 
             return redirect()->away($successUrl);
         } else {

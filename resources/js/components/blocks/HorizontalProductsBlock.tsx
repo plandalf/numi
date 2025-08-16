@@ -146,7 +146,7 @@ function HorizontalProductsComponent({ context }: { context: BlockContextType })
       weight: '500'
     }),
     Style.backgroundColor('buttonBackgroundColor', 'Button Background Color', {}, theme?.primary_color),
-    Style.backgroundColor('activeBackgroundColor', 'Button Hover Background Color', {}, theme?.secondary_color),
+    Style.backgroundColor('activeBackgroundColor', 'Button Active Background Color', {}, theme?.secondary_color),
     Style.borderRadius('buttonBorderRadius', 'Button Border Radius', {}, '6px'),
     // Style.hidden('hidden', 'Hidden', {}, false),
   ]);
@@ -172,10 +172,10 @@ function HorizontalProductsComponent({ context }: { context: BlockContextType })
   }), [style.buttonFont, theme]);
 
   const containerStyle = useMemo(() => ({
-    padding: appearance.padding,
-    margin: appearance.margin,
-    gap: appearance.spacing,
-  }), [appearance]);
+    padding: String(appearance.padding ?? '0px'),
+    margin: String(appearance.margin ?? '0px'),
+    gap: String(appearance.spacing ?? '12px'),
+  }) as React.CSSProperties, [appearance]);
 
   const itemStyle = useMemo(() => ({
     backgroundColor: resolveThemeValue(style.backgroundColor, theme) as string,
@@ -257,6 +257,36 @@ function HorizontalProductsComponent({ context }: { context: BlockContextType })
 
     return vars;
   }, [style.buttonBackgroundColor, style.buttonFont, style.buttonBorderRadius, theme, buttonFont]);
+
+  const activeButtonVars = useMemo(() => {
+    const resolvedBg = resolveThemeValue(style.activeBackgroundColor, theme) as string;
+    const resolvedText = (resolveThemeValue(style.buttonFont?.color, theme) as string) ?? '#FFFFFF';
+
+    const isColorWhite = (value?: string) => {
+      if (!value) return true;
+      const v = String(value).toLowerCase().replace(/\s+/g, '');
+      return (
+        v === 'white' || v === '#fff' || v === '#ffffff' ||
+        v.startsWith('rgb(255,255,255') || v.startsWith('hsl(0,0%100%)') || v.startsWith('hsl(0,0%,100%)') ||
+        v.startsWith('oklch(1')
+      );
+    };
+
+    const defaultSurface = '#189AB4';
+    const defaultBorder = '#007D96';
+    const effectiveBg = isColorWhite(resolvedBg) ? defaultSurface : resolvedBg;
+    const effectiveBorder = isColorWhite(resolvedBg) ? defaultBorder : (resolvedBg || defaultBorder);
+    const effectiveText = isColorWhite(resolvedText) && isColorWhite(resolvedBg) ? '#ffffff' : resolvedText;
+
+    const vars: React.CSSProperties = {
+      ...buttonVars,
+      '--btn-bg': effectiveBg,
+      '--btn-border': effectiveBorder,
+      color: effectiveText,
+    } as React.CSSProperties;
+
+    return vars;
+  }, [style.activeBackgroundColor, style.buttonFont, theme, buttonVars]);
 
   const interactionElements = useMemo(() => {
     return Array.isArray(items) ? items.filter(item => item.key).map(item => ({ value: item.key, label: item.title })) : [];
@@ -394,7 +424,7 @@ function HorizontalProductsComponent({ context }: { context: BlockContextType })
                   'w-full justify-center',
                   isSelected ? 'opacity-80 cursor-default' : '',
                 ].join(' ')}
-                style={{ ...buttonVars, padding: appearance.buttonPadding || '7px', minHeight: '40px' }}
+                style={{ ...(isSelected ? activeButtonVars : buttonVars), padding: String(appearance.buttonPadding ?? '7px'), minHeight: '40px' }}
                 data-disabled={isSelected ? true : undefined}
                 onClick={(e) => {
                   e.stopPropagation();

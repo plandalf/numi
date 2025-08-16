@@ -109,6 +109,10 @@ export interface CheckoutSession {
     email?: string;
     name?: string;
   };
+
+  // Metadata for UI/telemetry
+  created_at?: string;
+  current_page_id?: string;
 }
 
 export interface CheckoutPageProps {

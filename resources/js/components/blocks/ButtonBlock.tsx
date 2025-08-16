@@ -110,7 +110,7 @@ function ButtonBlockComponent() {
   });
 
   const containerStyles = useMemo(() => ({
-    margin: appearance.margin,
+    margin: String(appearance.margin ?? '0px'),
   }), [appearance]);
 
   const resolvedBackgroundColor = resolveThemeValue(style.backgroundColor, theme, 'primary_color') as string;
@@ -179,8 +179,8 @@ function ButtonBlockComponent() {
       borderRadius: resolvedBorderRadius,
       boxShadow: resolvedShadow,
       // Spacing
-      padding: appearance.padding,
-      gap: appearance.spacing,
+      padding: String(appearance.padding ?? '7px'),
+      gap: String(appearance.spacing ?? '0.5rem'),
       // CSS variables for Tailwind v4 arbitrary var utilities
       ...(cssVars as unknown as CSSProperties),
     };
@@ -212,7 +212,7 @@ function ButtonBlockComponent() {
       // Optical border (bg behind the surface)
       'border-transparent bg-(--btn-border)',
       // Surface (foreground) on the inset before layer
-      'before:absolute before:inset-0 before:-z-10 before:rounded-[calc(var(--radius-lg)-1px)] before:bg-(--btn-bg)',
+      'before:absolute before:inset-0 before:-z-10 before:rounded-[calc(var(--radius-lg)-1px)] before:[background:var(--btn-bg)]',
       'before:opacity-90 hover:before:opacity-100 active:before:opacity-95',
       'before:shadow-sm',
       // Subtle dark outline
