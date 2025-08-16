@@ -174,6 +174,8 @@ class CheckoutController extends Controller
         return Inertia::render('checkout', [
             'fonts' => FontResource::collection(FontElement::cases()),
             'offer' => new OfferResource($offer),
+
+            // calculation ?
             'checkoutSession' => new CheckoutSessionResource($checkout),
 
             // if intent is different we need to defer load the existing subscription in

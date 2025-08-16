@@ -13,10 +13,11 @@ import {
   PopoverContent, 
   PopoverTrigger 
 } from '@/components/ui/popover';
-import { Edit, Trash2, Plus, ChevronDown, Info, CornerDownRight } from 'lucide-react';
+import { Edit, Trash2, Plus, ChevronDown, Info, CornerDownRight, Link2 } from 'lucide-react';
 import { formatMoney } from '@/lib/utils';
 import { Price } from '@/types/offer';
 import React from 'react';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 // Helper function to get the base price for complex pricing models
 const getBasePrice = (price: Price): { amount: number; label: string } | null => {
@@ -246,6 +247,19 @@ export const PriceTable: React.FC<PriceTableProps> = ({ prices, onEdit, onDelete
                     <span className={isChild ? 'text-sm' : ''}>
                       {price.name || '-'}
                     </span>
+                    {price.gateway_price_id && (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Link2 className="h-4 w-4 text-blue-600" />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <div className="text-xs">
+                            Linked to {price.gateway_provider || 'stripe'} price
+                            <div className="font-mono break-all">{price.gateway_price_id}</div>
+                          </div>
+                        </TooltipContent>
+                      </Tooltip>
+                    )}
                   </div>
                 </TableCell>
                 <TableCell className="whitespace-nowrap">

@@ -47,11 +47,11 @@ class ProductStoreRequest extends FormRequest
             ],
             'gateway_prices' => ['required_with:integration_id', 'array'],
             'gateway_prices.*' => ['string', 'max:255'],
-            'gateway_product_id' => ['required_with:integration_id', 'string', 'max:255'],
+            'gateway_product_id' => ['nullable', Rule::requiredIf($this->filled('integration_id')), 'string', 'max:255'],
 
             // Add validation for other fields from migration if needed (e.g., gateway)
             'gateway_provider' => ['nullable', 'string', 'max:255'],
-//            'gateway_product_id' => ['nullable', 'string', 'max:255'],
+            //            'gateway_product_id' => ['nullable', 'string', 'max:255'],
             'image' => ['nullable', 'string', 'max:255'],
         ];
     }

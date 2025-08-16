@@ -87,11 +87,15 @@ class CheckoutSession extends Model
         'test_mode',
         'customer_id',
         'payment_method_id',
+
+        'intent_id',
+        'intent_type',
+        'intent', 'subscription',
+
+        'client_secret',
         'return_url', // [stripe-intent]
         'payment_confirmed_at', // [stripe-intent]
         'payment_method_locked', // [stripe-intent]
-        'intent_id', 'intent_type', 'client_secret',
-        'intent', 'subscription',
     ];
 
     protected $casts = [
