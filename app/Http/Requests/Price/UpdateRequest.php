@@ -107,6 +107,8 @@ class UpdateRequest extends FormRequest
             'gateway_provider' => ['sometimes', 'nullable', 'string', 'max:255'],
             'gateway_price_id' => ['sometimes', 'nullable', 'string', 'max:255'],
             'is_active' => ['sometimes', 'boolean'],
+            'activated_at' => ['sometimes', 'nullable', 'date'],
+            'deactivated_at' => ['sometimes', 'nullable', 'date', 'after:activated_at'],
             'metadata' => ['sometimes', 'nullable', 'array'],
             // 'archived_at' => ['sometimes', 'nullable', 'date'], // For archiving
         ];

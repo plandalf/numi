@@ -104,6 +104,8 @@ class Price extends Model
 
         'is_active',
         'archived_at',
+        'activated_at',
+        'deactivated_at',
 
         'integration_id',
         'deleted_at'
@@ -114,6 +116,8 @@ class Price extends Model
         'metadata' => 'json',
         'is_active' => 'boolean',
         'archived_at' => 'datetime',
+        'activated_at' => 'datetime',
+        'deactivated_at' => 'datetime',
         'type' => ChargeType::class,
         'currency' => CurrencyCast::class,
         'amount' => MoneyCast::class, // Ensure amount is treated as integer (cents)
@@ -161,7 +165,24 @@ class Price extends Model
     // Scope to get only active prices
     public function scopeActive($query)
     {
-        return $query->where('is_active', true);
+        return $query->where('is_active', true)->whereNull('archived_at');
+    }
+
+    public function scopeActiveAt($query, ?\Carbon\CarbonInterface $at = null)
+    {
+        $at = $at ?: now();
+        return $query->active()
+            ->where(function ($q) use ($at) {
+                $q->whereNull('activated_at')->orWhere('activated_at', '<=', $at);
+            })
+            ->where(function ($q) use ($at) {
+                $q->whereNull('deactivated_at')->orWhere('deactivated_at', '>', $at);
+            });
+    }
+
+    public function scopeListActiveAt($query, ?\Carbon\CarbonInterface $at = null)
+    {
+        return $query->list()->activeAt($at);
     }
 
     /**

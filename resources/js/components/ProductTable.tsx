@@ -23,6 +23,7 @@ type Product = {
   id: number;
   name: string;
   status: ProductStatus;
+  current_state?: 'draft'|'testing'|'active'|'deprecated'|'retired';
   created_at: string;
   integration?: {
     name: string;
@@ -63,7 +64,7 @@ export function ProductTable({ products }: ProductTableProps) {
           <TableHeader>
             <TableRow>
               <TableHead className="min-w-[150px]">Product name</TableHead>
-              <TableHead className="min-w-[100px]">Status</TableHead>
+              <TableHead className="min-w-[100px]">State</TableHead>
               <TableHead className="min-w-[120px]">Created</TableHead>
               <TableHead className="min-w-[100px]">Source</TableHead>
               <TableHead className="min-w-[100px]">Prices</TableHead>
@@ -82,14 +83,19 @@ export function ProductTable({ products }: ProductTableProps) {
                   </Link>
                 </TableCell>
                 <TableCell>
-                  <Badge className={cx('text-white whitespace-nowrap', {
-                    'bg-[#7EB500]': product.status === ProductStatus.ACTIVE,
-                    'bg-[#808ABF]': product.status === ProductStatus.DRAFT,
-                    'bg-red-400': product.status === ProductStatus.ARCHIVED,
-                    'bg-red-600': product.status === ProductStatus.DELETED,
-                  })}>
-                    {product.status}
-                  </Badge>
+                  {(() => {
+                    const state = (product as any).current_state as Product['current_state'] | undefined;
+                    const s = state || (product.status ? String(product.status).toLowerCase() : 'draft');
+                    const className = cx('text-white whitespace-nowrap', {
+                      'bg-[#7EB500]': s === 'active',
+                      'bg-blue-600': s === 'testing',
+                      'bg-[#808ABF]': s === 'draft',
+                      'bg-amber-600': s === 'deprecated',
+                      'bg-red-600': s === 'retired' || s === 'archived' || s === 'deleted',
+                    });
+                    const label = s.charAt(0).toUpperCase() + s.slice(1);
+                    return <Badge className={className}>{label}</Badge>;
+                  })()}
                 </TableCell>
                 <TableCell className="whitespace-nowrap">
                   {formatDate(product.created_at)}

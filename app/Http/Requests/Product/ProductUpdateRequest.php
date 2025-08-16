@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Product;
 
 use App\Models\Catalog\Product;
+use App\Enums\ProductState;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
@@ -47,6 +48,18 @@ class ProductUpdateRequest extends FormRequest
             'gateway_provider' => ['nullable', 'string', 'max:255'],
             'gateway_product_id' => ['nullable', 'string', 'max:255'],
             'image' => ['nullable', 'string', 'max:255'],
+            'current_state' => ['sometimes', Rule::in(array_map(fn($e) => $e->value, ProductState::cases()))],
+            'activated_at' => ['sometimes', 'nullable', 'date'],
+            'parent_product_id' => [
+                'sometimes',
+                'nullable',
+                'integer',
+                Rule::exists('catalog_products', 'id')
+                    ->where(function ($query) use ($organizationId, $productId) {
+                        return $query->where('organization_id', $organizationId)
+                                     ->where('id', '!=', $productId);
+                    }),
+            ],
             // Add validation for archiving if that's handled here
             // 'archived_at' => ['nullable', 'date'],
         ];

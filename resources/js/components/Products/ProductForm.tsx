@@ -14,6 +14,7 @@ import { useEffect, useState } from "react";
 import { type Product } from "@/types/offer"; // Changed from @/types/product
 import { toast } from "sonner";
 import { ImageUpload } from "../ui/image-upload";
+import { Combobox } from "@/components/combobox";
 import axios from '@/lib/axios';
 
 interface Props {
@@ -23,6 +24,7 @@ interface Props {
   hideDialog?: boolean;
   onSuccess?: (product: Product) => void;
   useJsonResponse?: boolean; // Add new prop to control response type
+  parentCandidates?: Array<{ id: number; name: string; lookup_key: string }>; // for parent combobox
 }
 
 interface ApiValidationError {
@@ -50,7 +52,8 @@ export default function ProductForm({
   initialData,
   hideDialog = false,
   onSuccess,
-  useJsonResponse = false // Default to Inertia redirect
+  useJsonResponse = false, // Default to Inertia redirect
+  parentCandidates = []
 }: Props) {
   const isEditing = !!initialData;
   const [isLookupKeyManuallyEdited, setIsLookupKeyManuallyEdited] = useState(false);
@@ -62,6 +65,9 @@ export default function ProductForm({
     gateway_provider: string | null;
     gateway_product_id: string | null;
     image: string | null;
+    current_state?: 'draft'|'testing'|'active'|'deprecated'|'retired';
+    activated_at?: string | null;
+    parent_product_id?: number | null;
   }>({
     name: initialData?.name || "",
     lookup_key: initialData?.lookup_key || "",
@@ -69,6 +75,9 @@ export default function ProductForm({
     gateway_provider: initialData?.gateway_provider || null,
     gateway_product_id: initialData?.gateway_product_id || null,
     image: initialData?.image || null,
+    current_state: (initialData as any)?.current_state || 'draft',
+    activated_at: (initialData as any)?.activated_at || null,
+    parent_product_id: (initialData as any)?.parent_product_id || null,
   });
 
   useEffect(() => {
@@ -80,6 +89,9 @@ export default function ProductForm({
         gateway_provider: initialData.gateway_provider || null,
         gateway_product_id: initialData.gateway_product_id || null,
         image: initialData.image || null,
+        current_state: (initialData as any)?.current_state || 'draft',
+        activated_at: (initialData as any)?.activated_at || null,
+        parent_product_id: (initialData as any)?.parent_product_id || null,
       });
       setIsLookupKeyManuallyEdited(true); // Consider existing products as manually edited
     } else {
@@ -235,6 +247,52 @@ export default function ProductForm({
           preview={data.image}
           onChange={(value) => setData("image", value?.url || null)}
         />
+      </div>
+
+      <div className="grid gap-2">
+        <Label htmlFor="current_state">State</Label>
+        <select
+          id="current_state"
+          className="border rounded-md h-9 px-2"
+          value={data.current_state}
+          onChange={(e) => setData('current_state', e.target.value as any)}
+          disabled={processing}
+        >
+          {['draft','testing','active','deprecated','retired'].map(s => (
+            <option key={s} value={s}>{s[0].toUpperCase()+s.slice(1)}</option>
+          ))}
+        </select>
+        {errors['current_state'] && <p className="text-sm text-red-500">{errors['current_state']}</p>}
+      </div>
+
+      <div className="grid gap-2">
+        <Label htmlFor="activated_at">Activated At</Label>
+        <Input
+          id="activated_at"
+          type="datetime-local"
+          value={data.activated_at || ''}
+          onChange={(e) => setData('activated_at', e.target.value || null)}
+          disabled={processing}
+        />
+        {errors['activated_at'] && <p className="text-sm text-red-500">{errors['activated_at']}</p>}
+      </div>
+
+      <div className="grid gap-2">
+        <Label htmlFor="parent_product_id">Parent Product</Label>
+        <Combobox
+          items={parentCandidates.map((p) => ({
+            value: String(p.id),
+            label: p.name,
+            subtitle: p.lookup_key,
+          }))}
+          selected={data.parent_product_id ? String(data.parent_product_id) : ''}
+          onSelect={(val: string) => setData('parent_product_id', val ? Number(val) : null)}
+          placeholder="Select parent product"
+          className="w-full"
+          popoverClassName="min-w-[400px]"
+        />
+        <p className="text-xs text-muted-foreground">Search and select a parent product to link lineage. Clear selection to remove parent.</p>
+        {errors['parent_product_id'] && <p className="text-sm text-red-500">{errors['parent_product_id']}</p>}
       </div>
       <div className="flex justify-end space-x-2 pt-4">
         <Button
