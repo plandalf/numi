@@ -180,7 +180,7 @@ function CountdownBlock({ context }: { context: BlockContextType }) {
       <div className="flex items-center gap-2">
         <IconRenderer icon={icon} style={iconStyle} defaultIcon={null} />
         {label && <span style={labelStyle}>{label}</span>}
-        <span style={timerStyle} className="font-mono">
+        <span style={timerStyle} className="font-mono tabular-nums">
           {formatTime(msRemaining)}
         </span>
       </div>
