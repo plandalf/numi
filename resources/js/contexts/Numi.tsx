@@ -5,8 +5,9 @@ import { createContext, useContext, useEffect, useState, useRef, useCallback, us
 import get from "lodash/get";
 import debounce from "lodash/debounce";
 import { Theme } from "@/types/theme";
-import { CheckoutState, GlobalStateContext } from '@/pages/checkout-main';
-import { CallbackType, Event } from "@/components/editor/interaction-event-editor";
+import { GlobalState, GlobalStateContext } from '@/pages/checkout-main';
+import { Event } from "@/components/editor/interaction-event-editor";
+import { SwitchProductActionValue } from '@/components/actions/switch-product-action';
 
 export const BlockContext = createContext<BlockContextType>({
   blockId: '',
@@ -429,7 +430,13 @@ const Numi = {
             case 'deactivateLineItem':
             case 'activateLineItem':
             case 'setItem':
-              checkout.updateLineItem(callback.value);
+              checkout?.updateLineItem(callback.value as any);
+              break;
+            case 'switchVariant':
+              checkout?.switchVariant(callback.value);
+              break;
+            case 'switchProduct':
+              checkout?.switchProduct(callback.value as SwitchProductActionValue);
               break;
             case 'redirect':
               window.open(callback.value, '_blank');
@@ -478,10 +485,10 @@ const Numi = {
     return [data];
   },
 
-  useCheckout(options: CheckoutOptions = {}): CheckoutState {
+  useCheckout(options: CheckoutOptions = {}): GlobalState {
     const checkout = useContext(GlobalStateContext);
 
-    return checkout;
+    return checkout!;
   },
 
   useAppearance(appearanceProps: any[]) {

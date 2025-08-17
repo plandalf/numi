@@ -10,6 +10,8 @@ import axios from '@/lib/axios';
 import { CheckoutSession } from '@/types/checkout';
 import { BlockRenderer } from '@/components/checkout/block-renderer';
 import { SetItemActionValue } from '@/components/actions/set-item-action';
+import { SwitchVariantActionValue } from '@/components/actions/switch-variant-action';
+import { SwitchProductActionValue } from '@/components/actions/switch-product-action';
 import { Theme } from '@/types/theme';
 import { sendMessage } from '@/utils/sendMessage';
 import { CheckoutSuccess } from '@/events/CheckoutSuccess';
@@ -54,7 +56,9 @@ export interface GlobalState {
   setPageSubmissionProps: (callback: () => Promise<unknown>) => void;
 
   // Line Items
-  updateLineItem: (offerItemId: string, price: string) => Promise<void>;
+  updateLineItem: (payload: SetItemActionValue) => Promise<void>;
+  switchVariant: (payload: SwitchVariantActionValue) => Promise<void>;
+  switchProduct: (payload: SwitchProductActionValue) => Promise<void>;
   addDiscount: (discount: string) => Promise<boolean>;
   removeDiscount: (discount: string) => Promise<boolean>;
 
@@ -64,6 +68,7 @@ export interface GlobalState {
   offer: OfferConfiguration;
   theme: Theme;
   isEditor: boolean;
+  session: CheckoutSession;
 }
 
 export function GlobalStateProvider({ offer, offerItems, session: defaultSession, editor = false, children }: { offer: OfferConfiguration, offerItems?: OfferItem[], session: CheckoutSession, editor?: boolean, children: React.ReactNode }) {
@@ -379,7 +384,7 @@ export function GlobalStateProvider({ offer, offerItems, session: defaultSession
     const previousTotal = session.total;
 
     if (editor) {
-      const updatedSession = updateSessionLineItems({ offerItems, item, price, quantity, required, checkoutSession: session });
+      const updatedSession = updateSessionLineItems({ offerItems: offerItems || [], item, price, quantity, required, checkoutSession: session });
       setSession(updatedSession);
 
       // Determine change type based on line item count and total changes
@@ -398,7 +403,7 @@ export function GlobalStateProvider({ offer, offerItems, session: defaultSession
 
     const response = await axios.post(`/checkouts/${session.id}/mutations`, {
       action: 'setItem',
-      offer_item_id: item,
+      offer_item_id: typeof item === 'string' ? item : String(item),
       price_id: price ?? undefined,
       quantity: quantity ?? undefined,
       required: required ?? undefined
@@ -425,6 +430,51 @@ export function GlobalStateProvider({ offer, offerItems, session: defaultSession
     }
 
     return response.data;
+  };
+
+  const switchVariant = async (payload: SwitchVariantActionValue) => {
+    await axios.post(`/checkouts/${session.id}/mutations`, {
+      action: 'switchVariant',
+      offer_item_id: payload.item,
+      interval: payload.interval,
+      type: payload.type,
+      // currency ignored server-side. always uses session currency
+      // product_id handled via separate switchProduct action
+    });
+  };
+
+  const switchProduct = async (payload: SwitchProductActionValue) => {
+    // Store previous line items for comparison
+    const previousLineItems = session.line_items || [];
+    const previousTotal = session.total;
+
+    // how do we do this if we dont have offer_items, they're generated? 
+
+    const response = await axios.post(`/checkouts/${session.id}/mutations`, {
+      action: 'switchProduct',
+      offer_item_id: payload.item,
+      product_id: payload.productId ? Number(payload.productId) : undefined,
+    });
+
+    if (response.status === 200) {
+      const updatedSession = response.data;
+      setSession(updatedSession);
+
+      // Determine change type based on line item count and total changes
+      const changeType = previousLineItems.length < (updatedSession.line_items || []).length
+        ? 'added'
+        : previousTotal !== updatedSession.total
+          ? 'price_changed'
+          : 'quantity_changed';
+
+      sendMessage(new CheckoutLineItemChanged(updatedSession, changeType, {
+        offer_item_id: payload.item,
+        product_id: payload.productId ? Number(payload.productId) : undefined,
+      }));
+
+      // Fire resize event to notify parent of potential height changes
+      sendMessage(new CheckoutResized());
+    }
   };
 
   const addDiscount = async (discount: string) => {
@@ -540,6 +590,8 @@ export function GlobalStateProvider({ offer, offerItems, session: defaultSession
     updateSessionProperties,
     validateField,
     updateLineItem,
+    switchVariant,
+    switchProduct,
     addDiscount,
     removeDiscount,
 

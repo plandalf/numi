@@ -53,9 +53,8 @@ class UpdateRequest extends FormRequest
                 })->ignore($price->id),
             ],
             // Immutable fields: scope, type, currency? Typically shouldn't change after creation.
-            // 'scope' => [...]
-            // 'type' => [...]
-            // 'currency' => [...]
+            'scope' => ['sometimes', Rule::in(['list', 'custom', 'variant'])],
+            
 
             'amount' => ['sometimes', 'required', 'integer', 'min:0'],
             'parent_list_price_id' => [
@@ -67,12 +66,16 @@ class UpdateRequest extends FormRequest
                     return $query->where('product_id', $product->id)
                         ->where('scope', 'list');
                 }),
-                // Custom validation to ensure type matches parent
+                // Custom validation to ensure type matches parent (compare values)
                 function ($attribute, $value, $fail) use ($price) {
                     if ($value && in_array($this->input('scope', $price->scope), ['custom', 'variant'])) {
                         $parentPrice = \App\Models\Catalog\Price::find($value);
-                        if ($parentPrice && $this->input('type', $price->type) !== $parentPrice->type) {
-                            $fail("The selected type must match the parent price type ({$parentPrice->type->value}).");
+                        if ($parentPrice) {
+                            $childType = is_string($this->input('type', $price->type)) ? $this->input('type', $price->type) : $price->type->value;
+                            $parentType = $parentPrice->type?->value ?? (string) $parentPrice->type;
+                            if ($childType !== $parentType) {
+                                $fail("The selected type must match the parent price type ({$parentType}).");
+                            }
                         }
                     }
                 },
@@ -97,10 +100,9 @@ class UpdateRequest extends FormRequest
             ],
             'cancel_after_cycles' => ['sometimes', 'nullable', 'integer'],
             'properties' => ['sometimes', 'nullable', 'array'],
-            'properties.tiers' => ['sometimes', 'array'],
-            'properties.tiers.*.from' => ['sometimes', 'integer', 'min:0'],
-            'properties.tiers.*.to' => ['sometimes', 'nullable', 'integer', 'min:1'],
-            'properties.tiers.*.unit_amount' => ['sometimes', 'integer', 'min:0'],
+            'properties.*.up_to' => ['sometimes', 'nullable', 'integer', 'min:1'],
+            'properties.*.unit_amount' => ['sometimes', 'integer', 'min:0'],
+            'properties.*.flat_amount' => ['sometimes', 'nullable', 'integer', 'min:0'],
             'properties.package' => ['sometimes', 'array'],
             'properties.package.size' => ['sometimes', 'integer', 'min:1'],
             'properties.package.unit_amount' => ['sometimes', 'integer', 'min:0'],
@@ -121,6 +123,8 @@ class UpdateRequest extends FormRequest
             $this->merge(['parent_list_price_id' => null]);
         }
 
+        // Retain gateway linkage even when moving to custom/variant
+
         // Ensure recurring fields are null if not recurring model
         if ($this->input('type', $price->type) === ChargeType::ONE_TIME->value) {
             $this->merge([
@@ -130,36 +134,49 @@ class UpdateRequest extends FormRequest
             ]);
         }
 
-        // Validate and prepare properties for complex pricing models
-        $price = $this->route('price');
-        $type = $this->input('type', $price->type);
+        // Validate and normalize properties for complex pricing models
+        $type = is_string($this->input('type', $price->type)) ? $this->input('type', $price->type) : $price->type->value;
         if (in_array($type, ['tiered', 'volume', 'graduated', 'package'])) {
             $properties = $this->input('properties');
-            
-            // For tier-based pricing (tiered, volume, graduated)
-            if (in_array($type, ['tiered', 'volume', 'graduated']) && $properties) {
+            if (in_array($type, ['tiered', 'volume', 'graduated'])) {
                 if (isset($properties['tiers']) && is_array($properties['tiers'])) {
-                    // Validate tiers structure
-                    $validTiers = array_filter($properties['tiers'], function ($tier) {
-                        return is_array($tier) && 
-                               isset($tier['from']) && is_numeric($tier['from']) &&
-                               isset($tier['unit_amount']) && is_numeric($tier['unit_amount']);
-                    });
-                    
-                    if (!empty($validTiers)) {
-                        $this->merge(['properties' => ['tiers' => array_values($validTiers)]]);
-                    } else {
-                        $this->merge(['properties' => null]);
-                    }
+                    $properties = $properties['tiers'];
                 }
-            }
-            
-            // For package pricing
-            if ($type === 'package' && $properties) {
+                if (is_array($properties)) {
+                    $normalized = [];
+                    $lastUpTo = 0;
+                    foreach ($properties as $index => $tier) {
+                        if (!is_array($tier)) continue;
+                        $upTo = $tier['up_to'] ?? ($tier['to'] ?? null);
+                        $unitAmount = $tier['unit_amount'] ?? null;
+                        $flatAmount = $tier['flat_amount'] ?? null;
+                        if (!is_numeric($unitAmount) && !is_numeric($flatAmount)) continue;
+                        if ($upTo !== null && is_numeric($upTo)) {
+                            $upTo = (int) $upTo;
+                            if ($upTo <= $lastUpTo) {
+                                $upTo = $lastUpTo + 1;
+                            }
+                            $lastUpTo = $upTo;
+                        } else {
+                            $upTo = null;
+                        }
+                        $normalized[] = [
+                            'up_to' => $upTo,
+                            'unit_amount' => (int) max(0, (int) ($unitAmount ?? 0)),
+                            'flat_amount' => isset($flatAmount) ? (int) max(0, (int) $flatAmount) : null,
+                        ];
+                    }
+                    usort($normalized, function ($a, $b) {
+                        $aU = $a['up_to'] ?? PHP_INT_MAX;
+                        $bU = $b['up_to'] ?? PHP_INT_MAX;
+                        return $aU <=> $bU;
+                    });
+                    $this->merge(['properties' => $normalized]);
+                }
+            } elseif ($type === 'package' && $properties) {
                 if (isset($properties['package']) && is_array($properties['package'])) {
                     $package = $properties['package'];
-                    if (isset($package['size'], $package['unit_amount']) && 
-                        is_numeric($package['size']) && is_numeric($package['unit_amount'])) {
+                    if (isset($package['size'], $package['unit_amount']) && is_numeric($package['size']) && is_numeric($package['unit_amount'])) {
                         $this->merge(['properties' => ['package' => $package]]);
                     } else {
                         $this->merge(['properties' => null]);

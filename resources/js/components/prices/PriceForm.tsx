@@ -152,6 +152,18 @@ const capitalize = (str: string | undefined | null): string => {
   return str.charAt(0).toUpperCase() + str.slice(1);
 };
 
+// Normalize various currency representations to a 3-letter lowercase code
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const normalizeCurrencyCode = (value: any, fallback: string = 'usd'): string => {
+  if (!value) return fallback;
+  if (typeof value === 'string') return value.toLowerCase();
+  if (typeof value === 'object') {
+    if (typeof value.code === 'string') return value.code.toLowerCase();
+    if (typeof value.currency === 'string') return value.currency.toLowerCase();
+  }
+  return fallback;
+};
+
 // Convert backend-normalized properties (either array of tiers or { tiers: [] })
 // into UI-friendly TierConfig with from/to boundaries
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -196,7 +208,7 @@ export default function PriceForm({
 }: Props) {
   const isEditing = !!(initialData?.id);
   const { props: pageProps } = usePage<PageProps>();
-  const defaultCurrency = product.currency || pageProps.config?.cashier_currency || 'usd'; // Get default currency
+  const defaultCurrency = normalizeCurrencyCode((product as unknown as { currency?: unknown }).currency || pageProps.config?.cashier_currency || 'usd');
   const [isLookupKeyManuallyEdited, setIsLookupKeyManuallyEdited] = useState(!!initialData?.lookup_key); // Track manual edits
   const [amountDisplay, setAmountDisplay] = useState<string>("0.00"); // State for formatted amount string
   const amountInputRef = useRef<HTMLInputElement>(null); // Ref for amount input to check focus
@@ -221,7 +233,7 @@ export default function PriceForm({
       parent_list_price_id: initialData?.parent_list_price_id || null,
       type,
       amount: initialData?.amount || 0,
-      currency: initialData?.currency || defaultCurrency,
+      currency: normalizeCurrencyCode((initialData as unknown as { currency?: unknown })?.currency) || defaultCurrency,
       renew_interval: initialData?.renew_interval || (isRecurringType ? 'month' : null),
       billing_anchor: initialData?.billing_anchor || null,
       recurring_interval_count: initialData?.recurring_interval_count || null,
@@ -331,6 +343,16 @@ export default function PriceForm({
       setData('parent_list_price_id', null);
     }
   }, [data.scope, setData]);
+
+  // Ensure child type always matches selected parent type for custom/variant
+  useEffect(() => {
+    if ((data.scope === 'custom' || data.scope === 'variant') && data.parent_list_price_id && listPrices && listPrices.length > 0) {
+      const parent = listPrices.find(p => p.id === data.parent_list_price_id);
+      if (parent && data.type !== parent.type) {
+        setData('type', parent.type);
+      }
+    }
+  }, [data.scope, data.parent_list_price_id, listPrices, data.type, setData]);
 
   // Resolve integration/product ids (supports both product.integration.id and product.integration_id shapes)
   const resolvedIntegrationId = (product as unknown as { integration?: { id?: number } }).integration?.id
@@ -613,11 +635,7 @@ export default function PriceForm({
       formData.billing_anchor = null;
     }
 
-    // For custom/variant, ensure we DO NOT send gateway linkage (internal mapping only)
-    if (formData.scope === 'custom' || formData.scope === 'variant') {
-      formData.gateway_provider = null;
-      formData.gateway_price_id = null;
-    }
+    // Retain gateway linkage even when moving to custom/variant
 
     // Format data
     formData.amount = Math.round(data.amount);
@@ -833,10 +851,10 @@ export default function PriceForm({
               </p>
             </div>
 
-            {/* Parent List Price Selection for Custom/Variant */}
+            {/* Move under different parent (and Parent selection for Custom/Variant) */}
             {(data.scope === 'custom' || data.scope === 'variant') && listPrices && listPrices.length > 0 && (
               <div className="flex flex-col gap-2">
-                <Label htmlFor="parent_list_price_id">Base List Price</Label>
+                <Label htmlFor="parent_list_price_id">{isEditing ? 'Move under Parent List Price' : 'Base List Price'}</Label>
                 <div className="flex items-start gap-2">
                   <div className="flex-1">
                     <Combobox
@@ -879,6 +897,12 @@ export default function PriceForm({
                           const parentPrice = listPrices.find(p => p.id === parentId);
                           if (parentPrice) {
                             setData('type', parentPrice.type);
+                            // Debug note shown next to model select when mismatched
+                            if (data.type && data.type !== parentPrice.type) {
+                              toast.message('Type adjusted to match parent', {
+                                description: `Parent: ${parentPrice.type}, Child before: ${data.type}`
+                              });
+                            }
                           }
                         }
                       }}
@@ -888,8 +912,17 @@ export default function PriceForm({
                       popoverClassName="min-w-[500px]"
                     />
                     {errors.parent_list_price_id && <p className="text-sm text-red-500">{errors.parent_list_price_id}</p>}
+                    {data.parent_list_price_id && listPrices && (() => {
+                      const parent = listPrices.find(p => p.id === data.parent_list_price_id);
+                      if (!parent) return null;
+                      const isMismatch = data.type !== parent.type;
+                      if (!isMismatch) return null;
+                      return (
+                        <p className="text-xs text-orange-600">Debug: Selected parent is {parent.type}, form type is {data.type}. It will be aligned on save.</p>
+                      );
+                    })()}
                     <p className="text-xs text-muted-foreground">
-                      This {data.scope} price will be based on the selected list price and inherit its pricing model. Search by name or type.
+                      {isEditing ? 'Move this price under another list price as a variant. Its pricing model must match the parent.' : 'This price will be based on the selected list price and inherit its pricing model.'} Search by name or type.
                     </p>
                   </div>
                   {/* Inline Stripe search below handles prefill; no separate dialog trigger needed */}
@@ -1049,11 +1082,14 @@ export default function PriceForm({
                     ${processing || isEditing ? 'cursor-not-allowed !bg-gray-100 text-gray-500' : 'bg-white'}
                     `}
                   >
-                    {getSupportedCurrencies().map((currency) => (
-                      <option key={currency.code} value={currency.code.toLowerCase()}>
-                        {currency.code} - {currency.name}
-                      </option>
-                    ))}
+                    {getSupportedCurrencies().map((c) => {
+                      const code = c.code.toLowerCase();
+                      return (
+                        <option key={code} value={code}>
+                          {c.code} - {c.name}
+                        </option>
+                      )
+                    })}
                   </Select>
                 </div>
                 {errors.amount && <p className="text-sm text-red-500">{errors.amount}</p>}

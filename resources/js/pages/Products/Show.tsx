@@ -296,6 +296,7 @@ export default function Show() {
           open={isAddExistingStripePriceDialogOpen}
           onOpenChange={setIsAddExistingStripePriceDialogOpen}
           product={product as ProductType}
+          listPrices={(listPrices || []).filter((p) => p.scope === 'list')}
         />
 
         {/* Product Form Dialog */}

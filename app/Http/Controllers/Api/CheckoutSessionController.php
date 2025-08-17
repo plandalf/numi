@@ -34,6 +34,10 @@ class CheckoutSessionController extends Controller
                     return $this->setProperties($checkoutSession, $request);
                 case 'setItem':
                     return $this->setItem($checkoutSession, $request);
+                case 'switchVariant':
+                    return $this->switchVariant($checkoutSession, $request);
+                case 'switchProduct':
+                    return $this->switchProduct($checkoutSession, $request);
                 case 'addDiscount':
                     return $this->addDiscount($checkoutSession, $request);
                 case 'removeDiscount':
@@ -103,6 +107,114 @@ class CheckoutSessionController extends Controller
             'offer_item_id' => $request->input('offer_item_id'),
         ], [
             ...$args,
+            'organization_id' => $checkoutSession->organization_id,
+            'deleted_at' => null,
+        ]);
+
+        $checkoutSession->load(['lineItems.offerItem.offerPrices', 'lineItems.price.product', 'lineItems.price']);
+
+        return new CheckoutSessionResource($checkoutSession);
+    }
+
+    protected function switchVariant(CheckoutSession $checkoutSession, Request $request)
+    {
+        $validated = $request->validate([
+            'offer_item_id' => 'required|integer',
+            'interval' => 'nullable|in:day,week,month,year',
+            'type' => 'nullable|in:recurring,one_time',
+            'currency' => 'nullable|string', // ignored; we use session currency
+            'product_id' => 'nullable|integer',
+        ]);
+
+        $offerItem = OfferItem::query()
+            ->where('offer_id', $checkoutSession->offer_id)
+            ->findOrFail($validated['offer_item_id']);
+
+        $basePrice = Price::query()->find($offerItem->default_price_id) ?? $offerItem->prices()->first();
+        abort_if(!$basePrice, 404, 'Base price not found');
+
+        // Checkouts cannot change currency; always use the session currency
+        $targetCurrency = $checkoutSession->currency;
+
+        // Determine the list price id whose children we should search (variants only)
+        // If a product_id is provided, resolve that product's list price as the base
+        if (!empty($validated['product_id'])) {
+            $explicitList = Price::query()
+                ->where('product_id', $validated['product_id'])
+                ->where('scope', 'list')
+                ->where('currency', strtolower($targetCurrency))
+                ->orderByDesc('is_active')
+                ->orderByDesc('id')
+                ->first();
+
+            abort_if(!$explicitList, 404, 'Target product list price not found');
+            $listPriceId = $explicitList->id;
+        } else {
+            $listPriceId = $basePrice->scope === 'list'
+                ? $basePrice->id
+                : $basePrice->parent_list_price_id;
+        }
+
+        abort_if(!$listPriceId, 404, 'Parent list price not found for variant search');
+
+        // Search only VARIANT scoped children under the list price, in the session currency
+        $candidates = Price::query()
+            ->where('parent_list_price_id', $listPriceId)
+            ->where('scope', 'variant')
+            ->where('currency', strtolower($targetCurrency))
+            ->get();
+
+        $matched = $candidates->first(function (Price $p) use ($validated) {
+            $typeOk = isset($validated['type']) ? $p->type->value === $validated['type'] : true;
+            $intOk = isset($validated['interval']) ? $p->renew_interval === $validated['interval'] : true;
+            return $typeOk && $intOk;
+        }) ?? $candidates->first();
+
+        abort_if(!$matched, 404, 'Matching variant not found');
+
+        $checkoutSession->lineItems()->updateOrCreate([
+            'offer_item_id' => $offerItem->id,
+        ], [
+            'price_id' => $matched->id,
+            'organization_id' => $checkoutSession->organization_id,
+            'deleted_at' => null,
+        ]);
+
+        $checkoutSession->load(['lineItems.offerItem.offerPrices', 'lineItems.price.product', 'lineItems.price']);
+
+        return new CheckoutSessionResource($checkoutSession);
+    }
+
+    /**
+     * Switch the product for a line item by setting its price to the target product's list price
+     * in the checkout session currency. Does not attempt to choose variants.
+     */
+    protected function switchProduct(CheckoutSession $checkoutSession, Request $request)
+    {
+        $validated = $request->validate([
+            'offer_item_id' => 'required|integer',
+            'product_id' => 'required|integer',
+        ]);
+
+        $offerItem = OfferItem::query()->findOrFail($validated['offer_item_id']);
+
+        $targetCurrency = strtolower($checkoutSession->currency);
+
+        // Pick the most recent active list price for the product in the session currency
+        $listPrice = Price::query()
+            ->where('product_id', $validated['product_id'])
+            ->where('scope', 'list')
+            // ->where('currency', $targetCurrency)
+            // ->orderByDesc('is_active')
+            ->orderByDesc('id')
+            ->first();
+
+        abort_if(!$listPrice, 404, 'Target product list price not found');
+
+        $checkoutSession->lineItems()->updateOrCreate([
+            'offer_item_id' => $offerItem->id,
+        ], [
+            'price_id' => $listPrice->id,
             'organization_id' => $checkoutSession->organization_id,
             'deleted_at' => null,
         ]);
