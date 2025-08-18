@@ -12,20 +12,26 @@ use App\Models\Order\Order;
 use App\Models\PaymentMethod;
 use App\Workflows\Automation\Events\SystemEvent;
 use Illuminate\Support\Facades\Log;
-use Stripe\PaymentIntent;
 
 class CommitCheckoutAction
 {
     public function __construct(
-        private readonly CreateOrderAction     $createOrderAction,
+        private readonly CreateOrderAction $createOrderAction,
         private readonly CreateOrderItemAction $createOrderItemAction,
     ) {}
 
-    public function __invoke(CheckoutSession $session): Order
+    public function __invoke(CheckoutSession $session): Order|array
     {
+        // Check if this is a subscription change (upgrade/expansion/etc.)
+        if ($session->intent === 'upgrade' && $session->subscription) {
+            $commitChange = app(CommitSubscriptionChangeAction::class);
+
+            return $commitChange($session);
+        }
+
         if ($session->intent_type === 'free') {
             $intent = null;
-        } else if ($session->intent_type === 'payment') {
+        } elseif ($session->intent_type === 'payment') {
             $intent = $session->paymentsIntegration
                 ->integrationClient()
                 ->getStripeClient()
@@ -33,7 +39,7 @@ class CommitCheckoutAction
                 ->retrieve($session->intent_id, [
                     'expand' => ['payment_method', 'latest_charge'],
                 ]);
-        } else if ($session->intent_type === 'setup') {
+        } elseif ($session->intent_type === 'setup') {
             $intent = $session->paymentsIntegration
                 ->integrationClient()
                 ->getStripeClient()
@@ -116,7 +122,7 @@ class CommitCheckoutAction
             'status' => CheckoutSessionStatus::CLOSED,
             'metadata' => array_merge($session->metadata ?? [], [
                 'committed_at' => now()->toISOString(),
-            ])
+            ]),
         ]);
 
         return $processed;

@@ -1,36 +1,33 @@
 <?php
 
 use App\Http\Controllers\Api\CheckoutSessionController;
+use App\Http\Controllers\ApiKeysController;
 use App\Http\Controllers\Billing\CheckoutController as BillingCheckoutController;
 use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\FeedbackController;
+use App\Http\Controllers\ImpersonationController;
 use App\Http\Controllers\IntegrationsController;
 use App\Http\Controllers\MediaController;
 use App\Http\Controllers\NoAccessController;
+use App\Http\Controllers\OfferItemPriceController;
 use App\Http\Controllers\OfferItemsController;
 use App\Http\Controllers\OffersController;
+use App\Http\Controllers\OnboardingController;
+use App\Http\Controllers\OrdersController;
 use App\Http\Controllers\OrderStatusController;
 use App\Http\Controllers\OrganizationController;
 use App\Http\Controllers\PriceController;
 use App\Http\Controllers\ProductsController;
 use App\Http\Controllers\ReusableBlockController;
 use App\Http\Controllers\Settings\ProfileController;
-use App\Http\Controllers\ThemeController;
 use App\Http\Controllers\TemplateController;
+use App\Http\Controllers\ThemeController;
 use App\Http\Controllers\WebhookController;
-use App\Models\Integration;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
-use App\Http\Controllers\OrdersController;
-use App\Http\Controllers\FeedbackController;
-use App\Http\Controllers\OfferItemPriceController;
-use App\Http\Controllers\OnboardingController;
-use App\Http\Controllers\ApiKeysController;
-use App\Http\Controllers\ImpersonationController;
 
-
-Route::get('test', function (\Illuminate\Http\Request $request) {
-});
+Route::get('test', function (\Illuminate\Http\Request $request) {});
 
 Route::redirect('/', '/dashboard')->name('home');
 
@@ -42,6 +39,64 @@ Route::middleware(['frame-embed'])->group(function () {
     Route::get('/checkout/{checkout}', [CheckoutController::class, 'show'])
         ->name('checkouts.show');
 });
+
+// Dev stub route to preview subscription upgrade flow using fixed Stripe IDs
+if (app()->environment('local')) {
+    Route::get('/dev/test-upgrade', function () {
+        // offer ogEvIeJtphR, intent upgrade, subscription + customer in query
+        $offer = 'ogEvIeJtphR/test';
+        $params = http_build_query([
+            'intent' => 'upgrade',
+            'subscription' => 'sub_1RsvuSFmvUKqVS2HzNrUriY1',
+            'customer' => [
+                'id' => 'cus_SoZ2vVT96xqqU3',
+            ],
+        ]);
+
+        return redirect("/o/{$offer}?{$params}");
+    })->name('dev.test-upgrade');
+
+    Route::get('/dev/test-trial', function () {
+        // offer ogEvIeJtphR, intent purchase, customer without subscription
+        $offer = 'ogEvIeJtphR/test';
+        $params = http_build_query([
+            'intent' => 'purchase',
+            'customer' => [
+                'id' => 'cus_Sosp82I2veYt3H',
+            ],
+            'price' => 'price_1Rsre8FmvUKqVS2HVmkd9hGs', // plandalf-sm plan
+        ]);
+
+        return redirect("/o/{$offer}?{$params}");
+    })->name('dev.test-trial');
+
+    Route::get('/dev/test-expansion', function () {
+        // offer ogEvIeJtphR, intent upgrade, customer with 1 subscription changing to 2 quantity
+        $offer = 'upgrader-ogEvIeJtphR/test';
+        $params = http_build_query([
+            'intent' => 'upgrade',
+            'subscription' => 'sub_1RxM8iFmvUKqVS2H54QuWjRB',
+            'customer' => [
+                'id' => 'cus_SoYS8PuS3zJHs4',
+            ],
+            'quantity' => 2, // Change from 1 to 2 seats
+        ]);
+
+        return redirect("/o/{$offer}?{$params}");
+    })->name('dev.test-expansion');
+
+    Route::get('/dev/subscription-preview/{checkout}', function (\App\Models\Checkout\CheckoutSession $checkout, \Illuminate\Http\Request $request) {
+        $result = app(\App\Actions\Checkout\PreviewChangeAdapterAction::class)($checkout);
+
+        return response()->json($result);
+    })->name('dev.subscription-preview');
+
+    Route::post('/dev/commit-subscription-change/{checkout}', function (\App\Models\Checkout\CheckoutSession $checkout, \Illuminate\Http\Request $request) {
+        $result = app(\App\Actions\Checkout\CommitSubscriptionChangeAction::class)($checkout);
+
+        return response()->json($result);
+    })->name('dev.commit-subscription-change');
+}
 
 Route::middleware(['frame-embed'])
     ->group(function () {
@@ -126,7 +181,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
                         Route::post('/fulfillment/test-email', [OrganizationController::class, 'sendTestFulfillmentEmail'])->name('fulfillment.test-email');
                     });
                 });
-
 
             Route::get('/themes', [ThemeController::class, 'index'])->name('themes.index');
             Route::post('/themes', [ThemeController::class, 'store'])->name('themes.store');
@@ -243,15 +297,14 @@ Route::get('/orders/{uuid}/receipt', [App\Http\Controllers\OrderController::clas
     ->middleware('signed');
 
 // Test route for receipt generation (remove in production)
-Route::get('/test-receipt/{uuid}', function($uuid) {
+Route::get('/test-receipt/{uuid}', function ($uuid) {
     $order = \App\Models\Order\Order::where('uuid', $uuid)->first();
-    if (!$order) {
+    if (! $order) {
         return 'Order not found';
     }
+
     return redirect($order->getReceiptUrl());
 })->name('test.receipt');
-
-
 
 // Impersonation routes - LOCAL DEVELOPMENT ONLY
 if (app()->environment('local')) {
@@ -268,4 +321,3 @@ if (app()->environment('local')) {
 require __DIR__.'/auth.php';
 require __DIR__.'/settings.php';
 require __DIR__.'/automation.php';
-

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Actions\Checkout\CreateCheckoutSessionAction;
+use App\Actions\Checkout\PreviewChangeAdapterAction;
 use App\Enums\Theme\FontElement;
 use App\Http\Resources\Checkout\CheckoutSessionResource;
 use App\Http\Resources\FontResource;
@@ -102,6 +103,7 @@ class CheckoutController extends Controller
         // New: handle intent and subscription for upgrades
         $intent = $request->query('intent', 'purchase');
         $subscription = $intent === 'upgrade' ? $request->query('subscription') : null;
+        $quantity = $request->query('quantity'); // Handle quantity for expansion scenarios
 
         $checkoutSession = $this->createCheckoutSessionAction
             ->execute(
@@ -112,7 +114,8 @@ class CheckoutController extends Controller
                 $currencyOverride,
                 $customerProperties,
                 $intent,
-                $subscription
+                $subscription,
+                $quantity // Pass quantity to the action
             );
 
         $this->handleInvalidDomain($request, $checkoutSession);
@@ -177,6 +180,11 @@ class CheckoutController extends Controller
 
             // calculation ?
             'checkoutSession' => new CheckoutSessionResource($checkout),
+
+            // Deferred preview for subscription upgrade/swap deltas
+            'subscriptionPreview' => \Inertia\Inertia::defer(function () use ($checkout) {
+                return app(PreviewChangeAdapterAction::class)($checkout);
+            }),
 
             // if intent is different we need to defer load the existing subscription in
         ])->with([

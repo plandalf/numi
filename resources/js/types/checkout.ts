@@ -64,6 +64,8 @@ export interface CheckoutSession {
   enabled_payment_methods?: string[];
   intent_mode?: 'setup' | 'payment';
   intent_type?: string;
+  intent?: 'purchase' | 'upgrade' | string;
+  subscription?: string | null;
   has_subscription_items?: boolean;
   has_onetime_items?: boolean;
   has_mixed_cart?: boolean;
@@ -115,6 +117,80 @@ export interface CheckoutSession {
   current_page_id?: string;
 }
 
+export type SubscriptionPreview = {
+  enabled: boolean;
+  signal: string;
+  effective: {
+    strategy: string;
+    at: string;
+    is_future: boolean;
+  };
+  totals: {
+    due_now: number;
+    currency: string;
+  };
+  lines: Array<{
+    id: string | null;
+    description: string | null;
+    amount: number;
+    currency: string | null;
+    proration: boolean;
+    period?: {
+      start: string;
+      end: string;
+    };
+    price?: {
+      id?: string | null;
+      recurring?: any;
+      product?: { id?: string | null; name?: string | null };
+    };
+  }>;
+  operations: Array<{
+    signal: string;
+    current: {
+      price: string | null;
+      quantity: number;
+    };
+    future: {
+      price: string | null;
+      quantity: number;
+    };
+    delta: {
+      currency: string;
+      amount_due_now: number;
+    };
+  }>;
+  commit_descriptor: Record<string, any>;
+  reason?: string;
+  actions?: {
+    swap_now: { 
+      due_now: number; 
+      currency: string; 
+    };
+    swap_at_period_end: { 
+      due_now: number; 
+      next_period_amount: number; 
+      currency: string; 
+    };
+    start_trial?: {
+      due_now: number;
+      currency: string;
+      trial_days: number;
+      trial_end: string;
+    };
+    skip_trial?: {
+      due_now: number;
+      currency: string;
+    };
+    expand_at_trial_end?: {
+      due_now: number;
+      trial_end: string;
+      next_period_amount: number;
+      currency: string;
+    };
+  };
+};
+
 export interface CheckoutPageProps {
   offer: OfferConfiguration;
   fonts: Font[];
@@ -122,6 +198,7 @@ export interface CheckoutPageProps {
   embedDomain?: string;
   environment?: string;
   checkoutSession: CheckoutSession;
+  subscriptionPreview?: SubscriptionPreview;
 }
 
 export interface TailwindLayoutConfig {

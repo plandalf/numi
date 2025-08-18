@@ -8,7 +8,7 @@ import {
   useValidateFields
 } from '@/pages/checkout-main';
 import type { OfferConfiguration, Page, PageSection } from '@/types/offer';
-import { CheckoutPageProps, CheckoutSession, NavigationBarProps, TailwindLayoutRendererProps } from '@/types/checkout';
+import { CheckoutPageProps, CheckoutSession, NavigationBarProps, TailwindLayoutRendererProps, SubscriptionPreview } from '@/types/checkout';
 import { Theme } from '@/types/theme';
 import { ChevronLeftIcon } from 'lucide-react';
 import { useMemo, useState } from 'react';
@@ -422,7 +422,7 @@ const CheckoutController = ({ offer, session }: { offer: OfferConfiguration, ses
 };
 
 
-export default function CheckoutPage({ offer, fonts, error, checkoutSession }: CheckoutPageProps) {
+export default function CheckoutPage({ offer, fonts, error, checkoutSession, subscriptionPreview }: CheckoutPageProps) {
   const firstPage = offer.view.pages[offer.view.first_page];
 
   const containerStyle = useMemo(() => {
@@ -555,7 +555,7 @@ export default function CheckoutPage({ offer, fonts, error, checkoutSession }: C
           {JSON.stringify(metaTags.structuredData)}
         </script>
       </Head>
-      <GlobalStateProvider offer={offer} session={checkoutSession} offerItems={offer.items}>
+      <GlobalStateProvider offer={offer} session={checkoutSession} offerItems={offer.items} subscriptionPreview={subscriptionPreview}>
         {checkoutSession.is_test_mode && (
           <div className="bg-yellow-50 text-yellow-700 border-b border-yellow-200">
             <p className="text-sm text-center py-1 font-semibold">You are in test mode. No real transactions will occur.</p>

@@ -7,7 +7,7 @@ import { BlockConfig, FieldState, HookUsage } from '@/types/blocks';
 
 import { blockTypes } from '@/components/blocks';
 import axios from '@/lib/axios';
-import { CheckoutSession } from '@/types/checkout';
+import { CheckoutSession, SubscriptionPreview, CheckoutItem } from '@/types/checkout';
 import { BlockRenderer } from '@/components/checkout/block-renderer';
 import { SetItemActionValue } from '@/components/actions/set-item-action';
 import { SwitchVariantActionValue } from '@/components/actions/switch-variant-action';
@@ -69,9 +69,10 @@ export interface GlobalState {
   theme: Theme;
   isEditor: boolean;
   session: CheckoutSession;
+  subscriptionPreview?: SubscriptionPreview;
 }
 
-export function GlobalStateProvider({ offer, offerItems, session: defaultSession, editor = false, children }: { offer: OfferConfiguration, offerItems?: OfferItem[], session: CheckoutSession, editor?: boolean, children: React.ReactNode }) {
+export function GlobalStateProvider({ offer, offerItems, session: defaultSession, subscriptionPreview, editor = false, children }: { offer: OfferConfiguration, offerItems?: OfferItem[], session: CheckoutSession, subscriptionPreview?: SubscriptionPreview, editor?: boolean, children: React.ReactNode }) {
   // Field states for all blocks
   const [fieldStates, setFieldStates] = useState<Record<string, FieldState>>(defaultSession.properties || {});
 
@@ -565,6 +566,105 @@ export function GlobalStateProvider({ offer, offerItems, session: defaultSession
     }
   };
 
+  // Create a computed session that includes subscription preview changes
+  const computedSession = useMemo(() => {
+    if (!subscriptionPreview?.enabled) {
+      return session;
+    }
+
+    // Check if this is a trial scenario
+    const isTrial = subscriptionPreview.signal === 'Acquisition' && subscriptionPreview.totals.due_now === 0;
+            const isTrialExpansion = (subscriptionPreview.signal === 'Switch' || subscriptionPreview.signal === 'Expansion') && subscriptionPreview.totals.due_now === 0;
+    
+    if (isTrial) {
+      // For trials, show the original line item but with trial information
+      // Don't add preview lines, just modify the display
+      return {
+        ...session,
+        // Keep original totals for trials - no additional charges
+        subtotal: session.subtotal,
+        total: session.total,
+        // Add trial metadata for UI display
+        metadata: {
+          ...session.metadata,
+          isTrial: true,
+          trialDays: subscriptionPreview.actions?.start_trial?.trial_days || 14,
+          trialEnd: subscriptionPreview.actions?.start_trial?.trial_end,
+          billingStartDate: subscriptionPreview.actions?.start_trial?.trial_end,
+          postTrialAmount: subscriptionPreview.actions?.skip_trial?.due_now || 0,
+        },
+      };
+    }
+
+    if (isTrialExpansion) {
+      // For trial expansions, show the original line item but with trial expansion information
+      return {
+        ...session,
+        // Keep original totals for trial expansions - no additional charges
+        subtotal: session.subtotal,
+        total: session.total,
+        // Add trial expansion metadata for UI display
+        metadata: {
+          ...session.metadata,
+          isTrialExpansion: true,
+          trialEnd: subscriptionPreview.actions?.expand_at_trial_end?.trial_end,
+          billingStartDate: subscriptionPreview.actions?.expand_at_trial_end?.trial_end,
+          postTrialAmount: subscriptionPreview.actions?.expand_at_trial_end?.next_period_amount || 0,
+        },
+      };
+    }
+
+    // For subscription changes, due_now might be 0
+    const previewAmount = subscriptionPreview.totals.due_now || 0;
+    const previewCurrency = subscriptionPreview.totals.currency;
+    
+    // Convert preview amount to session currency if different
+    let adjustedAmount = previewAmount;
+    if (previewCurrency !== session.currency) {
+      // For now, assume 1:1 conversion - in production you'd want proper currency conversion
+      adjustedAmount = previewAmount;
+    }
+
+    // Add preview lines as additional line items to show the breakdown
+    const previewLineItems: CheckoutItem[] = subscriptionPreview.lines.map((line, index) => ({
+      id: -(index + 1), // Use negative IDs to avoid conflicts with real line items
+      name: line.description || 'Plan change adjustment',
+      quantity: 1,
+      currency: line.currency || session.currency,
+      subtotal: line.amount,
+      taxes: 0,
+      inclusive_taxes: 0,
+      shipping: 0,
+      discount: 0,
+      total: line.amount,
+      product: undefined,
+      is_highlighted: false,
+      price: {
+        id: `preview-price-${index}`,
+        name: line.description || 'Plan change adjustment',
+        type: 'one_time',
+        currency: line.currency || session.currency,
+        amount: line.amount,
+        interval: null,
+        renew_interval: null,
+        cancel_after_cycles: null,
+      },
+      type: 'standard' as const,
+    }));
+
+    // For subscription changes, the preview amount represents the total due now
+    // We keep the original line items but adjust the totals to show the net change
+    const newSubtotal = adjustedAmount;
+    const newTotal = adjustedAmount;
+
+    return {
+      ...session,
+      line_items: [...session.line_items, ...previewLineItems],
+      subtotal: newSubtotal,
+      total: newTotal,
+    };
+  }, [session, subscriptionPreview]);
+
   // Create context value
   const value: GlobalState = {
     fields,
@@ -600,7 +700,8 @@ export function GlobalStateProvider({ offer, offerItems, session: defaultSession
     // submit
     offer,
     theme: offer?.theme ?? {} as Theme,
-    session,
+    session: computedSession, // Use computed session instead of raw session
+    subscriptionPreview,
     setSession,
 
     isEditor: editor

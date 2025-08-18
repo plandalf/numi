@@ -12,10 +12,8 @@ use App\Models\Catalog\Price;
 use App\Models\Checkout\CheckoutSession;
 use App\Models\Store\OfferItem;
 use App\Modules\Integrations\Contracts\AcceptsDiscount;
-use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\Log;
 use Stripe\Exception\InvalidRequestException;
 
 class CheckoutSessionController extends Controller
@@ -60,7 +58,7 @@ class CheckoutSessionController extends Controller
             report($e);
 
             return response()->json([
-                'message' => $e->getMessage(), //'An error occurred while processing the request.',
+                'message' => $e->getMessage(), // 'An error occurred while processing the request.',
                 'error' => $e->getMessage(),
             ], 500);
         }
@@ -74,7 +72,7 @@ class CheckoutSessionController extends Controller
 
         $args = [];
 
-        if (!$request->has('offer_item_id')) {
+        if (! $request->has('offer_item_id')) {
             return response()->json([
                 'message' => 'Offer item ID is required',
             ], 400);
@@ -93,7 +91,7 @@ class CheckoutSessionController extends Controller
         }
 
         if ($request->has('required')) {
-            if (!$required) {
+            if (! $required) {
                 $checkoutSession->lineItems()->where('offer_item_id', $request->input('offer_item_id'))->delete();
 
                 $checkoutSession->load(['lineItems.offerItem.offerPrices', 'lineItems.price.product', 'lineItems.price']);
@@ -131,14 +129,14 @@ class CheckoutSessionController extends Controller
             ->findOrFail($validated['offer_item_id']);
 
         $basePrice = Price::query()->find($offerItem->default_price_id) ?? $offerItem->prices()->first();
-        abort_if(!$basePrice, 404, 'Base price not found');
+        abort_if(! $basePrice, 404, 'Base price not found');
 
         // Checkouts cannot change currency; always use the session currency
         $targetCurrency = $checkoutSession->currency;
 
         // Determine the list price id whose children we should search (variants only)
         // If a product_id is provided, resolve that product's list price as the base
-        if (!empty($validated['product_id'])) {
+        if (! empty($validated['product_id'])) {
             $explicitList = Price::query()
                 ->where('product_id', $validated['product_id'])
                 ->where('scope', 'list')
@@ -147,7 +145,7 @@ class CheckoutSessionController extends Controller
                 ->orderByDesc('id')
                 ->first();
 
-            abort_if(!$explicitList, 404, 'Target product list price not found');
+            abort_if(! $explicitList, 404, 'Target product list price not found');
             $listPriceId = $explicitList->id;
         } else {
             $listPriceId = $basePrice->scope === 'list'
@@ -155,7 +153,7 @@ class CheckoutSessionController extends Controller
                 : $basePrice->parent_list_price_id;
         }
 
-        abort_if(!$listPriceId, 404, 'Parent list price not found for variant search');
+        abort_if(! $listPriceId, 404, 'Parent list price not found for variant search');
 
         // Search only VARIANT scoped children under the list price, in the session currency
         $candidates = Price::query()
@@ -167,10 +165,11 @@ class CheckoutSessionController extends Controller
         $matched = $candidates->first(function (Price $p) use ($validated) {
             $typeOk = isset($validated['type']) ? $p->type->value === $validated['type'] : true;
             $intOk = isset($validated['interval']) ? $p->renew_interval === $validated['interval'] : true;
+
             return $typeOk && $intOk;
         }) ?? $candidates->first();
 
-        abort_if(!$matched, 404, 'Matching variant not found');
+        abort_if(! $matched, 404, 'Matching variant not found');
 
         $checkoutSession->lineItems()->updateOrCreate([
             'offer_item_id' => $offerItem->id,
@@ -209,7 +208,7 @@ class CheckoutSessionController extends Controller
             ->orderByDesc('id')
             ->first();
 
-        abort_if(!$listPrice, 404, 'Target product list price not found');
+        abort_if(! $listPrice, 404, 'Target product list price not found');
 
         $checkoutSession->lineItems()->updateOrCreate([
             'offer_item_id' => $offerItem->id,
@@ -259,7 +258,7 @@ class CheckoutSessionController extends Controller
 
             $discount = $integrationClient->getDiscount($coupon);
 
-            if(!$discount->valid) {
+            if (! $discount->valid) {
                 return response()->json([
                     'message' => 'Invalid coupon',
                 ], 400);
@@ -285,7 +284,7 @@ class CheckoutSessionController extends Controller
             return new CheckoutSessionResource($checkoutSession);
         } catch (InvalidRequestException $e) {
             return response()->json([
-                'message' => "No such coupon: '{$coupon}'"
+                'message' => "No such coupon: '{$coupon}'",
             ], 400);
         }
     }
@@ -295,7 +294,7 @@ class CheckoutSessionController extends Controller
         $discount = $request->input('discount');
 
         $checkoutSession->update([
-            'discounts' => Arr::where($checkoutSession->discounts, fn($d) => $d['id'] !== $discount),
+            'discounts' => Arr::where($checkoutSession->discounts, fn ($d) => $d['id'] !== $discount),
         ]);
 
         $checkoutSession->load(['lineItems.offerItem.offerPrices', 'lineItems.price.product', 'lineItems.price']);
@@ -319,7 +318,7 @@ class CheckoutSessionController extends Controller
 
         abort_if($session->hasACompletedOrder(), 400, 'Checkout session is already completed');
 
-        abort_if(!is_null($session->payment_confirmed_at), 400, 'Payment is already confirmed');
+        abort_if(! is_null($session->payment_confirmed_at), 400, 'Payment is already confirmed');
 
         $prepare = app(PreparePaymentAction::class, ['session' => $session]);
 
@@ -339,7 +338,7 @@ class CheckoutSessionController extends Controller
         abort_if($session->hasACompletedOrder(), 400, 'Checkout session is already completed');
 
         abort_if(
-            $session->intent_type !== 'free' && (!$session->intent_id || !$session->client_secret),
+            $session->intent_type !== 'free' && (! $session->intent_id || ! $session->client_secret),
             400,
             'No payment intent found. Payment must be prepared first.'
         );
@@ -348,15 +347,26 @@ class CheckoutSessionController extends Controller
 
         $commit = app(CommitCheckoutAction::class);
 
-        $commit($session);
+        $result = $commit($session);
 
-        $session->refresh();
+        // Handle different return types
+        if (is_array($result)) {
+            // Subscription change result
+            return [
+                'message' => $result['message'],
+                'signal' => $result['signal'],
+                'result' => $result['result'],
+                'checkout_session' => new CheckoutSessionResource($result['checkout_session']),
+            ];
+        } else {
+            // Order result
+            $session->refresh();
+            $session->loadMissing(['order', 'order.items']);
 
-        $session->loadMissing(['order', 'order.items']);
-
-        return [
-            'message' => 'Order processed successfully',
-            'checkout_session' => new CheckoutSessionResource($session),
-        ];
+            return [
+                'message' => 'Order processed successfully',
+                'checkout_session' => new CheckoutSessionResource($session),
+            ];
+        }
     }
 }

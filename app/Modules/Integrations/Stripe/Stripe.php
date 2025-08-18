@@ -9,22 +9,28 @@ use App\Models\Checkout\CheckoutSession;
 use App\Models\Customer;
 use App\Models\Integration;
 use App\Models\Order\Order;
+use App\Modules\Billing\Changes\ChangeIntent;
+use App\Modules\Billing\Changes\ChangePreview;
+use App\Modules\Billing\Changes\ChangeResult;
 use App\Modules\Integrations\AbstractIntegration;
 use App\Modules\Integrations\Contracts\AcceptsDiscount;
 use App\Modules\Integrations\Contracts\CanCreateSubscription;
-use App\Modules\Integrations\Contracts\CanSetupIntent;
 use App\Modules\Integrations\Contracts\CanRetrieveIntent;
+use App\Modules\Integrations\Contracts\CanSetupIntent;
 use App\Modules\Integrations\Contracts\HasPrices;
 use App\Modules\Integrations\Contracts\HasProducts;
+use App\Modules\Integrations\Contracts\SupportsChangePreview;
+use App\Modules\Integrations\Contracts\SupportsSubscriptionPreview;
 use App\Modules\Integrations\Stripe\Actions\ImportStripePriceAction;
 use App\Modules\Integrations\Stripe\Actions\ImportStripeProductAction;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Log;
+use Stripe\Exception\ApiErrorException;
 use Stripe\PaymentIntent;
 use Stripe\SetupIntent;
 use Stripe\StripeClient;
-use Illuminate\Support\Facades\Log;
 
-class Stripe extends AbstractIntegration implements CanCreateSubscription, CanSetupIntent, CanRetrieveIntent, HasPrices, HasProducts, AcceptsDiscount
+class Stripe extends AbstractIntegration implements AcceptsDiscount, CanCreateSubscription, CanRetrieveIntent, CanSetupIntent, HasPrices, HasProducts, SupportsChangePreview, SupportsSubscriptionPreview
 {
     protected StripeClient $stripeClient;
 
@@ -46,6 +52,376 @@ class Stripe extends AbstractIntegration implements CanCreateSubscription, CanSe
     public function getStripeClient(): StripeClient
     {
         return $this->stripeClient;
+    }
+
+    public function retrieveSubscription(string $subscriptionId, array $options = []): object
+    {
+        return $this->stripeClient->subscriptions->retrieve($subscriptionId, $options);
+    }
+
+    public function previewUpcomingInvoice(array $params): object
+    {
+        return $this->stripeClient->invoices->upcoming($params);
+    }
+
+    public function previewChange(CheckoutSession $session, ChangeIntent $intent): ChangePreview
+    {
+        $subscription = $this->retrieveSubscription($session->subscription, [
+            'expand' => ['items.data.price.product'],
+        ]);
+
+        $trialEndTs = $subscription->trial_end ?? null;
+        $periodEndTs = $subscription->current_period_end ?? null;
+        $effectiveTs = $this->resolveEffectiveTs($intent->effectiveAt, $trialEndTs, $periodEndTs);
+
+        $existingItems = $subscription->items->data ?? [];
+        $existingBaseItem = $this->resolveExistingBaseItem($existingItems);
+        if (! $existingBaseItem) {
+            return new ChangePreview(false, $intent->signal, [], [], [], [], [], 'No current base subscription item found');
+        }
+
+        // Pre-compute current/future unit amounts and quantities
+        $currentUnit = (int) ($existingBaseItem->price->unit_amount ?? 0);
+        $currentQty = (int) ($existingBaseItem->quantity ?? 1);
+        $targetPriceModel = null;
+        if ($intent->targetLocalPriceId) {
+            $targetPriceModel = Price::query()
+                ->where('organization_id', $session->organization_id)
+                ->find($intent->targetLocalPriceId);
+        }
+        $futureUnit = (int) ($targetPriceModel?->amount?->getAmount() ?? $currentUnit);
+        $futureQty = max(1, $currentQty + (int) ($intent->quantityDelta ?? 0));
+        $currentPerPeriod = $currentUnit * $currentQty;
+        $futurePerPeriod = $futureUnit * $futureQty;
+
+        $desiredItems = [];
+        foreach ($existingItems as $item) {
+            $entry = ['id' => $item->id];
+            if ($item->id === $existingBaseItem->id) {
+                if ($intent->targetLocalPriceId) {
+                    if (! $targetPriceModel) {
+                        return new ChangePreview(false, $intent->signal, [], [], [], [], [], 'Target price not found');
+                    }
+                    $entry['price'] = $targetPriceModel->gateway_price_id;
+                }
+                $entry['quantity'] = $futureQty;
+                if ($entry['quantity'] < 1) {
+                    $entry['quantity'] = 1;
+                }
+            } else {
+                $entry['price'] = $item->price->id ?? null;
+                $entry['quantity'] = (int) ($item->quantity ?? 1);
+            }
+            $desiredItems[] = array_filter($entry);
+        }
+
+        $params = array_filter([
+            'subscription' => $subscription->id,
+            'subscription_items' => $desiredItems,
+            'subscription_proration_behavior' => 'create_prorations',
+            'subscription_proration_date' => $effectiveTs,
+            'customer' => $subscription->customer ?? null,
+            'subscription_trial_end' => ($trialEndTs && $effectiveTs === $trialEndTs) ? $trialEndTs : null,
+            'expand' => ['discounts', 'lines.data.discounts', 'lines.data.price.product'],
+        ]);
+
+        $strategy = $this->effectiveStrategy($intent->effectiveAt, $trialEndTs, $periodEndTs);
+
+        // For trial expansions, use synthetic calculation to ensure $0 due now
+        if ($strategy === 'at_trial_end') {
+            $upcoming = null; // Force synthetic fallback
+        } else {
+            try {
+                $upcoming = $this->previewUpcomingInvoice($params);
+            } catch (ApiErrorException $e) {
+                $upcoming = null; // Force synthetic fallback
+            }
+        }
+
+        if (! $upcoming) {
+            // Synthetic fallback: compute deltas without relying on provider upcoming invoice
+            $currency = strtolower($subscription->currency ?? ($session->currency ?? 'usd'));
+
+            $currentUnit = (int) ($existingBaseItem->price->unit_amount ?? 0);
+            // If target price set, use its unit; else reuse current unit
+            $targetPriceModel = null;
+            if ($intent->targetLocalPriceId) {
+                $targetPriceModel = Price::query()
+                    ->where('organization_id', $session->organization_id)
+                    ->find($intent->targetLocalPriceId);
+            }
+            $futureUnit = (int) ($targetPriceModel?->amount?->getAmount() ?? $currentUnit);
+
+            $currentQty = (int) ($existingBaseItem->quantity ?? 1);
+            $futureQty = max(1, $currentQty + (int) ($intent->quantityDelta ?? 0));
+
+            $currentPerPeriod = $currentUnit * $currentQty;
+            $futurePerPeriod = $futureUnit * $futureQty;
+
+            $prorationSubtotal = 0;
+            $dueNow = 0;
+            $lines = collect();
+            if ($strategy === 'at_period_end' || $strategy === 'at_trial_end' || ($trialEndTs && $effectiveTs === $trialEndTs)) {
+                // No immediate charge - changes take effect at period/trial end
+                $prorationSubtotal = 0;
+                $dueNow = 0;
+            } else {
+                // Always calculate immediate proration for 'at_date' strategy
+                $periodStartTs = $subscription->current_period_start ?? null;
+                if ($periodStartTs && $periodEndTs && $periodEndTs > $periodStartTs) {
+                    $periodDuration = max(1, $periodEndTs - $periodStartTs);
+                    $remaining = max(0, $periodEndTs - $effectiveTs);
+                    $ratio = max(0, min(1, $remaining / $periodDuration));
+                    $oldCredit = (int) round($currentPerPeriod * $ratio);
+                    $newCharge = (int) round($futurePerPeriod * $ratio);
+                    $prorationSubtotal = $newCharge - $oldCredit;
+
+                    $lines->push([
+                        'id' => null,
+                        'description' => 'Unused time credit (current plan)',
+                        'amount' => -abs($oldCredit),
+                        'currency' => $currency,
+                        'proration' => true,
+                        'period' => [
+                            'start' => \Carbon\Carbon::createFromTimestamp($effectiveTs)->toISOString(),
+                            'end' => \Carbon\Carbon::createFromTimestamp($periodEndTs)->toISOString(),
+                        ],
+                    ]);
+                    $lines->push([
+                        'id' => null,
+                        'description' => 'Remaining time charge (new plan)',
+                        'amount' => abs($newCharge),
+                        'currency' => $currency,
+                        'proration' => true,
+                        'period' => [
+                            'start' => \Carbon\Carbon::createFromTimestamp($effectiveTs)->toISOString(),
+                            'end' => \Carbon\Carbon::createFromTimestamp($periodEndTs)->toISOString(),
+                        ],
+                    ]);
+                } else {
+                    // No period info; use full-period delta as an estimate
+                    $prorationSubtotal = $futurePerPeriod - $currentPerPeriod;
+                }
+                $dueNow = max(0, $prorationSubtotal);
+            }
+
+            $operations = [[
+                'signal' => $intent->signal->name,
+                'current' => [
+                    'price' => $existingBaseItem->price->id ?? null,
+                    'quantity' => $currentQty,
+                ],
+                'future' => [
+                    'price' => $targetPriceModel?->gateway_price_id ?? ($existingBaseItem->price->id ?? null),
+                    'quantity' => $futureQty,
+                ],
+                'delta' => [
+                    'currency' => $currency,
+                    'amount_due_now' => $dueNow,
+                ],
+            ]];
+
+            $commitDescriptor = [
+                'subscription_id' => $subscription->id,
+                'items' => array_map(function ($i) {
+                    return array_filter($i);
+                }, $desiredItems),
+                'proration_behavior' => 'create_prorations',
+                'proration_date' => $effectiveTs,
+                'trial_end' => ($trialEndTs && $effectiveTs === $trialEndTs) ? $trialEndTs : null,
+            ];
+
+            // Provide action summaries for UI decisions
+            $actions = [
+                'swap_now' => [
+                    'due_now' => $dueNow,
+                    'currency' => $currency,
+                ],
+                'swap_at_period_end' => [
+                    'due_now' => 0,
+                    'next_period_amount' => $futurePerPeriod,
+                    'currency' => $currency,
+                ],
+            ];
+
+            // Add trial-specific actions if this is a trial subscription
+            if ($strategy === 'at_trial_end' && $trialEndTs) {
+                $actions['expand_at_trial_end'] = [
+                    'due_now' => 0,
+                    'trial_end' => \Carbon\Carbon::createFromTimestamp($trialEndTs)->toISOString(),
+                    'next_period_amount' => $futurePerPeriod,
+                    'currency' => $currency,
+                ];
+            }
+
+            return new ChangePreview(
+                enabled: true,
+                signal: $intent->signal,
+                effective: [
+                    'strategy' => $strategy,
+                    'at' => \Carbon\Carbon::createFromTimestamp($effectiveTs)->toISOString(),
+                    'is_future' => $effectiveTs > now()->timestamp,
+                ],
+                totals: [
+                    'due_now' => $dueNow,
+                    'currency' => $currency,
+                ],
+                lines: $lines->values()->all(),
+                operations: $operations,
+                commitDescriptor: $commitDescriptor,
+                reason: null,
+                actions: $actions,
+            );
+        }
+
+        $lines = collect($upcoming->lines->data ?? [])->map(function ($l) {
+            return [
+                'id' => $l->id ?? null,
+                'description' => $l->description ?? null,
+                'amount' => (int) ($l->amount ?? 0),
+                'currency' => $l->currency ?? null,
+                'proration' => (bool) ($l->proration ?? false),
+                'period' => $l->period ?? null,
+                'price' => [
+                    'id' => $l->price?->id ?? null,
+                    'recurring' => $l->price?->recurring ?? null,
+                    'product' => [
+                        'id' => $l->price?->product?->id ?? $l->price?->product ?? null,
+                        'name' => $l->price?->product?->name ?? null,
+                    ],
+                ],
+            ];
+        })->values()->all();
+
+        $commitDescriptor = [
+            'subscription_id' => $subscription->id,
+            'items' => array_map(function ($i) {
+                return array_filter($i);
+            }, $desiredItems),
+            'proration_behavior' => 'create_prorations',
+            'proration_date' => $effectiveTs,
+            'trial_end' => ($trialEndTs && $effectiveTs === $trialEndTs) ? $trialEndTs : null,
+        ];
+
+        // Provide action summaries for UI decisions (Stripe-backed)
+        $strategy = $this->effectiveStrategy($intent->effectiveAt, $trialEndTs, $periodEndTs);
+        $actions = [
+            'swap_now' => [
+                'due_now' => (int) ($upcoming->amount_due ?? 0),
+                'currency' => strtolower($upcoming->currency ?? ($session->currency ?? 'usd')),
+            ],
+            'swap_at_period_end' => [
+                'due_now' => 0,
+                'next_period_amount' => $futurePerPeriod,
+                'currency' => strtolower($upcoming->currency ?? ($session->currency ?? 'usd')),
+            ],
+        ];
+
+        // If subscription is trialing, surface a trial-aware action for the UI
+        if (! empty($trialEndTs) && $trialEndTs > now()->timestamp) {
+            $actions['expand_at_trial_end'] = [
+                'due_now' => 0,
+                'trial_end' => \Carbon\Carbon::createFromTimestamp($trialEndTs)->toISOString(),
+                'next_period_amount' => $futurePerPeriod,
+                'currency' => strtolower($upcoming->currency ?? ($session->currency ?? 'usd')),
+            ];
+        }
+
+        return new ChangePreview(
+            enabled: true,
+            signal: $intent->signal,
+            effective: [
+                'strategy' => $strategy,
+                'at' => \Carbon\Carbon::createFromTimestamp($effectiveTs)->toISOString(),
+                'is_future' => $effectiveTs > now()->timestamp,
+            ],
+            totals: [
+                'due_now' => (int) ($upcoming->amount_due ?? 0),
+                'currency' => strtolower($upcoming->currency ?? ($session->currency ?? 'usd')),
+            ],
+            lines: $lines,
+            operations: [[
+                'signal' => $intent->signal->name,
+                'current' => [
+                    'price' => $existingBaseItem->price->id ?? null,
+                    'quantity' => (int) ($existingBaseItem->quantity ?? 1),
+                ],
+                'future' => [
+                    'price' => ($intent->targetLocalPriceId ? ($desiredItems[0]['price'] ?? null) : ($existingBaseItem->price->id ?? null)),
+                    'quantity' => $desiredItems[0]['quantity'] ?? (int) ($existingBaseItem->quantity ?? 1),
+                ],
+                'delta' => [
+                    'currency' => strtolower($upcoming->currency ?? ($session->currency ?? 'usd')),
+                    'amount_due_now' => (int) ($upcoming->amount_due ?? 0),
+                ],
+            ]],
+            commitDescriptor: $commitDescriptor,
+            reason: null,
+            actions: $actions,
+        );
+    }
+
+    public function commitChange(CheckoutSession $session, ChangePreview $preview): ChangeResult
+    {
+        $d = $preview->commitDescriptor;
+        $update = array_filter([
+            'items' => $d['items'] ?? [],
+            'proration_behavior' => $d['proration_behavior'] ?? 'create_prorations',
+            'proration_date' => $d['proration_date'] ?? null,
+            'trial_end' => $d['trial_end'] ?? null,
+        ]);
+
+        $updated = $this->stripeClient->subscriptions->update($d['subscription_id'], $update);
+
+        return new ChangeResult(
+            signal: $preview->signal,
+            status: 'succeeded',
+            receipt: [
+                'subscription_id' => $updated->id,
+                'status' => $updated->status,
+            ],
+            provider: ['raw' => $updated]
+        );
+    }
+
+    private function resolveExistingBaseItem(array $items)
+    {
+        return collect($items)->first(function ($item) {
+            return ! empty($item->price?->recurring);
+        });
+    }
+
+    private function resolveEffectiveTs(?string $effectiveAt, $trialEndTs, $periodEndTs): int
+    {
+        if (! empty($effectiveAt)) {
+            try {
+                return \Carbon\Carbon::parse($effectiveAt)->timestamp;
+            } catch (\Throwable) {
+            }
+        }
+
+        // For trial subscriptions, default to trial end unless explicitly specified
+        if (! empty($trialEndTs) && $trialEndTs > now()->timestamp) {
+            return $trialEndTs;
+        }
+
+        // Default to immediate preview at current time
+        return now()->timestamp;
+    }
+
+    private function effectiveStrategy(?string $effectiveAt, $trialEndTs, $periodEndTs): string
+    {
+        if (! empty($effectiveAt)) {
+            return 'at_date';
+        }
+
+        // For trial subscriptions, default to trial end unless explicitly specified
+        if (! empty($trialEndTs) && $trialEndTs > now()->timestamp) {
+            return 'at_trial_end';
+        }
+
+        // Default to immediate proration for non-trial subscriptions
+        return 'at_date';
     }
 
     public function getSetupIntent($intentId)
@@ -101,7 +477,7 @@ class Stripe extends AbstractIntegration implements CanCreateSubscription, CanSe
         }
 
         // Add discounts if any
-        if (!empty($discounts)) {
+        if (! empty($discounts)) {
             $promotionCodes = [];
             foreach ($discounts as $discount) {
                 try {
@@ -109,7 +485,7 @@ class Stripe extends AbstractIntegration implements CanCreateSubscription, CanSe
                     $promotionCode = $this->stripeClient->promotionCodes->all([
                         'code' => $discount['id'],
                         'active' => true,
-                        'limit' => 1
+                        'limit' => 1,
                     ])->data[0] ?? null;
 
                     if ($promotionCode) {
@@ -125,13 +501,13 @@ class Stripe extends AbstractIntegration implements CanCreateSubscription, CanSe
                 } catch (\Exception $e) {
                     logger()->warning('Failed to apply discount', [
                         'discount_id' => $discount['id'],
-                        'error' => $e->getMessage()
+                        'error' => $e->getMessage(),
                     ]);
                 }
             }
 
             // Add promotion codes if any were found
-            if (!empty($promotionCodes)) {
+            if (! empty($promotionCodes)) {
                 $subscriptionData['promotion_code'] = $promotionCodes[0]; // Use first promotion code
             }
         }
@@ -247,7 +623,7 @@ class Stripe extends AbstractIntegration implements CanCreateSubscription, CanSe
 
         // Filter out specific payment method types that are not supported for JIT intents
         $paymentMethodTypes = collect($paymentMethodTypes)
-            ->filter(fn ($i) => !in_array($i, ['apple_pay', 'google_pay']))
+            ->filter(fn ($i) => ! in_array($i, ['apple_pay', 'google_pay']))
             ->values();
 
         $setupIntentData = [
@@ -256,7 +632,7 @@ class Stripe extends AbstractIntegration implements CanCreateSubscription, CanSe
                 'checkout_session_id' => $session->getRouteKey(),
             ],
             'payment_method_types' => $paymentMethodTypes->all(),
-//            'usage' => 'off_session',
+            //            'usage' => 'off_session',
         ];
 
         // Create a more specific idempotency key that includes key parameters
@@ -268,7 +644,7 @@ class Stripe extends AbstractIntegration implements CanCreateSubscription, CanSe
         ];
 
         // Create a hash of the key parameters for the idempotency key
-        $idempotencyKey = $session->getRouteKey() . '-' . md5(serialize($idempotencyKeyData));
+        $idempotencyKey = $session->getRouteKey().'-'.md5(serialize($idempotencyKeyData));
 
         if ($session->intent_id) {
             return $this->stripeClient
@@ -307,7 +683,7 @@ class Stripe extends AbstractIntegration implements CanCreateSubscription, CanSe
 
         // Filter out specific payment method types that are not supported for JIT intents
         $paymentMethodTypes = collect($paymentMethodTypes)
-            ->filter(fn ($i) => !in_array($i, ['apple_pay', 'google_pay']))
+            ->filter(fn ($i) => ! in_array($i, ['apple_pay', 'google_pay']))
             ->values();
 
         // Create payment intent with explicit payment method types
@@ -332,7 +708,7 @@ class Stripe extends AbstractIntegration implements CanCreateSubscription, CanSe
         ];
 
         // Create a hash of the key parameters for the idempotency key
-        $idempotencyKey = $session->getRouteKey() . '-' . md5(serialize($idempotencyKeyData));
+        $idempotencyKey = $session->getRouteKey().'-'.md5(serialize($idempotencyKeyData));
 
         if ($session->intent_id) {
             return $this->stripeClient
@@ -351,138 +727,138 @@ class Stripe extends AbstractIntegration implements CanCreateSubscription, CanSe
      * Create a direct payment intent using a confirmation token
      * This is used for one-time payments that don't require saving payment methods
      */
-//    public function createDirectPaymentIntent(array $data = [])
-//    {
-//        $order = $data['order'] ?? null;
-//        $items = $data['items'] ?? [];
-//        $discounts = $data['discounts'] ?? [];
-//        $confirmationToken = $data['confirmation_token'] ?? null;
-//
-//        if (!$order || empty($items) || !$confirmationToken) {
-//            throw new \InvalidArgumentException('Order, items, and confirmation token are required to create a direct payment intent');
-//        }
-//
-//        // Ensure checkout_session and customer relationships are loaded
-//        $order->load(['checkoutSession', 'customer']);
-//
-//        // Get the customer from the order
-//        $customer = $order->customer;
-//
-//        if (!$customer) {
-//            throw new \InvalidArgumentException('Customer is required to create a direct payment intent');
-//        }
-//
-//        // Calculate the total amount
-//        $amount = 0;
-//        $currency = null;
-//
-//        foreach ($items as $item) {
-//            $price = $item['price'];
-//            $quantity = $item['quantity'] ?? 1;
-//
-//            if (!$currency) {
-//                $currency = $price['currency'];
-//            } elseif ($currency !== $price['currency']) {
-//                throw new \InvalidArgumentException('All items must have the same currency');
-//            }
-//
-//            $amount += $price['amount']->getAmount() * $quantity;
-//        }
-//
-//        // Apply discounts if any
-//        if (!empty($discounts)) {
-//            $discountAmount = 0;
-//            foreach ($discounts as $discount) {
-//                try {
-//                    // Try to get the promotion code for this discount
-//                    $promotionCode = $this->stripeClient->promotionCodes->all([
-//                        'code' => $discount['id'],
-//                        'active' => true,
-//                        'limit' => 1
-//                    ])->data[0] ?? null;
-//
-//                    if ($promotionCode) {
-//                        // Apply promotion code discount
-//                        if ($promotionCode->coupon->percent_off) {
-//                            $discountAmount += $amount * ($promotionCode->coupon->percent_off / 100);
-//                        } else {
-//                            $discountAmount += $promotionCode->coupon->amount_off;
-//                        }
-//                    } else {
-//                        // Fallback to direct coupon calculation
-//                        if (isset($discount['percent_off'])) {
-//                            $discountAmount += $amount * ($discount['percent_off'] / 100);
-//                        } elseif (isset($discount['amount_off'])) {
-//                            $discountAmount += $discount['amount_off'];
-//                        }
-//                    }
-//                } catch (\Exception $e) {
-//                    logger()->warning('Failed to apply discount to direct payment intent', [
-//                        'discount_id' => $discount['id'],
-//                        'error' => $e->getMessage()
-//                    ]);
-//                }
-//            }
-//            $amount = max(0, $amount - $discountAmount);
-//        }
-//
-//        // Get enabled payment methods that are compatible with this currency
-//        $enabledPaymentMethods = $order->checkoutSession?->enabled_payment_methods ?? [];
-//
-//        // Prepare payment intent data
-//        $paymentIntentData = [
-//            'amount' => (int) $amount,
-//            'currency' => strtolower($currency),
-//            'customer' => $customer->reference_id,
-//            'confirmation_token' => $confirmationToken,
-//            'confirm' => true,
-//            'metadata' => [
-//                'order_id' => $order->id,
-//                'payment_type' => 'direct_one_time',
-//            ],
-//            //'setup_future_usage' => 'off_session',
-//
-//            //ConfirmationTokens help transport client side data collected by Stripe JS over to your server for
-//            // confirming a PaymentIntent or SetupIntent.
-//            // If the confirmation is successful, values present on the ConfirmationToken are written onto the Intent.
-//
-//            // TODO: idempotency key for a checkout
-//            // allow people to swap?
-//            // we may need to change intent on cart?
-//        ];
-//
-//        // Use specific payment method types to avoid conflicts with Stripe Elements
-//        $paymentIntentData['payment_method_types'] = ['card'];
-//
-//        // TODO: support other types of payment methods
-//        //
-////        $paymentIntent = $stripe->paymentIntents->create([
-////            'payment_method_types' => ['klarna'],
-////            'amount' => 1099,
-////            'currency' => 'eur',
-////        ]);
-//
-//        // Add return URL for 3D Secure flows
-//        // dont
-////        $paymentIntentData['return_url'] = config('app.url') . '/checkout/complete';
-//
-//        // todo: do some kind of redirect?
-//
-//        // Create the payment intent with the confirmation token
-//        $paymentIntent = $this->stripeClient->paymentIntents->create($paymentIntentData);
-//
-//        // If the payment intent has a payment method, update our database
-//        // Note: The payment method update is now handled in ProcessOrder to ensure proper flow
-//        if ($paymentIntent->payment_method) {
-//            Log::info(logname('intent-created'), [
-//                'payment_intent_id' => $paymentIntent->id,
-//                'payment_method_id' => $paymentIntent->payment_method,
-//                'status' => $paymentIntent->status,
-//            ]);
-//        }
-//
-//        return $paymentIntent;
-//    }
+    //    public function createDirectPaymentIntent(array $data = [])
+    //    {
+    //        $order = $data['order'] ?? null;
+    //        $items = $data['items'] ?? [];
+    //        $discounts = $data['discounts'] ?? [];
+    //        $confirmationToken = $data['confirmation_token'] ?? null;
+    //
+    //        if (!$order || empty($items) || !$confirmationToken) {
+    //            throw new \InvalidArgumentException('Order, items, and confirmation token are required to create a direct payment intent');
+    //        }
+    //
+    //        // Ensure checkout_session and customer relationships are loaded
+    //        $order->load(['checkoutSession', 'customer']);
+    //
+    //        // Get the customer from the order
+    //        $customer = $order->customer;
+    //
+    //        if (!$customer) {
+    //            throw new \InvalidArgumentException('Customer is required to create a direct payment intent');
+    //        }
+    //
+    //        // Calculate the total amount
+    //        $amount = 0;
+    //        $currency = null;
+    //
+    //        foreach ($items as $item) {
+    //            $price = $item['price'];
+    //            $quantity = $item['quantity'] ?? 1;
+    //
+    //            if (!$currency) {
+    //                $currency = $price['currency'];
+    //            } elseif ($currency !== $price['currency']) {
+    //                throw new \InvalidArgumentException('All items must have the same currency');
+    //            }
+    //
+    //            $amount += $price['amount']->getAmount() * $quantity;
+    //        }
+    //
+    //        // Apply discounts if any
+    //        if (!empty($discounts)) {
+    //            $discountAmount = 0;
+    //            foreach ($discounts as $discount) {
+    //                try {
+    //                    // Try to get the promotion code for this discount
+    //                    $promotionCode = $this->stripeClient->promotionCodes->all([
+    //                        'code' => $discount['id'],
+    //                        'active' => true,
+    //                        'limit' => 1
+    //                    ])->data[0] ?? null;
+    //
+    //                    if ($promotionCode) {
+    //                        // Apply promotion code discount
+    //                        if ($promotionCode->coupon->percent_off) {
+    //                            $discountAmount += $amount * ($promotionCode->coupon->percent_off / 100);
+    //                        } else {
+    //                            $discountAmount += $promotionCode->coupon->amount_off;
+    //                        }
+    //                    } else {
+    //                        // Fallback to direct coupon calculation
+    //                        if (isset($discount['percent_off'])) {
+    //                            $discountAmount += $amount * ($discount['percent_off'] / 100);
+    //                        } elseif (isset($discount['amount_off'])) {
+    //                            $discountAmount += $discount['amount_off'];
+    //                        }
+    //                    }
+    //                } catch (\Exception $e) {
+    //                    logger()->warning('Failed to apply discount to direct payment intent', [
+    //                        'discount_id' => $discount['id'],
+    //                        'error' => $e->getMessage()
+    //                    ]);
+    //                }
+    //            }
+    //            $amount = max(0, $amount - $discountAmount);
+    //        }
+    //
+    //        // Get enabled payment methods that are compatible with this currency
+    //        $enabledPaymentMethods = $order->checkoutSession?->enabled_payment_methods ?? [];
+    //
+    //        // Prepare payment intent data
+    //        $paymentIntentData = [
+    //            'amount' => (int) $amount,
+    //            'currency' => strtolower($currency),
+    //            'customer' => $customer->reference_id,
+    //            'confirmation_token' => $confirmationToken,
+    //            'confirm' => true,
+    //            'metadata' => [
+    //                'order_id' => $order->id,
+    //                'payment_type' => 'direct_one_time',
+    //            ],
+    //            //'setup_future_usage' => 'off_session',
+    //
+    //            //ConfirmationTokens help transport client side data collected by Stripe JS over to your server for
+    //            // confirming a PaymentIntent or SetupIntent.
+    //            // If the confirmation is successful, values present on the ConfirmationToken are written onto the Intent.
+    //
+    //            // TODO: idempotency key for a checkout
+    //            // allow people to swap?
+    //            // we may need to change intent on cart?
+    //        ];
+    //
+    //        // Use specific payment method types to avoid conflicts with Stripe Elements
+    //        $paymentIntentData['payment_method_types'] = ['card'];
+    //
+    //        // TODO: support other types of payment methods
+    //        //
+    // //        $paymentIntent = $stripe->paymentIntents->create([
+    // //            'payment_method_types' => ['klarna'],
+    // //            'amount' => 1099,
+    // //            'currency' => 'eur',
+    // //        ]);
+    //
+    //        // Add return URL for 3D Secure flows
+    //        // dont
+    // //        $paymentIntentData['return_url'] = config('app.url') . '/checkout/complete';
+    //
+    //        // todo: do some kind of redirect?
+    //
+    //        // Create the payment intent with the confirmation token
+    //        $paymentIntent = $this->stripeClient->paymentIntents->create($paymentIntentData);
+    //
+    //        // If the payment intent has a payment method, update our database
+    //        // Note: The payment method update is now handled in ProcessOrder to ensure proper flow
+    //        if ($paymentIntent->payment_method) {
+    //            Log::info(logname('intent-created'), [
+    //                'payment_intent_id' => $paymentIntent->id,
+    //                'payment_method_id' => $paymentIntent->payment_method,
+    //                'status' => $paymentIntent->status,
+    //            ]);
+    //        }
+    //
+    //        return $paymentIntent;
+    //    }
 
     public function getDiscount(string $code)
     {
@@ -542,7 +918,7 @@ class Stripe extends AbstractIntegration implements CanCreateSubscription, CanSe
             // Fallback to default payment methods if API call fails
             logger()->error('Failed to fetch payment methods from Stripe', [
                 'error' => $e->getMessage(),
-                'integration_id' => $this->integration->id
+                'integration_id' => $this->integration->id,
             ]);
 
             return [
@@ -618,7 +994,7 @@ class Stripe extends AbstractIntegration implements CanCreateSubscription, CanSe
         } catch (\Exception $e) {
             logger()->error('Failed to fetch payment-only methods from Stripe', [
                 'error' => $e->getMessage(),
-                'integration_id' => $this->integration->id
+                'integration_id' => $this->integration->id,
             ]);
 
             return [];
@@ -638,147 +1014,147 @@ class Stripe extends AbstractIntegration implements CanCreateSubscription, CanSe
         $restrictions = [
             'us_bank_account' => [
                 'currencies' => ['usd'],
-                'countries' => ['US']
+                'countries' => ['US'],
             ],
             'sepa_debit' => [
                 'currencies' => ['eur'],
-                'countries' => ['AT', 'BE', 'BG', 'HR', 'CY', 'CZ', 'DK', 'EE', 'FI', 'FR', 'DE', 'GR', 'HU', 'IE', 'IT', 'LV', 'LT', 'LU', 'MT', 'NL', 'PL', 'PT', 'RO', 'SK', 'SI', 'ES', 'SE']
+                'countries' => ['AT', 'BE', 'BG', 'HR', 'CY', 'CZ', 'DK', 'EE', 'FI', 'FR', 'DE', 'GR', 'HU', 'IE', 'IT', 'LV', 'LT', 'LU', 'MT', 'NL', 'PL', 'PT', 'RO', 'SK', 'SI', 'ES', 'SE'],
             ],
             'ideal' => [
                 'currencies' => ['eur'],
-                'countries' => ['AU', 'CA', 'AT', 'BE', 'BG', 'HR', 'CY', 'CZ', 'DK', 'EE', 'FI', 'FR', 'DE', 'GR', 'HU', 'IE', 'IT', 'LV', 'LT', 'LU', 'MT', 'NL', 'PL', 'PT', 'RO', 'SK', 'SI', 'ES', 'SE', 'HK', 'JP', 'MX', 'NZ', 'SG', 'US']
+                'countries' => ['AU', 'CA', 'AT', 'BE', 'BG', 'HR', 'CY', 'CZ', 'DK', 'EE', 'FI', 'FR', 'DE', 'GR', 'HU', 'IE', 'IT', 'LV', 'LT', 'LU', 'MT', 'NL', 'PL', 'PT', 'RO', 'SK', 'SI', 'ES', 'SE', 'HK', 'JP', 'MX', 'NZ', 'SG', 'US'],
             ],
             'sofort' => [
                 'currencies' => ['eur'],
-                'countries' => ['AU', 'CA', 'AT', 'BE', 'BG', 'HR', 'CY', 'CZ', 'DK', 'EE', 'FI', 'FR', 'DE', 'GR', 'HU', 'IE', 'IT', 'LV', 'LT', 'LU', 'MT', 'NL', 'PL', 'PT', 'RO', 'SK', 'SI', 'ES', 'SE', 'HK', 'JP', 'MX', 'NZ', 'SG', 'US']
+                'countries' => ['AU', 'CA', 'AT', 'BE', 'BG', 'HR', 'CY', 'CZ', 'DK', 'EE', 'FI', 'FR', 'DE', 'GR', 'HU', 'IE', 'IT', 'LV', 'LT', 'LU', 'MT', 'NL', 'PL', 'PT', 'RO', 'SK', 'SI', 'ES', 'SE', 'HK', 'JP', 'MX', 'NZ', 'SG', 'US'],
             ],
             'bancontact' => [
                 'currencies' => ['eur'],
-                'countries' => ['AU', 'CA', 'AT', 'BE', 'BG', 'HR', 'CY', 'CZ', 'DK', 'EE', 'FI', 'FR', 'DE', 'GR', 'HU', 'IE', 'IT', 'LV', 'LT', 'LU', 'MT', 'NL', 'PL', 'PT', 'RO', 'SK', 'SI', 'ES', 'SE', 'HK', 'JP', 'MX', 'NZ', 'SG', 'US']
+                'countries' => ['AU', 'CA', 'AT', 'BE', 'BG', 'HR', 'CY', 'CZ', 'DK', 'EE', 'FI', 'FR', 'DE', 'GR', 'HU', 'IE', 'IT', 'LV', 'LT', 'LU', 'MT', 'NL', 'PL', 'PT', 'RO', 'SK', 'SI', 'ES', 'SE', 'HK', 'JP', 'MX', 'NZ', 'SG', 'US'],
             ],
             'giropay' => [
                 'currencies' => ['eur'],
-                'countries' => ['AU', 'CA', 'AT', 'BE', 'BG', 'HR', 'CY', 'CZ', 'DK', 'EE', 'FI', 'FR', 'DE', 'GR', 'HU', 'IE', 'IT', 'LV', 'LT', 'LU', 'MT', 'NL', 'PL', 'PT', 'RO', 'SK', 'SI', 'ES', 'SE', 'HK', 'JP', 'MX', 'NZ', 'SG', 'US']
+                'countries' => ['AU', 'CA', 'AT', 'BE', 'BG', 'HR', 'CY', 'CZ', 'DK', 'EE', 'FI', 'FR', 'DE', 'GR', 'HU', 'IE', 'IT', 'LV', 'LT', 'LU', 'MT', 'NL', 'PL', 'PT', 'RO', 'SK', 'SI', 'ES', 'SE', 'HK', 'JP', 'MX', 'NZ', 'SG', 'US'],
             ],
             'eps' => [
                 'currencies' => ['eur'],
-                'countries' => ['AU', 'AT', 'CA', 'AT', 'BE', 'BG', 'HR', 'CY', 'CZ', 'DK', 'EE', 'FI', 'FR', 'DE', 'GR', 'HU', 'IE', 'IT', 'LV', 'LT', 'LU', 'MT', 'NL', 'PL', 'PT', 'RO', 'SK', 'SI', 'ES', 'SE', 'HK', 'JP', 'MX', 'NZ', 'SG', 'US']
+                'countries' => ['AU', 'AT', 'CA', 'AT', 'BE', 'BG', 'HR', 'CY', 'CZ', 'DK', 'EE', 'FI', 'FR', 'DE', 'GR', 'HU', 'IE', 'IT', 'LV', 'LT', 'LU', 'MT', 'NL', 'PL', 'PT', 'RO', 'SK', 'SI', 'ES', 'SE', 'HK', 'JP', 'MX', 'NZ', 'SG', 'US'],
             ],
             'p24' => [
                 'currencies' => ['eur', 'pln'],
-                'countries' => ['AU', 'CA', 'AT', 'BE', 'BG', 'HR', 'CY', 'CZ', 'DK', 'EE', 'FI', 'FR', 'DE', 'GR', 'HU', 'IE', 'IT', 'LV', 'LT', 'LU', 'MT', 'NL', 'PL', 'PT', 'RO', 'SK', 'SI', 'ES', 'SE', 'HK', 'JP', 'MX', 'NZ', 'SG', 'US']
+                'countries' => ['AU', 'CA', 'AT', 'BE', 'BG', 'HR', 'CY', 'CZ', 'DK', 'EE', 'FI', 'FR', 'DE', 'GR', 'HU', 'IE', 'IT', 'LV', 'LT', 'LU', 'MT', 'NL', 'PL', 'PT', 'RO', 'SK', 'SI', 'ES', 'SE', 'HK', 'JP', 'MX', 'NZ', 'SG', 'US'],
             ],
             'alipay' => [
                 'currencies' => ['aud', 'cad', 'cny', 'eur', 'gbp', 'hkd', 'jpy', 'myr', 'nzd', 'sgd', 'usd'],
-                'countries' => ['AU', 'CA', 'AT', 'BE', 'BG', 'HR', 'CY', 'CZ', 'DK', 'EE', 'FI', 'FR', 'DE', 'GR', 'HU', 'IE', 'IT', 'LV', 'LT', 'LU', 'MT', 'NL', 'PL', 'PT', 'RO', 'SK', 'SI', 'ES', 'SE', 'HK', 'JP', 'NZ', 'SG', 'US']
+                'countries' => ['AU', 'CA', 'AT', 'BE', 'BG', 'HR', 'CY', 'CZ', 'DK', 'EE', 'FI', 'FR', 'DE', 'GR', 'HU', 'IE', 'IT', 'LV', 'LT', 'LU', 'MT', 'NL', 'PL', 'PT', 'RO', 'SK', 'SI', 'ES', 'SE', 'HK', 'JP', 'NZ', 'SG', 'US'],
             ],
             'wechat_pay' => [
                 'currencies' => ['aud', 'cad', 'chf', 'cny', 'dkk', 'eur', 'gbp', 'hkd', 'jpy', 'nok', 'sek', 'sgd', 'usd'],
-                'countries' => ['AU', 'CA', 'AT', 'BE', 'BG', 'HR', 'CY', 'CZ', 'DK', 'EE', 'FI', 'FR', 'DE', 'GR', 'HU', 'IE', 'IT', 'LV', 'LT', 'LU', 'MT', 'NL', 'PL', 'PT', 'RO', 'SK', 'SI', 'ES', 'SE', 'HK', 'JP', 'SG', 'GB', 'US']
+                'countries' => ['AU', 'CA', 'AT', 'BE', 'BG', 'HR', 'CY', 'CZ', 'DK', 'EE', 'FI', 'FR', 'DE', 'GR', 'HU', 'IE', 'IT', 'LV', 'LT', 'LU', 'MT', 'NL', 'PL', 'PT', 'RO', 'SK', 'SI', 'ES', 'SE', 'HK', 'JP', 'SG', 'GB', 'US'],
             ],
             'klarna' => [
                 'currencies' => ['aud', 'cad', 'chf', 'czk', 'dkk', 'eur', 'gbp', 'nok', 'nzd', 'pln', 'ron', 'sek', 'usd'],
-                'countries' => ['AU', 'AT', 'BE', 'CA', 'HR', 'CY', 'DK', 'EE', 'FI', 'FR', 'DE', 'GR', 'IE', 'IT', 'LV', 'LT', 'LU', 'MT', 'NL', 'NZ', 'NO', 'PL', 'PT', 'RO', 'SK', 'SI', 'ES', 'SE', 'CH', 'GB', 'US']
+                'countries' => ['AU', 'AT', 'BE', 'CA', 'HR', 'CY', 'DK', 'EE', 'FI', 'FR', 'DE', 'GR', 'IE', 'IT', 'LV', 'LT', 'LU', 'MT', 'NL', 'NZ', 'NO', 'PL', 'PT', 'RO', 'SK', 'SI', 'ES', 'SE', 'CH', 'GB', 'US'],
             ],
             'afterpay_clearpay' => [
                 'currencies' => ['aud', 'cad', 'eur', 'nzd', 'gbp', 'usd'],
-                'countries' => ['AU', 'CA', 'NZ', 'GB', 'US']
+                'countries' => ['AU', 'CA', 'NZ', 'GB', 'US'],
             ],
             'affirm' => [
                 'currencies' => ['cad', 'usd'],
-                'countries' => ['CA', 'US']
+                'countries' => ['CA', 'US'],
             ],
             'paypal' => [
                 'currencies' => ['aud', 'cad', 'chf', 'czk', 'dkk', 'eur', 'gbp', 'hkd', 'nok', 'nzd', 'pln', 'sek', 'sgd', 'usd'],
-                'countries' => ['AT', 'BE', 'BG', 'HR', 'CY', 'CZ', 'DK', 'EE', 'FI', 'FR', 'DE', 'GR', 'IE', 'IT', 'LV', 'LT', 'LU', 'MT', 'NL', 'NO', 'PL', 'PT', 'RO', 'SK', 'SI', 'ES', 'SE', 'CH', 'GB']
+                'countries' => ['AT', 'BE', 'BG', 'HR', 'CY', 'CZ', 'DK', 'EE', 'FI', 'FR', 'DE', 'GR', 'IE', 'IT', 'LV', 'LT', 'LU', 'MT', 'NL', 'NO', 'PL', 'PT', 'RO', 'SK', 'SI', 'ES', 'SE', 'CH', 'GB'],
             ],
             'bacs_debit' => [
                 'currencies' => ['gbp'],
-                'countries' => ['GB']
+                'countries' => ['GB'],
             ],
             'au_becs_debit' => [
                 'currencies' => ['aud'],
-                'countries' => ['AU']
+                'countries' => ['AU'],
             ],
             'acss_debit' => [
                 'currencies' => ['cad', 'usd'],
-                'countries' => ['CA', 'US']
+                'countries' => ['CA', 'US'],
             ],
             'fpx' => [
                 'currencies' => ['myr'],
-                'countries' => ['MY']
+                'countries' => ['MY'],
             ],
             'grabpay' => [
                 'currencies' => ['myr', 'sgd'],
-                'countries' => ['MY', 'SG']
+                'countries' => ['MY', 'SG'],
             ],
             'oxxo' => [
                 'currencies' => ['mxn'],
-                'countries' => ['MX']
+                'countries' => ['MX'],
             ],
             'boleto' => [
                 'currencies' => ['brl'],
-                'countries' => ['BR']
+                'countries' => ['BR'],
             ],
             'konbini' => [
                 'currencies' => ['jpy'],
-                'countries' => ['JP']
+                'countries' => ['JP'],
             ],
             'paynow' => [
                 'currencies' => ['sgd'],
-                'countries' => ['SG']
+                'countries' => ['SG'],
             ],
             'promptpay' => [
                 'currencies' => ['thb'],
-                'countries' => ['TH']
+                'countries' => ['TH'],
             ],
             'cashapp' => [
                 'currencies' => ['usd'],
-                'countries' => ['US']
+                'countries' => ['US'],
             ],
             'amazon_pay' => [
                 'currencies' => ['usd'],
-                'countries' => ['AT', 'BE', 'CY', 'DK', 'FR', 'DE', 'HU', 'IE', 'IT', 'LU', 'NL', 'PT', 'ES', 'SE', 'CH', 'GB', 'US']
+                'countries' => ['AT', 'BE', 'CY', 'DK', 'FR', 'DE', 'HU', 'IE', 'IT', 'LU', 'NL', 'PT', 'ES', 'SE', 'CH', 'GB', 'US'],
             ],
             'revolut_pay' => [
                 'currencies' => ['eur', 'gbp', 'usd'],
-                'countries' => ['AT', 'BE', 'BG', 'HR', 'CY', 'CZ', 'DK', 'EE', 'FI', 'FR', 'DE', 'GR', 'HU', 'IE', 'IT', 'LV', 'LT', 'LU', 'MT', 'NL', 'PL', 'PT', 'RO', 'SK', 'SI', 'ES', 'SE', 'GB']
+                'countries' => ['AT', 'BE', 'BG', 'HR', 'CY', 'CZ', 'DK', 'EE', 'FI', 'FR', 'DE', 'GR', 'HU', 'IE', 'IT', 'LV', 'LT', 'LU', 'MT', 'NL', 'PL', 'PT', 'RO', 'SK', 'SI', 'ES', 'SE', 'GB'],
             ],
             'zip' => [
                 'currencies' => ['aud'],
-                'countries' => ['AU']
+                'countries' => ['AU'],
             ],
             'swish' => [
                 'currencies' => ['sek'],
-                'countries' => ['AT', 'BE', 'BG', 'HR', 'CY', 'CZ', 'DK', 'EE', 'FI', 'FR', 'DE', 'GR', 'IE', 'IS', 'IT', 'LV', 'LT', 'LU', 'NL', 'NO', 'PL', 'RO', 'SK', 'SI', 'ES', 'SE']
+                'countries' => ['AT', 'BE', 'BG', 'HR', 'CY', 'CZ', 'DK', 'EE', 'FI', 'FR', 'DE', 'GR', 'IE', 'IS', 'IT', 'LV', 'LT', 'LU', 'NL', 'NO', 'PL', 'RO', 'SK', 'SI', 'ES', 'SE'],
             ],
             'twint' => [
                 'currencies' => ['chf'],
-                'countries' => ['AT', 'BE', 'BG', 'HR', 'CY', 'CZ', 'DK', 'EE', 'FI', 'FR', 'DE', 'GI', 'GR', 'HU', 'IE', 'IS', 'IT', 'LV', 'LT', 'LU', 'MT', 'MC', 'NL', 'NO', 'PL', 'PT', 'RO', 'SM', 'SK', 'SI', 'SE', 'ES', 'CH', 'GB']
+                'countries' => ['AT', 'BE', 'BG', 'HR', 'CY', 'CZ', 'DK', 'EE', 'FI', 'FR', 'DE', 'GI', 'GR', 'HU', 'IE', 'IS', 'IT', 'LV', 'LT', 'LU', 'MT', 'MC', 'NL', 'NO', 'PL', 'PT', 'RO', 'SM', 'SK', 'SI', 'SE', 'ES', 'CH', 'GB'],
             ],
             'mb_way' => [
                 'currencies' => ['eur'],
-                'countries' => ['AU', 'AT', 'BE', 'BG', 'CA', 'HR', 'CY', 'CZ', 'DK', 'EE', 'FI', 'FR', 'DE', 'GI', 'GR', 'HK', 'HU', 'IE', 'IT', 'JP', 'LV', 'LT', 'LU', 'MT', 'MX', 'NL', 'NZ', 'NO', 'PL', 'PT', 'RO', 'SG', 'SK', 'SI', 'ES', 'SE', 'CH', 'GB', 'US']
+                'countries' => ['AU', 'AT', 'BE', 'BG', 'CA', 'HR', 'CY', 'CZ', 'DK', 'EE', 'FI', 'FR', 'DE', 'GI', 'GR', 'HK', 'HU', 'IE', 'IT', 'JP', 'LV', 'LT', 'LU', 'MT', 'MX', 'NL', 'NZ', 'NO', 'PL', 'PT', 'RO', 'SG', 'SK', 'SI', 'ES', 'SE', 'CH', 'GB', 'US'],
             ],
             'multibanco' => [
                 'currencies' => ['eur'],
-                'countries' => ['AT', 'BE', 'BG', 'HR', 'CY', 'CZ', 'DK', 'EE', 'FI', 'FR', 'DE', 'GI', 'GR', 'HU', 'IE', 'IT', 'LT', 'LU', 'LV', 'MT', 'NL', 'NO', 'PL', 'PT', 'RO', 'SK', 'SI', 'ES', 'SE', 'CH', 'GB', 'US']
+                'countries' => ['AT', 'BE', 'BG', 'HR', 'CY', 'CZ', 'DK', 'EE', 'FI', 'FR', 'DE', 'GI', 'GR', 'HU', 'IE', 'IT', 'LT', 'LU', 'LV', 'MT', 'NL', 'NO', 'PL', 'PT', 'RO', 'SK', 'SI', 'ES', 'SE', 'CH', 'GB', 'US'],
             ],
             'blik' => [
                 'currencies' => ['pln'],
-                'countries' => ['AT', 'BE', 'BG', 'HR', 'CY', 'CZ', 'DK', 'EE', 'FI', 'FR', 'DE', 'GR', 'HU', 'IS', 'IE', 'IT', 'LV', 'LT', 'LU', 'MT', 'NL', 'NO', 'PL', 'PT', 'RO', 'SK', 'SI', 'ES', 'SE']
+                'countries' => ['AT', 'BE', 'BG', 'HR', 'CY', 'CZ', 'DK', 'EE', 'FI', 'FR', 'DE', 'GR', 'HU', 'IS', 'IE', 'IT', 'LV', 'LT', 'LU', 'MT', 'NL', 'NO', 'PL', 'PT', 'RO', 'SK', 'SI', 'ES', 'SE'],
             ],
             'mobilepay' => [
                 'currencies' => ['dkk', 'eur', 'nok', 'sek'],
-                'countries' => ['AT', 'BE', 'BG', 'HR', 'CY', 'CZ', 'DK', 'EE', 'FI', 'FR', 'DE', 'GR', 'HU', 'IE', 'IT', 'LV', 'LT', 'LU', 'MT', 'NL', 'NO', 'PL', 'PT', 'RO', 'SK', 'SI', 'ES', 'SE']
+                'countries' => ['AT', 'BE', 'BG', 'HR', 'CY', 'CZ', 'DK', 'EE', 'FI', 'FR', 'DE', 'GR', 'HU', 'IE', 'IT', 'LV', 'LT', 'LU', 'MT', 'NL', 'NO', 'PL', 'PT', 'RO', 'SK', 'SI', 'ES', 'SE'],
             ],
             'vipps' => [
                 'currencies' => ['nok'],
-                'countries' => ['NO']
+                'countries' => ['NO'],
             ],
             'satispay' => [
                 'currencies' => ['eur'],
-                'countries' => ['IT']
+                'countries' => ['IT'],
             ],
         ];
 
@@ -789,6 +1165,7 @@ class Stripe extends AbstractIntegration implements CanCreateSubscription, CanSe
             // Always include basic payment methods
             if (in_array($method, ['card', 'apple_pay', 'google_pay', 'link'])) {
                 $filtered[] = $method;
+
                 continue;
             }
 
@@ -797,12 +1174,12 @@ class Stripe extends AbstractIntegration implements CanCreateSubscription, CanSe
                 $restriction = $restrictions[$method];
 
                 // Check currency restriction
-                if (isset($restriction['currencies']) && !in_array($currency, $restriction['currencies'])) {
+                if (isset($restriction['currencies']) && ! in_array($currency, $restriction['currencies'])) {
                     continue;
                 }
 
                 // Check country restriction
-                if (isset($restriction['countries']) && !in_array($country, $restriction['countries'])) {
+                if (isset($restriction['countries']) && ! in_array($country, $restriction['countries'])) {
                     continue;
                 }
             }
