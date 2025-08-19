@@ -1,4 +1,4 @@
-import { Head } from '@inertiajs/react';
+import { Head, Deferred } from '@inertiajs/react';
 import {
   GlobalStateProvider,
   LoadingError,
@@ -555,26 +555,49 @@ export default function CheckoutPage({ offer, fonts, error, checkoutSession, sub
           {JSON.stringify(metaTags.structuredData)}
         </script>
       </Head>
-      <GlobalStateProvider offer={offer} session={checkoutSession} offerItems={offer.items} subscriptionPreview={subscriptionPreview}>
-        {checkoutSession.is_test_mode && (
-          <div className="bg-yellow-50 text-yellow-700 border-b border-yellow-200">
-            <p className="text-sm text-center py-1 font-semibold">You are in test mode. No real transactions will occur.</p>
-          </div>
-        )}
-        <NavigationProvider>
-          <div className="min-h-screen bg-gray-50 flex flex-col gap-4 justify-center items-center" style={containerStyle}>
-            {error ? (
-              <div className="p-4">
-                <div className="bg-red-50 text-red-900 p-4 rounded-md">
-                  {error}
+      <Deferred data="subscriptionPreview" fallback={
+        <GlobalStateProvider offer={offer} session={checkoutSession} offerItems={offer.items} subscriptionPreview={subscriptionPreview}>
+          {checkoutSession.is_test_mode && (
+            <div className="bg-yellow-50 text-yellow-700 border-b border-yellow-200">
+              <p className="text-sm text-center py-1 font-semibold">You are in test mode. No real transactions will occur.</p>
+            </div>
+          )}
+          <NavigationProvider>
+            <div className="min-h-screen bg-gray-50 flex flex-col gap-4 justify-center items-center" style={containerStyle}>
+              {error ? (
+                <div className="p-4">
+                  <div className="bg-red-50 text-red-900 p-4 rounded-md">
+                    {error}
+                  </div>
                 </div>
-              </div>
-            ) : (
-              <CheckoutController offer={offer} session={checkoutSession} />
-            )}
-          </div>
-        </NavigationProvider>
-      </GlobalStateProvider>
+              ) : (
+                <CheckoutController offer={offer} session={checkoutSession} />
+              )}
+            </div>
+          </NavigationProvider>
+        </GlobalStateProvider>
+      }>
+        <GlobalStateProvider offer={offer} session={checkoutSession} offerItems={offer.items} subscriptionPreview={subscriptionPreview}>
+          {checkoutSession.is_test_mode && (
+            <div className="bg-yellow-50 text-yellow-700 border-b border-yellow-200">
+              <p className="text-sm text-center py-1 font-semibold">You are in test mode. No real transactions will occur.</p>
+            </div>
+          )}
+          <NavigationProvider>
+            <div className="min-h-screen bg-gray-50 flex flex-col gap-4 justify-center items-center" style={containerStyle}>
+              {error ? (
+                <div className="p-4">
+                  <div className="bg-red-50 text-red-900 p-4 rounded-md">
+                    {error}
+                  </div>
+                </div>
+              ) : (
+                <CheckoutController offer={offer} session={checkoutSession} />
+              )}
+            </div>
+          </NavigationProvider>
+        </GlobalStateProvider>
+      </Deferred>
     </>
   );
 }

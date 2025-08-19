@@ -12,7 +12,7 @@ import { OfferItemType } from "@/types/offer";
 
 function CheckoutSummaryComponent({ context: _context }: { context: BlockContextType }) {
   const theme = Numi.useTheme();
-  const { session, addDiscount, removeDiscount, isEditor } = Numi.useCheckout({});
+  const { session, subscriptionPreview, addDiscount, removeDiscount, isEditor } = Numi.useCheckout({});
 
   const [title] = Numi.useStateString({
     label: 'Title',
@@ -108,13 +108,6 @@ function CheckoutSummaryComponent({ context: _context }: { context: BlockContext
     group: 'discountCodes',
   });
 
-  const [totalLabel] = Numi.useStateString({
-    label: 'Label',
-    name: 'totalLabel',
-    defaultValue: session.has_subscription_items ? 'Total Due Today' : 'Total',
-    group: 'total',
-  });
-
   const appearance = Numi.useAppearance([
     Appearance.padding('padding', 'Padding', {}),
     Appearance.margin('margin', 'Margin', {}),
@@ -169,26 +162,70 @@ function CheckoutSummaryComponent({ context: _context }: { context: BlockContext
     Style.hidden('hidden', 'Hidden', {}, false),
   ]);
 
+  // Trial-aware helpers - moved to top level to avoid conditional hooks
+  const isTrialCheckout = Boolean(session?.metadata?.isTrial);
+  const isTrialExpansionCheckout = Boolean(session?.metadata?.isTrialExpansion);
+  const isImmediateSwap = Boolean(session?.metadata?.isImmediateSwap);
+  const isPeriodEndSwap = Boolean(session?.metadata?.isPeriodEndSwap);
+  const isSkipTrial = Boolean(session?.metadata?.isSkipTrial);
+  const isGenericPreview = Boolean(session?.metadata?.isGenericPreview);
+  
+  const trialStartIso = session?.metadata?.billingStartDate as string | undefined;
+  const postTrialAmount = session?.metadata?.postTrialAmount as number | undefined;
+  const swapAmount = session?.metadata?.swapAmount as number | undefined;
+  const nextPeriodAmount = session?.metadata?.nextPeriodAmount as number | undefined;
+  const skipAmount = session?.metadata?.skipAmount as number | undefined;
+  const previewAmount = session?.metadata?.previewAmount as number | undefined;
+  const effectiveDate = session?.metadata?.effectiveDate as string | undefined;
+  
+  const trialStartDateLabel = useMemo(() => {
+    if (!trialStartIso) return '';
+    try { return new Date(trialStartIso).toLocaleDateString(); } catch { return ''; }
+  }, [trialStartIso]);
+
+  const effectiveDateLabel = useMemo(() => {
+    if (!effectiveDate) return '';
+    try { return new Date(effectiveDate).toLocaleDateString(); } catch { return ''; }
+  }, [effectiveDate]);
+
+  const currency = useMemo(() => {
+    if (showCurrency) {
+      return session.currency;
+    }
+    return undefined;
+  }, [session.currency, showCurrency]);
+
+  const lineItems = useMemo(() => {
+    return session.line_items
+      .sort((a: CheckoutItem, b: CheckoutItem) => {
+        // Sort by type: 'standard' first, 'optional' last
+        if (a.type === OfferItemType.STANDARD && b.type === OfferItemType.OPTIONAL) return -1;
+        if (a.type === OfferItemType.OPTIONAL && b.type === OfferItemType.STANDARD) return 1;
+        return 0;
+      })
+      .map((item: CheckoutItem) => {
+        return {
+          ...item,
+        }
+      });
+  }, [session.line_items]);
+
   const containerStyle = useMemo<React.CSSProperties>(() => ({
     backgroundColor: String(resolveThemeValue(style.backgroundColor, theme, 'primary_surface_color') ?? ''),
-    padding: appearance.padding as any,
-    margin: appearance.margin as any,
-    gap: appearance.spacing as any,
+    padding: appearance.padding as React.CSSProperties['padding'],
+    margin: appearance.margin as React.CSSProperties['margin'],
+    gap: appearance.spacing as React.CSSProperties['gap'],
     borderColor: String(resolveThemeValue(style.borderColor, theme) ?? ''),
     borderWidth: style?.border?.width,
     borderStyle: style?.border?.style,
-    borderRadius: (style?.borderRadius ?? '3px') as any,
-    boxShadow: style?.shadow as any,
+    borderRadius: (style?.borderRadius ?? '3px') as React.CSSProperties['borderRadius'],
+    boxShadow: style?.shadow as React.CSSProperties['boxShadow'],
   }), [style]);
-
-  const { executeCallbacks } = Numi.useEventCallback({
-    name: 'click',
-  });
 
   const titleStyle = useMemo<React.CSSProperties>(() => ({
     color: String(resolveThemeValue(style.titleFont?.color, theme) ?? ''),
     fontFamily: style?.titleFont?.font,
-    fontWeight: style?.titleFont?.weight as any,
+    fontWeight: style?.titleFont?.weight as React.CSSProperties['fontWeight'],
     fontSize: style?.titleFont?.size,
     lineHeight: style?.titleFont?.lineHeight,
     letterSpacing: style?.titleFont?.letterSpacing,
@@ -197,7 +234,7 @@ function CheckoutSummaryComponent({ context: _context }: { context: BlockContext
   const labelStyle = useMemo<React.CSSProperties>(() => ({
     color: String(resolveThemeValue(style.labelFont?.color, theme) ?? ''),
     fontFamily: style?.labelFont?.font,
-    fontWeight: style?.labelFont?.weight as any,
+    fontWeight: style?.labelFont?.weight as React.CSSProperties['fontWeight'],
     fontSize: style?.labelFont?.size,
     lineHeight: style?.labelFont?.lineHeight,
     letterSpacing: style?.labelFont?.letterSpacing,
@@ -206,7 +243,7 @@ function CheckoutSummaryComponent({ context: _context }: { context: BlockContext
   const itemStyle = useMemo<React.CSSProperties>(() => ({
     color: String(resolveThemeValue(style.itemFont?.color, theme) ?? ''),
     fontFamily: style?.itemFont?.font,
-    fontWeight: style?.itemFont?.weight as any,
+    fontWeight: style?.itemFont?.weight as React.CSSProperties['fontWeight'],
     fontSize: style?.itemFont?.size,
     lineHeight: style?.itemFont?.lineHeight,
     letterSpacing: style?.itemFont?.letterSpacing,
@@ -215,7 +252,7 @@ function CheckoutSummaryComponent({ context: _context }: { context: BlockContext
   const itemPriceStyle = useMemo<React.CSSProperties>(() => ({
     color: String(resolveThemeValue(style.itemPriceFont?.color, theme) ?? ''),
     fontFamily: style?.itemPriceFont?.font,
-    fontWeight: style?.itemPriceFont?.weight as any,
+    fontWeight: style?.itemPriceFont?.weight as React.CSSProperties['fontWeight'],
     fontSize: style?.itemPriceFont?.size,
     lineHeight: style?.itemPriceFont?.lineHeight,
     letterSpacing: style?.itemPriceFont?.letterSpacing,
@@ -224,7 +261,7 @@ function CheckoutSummaryComponent({ context: _context }: { context: BlockContext
   const itemQuantityStyle = useMemo<React.CSSProperties>(() => ({
     color: String(resolveThemeValue(style.itemQuantityFont?.color, theme) ?? ''),
     fontFamily: style?.itemQuantityFont?.font,
-    fontWeight: style?.itemQuantityFont?.weight as any,
+    fontWeight: style?.itemQuantityFont?.weight as React.CSSProperties['fontWeight'],
     fontSize: style?.itemQuantityFont?.size,
     lineHeight: style?.itemQuantityFont?.lineHeight,
     letterSpacing: style?.itemQuantityFont?.letterSpacing,
@@ -234,7 +271,7 @@ function CheckoutSummaryComponent({ context: _context }: { context: BlockContext
     backgroundColor: String(resolveThemeValue(style.inputBackgroundColor, theme, 'secondary_surface_color') ?? ''),
     color: String(resolveThemeValue(style?.inputFont?.color, theme) ?? ''),
     fontFamily: style?.inputFont?.font,
-    fontWeight: style?.inputFont?.weight as any,
+    fontWeight: style?.inputFont?.weight as React.CSSProperties['fontWeight'],
     fontSize: style?.inputFont?.size,
     lineHeight: style?.inputFont?.lineHeight,
     letterSpacing: style?.inputFont?.letterSpacing,
@@ -263,7 +300,7 @@ function CheckoutSummaryComponent({ context: _context }: { context: BlockContext
   const summaryTextStyle = useMemo<React.CSSProperties>(() => ({
     color: String(resolveThemeValue(style.summaryTextFont?.color, theme) ?? ''),
     fontFamily: style?.summaryTextFont?.font,
-    fontWeight: style?.summaryTextFont?.weight as any,
+    fontWeight: style?.summaryTextFont?.weight as React.CSSProperties['fontWeight'],
     fontSize: style?.summaryTextFont?.size,
     lineHeight: style?.summaryTextFont?.lineHeight,
     letterSpacing: style?.summaryTextFont?.letterSpacing,
@@ -272,7 +309,7 @@ function CheckoutSummaryComponent({ context: _context }: { context: BlockContext
   const discountTextStyle = useMemo<React.CSSProperties>(() => ({
     color: String(resolveThemeValue(style?.discountTextFont?.color, theme) ?? ''),
     fontFamily: style?.discountTextFont?.font,
-    fontWeight: style?.discountTextFont?.weight as any,
+    fontWeight: style?.discountTextFont?.weight as React.CSSProperties['fontWeight'],
     fontSize: style?.discountTextFont?.size,
     lineHeight: style?.discountTextFont?.lineHeight,
     letterSpacing: style?.discountTextFont?.letterSpacing,
@@ -281,7 +318,7 @@ function CheckoutSummaryComponent({ context: _context }: { context: BlockContext
   const totalTextStyle = useMemo<React.CSSProperties>(() => ({
     color: String(resolveThemeValue(style?.totalTextFont?.color, theme) ?? ''),
     fontFamily: style?.totalTextFont?.font,
-    fontWeight: style?.totalTextFont?.weight as any,
+    fontWeight: style?.totalTextFont?.weight as React.CSSProperties['fontWeight'],
     fontSize: style?.totalTextFont?.size,
     lineHeight: style?.totalTextFont?.lineHeight,
     letterSpacing: style?.totalTextFont?.letterSpacing,
@@ -292,7 +329,7 @@ function CheckoutSummaryComponent({ context: _context }: { context: BlockContext
   }), [style]);
 
   const summaryContainerStyle = useMemo<React.CSSProperties>(() => ({
-    gap: appearance.summarySpacing as any,
+    gap: appearance.summarySpacing as React.CSSProperties['gap'],
   }), [appearance.summarySpacing]);
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -303,12 +340,12 @@ function CheckoutSummaryComponent({ context: _context }: { context: BlockContext
     // await this here,
     if (discountCode.trim()) {
       setIsDiscountSubmitting(true);
-      addDiscount(discountCode).then((status: any) => {
-        if (status.success) {
+      addDiscount(discountCode).then((status: boolean) => {
+        if (status) {
           setDiscountCode('');
           setErrors({ ...errors, discount: '' });
         } else {
-          setErrors({ discount: status.message });
+          setErrors({ discount: 'Failed to apply discount' });
         }
       }).finally(() => {
         setIsDiscountSubmitting(false);
@@ -317,11 +354,11 @@ function CheckoutSummaryComponent({ context: _context }: { context: BlockContext
   };
 
   const handleRemoveDiscount = (discount: string) => {
-    removeDiscount(discount).then((status: any) => {
-      if (status.success) {
+    removeDiscount(discount).then((status: boolean) => {
+      if (status) {
         setErrors({ ...errors, discount: '' });
       } else {
-        setErrors({ discount: status.message });
+        setErrors({ discount: 'Failed to remove discount' });
       }
     });
   };
@@ -336,35 +373,11 @@ function CheckoutSummaryComponent({ context: _context }: { context: BlockContext
     return null;
   }
 
-  const currency = useMemo(() => {
-    if (showCurrency) {
-      return session.currency;
-    }
-    return undefined;
-  }, [session.currency, showCurrency]);
-
-  const lineItems = useMemo(() => {
-    return session.line_items
-      .sort((a: CheckoutItem, b: CheckoutItem) => {
-        // Sort by type: 'standard' first, 'optional' last
-        if (a.type === OfferItemType.STANDARD && b.type === OfferItemType.OPTIONAL) return -1;
-        if (a.type === OfferItemType.OPTIONAL && b.type === OfferItemType.STANDARD) return 1;
-        return 0;
-      })
-      .map((item: CheckoutItem) => {
-        return {
-          ...item,
-        }
-      });
-  }, [session.line_items]);
-
   const LineItem = ({ item }: { item: CheckoutItem }) => {
-    // Check if this is a trial scenario
-    const isTrial = session.metadata?.isTrial;
-    const isTrialExpansion = session.metadata?.isTrialExpansion;
-    const trialDays = session.metadata?.trialDays;
-    const billingStartDate = session.metadata?.billingStartDate;
-    const postTrialAmount = session.metadata?.postTrialAmount;
+    // Determine if this is a preview line item (negative ID)
+    const isPreviewItem = item.id < 0;
+    const trialDays = session?.metadata?.trialDays as number | undefined;
+    const billingStartDate = session?.metadata?.billingStartDate as string | undefined;
 
     return (<div className="flex-grow overflow-hidden">
       <div className="flex justify-between items-center gap-4">
@@ -373,14 +386,39 @@ function CheckoutSummaryComponent({ context: _context }: { context: BlockContext
           style={itemStyle}
         >
           {item.price?.name}
-          {isTrial && (
+          {isTrialCheckout && (
             <div className="text-sm text-emerald-600 font-normal">
-              {trialDays}-day free trial
+              {trialDays ? `${trialDays}-day free trial` : 'Free trial'}
             </div>
           )}
-          {isTrialExpansion && (
+          {isTrialExpansionCheckout && (
             <div className="text-sm text-emerald-600 font-normal">
               Trial expansion
+            </div>
+          )}
+          {isImmediateSwap && isPreviewItem && (
+            <div className="text-sm text-blue-600 font-normal">
+              Immediate plan change
+            </div>
+          )}
+          {isPeriodEndSwap && (
+            <div className="text-sm text-blue-600 font-normal">
+              Plan change at period end
+            </div>
+          )}
+          {isPeriodEndSwap && subscriptionPreview?.current?.base_item?.quantity !== subscriptionPreview?.proposed?.base_item?.quantity && (
+            <div className="text-sm text-blue-600 font-normal">
+              Quantity: {subscriptionPreview?.current?.base_item?.quantity} → {subscriptionPreview?.proposed?.base_item?.quantity}
+            </div>
+          )}
+          {isSkipTrial && (
+            <div className="text-sm text-orange-600 font-normal">
+              Skip trial
+            </div>
+          )}
+          {isGenericPreview && isPreviewItem && (
+            <div className="text-sm text-gray-600 font-normal">
+              Plan change adjustment
             </div>
           )}
         </div>
@@ -395,19 +433,41 @@ function CheckoutSummaryComponent({ context: _context }: { context: BlockContext
               />
             :
             <div className="text-gray-700" style={itemPriceStyle}>
-              {isTrial ? (
+              {isTrialCheckout ? (
                 <div className="text-right">
                   <div className="text-emerald-600">Free</div>
                   <div className="text-sm text-gray-500">
                     Then {formatMoney(postTrialAmount || item.total, currency)}/{item.price?.renew_interval}
                   </div>
                 </div>
-              ) : isTrialExpansion ? (
+              ) : isTrialExpansionCheckout ? (
                 <div className="text-right">
                   <div className="text-emerald-600">Free during trial</div>
                   <div className="text-sm text-gray-500">
                     Then {formatMoney(postTrialAmount || item.total, currency)}/{item.price?.renew_interval}
                   </div>
+                </div>
+              ) : isImmediateSwap && isPreviewItem ? (
+                <div className="text-right">
+                  <div className="text-blue-600">{formatMoney(item.total, currency)}</div>
+                  <div className="text-sm text-gray-500">Due now</div>
+                </div>
+              ) : isPeriodEndSwap ? (
+                <div className="text-right">
+                  <div className="text-blue-600">No charge now</div>
+                  <div className="text-sm text-gray-500">
+                    {effectiveDateLabel ? `Changes ${effectiveDateLabel}` : 'Changes at period end'}
+                  </div>
+                </div>
+              ) : isSkipTrial ? (
+                <div className="text-right">
+                  <div className="text-orange-600">{formatMoney(item.total, currency)}</div>
+                  <div className="text-sm text-gray-500">Skip trial</div>
+                </div>
+              ) : isGenericPreview && isPreviewItem ? (
+                <div className="text-right">
+                  <div className="text-gray-600">{formatMoney(item.total, currency)}</div>
+                  <div className="text-sm text-gray-500">Adjustment</div>
                 </div>
               ) : (
                 formatMoney(item.total, currency)
@@ -425,15 +485,20 @@ function CheckoutSummaryComponent({ context: _context }: { context: BlockContext
         )}
         {item.price && item.price.type !== 'one_time' && (
           <>
-            {isTrial ? (
+            {isTrialCheckout ? (
               <div style={itemQuantityStyle}>
                 <div>Billing starts: {billingStartDate ? new Date(billingStartDate).toLocaleDateString() : 'After trial'}</div>
                 <div>Price per {item.price.renew_interval}: {formatMoney(postTrialAmount || item.total, currency)}</div>
               </div>
-            ) : isTrialExpansion ? (
+            ) : isTrialExpansionCheckout ? (
               <div style={itemQuantityStyle}>
                 <div>Billing starts: {billingStartDate ? new Date(billingStartDate).toLocaleDateString() : 'After trial'}</div>
                 <div>Price per {item.price.renew_interval}: {formatMoney(postTrialAmount || item.total, currency)}</div>
+              </div>
+            ) : isPeriodEndSwap ? (
+              <div style={itemQuantityStyle}>
+                <div>Current price: {formatMoney(session.metadata?.currentAmount || item.total, currency)}/{item.price.renew_interval}</div>
+                <div>New price: {formatMoney(nextPeriodAmount || item.total, currency)}/{item.price.renew_interval}</div>
               </div>
             ) : (
               <>
@@ -448,16 +513,6 @@ function CheckoutSummaryComponent({ context: _context }: { context: BlockContext
       </div>
     </div>)
   }
-
-  // Trial-aware helpers
-  const isTrialCheckout = Boolean((session as any)?.metadata?.isTrial);
-  const isTrialExpansionCheckout = Boolean((session as any)?.metadata?.isTrialExpansion);
-  const trialStartIso = (session as any)?.metadata?.billingStartDate as string | undefined;
-  const postTrialAmount = (session as any)?.metadata?.postTrialAmount as number | undefined;
-  const trialStartDateLabel = useMemo(() => {
-    if (!trialStartIso) return '';
-    try { return new Date(trialStartIso).toLocaleDateString(); } catch { return ''; }
-  }, [trialStartIso]);
 
   return (
     <div className="flex flex-col p-4 gap-4" style={containerStyle}>
@@ -534,13 +589,13 @@ function CheckoutSummaryComponent({ context: _context }: { context: BlockContext
       {/* Order Summary Calculations */}
       {(showSubtotal ||
         (showShipping && session.shipping > 0) ||
-        (showTaxes && session.inclusive_taxes > 0 && session.subtotal > 0 && !isTrialCheckout && !isTrialExpansionCheckout) ||
+        (showTaxes && session.inclusive_taxes > 0 && session.subtotal > 0 && !isTrialCheckout && !isTrialExpansionCheckout && !isPeriodEndSwap) ||
         (session.discounts && session.discounts.length > 0)
       ) && (
         <div className="space-y-2 text-sm flex flex-col" style={summaryContainerStyle}>
           {showSubtotal && <div className="flex justify-between">
             <span style={summaryTextStyle}>Subtotal</span>
-            <span style={summaryTextStyle}>{formatMoney(isTrialCheckout || isTrialExpansionCheckout ? 0 : session.subtotal, currency)}</span>
+            <span style={summaryTextStyle}>{formatMoney(isTrialCheckout || isTrialExpansionCheckout || isPeriodEndSwap ? 0 : session.subtotal, currency)}</span>
           </div>}
 
           {showShipping && session.shipping > 0 && (
@@ -551,7 +606,7 @@ function CheckoutSummaryComponent({ context: _context }: { context: BlockContext
           )}
 
 
-          {showTaxes && (session.inclusive_taxes) > 0 && session.subtotal > 0 && !isTrialCheckout && !isTrialExpansionCheckout && (
+          {showTaxes && (session.inclusive_taxes) > 0 && session.subtotal > 0 && !isTrialCheckout && !isTrialExpansionCheckout && !isPeriodEndSwap && (
             <div className="flex justify-between">
               <span style={summaryTextStyle}>{taxesLabel}</span>
               <span style={summaryTextStyle}>
@@ -567,7 +622,7 @@ function CheckoutSummaryComponent({ context: _context }: { context: BlockContext
                 if (discount.amount_off !== null) {
                   return acc + discount.amount_off;
                 } else if (discount.percent_off !== null) {
-                  return acc + ((isTrialCheckout || isTrialExpansionCheckout ? 0 : session.subtotal) * (discount.percent_off / 100));
+                  return acc + ((isTrialCheckout || isTrialExpansionCheckout || isPeriodEndSwap ? 0 : session.subtotal) * (discount.percent_off / 100));
                 }
                 return acc;
               }, 0), currency)}</span>
@@ -580,13 +635,52 @@ function CheckoutSummaryComponent({ context: _context }: { context: BlockContext
       {/* Total */}
       <div className="flex flex-col gap-1">
         <div className="flex justify-between font-semibold text-lg">
-          <span style={totalTextStyle}>Total Due Today</span>
-          <span style={totalTextStyle}>{formatMoney(isTrialCheckout || isTrialExpansionCheckout ? 0 : session.total, currency)}</span>
+          <span style={totalTextStyle}>
+            {isTrialCheckout || isTrialExpansionCheckout ? 'Total Due Today' :
+             isPeriodEndSwap ? 'Total Due Today' :
+             isImmediateSwap ? 'Total Due Now' :
+             isSkipTrial ? 'Total Due Now' :
+             isGenericPreview ? 'Total Due Now' :
+             'Total Due Today'}
+          </span>
+          <span style={totalTextStyle}>
+            {formatMoney(isTrialCheckout || isTrialExpansionCheckout || isPeriodEndSwap ? 0 : session.total, currency)}
+          </span>
         </div>
+        
+        {/* Additional total information for different scenarios */}
         {(isTrialCheckout || isTrialExpansionCheckout) && postTrialAmount !== undefined && (
           <div className="flex justify-between text-sm">
             <span style={summaryTextStyle}>Total due{trialStartDateLabel ? `: ${trialStartDateLabel}` : ''}</span>
             <span style={summaryTextStyle}>{formatMoney(postTrialAmount, currency)}</span>
+          </div>
+        )}
+        
+        {isPeriodEndSwap && nextPeriodAmount !== undefined && (
+          <div className="flex justify-between text-sm">
+            <span style={summaryTextStyle}>Next period total{effectiveDateLabel ? `: ${effectiveDateLabel}` : ''}</span>
+            <span style={summaryTextStyle}>{formatMoney(nextPeriodAmount, currency)}</span>
+          </div>
+        )}
+        
+        {isImmediateSwap && swapAmount !== undefined && (
+          <div className="flex justify-between text-sm">
+            <span style={summaryTextStyle}>Plan change fee</span>
+            <span style={summaryTextStyle}>{formatMoney(swapAmount, currency)}</span>
+          </div>
+        )}
+        
+        {isSkipTrial && skipAmount !== undefined && (
+          <div className="flex justify-between text-sm">
+            <span style={summaryTextStyle}>Skip trial fee</span>
+            <span style={summaryTextStyle}>{formatMoney(skipAmount, currency)}</span>
+          </div>
+        )}
+        
+        {isGenericPreview && previewAmount !== undefined && (
+          <div className="flex justify-between text-sm">
+            <span style={summaryTextStyle}>Adjustment total{effectiveDateLabel ? `: ${effectiveDateLabel}` : ''}</span>
+            <span style={summaryTextStyle}>{formatMoney(previewAmount, currency)}</span>
           </div>
         )}
       </div>

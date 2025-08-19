@@ -86,7 +86,7 @@ if (app()->environment('local')) {
     })->name('dev.test-expansion');
 
     Route::get('/dev/subscription-preview/{checkout}', function (\App\Models\Checkout\CheckoutSession $checkout, \Illuminate\Http\Request $request) {
-        $result = app(\App\Actions\Checkout\PreviewChangeAdapterAction::class)($checkout);
+        $result = app(\App\Actions\Checkout\PreviewSubscriptionChangeAction::class)($checkout);
 
         return response()->json($result);
     })->name('dev.subscription-preview');
@@ -114,6 +114,10 @@ Route::middleware(['frame-embed'])
 
         Route::post('/checkouts/{checkoutSession}/mutations', [CheckoutSessionController::class, 'storeMutation'])
             ->name('checkouts.mutations.store');
+
+        // Preview subscription change (plan upgrade/downgrade)
+        Route::get('/checkouts/{checkoutSession}/preview', [CheckoutSessionController::class, 'preview'])
+            ->name('checkouts.preview');
 
         Route::get('/order-status/{order}', OrderStatusController::class)
             ->name('order-status.show')

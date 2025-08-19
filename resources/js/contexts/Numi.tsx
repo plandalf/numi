@@ -443,6 +443,11 @@ const Numi = {
               break;
           }
         }
+        
+        // Reload subscription preview after any mutation to ensure UI is updated
+        if (checkout?.reloadSubscriptionPreview) {
+          checkout.reloadSubscriptionPreview();
+        }
       }
     }, [blockContext]);
 

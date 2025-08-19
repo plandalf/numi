@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Actions\Checkout\CommitCheckoutAction;
 use App\Actions\Checkout\PreparePaymentAction;
+use App\Actions\Checkout\PreviewSubscriptionChangeAction;
 use App\Enums\CheckoutSessionStatus;
 use App\Exceptions\CheckoutException;
 use App\Http\Controllers\Controller;
@@ -18,6 +19,25 @@ use Stripe\Exception\InvalidRequestException;
 
 class CheckoutSessionController extends Controller
 {
+    public function preview(CheckoutSession $checkoutSession, Request $request)
+    {
+        try {
+            $action = app(PreviewSubscriptionChangeAction::class);
+            $effectiveAt = $request->input('effective_at');
+
+            $result = $action($checkoutSession, $effectiveAt);
+
+            return response()->json($result);
+        } catch (\Exception $e) {
+            report($e);
+
+            return response()->json([
+                'enabled' => false,
+                'reason' => 'Failed to generate preview: '.$e->getMessage(),
+            ], 500);
+        }
+    }
+
     public function storeMutation(
         CheckoutSession $checkoutSession,
         Request $request

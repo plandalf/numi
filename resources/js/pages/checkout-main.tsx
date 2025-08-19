@@ -1,4 +1,4 @@
-import { Head } from '@inertiajs/react';
+import { Head, Deferred } from '@inertiajs/react';
 import { useState, createContext, useContext, useMemo, useEffect, useRef } from 'react';
 import { type Block, type Page as OfferPage, type OfferConfiguration, OfferItem, Page, } from '@/types/offer';
 import { cn } from '@/lib/utils';
@@ -64,6 +64,7 @@ export interface GlobalState {
 
   // Checkout
   updateSessionProperties: (blockId: string, value: any) => Promise<void>;
+  reloadSubscriptionPreview: () => Promise<void>;
 
   offer: OfferConfiguration;
   theme: Theme;
@@ -79,12 +80,18 @@ export function GlobalStateProvider({ offer, offerItems, session: defaultSession
   const [hookUsage, setHookUsage] = useState<Record<string, HookUsage[]>>({});
   const [registeredHooks, setRegisteredHooks] = useState<Set<string>>(new Set());
   const [session, setSession] = useState<CheckoutSession>(defaultSession);
+  const [currentSubscriptionPreview, setCurrentSubscriptionPreview] = useState<SubscriptionPreview | undefined>(subscriptionPreview);
   const [submissionProps, setSubmissionProps] = useState<() => Promise<unknown>>();
   // Form state
   const [errors, setErrors] = useState<ValidationErrors>({});
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [isSubmitting, setSubmitting] = useState<boolean>(false);
   const previousItemsRef = useRef<OfferItem[]|undefined>(undefined);
+
+  // Update currentSubscriptionPreview when subscriptionPreview prop changes (for deferred props)
+  useEffect(() => {
+    setCurrentSubscriptionPreview(subscriptionPreview);
+  }, [subscriptionPreview]);
 
   const fields = useMemo(() => {
     return Object.values(fieldStates)
@@ -379,6 +386,25 @@ export function GlobalStateProvider({ offer, offerItems, session: defaultSession
     }
   };
 
+  // Function to reload subscription preview data
+  const reloadSubscriptionPreview = async () => {
+    if (editor || session.intent !== 'upgrade' || !session.subscription) {
+      return;
+    }
+
+    try {
+      const response = await axios.get(`/checkouts/${session.id}/preview`);
+      if (response.status === 200 && response.data.enabled) {
+        setCurrentSubscriptionPreview(response.data);
+      } else {
+        setCurrentSubscriptionPreview(undefined);
+      }
+    } catch (error) {
+      console.error('Failed to reload subscription preview:', error);
+      setCurrentSubscriptionPreview(undefined);
+    }
+  };
+
   const updateLineItem = async ({ item, price, quantity, required }: SetItemActionValue) => {
     // Store previous line items for comparison
     const previousLineItems = session.line_items || [];
@@ -414,6 +440,9 @@ export function GlobalStateProvider({ offer, offerItems, session: defaultSession
       const updatedSession = response.data;
       setSession(updatedSession);
 
+      // Reload subscription preview after line item changes
+      await reloadSubscriptionPreview();
+
       // Determine change type based on line item count and total changes
       const changeType = quantity === 0 ? 'removed' :
                         previousLineItems.length < (updatedSession.line_items || []).length ? 'added' :
@@ -434,7 +463,7 @@ export function GlobalStateProvider({ offer, offerItems, session: defaultSession
   };
 
   const switchVariant = async (payload: SwitchVariantActionValue) => {
-    await axios.post(`/checkouts/${session.id}/mutations`, {
+    const response = await axios.post(`/checkouts/${session.id}/mutations`, {
       action: 'switchVariant',
       offer_item_id: payload.item,
       interval: payload.interval,
@@ -442,6 +471,11 @@ export function GlobalStateProvider({ offer, offerItems, session: defaultSession
       // currency ignored server-side. always uses session currency
       // product_id handled via separate switchProduct action
     });
+
+    if (response.status === 200) {
+      // Reload subscription preview after variant changes
+      await reloadSubscriptionPreview();
+    }
   };
 
   const switchProduct = async (payload: SwitchProductActionValue) => {
@@ -460,6 +494,9 @@ export function GlobalStateProvider({ offer, offerItems, session: defaultSession
     if (response.status === 200) {
       const updatedSession = response.data;
       setSession(updatedSession);
+
+      // Reload subscription preview after product changes
+      await reloadSubscriptionPreview();
 
       // Determine change type based on line item count and total changes
       const changeType = previousLineItems.length < (updatedSession.line_items || []).length
@@ -493,6 +530,9 @@ export function GlobalStateProvider({ offer, offerItems, session: defaultSession
       if (response.status === 200) {
         const updatedSession = response.data;
         setSession(updatedSession);
+
+        // Reload subscription preview after discount changes
+        await reloadSubscriptionPreview();
 
         // Fire line item changed event for discount addition
         sendMessage(new CheckoutLineItemChanged(updatedSession, 'price_changed', {
@@ -532,6 +572,9 @@ export function GlobalStateProvider({ offer, offerItems, session: defaultSession
         const updatedSession = response.data;
         setSession(updatedSession);
 
+        // Reload subscription preview after discount changes
+        await reloadSubscriptionPreview();
+
         // Fire line item changed event for discount removal
         sendMessage(new CheckoutLineItemChanged(updatedSession, 'price_changed', {
           discount: discount,
@@ -568,66 +611,115 @@ export function GlobalStateProvider({ offer, offerItems, session: defaultSession
 
   // Create a computed session that includes subscription preview changes
   const computedSession = useMemo(() => {
-    if (!subscriptionPreview?.enabled) {
+    if (!currentSubscriptionPreview?.enabled) {
       return session;
     }
 
-    // Check if this is a trial scenario
-    const isTrial = subscriptionPreview.signal === 'Acquisition' && subscriptionPreview.totals.due_now === 0;
-            const isTrialExpansion = (subscriptionPreview.signal === 'Switch' || subscriptionPreview.signal === 'Expansion') && subscriptionPreview.totals.due_now === 0;
-    
-    if (isTrial) {
-      // For trials, show the original line item but with trial information
-      // Don't add preview lines, just modify the display
-      return {
-        ...session,
-        // Keep original totals for trials - no additional charges
-        subtotal: session.subtotal,
-        total: session.total,
-        // Add trial metadata for UI display
-        metadata: {
-          ...session.metadata,
-          isTrial: true,
-          trialDays: subscriptionPreview.actions?.start_trial?.trial_days || 14,
-          trialEnd: subscriptionPreview.actions?.start_trial?.trial_end,
-          billingStartDate: subscriptionPreview.actions?.start_trial?.trial_end,
-          postTrialAmount: subscriptionPreview.actions?.skip_trial?.due_now || 0,
-        },
-      };
-    }
+    const strategy = currentSubscriptionPreview.effective?.strategy;
+    const totalDueAtEffective = currentSubscriptionPreview.delta?.total_due_at_effective || 0;
+    const currency = currentSubscriptionPreview.delta?.currency || session.currency;
+    const currentQuantity = currentSubscriptionPreview.current?.base_item?.quantity || 1;
+    const proposedQuantity = currentSubscriptionPreview.proposed?.base_item?.quantity || 1;
 
-    if (isTrialExpansion) {
-      // For trial expansions, show the original line item but with trial expansion information
+    // Handle different preview scenarios based on strategy
+    if (strategy === 'at_trial_end') {
+      // Trial expansion scenarios
       return {
         ...session,
-        // Keep original totals for trial expansions - no additional charges
         subtotal: session.subtotal,
         total: session.total,
-        // Add trial expansion metadata for UI display
         metadata: {
           ...session.metadata,
           isTrialExpansion: true,
-          trialEnd: subscriptionPreview.actions?.expand_at_trial_end?.trial_end,
-          billingStartDate: subscriptionPreview.actions?.expand_at_trial_end?.trial_end,
-          postTrialAmount: subscriptionPreview.actions?.expand_at_trial_end?.next_period_amount || 0,
+          trialEnd: currentSubscriptionPreview.effective.at,
+          billingStartDate: currentSubscriptionPreview.effective.at,
+          postTrialAmount: totalDueAtEffective,
+          effectiveDate: currentSubscriptionPreview.effective.at,
         },
       };
     }
 
-    // For subscription changes, due_now might be 0
-    const previewAmount = subscriptionPreview.totals.due_now || 0;
-    const previewCurrency = subscriptionPreview.totals.currency;
-    
-    // Convert preview amount to session currency if different
-    let adjustedAmount = previewAmount;
-    if (previewCurrency !== session.currency) {
-      // For now, assume 1:1 conversion - in production you'd want proper currency conversion
-      adjustedAmount = previewAmount;
+    if (strategy === 'at_period_end') {
+      // Period-end swap scenarios
+      return {
+        ...session,
+        subtotal: session.subtotal,
+        total: session.total,
+        metadata: {
+          ...session.metadata,
+          isPeriodEndSwap: true,
+          nextPeriodAmount: totalDueAtEffective,
+          effectiveDate: currentSubscriptionPreview.effective.at,
+          currentAmount: session.total,
+        },
+      };
     }
 
+    if (strategy === 'at_date') {
+      // Immediate swap scenarios
+      if (totalDueAtEffective > 0) {
+        // Add preview lines for immediate swap
+        const previewLineItems: CheckoutItem[] = currentSubscriptionPreview.invoice_preview?.lines?.map((line, index) => ({
+          id: -(index + 1),
+          name: line.description || 'Plan change adjustment',
+          quantity: 1,
+          currency: line.currency || session.currency,
+          subtotal: line.amount,
+          taxes: 0,
+          inclusive_taxes: 0,
+          shipping: 0,
+          discount: 0,
+          total: line.amount,
+          product: undefined,
+          is_highlighted: false,
+          price: {
+            id: `preview-price-${index}`,
+            name: line.description || 'Plan change adjustment',
+            type: 'one_time',
+            currency: line.currency || session.currency,
+            amount: line.amount,
+            interval: null,
+            renew_interval: null,
+            cancel_after_cycles: null,
+          },
+          type: 'standard' as const,
+        })) || [];
+
+        return {
+          ...session,
+          line_items: [...session.line_items, ...previewLineItems],
+          subtotal: totalDueAtEffective,
+          total: totalDueAtEffective,
+          metadata: {
+            ...session.metadata,
+            isImmediateSwap: true,
+            swapAmount: totalDueAtEffective,
+            effectiveDate: currentSubscriptionPreview.effective.at,
+          },
+        };
+      } else {
+        // No immediate charge
+        return {
+          ...session,
+          subtotal: session.subtotal,
+          total: session.total,
+          metadata: {
+            ...session.metadata,
+            isPeriodEndSwap: true,
+            nextPeriodAmount: totalDueAtEffective,
+            effectiveDate: currentSubscriptionPreview.effective.at,
+            currentAmount: session.total,
+          },
+        };
+      }
+    }
+
+    // Generic preview scenarios (fallback)
+    const previewAmount = totalDueAtEffective || 0;
+    
     // Add preview lines as additional line items to show the breakdown
-    const previewLineItems: CheckoutItem[] = subscriptionPreview.lines.map((line, index) => ({
-      id: -(index + 1), // Use negative IDs to avoid conflicts with real line items
+    const previewLineItems: CheckoutItem[] = currentSubscriptionPreview.invoice_preview?.lines?.map((line, index) => ({
+      id: -(index + 1),
       name: line.description || 'Plan change adjustment',
       quantity: 1,
       currency: line.currency || session.currency,
@@ -650,20 +742,22 @@ export function GlobalStateProvider({ offer, offerItems, session: defaultSession
         cancel_after_cycles: null,
       },
       type: 'standard' as const,
-    }));
-
-    // For subscription changes, the preview amount represents the total due now
-    // We keep the original line items but adjust the totals to show the net change
-    const newSubtotal = adjustedAmount;
-    const newTotal = adjustedAmount;
+    })) || [];
 
     return {
       ...session,
       line_items: [...session.line_items, ...previewLineItems],
-      subtotal: newSubtotal,
-      total: newTotal,
+      subtotal: previewAmount,
+      total: previewAmount,
+      metadata: {
+        ...session.metadata,
+        isGenericPreview: true,
+        previewAmount: previewAmount,
+        previewStrategy: strategy,
+        effectiveDate: currentSubscriptionPreview.effective.at,
+      },
     };
-  }, [session, subscriptionPreview]);
+  }, [session, currentSubscriptionPreview]);
 
   // Create context value
   const value: GlobalState = {
@@ -694,6 +788,7 @@ export function GlobalStateProvider({ offer, offerItems, session: defaultSession
     switchProduct,
     addDiscount,
     removeDiscount,
+    reloadSubscriptionPreview,
 
     // Submission
     // submitPage,
@@ -701,7 +796,7 @@ export function GlobalStateProvider({ offer, offerItems, session: defaultSession
     offer,
     theme: offer?.theme ?? {} as Theme,
     session: computedSession, // Use computed session instead of raw session
-    subscriptionPreview,
+    subscriptionPreview: currentSubscriptionPreview,
     setSession,
 
     isEditor: editor
