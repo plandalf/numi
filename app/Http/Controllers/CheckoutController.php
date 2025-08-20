@@ -102,6 +102,7 @@ class CheckoutController extends Controller
         // New: handle intent and subscription for upgrades
         $intent = $request->query('intent', 'purchase');
         $subscription = $intent === 'upgrade' ? $request->query('subscription') : null;
+        $quantity = $request->query('quantity'); // Handle quantity for expansion scenarios
 
         $checkoutSession = $this->createCheckoutSessionAction
             ->execute(
@@ -112,7 +113,8 @@ class CheckoutController extends Controller
                 $currencyOverride,
                 $customerProperties,
                 $intent,
-                $subscription
+                $subscription,
+                $quantity // Pass quantity to the action
             );
 
         $this->handleInvalidDomain($request, $checkoutSession);
@@ -178,7 +180,10 @@ class CheckoutController extends Controller
             // calculation ?
             'checkoutSession' => new CheckoutSessionResource($checkout),
 
-            // if intent is different we need to defer load the existing subscription in
+            // Deferred preview for subscription upgrade/swap deltas
+            'subscriptionPreview' => Inertia::defer(function () use ($checkout) {
+                return app(\App\Actions\Checkout\PreviewSubscriptionChangeAction::class)($checkout);
+            }),
         ])->with([
             'customFonts' => $customFonts,
             'googleFontsUrl' => $googleFontsUrl,

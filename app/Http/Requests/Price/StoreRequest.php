@@ -6,6 +6,7 @@ namespace App\Http\Requests\Price;
 
 use App\Enums\ChargeType;
 use App\Enums\RenewInterval;
+use App\Models\Catalog\Price as CatalogPrice;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
@@ -58,15 +59,20 @@ class StoreRequest extends FormRequest
                     return $query->where('product_id', $product->id)
                         ->where('scope', 'list');
                 }),
-                // Custom validation to ensure type matches parent
-                // function ($attribute, $value, $fail) {
-                //     if ($value && in_array($this->input('scope'), ['custom', 'variant'])) {
-                //         $parentPrice = \App\Models\Catalog\Price::find($value);
-                //         if ($parentPrice && $this->input('type') !== $parentPrice->type) {
-                //             $fail("The selected type must match the parent price type ({$parentPrice->type->value}).");
-                //         }
-                //     }
-                // },
+                // Ensure type matches parent (using enum values)
+                function ($attribute, $value, $fail) {
+                    if ($value && in_array($this->input('scope'), ['custom', 'variant'])) {
+                        /** @var CatalogPrice|null $parentPrice */
+                        $parentPrice = CatalogPrice::find($value);
+                        if ($parentPrice) {
+                            $childType = $this->input('type');
+                            $parentType = $parentPrice->type?->value ?? (string) $parentPrice->type;
+                            if ($childType !== $parentType) {
+                                $fail("The selected type must match the parent price type ({$parentType}).");
+                            }
+                        }
+                    }
+                },
             ],
             // Recurring fields validation
             'renew_interval' => [
@@ -108,13 +114,7 @@ class StoreRequest extends FormRequest
             $this->merge(['parent_list_price_id' => null]);
         }
 
-        // For custom/variant prices, ensure we do NOT link to gateway objects
-        if (in_array($this->input('scope'), ['custom', 'variant'])) {
-            $this->merge([
-                'gateway_provider' => null,
-                'gateway_price_id' => null,
-            ]);
-        }
+        // Retain gateway linkage even for custom/variant prices (moving/variants may still be gateway-linked)
 
         // Clear recurring fields for one-time charges
         if ($this->input('type') === ChargeType::ONE_TIME->value) {
