@@ -133,7 +133,7 @@ class CreateCheckoutSessionAction
         }
 
         if ($currencyOverride && $currencyOverride !== 'auto'
-            && strtoupper($parentPrice->currency) !== strtoupper($currencyOverride)
+            && strtolower($parentPrice->currency) !== strtolower($currencyOverride)
         ) {
             $parentMatches = false;
         }
@@ -155,12 +155,8 @@ class CreateCheckoutSessionAction
 
         // Filter by currency if provided
         if ($currencyOverride && $currencyOverride !== 'auto') {
-            $query->where('currency', strtoupper($currencyOverride));
+            $query->where('currency', strtolower($currencyOverride));
         }
-
-        Log::info(logname(), [
-            'sql' => $query->toRawSql(),
-        ]);
 
         // Return the first matching child price
         return $query->first();
