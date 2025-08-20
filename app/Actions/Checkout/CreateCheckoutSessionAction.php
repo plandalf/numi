@@ -14,8 +14,17 @@ class CreateCheckoutSessionAction
         private readonly CreateCheckoutLineItemAction $createCheckoutLineItemAction
     ) {}
 
-    public function execute(Offer $offer, array $checkoutItems, bool $testMode = false, ?string $intervalOverride = null, ?string $currencyOverride = null, array $customerProperties = [], string $intent = 'purchase', ?string $subscription = null, ?int $quantity = null): CheckoutSession
-    {
+    public function execute(
+        Offer $offer,
+        array $checkoutItems,
+        bool $testMode = false,
+        ?string $intervalOverride = null,
+        ?string $currencyOverride = null,
+        array $customerProperties = [],
+        string $intent = 'purchase',
+        ?string $subscription = null,
+        ?int $quantity = null
+    ): CheckoutSession {
         $paymentIntegration = $offer->organization
             ->integrations()
             ->where('type', $testMode

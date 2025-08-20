@@ -12,15 +12,15 @@ use App\Modules\Billing\Changes\ChangeIntent;
 use App\Modules\Integrations\Contracts\SupportsSubscriptionPreview;
 use Carbon\Carbon;
 
+/**
+ * Generalized preview dispatcher for all change types using SignalID.
+ * Derives a ChangeIntent by comparing current vs future state, then delegates to PreviewChangeAction.
+ *
+ * @param  string|null  $effectiveAt  ISO8601 time, or null to infer (trial end → period end → now)
+ * @return array<string, mixed>
+ */
 class PreviewChangeAdapterAction
 {
-    /**
-     * Generalized preview dispatcher for all change types using SignalID.
-     * Derives a ChangeIntent by comparing current vs future state, then delegates to PreviewChangeAction.
-     *
-     * @param  string|null  $effectiveAt  ISO8601 time, or null to infer (trial end → period end → now)
-     * @return array<string, mixed>
-     */
     public function __invoke(CheckoutSession $session, ?string $effectiveAt = null): array
     {
         // Ensure relations are available

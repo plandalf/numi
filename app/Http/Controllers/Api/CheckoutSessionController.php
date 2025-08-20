@@ -21,21 +21,12 @@ class CheckoutSessionController extends Controller
 {
     public function preview(CheckoutSession $checkoutSession, Request $request)
     {
-        try {
-            $action = app(PreviewSubscriptionChangeAction::class);
-            $effectiveAt = $request->input('effective_at');
+        $action = app(PreviewSubscriptionChangeAction::class);
+        $effectiveAt = $request->input('effective_at');
 
-            $result = $action($checkoutSession, $effectiveAt);
+        $result = $action($checkoutSession, $effectiveAt);
 
-            return response()->json($result);
-        } catch (\Exception $e) {
-            report($e);
-
-            return response()->json([
-                'enabled' => false,
-                'reason' => 'Failed to generate preview: '.$e->getMessage(),
-            ], 500);
-        }
+        return response()->json($result);
     }
 
     public function storeMutation(
@@ -144,6 +135,8 @@ class CheckoutSessionController extends Controller
             'product_id' => 'nullable|integer',
         ]);
 
+        // recurring_interval_count?
+
         $offerItem = OfferItem::query()
             ->where('offer_id', $checkoutSession->offer_id)
             ->findOrFail($validated['offer_item_id']);
@@ -215,7 +208,9 @@ class CheckoutSessionController extends Controller
             'product_id' => 'required|integer',
         ]);
 
-        $offerItem = OfferItem::query()->findOrFail($validated['offer_item_id']);
+        $offerItem = OfferItem::query()
+            ->where('offer_id', $checkoutSession->offer_id)
+            ->findOrFail($validated['offer_item_id']);
 
         $targetCurrency = strtolower($checkoutSession->currency);
 
@@ -223,8 +218,7 @@ class CheckoutSessionController extends Controller
         $listPrice = Price::query()
             ->where('product_id', $validated['product_id'])
             ->where('scope', 'list')
-            // ->where('currency', $targetCurrency)
-            // ->orderByDesc('is_active')
+            ->where('currency', $targetCurrency)
             ->orderByDesc('id')
             ->first();
 

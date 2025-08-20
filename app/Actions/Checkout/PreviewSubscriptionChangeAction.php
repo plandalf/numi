@@ -9,6 +9,15 @@ use App\Models\Checkout\CheckoutSession;
 use App\Modules\Integrations\Stripe\Stripe;
 use Carbon\Carbon;
 
+/**
+ * Compute a preview of the delta (proration, immediate or future invoice impact) for changing the base plan.
+ * - Only swaps the base plan (STANDARD + required item) to the new recurring price
+ * - Keeps other subscription items (addons) as-is
+ * - Supports trial-aware and period-end future effective times
+ *
+ * @param  string|null  $effectiveAt  ISO8601 time, or null to infer (trial end → period end → now)
+ * @return array<string, mixed>
+ */
 class PreviewSubscriptionChangeAction
 {
     private ?Stripe $stripeIntegration = null;
@@ -21,15 +30,7 @@ class PreviewSubscriptionChangeAction
         $this->stripeIntegration = $integration;
     }
 
-    /**
-     * Compute a preview of the delta (proration, immediate or future invoice impact) for changing the base plan.
-     * - Only swaps the base plan (STANDARD + required item) to the new recurring price
-     * - Keeps other subscription items (addons) as-is
-     * - Supports trial-aware and period-end future effective times
-     *
-     * @param  string|null  $effectiveAt  ISO8601 time, or null to infer (trial end → period end → now)
-     * @return array<string, mixed>
-     */
+
     public function __invoke(CheckoutSession $session, ?string $effectiveAt = null): array
     {
         if ($session->intent !== 'upgrade' || empty($session->subscription)) {

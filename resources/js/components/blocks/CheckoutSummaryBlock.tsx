@@ -12,7 +12,13 @@ import { OfferItemType } from "@/types/offer";
 
 function CheckoutSummaryComponent({ context: _context }: { context: BlockContextType }) {
   const theme = Numi.useTheme();
-  const { session, subscriptionPreview, addDiscount, removeDiscount, isEditor } = Numi.useCheckout({});
+  const {
+    session,
+    subscriptionPreview,
+    addDiscount,
+    removeDiscount,
+    isEditor
+  } = Numi.useCheckout({});
 
   const [title] = Numi.useStateString({
     label: 'Title',
@@ -169,7 +175,7 @@ function CheckoutSummaryComponent({ context: _context }: { context: BlockContext
   const isPeriodEndSwap = Boolean(session?.metadata?.isPeriodEndSwap);
   const isSkipTrial = Boolean(session?.metadata?.isSkipTrial);
   const isGenericPreview = Boolean(session?.metadata?.isGenericPreview);
-  
+
   const trialStartIso = session?.metadata?.billingStartDate as string | undefined;
   const postTrialAmount = session?.metadata?.postTrialAmount as number | undefined;
   const swapAmount = session?.metadata?.swapAmount as number | undefined;
@@ -177,7 +183,7 @@ function CheckoutSummaryComponent({ context: _context }: { context: BlockContext
   const skipAmount = session?.metadata?.skipAmount as number | undefined;
   const previewAmount = session?.metadata?.previewAmount as number | undefined;
   const effectiveDate = session?.metadata?.effectiveDate as string | undefined;
-  
+
   const trialStartDateLabel = useMemo(() => {
     if (!trialStartIso) return '';
     try { return new Date(trialStartIso).toLocaleDateString(); } catch { return ''; }
@@ -517,7 +523,7 @@ function CheckoutSummaryComponent({ context: _context }: { context: BlockContext
   return (
     <div className="flex flex-col p-4 gap-4" style={containerStyle}>
       {title && <h3 className="font-medium text-lg" style={titleStyle}>{title}</h3>}
-      
+
       {/* Order Items */}
       <div className="space-y-3 overflow-y-auto h-auto max-h-[300px]">
         {lineItems.length === 0 && (
@@ -647,7 +653,7 @@ function CheckoutSummaryComponent({ context: _context }: { context: BlockContext
             {formatMoney(isTrialCheckout || isTrialExpansionCheckout || isPeriodEndSwap ? 0 : session.total, currency)}
           </span>
         </div>
-        
+
         {/* Additional total information for different scenarios */}
         {(isTrialCheckout || isTrialExpansionCheckout) && postTrialAmount !== undefined && (
           <div className="flex justify-between text-sm">
@@ -655,28 +661,28 @@ function CheckoutSummaryComponent({ context: _context }: { context: BlockContext
             <span style={summaryTextStyle}>{formatMoney(postTrialAmount, currency)}</span>
           </div>
         )}
-        
+
         {isPeriodEndSwap && nextPeriodAmount !== undefined && (
           <div className="flex justify-between text-sm">
             <span style={summaryTextStyle}>Next period total{effectiveDateLabel ? `: ${effectiveDateLabel}` : ''}</span>
             <span style={summaryTextStyle}>{formatMoney(nextPeriodAmount, currency)}</span>
           </div>
         )}
-        
+
         {isImmediateSwap && swapAmount !== undefined && (
           <div className="flex justify-between text-sm">
             <span style={summaryTextStyle}>Plan change fee</span>
             <span style={summaryTextStyle}>{formatMoney(swapAmount, currency)}</span>
           </div>
         )}
-        
+
         {isSkipTrial && skipAmount !== undefined && (
           <div className="flex justify-between text-sm">
             <span style={summaryTextStyle}>Skip trial fee</span>
             <span style={summaryTextStyle}>{formatMoney(skipAmount, currency)}</span>
           </div>
         )}
-        
+
         {isGenericPreview && previewAmount !== undefined && (
           <div className="flex justify-between text-sm">
             <span style={summaryTextStyle}>Adjustment total{effectiveDateLabel ? `: ${effectiveDateLabel}` : ''}</span>

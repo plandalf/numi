@@ -181,11 +181,9 @@ class CheckoutController extends Controller
             'checkoutSession' => new CheckoutSessionResource($checkout),
 
             // Deferred preview for subscription upgrade/swap deltas
-            'subscriptionPreview' => \Inertia\Inertia::defer(function () use ($checkout) {
+            'subscriptionPreview' => Inertia::defer(function () use ($checkout) {
                 return app(\App\Actions\Checkout\PreviewSubscriptionChangeAction::class)($checkout);
             }),
-
-            // if intent is different we need to defer load the existing subscription in
         ])->with([
             'customFonts' => $customFonts,
             'googleFontsUrl' => $googleFontsUrl,
