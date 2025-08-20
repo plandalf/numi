@@ -91,13 +91,14 @@ export function isValidUrl(url: string): boolean {
 }
 
 export function getSupportedCurrencies(): { code: string; name: string }[] {
+    // Use ISO currency codes; UI can map symbols separately
     return [
-        { code: '$ USD', name: '🇺🇸 US Dollar' },
-        { code: '£ GBP', name: '🇬🇧 British Pound' },
-        { code: '¥ JPY', name: '🇯🇵 Japanese Yen' },
-        { code: '$ CAD', name: '🇨🇦 Canadian Dollar' },
-        { code: '$ AUD', name: '🇦🇺 Australian Dollar' },
-        { code: '$ NZD', name: '🇳🇿 New Zealand Dollar' },
-        { code: '€ EUR', name: '🇳🇿 Euros' },
+        { code: 'USD', name: 'US Dollar' },
+        { code: 'GBP', name: 'British Pound' },
+        { code: 'JPY', name: 'Japanese Yen' },
+        { code: 'CAD', name: 'Canadian Dollar' },
+        { code: 'AUD', name: 'Australian Dollar' },
+        { code: 'NZD', name: 'New Zealand Dollar' },
+        { code: 'EUR', name: 'Euro' },
     ];
 }

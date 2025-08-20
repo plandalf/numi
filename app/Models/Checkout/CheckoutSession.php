@@ -9,8 +9,8 @@ use App\Models\Customer;
 use App\Models\Integration;
 use App\Models\Order\Order;
 use App\Models\Organization;
-use App\Models\Store\Offer;
 use App\Models\PaymentMethod;
+use App\Models\Store\Offer;
 use App\Modules\Integrations\AbstractIntegration;
 use App\Modules\Integrations\Stripe\Stripe;
 use Carbon\Carbon;
@@ -27,7 +27,6 @@ use Illuminate\Support\Arr;
  * @property int|null $payment_method_id
  *
  * // todo :itnegration_id
- *
  * @property int $offer_id
  * @property array<string, string> $properties
  * @property Carbon $expires_at
@@ -40,12 +39,12 @@ use Illuminate\Support\Arr;
  * @property bool $test_mode
  * @property Organization $organization
  * @property array $discounts
- *
  * @property string $currency
  * @property string $publishable_key
  * @property array|null $metadata
  * @property string $intent_type
- *
+ * @property string $intent
+ * @property string|null $subscription
  * @property string $client_secret
  * @property string $payment_confirmed_at
  * @property bool $payment_method_locked
@@ -59,10 +58,8 @@ use Illuminate\Support\Arr;
  * @property array $enabled_payment_methods
  * @property Order|null $order
  * @property Offer $offer
- *
  * @property int $payments_integration_id
  * @property Integration $paymentsIntegration
- *
  * @property Integration $integration DEPRECATED
  * @property mixed $intent_id
  * @property Stripe $integrationClient
@@ -90,10 +87,15 @@ class CheckoutSession extends Model
         'test_mode',
         'customer_id',
         'payment_method_id',
+
+        'intent_id',
+        'intent_type',
+        'intent', 'subscription',
+
+        'client_secret',
         'return_url', // [stripe-intent]
         'payment_confirmed_at', // [stripe-intent]
         'payment_method_locked', // [stripe-intent]
-        'intent_id', 'intent_type', 'client_secret'
     ];
 
     protected $casts = [
@@ -144,7 +146,7 @@ class CheckoutSession extends Model
 
     public function getIntegrationAttribute()
     {
-        if (!is_null($this->payments_integration_id)) {
+        if (! is_null($this->payments_integration_id)) {
             return $this->paymentsIntegration;
         }
 
@@ -188,7 +190,7 @@ class CheckoutSession extends Model
     {
         $subtotal = $this->lineItems->sum('total');
 
-        if (!empty($this->discounts)) {
+        if (! empty($this->discounts)) {
             $discountAmount = 0;
             foreach ($this->discounts as $discount) {
                 if (isset($discount['percent_off'])) {
@@ -238,7 +240,7 @@ class CheckoutSession extends Model
 
     public function getEnabledPaymentMethodsAttribute()
     {
-        if (!$this->integration) {
+        if (! $this->integration) {
             return [];
         }
 
@@ -253,14 +255,15 @@ class CheckoutSession extends Model
     public function getIntentModeAttribute(): string
     {
         // Load line items with their prices if not already loaded
-        if (!$this->relationLoaded('lineItems')) {
+        if (! $this->relationLoaded('lineItems')) {
             $this->load('lineItems.price');
         }
 
         // Check if any line item has a recurring price (subscription)
         $hasSubscriptionItems = $this->lineItems->some(function (CheckoutLineItem $lineItem) {
             $price = $lineItem->price;
-            return $price && $price->type->isSubscription() && !empty($price->renew_interval);
+
+            return $price && $price->type->isSubscription() && ! empty($price->renew_interval);
         });
 
         return $hasSubscriptionItems ? 'setup' : 'payment';
@@ -269,25 +272,27 @@ class CheckoutSession extends Model
     public function getHasSubscriptionItemsAttribute(): bool
     {
         // Load line items with their prices if not already loaded
-        if (!$this->relationLoaded('lineItems')) {
+        if (! $this->relationLoaded('lineItems')) {
             $this->load('lineItems.price');
         }
 
         return $this->lineItems->some(function (CheckoutLineItem $lineItem) {
             $price = $lineItem->price;
-            return $price && $price->type->isSubscription() && !empty($price->renew_interval);
+
+            return $price && $price->type->isSubscription() && ! empty($price->renew_interval);
         });
     }
 
     public function getHasOnetimeItemsAttribute(): bool
     {
         // Load line items with their prices if not already loaded
-        if (!$this->relationLoaded('lineItems')) {
+        if (! $this->relationLoaded('lineItems')) {
             $this->load('lineItems.price');
         }
 
         return $this->lineItems->some(function (CheckoutLineItem $lineItem) {
             $price = $lineItem->price;
+
             return $price && $price->type->isOneTime();
         });
     }
@@ -300,7 +305,7 @@ class CheckoutSession extends Model
     public function hasACompletedOrder(): bool
     {
         if ($this->status === \App\Enums\CheckoutSessionStatus::CLOSED) {
-            return !is_null($this->order);
+            return ! is_null($this->order);
         }
 
         return false;
@@ -309,7 +314,7 @@ class CheckoutSession extends Model
     public function integrationClient(): ?AbstractIntegration
     {
 
-        if (!is_null($this->payments_integration_id)) {
+        if (! is_null($this->payments_integration_id)) {
             return $this->paymentsIntegration->integrationClient();
         }
 
@@ -327,7 +332,7 @@ class CheckoutSession extends Model
     public function getIntentState(): array
     {
         // If no intent exists, user can proceed normally
-        if (!$this->intent_id || !$this->client_secret) {
+        if (! $this->intent_id || ! $this->client_secret) {
             return [
                 'can_proceed' => true,
                 'blocked' => false,
@@ -340,7 +345,7 @@ class CheckoutSession extends Model
 
         try {
             $integrationClient = $this->integrationClient();
-            if (!$integrationClient) {
+            if (! $integrationClient) {
                 return [
                     'can_proceed' => false,
                     'blocked' => true,
@@ -354,7 +359,7 @@ class CheckoutSession extends Model
             // Retrieve the intent from Stripe to check its current state
             $intent = $integrationClient->retrieveIntent($this->intent_id, $this->intent_type);
 
-            if (!$intent) {
+            if (! $intent) {
                 return [
                     'can_proceed' => false,
                     'blocked' => true,
@@ -376,7 +381,7 @@ class CheckoutSession extends Model
                     'last_intent_status_check' => now()->toISOString(),
                     'intent_status' => $intentStatus,
                     'requires_action' => $requiresAction,
-                ])
+                ]),
             ]);
 
             // Determine if user should be blocked
@@ -387,11 +392,11 @@ class CheckoutSession extends Model
             if ($intentStatus === 'canceled') {
                 $blocked = true;
                 $reason = 'Payment was canceled';
-            } elseif ($intentStatus === 'succeeded' && !$this->payment_confirmed_at) {
+            } elseif ($intentStatus === 'succeeded' && ! $this->payment_confirmed_at) {
                 // Payment succeeded but not confirmed locally - this is unusual
                 $blocked = true;
                 $reason = 'Payment already succeeded but not confirmed';
-            } elseif ($intentStatus === 'processing' && !$this->payment_confirmed_at) {
+            } elseif ($intentStatus === 'processing' && ! $this->payment_confirmed_at) {
                 // Payment is processing but not confirmed locally
                 $blocked = true;
                 $reason = 'Payment is processing';
@@ -404,7 +409,7 @@ class CheckoutSession extends Model
             // These are normal states for a payment that hasn't been completed yet
 
             return [
-                'can_proceed' => !$blocked,
+                'can_proceed' => ! $blocked,
                 'blocked' => $blocked,
                 'reason' => $reason,
                 'intent_status' => $intentStatus,
@@ -437,6 +442,6 @@ class CheckoutSession extends Model
      */
     public function hasActiveIntent(): bool
     {
-        return !empty($this->intent_id) && !empty($this->client_secret);
+        return ! empty($this->intent_id) && ! empty($this->client_secret);
     }
 }

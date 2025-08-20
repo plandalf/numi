@@ -1,0 +1,11 @@
+{
+    "mcpServers": {
+        "laravel-boost": {
+            "command": "php",
+            "args": [
+                "/Users/wavy/plandalf/numi/artisan",
+                "boost:mcp"
+            ]
+        }
+    }
+}

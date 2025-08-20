@@ -13,10 +13,11 @@ import {
   PopoverContent, 
   PopoverTrigger 
 } from '@/components/ui/popover';
-import { Edit, Trash2, Plus, Info, CornerDownRight, Check } from 'lucide-react';
+import { Edit, Trash2, Plus, ChevronDown, Info, CornerDownRight, Link2 } from 'lucide-react';
 import { formatMoney } from '@/lib/utils';
 import { Price } from '@/types/offer';
 import React from 'react';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 // Helper function to get the base price for complex pricing models
 const getBasePrice = (price: Price): { amount: number; label: string } | null => {
@@ -245,6 +246,19 @@ export const PriceTable: React.FC<PriceTableProps> = ({ prices, onEdit, onDelete
                     <span className={isChild ? 'text-sm' : ''}>
                       {price.name || '-'}
                     </span>
+                    {price.gateway_price_id && (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Link2 className="h-4 w-4 text-blue-600" />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <div className="text-xs">
+                            Linked to {price.gateway_provider || 'stripe'} price
+                            <div className="font-mono break-all">{price.gateway_price_id}</div>
+                          </div>
+                        </TooltipContent>
+                      </Tooltip>
+                    )}
                   </div>
                   {price.lookup_key && (
                     <div className="text-xs text-muted-foreground break-all">{price.lookup_key}</div>
@@ -273,7 +287,7 @@ export const PriceTable: React.FC<PriceTableProps> = ({ prices, onEdit, onDelete
                   {(() => {
                     // Simple pricing types
                     if (['one_time', 'recurring'].includes(price.type)) {
-                      return `${formatMoney(price.amount, price.currency)}`;
+                      return `${formatMoney(price.amount, price.currency)} ${price.currency.toUpperCase()}`;
                     }
                     
                     // Complex pricing types
@@ -287,7 +301,7 @@ export const PriceTable: React.FC<PriceTableProps> = ({ prices, onEdit, onDelete
                         <div className="flex items-center gap-1">
                           <span className="text-xs text-muted-foreground">{basePrice.label}</span>
                           <span className="font-medium">
-                            {formatMoney(basePrice.amount, price.currency)}
+                            {formatMoney(basePrice.amount, price.currency)} {price.currency.toUpperCase()}
                           </span>
                           {hasBreakdown && (
                             <Info className="h-3 w-3 text-muted-foreground" />

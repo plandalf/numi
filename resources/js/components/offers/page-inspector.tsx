@@ -25,6 +25,7 @@ import { Input } from '../ui/input';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog';
 import { BookmarkIcon } from 'lucide-react';
 import axios from '@/lib/axios';
+import { CodeEditor } from '../editor/code-editor';
 
 interface SaveBlockDialogProps {
   block: Block;
@@ -407,6 +408,13 @@ export const Inspector = ({
                             onChange={value => handleContentChange(hook.name, value)}
                             type='advanced'
                             themeColors={themeColors}
+                          />
+                        ) : hook.type === 'string' && hook.inspector === 'code' ? (
+                          <CodeEditor
+                            label={hook.label || hook.name}
+                            value={block.content?.[hook.name] ?? hook.defaultValue}
+                            onChange={value => handleContentChange(hook.name, value)}
+                            placeholder="Write or paste HTML..."
                           />
                         ) : hook.type === 'string' ? (
                           <StringEditor

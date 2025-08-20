@@ -7,8 +7,6 @@ import { Head, router } from '@inertiajs/react';
 import React, { useState } from 'react';
 import { NumiPopupEmbed, BillingPortalEmbed } from '@plandalf/react';
 import { CheckCircle, DollarSign, Users, Clock } from 'lucide-react';
-import { Link } from '@/components/ui/link';
-
 
 interface PriceInfo {
     id: string;
@@ -64,7 +62,7 @@ interface BillingProps {
 export default function Billing({ subscriptions, portalCustomerToken }: BillingProps) {
     const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
     const [checkoutId, setCheckoutId] = useState<string | null>(null);
-    
+
     // Get the active subscription
     const activeSubscription = subscriptions?.find(sub => sub.active) || subscriptions?.find(sub => sub.on_trial);
     const isPaid = subscriptions?.some(sub => sub.active && !sub.on_trial) || false;
@@ -75,7 +73,7 @@ export default function Billing({ subscriptions, portalCustomerToken }: BillingP
     // Check for success message from URL params or session
     const urlParams = new URLSearchParams(window.location.search);
     const messageCheckoutId = urlParams.get('checkoutId');
-    
+
     // Set checkout ID from URL if present
     if (messageCheckoutId && !checkoutId) {
         setCheckoutId(messageCheckoutId);
@@ -159,7 +157,7 @@ export default function Billing({ subscriptions, portalCustomerToken }: BillingP
                 domain={import.meta.env.VITE_PLANDALF_DOMAIN}
                 customerToken={portalCustomerToken || undefined}
             />
-            
+
             <div className="space-y-6 hidden">
                 {/* Header */}
                 <div className="space-y-2">
@@ -185,7 +183,7 @@ export default function Billing({ subscriptions, portalCustomerToken }: BillingP
                             {status.label}
                         </Badge>
                     </div>
-                    
+
                     <div className="space-y-4">
                         <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
                             <div className="flex items-center gap-3">
@@ -210,7 +208,7 @@ export default function Billing({ subscriptions, portalCustomerToken }: BillingP
                                 )}
                             </div>
                         </div>
-                        
+
                         {isOnTrial && trialDaysLeft > 0 && (
                             <div className="flex items-center gap-2 p-3 bg-amber-50 border border-amber-200 rounded-lg">
                                 <Clock className="h-4 w-4 text-amber-600" />
@@ -220,9 +218,9 @@ export default function Billing({ subscriptions, portalCustomerToken }: BillingP
                                 </div>
                             </div>
                         )}
-                        
+
                         <Separator />
-                        
+
                         <div className="flex items-center justify-between">
                             <div className="space-y-1">
                                 <div className="text-sm font-medium">Plan Features</div>
@@ -230,7 +228,7 @@ export default function Billing({ subscriptions, portalCustomerToken }: BillingP
                                     Unlimited offers, advanced analytics, priority support
                                 </div>
                             </div>
-                            <Button 
+                            <Button
                                 onClick={() => setIsCheckoutOpen(true)}
                                 disabled={isPaid}
                                 className="min-w-[120px]"
@@ -265,13 +263,13 @@ export default function Billing({ subscriptions, portalCustomerToken }: BillingP
                                                 {subscription.product_name || `${subscription.type} Plan`}
                                             </div>
                                             <div className="text-sm text-muted-foreground">
-                                                Status: {subscription.stripe_status} • 
-                                                Type: {subscription.type} • 
+                                                Status: {subscription.stripe_status} •
+                                                Type: {subscription.type} •
                                                 Created: {new Date(subscription.created_at).toLocaleDateString()}
                                             </div>
                                             {subscription.items && subscription.items.length > 0 && (
                                                 <div className="text-xs text-muted-foreground">
-                                                    Items: {subscription.items.map(item => 
+                                                    Items: {subscription.items.map(item =>
                                                         item.price_info?.product?.name || item.stripe_price
                                                     ).join(', ')}
                                                 </div>
@@ -279,12 +277,12 @@ export default function Billing({ subscriptions, portalCustomerToken }: BillingP
                                         </div>
                                         <div className="text-right">
                                             <Badge variant={
-                                                subscription.active ? 'default' : 
-                                                subscription.on_trial ? 'secondary' : 
+                                                subscription.active ? 'default' :
+                                                subscription.on_trial ? 'secondary' :
                                                 'outline'
                                             }>
-                                                {subscription.active ? 'Active' : 
-                                                 subscription.on_trial ? 'Trial' : 
+                                                {subscription.active ? 'Active' :
+                                                 subscription.on_trial ? 'Trial' :
                                                  subscription.canceled ? 'Canceled' : 'Inactive'}
                                             </Badge>
                                             <div className="space-y-1">
@@ -295,9 +293,9 @@ export default function Billing({ subscriptions, portalCustomerToken }: BillingP
                                                 )}
                                                 {(subscription.trial_ends_at || subscription.ends_at) && (
                                                     <div className="text-xs text-muted-foreground">
-                                                        {subscription.trial_ends_at ? 
+                                                        {subscription.trial_ends_at ?
                                                             `Trial ends: ${new Date(subscription.trial_ends_at).toLocaleDateString()}` :
-                                                            subscription.ends_at ? 
+                                                            subscription.ends_at ?
                                                             `Ends: ${new Date(subscription.ends_at).toLocaleDateString()}` : ''
                                                         }
                                                     </div>
@@ -324,8 +322,8 @@ export default function Billing({ subscriptions, portalCustomerToken }: BillingP
                                 <div>
                                     Your subscription has been activated. You should see the changes reflected above shortly.
                                 </div>
-                                <Button 
-                                    variant="outline" 
+                                <Button
+                                    variant="outline"
                                     size="sm"
                                     onClick={() => setCheckoutId(null)}
                                     className="mt-2 border-green-300 text-green-700 hover:bg-green-100"
@@ -338,7 +336,7 @@ export default function Billing({ subscriptions, portalCustomerToken }: BillingP
                 )}
             </div>
 
-        
+
 
             {/* Numi Popup Embed */}
             <NumiPopupEmbed
@@ -352,7 +350,7 @@ export default function Billing({ subscriptions, portalCustomerToken }: BillingP
                     const checkoutId = data.checkoutId || data.id || 'N/A';
                     setCheckoutId(checkoutId);
                     setIsCheckoutOpen(false);
-                    
+
                     // Redirect to checkout completion page using Inertia
                     router.visit(`/organizations/settings/checkout-completion/${checkoutId}`);
                 }}
@@ -367,4 +365,4 @@ export default function Billing({ subscriptions, portalCustomerToken }: BillingP
             />
         </SettingsLayout>
     );
-} 
+}

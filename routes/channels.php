@@ -20,6 +20,6 @@ Broadcast::channel('offer.{offerId}.editing', function ($user, $offerId) {
     return [
         'id' => $user->id,
         'name' => $user->name,
-        'avatar' => "https://www.gravatar.com/avatar/${hash}?s=200&d=identicon",
+        'avatar' => "https://www.gravatar.com/avatar/{$hash}?s=200&d=identicon",
     ];
 });

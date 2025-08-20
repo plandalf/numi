@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\CheckoutSessionAPIController;
 use App\Http\Controllers\Api\CustomerAPIController;
 use App\Http\Controllers\Api\FulfillmentAPIController;
+use App\Http\Controllers\Api\ProductAPIController;
 use App\Http\Controllers\OfferItemsController;
 use Illuminate\Support\Facades\Route;
 
@@ -51,5 +52,13 @@ Route::middleware(['force-json', 'api-key'])->group(function () {
                 'default_currency' => $organization->default_currency,
             ]);
         })->name('organization.show');
+
+        // (reserved) additional v1 endpoints
     });
+});
+
+// App-authenticated API (session-based), not API-key based
+Route::middleware(['web', 'auth', 'organization', 'force-json'])->group(function () {
+    // RESTful Products API (session-authenticated)
+    Route::apiResource('products', ProductAPIController::class);
 });

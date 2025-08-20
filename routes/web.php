@@ -1,35 +1,33 @@
 <?php
 
 use App\Http\Controllers\Api\CheckoutSessionController;
+use App\Http\Controllers\ApiKeysController;
 use App\Http\Controllers\Billing\BillingController as BillingCheckoutController;
 use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\Client\BillingPortalController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\FeedbackController;
+use App\Http\Controllers\ImpersonationController;
 use App\Http\Controllers\IntegrationsController;
 use App\Http\Controllers\MediaController;
 use App\Http\Controllers\NoAccessController;
+use App\Http\Controllers\OfferItemPriceController;
 use App\Http\Controllers\OfferItemsController;
 use App\Http\Controllers\OffersController;
+use App\Http\Controllers\OnboardingController;
+use App\Http\Controllers\OrdersController;
 use App\Http\Controllers\OrderStatusController;
 use App\Http\Controllers\OrganizationController;
 use App\Http\Controllers\PriceController;
 use App\Http\Controllers\ProductsController;
 use App\Http\Controllers\ReusableBlockController;
 use App\Http\Controllers\Settings\ProfileController;
-use App\Http\Controllers\ThemeController;
 use App\Http\Controllers\TemplateController;
+use App\Http\Controllers\ThemeController;
 use App\Http\Controllers\WebhookController;
-use App\Models\Integration;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
-use App\Http\Controllers\OrdersController;
-use App\Http\Controllers\FeedbackController;
-use App\Http\Controllers\OfferItemPriceController;
-use App\Http\Controllers\OnboardingController;
-use App\Http\Controllers\ApiKeysController;
-use App\Http\Controllers\ImpersonationController;
 use App\Http\Controllers\Client\SubscriptionCancellationController;
-
 
 Route::get('test', function (\Illuminate\Http\Request $request) {
 });
@@ -64,6 +62,10 @@ Route::middleware(['frame-embed'])
 
         Route::post('/checkouts/{checkoutSession}/mutations', [CheckoutSessionController::class, 'storeMutation'])
             ->name('checkouts.mutations.store');
+
+        // Preview subscription change (plan upgrade/downgrade)
+        Route::get('/checkouts/{checkoutSession}/preview', [CheckoutSessionController::class, 'preview'])
+            ->name('checkouts.preview');
 
         Route::get('/order-status/{order}', OrderStatusController::class)
             ->name('order-status.show')
@@ -133,13 +135,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
                         Route::prefix('billing')->name('billing.')->group(function () {
                             Route::get('/', [BillingCheckoutController::class, 'billing'])->name('index');
-                            Route::get('/portal', [BillingCheckoutController::class, 'portal'])->name('portal');
                         });
 
                         // Checkout completion routes
                         Route::prefix('checkout-completion')->name('checkout-completion.')->group(function () {
                             Route::get('/{checkoutId}', [\App\Http\Controllers\CheckoutCompletionController::class, 'show'])->name('show');
-                            Route::post('/{checkoutId}/process', [\App\Http\Controllers\CheckoutCompletionController::class, 'process'])->name('process');
                         });
 
                         Route::get('/fulfillment', [OrganizationController::class, 'fulfillment'])->name('fulfillment');
@@ -147,7 +147,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
                         Route::post('/fulfillment/test-email', [OrganizationController::class, 'sendTestFulfillmentEmail'])->name('fulfillment.test-email');
                     });
                 });
-
 
             Route::get('/themes', [ThemeController::class, 'index'])->name('themes.index');
             Route::post('/themes', [ThemeController::class, 'store'])->name('themes.store');
@@ -237,11 +236,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
     });
 });
 
-Route::middleware(['auth', 'organization'])->group(function () {
-    Route::get('organizations/settings/billing/checkout', [BillingCheckoutController::class, 'checkout'])
-        ->name('organizations.settings.billing.checkout');
-});
-
 // Media routes
 Route::middleware(['auth'])->group(function () {
     Route::get('/medias', [MediaController::class, 'index'])->name('medias.index');
@@ -285,15 +279,14 @@ Route::get('/orders/{uuid}/receipt', [App\Http\Controllers\OrderController::clas
     ->middleware('signed');
 
 // Test route for receipt generation (remove in production)
-Route::get('/test-receipt/{uuid}', function($uuid) {
+Route::get('/test-receipt/{uuid}', function ($uuid) {
     $order = \App\Models\Order\Order::where('uuid', $uuid)->first();
-    if (!$order) {
+    if (! $order) {
         return 'Order not found';
     }
+
     return redirect($order->getReceiptUrl());
 })->name('test.receipt');
-
-
 
 // Impersonation routes - LOCAL DEVELOPMENT ONLY
 if (app()->environment('local')) {
@@ -310,4 +303,3 @@ if (app()->environment('local')) {
 require __DIR__.'/auth.php';
 require __DIR__.'/settings.php';
 require __DIR__.'/automation.php';
-

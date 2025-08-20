@@ -5,8 +5,9 @@ import { createContext, useContext, useEffect, useState, useRef, useCallback, us
 import get from "lodash/get";
 import debounce from "lodash/debounce";
 import { Theme } from "@/types/theme";
-import { CheckoutState, GlobalStateContext } from '@/pages/checkout-main';
-import { CallbackType, Event } from "@/components/editor/interaction-event-editor";
+import { GlobalState, GlobalStateContext } from '@/pages/checkout-main';
+import { Event } from "@/components/editor/interaction-event-editor";
+import { SwitchProductActionValue } from '@/components/actions/switch-product-action';
 
 export const BlockContext = createContext<BlockContextType>({
   blockId: '',
@@ -429,12 +430,23 @@ const Numi = {
             case 'deactivateLineItem':
             case 'activateLineItem':
             case 'setItem':
-              checkout.updateLineItem(callback.value);
+              checkout?.updateLineItem(callback.value as any);
+              break;
+            case 'switchVariant':
+              checkout?.switchVariant(callback.value);
+              break;
+            case 'switchProduct':
+              checkout?.switchProduct(callback.value as SwitchProductActionValue);
               break;
             case 'redirect':
               window.open(callback.value, '_blank');
               break;
           }
+        }
+        
+        // Reload subscription preview after any mutation to ensure UI is updated
+        if (checkout?.reloadSubscriptionPreview) {
+          checkout.reloadSubscriptionPreview();
         }
       }
     }, [blockContext]);
@@ -478,10 +490,10 @@ const Numi = {
     return [data];
   },
 
-  useCheckout(options: CheckoutOptions = {}): CheckoutState {
+  useCheckout(options: CheckoutOptions = {}): GlobalState {
     const checkout = useContext(GlobalStateContext);
 
-    return checkout;
+    return checkout!;
   },
 
   useAppearance(appearanceProps: any[]) {
@@ -513,14 +525,13 @@ const Numi = {
 
     // Calculate appearance using useMemo to prevent unnecessary recalculations
     return useMemo(() => {
-      const appearance: Record<string, any> = {};
+      const appearance: Record<string, unknown> = {};
 
-      // Get the value from block config or use default
+      // Get the value from block config or use default; preserve explicit falsy values like false/''/0
       appearanceProps.forEach(prop => {
         if (prop.type) {
-
-          const value = blockContext.blockConfig.appearance?.[prop.type] || prop.defaultValue
-          appearance[prop.type] = value;
+          const configured = blockContext.blockConfig.appearance?.[prop.type];
+          appearance[prop.type] = configured !== undefined ? configured : prop.defaultValue;
         }
       });
 
@@ -556,15 +567,13 @@ const Numi = {
 
     // Calculate styles using useMemo to prevent unnecessary recalculations
     return useMemo(() => {
-      const style: Record<string, any> = {};
+      const style: Record<string, unknown> = {};
 
-
-
-      // Get the value from block config or use default
+      // Get the value from block config or use default; preserve explicit falsy values like false/''/0
       styleProps.forEach(prop => {
         if (prop.type) {
-          style[prop.type] = blockContext.blockConfig.style?.[prop.type]
-          || prop.defaultValue;
+          const configured = blockContext.blockConfig.style?.[prop.type];
+          style[prop.type] = configured !== undefined ? configured : prop.defaultValue;
         }
       });
 

@@ -29,7 +29,6 @@ class BillingController extends Controller
             ->with('items')
             ->get()
             ->map(function ($subscription) {
-                // dd($subscription);
                 // Get price information from Stripe
                 $priceInfo = $this->getStripePriceInfo($subscription->stripe_price);
 
