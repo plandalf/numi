@@ -490,9 +490,13 @@ class BillingPortalController extends Controller
 
         $decoded = JWT::decode($jwt, $keys);
 
-        throw_if(!isset($decoded->customer_id), new \RuntimeException('Invalid token payload'));
+        Log::info(logname(), [
+            'payload' => $decoded,
+            'kid' => $kid,
+            'api_key_id' =>< $apiKey?->id,
+        ]);
 
-        return [$apiKey, (string) $decoded->customer_id ?? ''];
+        return [$apiKey, data_get($decoded, 'customer_id')];
     }
 
     private function getCurrentOrganizationIdOrNull(): ?int
