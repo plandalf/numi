@@ -69,9 +69,6 @@ class SubscriptionCancellationController extends Controller
                 ],
             ],
             'offers' => [
-                // Prototype: coupon and downgrade
-//                ['key' => 'coupon_20', 'type' => 'coupon', 'label' => 'Save 20% for 3 months', 'coupon' => 'SAVE20_3M'],
-//                ['key' => 'downgrade_basic', 'type' => 'downgrade', 'label' => 'Downgrade to Basic plan', 'price_lookup_key' => 'basic_monthly'],
             ],
             'subscription' => Inertia::defer(function () use ($integration, $subscription) {
                 if (! $integration) {
