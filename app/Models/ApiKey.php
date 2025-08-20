@@ -6,10 +6,11 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Str;
+use App\Database\Traits\HasSqids;
 
-class ApiKey extends Model
+class ApiKey extends \App\Database\Model
 {
-    use HasFactory;
+    use HasFactory, HasSqids;
 
     protected $fillable = [
         'name',
@@ -48,19 +49,19 @@ class ApiKey extends Model
     {
         // Find the underscore to separate prefix from key part
         $underscorePos = strpos($key, '_');
-        
+
         if ($underscorePos === false) {
             // Fallback if no underscore found
             return substr($key, 0, 8) . str_repeat('*', strlen($key) - 8);
         }
-        
+
         $prefix = substr($key, 0, $underscorePos + 1); // Include the underscore
         $keyPart = substr($key, $underscorePos + 1);
-        
+
         // Show first 8 characters of the key part, mask the rest
         $visibleKeyChars = 8;
         $maskedKeyChars = strlen($keyPart) - $visibleKeyChars;
-        
+
         return $prefix . substr($keyPart, 0, $visibleKeyChars) . str_repeat('*', $maskedKeyChars);
     }
 

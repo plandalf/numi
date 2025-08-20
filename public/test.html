@@ -111,6 +111,7 @@
                 data-numi-popup-size="medium" 
                 data-numi-offer="bing-bong-1-8Di1dEf1LTe" 
                 data-numi-embed-type="popup"
+            
                 class="popup">
                 Popup (Medium)
             </button>
@@ -157,6 +158,39 @@
             <button onclick="testWildcardMatching()" class="test">Wildcard Matching</button>
             <button onclick="testAnalyticsSetup()" class="test">Analytics Setup</button>
             <button onclick="testSessionState()" class="test">Session State</button>
+        </div>
+    </div>
+
+    <div class="container">
+        <h2>🧾 Billing Portal Test</h2>
+        <p>This button opens the billing portal. In local dev, it will auto-fetch a test JWT and attach it.</p>
+        <div class="buttons">
+            <button
+                id="billingPortalButton"
+                data-numi-embed-type="billing-portal"
+                data-numi-portal="billing"
+                data-numi-button-text="Open Billing Portal"
+                class="popup"
+            >
+                Billing Portal (Popup)
+            </button>
+        </div>
+        <div class="status info" id="billingPortalStatus">Waiting for token…</div>
+    </div>
+
+    <div class="container">
+        <h2>🧾 Billing Portal Test (Provided Token)</h2>
+        <p>Uses a hardcoded token via <code>data-numi-customer</code>.</p>
+        <div class="buttons">
+            <button
+                data-numi-embed-type="billing-portal"
+                data-numi-portal="billing"
+                data-numi-customer="eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJjdXN0b21lcl9pZCI6ImN1c19Tb1oydlZUOTZ4cXFVMyIsImlhdCI6MTc1NDcwOTU2MSwiZXhwIjoxNzU0NzEzMTYxfQ.OUIfZZge0eCFAxqy_g-m4bpF6TqI3iGBGdVrNxIPprY"
+                data-numi-button-text="Open Billing Portal (Provided Token)"
+                class="popup"
+            >
+                Billing Portal (Provided Token)
+            </button>
         </div>
     </div>
 
@@ -395,6 +429,35 @@
         });
     </script>
 
+    <script>
+        // Attempt to fetch a local test token and attach it before v1.js initializes embeds
+        (async function attachBillingTestToken() {
+            try {
+                const res = await fetch('/dev/billing/test-token');
+                if (!res.ok) throw new Error('non-200');
+                const data = await res.json();
+                const btn = document.getElementById('billingPortalButton');
+                if (btn && data && data.token) {
+                    btn.setAttribute('data-numi-customer', data.token);
+                    const status = document.getElementById('billingPortalStatus');
+                    if (status) {
+                        status.textContent = '✅ Test token attached. Click the button to open the portal.';
+                    }
+                    // Log for visibility
+                    if (window.console) {
+                        console.log('[Billing Test] token:', data.token);
+                        console.log('[Billing Test] example_url:', data.example_url);
+                    }
+                } else {
+                    const status = document.getElementById('billingPortalStatus');
+                    if (status) status.textContent = '⚠️ No token available (not local or no ApiKey). You can still open the portal without a token.';
+                }
+            } catch (e) {
+                const status = document.getElementById('billingPortalStatus');
+                if (status) status.textContent = '⚠️ Token fetch failed. You can still open the portal without a token.';
+            }
+        })();
+    </script>
     <!-- Load the enhanced v1.js script -->
     <script src="./js/v1.js"></script>
 </body>
