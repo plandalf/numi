@@ -493,7 +493,7 @@ class BillingPortalController extends Controller
         Log::info(logname(), [
             'payload' => $decoded,
             'kid' => $kid,
-            'api_key_id' =>< $apiKey?->id,
+            'api_key_id' => $apiKey?->id,
         ]);
 
         return [$apiKey, data_get($decoded, 'customer_id')];
