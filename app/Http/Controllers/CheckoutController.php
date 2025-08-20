@@ -15,6 +15,7 @@ use App\Services\FontExtractionService;
 use App\Traits\HandlesLandingPageDomains;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;

@@ -7,6 +7,7 @@ use App\Models\Catalog\Price;
 use App\Models\Checkout\CheckoutSession;
 use App\Models\Store\Offer;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Log;
 
 class CreateCheckoutSessionAction
 {
@@ -43,22 +44,49 @@ class CreateCheckoutSessionAction
                 'subscription' => $intent === 'upgrade' ? $subscription : null,
             ]);
 
+        Log::info(logname(), [
+            'checkout_session_id' => $checkoutSession->id,
+            'currency_override' => $currencyOverride,
+            'items' => $offer->offerItems->count(),
+        ]);
+
         // If no explicit checkout items provided, use offer's default items
         if (empty($checkoutItems)) {
             foreach ($offer->offerItems as $offerItem) {
                 if (! $offerItem->default_price_id || ! $offerItem->is_required) {
+                    Log::info(logname('skip-items'), [
+                        'checkout_session_id' => $checkoutSession->id,
+                    ]);
                     continue;
                 }
 
                 $priceId = $offerItem->default_price_id;
 
+                Log::info(logname('skip-items'), [
+                    'checkout_session_id' => $checkoutSession->id,
+                    'default_price_id' => $priceId,
+                    'interval_override' => $intervalOverride,
+                ]);
+
                 // Apply interval/currency overrides if provided
                 if ($intervalOverride || $currencyOverride) {
                     /* @var Price|null $defaultPrice */
-                    $defaultPrice = $offer->organization->prices()->find($offerItem->default_price_id);
+                    $defaultPrice = $offer->organization
+                        ->prices()
+                        ->find($offerItem->default_price_id);
+
+                    Log::info(logname('skip-items'), [
+                        'checkout_session_id' => $checkoutSession->id,
+                        'default_price_id' => $defaultPrice?->id,
+                    ]);
 
                     if ($defaultPrice) {
                         $overriddenPrice = $this->findPriceWithOverrides($defaultPrice, $intervalOverride, $currencyOverride);
+
+                        Log::info(logname('skip-items'), [
+                            'checkout_session_id' => $checkoutSession->id,
+                            'override_price' => $overriddenPrice?->id,
+                        ]);
 
                         if ($overriddenPrice) {
                             $priceId = $overriddenPrice->id;
@@ -117,7 +145,9 @@ class CreateCheckoutSessionAction
         if ($intervalOverride && $parentPrice->renew_interval !== $intervalOverride) {
             $parentMatches = false;
         }
-        if ($currencyOverride && $currencyOverride !== 'auto' && strtoupper($parentPrice->currency) !== strtoupper($currencyOverride)) {
+        if ($currencyOverride && $currencyOverride !== 'auto'
+            && strtoupper($parentPrice->currency) !== strtoupper($currencyOverride)
+        ) {
             $parentMatches = false;
         }
 
