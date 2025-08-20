@@ -44,29 +44,14 @@ class CreateCheckoutSessionAction
                 'subscription' => $intent === 'upgrade' ? $subscription : null,
             ]);
 
-        Log::info(logname(), [
-            'checkout_session_id' => $checkoutSession->id,
-            'currency_override' => $currencyOverride,
-            'items' => $offer->offerItems->count(),
-        ]);
-
         // If no explicit checkout items provided, use offer's default items
         if (empty($checkoutItems)) {
             foreach ($offer->offerItems as $offerItem) {
                 if (! $offerItem->default_price_id || ! $offerItem->is_required) {
-                    Log::info(logname('skip-items'), [
-                        'checkout_session_id' => $checkoutSession->id,
-                    ]);
                     continue;
                 }
 
                 $priceId = $offerItem->default_price_id;
-
-                Log::info(logname('skip-items'), [
-                    'checkout_session_id' => $checkoutSession->id,
-                    'default_price_id' => $priceId,
-                    'interval_override' => $intervalOverride,
-                ]);
 
                 // Apply interval/currency overrides if provided
                 if ($intervalOverride || $currencyOverride) {
@@ -74,11 +59,6 @@ class CreateCheckoutSessionAction
                     $defaultPrice = $offer->organization
                         ->prices()
                         ->find($offerItem->default_price_id);
-
-                    Log::info(logname('skip-items'), [
-                        'checkout_session_id' => $checkoutSession->id,
-                        'default_price_id' => $defaultPrice?->id,
-                    ]);
 
                     if ($defaultPrice) {
                         $overriddenPrice = $this->findPriceWithOverrides($defaultPrice, $intervalOverride, $currencyOverride);
@@ -140,11 +120,18 @@ class CreateCheckoutSessionAction
      */
     private function findPriceWithOverrides(Price $parentPrice, ?string $intervalOverride, ?string $currencyOverride): ?Price
     {
+        Log::info(logname(), [
+            'parent_price_id' => $parentPrice?->id,
+            'interval_override' => $intervalOverride,
+            'currency_override' => $currencyOverride,
+        ]);
+
         // First check if parent price already matches
         $parentMatches = true;
         if ($intervalOverride && $parentPrice->renew_interval !== $intervalOverride) {
             $parentMatches = false;
         }
+
         if ($currencyOverride && $currencyOverride !== 'auto'
             && strtoupper($parentPrice->currency) !== strtoupper($currencyOverride)
         ) {
@@ -170,6 +157,10 @@ class CreateCheckoutSessionAction
         if ($currencyOverride && $currencyOverride !== 'auto') {
             $query->where('currency', strtoupper($currencyOverride));
         }
+
+        Log::info(logname(), [
+            'sql' => $query->toRawSql(),
+        ]);
 
         // Return the first matching child price
         return $query->first();
