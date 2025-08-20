@@ -65,35 +65,17 @@ class BillingController extends Controller
             });
 
         // Generate a billing portal JWT for the org's Stripe customer (if available)
-        $portalToken = null;
-        $customerId = (string) ($organization->stripe_id ?? '');
-        if ($customerId !== '') {
-            $now = time();
-            $payload = [
-                'customer_id' => $customerId,
-                'iat' => $now,
-                'exp' => $now + 3600,
-            ];
+        $customerId = $organization->stripe_id;
+        $now = time();
+        $payload = [
+            'customer_id' => $customerId,
+            'iat' => $now,
+            'exp' => $now + 3600,
+        ];
 
-            $secret = (string) (config('services.plandalf.billing_portal.secret') ?? '');
-            $kid = (string) (config('services.plandalf.billing_portal.kid') ?? '');
-
-            // dd($secret, $kid,$payload);
-
-            if ($secret !== '') {
-                $portalToken = JWT::encode($payload, $secret, 'HS256', $kid ?: null);
-            } else {
-                $apiKey = ApiKey::query()
-                    ->forOrganization($organization->id)
-                    ->active()
-                    ->latest('id')
-                    ->first();
-                if ($apiKey) {
-                    $headerKid = method_exists($apiKey, 'getSqid') ? $apiKey->getSqid() : null;
-                    $portalToken = JWT::encode($payload, (string) $apiKey->key, 'HS256', $headerKid);
-                }
-            }
-        }
+        $secret = (string) (config('services.plandalf.billing_portal.secret') ?? '');
+        $kid = (string) (config('services.plandalf.billing_portal.kid') ?? '');
+        $portalToken = JWT::encode($payload, $secret, 'HS256', $kid ?: null);
 
         return Inertia::render('organizations/settings/billing', [
             'subscriptions' => $subscriptions,
