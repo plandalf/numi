@@ -204,6 +204,13 @@ type PriceStepProps = {
   productId: string;
 }
 
+const getAmount = (price: StripePrice) => {
+  if (price.unit_amount) {
+    return formatMoney(price.unit_amount, price.currency);
+  }
+  return formatMoney(price.tiers[0].flat_amount || price.tiers[0].unit_amount, price.currency);
+}
+
 export const PriceStep = ({ integrationId, onClickSave, onClickBack, selectedPrices, setSelectedPrices, productId }: PriceStepProps) => {
   const [prices, setPrices] = useState<StripePrice[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -247,13 +254,6 @@ export const PriceStep = ({ integrationId, onClickSave, onClickBack, selectedPri
     ),
     disabled: price.imported,
   }));
-
-  const getAmount = (price: StripePrice) => {
-    if (price.unit_amount) {
-      return formatMoney(price.unit_amount, price.currency);
-    }
-    return formatMoney(price.tiers[0].flat_amount || price.tiers[0].unit_amount, price.currency);
-  }
 
   const handleRemovePrice = (priceId: string) => {
     setSelectedPrices(selectedPrices.filter(id => id !== priceId));
