@@ -25,7 +25,9 @@ class ImportRequest extends FormRequest
     {
         return [
             'gateway_prices' => ['array'],
-            'gateway_prices.*' => ['string', 'max:255']
+            'gateway_prices.*' => ['string', 'max:255'],
+            'parent_list_price_id' => ['nullable', 'integer'],
+            'scope' => ['nullable', 'in:list,custom,variant'],
         ];
     }
 }

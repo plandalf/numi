@@ -27,7 +27,7 @@ class OrganizationFactory extends Factory
         return [
             'name' => fake()->company(),
             'ulid' => Str::ulid(),
-            'default_currency' => fake()->randomElement(array_keys(config('currencies.available', ['USD' => 'US Dollar']))),
+            'default_currency' => fake()->randomElement(['USD', 'EUR', 'GBP', 'CAD', 'AUD']),
         ];
     }
 }

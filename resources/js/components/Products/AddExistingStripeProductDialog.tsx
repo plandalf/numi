@@ -237,7 +237,14 @@ export const PriceStep = ({ integrationId, onClickSave, onClickBack, selectedPri
   const comboboxItems = prices.map(price => ({
     value: price.id,
     label: price.nickname || price.id,
-    badge: price.imported ? <Badge variant="outline">Imported</Badge> : null,
+    subtitle: `${price.type}${price.recurring ? ` • ${price.recurring.interval}` : ''}`,
+    metadata: (
+      <div className="flex items-center gap-2 text-xs">
+        <span>{getAmount(price)}</span>
+        <span className="uppercase">{price.currency}</span>
+        {price.imported && (<Badge variant="outline">Imported</Badge>)}
+      </div>
+    ),
     disabled: price.imported,
   }));
 

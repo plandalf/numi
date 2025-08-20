@@ -14,8 +14,17 @@ class CreateCheckoutSessionAction
         private readonly CreateCheckoutLineItemAction $createCheckoutLineItemAction
     ) {}
 
-    public function execute(Offer $offer, array $checkoutItems, bool $testMode = false, ?string $intervalOverride = null, ?string $currencyOverride = null, array $customerProperties = [], string $intent = 'purchase', ?string $subscription = null): CheckoutSession
-    {
+    public function execute(
+        Offer $offer,
+        array $checkoutItems,
+        bool $testMode = false,
+        ?string $intervalOverride = null,
+        ?string $currencyOverride = null,
+        array $customerProperties = [],
+        string $intent = 'purchase',
+        ?string $subscription = null,
+        ?int $quantity = null
+    ): CheckoutSession {
         $paymentIntegration = $offer->organization
             ->integrations()
             ->where('type', $testMode
@@ -57,11 +66,14 @@ class CreateCheckoutSessionAction
                     }
                 }
 
+                // Use provided quantity or default to 1
+                $itemQuantity = $quantity ?? 1;
+
                 $this->createCheckoutLineItemAction->execute(
                     $checkoutSession,
                     $offerItem,
                     $priceId,
-                    1
+                    $itemQuantity
                 );
             }
         } else {
@@ -80,11 +92,14 @@ class CreateCheckoutSessionAction
                     }
                 }
 
+                // Use provided quantity or item quantity or default to 1
+                $itemQuantity = $quantity ?? Arr::get($item, 'quantity', 1);
+
                 $this->createCheckoutLineItemAction->execute(
                     $checkoutSession,
                     null,
                     $priceId,
-                    Arr::get($item, 'quantity', 1)
+                    $itemQuantity
                 );
             }
         }
