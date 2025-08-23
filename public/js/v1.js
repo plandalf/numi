@@ -196,6 +196,7 @@ ${spinAnimationStyles}
   min-height: 360px;
   border-radius: 16px;
   overflow: visible;
+  background: #ffffff; /* ensure clean look before iframe loads */
   box-shadow: 
     0 20px 25px -5px rgba(0, 0, 0, 0.1),
     0 10px 10px -5px rgba(0, 0, 0, 0.04),
@@ -216,6 +217,7 @@ ${spinAnimationStyles}
   max-height: calc(100vh - 80px);
   border-radius: 16px;
   overflow: visible;
+  background: #ffffff; /* ensure clean look before iframe loads */
   box-shadow: 
     0 20px 25px -5px rgba(0, 0, 0, 0.1),
     0 10px 10px -5px rgba(0, 0, 0, 0.04),
@@ -450,6 +452,12 @@ ${spinAnimationStyles}
         };
         // smartly compute this to be black or white depending on the button color
         const buttonTextColor = getLuminance(buttonColor) > 0.5 ? 'black' : 'white';
+        const isBillingPortal =
+            element.dataset.numiBillingPortal !== undefined ||
+            element.getAttribute('data-numi-embed-type') === 'billing-portal' ||
+            element.dataset.numiPortal === 'billing';
+        const customerToken = element.dataset.numiCustomer || element.dataset.numiCustomerToken || null;
+        const returnUrl = element.dataset.numiReturnUrl || null;
         const config = {
             initialized: element.dataset.numiInitialized !== undefined,
             inheritParameters: element.dataset.numiInheritParameters !== undefined,
@@ -464,13 +472,17 @@ ${spinAnimationStyles}
             domain: element.dataset.numiDomain,
             popupSize,
             preview: element.dataset.numiPreview !== undefined,
+            // Billing portal support
+            isBillingPortal,
+            customerToken,
+            returnUrl,
         };
 
         console.log('NUMI-V1', { config, data: element.dataset })
 
         return config;
     };
-    const getSharedIframeSrc = (configDomain, offerPublicIdentifier, inheritParameters, target) => {
+    const getSharedIframeSrc = (configDomain, offerPublicIdentifier, inheritParameters, target, modeConfig) => {
         // 1. Use configDomain if set
         let domain = null;
         if (configDomain) {
@@ -518,7 +530,12 @@ ${spinAnimationStyles}
         if (!domain) {
             domain = 'https://plandalf.dev';
         }
-        const formLink = `${domain}/o/${offerPublicIdentifier}`;
+        // Determine path based on mode
+        let path = `/o/${offerPublicIdentifier}`;
+        if (modeConfig && modeConfig.mode === 'billing') {
+            path = `/billing/portal`;
+        }
+        const formLink = `${domain}${path}`;
         const iframeSrc = new URL(formLink);
         // if we're passed the option to inherit search parameters, then we add
         // those here as well.
@@ -526,6 +543,16 @@ ${spinAnimationStyles}
             const params = new URL(window.location.href).searchParams;
             for (const [key, value] of params.entries()) {
                 iframeSrc.searchParams.append(key, value);
+            }
+        }
+        // Attach known params for billing portal
+        if (modeConfig && modeConfig.mode === 'billing') {
+            if (modeConfig.customerToken) {
+                // The controller accepts 'customer'|'customer_id'|'cid'. Use 'customer'.
+                iframeSrc.searchParams.append('customer', modeConfig.customerToken);
+            }
+            if (modeConfig.returnUrl) {
+                iframeSrc.searchParams.append('return_url', modeConfig.returnUrl);
             }
         }
         // we convert data- attributes into URL parameters. we use the ones passed
@@ -629,7 +656,7 @@ ${spinAnimationStyles}
     // Popups and sliders are quite similar in their setup, so we bundle in the
     // code together here and just adjust classes dependent on the embed type
     const initializePopupLikeTarget = (target, embedType) => {
-        const { offerPublicIdentifier, initialized, inheritParameters, sliderDirection, domain, dynamicResize, popupSize, preview, } = getConfig(target);
+        const { offerPublicIdentifier, initialized, inheritParameters, sliderDirection, domain, dynamicResize, popupSize, preview, isBillingPortal, customerToken, returnUrl } = getConfig(target);
         if (initialized)
             return;
         const popupContainer = document.createElement('div');
@@ -643,13 +670,23 @@ ${spinAnimationStyles}
         const popupLoading = document.createElement('div');
         popupLoading.className = 'numi-embed-loading';
         popupLoading.style.display = 'block';
+        // make sure spinner is centered within the rounded white card
+        Object.assign(popupLoading.style, {
+            marginTop: '-10px'
+        });
         popupContainer.appendChild(popupLoading);
         const iframeContainer = document.createElement('div');
         iframeContainer.className = 'numi-embed-iframe-container';
         iframeContainer.style.opacity = '1';
         popupContainer.appendChild(iframeContainer);
         const iframe = document.createElement('iframe');
-        const iframeSrc = getSharedIframeSrc(domain, offerPublicIdentifier, inheritParameters, target);
+        const iframeSrc = getSharedIframeSrc(
+            domain,
+            offerPublicIdentifier || 'billing-portal',
+            inheritParameters,
+            target,
+            isBillingPortal ? { mode: 'billing', customerToken, returnUrl } : { mode: 'offer' }
+        );
         const embedId = generateEmbedId();
         iframeSrc.searchParams.append('numi-embed-id', `${embedId}`);
         iframeSrc.searchParams.append('numi-embed-type', embedType);
@@ -690,11 +727,18 @@ ${spinAnimationStyles}
         }
         iframe.allow = 'microphone; camera; geolocation';
         iframe.style.border = '0px';
-        iframe.title = `${offerPublicIdentifier}`;
+        iframe.style.background = '#ffffff'; // hide any initial transparency while loading
+        iframe.title = isBillingPortal ? 'Billing Portal' : `${offerPublicIdentifier}`;
         
-        // Store embed ID and offer ID for session tracking
+        // Store embed ID and context marker for session tracking
         target.setAttribute('data-numi-embed-id', embedId);
-        target.setAttribute('data-numi-offer', offerPublicIdentifier);
+        if (isBillingPortal) {
+            target.setAttribute('data-numi-portal', 'billing-portal');
+            target.removeAttribute('data-numi-offer');
+        } else {
+            target.setAttribute('data-numi-offer', offerPublicIdentifier);
+            target.removeAttribute('data-numi-portal');
+        }
         
         // Register embed type for session tracking
         embedTypeRegistry.set(embedId, embedType);
@@ -1041,6 +1085,30 @@ ${spinAnimationStyles}
         }
         popupTargets.forEach(target => {
             if (target instanceof HTMLElement) {
+                initializePopupLikeTarget(target, 'popup');
+            }
+        });
+    }
+
+    // Initialize Billing Portal embeds (reuse popup UI)
+    // Supports any of: data-numi-embed-type="billing-portal", data-numi-billing-portal, data-numi-portal="billing"
+    const billingPortalTargets = document.querySelectorAll("[data-numi-embed-type='billing-portal'], [data-numi-billing-portal], [data-numi-portal='billing']");
+    if (billingPortalTargets.length > 0) {
+        // Ensure popup styles are present
+        // @ts-ignore
+        if (!window.__numiPopupEmbedsInitialized) {
+            const popupStylesheet = document.createElement('style');
+            popupStylesheet.innerHTML = popupStyles;
+            document.head.appendChild(popupStylesheet);
+            // @ts-ignore
+            window.__numiPopupEmbedsInitialized = true;
+        }
+        billingPortalTargets.forEach(target => {
+            if (target instanceof HTMLElement) {
+                // Force popup behavior
+                target.setAttribute('data-numi-embed-type', 'popup');
+                // Mark portal mode explicitly so getConfig picks it up after we change the embed-type
+                target.setAttribute('data-numi-portal', 'billing');
                 initializePopupLikeTarget(target, 'popup');
             }
         });
@@ -1548,7 +1616,8 @@ ${spinAnimationStyles}
     // Helper to find offer ID from embed ID
     const findOfferIdFromEmbedId = (embedId) => {
         const element = document.querySelector(`[data-numi-embed-id="${embedId}"]`);
-        return element?.dataset.numiOffer || 'unknown';
+        // Prefer offer for checkout embeds; for billing portal use portal marker
+        return element?.dataset.numiOffer || element?.dataset.numiPortal || 'unknown';
     };
 
     // Install the enhanced message listener

@@ -1,4 +1,4 @@
-import { Head } from '@inertiajs/react';
+import { Head, Deferred } from '@inertiajs/react';
 import { useState, createContext, useContext, useMemo, useEffect, useRef } from 'react';
 import { type Block, type Page as OfferPage, type OfferConfiguration, OfferItem, Page, } from '@/types/offer';
 import { cn } from '@/lib/utils';
@@ -7,9 +7,11 @@ import { BlockConfig, FieldState, HookUsage } from '@/types/blocks';
 
 import { blockTypes } from '@/components/blocks';
 import axios from '@/lib/axios';
-import { CheckoutSession } from '@/types/checkout';
+import { CheckoutSession, SubscriptionPreview, CheckoutItem } from '@/types/checkout';
 import { BlockRenderer } from '@/components/checkout/block-renderer';
 import { SetItemActionValue } from '@/components/actions/set-item-action';
+import { SwitchVariantActionValue } from '@/components/actions/switch-variant-action';
+import { SwitchProductActionValue } from '@/components/actions/switch-product-action';
 import { Theme } from '@/types/theme';
 import { sendMessage } from '@/utils/sendMessage';
 import { CheckoutSuccess } from '@/events/CheckoutSuccess';
@@ -54,31 +56,42 @@ export interface GlobalState {
   setPageSubmissionProps: (callback: () => Promise<unknown>) => void;
 
   // Line Items
-  updateLineItem: (offerItemId: string, price: string) => Promise<void>;
+  updateLineItem: (payload: SetItemActionValue) => Promise<void>;
+  switchVariant: (payload: SwitchVariantActionValue) => Promise<void>;
+  switchProduct: (payload: SwitchProductActionValue) => Promise<void>;
   addDiscount: (discount: string) => Promise<boolean>;
   removeDiscount: (discount: string) => Promise<boolean>;
 
   // Checkout
   updateSessionProperties: (blockId: string, value: any) => Promise<void>;
+  reloadSubscriptionPreview: () => Promise<void>;
 
   offer: OfferConfiguration;
   theme: Theme;
   isEditor: boolean;
+  session: CheckoutSession;
+  subscriptionPreview?: SubscriptionPreview;
 }
 
-export function GlobalStateProvider({ offer, offerItems, session: defaultSession, editor = false, children }: { offer: OfferConfiguration, offerItems?: OfferItem[], session: CheckoutSession, editor?: boolean, children: React.ReactNode }) {
+export function GlobalStateProvider({ offer, offerItems, session: defaultSession, subscriptionPreview, editor = false, children }: { offer: OfferConfiguration, offerItems?: OfferItem[], session: CheckoutSession, subscriptionPreview?: SubscriptionPreview, editor?: boolean, children: React.ReactNode }) {
   // Field states for all blocks
   const [fieldStates, setFieldStates] = useState<Record<string, FieldState>>(defaultSession.properties || {});
 
   const [hookUsage, setHookUsage] = useState<Record<string, HookUsage[]>>({});
   const [registeredHooks, setRegisteredHooks] = useState<Set<string>>(new Set());
   const [session, setSession] = useState<CheckoutSession>(defaultSession);
+  const [currentSubscriptionPreview, setCurrentSubscriptionPreview] = useState<SubscriptionPreview | undefined>(subscriptionPreview);
   const [submissionProps, setSubmissionProps] = useState<() => Promise<unknown>>();
   // Form state
   const [errors, setErrors] = useState<ValidationErrors>({});
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [isSubmitting, setSubmitting] = useState<boolean>(false);
   const previousItemsRef = useRef<OfferItem[]|undefined>(undefined);
+
+  // Update currentSubscriptionPreview when subscriptionPreview prop changes (for deferred props)
+  useEffect(() => {
+    setCurrentSubscriptionPreview(subscriptionPreview);
+  }, [subscriptionPreview]);
 
   const fields = useMemo(() => {
     return Object.values(fieldStates)
@@ -132,23 +145,6 @@ export function GlobalStateProvider({ offer, offerItems, session: defaultSession
         type: typeof value === 'boolean' ? 'boolean' : typeof value === 'number' ? 'number' : 'string'
       }
     }));
-    // basic key value instead of all block stuff
-    // setFieldStates(prev => ({
-    //   ...prev,
-    //   [`${blockId}:${fieldName}`]: {
-    //     value: value,
-    //   }
-    // }));
-
-    // setFieldStates(prev => ({
-    //   ...prev,
-    //   [`${blockId}:${fieldName}`]: {
-    //     blockId,
-    //     fieldName,
-    //     value,
-    //     type: typeof value === 'boolean' ? 'boolean' : typeof value === 'number' ? 'number' : 'string'
-    //   }
-    // }));
   };
 
   // Get field state function
@@ -323,7 +319,7 @@ export function GlobalStateProvider({ offer, offerItems, session: defaultSession
       if (action === 'commit') {
         // Fire checkout submit event
         sendMessage(new CheckoutSubmit(session));
-        
+
         const body = (await submissionProps?.() ?? {}) as { error?: string, confirmation_token?: string };
 
         console.log('action-submit', { body });
@@ -352,7 +348,7 @@ export function GlobalStateProvider({ offer, offerItems, session: defaultSession
 
       if (action === 'commit' && response.data?.checkout_session) {
         sendMessage(new CheckoutSuccess(response.data.checkout_session));
-        
+
         // Fire checkout complete event after successful payment
         setTimeout(() => {
           sendMessage(new CheckoutComplete(response.data.checkout_session));
@@ -390,32 +386,51 @@ export function GlobalStateProvider({ offer, offerItems, session: defaultSession
     }
   };
 
+  // Function to reload subscription preview data
+  const reloadSubscriptionPreview = async () => {
+    if (editor || session.intent !== 'upgrade' || !session.subscription) {
+      return;
+    }
+
+    try {
+      const response = await axios.get(`/checkouts/${session.id}/preview`);
+      if (response.status === 200 && response.data.enabled) {
+        setCurrentSubscriptionPreview(response.data);
+      } else {
+        setCurrentSubscriptionPreview(undefined);
+      }
+    } catch (error) {
+      console.error('Failed to reload subscription preview:', error);
+      setCurrentSubscriptionPreview(undefined);
+    }
+  };
+
   const updateLineItem = async ({ item, price, quantity, required }: SetItemActionValue) => {
     // Store previous line items for comparison
     const previousLineItems = session.line_items || [];
     const previousTotal = session.total;
-    
+
     if (editor) {
-      const updatedSession = updateSessionLineItems({ offerItems, item, price, quantity, required, checkoutSession: session });
+      const updatedSession = updateSessionLineItems({ offerItems: offerItems || [], item, price, quantity, required, checkoutSession: session });
       setSession(updatedSession);
-      
+
       // Determine change type based on line item count and total changes
-      const changeType = quantity === 0 ? 'removed' : 
+      const changeType = quantity === 0 ? 'removed' :
                         previousLineItems.length < (updatedSession.line_items || []).length ? 'added' :
                         previousTotal !== updatedSession.total ? 'price_changed' : 'quantity_changed';
-      
-      sendMessage(new CheckoutLineItemChanged(updatedSession, changeType, { 
-        offer_item_id: item, 
-        price_id: price, 
-        quantity, 
-        required 
+
+      sendMessage(new CheckoutLineItemChanged(updatedSession, changeType, {
+        offer_item_id: item,
+        price_id: price,
+        quantity,
+        required
       }));
       return;
     }
 
     const response = await axios.post(`/checkouts/${session.id}/mutations`, {
       action: 'setItem',
-      offer_item_id: item,
+      offer_item_id: typeof item === 'string' ? item : String(item),
       price_id: price ?? undefined,
       quantity: quantity ?? undefined,
       required: required ?? undefined
@@ -424,24 +439,80 @@ export function GlobalStateProvider({ offer, offerItems, session: defaultSession
     if (response.status === 200) {
       const updatedSession = response.data;
       setSession(updatedSession);
-      
+
+      // Reload subscription preview after line item changes
+      await reloadSubscriptionPreview();
+
       // Determine change type based on line item count and total changes
-      const changeType = quantity === 0 ? 'removed' : 
+      const changeType = quantity === 0 ? 'removed' :
                         previousLineItems.length < (updatedSession.line_items || []).length ? 'added' :
                         previousTotal !== updatedSession.total ? 'price_changed' : 'quantity_changed';
-      
-      sendMessage(new CheckoutLineItemChanged(updatedSession, changeType, { 
-        offer_item_id: item, 
-        price_id: price, 
-        quantity, 
-        required 
+
+      sendMessage(new CheckoutLineItemChanged(updatedSession, changeType, {
+        offer_item_id: item,
+        price_id: price,
+        quantity,
+        required
       }));
-      
+
       // Fire resize event to notify parent of potential height changes
       sendMessage(new CheckoutResized());
     }
 
     return response.data;
+  };
+
+  const switchVariant = async (payload: SwitchVariantActionValue) => {
+    const response = await axios.post(`/checkouts/${session.id}/mutations`, {
+      action: 'switchVariant',
+      offer_item_id: payload.item,
+      interval: payload.interval,
+      type: payload.type,
+      // currency ignored server-side. always uses session currency
+      // product_id handled via separate switchProduct action
+    });
+
+    if (response.status === 200) {
+      // Reload subscription preview after variant changes
+      await reloadSubscriptionPreview();
+    }
+  };
+
+  const switchProduct = async (payload: SwitchProductActionValue) => {
+    // Store previous line items for comparison
+    const previousLineItems = session.line_items || [];
+    const previousTotal = session.total;
+
+    // how do we do this if we dont have offer_items, they're generated? 
+
+    const response = await axios.post(`/checkouts/${session.id}/mutations`, {
+      action: 'switchProduct',
+      offer_item_id: payload.item,
+      product_id: payload.productId ? Number(payload.productId) : undefined,
+    });
+
+    if (response.status === 200) {
+      const updatedSession = response.data;
+      setSession(updatedSession);
+
+      // Reload subscription preview after product changes
+      await reloadSubscriptionPreview();
+
+      // Determine change type based on line item count and total changes
+      const changeType = previousLineItems.length < (updatedSession.line_items || []).length
+        ? 'added'
+        : previousTotal !== updatedSession.total
+          ? 'price_changed'
+          : 'quantity_changed';
+
+      sendMessage(new CheckoutLineItemChanged(updatedSession, changeType, {
+        offer_item_id: payload.item,
+        product_id: payload.productId ? Number(payload.productId) : undefined,
+      }));
+
+      // Fire resize event to notify parent of potential height changes
+      sendMessage(new CheckoutResized());
+    }
   };
 
   const addDiscount = async (discount: string) => {
@@ -459,13 +530,16 @@ export function GlobalStateProvider({ offer, offerItems, session: defaultSession
       if (response.status === 200) {
         const updatedSession = response.data;
         setSession(updatedSession);
-        
+
+        // Reload subscription preview after discount changes
+        await reloadSubscriptionPreview();
+
         // Fire line item changed event for discount addition
-        sendMessage(new CheckoutLineItemChanged(updatedSession, 'price_changed', { 
+        sendMessage(new CheckoutLineItemChanged(updatedSession, 'price_changed', {
           discount: discount,
           action: 'discount_added'
         }));
-        
+
         return status;
       }
 
@@ -497,13 +571,16 @@ export function GlobalStateProvider({ offer, offerItems, session: defaultSession
       if (response.status === 200) {
         const updatedSession = response.data;
         setSession(updatedSession);
-        
+
+        // Reload subscription preview after discount changes
+        await reloadSubscriptionPreview();
+
         // Fire line item changed event for discount removal
-        sendMessage(new CheckoutLineItemChanged(updatedSession, 'price_changed', { 
+        sendMessage(new CheckoutLineItemChanged(updatedSession, 'price_changed', {
           discount: discount,
           action: 'discount_removed'
         }));
-        
+
         return status;
       }
 
@@ -532,6 +609,156 @@ export function GlobalStateProvider({ offer, offerItems, session: defaultSession
     }
   };
 
+  // Create a computed session that includes subscription preview changes
+  const computedSession = useMemo(() => {
+    if (!currentSubscriptionPreview?.enabled) {
+      return session;
+    }
+
+    const strategy = currentSubscriptionPreview.effective?.strategy;
+    const totalDueAtEffective = currentSubscriptionPreview.delta?.total_due_at_effective || 0;
+    const currency = currentSubscriptionPreview.delta?.currency || session.currency;
+    const currentQuantity = currentSubscriptionPreview.current?.base_item?.quantity || 1;
+    const proposedQuantity = currentSubscriptionPreview.proposed?.base_item?.quantity || 1;
+
+    // Handle different preview scenarios based on strategy
+    if (strategy === 'at_trial_end') {
+      // Trial expansion scenarios
+      return {
+        ...session,
+        subtotal: session.subtotal,
+        total: session.total,
+        metadata: {
+          ...session.metadata,
+          isTrialExpansion: true,
+          trialEnd: currentSubscriptionPreview.effective.at,
+          billingStartDate: currentSubscriptionPreview.effective.at,
+          postTrialAmount: totalDueAtEffective,
+          effectiveDate: currentSubscriptionPreview.effective.at,
+        },
+      };
+    }
+
+    if (strategy === 'at_period_end') {
+      // Period-end swap scenarios
+      return {
+        ...session,
+        subtotal: session.subtotal,
+        total: session.total,
+        metadata: {
+          ...session.metadata,
+          isPeriodEndSwap: true,
+          nextPeriodAmount: totalDueAtEffective,
+          effectiveDate: currentSubscriptionPreview.effective.at,
+          currentAmount: session.total,
+        },
+      };
+    }
+
+    if (strategy === 'at_date') {
+      // Immediate swap scenarios
+      if (totalDueAtEffective > 0) {
+        // Add preview lines for immediate swap
+        const previewLineItems: CheckoutItem[] = currentSubscriptionPreview.invoice_preview?.lines?.map((line, index) => ({
+          id: -(index + 1),
+          name: line.description || 'Plan change adjustment',
+          quantity: 1,
+          currency: line.currency || session.currency,
+          subtotal: line.amount,
+          taxes: 0,
+          inclusive_taxes: 0,
+          shipping: 0,
+          discount: 0,
+          total: line.amount,
+          product: undefined,
+          is_highlighted: false,
+          price: {
+            id: `preview-price-${index}`,
+            name: line.description || 'Plan change adjustment',
+            type: 'one_time',
+            currency: line.currency || session.currency,
+            amount: line.amount,
+            interval: null,
+            renew_interval: null,
+            cancel_after_cycles: null,
+          },
+          type: 'standard' as const,
+        })) || [];
+
+        return {
+          ...session,
+          line_items: [...session.line_items, ...previewLineItems],
+          subtotal: totalDueAtEffective,
+          total: totalDueAtEffective,
+          metadata: {
+            ...session.metadata,
+            isImmediateSwap: true,
+            swapAmount: totalDueAtEffective,
+            effectiveDate: currentSubscriptionPreview.effective.at,
+          },
+        };
+      } else {
+        // No immediate charge
+        return {
+          ...session,
+          subtotal: session.subtotal,
+          total: session.total,
+          metadata: {
+            ...session.metadata,
+            isPeriodEndSwap: true,
+            nextPeriodAmount: totalDueAtEffective,
+            effectiveDate: currentSubscriptionPreview.effective.at,
+            currentAmount: session.total,
+          },
+        };
+      }
+    }
+
+    // Generic preview scenarios (fallback)
+    const previewAmount = totalDueAtEffective || 0;
+    
+    // Add preview lines as additional line items to show the breakdown
+    const previewLineItems: CheckoutItem[] = currentSubscriptionPreview.invoice_preview?.lines?.map((line, index) => ({
+      id: -(index + 1),
+      name: line.description || 'Plan change adjustment',
+      quantity: 1,
+      currency: line.currency || session.currency,
+      subtotal: line.amount,
+      taxes: 0,
+      inclusive_taxes: 0,
+      shipping: 0,
+      discount: 0,
+      total: line.amount,
+      product: undefined,
+      is_highlighted: false,
+      price: {
+        id: `preview-price-${index}`,
+        name: line.description || 'Plan change adjustment',
+        type: 'one_time',
+        currency: line.currency || session.currency,
+        amount: line.amount,
+        interval: null,
+        renew_interval: null,
+        cancel_after_cycles: null,
+      },
+      type: 'standard' as const,
+    })) || [];
+
+    return {
+      ...session,
+      line_items: [...session.line_items, ...previewLineItems],
+      subtotal: previewAmount,
+      total: previewAmount,
+      metadata: {
+        ...session.metadata,
+        isGenericPreview: true,
+        previewAmount: previewAmount,
+        previewStrategy: strategy,
+        effectiveDate: currentSubscriptionPreview.effective.at,
+      },
+    };
+  }, [session, currentSubscriptionPreview]);
+
   // Create context value
   const value: GlobalState = {
     fields,
@@ -557,15 +784,19 @@ export function GlobalStateProvider({ offer, offerItems, session: defaultSession
     updateSessionProperties,
     validateField,
     updateLineItem,
+    switchVariant,
+    switchProduct,
     addDiscount,
     removeDiscount,
+    reloadSubscriptionPreview,
 
     // Submission
     // submitPage,
     // submit
     offer,
     theme: offer?.theme ?? {} as Theme,
-    session,
+    session: computedSession, // Use computed session instead of raw session
+    subscriptionPreview: currentSubscriptionPreview,
     setSession,
 
     isEditor: editor
@@ -609,88 +840,6 @@ export const Section = ({
     ))
   );
 };
-
-export const layoutConfig = {
-  "name": "SplitCheckout@v1.1",
-  "template": {
-    "type": "grid",
-    "props": {
-      "className": "grid grid-cols-1 md:grid-cols-2 w-full h-full min-h-[inherit] max-h-[inherit]"
-    },
-    "children": [
-      {
-        "type": "box",
-        "props": {
-          "className": "h-full min-h-[inherit] max-h-[inherit] overflow-y-auto"
-        },
-        "children": [
-          {
-            "type": "flex",
-            "props": {
-              "className": "flex flex-col h-full"
-            },
-            "children": [
-              {
-                "type": "flex",
-                "props": {
-                  "className": "flex flex-col flex-grow overflow-y-auto"
-                },
-                "children": [
-                  {
-                    "id": "title",
-                    "type": "NavigationBar",
-                    "props": {
-                      "className": "space-y-1 p-6",
-                      "barStyle": "default"
-                    }
-                  },
-                  {
-                    "id": "content",
-                    "type": "flex",
-                    "props": {
-                      "className": "flex flex-col flex-grow space-y-2 p-6"
-                    }
-                  }
-                ]
-              },
-              {
-                "id": "action",
-                "type": "box",
-                "props": {
-                  "className": "p-6 flex flex-col"
-                },
-              }
-            ]
-          }
-        ]
-      },
-      {
-        "type": "box",
-        "id": "promo_box",
-        "props": {
-          "className": "hidden md:flex h-full overflow-y-auto flex-col  min-h-[inherit] max-h-[inherit]"
-        },
-        "children": [
-          {
-            "id": "promo_header",
-            "type": "box",
-            "props": {
-              "className": "h-auto p-6"
-            }
-          },
-          {
-            "id": "promo_content",
-            "type": "box",
-            "props": {
-              "className": "h-full flex flex-col flex-grow space-y-2 p-6 min-h-max"
-            }
-          }
-        ]
-      }
-    ]
-  }
-}
-
 
 export type CheckoutState = {
 
@@ -962,79 +1111,6 @@ export const useValidateFields = () => {
 
   return { validateAllFields }
 }
-
-const DebugPanel = () => {
-  const [isOpen, setIsOpen] = useState(true);
-
-  return (
-    <div className="fixed bottom-4 right-4 z-50">
-      <div className="flex flex-col items-end">
-        <button
-          onClick={() => setIsOpen(!isOpen)}
-          className="mb-2 px-3 py-1 bg-gray-800 text-white text-sm rounded-md hover:bg-gray-700 transition-colors"
-        >
-          {isOpen ? 'Hide Debug' : 'Show Debug'}
-        </button>
-
-        {isOpen && (
-          <div className="w-96 max-h-[50vh] overflow-y-auto bg-white rounded-lg shadow-lg border border-gray-200 text-xs">
-            <StateDisplay />
-          </div>
-        )}
-      </div>
-    </div>
-  );
-};
-
-function StateDisplay() {
-  const globalState = useContext(GlobalStateContext);
-  const { pageHistory, completedPages, canGoBack, canGoForward, navigationHistory } = useNavigation();
-  if (!globalState) return null;
-
-  return (
-    <div className="p-1 bg-gray-100 rounded">
-      <table className="whitespace-pre-wrap">
-        <thead>
-          <tr className="text-xs text-left">
-            <th className="px-1 overflow-hidden">Field</th>
-            <th className="px-1">Value</th>
-          </tr>
-        </thead>
-        <tbody>
-          {Object.entries(globalState.fieldStates).map(([key, field]) => (
-            <tr key={key}>
-              <td className="px-1">{key}</td>
-              <td className="px-1">{JSON.stringify(field.value, null, 2)}</td>
-            </tr>
-          ))}
-        </tbody>
-        <tfoot>
-          <tr>
-            <td className="px-1">Page History</td>
-            <td className="px-1">{pageHistory.join(', ')}</td>
-          </tr>
-          <tr>
-            <td className="px-1">Completed Pages</td>
-            <td className="px-1">{completedPages.join(', ')}</td>
-          </tr>
-          <tr>
-            <td className="px-1">Navigation History</td>
-            <td className="px-1">
-              <div className="space-y-1">
-                {navigationHistory.map((entry: NavigationHistoryEntry, index: number) => (
-                  <div key={index} className="text-xs">
-                    {new Date(entry.timestamp).toLocaleTimeString()} - {entry.direction}: {entry.pageId}
-                  </div>
-                ))}
-              </div>
-            </td>
-          </tr>
-        </tfoot>
-      </table>
-    </div>
-  );
-}
-
 
 export function PageNotFound() {
   return (

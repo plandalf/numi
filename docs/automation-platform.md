@@ -350,7 +350,11 @@ class ProcessOrderWorkflow extends Workflow
 
 namespace App\Workflows\Automation;
 
-use App\Models\Sequence;use App\Models\WorkflowExecution;use App\Models\WorkflowStep;use App\Workflows\Automation\NodeActivities\ActionActivity;use Workflow\ActivityStub;use Workflow\Workflow;
+use App\Models\Sequence;use App\Models\WorkflowExecution;
+use App\Models\WorkflowStep;
+use App\Workflows\Automation\NodeActivities\ActionActivity;
+use Workflow\ActivityStub;
+use Workflow\Workflow;
 
 class RunSequenceWorkflow extends Workflow
 {
@@ -367,7 +371,7 @@ class RunSequenceWorkflow extends Workflow
         $currentData = $triggerData;
         $stepOutputs = [];
         
-        foreach ($sequence->nodes as $node) {
+        foreach ($sequence->actions as $node) {
             // Create step record
             $step = WorkflowStep::create([
                 'execution_id' => $execution->id,

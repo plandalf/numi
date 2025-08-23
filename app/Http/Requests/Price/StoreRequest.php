@@ -6,6 +6,7 @@ namespace App\Http\Requests\Price;
 
 use App\Enums\ChargeType;
 use App\Enums\RenewInterval;
+use App\Models\Catalog\Price as CatalogPrice;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
@@ -58,15 +59,20 @@ class StoreRequest extends FormRequest
                     return $query->where('product_id', $product->id)
                         ->where('scope', 'list');
                 }),
-                // Custom validation to ensure type matches parent
-                // function ($attribute, $value, $fail) {
-                //     if ($value && in_array($this->input('scope'), ['custom', 'variant'])) {
-                //         $parentPrice = \App\Models\Catalog\Price::find($value);
-                //         if ($parentPrice && $this->input('type') !== $parentPrice->type) {
-                //             $fail("The selected type must match the parent price type ({$parentPrice->type->value}).");
-                //         }
-                //     }
-                // },
+                // Ensure type matches parent (using enum values)
+                function ($attribute, $value, $fail) {
+                    if ($value && in_array($this->input('scope'), ['custom', 'variant'])) {
+                        /** @var CatalogPrice|null $parentPrice */
+                        $parentPrice = CatalogPrice::find($value);
+                        if ($parentPrice) {
+                            $childType = $this->input('type');
+                            $parentType = $parentPrice->type?->value ?? (string) $parentPrice->type;
+                            if ($childType !== $parentType) {
+                                $fail("The selected type must match the parent price type ({$parentType}).");
+                            }
+                        }
+                    }
+                },
             ],
             // Recurring fields validation
             'renew_interval' => [
@@ -86,16 +92,15 @@ class StoreRequest extends FormRequest
             ],
             'cancel_after_cycles' => ['nullable', 'integer', 'min:1'],
             'properties' => ['nullable', 'array'],
-            'properties.tiers' => ['array'],
-            'properties.tiers.*.from' => ['integer', 'min:0'],
-            'properties.tiers.*.to' => ['nullable', 'integer', 'min:1'],
-            'properties.tiers.*.unit_amount' => ['integer', 'min:0'],
+            // Normalized tier structure (direct array of tiers)
+            'properties.*.up_to' => ['nullable', 'integer', 'min:1'],
+            'properties.*.unit_amount' => ['integer', 'min:0'],
+            'properties.*.flat_amount' => ['nullable', 'integer', 'min:0'],
+            // Package structure (if used)
             'properties.package' => ['array'],
             'properties.package.size' => ['integer', 'min:1'],
             'properties.package.unit_amount' => ['integer', 'min:0'],
 
-            'gateway_prices' => ['array'],
-            'gateway_prices.*' => ['string', 'max:255'],
             'is_active' => ['boolean'],
             'metadata' => ['nullable', 'array'],
         ];
@@ -109,6 +114,8 @@ class StoreRequest extends FormRequest
             $this->merge(['parent_list_price_id' => null]);
         }
 
+        // Retain gateway linkage even for custom/variant prices (moving/variants may still be gateway-linked)
+
         // Clear recurring fields for one-time charges
         if ($this->input('type') === ChargeType::ONE_TIME->value) {
             $this->merge([
@@ -119,26 +126,54 @@ class StoreRequest extends FormRequest
             ]);
         }
 
-        // Validate and prepare properties for complex pricing models
+        // Validate and normalize properties for complex pricing models
         $type = $this->input('type');
         if (in_array($type, ['tiered', 'volume', 'graduated', 'package'])) {
             $properties = $this->input('properties');
             
             // For tier-based pricing (tiered, volume, graduated)
             if (in_array($type, ['tiered', 'volume', 'graduated']) && $properties) {
+                // Support both legacy {tiers: []} and normalized direct array []
                 if (isset($properties['tiers']) && is_array($properties['tiers'])) {
-                    // Validate tiers structure
-                    $validTiers = array_filter($properties['tiers'], function ($tier) {
-                        return is_array($tier) && 
-                               isset($tier['from']) && is_numeric($tier['from']) &&
-                               isset($tier['unit_amount']) && is_numeric($tier['unit_amount']);
-                    });
-                    
-                    if (!empty($validTiers)) {
-                        $this->merge(['properties' => ['tiers' => array_values($validTiers)]]);
-                    } else {
-                        $this->merge(['properties' => null]);
+                    $properties = $properties['tiers'];
+                }
+
+                if (is_array($properties)) {
+                    $normalized = [];
+                    $lastUpTo = 0;
+                    foreach ($properties as $index => $tier) {
+                        if (!is_array($tier)) continue;
+                        // Allow from/to or up_to; convert to up_to only
+                        $upTo = $tier['up_to'] ?? ($tier['to'] ?? null);
+                        // Determine unit/flat amounts
+                        $unitAmount = $tier['unit_amount'] ?? null;
+                        $flatAmount = $tier['flat_amount'] ?? null;
+                        if (!is_numeric($unitAmount) && !is_numeric($flatAmount)) continue;
+                        // Ensure monotonic up_to
+                        if ($upTo !== null && is_numeric($upTo)) {
+                            $upTo = (int) $upTo;
+                            if ($upTo <= $lastUpTo) {
+                                $upTo = $lastUpTo + 1;
+                            }
+                            $lastUpTo = $upTo;
+                        } else {
+                            $upTo = null;
+                        }
+                        $normalized[] = [
+                            'up_to' => $upTo,
+                            'unit_amount' => (int) max(0, (int) ($unitAmount ?? 0)),
+                            'flat_amount' => isset($flatAmount) ? (int) max(0, (int) $flatAmount) : null,
+                        ];
                     }
+
+                    // Sort by up_to ascending, null last
+                    usort($normalized, function ($a, $b) {
+                        $aU = $a['up_to'] ?? PHP_INT_MAX;
+                        $bU = $b['up_to'] ?? PHP_INT_MAX;
+                        return $aU <=> $bU;
+                    });
+
+                    $this->merge(['properties' => $normalized]);
                 }
             }
             
@@ -153,6 +188,15 @@ class StoreRequest extends FormRequest
                         $this->merge(['properties' => null]);
                     }
                 }
+            }
+        }
+
+        // If request claims simple recurring but provides tiers, normalize to our internal mapping
+        // Default to 'graduated' when tiers are present and type is 'recurring'
+        if ($this->input('type') === ChargeType::RECURRING->value) {
+            $properties = $this->input('properties');
+            if (isset($properties['tiers']) && is_array($properties['tiers']) && count($properties['tiers']) > 0) {
+                $this->merge(['type' => ChargeType::GRADUATED->value]);
             }
         }
     }

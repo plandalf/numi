@@ -1,33 +1,33 @@
 <?php
 
 use App\Http\Controllers\Api\CheckoutSessionController;
-use App\Http\Controllers\Billing\CheckoutController as BillingCheckoutController;
+use App\Http\Controllers\ApiKeysController;
+use App\Http\Controllers\Billing\BillingController as BillingCheckoutController;
 use App\Http\Controllers\CheckoutController;
+use App\Http\Controllers\Client\BillingPortalController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\FeedbackController;
+use App\Http\Controllers\ImpersonationController;
 use App\Http\Controllers\IntegrationsController;
 use App\Http\Controllers\MediaController;
 use App\Http\Controllers\NoAccessController;
+use App\Http\Controllers\OfferItemPriceController;
 use App\Http\Controllers\OfferItemsController;
 use App\Http\Controllers\OffersController;
+use App\Http\Controllers\OnboardingController;
+use App\Http\Controllers\OrdersController;
 use App\Http\Controllers\OrderStatusController;
 use App\Http\Controllers\OrganizationController;
 use App\Http\Controllers\PriceController;
 use App\Http\Controllers\ProductsController;
 use App\Http\Controllers\ReusableBlockController;
 use App\Http\Controllers\Settings\ProfileController;
-use App\Http\Controllers\ThemeController;
 use App\Http\Controllers\TemplateController;
+use App\Http\Controllers\ThemeController;
 use App\Http\Controllers\WebhookController;
-use App\Models\Integration;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
-use App\Http\Controllers\OrdersController;
-use App\Http\Controllers\FeedbackController;
-use App\Http\Controllers\OfferItemPriceController;
-use App\Http\Controllers\OnboardingController;
-use App\Http\Controllers\ApiKeysController;
-use App\Http\Controllers\ImpersonationController;
-
+use App\Http\Controllers\Client\SubscriptionCancellationController;
 
 Route::get('test', function (\Illuminate\Http\Request $request) {
 });
@@ -41,6 +41,9 @@ Route::middleware(['frame-embed'])->group(function () {
 
     Route::get('/checkout/{checkout}', [CheckoutController::class, 'show'])
         ->name('checkouts.show');
+
+    Route::get('/billing/portal', [BillingPortalController::class, 'show'])
+        ->name('client.billing-portal.show');
 });
 
 Route::middleware(['frame-embed'])
@@ -60,9 +63,27 @@ Route::middleware(['frame-embed'])
         Route::post('/checkouts/{checkoutSession}/mutations', [CheckoutSessionController::class, 'storeMutation'])
             ->name('checkouts.mutations.store');
 
+        // Preview subscription change (plan upgrade/downgrade)
+        Route::get('/checkouts/{checkoutSession}/preview', [CheckoutSessionController::class, 'preview'])
+            ->name('checkouts.preview');
+
         Route::get('/order-status/{order}', OrderStatusController::class)
             ->name('order-status.show')
             ->middleware('signed');
+    });
+
+// Cancellation flow (separate tool, embed-safe)
+Route::prefix('billing/subscriptions')
+    ->middleware(['frame-embed'])
+    ->group(function () {
+        Route::get('{subscription}/cancel', [SubscriptionCancellationController::class, 'show'])
+            ->name('client.subscriptions.cancel');
+        Route::post('{subscription}/cancel/answers', [SubscriptionCancellationController::class, 'storeAnswers'])
+            ->name('client.subscriptions.cancel.answers');
+        Route::post('{subscription}/cancel/offer', [SubscriptionCancellationController::class, 'offer'])
+            ->name('client.subscriptions.cancel.offer');
+        Route::post('{subscription}/cancel/confirm', [SubscriptionCancellationController::class, 'confirm'])
+            ->name('client.subscriptions.cancel.confirm');
     });
 
 // Social image generation route (signed URL required)
@@ -114,13 +135,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
                         Route::prefix('billing')->name('billing.')->group(function () {
                             Route::get('/', [BillingCheckoutController::class, 'billing'])->name('index');
-                            Route::get('/portal', [BillingCheckoutController::class, 'portal'])->name('portal');
                         });
 
                         // Checkout completion routes
                         Route::prefix('checkout-completion')->name('checkout-completion.')->group(function () {
                             Route::get('/{checkoutId}', [\App\Http\Controllers\CheckoutCompletionController::class, 'show'])->name('show');
-                            Route::post('/{checkoutId}/process', [\App\Http\Controllers\CheckoutCompletionController::class, 'process'])->name('process');
                         });
 
                         Route::get('/fulfillment', [OrganizationController::class, 'fulfillment'])->name('fulfillment');
@@ -128,7 +147,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
                         Route::post('/fulfillment/test-email', [OrganizationController::class, 'sendTestFulfillmentEmail'])->name('fulfillment.test-email');
                     });
                 });
-
 
             Route::get('/themes', [ThemeController::class, 'index'])->name('themes.index');
             Route::post('/themes', [ThemeController::class, 'store'])->name('themes.store');
@@ -218,11 +236,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
     });
 });
 
-Route::middleware(['auth', 'organization'])->group(function () {
-    Route::get('organizations/settings/billing/checkout', [BillingCheckoutController::class, 'checkout'])
-        ->name('organizations.settings.billing.checkout');
-});
-
 // Media routes
 Route::middleware(['auth'])->group(function () {
     Route::get('/medias', [MediaController::class, 'index'])->name('medias.index');
@@ -230,6 +243,22 @@ Route::middleware(['auth'])->group(function () {
     Route::put('/medias/{media}/upload', [MediaController::class, 'upload'])->name('medias.upload');
     Route::post('/medias/{media}/finalize', [MediaController::class, 'finalizeUpload'])->name('medias.finalize');
 });
+
+// Public endpoints for client billing portal actions (embed-safe)
+Route::prefix('client/billing')
+    ->middleware(['frame-embed'])
+    ->group(function () {
+        Route::post('/setup-intent', [BillingPortalController::class, 'createSetupIntent'])
+            ->name('client.billing.setup-intent');
+        Route::post('/default-payment-method', [BillingPortalController::class, 'setDefaultPaymentMethod'])
+            ->name('client.billing.default-payment-method');
+        Route::post('/invoices/{invoice}/pay', [BillingPortalController::class, 'payInvoice'])
+            ->name('client.billing.pay-invoice');
+        Route::get('/invoices/{invoice}/url', [BillingPortalController::class, 'invoiceUrl'])
+            ->name('client.billing.invoice-url');
+        Route::post('/subscriptions/swap-plan', [BillingPortalController::class, 'swapPlan'])
+            ->name('client.billing.swap-plan');
+    });
 
 Route::get('m/{dir}/{media}.{extension}', function (string $dir, \App\Models\Media $media) {
     return redirect()->away($media->getSignedUrl());
@@ -250,15 +279,14 @@ Route::get('/orders/{uuid}/receipt', [App\Http\Controllers\OrderController::clas
     ->middleware('signed');
 
 // Test route for receipt generation (remove in production)
-Route::get('/test-receipt/{uuid}', function($uuid) {
+Route::get('/test-receipt/{uuid}', function ($uuid) {
     $order = \App\Models\Order\Order::where('uuid', $uuid)->first();
-    if (!$order) {
+    if (! $order) {
         return 'Order not found';
     }
+
     return redirect($order->getReceiptUrl());
 })->name('test.receipt');
-
-
 
 // Impersonation routes - LOCAL DEVELOPMENT ONLY
 if (app()->environment('local')) {
@@ -275,4 +303,3 @@ if (app()->environment('local')) {
 require __DIR__.'/auth.php';
 require __DIR__.'/settings.php';
 require __DIR__.'/automation.php';
-

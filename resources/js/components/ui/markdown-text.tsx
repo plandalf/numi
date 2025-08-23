@@ -10,6 +10,7 @@ interface MarkdownTextProps {
   style?: React.CSSProperties;
   className?: string;
   theme?: Theme;
+  listItemGap?: string;
 }
 
 const getTypographyStyleInline = ({
@@ -36,7 +37,11 @@ const getTypographyStyleInline = ({
   return { ...inline, ...style };
 };
 
-const componentsForTheme = (theme?: Theme, baseStyle?: React.CSSProperties): Components => ({
+const componentsForTheme = (
+  theme?: Theme,
+  baseStyle?: React.CSSProperties,
+  listItemGap?: string
+): Components => ({
   h1: (props) => <h1 {...props} style={{ ...getTypographyStyleInline({ theme, element: 'h1', style: baseStyle }), ...(props.style || {}) }} />,
   h2: (props) => <h2 {...props} style={{ ...getTypographyStyleInline({ theme, element: 'h2', style: baseStyle }), ...(props.style || {}) }} />,
   h3: (props) => <h3 {...props} style={{ ...getTypographyStyleInline({ theme, element: 'h3', style: baseStyle }), ...(props.style || {}) }} />,
@@ -47,25 +52,64 @@ const componentsForTheme = (theme?: Theme, baseStyle?: React.CSSProperties): Com
   a: (props) => <a {...props} style={{ textDecoration: 'underline', ...getTypographyStyleInline({ theme, element: 'body', style: baseStyle }), ...(props.style || {}) }} />,
   code: (props) => <code {...props} style={{ ...getTypographyStyleInline({ theme, element: 'body', style: { ...(baseStyle || {}), fontFamily: (theme as any)?.mono_font } }), ...(props.style || {}) }} />,
   pre: (props) => <pre {...props} style={{ ...getTypographyStyleInline({ theme, element: 'body', style: { ...(baseStyle || {}), fontFamily: (theme as any)?.mono_font } }), ...(props.style || {}) }} />,
-  ul: (props) => <ul {...props} style={{ ...getTypographyStyleInline({ theme, element: 'body', style: baseStyle }), ...(props.style || {}) }} />,
-  ol: (props) => <ol {...props} style={{ ...getTypographyStyleInline({ theme, element: 'body', style: baseStyle }), ...(props.style || {}) }} />,
-  li: (props) => <li {...props} style={{ ...getTypographyStyleInline({ theme, element: 'body', style: baseStyle }), ...(props.style || {}) }} />,
+
+  // NEW ul/ol styles preserved from main, implemented inline for SSR
+  ul: ({ children, ...props }) => (
+    <ul
+      {...props}
+      style={{
+        listStyleType: 'disc',
+        marginLeft: 16,
+        marginBlockStart: 0,
+        marginBlockEnd: 0,
+        ...getTypographyStyleInline({ theme, element: 'body', style: baseStyle }),
+        ...(props.style || {}),
+      }}
+    >
+      {children}
+    </ul>
+  ),
+  ol: ({ children, ...props }) => (
+    <ol
+      {...props}
+      style={{
+        listStyleType: 'decimal',
+        marginLeft: 16,
+        marginTop: 0,
+        marginBottom: 0,
+        ...getTypographyStyleInline({ theme, element: 'body', style: baseStyle }),
+        ...(props.style || {}),
+      }}
+    >
+      {children}
+    </ol>
+  ),
+  li: (props) => (
+    <li
+      {...props}
+      style={{
+        marginBottom: listItemGap ?? '0',
+        ...getTypographyStyleInline({ theme, element: 'body', style: baseStyle }),
+        ...(props.style || {}),
+      }}
+    />
+  ),
 });
 
 const preserveAllLineBreaks = (text: string) => {
-  return (text || '').split('\n').map(line => {
-    // If line is empty, return a non-breaking space
-    return line.trim() === '' ? '&nbsp;' : line;
-  }).join('\n');
+  return (text || '')
+    .split('\n')
+    .map((line) => (line.trim() === '' ? '&nbsp;' : line))
+    .join('\n');
 };
 
-export const MarkdownText = ({ text, theme, style, className, ...props }: MarkdownTextProps) => {
+export const MarkdownText = ({ text, theme, style, className, listItemGap, ...props }: MarkdownTextProps) => {
   return (
     <div className={cn('numi-markdown whitespace-pre-line', className)} {...props}>
       <ReactMarkdown
         rehypePlugins={[rehypeRaw]}
         components={{
-          ...componentsForTheme(theme, style),
+          ...componentsForTheme(theme, style, listItemGap),
           h6: ({ children }) => <p style={getTypographyStyleInline({ theme, element: 'body', style })}>{children}</p>,
         }}
       >
@@ -74,4 +118,3 @@ export const MarkdownText = ({ text, theme, style, className, ...props }: Markdo
     </div>
   );
 };
-

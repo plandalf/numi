@@ -17,6 +17,7 @@ import { toast } from "sonner";
 import { formatMoney, slugify, getSupportedCurrencies } from "@/lib/utils"; // Import slugify and getSupportedCurrencies
 import { type Price, type Product } from '@/types/offer';
 import axios from '@/lib/axios';
+// Inline Stripe price search within the modal instead of a separate dialog
 
 
 // Placeholder Types if not globally defined
@@ -35,6 +36,33 @@ interface PageProps {
 type PriceType = 'one_time' | 'recurring' | 'tiered' | 'volume' | 'graduated' | 'package';
 type RecurringInterval = 'day' | 'week' | 'month' | 'year';
 type PriceScope = 'list' | 'custom' | 'variant';
+
+// Stripe API shapes (subset used for prefill)
+interface StripeRecurring {
+  interval: RecurringInterval | string;
+  interval_count: number;
+  usage_type: string;
+}
+
+interface StripeTier {
+  flat_amount?: number | null;
+  unit_amount?: number | null;
+  up_to?: number | null;
+}
+
+interface StripePriceLite {
+  id: string;
+  nickname?: string | null;
+  lookup_key?: string | null;
+  active?: boolean;
+  type: 'recurring' | 'one_time';
+  recurring?: StripeRecurring;
+  tiers?: StripeTier[];
+  unit_amount: number | null;
+  currency: string;
+  tiers_mode?: 'volume' | 'graduated' | string | null;
+  billing_scheme?: 'tiered' | 'per_unit' | string | null;
+}
 
 // Tier structure similar to VariantForm
 interface TierConfig {
@@ -119,6 +147,54 @@ const stripCommas = (numStr: string): string => {
   return numStr.replace(/,/g, '');
 };
 
+const capitalize = (str: string | undefined | null): string => {
+  if (!str) return '';
+  return str.charAt(0).toUpperCase() + str.slice(1);
+};
+
+// Normalize various currency representations to a 3-letter lowercase code
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const normalizeCurrencyCode = (value: any, fallback: string = 'usd'): string => {
+  if (!value) return fallback;
+  if (typeof value === 'string') return value.toLowerCase();
+  if (typeof value === 'object') {
+    if (typeof value.code === 'string') return value.code.toLowerCase();
+    if (typeof value.currency === 'string') return value.currency.toLowerCase();
+  }
+  return fallback;
+};
+
+// Convert backend-normalized properties (either array of tiers or { tiers: [] })
+// into UI-friendly TierConfig with from/to boundaries
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const computeTiersFromProperties = (props: any): TierConfig[] => {
+  // Handle both shapes: array or { tiers: [] }
+  const tiersSource = Array.isArray(props) ? props : (props?.tiers ?? null);
+  if (!Array.isArray(tiersSource) || tiersSource.length === 0) {
+    return [{ from: 0, to: null, unit_amount: 0 }];
+  }
+  // Sort by up_to ascending (null last)
+  const sorted = [...tiersSource].sort((a, b) => {
+    const aU = (a?.up_to ?? Number.POSITIVE_INFINITY) as number;
+    const bU = (b?.up_to ?? Number.POSITIVE_INFINITY) as number;
+    return aU - bU;
+  });
+  // Build from/to
+  const result: TierConfig[] = [];
+  let prevUpTo: number | null = null;
+  for (let i = 0; i < sorted.length; i++) {
+    const t = sorted[i] ?? {};
+    const upTo: number | null = typeof t.up_to === 'number' ? t.up_to : null;
+    const from = prevUpTo === null ? 0 : prevUpTo + 1;
+    const to = upTo;
+    const unitAmount = typeof t.unit_amount === 'number' ? t.unit_amount : 0;
+    const flatAmount = typeof t.flat_amount === 'number' ? t.flat_amount : null;
+    result.push({ from, to, unit_amount: unitAmount, flat_amount: flatAmount });
+    if (upTo !== null) prevUpTo = upTo;
+  }
+  return result;
+};
+
 export default function PriceForm({
   open,
   onOpenChange,
@@ -132,14 +208,16 @@ export default function PriceForm({
 }: Props) {
   const isEditing = !!(initialData?.id);
   const { props: pageProps } = usePage<PageProps>();
-  const defaultCurrency = product.currency || pageProps.config?.cashier_currency || 'usd'; // Get default currency
+  const defaultCurrency = normalizeCurrencyCode((product as unknown as { currency?: unknown }).currency || pageProps.config?.cashier_currency || 'usd');
   const [isLookupKeyManuallyEdited, setIsLookupKeyManuallyEdited] = useState(!!initialData?.lookup_key); // Track manual edits
   const [amountDisplay, setAmountDisplay] = useState<string>("0.00"); // State for formatted amount string
   const amountInputRef = useRef<HTMLInputElement>(null); // Ref for amount input to check focus
   const [cursorPosition, setCursorPosition] = useState<number | null>(null); // For managing cursor
+  const [stripePrices, setStripePrices] = useState<StripePriceLite[]>([]);
+  const [isLoadingStripePrices, setIsLoadingStripePrices] = useState<boolean>(false);
 
   // --- State for complex properties ---
-  const [tiers, setTiers] = useState<TierConfig[]>(initialData?.properties?.tiers || [{ from: 0, to: null, unit_amount: 0 }]);
+  const [tiers, setTiers] = useState<TierConfig[]>(computeTiersFromProperties(initialData?.properties));
   const [packageConfig, setPackageConfig] = useState<PackageConfig>(initialData?.properties?.package || { size: 1, unit_amount: 0 });
   // --- End State ---
 
@@ -155,7 +233,7 @@ export default function PriceForm({
       parent_list_price_id: initialData?.parent_list_price_id || null,
       type,
       amount: initialData?.amount || 0,
-      currency: initialData?.currency || defaultCurrency,
+      currency: normalizeCurrencyCode((initialData as unknown as { currency?: unknown })?.currency) || defaultCurrency,
       renew_interval: initialData?.renew_interval || (isRecurringType ? 'month' : null),
       billing_anchor: initialData?.billing_anchor || null,
       recurring_interval_count: initialData?.recurring_interval_count || null,
@@ -177,6 +255,7 @@ export default function PriceForm({
   });
 
   const { data, setData, post, put, processing, errors, reset } = useForm<PriceFormData>(getInitialFormData());
+  const [isDebugOpen, setIsDebugOpen] = useState<boolean>(false);
 
   // Reset form and properties state when dialog closes or initialData changes
   useEffect(() => {
@@ -194,7 +273,7 @@ export default function PriceForm({
       // Format initial amount to display string
       const initialAmountStr = initialFormState.amount ? (initialFormState.amount / 100).toFixed(2) : "0.00";
       setAmountDisplay(formatNumberWithCommas(initialAmountStr));
-      setTiers(initialData?.properties?.tiers || [{ from: 0, to: null, unit_amount: 0 }]);
+      setTiers(computeTiersFromProperties(initialData?.properties));
       setPackageConfig(initialData?.properties?.package || { size: 1, unit_amount: 0 });
       setIsLookupKeyManuallyEdited(!!initialData?.lookup_key);
     }
@@ -264,6 +343,103 @@ export default function PriceForm({
       setData('parent_list_price_id', null);
     }
   }, [data.scope, setData]);
+
+  // Ensure child type always matches selected parent type for custom/variant
+  useEffect(() => {
+    if ((data.scope === 'custom' || data.scope === 'variant') && data.parent_list_price_id && listPrices && listPrices.length > 0) {
+      const parent = listPrices.find(p => p.id === data.parent_list_price_id);
+      if (parent && data.type !== parent.type) {
+        setData('type', parent.type);
+      }
+    }
+  }, [data.scope, data.parent_list_price_id, listPrices, data.type, setData]);
+
+  // Resolve integration/product ids (supports both product.integration.id and product.integration_id shapes)
+  const resolvedIntegrationId = (product as unknown as { integration?: { id?: number } }).integration?.id
+    ?? (product as unknown as { integration_id?: number }).integration_id;
+  const resolvedGatewayProductId = (product as unknown as { gateway_product_id?: string }).gateway_product_id;
+
+  // Fetch Stripe prices for the connected product (if available)
+  useEffect(() => {
+    if (!open) return;
+    if (!resolvedIntegrationId || !resolvedGatewayProductId) return;
+    setIsLoadingStripePrices(true);
+    axios
+      .get(`/integrations/${resolvedIntegrationId}/products/${resolvedGatewayProductId}/prices`)
+      .then((res) => setStripePrices((res.data || []) as StripePriceLite[]))
+      .catch(() => setStripePrices([]))
+      .finally(() => setIsLoadingStripePrices(false));
+  }, [open, resolvedIntegrationId, resolvedGatewayProductId]);
+
+  const prefillFromStripePrice = (stripePrice: StripePriceLite) => {
+    if (!stripePrice) return;
+    setData('gateway_provider', 'stripe');
+    setData('gateway_price_id', stripePrice.id);
+    // Compute a sensible name and lookup key
+    const intervalLabel = stripePrice.recurring ? capitalize(String(stripePrice.recurring.interval)) : '';
+    const typeLabel = (() => {
+      if (Array.isArray(stripePrice.tiers) && stripePrice.tiers.length > 0) {
+        if (stripePrice.tiers_mode === 'volume') return 'Volume';
+        if (stripePrice.tiers_mode === 'graduated' || stripePrice.billing_scheme === 'tiered') return 'Graduated';
+      }
+      return stripePrice.type === 'recurring' ? 'Recurring' : 'One-time';
+    })();
+    const amountLabel = typeof stripePrice.unit_amount === 'number' && stripePrice.unit_amount !== null
+      ? `${formatMoney(stripePrice.unit_amount, stripePrice.currency)}`
+      : '';
+    const defaultName = [product.name, amountLabel, intervalLabel || typeLabel].filter(Boolean).join(' ').trim();
+    const desiredName = stripePrice.nickname || defaultName;
+    setData('name', desiredName);
+    const desiredLookup = stripePrice.lookup_key || slugify(desiredName);
+    if (!isLookupKeyManuallyEdited) {
+      setData('lookup_key', desiredLookup);
+    }
+    if (stripePrice.currency) {
+      setData('currency', stripePrice.currency.toLowerCase());
+    }
+    if (typeof stripePrice.unit_amount === 'number' && stripePrice.unit_amount !== null) {
+      setData('amount', Math.round(stripePrice.unit_amount));
+    } else if (Array.isArray(stripePrice.tiers) && stripePrice.tiers.length > 0) {
+      const mappedTiers: TierConfig[] = [];
+      for (let i = 0; i < stripePrice.tiers.length; i++) {
+        const t = stripePrice.tiers[i];
+        const prevTo = i > 0 ? stripePrice.tiers[i - 1]?.up_to : 0;
+        const from = typeof prevTo === 'number' ? prevTo + (i > 0 ? 1 : 0) : 0;
+        const to = t.up_to ?? null;
+        // Prefer flat_amount if provided (Stripe tier flat pricing), otherwise unit_amount
+        const amount = (typeof t.flat_amount === 'number' && t.flat_amount !== null)
+          ? t.flat_amount
+          : ((typeof t.unit_amount === 'number' && t.unit_amount !== null) ? t.unit_amount : 0);
+        mappedTiers.push({ from, to, unit_amount: amount });
+      }
+      setTiers(mappedTiers);
+      setData('properties', { tiers: mappedTiers });
+      if (stripePrice.tiers_mode === 'volume') {
+        setData('type', 'volume');
+      } else if (stripePrice.tiers_mode === 'graduated') {
+        setData('type', 'graduated');
+      } else {
+        // Default to graduated for Stripe tiered billing when tiers_mode is unspecified
+        setData('type', 'graduated');
+      }
+    }
+
+    if (stripePrice.type === 'recurring' && stripePrice.recurring) {
+      const interval = (stripePrice.recurring.interval || 'month') as RecurringInterval;
+      setData('renew_interval', interval);
+      setData('recurring_interval_count', stripePrice.recurring.interval_count || null);
+      // Do not override complex pricing types derived from tiers
+      if (!Array.isArray(stripePrice.tiers) || stripePrice.tiers.length === 0) {
+        setData('type', 'recurring');
+      }
+    } else if (stripePrice.type === 'one_time') {
+      setData('renew_interval', null);
+      setData('recurring_interval_count', null);
+      setData('type', 'one_time');
+    }
+
+    toast.success('Prefilled from Stripe price');
+  };
 
   const addMetadataEntry = () => {
     const newEntries = [...data.metadata, { tag_name: '', copy: '' }];
@@ -459,6 +635,8 @@ export default function PriceForm({
       formData.billing_anchor = null;
     }
 
+    // Retain gateway linkage even when moving to custom/variant
+
     // Format data
     formData.amount = Math.round(data.amount);
     formData.lookup_key = formData.lookup_key?.trim() || null;
@@ -595,6 +773,29 @@ export default function PriceForm({
     <DialogBody>
         <div className="flex-grow h-full overflow-auto p-4">
           <div className="flex flex-col gap-4 pb-4">
+            {/* Stripe Price Search (prefill) - top of form */}
+            {resolvedIntegrationId && resolvedGatewayProductId && (
+              <div className="flex flex-col gap-2">
+                <Label>Import from Stripe</Label>
+                <Combobox
+                  className="mt-1 w-full"
+                  items={(stripePrices || []).map((price: StripePriceLite) => ({
+                    value: price.id,
+                    label: price.nickname || price.id,
+                    subtitle: `${price.type}${price.recurring ? ` • ${price.recurring.interval}` : ''} • ${price.unit_amount ? formatMoney(price.unit_amount, price.currency) : ''}`,
+                  }))}
+                  placeholder={isLoadingStripePrices ? 'Loading prices…' : 'Search Stripe prices'}
+                  selected={''}
+                  onSelect={(value) => {
+                    const id = typeof value === 'string' ? value : (value as string[])[0];
+                    const found = (stripePrices || []).find((p: StripePriceLite) => p.id === id);
+                    if (found) prefillFromStripePrice(found);
+                  }}
+                />
+                <p className="text-xs text-muted-foreground">Selecting a Stripe price will prefill the fields below.</p>
+              </div>
+            )}
+
             <div className="flex flex-col gap-2">
               <Label htmlFor="name">Name</Label>
               <Input
@@ -650,62 +851,82 @@ export default function PriceForm({
               </p>
             </div>
 
-            {/* Parent List Price Selection for Custom/Variant */}
+            {/* Move under different parent (and Parent selection for Custom/Variant) */}
             {(data.scope === 'custom' || data.scope === 'variant') && listPrices && listPrices.length > 0 && (
               <div className="flex flex-col gap-2">
-                <Label htmlFor="parent_list_price_id">Base List Price</Label>
-                <Combobox
-                  items={listPrices.map((price) => ({
-                    value: price.id.toString(),
-                    label: price.name || `Price #${price.id}`,
-                    subtitle: `${price.type.replace('_', ' ')} • ${formatMoney(price.amount, price.currency)} ${price.currency.toUpperCase()}`,
-                    metadata: (
-                      <div className="flex items-center gap-2 text-xs">
-                        <Badge variant="secondary" className="text-xs px-1.5 py-0.5 h-auto">
-                          {price.type.replace('_', ' ')}
-                        </Badge>
-                        {price.lookup_key && (
-                          <span className="text-muted-foreground">Key: {price.lookup_key}</span>
-                        )}
-                        <span className={price.is_active ? "text-green-600" : "text-gray-500"}>
-                          {price.is_active ? "Active" : "Inactive"}
-                        </span>
-                      </div>
-                    ),
-                    badge: (
-                      <div className="flex flex-col items-end gap-1">
-                        <Badge className="bg-green-600 text-white text-xs">
-                          List
-                        </Badge>
-                        <span className="text-xs font-medium text-green-600">
-                          {formatMoney(price.amount, price.currency)}
-                        </span>
-                      </div>
-                    ),
-                    disabled: !price.is_active,
-                  }))}
-                  selected={data.parent_list_price_id?.toString() || ''}
-                  onSelect={(value) => {
-                    const parentId = value ? parseInt(value as string) : null;
-                    setData('parent_list_price_id', parentId);
+                <Label htmlFor="parent_list_price_id">{isEditing ? 'Move under Parent List Price' : 'Base List Price'}</Label>
+                <div className="flex items-start gap-2">
+                  <div className="flex-1">
+                    <Combobox
+                      items={listPrices.map((price) => ({
+                        value: price.id.toString(),
+                        label: price.name || `Price #${price.id}`,
+                        subtitle: `${price.type.replace('_', ' ')} • ${formatMoney(price.amount, price.currency)} ${price.currency.toUpperCase()}`,
+                        metadata: (
+                          <div className="flex items-center gap-2 text-xs">
+                            <Badge variant="secondary" className="text-xs px-1.5 py-0.5 h-auto">
+                              {price.type.replace('_', ' ')}
+                            </Badge>
+                            {price.lookup_key && (
+                              <span className="text-muted-foreground">Key: {price.lookup_key}</span>
+                            )}
+                            <span className={price.is_active ? "text-green-600" : "text-gray-500"}>
+                              {price.is_active ? "Active" : "Inactive"}
+                            </span>
+                          </div>
+                        ),
+                        badge: (
+                          <div className="flex flex-col items-end gap-1">
+                            <Badge className="bg-green-600 text-white text-xs">
+                              List
+                            </Badge>
+                            <span className="text-xs font-medium text-green-600">
+                              {formatMoney(price.amount, price.currency)}
+                            </span>
+                          </div>
+                        ),
+                        disabled: !price.is_active,
+                      }))}
+                      selected={data.parent_list_price_id?.toString() || ''}
+                      onSelect={(value) => {
+                        const parentId = value ? parseInt(value as string) : null;
+                        setData('parent_list_price_id', parentId);
 
-                    // Automatically set the type to match the parent price
-                    if (parentId && listPrices) {
-                      const parentPrice = listPrices.find(p => p.id === parentId);
-                      if (parentPrice) {
-                        setData('type', parentPrice.type);
-                      }
-                    }
-                  }}
-                  placeholder="Search and select base list price"
-                  disabled={processing}
-                  className="w-full"
-                  popoverClassName="min-w-[500px]"
-                />
-                {errors.parent_list_price_id && <p className="text-sm text-red-500">{errors.parent_list_price_id}</p>}
-                <p className="text-xs text-muted-foreground">
-                  This {data.scope} price will be based on the selected list price and inherit its pricing model. Search by name or type.
-                </p>
+                        // Automatically set the type to match the parent price
+                        if (parentId && listPrices) {
+                          const parentPrice = listPrices.find(p => p.id === parentId);
+                          if (parentPrice) {
+                            setData('type', parentPrice.type);
+                            // Debug note shown next to model select when mismatched
+                            if (data.type && data.type !== parentPrice.type) {
+                              toast.message('Type adjusted to match parent', {
+                                description: `Parent: ${parentPrice.type}, Child before: ${data.type}`
+                              });
+                            }
+                          }
+                        }
+                      }}
+                      placeholder="Search and select base list price"
+                      disabled={processing}
+                      className="w-full"
+                      popoverClassName="min-w-[500px]"
+                    />
+                    {errors.parent_list_price_id && <p className="text-sm text-red-500">{errors.parent_list_price_id}</p>}
+                    {data.parent_list_price_id && listPrices && (() => {
+                      const parent = listPrices.find(p => p.id === data.parent_list_price_id);
+                      if (!parent) return null;
+                      const isMismatch = data.type !== parent.type;
+                      if (!isMismatch) return null;
+                      return (
+                        <p className="text-xs text-orange-600">Debug: Selected parent is {parent.type}, form type is {data.type}. It will be aligned on save.</p>
+                      );
+                    })()}
+                    <p className="text-xs text-muted-foreground">
+                      {isEditing ? 'Move this price under another list price as a variant. Its pricing model must match the parent.' : 'This price will be based on the selected list price and inherit its pricing model.'} Search by name or type.
+                    </p>
+                  </div>
+                  {/* Inline Stripe search below handles prefill; no separate dialog trigger needed */}
+                </div>
               </div>
             )}
 
@@ -717,6 +938,8 @@ export default function PriceForm({
                 </p>
               </div>
             )}
+
+            {/* (Import block already shown at top) */}
 
             <div className="text-sm text-teal-600 cursor-pointer" onClick={() => {
               const newShowMetadata = !showMetadata;
@@ -859,11 +1082,14 @@ export default function PriceForm({
                     ${processing || isEditing ? 'cursor-not-allowed !bg-gray-100 text-gray-500' : 'bg-white'}
                     `}
                   >
-                    {getSupportedCurrencies().map((currency) => (
-                      <option key={currency.code} value={currency.code.toLowerCase()}>
-                        {currency.code} - {currency.name}
-                      </option>
-                    ))}
+                    {getSupportedCurrencies().map((c) => {
+                      const code = c.code.toLowerCase();
+                      return (
+                        <option key={code} value={code}>
+                          {c.code} - {c.name}
+                        </option>
+                      )
+                    })}
                   </Select>
                 </div>
                 {errors.amount && <p className="text-sm text-red-500">{errors.amount}</p>}
@@ -1188,6 +1414,40 @@ export default function PriceForm({
                 </div>
               </div>
             )}
+
+            {/* Debug preview: mapped values before submit (for development) */}
+            <div className="rounded-md bg-gray-50 p-3 text-xs text-gray-700">
+              <button
+                type="button"
+                className="flex w-full items-center justify-between"
+                onClick={() => setIsDebugOpen(!isDebugOpen)}
+              >
+                <div className="font-medium">Debug (mapped values)</div>
+                {isDebugOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+              </button>
+              {isDebugOpen && (
+                <>
+                  <pre className="whitespace-pre-wrap break-all max-h-48 overflow-auto mt-2">
+{JSON.stringify({
+  resolvedIntegrationId,
+  resolvedGatewayProductId,
+  mapped: {
+    scope: data.scope,
+    type: data.type,
+    currency: data.currency,
+    amount: data.amount,
+    renew_interval: data.renew_interval,
+    recurring_interval_count: data.recurring_interval_count,
+    properties: data.properties,
+    gateway_provider: data.gateway_provider,
+    gateway_price_id: data.gateway_price_id,
+  }
+}, null, 2)}
+                  </pre>
+                  <div className="mt-1 text-[10px] text-muted-foreground">Note: Stripe types map to our ChargeType enum: one_time, recurring, graduated, volume, package.</div>
+                </>
+              )}
+            </div>
 
             {/* Is Active Switch */}
             <div className="flex items-center space-x-2 pt-2">

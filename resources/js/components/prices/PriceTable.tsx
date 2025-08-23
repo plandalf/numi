@@ -1,22 +1,23 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuItem, 
-  DropdownMenuSeparator, 
-  DropdownMenuTrigger 
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
-import { 
-  Popover, 
-  PopoverContent, 
-  PopoverTrigger 
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger
 } from '@/components/ui/popover';
-import { Edit, Trash2, Plus, ChevronDown, Info, CornerDownRight } from 'lucide-react';
+import { Edit, Trash2, Plus, ChevronDown, Info, CornerDownRight, Link2, Check } from 'lucide-react';
 import { formatMoney } from '@/lib/utils';
 import { Price } from '@/types/offer';
 import React from 'react';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 // Helper function to get the base price for complex pricing models
 const getBasePrice = (price: Price): { amount: number; label: string } | null => {
@@ -25,12 +26,12 @@ const getBasePrice = (price: Price): { amount: number; label: string } | null =>
     if (price.amount > 0) {
       return {
         amount: price.amount,
-        label: 'From'
+        label: 'starts at'
       };
     }
     return null;
   }
-  
+
   switch (price.type) {
     case 'tiered':
     case 'volume':
@@ -40,7 +41,7 @@ const getBasePrice = (price: Price): { amount: number; label: string } | null =>
         if (firstTier && typeof firstTier.unit_amount === 'number') {
           return {
             amount: firstTier.unit_amount,
-            label: 'Start at'
+            label: 'starts at'
           };
         }
       }
@@ -51,21 +52,21 @@ const getBasePrice = (price: Price): { amount: number; label: string } | null =>
         if (typeof size === 'number' && typeof unit_amount === 'number') {
           return {
             amount: unit_amount * size,
-            label: `${size} pack for`
+            label: 'starts at'
           };
         }
       }
       break;
   }
-  
+
   // Fallback to simple amount if available
   if (price.amount > 0) {
     return {
       amount: price.amount,
-      label: 'From'
+      label: 'starts at'
     };
   }
-  
+
   return null;
 };
 
@@ -75,13 +76,13 @@ const PricingBreakdown: React.FC<{ price: Price }> = ({ price }) => {
 
   const renderTieredPricing = (tiers: any[]) => {
     if (!Array.isArray(tiers) || tiers.length === 0) return null;
-    
+
     return (
       <div className="space-y-2">
         <div className="text-sm font-medium">Pricing Tiers</div>
         {tiers.map((tier, index) => {
           if (!tier || typeof tier.unit_amount !== 'number') return null;
-          
+
           return (
             <div key={index} className="flex justify-between text-xs p-2 bg-gray-50 rounded">
               <span>
@@ -102,7 +103,7 @@ const PricingBreakdown: React.FC<{ price: Price }> = ({ price }) => {
     if (!pkg || typeof pkg.size !== 'number' || typeof pkg.unit_amount !== 'number') {
       return null;
     }
-    
+
     return (
       <div className="space-y-2">
         <div className="text-sm font-medium">Package Pricing</div>
@@ -155,7 +156,7 @@ const groupPricesHierarchically = (prices: Price[]) => {
   // Separate parent and child prices
   const parentPrices = prices.filter(p => p.scope === 'list');
   const childPrices = prices.filter(p => p.scope !== 'list');
-  
+
   // Create a map of parent ID to children
   const childrenByParent = childPrices.reduce((acc, child) => {
     const parentId = child.parent_list_price_id;
@@ -167,39 +168,39 @@ const groupPricesHierarchically = (prices: Price[]) => {
     }
     return acc;
   }, {} as Record<number, Price[]>);
-  
+
   // Group and sort: parents first, then their children
   const groupedPrices: Array<{ price: Price; isChild: boolean; parentName?: string }> = [];
-  
+
   // Add parents and their children
   parentPrices.forEach(parent => {
     // Add parent
     groupedPrices.push({ price: parent, isChild: false });
-    
+
     // Add children of this parent
     const children = childrenByParent[parent.id] || [];
     children.forEach(child => {
-      groupedPrices.push({ 
-        price: child, 
-        isChild: true, 
-        parentName: parent.name || `Price #${parent.id}` 
+      groupedPrices.push({
+        price: child,
+        isChild: true,
+        parentName: parent.name || `Price #${parent.id}`
       });
     });
   });
-  
+
   // Add orphaned child prices (those without valid parent) at the end
-  const orphanedChildren = childPrices.filter(child => 
-    !child.parent_list_price_id || 
+  const orphanedChildren = childPrices.filter(child =>
+    !child.parent_list_price_id ||
     !parentPrices.find(p => p.id === child.parent_list_price_id)
   );
-  
+
   orphanedChildren.forEach(orphan => {
-    groupedPrices.push({ 
-      price: orphan, 
+    groupedPrices.push({
+      price: orphan,
       isChild: false // Render as standalone since parent is missing
     });
   });
-  
+
   return groupedPrices;
 };
 
@@ -213,25 +214,24 @@ interface PriceTableProps {
 
 export const PriceTable: React.FC<PriceTableProps> = ({ prices, onEdit, onDelete, onCreateChild, showActions = false }) => {
   const groupedPrices = groupPricesHierarchically(prices);
-  
+
   return (
     prices && prices.length > 0 ? (
       <div className="rounded-md border overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="min-w-[150px]">Prices</TableHead>
+              <TableHead className="min-w-[200px]">Prices</TableHead>
               <TableHead className="min-w-[80px]">Scope</TableHead>
-              <TableHead className="min-w-[100px]">Status</TableHead>
-              <TableHead className="min-w-[100px]">Lookup Key</TableHead>
+              <TableHead className="min-w-[60px] text-center">Active</TableHead>
               <TableHead className="min-w-[80px]">Type</TableHead>
-              <TableHead className="min-w-[100px]">Price</TableHead>
+              <TableHead className="min-w-[120px]">Price</TableHead>
               {showActions && <TableHead className="text-right">Actions</TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
             {groupedPrices.map(({ price, isChild, parentName }, index) => (
-              <TableRow 
+              <TableRow
                 key={`${price.id}-${index}`}
                 className={isChild ? 'bg-gray-50/50' : ''}
               >
@@ -246,25 +246,42 @@ export const PriceTable: React.FC<PriceTableProps> = ({ prices, onEdit, onDelete
                     <span className={isChild ? 'text-sm' : ''}>
                       {price.name || '-'}
                     </span>
+                    {price.gateway_price_id && (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Link2 className="h-4 w-4 text-blue-600" />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <div className="text-xs">
+                            Linked to {price.gateway_provider || 'stripe'} price
+                            <div className="font-mono break-all">{price.gateway_price_id}</div>
+                          </div>
+                        </TooltipContent>
+                      </Tooltip>
+                    )}
                   </div>
+                  {price.lookup_key && (
+                    <div className="text-xs text-muted-foreground break-all">{price.lookup_key}</div>
+                  )}
                 </TableCell>
                 <TableCell className="whitespace-nowrap">
                   <Badge className={`whitespace-nowrap text-white ${
                     price.scope === 'list' ? 'bg-green-600' :
-                    price.scope === 'custom' ? 'bg-blue-600' : 
+                    price.scope === 'custom' ? 'bg-blue-600' :
                     'bg-purple-600'
                   }`}>
                     {price.scope === 'list' ? 'List' :
-                     price.scope === 'custom' ? 'Custom' : 
+                     price.scope === 'custom' ? 'Custom' :
                      'Variant'}
                   </Badge>
                 </TableCell>
-                <TableCell className="whitespace-nowrap">
-                  <Badge className={`whitespace-nowrap text-white ${price.is_active ? 'bg-[#7EB500]' : 'bg-[#808ABF]'}`}>
-                    {price.is_active ? 'Active' : 'Inactive'}
-                  </Badge>
+                <TableCell className="text-center">
+                  {price.is_active ? (
+                    <Check className="h-4 w-4 text-green-600 inline-block" aria-label="Active" />
+                  ) : (
+                    <span className="text-muted-foreground">—</span>
+                  )}
                 </TableCell>
-                <TableCell className="whitespace-nowrap">{price.lookup_key || '-'}</TableCell>
                 <TableCell className="whitespace-nowrap capitalize">{price.type.replace('_', ' ')}</TableCell>
                 <TableCell className="whitespace-nowrap">
                   {(() => {
@@ -272,7 +289,7 @@ export const PriceTable: React.FC<PriceTableProps> = ({ prices, onEdit, onDelete
                     if (['one_time', 'recurring'].includes(price.type)) {
                       return `${formatMoney(price.amount, price.currency)} ${price.currency.toUpperCase()}`;
                     }
-                    
+
                     // Complex pricing types
                     const basePrice = getBasePrice(price);
                     const hasBreakdown = price.properties && (

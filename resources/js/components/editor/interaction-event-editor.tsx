@@ -13,6 +13,8 @@ import { usePage } from '@inertiajs/react';
 import { EditProps } from '@/pages/offers/edit';
 import { Combobox } from '../combobox';
 import SetItemAction, { SetItemActionValue } from '../actions/set-item-action';
+import SwitchVariantAction, { SwitchVariantActionValue } from '../actions/switch-variant-action';
+import SwitchProductAction, { SwitchProductActionValue } from '../actions/switch-product-action';
 import { Separator } from '../ui/separator';
 import RedirectToUrl from '../actions/redirect-to-url';
 
@@ -22,6 +24,8 @@ const ACTION_OPTIONS = [
   { value: 'deactivateLineItem', label: 'Deactivate line item' },
   { value: 'activateLineItem', label: 'Activate line item' },
   { value: 'setItem', label: 'Set line item (advanced)' },
+  { value: 'switchVariant', label: 'Switch variant (by currency/interval/type)' },
+  { value: 'switchProduct', label: 'Switch product' },
   { value: 'redirect', label: 'Redirect to URL' },
 ];
 
@@ -51,7 +55,7 @@ export const EVENTS = [
     label: 'On Unselect'
   },
 ]
-type EventValue = SetItemActionValue | string;
+type EventValue = SetItemActionValue | SwitchVariantActionValue | SwitchProductActionValue | string;
 export interface EventAction {
   event: Event;
   action: string;
@@ -89,6 +93,10 @@ function ActionSelector({ action, value, onChange }: ActionSelectorProps) {
     case 'activateLineItem':
     case 'setItem':
       return <SetItemAction value={value as SetItemActionValue} onChange={onChange} action={action} />;
+    case 'switchVariant':
+      return <SwitchVariantAction value={(value as SwitchVariantActionValue) || { item: '', type: 'recurring', interval: 'month', currency: 'session' }} onChange={(v) => onChange(v as unknown as EventValue)} />;
+    case 'switchProduct':
+      return <SwitchProductAction value={(value as SwitchProductActionValue) || { item: '' }} onChange={(v) => onChange(v as unknown as EventValue)} />;
     case 'redirect':
       return <RedirectToUrl value={value as string} onChange={onChange} />;
     default:
@@ -265,7 +273,7 @@ export const InteractionEventEditor: React.FC<InteractionEventEditorProps> = ({ 
     return action.action;
   };
 
-  const handleOnItemClick = (event: Event, index: number, action: EventAction) => {
+  const handleOnItemClick = () => {
     setOpen(true);
   }
 
@@ -306,7 +314,7 @@ export const InteractionEventEditor: React.FC<InteractionEventEditorProps> = ({ 
                 <div
                   key={index}
                   className="text-sm text-gray-700 p-1 hover:bg-gray-200 bg-gray-100 rounded-sm border p-2 cursor-pointer"
-                  onClick={() => handleOnItemClick(event as Event, index, action)}
+                  onClick={() => handleOnItemClick()}
                 >
                   {description}
                 </div>

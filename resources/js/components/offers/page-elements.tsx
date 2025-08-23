@@ -20,7 +20,8 @@ import {
   BookmarkIcon,
   Star,
   CodeIcon,
-  Package
+  Package,
+  Clock
 } from 'lucide-react';
 import { useDraggable } from '@dnd-kit/core';
 import SearchBar from './search-bar';
@@ -74,6 +75,8 @@ export const CustomElementIcon = ({ type }: CustomElementIconProps) => {
         return <Package className="w-6 h-6" />;
     case 'horizontal_products':
         return <Package className="w-6 h-6" />;
+    case 'countdown':
+        return <Clock className="w-6 h-6" />;
     default:
         return null;
   }
@@ -127,6 +130,7 @@ const baseElements = [
   { type: 'divider', title: 'Divider' },
   { type: 'rating', title: 'Rating' },
   { type: 'html', title: 'HTML Block' },
+  { type: 'countdown', title: 'Countdown' },
 ];
 
 const interactiveElements = [

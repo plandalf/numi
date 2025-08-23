@@ -14,12 +14,19 @@ class CurrencyCast implements CastsAttributes
 
     public function set(Model $model, string $key, mixed $value, array $attributes)
     {
-        return match (true) {
+        $code = match (true) {
             is_null($value) => null,
             is_string($value) => $value,
             $value instanceof \Money\Currency => $value->getCode(),
             $value instanceof Currency => $value->getAlpha3(),
-            default => $value->getCode(),
+            default => (string) $value,
         };
+
+        if ($code === null) {
+            return null;
+        }
+
+        // Persist lowercase ISO code
+        return strtolower($code);
     }
 }

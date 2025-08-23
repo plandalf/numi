@@ -8,8 +8,10 @@ use Inertia\Inertia;
 use Stripe\Stripe;
 use Stripe\Price;
 use Illuminate\Support\Facades\Log;
+use App\Models\ApiKey;
+use Firebase\JWT\JWT;
 
-class CheckoutController extends Controller
+class BillingController extends Controller
 {
     public function billing(Request $request)
     {
@@ -27,7 +29,6 @@ class CheckoutController extends Controller
             ->with('items')
             ->get()
             ->map(function ($subscription) {
-                // dd($subscription);
                 // Get price information from Stripe
                 $priceInfo = $this->getStripePriceInfo($subscription->stripe_price);
 
@@ -63,21 +64,23 @@ class CheckoutController extends Controller
                 ];
             });
 
+        // Generate a billing portal JWT for the org's Stripe customer (if available)
+        $customerId = $organization->stripe_id;
+        $now = time();
+        $payload = [
+            'customer_id' => $customerId,
+            'iat' => $now,
+            'exp' => $now + 3600,
+        ];
+
+        $secret = (string) (config('services.plandalf.billing_portal.secret') ?? '');
+        $kid = (string) (config('services.plandalf.billing_portal.kid') ?? '');
+        $portalToken = JWT::encode($payload, $secret, 'HS256', $kid ?: null);
+
         return Inertia::render('organizations/settings/billing', [
             'subscriptions' => $subscriptions,
+            'portalCustomerToken' => $portalToken,
         ]);
-    }
-
-    public function portal(Request $request)
-    {
-        /** @var \App\Models\Organization $organization */
-        $organization = request()->user()->currentOrganization;
-
-        return Inertia::location(
-            $organization->billingPortalUrl(
-                route('organizations.settings.billing.index')
-            )
-        );
     }
 
     /**
@@ -115,7 +118,6 @@ class CheckoutController extends Controller
                 'formatted_with_interval' => $this->formatPriceWithInterval($price),
             ];
         } catch (\Exception $e) {
-            dd($e);
             Log::warning('Failed to fetch Stripe price information', [
                 'price_id' => $priceId,
                 'error' => $e->getMessage(),

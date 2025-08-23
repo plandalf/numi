@@ -37,9 +37,12 @@ class ReusableBlock extends Model
 
     public function scopeSearch(Builder $query, string $search): Builder
     {
-        return $query->where(function (Builder $query) use ($search) {
-            $query->where('name', 'ILIKE', "%{$search}%")
-                ->orWhere('block_type', 'ILIKE', "%{$search}%");
+        $driver = $query->getConnection()->getDriverName();
+        $operator = $driver === 'pgsql' ? 'ILIKE' : 'LIKE';
+
+        return $query->where(function (Builder $q) use ($search, $operator) {
+            $q->where('name', $operator, "%{$search}%")
+              ->orWhere('block_type', $operator, "%{$search}%");
         });
     }
 

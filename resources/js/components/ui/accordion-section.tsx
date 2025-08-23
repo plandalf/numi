@@ -133,7 +133,7 @@ function SortableAccordionItem({
             <span className="font-medium text-sm text-left">{getSectionTitle(item, index)}</span>
           </div>
           {onDelete && (
-            <Button
+            <div
               type="button"
               variant="ghost"
               size="icon"
@@ -147,7 +147,7 @@ function SortableAccordionItem({
               )}
             >
               <Trash2 className="h-4 w-4" />
-            </Button>
+            </div>
           )}
         </AccordionTrigger>
         <AccordionContent className="bg-transparent rounded-b-lg">

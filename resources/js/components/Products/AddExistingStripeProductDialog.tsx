@@ -204,6 +204,13 @@ type PriceStepProps = {
   productId: string;
 }
 
+const getAmount = (price: StripePrice) => {
+  if (price.unit_amount) {
+    return formatMoney(price.unit_amount, price.currency);
+  }
+  return formatMoney(price.tiers[0].flat_amount || price.tiers[0].unit_amount, price.currency);
+}
+
 export const PriceStep = ({ integrationId, onClickSave, onClickBack, selectedPrices, setSelectedPrices, productId }: PriceStepProps) => {
   const [prices, setPrices] = useState<StripePrice[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -237,16 +244,16 @@ export const PriceStep = ({ integrationId, onClickSave, onClickBack, selectedPri
   const comboboxItems = prices.map(price => ({
     value: price.id,
     label: price.nickname || price.id,
-    badge: price.imported ? <Badge variant="outline">Imported</Badge> : null,
+    subtitle: `${price.type}${price.recurring ? ` • ${price.recurring.interval}` : ''}`,
+    metadata: (
+      <div className="flex items-center gap-2 text-xs">
+        <span>{getAmount(price)}</span>
+        <span className="uppercase">{price.currency}</span>
+        {price.imported && (<Badge variant="outline">Imported</Badge>)}
+      </div>
+    ),
     disabled: price.imported,
   }));
-
-  const getAmount = (price: StripePrice) => {
-    if (price.unit_amount) {
-      return formatMoney(price.unit_amount, price.currency);
-    }
-    return formatMoney(price.tiers[0].flat_amount || price.tiers[0].unit_amount, price.currency);
-  }
 
   const handleRemovePrice = (priceId: string) => {
     setSelectedPrices(selectedPrices.filter(id => id !== priceId));
