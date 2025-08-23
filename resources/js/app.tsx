@@ -4,7 +4,7 @@ import NProgress from 'nprogress';
 
 import { createInertiaApp, router } from '@inertiajs/react';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
-import { createRoot } from 'react-dom/client';
+import { hydrateRoot } from 'react-dom/client';
 import { initializeTheme } from './hooks/use-appearance';
 import { Toaster } from './components/ui/sonner';
 import { initFlashMessages } from './lib/notifications';
@@ -74,13 +74,12 @@ createInertiaApp({
     title: (title) => `${title} - ${appName}`,
     resolve: (name) => resolvePageComponent(`./pages/${name}.tsx`, import.meta.glob('./pages/**/*.tsx')),
     setup({ el, App, props }) {
-        const root = createRoot(el);
-
-        root.render(
+        hydrateRoot(
+            el,
             <>
                 <App {...props} />
                 <Toaster position="top-center" closeButton richColors />
-            </>
+            </>,
         );
     },
 });
