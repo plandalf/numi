@@ -34,7 +34,11 @@ const getTypographyStyleInline = ({
     ...(letterSpacing ? { letterSpacing: letterSpacing as React.CSSProperties['letterSpacing'] } : {}),
   };
 
-  return { ...inline, ...style };
+  const cleanedStyle = style
+    ? (Object.fromEntries(Object.entries(style).filter(([, v]) => v !== undefined && v !== null)) as React.CSSProperties)
+    : undefined;
+
+  return cleanedStyle ? { ...inline, ...cleanedStyle } : inline;
 };
 
 const componentsForTheme = (
@@ -42,65 +46,132 @@ const componentsForTheme = (
   baseStyle?: React.CSSProperties,
   listItemGap?: string
 ): Components => ({
-  h1: (props) => <h1 {...props} style={{ ...getTypographyStyleInline({ theme, element: 'h1', style: baseStyle }), ...(props.style || {}) }} />,
-  h2: (props) => <h2 {...props} style={{ ...getTypographyStyleInline({ theme, element: 'h2', style: baseStyle }), ...(props.style || {}) }} />,
-  h3: (props) => <h3 {...props} style={{ ...getTypographyStyleInline({ theme, element: 'h3', style: baseStyle }), ...(props.style || {}) }} />,
-  h4: (props) => <h4 {...props} style={{ ...getTypographyStyleInline({ theme, element: 'h4', style: baseStyle }), ...(props.style || {}) }} />,
-  h5: (props) => <h5 {...props} style={{ ...getTypographyStyleInline({ theme, element: 'h5', style: baseStyle }), ...(props.style || {}) }} />,
-  p: (props) => <p {...props} style={{ ...getTypographyStyleInline({ theme, element: 'body', style: baseStyle }), ...(props.style || {}) }} />,
-  blockquote: (props) => <blockquote {...props} style={{ ...getTypographyStyleInline({ theme, element: 'label', style: baseStyle }), ...(props.style || {}) }} />,
-  a: (props) => <a {...props} style={{ textDecoration: 'underline', ...getTypographyStyleInline({ theme, element: 'body', style: baseStyle }), ...(props.style || {}) }} />,
-  code: (props) => <code {...props} style={{ ...getTypographyStyleInline({ theme, element: 'body', style: { ...(baseStyle || {}), fontFamily: (theme as any)?.mono_font } }), ...(props.style || {}) }} />,
-  pre: (props) => <pre {...props} style={{ ...getTypographyStyleInline({ theme, element: 'body', style: { ...(baseStyle || {}), fontFamily: (theme as any)?.mono_font } }), ...(props.style || {}) }} />,
+  h1: ({ node: _node, style: s, ...rest }) => {
+    void _node;
+    return <h1 {...rest} style={{ ...getTypographyStyleInline({ theme, element: 'h1', style: baseStyle }), ...(s || {}), marginBlockStart: 0, marginBlockEnd: 0 }} />;
+  },
+  h2: ({ node: _node, style: s, ...rest }) => {
+    void _node;
+    return <h2 {...rest} style={{ ...getTypographyStyleInline({ theme, element: 'h2', style: baseStyle }), ...(s || {}), marginBlockStart: 0, marginBlockEnd: 0 }} />;
+  },
+  h3: ({ node: _node, style: s, ...rest }) => {
+    void _node;
+    return <h3 {...rest} style={{ ...getTypographyStyleInline({ theme, element: 'h3', style: baseStyle }), ...(s || {}), marginBlockStart: 0, marginBlockEnd: 0 }} />;
+  },
+  h4: ({ node: _node, style: s, ...rest }) => {
+    void _node;
+    return <h4 {...rest} style={{ ...getTypographyStyleInline({ theme, element: 'h4', style: baseStyle }), ...(s || {}), marginBlockStart: 0, marginBlockEnd: 0 }} />;
+  },
+  h5: ({ node: _node, style: s, ...rest }) => {
+    void _node;
+    return <h5 {...rest} style={{ ...getTypographyStyleInline({ theme, element: 'h5', style: baseStyle }), ...(s || {}), marginBlockStart: 0, marginBlockEnd: 0 }} />;
+  },
+  p: ({ node: _node, style: s, ...rest }) => {
+    void _node;
+    return <p {...rest} style={{ ...getTypographyStyleInline({ theme, element: 'body', style: baseStyle }), ...(s || {}), marginBlockStart: 0, marginBlockEnd: 0 }} />;
+  },
+  blockquote: ({ node: _node, style: s, ...rest }) => {
+    void _node;
+    return <blockquote {...rest} style={{ ...getTypographyStyleInline({ theme, element: 'label', style: baseStyle }), ...(s || {}), marginBlockStart: 0, marginBlockEnd: 0 }} />;
+  },
+  a: ({ node: _node, style: s, ...rest }) => {
+    void _node;
+    return <a {...rest} style={{ textDecoration: 'underline', ...getTypographyStyleInline({ theme, element: 'body', style: baseStyle }), ...(s || {}), marginBlockStart: 0, marginBlockEnd: 0 }} />;
+  },
+  code: ({ node: _node, style: s, ...rest }) => {
+    void _node;
+    return (
+      <code
+        {...rest}
+        style={{
+          ...getTypographyStyleInline({
+            theme,
+            element: 'body',
+            style: { ...(baseStyle || {}), fontFamily: (theme as Theme & { mono_font?: string })?.mono_font },
+          }),
+          ...(s || {}),
+          margin: 0,
+        }}
+      />
+    );
+  },
+  pre: ({ node: _node, style: s, ...rest }) => {
+    void _node;
+    return (
+      <pre
+        {...rest}
+        style={{
+          ...getTypographyStyleInline({
+            theme,
+            element: 'body',
+            style: { ...(baseStyle || {}), fontFamily: (theme as Theme & { mono_font?: string })?.mono_font },
+          }),
+          ...(s || {}),
+          margin: 0,
+        }}
+      />
+    );
+  },
 
   // NEW ul/ol styles preserved from main, implemented inline for SSR
-  ul: ({ children, ...props }) => (
-    <ul
-      {...props}
-      style={{
-        listStyleType: 'disc',
-        marginLeft: 16,
-        marginBlockStart: 0,
-        marginBlockEnd: 0,
-        ...getTypographyStyleInline({ theme, element: 'body', style: baseStyle }),
-        ...(props.style || {}),
-      }}
-    >
-      {children}
-    </ul>
-  ),
-  ol: ({ children, ...props }) => (
-    <ol
-      {...props}
-      style={{
-        listStyleType: 'decimal',
-        marginLeft: 16,
-        marginTop: 0,
-        marginBottom: 0,
-        ...getTypographyStyleInline({ theme, element: 'body', style: baseStyle }),
-        ...(props.style || {}),
-      }}
-    >
-      {children}
-    </ol>
-  ),
-  li: (props) => (
-    <li
-      {...props}
-      style={{
-        marginBottom: listItemGap ?? '0',
-        ...getTypographyStyleInline({ theme, element: 'body', style: baseStyle }),
-        ...(props.style || {}),
-      }}
-    />
-  ),
+  ul: ({ node: _node, children, style: s, ...rest }) => {
+    void _node;
+    return (
+      <ul
+        {...rest}
+        style={{
+          ...getTypographyStyleInline({ theme, element: 'body', style: baseStyle }),
+          ...(s || {}),
+          listStyleType: 'disc',
+          marginLeft: 16,
+          marginBlockStart: 0,
+          marginBlockEnd: 0,
+          padding: 0,
+        }}
+      >
+        {children}
+      </ul>
+    );
+  },
+  ol: ({ node: _node, children, style: s, ...rest }) => {
+    void _node;
+    return (
+      <ol
+        {...rest}
+        style={{
+          ...getTypographyStyleInline({ theme, element: 'body', style: baseStyle }),
+          ...(s || {}),
+          listStyleType: 'decimal',
+          marginLeft: 16,
+          marginTop: 0,
+          marginBottom: 0,
+          padding: 0,
+        }}
+      >
+        {children}
+      </ol>
+    );
+  },
+  li: ({ node: _node, children, style: s, ...rest }) => {
+    void _node;
+    return (
+      <li
+        {...rest}
+        style={{
+          margin: 0,
+          marginBottom: listItemGap ?? '0',
+          ...getTypographyStyleInline({ theme, element: 'body', style: baseStyle }),
+          ...(s || {}),
+        }}
+      >
+        {children}
+      </li>
+    );
+  },
 });
 
 const preserveAllLineBreaks = (text: string) => {
-  return (text || '')
-    .split('\n')
-    .map((line) => (line.trim() === '' ? '&nbsp;' : line))
-    .join('\n');
+  return text ?? '';
 };
 
 export const MarkdownText = ({ text, theme, style, className, listItemGap, ...props }: MarkdownTextProps) => {
