@@ -97,6 +97,7 @@ export function PageEditorDialog({
               <div className="grid grid-cols-4 gap-4">
                 {PAGE_TYPES.map(({ type, label, icon }) => (
                   <button
+                    key={type}
                     onClick={() => setSelectedType(type)}
                     className={cn(
                       "cursor-pointer flex flex-col items-center gap-2 p-4 rounded-lg border border-border hover:bg-secondary/50",

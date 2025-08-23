@@ -2,7 +2,7 @@
 
 use App\Http\Middleware\FrameEmbedMiddleware;
 use App\Http\Middleware\ForceJsonResponse;
-use App\Http\Middleware\HandleAppearance;
+
 use App\Http\Middleware\HandleInertiaRequests;
 use App\Http\Middleware\RequireOrganization;
 use App\Http\Middleware\RequiresSubscription;
@@ -21,10 +21,10 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
-        $middleware->encryptCookies(except: ['appearance']);
+        $middleware->encryptCookies();
 
         $middleware->web(append: [
-            HandleAppearance::class,
+
             HandleInertiaRequests::class,
             AddLinkHeadersForPreloadedAssets::class,
         ]);

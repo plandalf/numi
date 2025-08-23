@@ -12,7 +12,7 @@ interface AuthLayoutProps {
 
 export default function AuthSimpleLayout({ children, title, description }: PropsWithChildren<AuthLayoutProps>) {
     return (
-      <div className="min-h-svh flex flex-col ">
+      <div className="min-h-svh flex flex-col">
         <div className="h-14 bg-gray-900 text-white flex justify-between items-center px-3">
           <div className="flex items-center gap-4">
             <Link href="/dashboard" prefetch>

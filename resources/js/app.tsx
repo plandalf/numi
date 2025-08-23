@@ -5,8 +5,8 @@ import NProgress from 'nprogress';
 import { createInertiaApp, router } from '@inertiajs/react';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import { hydrateRoot } from 'react-dom/client';
-import { initializeTheme } from './hooks/use-appearance';
 import { Toaster } from './components/ui/sonner';
+
 import { initFlashMessages } from './lib/notifications';
 import { configureEcho } from '@laravel/echo-react';
 
@@ -47,9 +47,10 @@ router.on('start', (e) => {
     NProgress.start();
 });
 
-router.on('progress', (event: any) => {
-    if (event?.detail?.progress?.percentage) {
-        const progress = Math.min((event.detail.progress.percentage / 100) * 0.9, 0.9);
+router.on('progress', (event: unknown) => {
+    const progressEvent = event as { detail?: { progress?: { percentage?: number } } };
+    if (progressEvent?.detail?.progress?.percentage) {
+        const progress = Math.min((progressEvent.detail.progress.percentage / 100) * 0.9, 0.9);
         NProgress.set(progress);
     }
 });
@@ -83,9 +84,6 @@ createInertiaApp({
         );
     },
 });
-
-// This will set light / dark mode on load...
-initializeTheme();
 
 // Initialize flash message handling
 initFlashMessages();

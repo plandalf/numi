@@ -1,6 +1,4 @@
-import { useCurrentOrganization } from '@/hooks/use-current-organization';
 import AppLogoIcon from './app-logo-icon';
-import { useSubscriptions } from '@/hooks/use-subscriptions';
 
 export default function AppLogo() {
 
@@ -14,7 +12,6 @@ export default function AppLogo() {
                     <span className="truncate leading-none font-semibold text-xl uppercase font-sora">Plandalf</span>
                 </div>
             </div>
-
         </div>
     );
 }

@@ -11,6 +11,15 @@ import { Label } from '@/components/ui/label';
 import AuthLayout from '@/layouts/auth-layout';
 import { Organization } from '@/types';
 
+// Safe route helper for SSR
+const safeRoute = (name: string, fallback: string = '/') => {
+    try {
+        return route(name, undefined, false); // Force relative URLs
+    } catch {
+        return fallback;
+    }
+};
+
 type LoginForm = {
     email: string;
     password: string;
@@ -32,7 +41,7 @@ export default function Login({ status, canResetPassword, organization }: LoginP
 
     const submit: FormEventHandler = (e) => {
         e.preventDefault();
-        post(route('login'), {
+        post(safeRoute('login', '/login'), {
             onFinish: () => reset('password'),
         });
     };
@@ -72,7 +81,7 @@ export default function Login({ status, canResetPassword, organization }: LoginP
                         <div className="flex items-center">
                             <Label htmlFor="password">Password</Label>
                             {canResetPassword && (
-                                <TextLink href={route('password.request')} className="ml-auto text-sm" tabIndex={5}>
+                                <TextLink href={safeRoute('password.request', '/forgot-password')} className="ml-auto text-sm" tabIndex={5}>
                                     Forgot password?
                                 </TextLink>
                             )}
@@ -98,7 +107,7 @@ export default function Login({ status, canResetPassword, organization }: LoginP
 
                 <div className="text-muted-foreground text-center text-sm">
                     Don't have an account?{' '}
-                    <TextLink href={route('signup')} tabIndex={5}>
+                    <TextLink href={safeRoute('signup', '/signup')} tabIndex={5}>
                         Sign up
                     </TextLink>
                 </div>
