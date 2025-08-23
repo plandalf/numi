@@ -681,11 +681,11 @@ const Numi = {
 
     useEffect(() => {
       blockContext.registerHook(hook);
-      blockContext.registerField('value', defaultValue);
+      blockContext.registerField(props.name, defaultValue);
     }, [hook]);
 
     const setFieldValue = (newValue: any) => {
-      blockContext.setFieldValue('value', newValue);
+      blockContext.setFieldValue(props.name, newValue);
       setValue(newValue);
     };
 
@@ -718,7 +718,7 @@ const Numi = {
         group: group,
       });
 
-      blockContext.registerField('value', defaultValue);
+      blockContext.registerField(name, defaultValue);
 
       const existingState = blockContext.globalState.getFieldState(
         blockContext.blockId,
@@ -764,8 +764,10 @@ const Numi = {
       );
 
       if (!existingState) {
-        // Use block config value as initial value if it exists
-        const initialValue = blockContext.blockConfig.content[props.name] ?? props.defaultValue;
+        // Prefer configured content when it is non-empty; otherwise use the provided default
+        const configured = get(blockContext.blockConfig, `content.${props.name}`);
+        const hasConfigured = !(configured === undefined || (typeof configured === 'string' && configured.trim() === ''));
+        const initialValue = hasConfigured ? configured : props.defaultValue;
         blockContext.globalState.updateFieldState(
           blockContext.blockId,
           props.name,
@@ -776,15 +778,18 @@ const Numi = {
 
     // For editor-editable values (not hidden), prioritize block config
     // For runtime-editable values (hidden), prioritize field state
+    const configured = get(blockContext.blockConfig, `content.${props.name}`);
+    const hasConfigured = !(configured === undefined || (typeof configured === 'string' && configured.trim() === ''));
+    const fieldValue = blockContext.getFieldValue(props.name);
     const defaultValue = props.inspector !== 'hidden'
-      ? get(blockContext.blockConfig, `content.${props.name}`) ?? blockContext.getFieldValue(props.name) ?? props.defaultValue
-      : blockContext.getFieldValue(props.name) ?? get(blockContext.blockConfig, `content.${props.name}`) ?? props.defaultValue;
+      ? (hasConfigured ? configured : (fieldValue ?? props.defaultValue))
+      : (fieldValue ?? (hasConfigured ? configured : props.defaultValue));
 
     const value = defaultValue;
     const format = get(blockContext.blockConfig, `content.format`) ?? props.format ?? 'plain';
 
     const setValue = (newValue: string) => {
-      blockContext.setFieldValue('value', newValue);
+      blockContext.setFieldValue(props.name, newValue);
     };
 
     return [value, setValue, format];
@@ -834,7 +839,7 @@ const Numi = {
       : Number(blockContext.getFieldValue(props.name)) ?? Number(get(blockContext.blockConfig, `content.${props.name}`)) ?? props.defaultValue;
 
     const setValue = (newValue: number) => {
-      blockContext.setFieldValue('value', newValue);
+      blockContext.setFieldValue(props.name, newValue);
     };
 
     return [value, setValue];
