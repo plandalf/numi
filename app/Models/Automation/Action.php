@@ -4,7 +4,6 @@ namespace App\Models\Automation;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
@@ -16,9 +15,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string|null $description
  * @property int|null $integration_id
  * @property string|null $action_key
+ * @property int|null $sort_order
  * @property array|null $position
  * @property array|null $metadata
- *
  * @property \Carbon\Carbon $created_at
  * @property \Carbon\Carbon $updated_at
  */
@@ -34,6 +33,7 @@ class Action extends Model
         'arguments' => 'json',
         'configuration' => 'json',
         'test_result' => 'json',
+        'sort_order' => 'integer',
         'position' => 'json',
         'metadata' => 'json',
         'retry_config' => 'json',

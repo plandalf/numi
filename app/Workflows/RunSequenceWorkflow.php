@@ -3,16 +3,14 @@
 namespace App\Workflows;
 
 use App\Models\Automation\Action;
+use App\Models\Automation\AutomationEvent;
 use App\Models\Automation\Run;
 use App\Models\Automation\Trigger;
-use App\Models\Automation\AutomationEvent;
 use App\Models\WorkflowStep;
-use App\Workflows\Automation\ActivitySchemaRegistry;
 use App\Workflows\Automation\Bundle;
 use App\Workflows\Automation\NodeActivities\ActionActivity;
 use App\Workflows\Automation\TemplateResolver;
 use Carbon\Carbon;
-use Carbon\CarbonPeriod;
 use Illuminate\Support\Facades\Log;
 use Workflow\ActivityStub;
 use Workflow\Workflow;
@@ -24,10 +22,22 @@ use Workflow\Workflow;
 class RunSequenceWorkflow extends Workflow
 {
     public function execute(
-        Trigger         $trigger,
+        Trigger $trigger,
         AutomationEvent $event,
     ) {
-        foreach (collect($trigger->sequence->actions) as $action) {
+        $actions = $trigger->sequence->actions;
+        // Ensure execution order: by sort_order if present, else by id
+        $ordered = collect($actions)->sort(function ($a, $b) {
+            $ao = isset($a->sort_order) ? (int) $a->sort_order : 999999;
+            $bo = isset($b->sort_order) ? (int) $b->sort_order : 999999;
+            if ($ao === $bo) {
+                return $a->id <=> $b->id;
+            }
+
+            return $ao <=> $bo;
+        });
+
+        foreach ($ordered as $action) {
             // Resolve template variables in node configuration
             $resolvedConfiguration = $this->resolveNodeConfiguration($action, $event);
 
@@ -53,7 +63,7 @@ class RunSequenceWorkflow extends Workflow
             ]);
 
             Log::info(logname(), [
-                'note' => 'event: '.$event->id. ' node: '.$action->id. ' step: '.$step->id,
+                'note' => 'event: '.$event->id.' node: '.$action->id.' step: '.$step->id,
             ]);
 
             // Execute the action

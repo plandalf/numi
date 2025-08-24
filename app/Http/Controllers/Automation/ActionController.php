@@ -5,16 +5,14 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Automation;
 
 use App\Http\Controllers\Controller;
+use App\Models\App;
+use App\Models\Automation\Action;
 use App\Models\Automation\AutomationEvent;
-use App\Models\WorkflowStep;
+use App\Models\Automation\Sequence;
 use App\Workflows\Automation\Bundle;
 use App\Workflows\Automation\TemplateResolver;
-use Illuminate\Http\Request;
-use Illuminate\Http\Response;
 use Illuminate\Http\JsonResponse;
-use App\Models\Automation\Action;
-use App\Models\Automation\Sequence;
-use App\Models\App;
+use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
 class ActionController extends Controller
@@ -35,15 +33,18 @@ class ActionController extends Controller
 
         try {
             $sequence = Sequence::findOrFail($validated['sequence_id']);
-            $actions = $sequence->actions()->where('type', 'action')->get();
+            $actions = $sequence->actions()
+                ->where('type', 'action')
+                ->orderByRaw('COALESCE(sort_order, 999999), id')
+                ->get();
 
             return response()->json([
                 'data' => $actions,
-                'message' => 'Actions retrieved successfully'
+                'message' => 'Actions retrieved successfully',
             ]);
         } catch (\Exception $e) {
             return response()->json([
-                'message' => 'Failed to retrieve actions: ' . $e->getMessage()
+                'message' => 'Failed to retrieve actions: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -72,11 +73,14 @@ class ActionController extends Controller
 
             // Find the app by name
             $app = App::where('name', $validated['app_name'])->first();
-            if (!$app) {
+            if (! $app) {
                 return response()->json([
-                    'message' => 'App not found: ' . $validated['app_name']
+                    'message' => 'App not found: '.$validated['app_name'],
                 ], 404);
             }
+
+            $maxOrder = Action::where('sequence_id', $sequence->id)->max('sort_order');
+            $nextOrder = is_null($maxOrder) ? 1 : ($maxOrder + 1);
 
             $action = Action::create([
                 'sequence_id' => $sequence->id,
@@ -84,6 +88,7 @@ class ActionController extends Controller
                 'type' => 'action',
                 'app_id' => $app->id,
                 'action_key' => $validated['app_action_key'],
+                'sort_order' => $nextOrder,
                 'configuration' => $validated['configuration'] ?? [],
                 // 'position_x' => 0, // Default position
                 // 'position_y' => 0, // Default position
@@ -92,7 +97,47 @@ class ActionController extends Controller
             return $action->load('app');
         } catch (\Exception $e) {
             return response()->json([
-                'message' => 'Failed to create action: ' . $e->getMessage()
+                'message' => 'Failed to create action: '.$e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Reorder actions for a sequence.
+     */
+    public function reorder(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'sequence_id' => [
+                'required',
+                'integer',
+                Rule::exists(Sequence::class, 'id')
+                    ->where('organization_id', auth()->user()->currentOrganization->id),
+            ],
+            'orders' => ['required', 'array', 'min:1'],
+            'orders.*.id' => ['required', 'integer', Rule::exists(Action::class, 'id')],
+            'orders.*.sort_order' => ['required', 'integer', 'min:1'],
+        ]);
+
+        try {
+            $sequence = Sequence::findOrFail($validated['sequence_id']);
+
+            // Map id => order
+            $map = collect($validated['orders'])->keyBy('id');
+
+            $actions = Action::where('sequence_id', $sequence->id)
+                ->whereIn('id', $map->keys())
+                ->get();
+
+            foreach ($actions as $action) {
+                $newOrder = (int) $map[$action->id]['sort_order'];
+                $action->update(['sort_order' => $newOrder]);
+            }
+
+            return response()->json(['message' => 'Reordered successfully']);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Failed to reorder actions: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -104,16 +149,16 @@ class ActionController extends Controller
     {
         try {
             $action = Action::where('id', $id)
-                          ->where('type', 'action')
-                          ->firstOrFail();
+                ->where('type', 'action')
+                ->firstOrFail();
 
             return response()->json([
                 'data' => $action->load('app'),
-                'message' => 'Action retrieved successfully'
+                'message' => 'Action retrieved successfully',
             ]);
         } catch (\Exception $e) {
             return response()->json([
-                'message' => 'Failed to retrieve action: ' . $e->getMessage()
+                'message' => 'Failed to retrieve action: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -133,18 +178,18 @@ class ActionController extends Controller
             'action_key' => 'sometimes|string',
             'configuration' => 'nullable|array',
 
-//            'sequence_id' => [
-//                'required',
-//                'integer',
-//                Rule::exists(Sequence::class, 'id')
-//                    ->where('organization_id', auth()->user()->currentOrganization->id),
-//            ],
+            //            'sequence_id' => [
+            //                'required',
+            //                'integer',
+            //                Rule::exists(Sequence::class, 'id')
+            //                    ->where('organization_id', auth()->user()->currentOrganization->id),
+            //            ],
         ]);
 
         try {
             $action = Action::where('id', $id)
-              ->where('type', 'action')
-              ->firstOrFail();
+                ->where('type', 'action')
+                ->firstOrFail();
 
             $updateData = [
                 'name' => $validated['name'],
@@ -165,7 +210,7 @@ class ActionController extends Controller
             return $action->load('app');
         } catch (\Exception $e) {
             return response()->json([
-                'message' => 'Failed to update action: ' . $e->getMessage()
+                'message' => 'Failed to update action: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -191,12 +236,12 @@ class ActionController extends Controller
                 ->first();
 
             // Use AppDiscoveryService to find the action class
-            $discoveryService = new \App\Services\AppDiscoveryService();
+            $discoveryService = new \App\Services\AppDiscoveryService;
             $appData = $discoveryService->getApp($actionNode->app->key);
 
-            if (!$appData) {
+            if (! $appData) {
                 return response()->json([
-                    'message' => 'App configuration not found: ' . $actionNode->app->key
+                    'message' => 'App configuration not found: '.$actionNode->app->key,
                 ], 404);
             }
 
@@ -204,16 +249,16 @@ class ActionController extends Controller
             $action = collect($appData['actions'])
                 ->firstWhere('key', $actionNode->action_key);
 
-            if (!$action) {
+            if (! $action) {
                 return response()->json([
-                    'message' => 'Action not found: ' . $actionNode->action_key
+                    'message' => 'Action not found: '.$actionNode->action_key,
                 ], 404);
             }
 
             // Check if action class exists
-            if (!class_exists($action['class'])) {
+            if (! class_exists($action['class'])) {
                 return response()->json([
-                    'message' => 'Action class not found: ' . $action['class']
+                    'message' => 'Action class not found: '.$action['class'],
                 ], 500);
             }
 
@@ -221,7 +266,7 @@ class ActionController extends Controller
 
             if ($actionNode->sequence->triggers->isEmpty()) {
                 return response()->json([
-                    'message' => 'No trigger found for this action. Please ensure the sequence has a trigger defined.'
+                    'message' => 'No trigger found for this action. Please ensure the sequence has a trigger defined.',
                 ], 422);
             }
 
@@ -234,18 +279,18 @@ class ActionController extends Controller
             // Use recent trigger event data if available; otherwise, fall back to trigger example() output
             $triggerPayload = $r?->event_data;
 
-            if (!$triggerPayload) {
+            if (! $triggerPayload) {
                 $sequenceTrigger = $actionNode->sequence->triggers->first();
 
                 if ($sequenceTrigger) {
                     // Discover the trigger class from the app discovery metadata
-                    $discoveryService = new \App\Services\AppDiscoveryService();
+                    $discoveryService = new \App\Services\AppDiscoveryService;
                     $triggerAppData = $discoveryService->getApp($sequenceTrigger->app->key);
 
                     $triggerClass = collect($triggerAppData['triggers'] ?? [])->firstWhere('key', $sequenceTrigger->trigger_key)['class'] ?? null;
 
                     if ($triggerClass && class_exists($triggerClass)) {
-                        $triggerInstance = new $triggerClass();
+                        $triggerInstance = new $triggerClass;
 
                         $exampleBundle = new \App\Workflows\Automation\Bundle(
                             organization: $actionNode->sequence->organization,
@@ -262,7 +307,7 @@ class ActionController extends Controller
                 }
             }
 
-            abort_if(!$triggerPayload, 404, 'No recent trigger event found and no example data available for this action.');
+            abort_if(! $triggerPayload, 404, 'No recent trigger event found and no example data available for this action.');
 
             $props = [
                 'trigger' => $triggerPayload,
@@ -293,8 +338,8 @@ class ActionController extends Controller
             $result = $actionInstance($bundle);
 
             // Generate JSON Schema for the result
-            $schemaService = new \App\Services\DataSchemaService();
-//            $jsonSchema = $schemaService->generateJsonSchema($result, "Action {$actionNode->name} Result");
+            $schemaService = new \App\Services\DataSchemaService;
+            //            $jsonSchema = $schemaService->generateJsonSchema($result, "Action {$actionNode->name} Result");
 
             // Store test result and schema against the action node
             $actionNode->update([
@@ -318,18 +363,18 @@ class ActionController extends Controller
                     'configuration' => $configuration,
                     'result' => $result,
                     'timestamp' => now()->toISOString(),
-                ]
+                ],
             ]);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Action test failed: ' . $e->getMessage(),
+                'message' => 'Action test failed: '.$e->getMessage(),
                 'props' => $props,
                 'error_details' => [
                     'exception' => get_class($e),
                     'file' => $e->getFile(),
                     'line' => $e->getLine(),
-                ]
+                ],
             ], 422);
         }
     }
@@ -341,25 +386,25 @@ class ActionController extends Controller
     {
         try {
             $actionNode = Action::where('id', $actionId)
-                              ->where('type', 'action')
-                              ->firstOrFail();
+                ->where('type', 'action')
+                ->firstOrFail();
 
             $testResult = $actionNode->test_result;
 
-            if (!$testResult || !isset($testResult['schema'])) {
+            if (! $testResult || ! isset($testResult['schema'])) {
                 return response()->json([
-                    'message' => 'No schema available. Run a test first to generate schema.'
+                    'message' => 'No schema available. Run a test first to generate schema.',
                 ], 404);
             }
 
             return response()->json([
                 'data' => $testResult['schema'],
                 'message' => 'Schema retrieved successfully',
-                'tested_at' => $testResult['tested_at'] ?? null
+                'tested_at' => $testResult['tested_at'] ?? null,
             ]);
         } catch (\Exception $e) {
             return response()->json([
-                'message' => 'Failed to retrieve schema: ' . $e->getMessage()
+                'message' => 'Failed to retrieve schema: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -375,17 +420,17 @@ class ActionController extends Controller
 
         try {
             $sequence = \App\Models\Automation\Sequence::findOrFail($validated['sequence_id']);
-            $schemaService = new \App\Services\DataSchemaService();
+            $schemaService = new \App\Services\DataSchemaService;
 
             $fields = $schemaService->getAvailableFields($sequence);
 
             return response()->json([
                 'data' => $fields,
-                'message' => 'Available fields retrieved successfully'
+                'message' => 'Available fields retrieved successfully',
             ]);
         } catch (\Exception $e) {
             return response()->json([
-                'message' => 'Failed to retrieve available fields: ' . $e->getMessage()
+                'message' => 'Failed to retrieve available fields: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -397,17 +442,17 @@ class ActionController extends Controller
     {
         try {
             $action = Action::where('id', $id)
-                          ->where('type', 'action')
-                          ->firstOrFail();
+                ->where('type', 'action')
+                ->firstOrFail();
 
             $action->delete();
 
             return response()->json([
-                'message' => 'Action deleted successfully'
+                'message' => 'Action deleted successfully',
             ]);
         } catch (\Exception $e) {
             return response()->json([
-                'message' => 'Failed to delete action: ' . $e->getMessage()
+                'message' => 'Failed to delete action: '.$e->getMessage(),
             ], 500);
         }
     }

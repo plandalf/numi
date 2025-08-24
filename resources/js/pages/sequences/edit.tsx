@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { Plus, Settings, Zap, Play, Trash2, Mail, Clock, Filter, Webhook, Edit as EditIcon, TestTube, Activity } from 'lucide-react';
+import { Plus, Settings, Zap, Play, Trash2, Mail, Clock, Filter, Webhook, Edit as EditIcon, TestTube, Activity, GripVertical } from 'lucide-react';
 import AppLayout from '@/layouts/app-layout';
 import { AddTriggerModal } from '@/components/sequences/AddTriggerModal';
 import { EditTriggerModal } from '@/components/sequences/EditTriggerModal';
@@ -53,6 +53,7 @@ interface Action {
   action_key?: string;
   configuration?: Record<string, unknown>;
   arguments?: Record<string, unknown>;
+  sort_order?: number | null;
   app?: {
     id: number;
     name: string;
@@ -129,7 +130,21 @@ export default function Edit() {
   const [editingTrigger, setEditingTrigger] = useState<CreatedTrigger | null>(null);
 
   const triggers = sequence.triggers || [];
-  const actions = sequence.actions || [];
+  const extractOrder = (a: Action) => (a.sort_order ?? 999999);
+
+  const [actionsOrder, setActionsOrder] = useState<Action[]>(() =>
+    (sequence.actions || [])
+      .slice()
+      .sort((a, b) => (extractOrder(a) - extractOrder(b)) || a.id - b.id)
+  );
+
+  React.useEffect(() => {
+    setActionsOrder(
+      (sequence.actions || [])
+        .slice()
+        .sort((a, b) => (extractOrder(a) - extractOrder(b)) || a.id - b.id)
+    );
+  }, [sequence.actions]);
 
   // Get existing trigger constraints for new trigger restrictions
   const getExistingTriggerConstraints = () => {
@@ -223,6 +238,8 @@ export default function Edit() {
 
   const handleActionAdded = (newAction: Action) => {
     setEditingAction(newAction);
+    setShowAddActionModal(false);
+    reload();
   };
 
   const handleEditAction = (action: Action) => {
@@ -240,6 +257,43 @@ export default function Edit() {
 
   const handleCloseActionModal = () => {
     setShowAddActionModal(false);
+  };
+
+  // --- Drag and drop ordering ---
+  const [dragIndex, setDragIndex] = useState<number | null>(null);
+
+  const onDragStart = (index: number) => (e: React.DragEvent) => {
+    setDragIndex(index);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const onDragOver = (index: number) => (e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  };
+
+  const persistReorder = async (ordered: Action[]) => {
+    try {
+      const orders = ordered.map((a, i) => ({ id: a.id, sort_order: i + 1 }));
+      await axios.post('/automation/actions/reorder', {
+        sequence_id: sequence.id,
+        orders,
+      });
+      reload();
+    } catch (error) {
+      console.error('Failed to reorder actions:', error);
+    }
+  };
+
+  const onDrop = (index: number) => async (e: React.DragEvent) => {
+    e.preventDefault();
+    if (dragIndex === null || dragIndex === index) return;
+    const updated = actionsOrder.slice();
+    const [moved] = updated.splice(dragIndex, 1);
+    updated.splice(index, 0, moved);
+    setActionsOrder(updated);
+    setDragIndex(null);
+    await persistReorder(updated);
   };
 
   const deleteTrigger = async (triggerId: number) => {
@@ -426,7 +480,7 @@ export default function Edit() {
               </div>
             </div>
             <div className="space-y-3">
-              {actions.length === 0 ? (
+              {actionsOrder.length === 0 ? (
                 <div className="text-center py-8 text-gray-500">
                   <Play className="h-12 w-12 mx-auto mb-4 text-gray-300" />
                   <p className="text-lg font-medium">No actions yet</p>
@@ -440,11 +494,21 @@ export default function Edit() {
                   </Button>
                 </div>
               ) : (
-                actions.map((action) => {
+                actionsOrder.map((action, idx) => {
                   const ActionIcon = getActionIcon(action.type);
                   return (
-                    <div key={action.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div
+                      key={action.id}
+                      className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                      draggable
+                      onDragStart={onDragStart(idx)}
+                      onDragOver={onDragOver(idx)}
+                      onDrop={onDrop(idx)}
+                    >
                       <div className="flex items-center space-x-3">
+                        <div className="cursor-grab text-gray-400">
+                          <GripVertical className="h-4 w-4" />
+                        </div>
                         <div
                           className={`w-8 h-8 rounded flex items-center justify-center ${getActionColor(action.type)}`}>
                           <ActionIcon className="h-4 w-4" />

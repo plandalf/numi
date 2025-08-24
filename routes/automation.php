@@ -1,15 +1,14 @@
 <?php
 
-use App\Http\Controllers\Automation\WorkflowsController;
-use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Automation\TriggersController;
 use App\Http\Controllers\Automation\ActionController;
-use App\Http\Controllers\Automation\TestController;
+use App\Http\Controllers\Automation\AppController;
 use App\Http\Controllers\Automation\IntegrationController;
 use App\Http\Controllers\Automation\IntegrationSetupController;
-use App\Http\Controllers\Automation\AppController;
 use App\Http\Controllers\Automation\ResourceController;
+use App\Http\Controllers\Automation\TriggersController;
+use App\Http\Controllers\Automation\WorkflowsController;
 use App\Http\Controllers\SequencesController;
+use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth', 'organization', 'subscription'])
     ->as('automation.')
@@ -25,6 +24,7 @@ Route::middleware(['auth', 'organization', 'subscription'])
         Route::any('triggers/{trigger}/tests', [TriggersController::class, 'test']);
         Route::get('triggers/{trigger}/schema', [TriggersController::class, 'getSchema']);
         Route::resource('actions', ActionController::class);
+        Route::post('actions/reorder', [ActionController::class, 'reorder']);
         Route::any('actions/{action}/tests', [ActionController::class, 'test']);
         Route::get('actions/{action}/schema', [ActionController::class, 'getSchema']);
         Route::get('actions/fields/available', [ActionController::class, 'getAvailableFields']);

@@ -56,7 +56,7 @@ class Sequence extends Model
 
     public function actions(): HasMany
     {
-        return $this->hasMany(Action::class);
+        return $this->hasMany(Action::class)->orderByRaw('COALESCE(sort_order, 999999), id');
     }
 
     public function organization(): BelongsTo
