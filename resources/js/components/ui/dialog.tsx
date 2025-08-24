@@ -87,7 +87,7 @@ function DialogContent({
           'XXstranslate-x-[-50%] XXtranslaste-y-[-50%] duration-200',
           'gap-4 rounded-lg border shadow-lg sm:max-w-lg p-4',
           className,
-          'DialogContent relative',
+          'DialogContent relative flex flex-col',
           {
             'grid' : position === 'center',
             'flex' : position === 'sticky',
