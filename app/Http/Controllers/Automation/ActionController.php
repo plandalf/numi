@@ -231,10 +231,41 @@ class ActionController extends Controller
                 ->whereNotNull('event_data')
                 ->first();
 
-            abort_if(!$r, 404, 'No recent trigger event found for this action.');
+            // Use recent trigger event data if available; otherwise, fall back to trigger example() output
+            $triggerPayload = $r?->event_data;
+
+            if (!$triggerPayload) {
+                $sequenceTrigger = $actionNode->sequence->triggers->first();
+
+                if ($sequenceTrigger) {
+                    // Discover the trigger class from the app discovery metadata
+                    $discoveryService = new \App\Services\AppDiscoveryService();
+                    $triggerAppData = $discoveryService->getApp($sequenceTrigger->app->key);
+
+                    $triggerClass = collect($triggerAppData['triggers'] ?? [])->firstWhere('key', $sequenceTrigger->trigger_key)['class'] ?? null;
+
+                    if ($triggerClass && class_exists($triggerClass)) {
+                        $triggerInstance = new $triggerClass();
+
+                        $exampleBundle = new \App\Workflows\Automation\Bundle(
+                            organization: $actionNode->sequence->organization,
+                            input: [],
+                            configuration: $sequenceTrigger->configuration ?? [],
+                            integration: $sequenceTrigger->integration
+                        );
+
+                        // Call example() to generate testable trigger data
+                        if (method_exists($triggerInstance, 'example')) {
+                            $triggerPayload = $triggerInstance->example($exampleBundle);
+                        }
+                    }
+                }
+            }
+
+            abort_if(!$triggerPayload, 404, 'No recent trigger event found and no example data available for this action.');
 
             $props = [
-                'trigger' => $r->event_data,
+                'trigger' => $triggerPayload,
             ];
 
             $actions = Action::query()

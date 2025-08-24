@@ -6,14 +6,26 @@ export function cn(...inputs: ClassValue[]) {
     return twMerge(clsx(inputs));
 }
 
-export function formatMoney(amount: number, currency?: string): string {
+export function formatMoney(amount: number, currency?: string, locale: string = 'en-US'): string {
     // Convert cents to dollars/euros/etc.
     const value = amount / 100;
-    return new Intl.NumberFormat(undefined, { // Use user's locale
-        style: currency ? 'currency' : 'decimal',
-        currency: currency,
-        minimumFractionDigits: 2, // Ensure two decimal places
-    }).format(value);
+
+    try {
+        const options: Intl.NumberFormatOptions = {
+            style: currency ? 'currency' : 'decimal',
+            currency: currency,
+            minimumFractionDigits: 2,
+        };
+
+        if (currency) {
+            options.currencyDisplay = 'narrowSymbol'; // Avoids prefixes like "US$" in some locales
+        }
+
+        return new Intl.NumberFormat(locale, options).format(value);
+    } catch {
+        const formatted = value.toFixed(2);
+        return currency ? `${formatted} ${currency}` : formatted;
+    }
 }
 
 export const slugify = (text: string): string => {
@@ -22,8 +34,8 @@ export const slugify = (text: string): string => {
         .toLowerCase()
         .trim()
         .replace(/\s+/g, '_')        // Replace spaces with _
-        .replace(/[^\w_\-]+/g, '')   // Allow underscores and hyphens
-        .replace(/[\_\-]+/g, '_')    // Replace multiple _ or - with single _
+        .replace(/[^\w_-]+/g, '')   // Allow underscores and hyphens
+        .replace(/[_-]+/g, '_')    // Replace multiple _ or - with single _
         .replace(/^_+/, '')         // Trim _ from start
         .replace(/_+$/, '');        // Trim _ from end
 };

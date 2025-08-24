@@ -1,4 +1,4 @@
-import { Head, Deferred } from '@inertiajs/react';
+import { Head, Deferred, usePage } from '@inertiajs/react';
 import {
   GlobalStateProvider,
   LoadingError,
@@ -8,7 +8,7 @@ import {
   useValidateFields
 } from '@/pages/checkout-main';
 import type { OfferConfiguration, Page, PageSection } from '@/types/offer';
-import { CheckoutPageProps, CheckoutSession, NavigationBarProps, TailwindLayoutRendererProps, SubscriptionPreview } from '@/types/checkout';
+import { CheckoutPageProps, CheckoutSession, NavigationBarProps, TailwindLayoutRendererProps } from '@/types/checkout';
 import { Theme } from '@/types/theme';
 import { ChevronLeftIcon } from 'lucide-react';
 import { useMemo, useState } from 'react';
@@ -22,12 +22,13 @@ import { CheckoutCancel } from '@/events/CheckoutCancel';
 import { getLayoutJSONConfig } from '@/config/layouts';
 
 // Helper function to generate meta tags
-const generateMetaTags = (offer: OfferConfiguration) => {
+const generateMetaTags = (offer: OfferConfiguration, currentUrl: string) => {
   const title = offer.name || 'Complete Your Purchase';
   const description = offer.description || `Secure checkout for ${offer.name}`;
   const imageUrl = offer.product_image?.url;
   const themeColor = offer.theme?.primary_color || offer.organization?.primary_color || '#3B82F6';
-  const currentUrl = typeof window !== 'undefined' ? window.location.href : '';
+  // Use a stable URL sourced from Inertia SSR props when available
+  // Pass in the computed currentUrl from the caller
 
   // Use organization info if available, fallback to Numi
   const organizationName = offer.organization?.name || 'Plandalf';
@@ -77,7 +78,7 @@ const generateMetaTags = (offer: OfferConfiguration) => {
 };
 
 export const NavigationBar = ({ children, className, ...props }: NavigationBarProps) => {
-  const { goToPrevPage, canGoBack, canGoForward } = useNavigation();
+  const { goToPrevPage, canGoBack } = useNavigation();
 
   function onBack() {
     goToPrevPage();
@@ -270,6 +271,10 @@ const CheckoutController = ({ offer, session }: { offer: OfferConfiguration, ses
   }, [showErrorToast]);
 
   const isMobile = useIsMobile();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const { validateAllFields } = useValidateFields();
   const { currentPage, goToNextPage } = useNavigation();
@@ -303,7 +308,9 @@ const CheckoutController = ({ offer, session }: { offer: OfferConfiguration, ses
     }
   };
 
-  const isHosted = offer.is_hosted && !isMobile;
+  // Ensure SSR and first client render match: assume non-mobile until mounted
+  const effectiveIsMobile = mounted ? isMobile : false;
+  const isHosted = offer.is_hosted && !effectiveIsMobile;
   const hostedPage = offer.hosted_page;
   const style = hostedPage?.style;
   const appearance = hostedPage?.appearance;
@@ -314,7 +321,7 @@ const CheckoutController = ({ offer, session }: { offer: OfferConfiguration, ses
     }
 
     return 'min-h-screen relative h-screen w-full';
-  }, [isHosted, isMobile]);
+  }, [isHosted]);
 
   const formStyle = useMemo(() => {
     if (isHosted) {
@@ -366,8 +373,11 @@ const CheckoutController = ({ offer, session }: { offer: OfferConfiguration, ses
   const layoutConfig = useMemo(() => getLayoutJSONConfig(currentPage?.layout?.sm?.split('@')[0] ?? 'promo'), [currentPage?.layout?.sm]);
 
   if (!currentPage) {
-    console.error('No page found');
-    return null;
+    return (
+      <div className="min-h-screen bg-gray-50 flex flex-col gap-4 justify-center items-center">
+        <div className="animate-pulse text-gray-500">Loading checkout…</div>
+      </div>
+    );
   }
 
   return (
@@ -422,7 +432,9 @@ const CheckoutController = ({ offer, session }: { offer: OfferConfiguration, ses
 };
 
 
-export default function CheckoutPage({ offer, fonts, error, checkoutSession, subscriptionPreview }: CheckoutPageProps) {
+export default function CheckoutPage({ offer, error, checkoutSession, subscriptionPreview }: CheckoutPageProps) {
+  const { url: inertiaUrl } = usePage();
+  const currentUrl = typeof window === 'undefined' ? (inertiaUrl as string) : window.location.href;
   const firstPage = offer.view.pages[offer.view.first_page];
 
   const containerStyle = useMemo(() => {
@@ -468,7 +480,7 @@ export default function CheckoutPage({ offer, fonts, error, checkoutSession, sub
       }
     };
   }, [checkoutSession]);
-  const metaTags = generateMetaTags(offer);
+  const metaTags = generateMetaTags(offer, currentUrl);
 
   if (!firstPage) {
     return <PageNotFound/>;
@@ -555,14 +567,14 @@ export default function CheckoutPage({ offer, fonts, error, checkoutSession, sub
           {JSON.stringify(metaTags.structuredData)}
         </script>
       </Head>
-      <Deferred data="subscriptionPreview" fallback={
-        <GlobalStateProvider offer={offer} session={checkoutSession} offerItems={offer.items} subscriptionPreview={subscriptionPreview}>
-          {checkoutSession.is_test_mode && (
-            <div className="bg-yellow-50 text-yellow-700 border-b border-yellow-200">
-              <p className="text-sm text-center py-1 font-semibold">You are in test mode. No real transactions will occur.</p>
-            </div>
-          )}
-          <NavigationProvider>
+      <GlobalStateProvider offer={offer} session={checkoutSession} offerItems={offer.items} subscriptionPreview={subscriptionPreview}>
+        {checkoutSession.is_test_mode && (
+          <div className="bg-yellow-50 text-yellow-700 border-b border-yellow-200">
+            <p className="text-sm text-center py-1 font-semibold">You are in test mode. No real transactions will occur.</p>
+          </div>
+        )}
+        <NavigationProvider>
+          <Deferred data="subscriptionPreview" fallback={
             <div className="min-h-screen bg-gray-50 flex flex-col gap-4 justify-center items-center" style={containerStyle}>
               {error ? (
                 <div className="p-4">
@@ -574,16 +586,7 @@ export default function CheckoutPage({ offer, fonts, error, checkoutSession, sub
                 <CheckoutController offer={offer} session={checkoutSession} />
               )}
             </div>
-          </NavigationProvider>
-        </GlobalStateProvider>
-      }>
-        <GlobalStateProvider offer={offer} session={checkoutSession} offerItems={offer.items} subscriptionPreview={subscriptionPreview}>
-          {checkoutSession.is_test_mode && (
-            <div className="bg-yellow-50 text-yellow-700 border-b border-yellow-200">
-              <p className="text-sm text-center py-1 font-semibold">You are in test mode. No real transactions will occur.</p>
-            </div>
-          )}
-          <NavigationProvider>
+          }>
             <div className="min-h-screen bg-gray-50 flex flex-col gap-4 justify-center items-center" style={containerStyle}>
               {error ? (
                 <div className="p-4">
@@ -595,9 +598,9 @@ export default function CheckoutPage({ offer, fonts, error, checkoutSession, sub
                 <CheckoutController offer={offer} session={checkoutSession} />
               )}
             </div>
-          </NavigationProvider>
-        </GlobalStateProvider>
-      </Deferred>
+          </Deferred>
+        </NavigationProvider>
+      </GlobalStateProvider>
     </>
   );
 }

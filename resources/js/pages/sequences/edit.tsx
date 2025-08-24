@@ -381,7 +381,7 @@ export default function Edit() {
                   <CardTitle>Actions</CardTitle>
                 </div>
                 <Button onClick={() => setShowAddActionModal(true)} size="sm">
-                <Plus className="h-4 w-4 mr-2" />
+                  <Plus className="h-4 w-4 mr-2" />
                   Add Action
                 </Button>
               </div>
@@ -395,7 +395,6 @@ export default function Edit() {
                   <Button
                     onClick={() => setShowAddActionModal(true)}
                     className="mt-4"
-                    variant="outline"
                   >
                     <Plus className="h-4 w-4 mr-2" />
                     Add Action

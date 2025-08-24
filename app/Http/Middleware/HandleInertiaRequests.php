@@ -7,6 +7,7 @@ use App\Http\Resources\OrganizationResource;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
+use Tighten\Ziggy\Ziggy;
 
 class HandleInertiaRequests extends Middleware
 {
@@ -62,6 +63,19 @@ class HandleInertiaRequests extends Middleware
         [$message, $author] = str(Inspiring::quotes()->random())->explode('-');
         $user = $request->user();
 
+        $isPortalRoute = $request->routeIs(
+            'client.billing-portal.show',
+            'client.billing*',
+            'client.subscriptions.cancel*',
+            'offers.show',
+            'checkouts.*',
+            'checkout.redirect.callback',
+            'checkouts.mutations.store',
+            'order-status.*',
+        );
+
+        $ziggy = new Ziggy($isPortalRoute ? 'portal' : null);
+
         return [
             ...parent::share($request),
             'name' => config('app.name'),
@@ -81,6 +95,7 @@ class HandleInertiaRequests extends Middleware
                 ] : null,
             ],
             'ziggy' => fn (): array => [
+                ...$ziggy->toArray(),
                 'location' => $request->url(),
             ],
             'flash' => [
