@@ -2,13 +2,14 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Automation\Sequence;
+use App\Http\Requests\Automation\UpdateSequenceRequest;
 use App\Models\Automation\Run;
+use App\Models\Automation\Sequence;
 use App\Models\Integration;
 use App\Services\AppDiscoveryService;
-use Illuminate\Http\Request;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -63,6 +64,30 @@ class SequencesController extends Controller
         ]);
     }
 
+    public function update(UpdateSequenceRequest $request, Sequence $sequence): RedirectResponse|JsonResponse
+    {
+        $this->authorize('update', $sequence);
+
+        $validated = $request->validated();
+
+        $sequence->update([
+            'name' => $validated['name'],
+            'description' => $validated['description'] ?? null,
+            'is_active' => (bool) ($validated['is_active'] ?? $sequence->is_active),
+        ]);
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'sequence' => $sequence->fresh(),
+                'message' => 'Sequence updated successfully.',
+            ]);
+        }
+
+        return redirect()
+            ->route('automation.sequences.edit', $sequence)
+            ->with('success', 'Sequence updated successfully.');
+    }
+
     public function store(Request $request): RedirectResponse
     {
         $validated = $request->validate([
@@ -93,7 +118,7 @@ class SequencesController extends Controller
         $sequence->load(['triggers', 'actions']);
 
         // Get discovered apps instead of hardcoded ones
-        $discoveryService = new AppDiscoveryService();
+        $discoveryService = new AppDiscoveryService;
         $discoveredApps = $discoveryService->discoverApps();
 
         // Transform discovered apps to match the expected format
@@ -103,7 +128,7 @@ class SequencesController extends Controller
                 'key' => $key,
                 'name' => $app['name'],
                 'class' => $app['class'],
-                'description' => 'Discovered app with ' . count($app['actions']) . ' actions and ' . count($app['triggers']) . ' triggers',
+                'description' => 'Discovered app with '.count($app['actions']).' actions and '.count($app['triggers']).' triggers',
                 'icon_url' => null, // Could be added to the discovery system later
                 'color' => '#3b82f6', // Default blue color
                 'category' => 'automation',

@@ -3,6 +3,11 @@ import { Head, router, usePage } from '@inertiajs/react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
 import { Plus, Settings, Zap, Play, Trash2, Mail, Clock, Filter, Webhook, Edit as EditIcon, TestTube, Activity } from 'lucide-react';
 import AppLayout from '@/layouts/app-layout';
 import { AddTriggerModal } from '@/components/sequences/AddTriggerModal';
@@ -113,6 +118,12 @@ export default function Edit() {
   // const [showTestActionModal, setShowTestActionModal] = useState(false);
   const [showWorkflowRunsModal, setShowWorkflowRunsModal] = useState(false);
 
+  const [showSettingsDialog, setShowSettingsDialog] = useState(false);
+  const [configName, setConfigName] = useState(sequence.name || '');
+  const [configDescription, setConfigDescription] = useState(sequence.description || '');
+  const [configIsActive, setConfigIsActive] = useState<boolean>(!!sequence.is_active);
+  const [savingSettings, setSavingSettings] = useState(false);
+
   const [editingAction, setEditingAction] = useState<Action | null>(null);
 
   const [editingTrigger, setEditingTrigger] = useState<CreatedTrigger | null>(null);
@@ -162,6 +173,30 @@ export default function Edit() {
       only: ['sequence'],
     });
   }
+
+  const openSettings = () => {
+    setConfigName(sequence.name || '');
+    setConfigDescription(sequence.description || '');
+    setConfigIsActive(!!sequence.is_active);
+    setShowSettingsDialog(true);
+  };
+
+  const saveSettings = async () => {
+    try {
+      setSavingSettings(true);
+      await axios.put(`/automation/sequences/${sequence.id}`, {
+        name: configName,
+        description: configDescription,
+        is_active: configIsActive,
+      });
+      setShowSettingsDialog(false);
+      reload();
+    } catch (error) {
+      console.error('Failed to save sequence settings:', error);
+    } finally {
+      setSavingSettings(false);
+    }
+  };
 
   const handleTriggerAdded = (newTrigger: CreatedTrigger) => {
     reload();
@@ -269,6 +304,10 @@ export default function Edit() {
           </div>
 
           <div className="flex space-x-2">
+            <Button onClick={openSettings} variant="outline">
+              <Settings className="h-4 w-4 mr-2" />
+              Settings
+            </Button>
             {/* <Button
               onClick={() => setShowWorkflowRunsModal(true)}
               variant="outline"
@@ -448,6 +487,53 @@ export default function Edit() {
       </div>
 
       {/* Modals */}
+      <Dialog open={showSettingsDialog} onOpenChange={setShowSettingsDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit sequence settings</DialogTitle>
+            <DialogDescription>Update basic information and activation state.</DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="sequence-name">Name</Label>
+              <Input
+                id="sequence-name"
+                value={configName}
+                onChange={(e) => setConfigName(e.target.value)}
+                placeholder="Sequence name"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="sequence-description">Description</Label>
+              <Textarea
+                id="sequence-description"
+                value={configDescription || ''}
+                onChange={(e) => setConfigDescription(e.target.value)}
+                placeholder="Optional description"
+              />
+            </div>
+
+            <div className="flex items-center justify-between rounded-md border p-3">
+              <div className="space-y-0.5">
+                <Label htmlFor="sequence-active">Active</Label>
+                <p className="text-xs text-gray-500">When active, triggers will run this sequence.</p>
+              </div>
+              <Switch id="sequence-active" checked={configIsActive} onCheckedChange={setConfigIsActive} />
+            </div>
+          </div>
+
+          <DialogFooter className="mt-4">
+            <div className="flex w-full justify-end gap-2">
+              <Button variant="outline" onClick={() => setShowSettingsDialog(false)} disabled={savingSettings}>Cancel</Button>
+              <Button onClick={saveSettings} disabled={savingSettings}>
+                {savingSettings ? 'Saving…' : 'Save changes'}
+              </Button>
+            </div>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       <AddTriggerModal
         open={showAddTriggerModal}
         onClose={() => setShowAddTriggerModal(false)}
