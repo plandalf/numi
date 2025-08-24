@@ -4,7 +4,6 @@ namespace App\Apps\Kajabi\Actions;
 
 use App\Apps\Kajabi\KajabiApp;
 use App\Apps\Kajabi\Requests\AddTagsToContactRequest;
-use App\Apps\Kajabi\Requests\CreateTagRequest;
 use App\Apps\Kajabi\Requests\FindTagByNameRequest;
 use App\Models\Integration;
 use App\Workflows\Attributes\IsAction;

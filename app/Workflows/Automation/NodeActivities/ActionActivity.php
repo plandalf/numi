@@ -39,11 +39,6 @@ class ActionActivity extends WorkflowActivity
             throw new \Exception("Action not found: {$node->action_key}");
         }
 
-        // Update bundle with node's integration if not already set
-        if (!$bundle->integration && $node->integration) {
-            $bundle->integration = $node->integration;
-        }
-
         $e = new $action['class'];
 
         return $e($bundle);
