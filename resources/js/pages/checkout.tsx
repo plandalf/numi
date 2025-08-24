@@ -271,10 +271,6 @@ const CheckoutController = ({ offer, session }: { offer: OfferConfiguration, ses
   }, [showErrorToast]);
 
   const isMobile = useIsMobile();
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   const { validateAllFields } = useValidateFields();
   const { currentPage, goToNextPage } = useNavigation();
@@ -308,9 +304,7 @@ const CheckoutController = ({ offer, session }: { offer: OfferConfiguration, ses
     }
   };
 
-  // Ensure SSR and first client render match: assume non-mobile until mounted
-  const effectiveIsMobile = mounted ? isMobile : false;
-  const isHosted = offer.is_hosted && !effectiveIsMobile;
+  const isHosted = offer.is_hosted && !isMobile;
   const hostedPage = offer.hosted_page;
   const style = hostedPage?.style;
   const appearance = hostedPage?.appearance;
@@ -574,8 +568,18 @@ export default function CheckoutPage({ offer, error, checkoutSession, subscripti
           </div>
         )}
         <NavigationProvider>
-          <Deferred data="subscriptionPreview" fallback={
-            <div className="min-h-screen bg-gray-50 flex flex-col gap-4 justify-center items-center" style={containerStyle}>
+          <div className="min-h-screen bg-gray-50 flex flex-col gap-4 justify-center items-center" style={containerStyle}>
+            <Deferred data="subscriptionPreview" fallback={
+              error ? (
+                <div className="p-4">
+                  <div className="bg-red-50 text-red-900 p-4 rounded-md">
+                    {error}
+                  </div>
+                </div>
+              ) : (
+                <CheckoutController offer={offer} session={checkoutSession} />
+              )
+            }>
               {error ? (
                 <div className="p-4">
                   <div className="bg-red-50 text-red-900 p-4 rounded-md">
@@ -585,20 +589,8 @@ export default function CheckoutPage({ offer, error, checkoutSession, subscripti
               ) : (
                 <CheckoutController offer={offer} session={checkoutSession} />
               )}
-            </div>
-          }>
-            <div className="min-h-screen bg-gray-50 flex flex-col gap-4 justify-center items-center" style={containerStyle}>
-              {error ? (
-                <div className="p-4">
-                  <div className="bg-red-50 text-red-900 p-4 rounded-md">
-                    {error}
-                  </div>
-                </div>
-              ) : (
-                <CheckoutController offer={offer} session={checkoutSession} />
-              )}
-            </div>
-          </Deferred>
+            </Deferred>
+          </div>
         </NavigationProvider>
       </GlobalStateProvider>
     </>
