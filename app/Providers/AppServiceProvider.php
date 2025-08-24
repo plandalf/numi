@@ -80,6 +80,7 @@ class AppServiceProvider extends ServiceProvider
         // leave them enabled all the time.
         Model::preventAccessingMissingAttributes();
         Model::preventSilentlyDiscardingAttributes();
+        Model::automaticallyEagerLoadRelationships();
 
         // Since this is a performance concern only, don't halt
         // production for violations.

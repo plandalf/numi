@@ -125,7 +125,7 @@ class WorkflowsController extends Controller
                 $query->select('id', 'name', 'type', 'app_id', 'action_key')
                       ->with('app:id,name,icon_url,color');
             }])
-            ->orderBy('created_at', 'asc')
+            ->orderBy('id', 'asc')
             ->get();
 
         // Get workflow logs
