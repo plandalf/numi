@@ -632,7 +632,7 @@ export default function Edit() {
           onActionUpdated={handleActionUpdatedFromEdit}
           sequenceData={{
             triggers: triggers,
-            actions: actions
+            actions: actionsOrder
           }}
         />
       )}
