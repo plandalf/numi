@@ -89,6 +89,20 @@
     </div>
 
     <div class="container">
+        <h2>🆔 Offer ID</h2>
+        <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+            <label for="offerInput">Offer ID:</label>
+            <input id="offerInput" type="text" placeholder="Enter offer ID"
+                   style="flex:1; min-width:280px; padding:8px 10px; border:1px solid #cbd5e1; border-radius:6px; font-size:14px;" />
+            <button id="saveOfferBtn" class="test">Save</button>
+            <button id="resetOfferBtn" class="clear" title="Reset to default">Reset</button>
+        </div>
+        <div class="status info" style="margin-top:10px;">
+            <strong>Using offer:</strong> <code id="currentOfferDisplay">bing-bong-1-8Di1dEf1LTe</code>
+        </div>
+    </div>
+
+    <div class="container">
         <h2>📋 Event Log</h2>
         <div class="log" id="log"></div>
         <button onclick="clearLog()" class="clear">Clear Log</button>
@@ -96,7 +110,7 @@
 
     <div class="container">
         <h2>🧪 Embed Type Tests</h2>
-        <p>Test different embed types using offer: <code>bing-bong-1-8Di1dEf1LTe</code></p>
+        <p>Test different embed types using offer: <code id="currentOfferDisplayInline">bing-bong-1-8Di1dEf1LTe</code></p>
         
         <div class="buttons">
             <button 
@@ -196,6 +210,43 @@
 
     <script>
         // =============================================================================
+        // OFFER ID PERSISTENCE UTILS
+        // =============================================================================
+        const OFFER_STORAGE_KEY = 'plandalf.test.offerId';
+        const DEFAULT_OFFER_ID = 'bing-bong-1-8Di1dEf1LTe';
+
+        function getStoredOfferId() {
+            try {
+                return localStorage.getItem(OFFER_STORAGE_KEY) || DEFAULT_OFFER_ID;
+            } catch (_) {
+                return DEFAULT_OFFER_ID;
+            }
+        }
+
+        function setStoredOfferId(offerId) {
+            try {
+                localStorage.setItem(OFFER_STORAGE_KEY, offerId);
+            } catch (_) { }
+        }
+
+        function applyOfferId(offerId) {
+            const displayA = document.getElementById('currentOfferDisplay');
+            const displayB = document.getElementById('currentOfferDisplayInline');
+            if (displayA) displayA.textContent = offerId;
+            if (displayB) displayB.textContent = offerId;
+
+            const nodes = document.querySelectorAll('[data-numi-offer]');
+            nodes.forEach((el) => {
+                const current = el.getAttribute('data-numi-offer') || '';
+                const slashIdx = current.indexOf('/');
+                const suffix = slashIdx !== -1 ? current.substring(slashIdx) : '';
+                el.setAttribute('data-numi-offer', offerId + suffix);
+            });
+        }
+
+        const CURRENT_OFFER_ID = getStoredOfferId();
+
+        // =============================================================================
         // TEST UTILITIES
         // =============================================================================
         
@@ -289,6 +340,19 @@
                 }
             }
         };
+
+        // Ensure the currently selected offer has a simple completion handler
+        try {
+            window.plandalfConfig.offers = window.plandalfConfig.offers || {};
+            if (!window.plandalfConfig.offers[CURRENT_OFFER_ID]) {
+                window.plandalfConfig.offers[CURRENT_OFFER_ID] = {
+                    onComplete: function(data) {
+                        log('🎉 Offer completed successfully!', 'success');
+                        setTimeout(() => log('✨ Features activated!', 'success'), 800);
+                    }
+                };
+            }
+        } catch (_) { }
 
         // =============================================================================
         // PROGRAMMATIC API TESTS
@@ -414,6 +478,31 @@
         // =============================================================================
         
         document.addEventListener('DOMContentLoaded', () => {
+            // Wire up Offer ID input and initial application
+            const input = document.getElementById('offerInput');
+            const saveBtn = document.getElementById('saveOfferBtn');
+            const resetBtn = document.getElementById('resetOfferBtn');
+            if (input) input.value = CURRENT_OFFER_ID;
+            applyOfferId(CURRENT_OFFER_ID);
+
+            const persistAndApply = () => {
+                const newId = (input?.value || '').trim() || DEFAULT_OFFER_ID;
+                setStoredOfferId(newId);
+                applyOfferId(newId);
+                log(`💾 Offer ID saved: ${newId}`, 'success');
+            };
+            if (saveBtn) saveBtn.addEventListener('click', persistAndApply);
+            if (resetBtn) resetBtn.addEventListener('click', () => {
+                if (input) input.value = DEFAULT_OFFER_ID;
+                persistAndApply();
+            });
+            if (input) input.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    persistAndApply();
+                }
+            });
+
             updateStatus('Waiting for plandalf.js to load...');
             
             const checkPlandalf = () => {
