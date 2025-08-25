@@ -35,7 +35,6 @@ class SequencesController extends Controller
             ->paginate();
 
         $workflows->transform(function (Run $wf) {
-
             return [
                 'id' => $wf->id,
                 'logs' => collect($wf->logs)

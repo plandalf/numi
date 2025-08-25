@@ -37,48 +37,12 @@ class RunSequenceWorkflow extends Workflow
             return $ao <=> $bo;
         });
 
-        // Log the full execution order for diagnostics
-        try {
-            \Log::info('workflow.run_sequence.execution_order', [
-                'run_id' => $this->storedWorkflow->id,
-                'sequence_id' => $trigger->sequence->id,
-                'actions' => $ordered->values()->map(function ($a) {
-                    return [
-                        'id' => $a->id,
-                        'name' => $a->name,
-                        'action_key' => $a->action_key ?? null,
-                        'sort_order' => $a->sort_order ?? null,
-                        'app_id' => $a->app_id ?? null,
-                        'integration_id' => $a->integration->id ?? null,
-                    ];
-                })->all(),
-            ]);
-        } catch (\Throwable $e) {
-        }
-
         foreach ($ordered as $action) {
             /* @var Action $action */
             // Resolve template variables in node configuration
             $resolvedConfiguration = $this->resolveNodeConfiguration($action, $event);
 
             $action->loadMissing(['integration', 'app']);
-
-            // Detailed relation/attribute diagnostics
-            try {
-                \Log::info('workflow.run_sequence.action_diagnostics', [
-                    'run_id' => $this->storedWorkflow->id,
-                    'sequence_id' => $trigger->sequence_id ?? $trigger->sequence->id,
-                    'organization_id' => $trigger->sequence->organization->id ?? null,
-                    'action_id' => $action->id,
-                    'action_app_id' => $action->app_id ?? null,
-                    'action_integration_id_attr' => $action->getAttribute('integration_id'),
-                    'relation_loaded_integration' => method_exists($action, 'relationLoaded') ? $action->relationLoaded('integration') : null,
-                    'relation_loaded_app' => method_exists($action, 'relationLoaded') ? $action->relationLoaded('app') : null,
-                    'integration_id_after_load' => $action->integration?->id,
-                    'trigger_integration_id' => $trigger->integration?->id,
-                ]);
-            } catch (\Throwable $e) {
-            }
 
             // Create input bundle with resolved configuration
             $bundle = new Bundle(
@@ -101,31 +65,9 @@ class RunSequenceWorkflow extends Workflow
                 'max_retries' => $action->retry_config['max_retries'] ?? 0,
             ]);
 
-            Log::info(logname(), [
-                'note' => 'event: '.$event->id.' node: '.$action->id.' step: '.$step->id,
-            ]);
-
-            // Execute the action
             try {
-                try {
-                    \Log::info('workflow.run_sequence.before_activity', [
-                        'activity' => ActionActivity::class,
-                        'run_id' => $this->storedWorkflow->id,
-                        'action_id' => $action->id,
-                        'bundle_has_integration' => (bool) $bundle->integration,
-                        'bundle_integration_id' => $bundle->integration?->id,
-                        'node_integration_id' => $action->integration?->id,
-                    ]);
-                } catch (\Throwable $e) {
-                }
                 $output = yield ActivityStub::make(ActionActivity::class, $action, $bundle);
-                try {
-                    \Log::info('workflow.run_sequence.after_activity', [
-                        'run_id' => $this->storedWorkflow->id,
-                        'action_id' => $action->id,
-                    ]);
-                } catch (\Throwable $e) {
-                }
+
             } catch (\Exception $e) {
                 Log::error(logname('workflow_error'), [
                     'workflow_id' => $this->storedWorkflow->id,

@@ -25,15 +25,6 @@ class ActionActivity extends WorkflowActivity
 
     public function execute(Action $node, Bundle $bundle)
     {
-        try {
-            Log::info('workflow.action_activity.enter', [
-                'node_id' => $node->id ?? null,
-                'node_app_id' => $node->app_id ?? null,
-                'bundle_has_integration' => (bool) ($bundle->integration ?? false),
-            ]);
-        } catch (\Throwable $e) {
-        }
-
         // Ensure required relations are available after rehydration
         $node->loadMissing(['integration', 'app']);
 
@@ -48,20 +39,6 @@ class ActionActivity extends WorkflowActivity
                 ->where('organization_id', $bundle->organization->id)
                 ->where('app_id', $node->app_id)
                 ->first();
-        }
-
-        // Log selection status
-        try {
-            Log::info('workflow.action_activity.integration_selected', [
-                'organization_id' => $bundle->organization->id,
-                'node_id' => $node->id,
-                'node_app_id' => $node->app_id,
-                'bundle_has_integration' => (bool) $bundle->integration,
-                'node_has_integration' => (bool) $node->integration,
-                'selected_integration_id' => $integration?->id,
-            ]);
-        } catch (\Throwable $e) {
-            // ignore logging errors
         }
 
         // Integration is optional at the activity level; specific actions may still require it
@@ -93,18 +70,6 @@ class ActionActivity extends WorkflowActivity
             configuration: $bundle->configuration,
             integration: $integration,
         );
-
-        try {
-            Log::info('workflow.action_activity.invoking_action', [
-                'node_id' => $node->id,
-                'action_key' => $node->action_key,
-                'app_key' => $node->app->key ?? null,
-                'has_integration' => (bool) $integration,
-                'integration_id' => $integration?->id,
-            ]);
-        } catch (\Throwable $e) {
-            // ignore
-        }
 
         return $e($bundleWithIntegration);
     }
