@@ -37,19 +37,42 @@ class CreateContactTag extends AppAction
      */
     public function __invoke(Bundle $bundle): array
     {
-        // Debug: log integration and org context before auth
+        // Entry logging: capture integration/org context
         try {
-            \Log::debug('kajabi.create_contact_tag.pre_auth', [
+            \Log::debug('kajabi.create_contact_tag.enter', [
                 'organization_id' => $bundle->organization->id ?? null,
                 'has_integration' => (bool) $bundle->integration,
+                'integration_class' => is_object($bundle->integration) ? get_class($bundle->integration) : gettype($bundle->integration),
                 'integration_id' => $bundle->integration?->id,
                 'integration_app_id' => $bundle->integration?->app_id,
             ]);
         } catch (\Throwable $e) {
         }
 
+        // Auth with Kajabi
         $kajabi = new KajabiApp;
-        $connector = $kajabi->auth($bundle->integration);
+        try {
+            $connector = $kajabi->auth($bundle->integration);
+            try {
+                \Log::debug('kajabi.create_contact_tag.authed', [
+                    'organization_id' => $bundle->organization->id ?? null,
+                    'integration_id' => $bundle->integration?->id,
+                ]);
+            } catch (\Throwable $e) {
+            }
+        } catch (\Throwable $e) {
+            try {
+                \Log::error('kajabi.create_contact_tag.auth_failed', [
+                    'message' => $e->getMessage(),
+                    'organization_id' => $bundle->organization->id ?? null,
+                    'has_integration' => (bool) $bundle->integration,
+                    'integration_id' => $bundle->integration?->id,
+                    'integration_app_id' => $bundle->integration?->app_id,
+                ]);
+            } catch (\Throwable $logEx) {
+            }
+            throw $e;
+        }
 
         $rawTagInput = $bundle->input['name'];
         $contactId = $bundle->input['contact_id'];
@@ -57,6 +80,14 @@ class CreateContactTag extends AppAction
 
         // Parse tag input supporting comma-separated list with double-quoted values for spaces
         [$tagNames, $wasQuotedMap] = $this->parseTagNames($rawTagInput);
+        try {
+            \Log::debug('kajabi.create_contact_tag.parsed_tags', [
+                'raw' => $rawTagInput,
+                'names' => $tagNames,
+                'site_id' => $siteId,
+            ]);
+        } catch (\Throwable $e) {
+        }
 
         // Enforce quotes for tags that include spaces
         foreach ($tagNames as $index => $name) {
@@ -81,6 +112,15 @@ class CreateContactTag extends AppAction
             $findTagResponse = $connector->send($findTagRequest);
 
             if ($findTagResponse->failed()) {
+                try {
+                    \Log::error('kajabi.create_contact_tag.search_failed', [
+                        'name' => $name,
+                        'site_id' => $siteId,
+                        'status' => method_exists($findTagResponse, 'status') ? $findTagResponse->status() : null,
+                        'body' => $findTagResponse->body(),
+                    ]);
+                } catch (\Throwable $e) {
+                }
                 throw new \Exception('Failed to search for tags in Kajabi: '.$findTagResponse->body());
             }
 
@@ -88,6 +128,10 @@ class CreateContactTag extends AppAction
             if (! empty($existingTags)) {
                 $tag = collect($existingTags)->firstWhere('attributes.name', $name);
                 if (! $tag) {
+                    try {
+                        \Log::warning('kajabi.create_contact_tag.tag_not_found_in_results', ['name' => $name]);
+                    } catch (\Throwable $e) {
+                    }
                     throw new \RuntimeException('Tag not found in Kajabi: '.$name);
                 }
                 $resolvedTagIds[] = $tag['id'];
@@ -98,15 +142,46 @@ class CreateContactTag extends AppAction
                 ];
             } else {
                 // Creation is not implemented; enforce existing tags only for now
+                try {
+                    \Log::warning('kajabi.create_contact_tag.tag_missing', ['name' => $name, 'site_id' => $siteId]);
+                } catch (\Throwable $e) {
+                }
                 throw new \RuntimeException('Tag not found in Kajabi: '.$name.'. Creating tags is not currently supported by this action.');
             }
         }
 
         // Now add all tags to the contact in one request
         $addTagRequest = new AddTagsToContactRequest($contactId, $resolvedTagIds);
-        $addTagResponse = $connector->send($addTagRequest);
+        try {
+            \Log::debug('kajabi.create_contact_tag.add_tags_request', [
+                'contact_id' => $contactId,
+                'tag_ids' => $resolvedTagIds,
+            ]);
+        } catch (\Throwable $e) {
+        }
+
+        try {
+            $addTagResponse = $connector->send($addTagRequest);
+        } catch (\Throwable $e) {
+            try {
+                \Log::error('kajabi.create_contact_tag.add_tags_exception', [
+                    'message' => $e->getMessage(),
+                    'contact_id' => $contactId,
+                    'tag_ids' => $resolvedTagIds,
+                ]);
+            } catch (\Throwable $logEx) {
+            }
+            throw $e;
+        }
 
         if ($addTagResponse->failed()) {
+            try {
+                \Log::error('kajabi.create_contact_tag.add_tags_failed', [
+                    'status' => method_exists($addTagResponse, 'status') ? $addTagResponse->status() : null,
+                    'body' => $addTagResponse->body(),
+                ]);
+            } catch (\Throwable $e) {
+            }
             throw new \Exception('Failed to add tag to contact in Kajabi: '.$addTagResponse->body());
         }
 

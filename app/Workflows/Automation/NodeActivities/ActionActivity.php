@@ -29,8 +29,12 @@ class ActionActivity extends WorkflowActivity
         // Ensure required relations are available after rehydration
         $node->loadMissing(['integration', 'app']);
 
-        // Prefer bundle integration; fall back to node's integration, then org-level app integration
+        // Prefer bundle integration; fall back to node's integration, then org-level app integration.
+        // When models are rehydrated via SerializesModels relationships may be unloaded, so attempt to reload.
         $integration = $bundle->integration ?: $node->integration;
+        if (! $integration && $node->getAttribute('integration_id')) {
+            $integration = Integration::query()->find($node->getAttribute('integration_id'));
+        }
         if (! $integration && $node->app_id) {
             $integration = Integration::query()
                 ->where('organization_id', $bundle->organization->id)
