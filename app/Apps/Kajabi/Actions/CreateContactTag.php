@@ -37,7 +37,18 @@ class CreateContactTag extends AppAction
      */
     public function __invoke(Bundle $bundle): array
     {
-        $kajabi = new KajabiApp();
+        // Debug: log integration and org context before auth
+        try {
+            \Log::debug('kajabi.create_contact_tag.pre_auth', [
+                'organization_id' => $bundle->organization->id ?? null,
+                'has_integration' => (bool) $bundle->integration,
+                'integration_id' => $bundle->integration?->id,
+                'integration_app_id' => $bundle->integration?->app_id,
+            ]);
+        } catch (\Throwable $e) {
+        }
+
+        $kajabi = new KajabiApp;
         $connector = $kajabi->auth($bundle->integration);
 
         $rawTagInput = $bundle->input['name'];
@@ -50,7 +61,7 @@ class CreateContactTag extends AppAction
         // Enforce quotes for tags that include spaces
         foreach ($tagNames as $index => $name) {
             if (preg_match('/\s/', $name) === 1 && ($wasQuotedMap[$index] ?? false) === false) {
-                throw new \InvalidArgumentException('Tag names containing spaces must be wrapped in double quotes. Offending tag: ' . $name);
+                throw new \InvalidArgumentException('Tag names containing spaces must be wrapped in double quotes. Offending tag: '.$name);
             }
         }
 
@@ -70,14 +81,14 @@ class CreateContactTag extends AppAction
             $findTagResponse = $connector->send($findTagRequest);
 
             if ($findTagResponse->failed()) {
-                throw new \Exception('Failed to search for tags in Kajabi: ' . $findTagResponse->body());
+                throw new \Exception('Failed to search for tags in Kajabi: '.$findTagResponse->body());
             }
 
             $existingTags = $findTagResponse->json('data', []);
-            if (!empty($existingTags)) {
+            if (! empty($existingTags)) {
                 $tag = collect($existingTags)->firstWhere('attributes.name', $name);
-                if (!$tag) {
-                    throw new \RuntimeException('Tag not found in Kajabi: ' . $name);
+                if (! $tag) {
+                    throw new \RuntimeException('Tag not found in Kajabi: '.$name);
                 }
                 $resolvedTagIds[] = $tag['id'];
                 $resolvedTags[] = [
@@ -87,7 +98,7 @@ class CreateContactTag extends AppAction
                 ];
             } else {
                 // Creation is not implemented; enforce existing tags only for now
-                throw new \RuntimeException('Tag not found in Kajabi: ' . $name . '. Creating tags is not currently supported by this action.');
+                throw new \RuntimeException('Tag not found in Kajabi: '.$name.'. Creating tags is not currently supported by this action.');
             }
         }
 
@@ -96,17 +107,17 @@ class CreateContactTag extends AppAction
         $addTagResponse = $connector->send($addTagRequest);
 
         if ($addTagResponse->failed()) {
-            throw new \Exception('Failed to add tag to contact in Kajabi: ' . $addTagResponse->body());
+            throw new \Exception('Failed to add tag to contact in Kajabi: '.$addTagResponse->body());
         }
 
         // Backward-compatible fields for single-tag usage, plus array forms for multi-tag usage
         $firstTag = $resolvedTags[0] ?? null;
 
-        return [
+        $result = [
             'tag_id' => $firstTag['id'] ?? null,
             'tag_name' => $firstTag['name'] ?? null,
             'tag_ids' => $resolvedTagIds,
-            'tag_names' => array_map(fn($t) => $t['name'], $resolvedTags),
+            'tag_names' => array_map(fn ($t) => $t['name'], $resolvedTags),
             'tags' => $resolvedTags,
             'contact_id' => $contactId,
             'site_id' => $siteId,
@@ -114,9 +125,20 @@ class CreateContactTag extends AppAction
             'status' => 'assigned',
             'created_at' => now()->toISOString(),
             'message' => (count($resolvedTags) > 1)
-                ? ("Tags '" . implode("', '", array_map(fn($t) => $t['name'], $resolvedTags)) . "' assigned to contact successfully")
-                : ("Tag '" . ($firstTag['name'] ?? '') . "' found and assigned to contact successfully"),
+                ? ("Tags '".implode("', '", array_map(fn ($t) => $t['name'], $resolvedTags))."' assigned to contact successfully")
+                : ("Tag '".($firstTag['name'] ?? '')."' found and assigned to contact successfully"),
         ];
+
+        try {
+            \Log::debug('kajabi.create_contact_tag.success', [
+                'contact_id' => $contactId,
+                'tags' => $resolvedTags,
+                'site_id' => $siteId,
+            ]);
+        } catch (\Throwable $e) {
+        }
+
+        return $result;
     }
 
     /**
@@ -147,18 +169,22 @@ class CreateContactTag extends AppAction
                     if ($nextChar === '"') {
                         $current .= '"';
                         $i++; // skip escaped quote
+
                         continue;
                     }
                     $inQuotes = false;
+
                     continue;
                 }
                 $current .= $char;
+
                 continue;
             }
 
             if ($char === '"') {
                 $inQuotes = true;
                 $currentWasQuoted = true;
+
                 continue;
             }
 
@@ -170,6 +196,7 @@ class CreateContactTag extends AppAction
                 }
                 $current = '';
                 $currentWasQuoted = false;
+
                 continue;
             }
 

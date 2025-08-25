@@ -44,6 +44,26 @@ class RunSequenceWorkflow extends Workflow
 
             $action->loadMissing(['integration']);
 
+            // Debug logging for integration resolution at workflow layer
+            try {
+                Log::debug('workflow.run_sequence.action_pre_bundle', [
+                    'run_id' => $this->storedWorkflow->id,
+                    'sequence_id' => $trigger->sequence_id ?? $trigger->sequence->id,
+                    'organization_id' => $trigger->sequence->organization->id ?? null,
+                    'trigger_id' => $trigger->id,
+                    'trigger_integration_id' => $trigger->integration->id ?? null,
+                    'action_id' => $action->id,
+                    'action_app_id' => $action->app_id ?? null,
+                    'action_integration_id' => $action->integration->id ?? null,
+                    'sort_order' => $action->sort_order ?? null,
+                ]);
+            } catch (\Throwable $e) {
+                Log::warning('workflow.run_sequence.logging_failed', [
+                    'action_id' => $action->id ?? null,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+
             // Create input bundle with resolved configuration
             $bundle = new Bundle(
                 organization: $trigger->sequence->organization,
