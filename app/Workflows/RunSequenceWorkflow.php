@@ -37,6 +37,25 @@ class RunSequenceWorkflow extends Workflow
             return $ao <=> $bo;
         });
 
+        // Log the full execution order for diagnostics
+        try {
+            \Log::info('workflow.run_sequence.execution_order', [
+                'run_id' => $this->storedWorkflow->id,
+                'sequence_id' => $trigger->sequence->id,
+                'actions' => $ordered->values()->map(function ($a) {
+                    return [
+                        'id' => $a->id,
+                        'name' => $a->name,
+                        'action_key' => $a->action_key ?? null,
+                        'sort_order' => $a->sort_order ?? null,
+                        'app_id' => $a->app_id ?? null,
+                        'integration_id' => $a->integration->id ?? null,
+                    ];
+                })->all(),
+            ]);
+        } catch (\Throwable $e) {
+        }
+
         foreach ($ordered as $action) {
             /* @var Action $action */
             // Resolve template variables in node configuration
@@ -119,13 +138,7 @@ class RunSequenceWorkflow extends Workflow
                     ]);
                 } catch (\Throwable $e) {
                 }
-                $payload = [
-                    'organization_id' => $trigger->sequence->organization->id,
-                    'integration_id' => $bundle->integration?->id,
-                    'input' => $resolvedConfiguration,
-                    'configuration' => $action->configuration ?? [],
-                ];
-                $output = yield ActivityStub::make(ActionActivity::class, $action->id, $payload);
+                $output = yield ActivityStub::make(ActionActivity::class, $action, $bundle);
                 try {
                     \Log::info('workflow.run_sequence.after_activity', [
                         'run_id' => $this->storedWorkflow->id,

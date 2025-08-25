@@ -23,41 +23,29 @@ class ActionActivity extends WorkflowActivity
 
     public $timeout = 20;
 
-    public function execute(int $nodeId, array $payload)
+    public function execute(Action $node, Bundle $bundle)
     {
         try {
             Log::info('workflow.action_activity.enter', [
-                'node_id' => $nodeId,
-                'payload' => [
-                    'organization_id' => $payload['organization_id'] ?? null,
-                    'integration_id' => $payload['integration_id'] ?? null,
-                ],
+                'node_id' => $node->id ?? null,
+                'node_app_id' => $node->app_id ?? null,
+                'bundle_has_integration' => (bool) ($bundle->integration ?? false),
             ]);
         } catch (\Throwable $e) {
         }
 
-        // Rehydrate models from IDs
-        $node = Action::query()->with(['integration', 'app'])->findOrFail($nodeId);
-        $organizationId = $payload['organization_id'] ?? null;
-        $integrationId = $payload['integration_id'] ?? null;
-        $input = $payload['input'] ?? [];
-        $configuration = $payload['configuration'] ?? [];
+        // Ensure required relations are available after rehydration
+        $node->loadMissing(['integration', 'app']);
 
         // Prefer bundle integration; fall back to node's integration, then org-level app integration.
         // When models are rehydrated via SerializesModels relationships may be unloaded, so attempt to reload.
-        $integration = null;
-        if ($integrationId) {
-            $integration = Integration::query()->find($integrationId);
-        }
-        if (! $integration) {
-            $integration = $node->integration;
-        }
+        $integration = $bundle->integration ?: $node->integration;
         if (! $integration && $node->getAttribute('integration_id')) {
             $integration = Integration::query()->find($node->getAttribute('integration_id'));
         }
         if (! $integration && $node->app_id) {
             $integration = Integration::query()
-                ->where('organization_id', $organizationId)
+                ->where('organization_id', $bundle->organization->id)
                 ->where('app_id', $node->app_id)
                 ->first();
         }
@@ -65,10 +53,10 @@ class ActionActivity extends WorkflowActivity
         // Log selection status
         try {
             Log::info('workflow.action_activity.integration_selected', [
-                'organization_id' => $organizationId,
+                'organization_id' => $bundle->organization->id,
                 'node_id' => $node->id,
                 'node_app_id' => $node->app_id,
-                'bundle_has_integration' => (bool) ($integrationId !== null),
+                'bundle_has_integration' => (bool) $bundle->integration,
                 'node_has_integration' => (bool) $node->integration,
                 'selected_integration_id' => $integration?->id,
             ]);
@@ -98,14 +86,11 @@ class ActionActivity extends WorkflowActivity
 
         $e = new $action['class'];
 
-        // Pass through a bundle with rehydrated context
-        $orgClass = \App\Models\Organization::class;
-        /** @var \App\Models\Organization $org */
-        $org = $orgClass::query()->findOrFail($organizationId);
+        // Pass through a bundle with ensured integration context
         $bundleWithIntegration = new Bundle(
-            organization: $org,
-            input: $input,
-            configuration: $configuration,
+            organization: $bundle->organization,
+            input: $bundle->input,
+            configuration: $bundle->configuration,
             integration: $integration,
         );
 
