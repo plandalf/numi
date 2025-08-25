@@ -5,6 +5,7 @@ namespace App\Workflows\Automation;
 use App\Models\Integration;
 use App\Models\Organization;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Log;
 
 class Bundle
 {
