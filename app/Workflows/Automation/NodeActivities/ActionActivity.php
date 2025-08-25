@@ -44,7 +44,7 @@ class ActionActivity extends WorkflowActivity
 
         // Log selection status
         try {
-            Log::debug('workflow.action_activity.integration_selected', [
+            Log::info('workflow.action_activity.integration_selected', [
                 'organization_id' => $bundle->organization->id,
                 'node_id' => $node->id,
                 'node_app_id' => $node->app_id,
@@ -87,7 +87,7 @@ class ActionActivity extends WorkflowActivity
         );
 
         try {
-            Log::debug('workflow.action_activity.invoking_action', [
+            Log::info('workflow.action_activity.invoking_action', [
                 'node_id' => $node->id,
                 'action_key' => $node->action_key,
                 'app_key' => $node->app->key ?? null,

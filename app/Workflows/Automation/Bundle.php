@@ -15,5 +15,10 @@ class Bundle
         public ?array $input = [],
         public ?array $configuration = [],
         public ?Integration $integration = null,
-    ) {}
+    ) {
+        Log::info('Bundle created', [
+            'organization_id' => $organization->id,
+            'integration_id' => $integration?->id,
+        ]);
+    }
 }

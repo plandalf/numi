@@ -42,7 +42,24 @@ class RunSequenceWorkflow extends Workflow
             // Resolve template variables in node configuration
             $resolvedConfiguration = $this->resolveNodeConfiguration($action, $event);
 
-            $action->loadMissing(['integration']);
+            $action->loadMissing(['integration', 'app']);
+
+            // Detailed relation/attribute diagnostics
+            try {
+                \Log::info('workflow.run_sequence.action_diagnostics', [
+                    'run_id' => $this->storedWorkflow->id,
+                    'sequence_id' => $trigger->sequence_id ?? $trigger->sequence->id,
+                    'organization_id' => $trigger->sequence->organization->id ?? null,
+                    'action_id' => $action->id,
+                    'action_app_id' => $action->app_id ?? null,
+                    'action_integration_id_attr' => $action->getAttribute('integration_id'),
+                    'relation_loaded_integration' => method_exists($action, 'relationLoaded') ? $action->relationLoaded('integration') : null,
+                    'relation_loaded_app' => method_exists($action, 'relationLoaded') ? $action->relationLoaded('app') : null,
+                    'integration_id_after_load' => $action->integration?->id,
+                    'trigger_integration_id' => $trigger->integration?->id,
+                ]);
+            } catch (\Throwable $e) {
+            }
 
             // Debug logging for integration resolution at workflow layer
             try {
