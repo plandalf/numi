@@ -38,8 +38,11 @@ class RunSequenceWorkflow extends Workflow
         });
 
         foreach ($ordered as $action) {
+            /* @var Action $action */
             // Resolve template variables in node configuration
             $resolvedConfiguration = $this->resolveNodeConfiguration($action, $event);
+
+            $action->loadMissing(['integration']);
 
             // Create input bundle with resolved configuration
             $bundle = new Bundle(
