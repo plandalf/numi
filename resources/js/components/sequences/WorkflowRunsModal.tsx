@@ -256,7 +256,12 @@ function WorkflowRunDetailsModal({ open, onClose, workflowId }: WorkflowRunDetai
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent variant="full-height" className="max-w-[95vw] max-h-[90vh] overflow-y-auto" position="sticky">
+      <DialogContent
+        variant="full-height"
+        className="max-w-[95vw] max-h-[90vh] p-0"
+        position="sticky"
+      >
+        <div className="max-h-[90vh] overflow-y-auto p-4">
         <DialogHeader>
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
@@ -583,6 +588,7 @@ function WorkflowRunDetailsModal({ open, onClose, workflowId }: WorkflowRunDetai
             </Tabs>
           </div>
         )}
+        </div>
       </DialogContent>
     </Dialog>
   );

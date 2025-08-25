@@ -44,20 +44,34 @@ class WorkflowsController extends Controller
                 ->orderBy('created_at', 'asc')
                 ->get();
 
-            // Get workflow logs from the workflow package
-            $logs = collect($workflow->logs)->map(function ($log) {
-                return [
-                    'id' => $log->id,
-                    'created_at' => $log->created_at,
-                    'class' => $log->class,
-                    'content' => $log->result ? Serializer::unserialize($log->result) : null,
-                ];
-            })->toArray();
+            // Get workflow logs from the workflow package (latest first)
+            $logsCollection = collect($workflow->logs);
+            $logs = $logsCollection
+                ->sortByDesc(function ($log) {
+                    return $log->created_at;
+                })
+                ->values()
+                ->map(function ($log) {
+                    return [
+                        'id' => $log->id,
+                        'created_at' => $log->created_at,
+                        'class' => $log->class,
+                        'content' => $log->result ? Serializer::unserialize($log->result) : null,
+                    ];
+                })
+                ->toArray();
 
-            // Get workflow exceptions
-            $exceptions = collect($workflow->exceptions)->map(function ($exception) {
-                return Serializer::unserialize($exception->exception);
-            })->toArray();
+            // Get workflow exceptions (latest first)
+            $exceptionsCollection = collect($workflow->exceptions);
+            $exceptions = $exceptionsCollection
+                ->sortByDesc(function ($e) {
+                    return $e->created_at;
+                })
+                ->values()
+                ->map(function ($exception) {
+                    return Serializer::unserialize($exception->exception);
+                })
+                ->toArray();
 
             return [
                 'id' => $workflow->id,
@@ -94,6 +108,10 @@ class WorkflowsController extends Controller
                 })->toArray(),
                 'logs' => $logs,
                 'exceptions' => $exceptions,
+                'logs_count' => $logsCollection->count(),
+                'exceptions_count' => $exceptionsCollection->count(),
+                'last_log_at' => optional($logsCollection->sortByDesc('created_at')->first())->created_at,
+                'last_exception_at' => optional($exceptionsCollection->sortByDesc('created_at')->first())->created_at,
                 'total_steps' => $steps->count(),
                 'completed_steps' => $steps->where('status', WorkflowStep::STATUS_COMPLETED)->count(),
                 'failed_steps' => $steps->where('status', WorkflowStep::STATUS_FAILED)->count(),
@@ -128,23 +146,37 @@ class WorkflowsController extends Controller
             ->orderBy('id', 'asc')
             ->get();
 
-        // Get workflow logs
-        $logs = collect($workflow->logs)->map(function ($log) {
-            return [
-                'id' => $log->id,
-                'created_at' => $log->created_at,
-                'class' => $log->class,
-                'content' => $log->result ? Serializer::unserialize($log->result) : null,
-            ];
-        })->toArray();
+        // Get workflow logs (latest first)
+        $logsCollection = collect($workflow->logs);
+        $logs = $logsCollection
+            ->sortByDesc(function ($log) {
+                return $log->created_at;
+            })
+            ->values()
+            ->map(function ($log) {
+                return [
+                    'id' => $log->id,
+                    'created_at' => $log->created_at,
+                    'class' => $log->class,
+                    'content' => $log->result ? Serializer::unserialize($log->result) : null,
+                ];
+            })
+            ->toArray();
 
-        // Get workflow exceptions
-        $exceptions = collect($workflow->exceptions)->map(function ($exception) {
-            return [
-                'message' => $exception->exception ? Serializer::unserialize($exception->exception) : 'Unknown error',
-                'created_at' => $exception->created_at,
-            ];
-        })->toArray();
+        // Get workflow exceptions (latest first)
+        $exceptionsCollection = collect($workflow->exceptions);
+        $exceptions = $exceptionsCollection
+            ->sortByDesc(function ($e) {
+                return $e->created_at;
+            })
+            ->values()
+            ->map(function ($exception) {
+                return [
+                    'message' => $exception->exception ? Serializer::unserialize($exception->exception) : 'Unknown error',
+                    'created_at' => $exception->created_at,
+                ];
+            })
+            ->toArray();
 
         return response()->json([
             'data' => [
@@ -199,6 +231,8 @@ class WorkflowsController extends Controller
                 })->toArray(),
                 'logs' => $logs,
                 'exceptions' => $exceptions,
+                'logs_count' => $logsCollection->count(),
+                'exceptions_count' => $exceptionsCollection->count(),
                 'summary' => [
                     'total_steps' => $steps->count(),
                     'completed_steps' => $steps->where('status', WorkflowStep::STATUS_COMPLETED)->count(),
