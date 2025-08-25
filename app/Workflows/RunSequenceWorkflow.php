@@ -108,7 +108,31 @@ class RunSequenceWorkflow extends Workflow
 
             // Execute the action
             try {
-                $output = yield ActivityStub::make(ActionActivity::class, $action, $bundle);
+                try {
+                    \Log::info('workflow.run_sequence.before_activity', [
+                        'activity' => ActionActivity::class,
+                        'run_id' => $this->storedWorkflow->id,
+                        'action_id' => $action->id,
+                        'bundle_has_integration' => (bool) $bundle->integration,
+                        'bundle_integration_id' => $bundle->integration?->id,
+                        'node_integration_id' => $action->integration?->id,
+                    ]);
+                } catch (\Throwable $e) {
+                }
+                $payload = [
+                    'organization_id' => $trigger->sequence->organization->id,
+                    'integration_id' => $bundle->integration?->id,
+                    'input' => $resolvedConfiguration,
+                    'configuration' => $action->configuration ?? [],
+                ];
+                $output = yield ActivityStub::make(ActionActivity::class, $action->id, $payload);
+                try {
+                    \Log::info('workflow.run_sequence.after_activity', [
+                        'run_id' => $this->storedWorkflow->id,
+                        'action_id' => $action->id,
+                    ]);
+                } catch (\Throwable $e) {
+                }
             } catch (\Exception $e) {
                 Log::error(logname('workflow_error'), [
                     'workflow_id' => $this->storedWorkflow->id,
