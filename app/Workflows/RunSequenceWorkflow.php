@@ -80,26 +80,6 @@ class RunSequenceWorkflow extends Workflow
             } catch (\Throwable $e) {
             }
 
-            // Debug logging for integration resolution at workflow layer
-            try {
-                Log::debug('workflow.run_sequence.action_pre_bundle', [
-                    'run_id' => $this->storedWorkflow->id,
-                    'sequence_id' => $trigger->sequence_id ?? $trigger->sequence->id,
-                    'organization_id' => $trigger->sequence->organization->id ?? null,
-                    'trigger_id' => $trigger->id,
-                    'trigger_integration_id' => $trigger->integration->id ?? null,
-                    'action_id' => $action->id,
-                    'action_app_id' => $action->app_id ?? null,
-                    'action_integration_id' => $action->integration->id ?? null,
-                    'sort_order' => $action->sort_order ?? null,
-                ]);
-            } catch (\Throwable $e) {
-                Log::warning('workflow.run_sequence.logging_failed', [
-                    'action_id' => $action->id ?? null,
-                    'error' => $e->getMessage(),
-                ]);
-            }
-
             // Create input bundle with resolved configuration
             $bundle = new Bundle(
                 organization: $trigger->sequence->organization,
@@ -169,7 +149,7 @@ class RunSequenceWorkflow extends Workflow
                 'output_data' => $output,
                 'status' => WorkflowStep::STATUS_COMPLETED,
                 'completed_at' => $this->now,
-                'duration_ms' => $startTime->diffInMilliseconds($this->now),
+                'duration_ms' => intval($startTime->diffInMilliseconds($this->now)),
             ]);
         }
 
