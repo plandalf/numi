@@ -4,7 +4,6 @@ namespace App\Workflows\Automation\NodeActivities;
 
 use App\Models\Automation\Action;
 use App\Models\Integration;
-use App\Models\Integration;
 use App\Services\AppDiscoveryService;
 use App\Workflows\Automation\Attributes\Activity;
 use App\Workflows\Automation\Bundle;
@@ -26,6 +25,13 @@ class ActionActivity extends WorkflowActivity
 
     public function execute(Action $node, Bundle $bundle)
     {
+        try {
+            Log::info('workflow.action_activity.enter', [
+                'node_id' => $node->id ?? null,
+                'node_app_id' => $node->app_id ?? null,
+                'bundle_has_integration' => (bool) ($bundle->integration ?? false),
+            ]);
+        } catch (\Throwable $e) {}
         // Ensure required relations are available after rehydration
         $node->loadMissing(['integration', 'app']);
 
