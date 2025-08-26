@@ -72,11 +72,7 @@ router.on('invalid', () => {
 
 createInertiaApp({
     title: (title) => `${title} - ${appName}`,
-    resolve: (name) => resolvePageComponent(`./pages/${name}.tsx`, import.meta.glob('./pages/**/*.tsx',{ eager: true })),
-    // resolve: name => {
-    //   const pages = import.meta.glob('./Pages/**/*.jsx', { eager: true })
-    //   return pages[`./Pages/${name}.jsx`]
-    // },
+    resolve: (name) => resolvePageComponent(`./pages/${name}.tsx`, import.meta.glob('./pages/**/*.tsx',)),
     setup({ el, App, props }) {
         hydrateRoot(
             el,
