@@ -17,15 +17,15 @@
                 -moz-osx-font-smoothing: grayscale;
             }
 
-            /* Hide content until fonts and styles are loaded */
-            .font-loading {
-                visibility: hidden;
-            }
+            /*!* Hide content until fonts and styles are loaded *!*/
+            /*.font-loading {*/
+            /*    visibility: hidden;*/
+            /*}*/
 
-            /* Show content when ready */
-            .fonts-loaded {
-                visibility: visible;
-            }
+            /*!* Show content when ready *!*/
+            /*.fonts-loaded {*/
+            /*    visibility: visible;*/
+            /*}*/
         </style>
 
         <title inertia>{{ config('app.name', 'Plandalf') }}</title>
@@ -49,21 +49,21 @@
         @vite(['resources/js/client.tsx', "resources/js/pages/{$page['component']}.tsx"])
         @inertiaHead
     </head>
-    <body class="font-sans antialiased  font-loading">
+    <body class="font-sans antialiased">
         @inertia
-        <script>
-            // Mark fonts as loaded when they're ready
-            document.fonts.ready.then(function() {
-                document.body.classList.remove('font-loading');
-                document.body.classList.add('fonts-loaded');
-            });
+{{--        <script>--}}
+{{--            // Mark fonts as loaded when they're ready--}}
+{{--            document.fonts.ready.then(function() {--}}
+{{--                document.body.classList.remove('font-loading');--}}
+{{--                document.body.classList.add('fonts-loaded');--}}
+{{--            });--}}
 
-            // Fallback in case fonts don't load
-            setTimeout(function() {
-                document.body.classList.remove('font-loading');
-                document.body.classList.add('fonts-loaded');
-            }, 3000);
-        </script>
+{{--            // Fallback in case fonts don't load--}}
+{{--            setTimeout(function() {--}}
+{{--                document.body.classList.remove('font-loading');--}}
+{{--                document.body.classList.add('fonts-loaded');--}}
+{{--            }, 3000);--}}
+{{--        </script>--}}
     </body>
 </html>
 
