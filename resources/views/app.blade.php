@@ -16,20 +16,17 @@
                 -webkit-font-smoothing: antialiased;
                 -moz-osx-font-smoothing: grayscale;
             }
-            
 
-            
             /* Hide content until fonts and styles are loaded */
             .font-loading {
                 visibility: hidden;
             }
-            
+
             /* Show content when ready */
             .fonts-loaded {
                 visibility: visible;
             }
         </style>
-
 
 
         <title inertia>{{ config('app.name', 'Plandalf') }}</title>
@@ -43,11 +40,11 @@
             <link href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600" rel="stylesheet" />
             <link href="https://fonts.bunny.net/css?family=sora:800" rel="stylesheet" />
         </noscript>
-        
+
         {{-- Google Fonts preconnect for better performance --}}
         <link rel="preconnect" href="https://fonts.googleapis.com">
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-        
+
         {{-- Custom fonts for checkout pages --}}
         @if(isset($page['props']['googleFontsUrl']) && $page['props']['googleFontsUrl'])
             <link rel="preload" as="style" href="{{ $page['props']['googleFontsUrl'] }}">
@@ -69,7 +66,7 @@
                 document.body.classList.remove('font-loading');
                 document.body.classList.add('fonts-loaded');
             });
-            
+
             // Fallback in case fonts don't load
             setTimeout(function() {
                 document.body.classList.remove('font-loading');

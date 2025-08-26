@@ -4,8 +4,28 @@
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
 
+        {{-- Critical CSS to prevent FOUC --}}
         <style>
-            html { background-color: oklch(1 0 0); }
+            /* Prevent flash of unstyled content */
+            html, body {
+                background-color: oklch(1 0 0);
+                color: oklch(0.145 0 0);
+                font-family: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif;
+                font-feature-settings: normal;
+                font-variation-settings: normal;
+                -webkit-font-smoothing: antialiased;
+                -moz-osx-font-smoothing: grayscale;
+            }
+
+            /* Hide content until fonts and styles are loaded */
+            .font-loading {
+                visibility: hidden;
+            }
+
+            /* Show content when ready */
+            .fonts-loaded {
+                visibility: visible;
+            }
         </style>
 
         <title inertia>{{ config('app.name', 'Plandalf') }}</title>
@@ -26,10 +46,11 @@
         {{-- Restrict Ziggy to portal routes only --}}
         @routes('portal')
         @viteReactRefresh
-        @vite(['resources/js/app.tsx', "resources/js/pages/{$page['component']}.tsx"])
+        @vite(['resources/js/client.tsx', "resources/js/pages/{$page['component']}.tsx"])
         @inertiaHead
     </head>
     <body class="font-sans antialiased">
+    {{$page['component']}}
         @inertia
     </body>
 </html>

@@ -174,7 +174,7 @@ class CheckoutController extends Controller
         $customFonts = $this->fontExtractionService->extractAllFontsForOffer($offer);
         $googleFontsUrl = $this->fontExtractionService->buildGoogleFontsUrl($customFonts);
 
-        return Inertia::render('checkout', [
+        return Inertia::render('client/checkout', [
             'fonts' => FontResource::collection(FontElement::cases()),
             'offer' => new OfferResource($offer),
 

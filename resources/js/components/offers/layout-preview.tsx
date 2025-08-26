@@ -8,7 +8,7 @@ import { type PageSection, type FormSection } from '@/types/offer';
 import { BlockConfig, GlobalState, BlockContextType } from '@/types/blocks';
 import Numi, { BlockContext } from '@/contexts/Numi';
 import { blockTypes } from '@/components/blocks';
-import { GlobalStateContext } from '@/pages/checkout-main';
+import { GlobalStateContext } from '@/pages/client/checkout-main';
 import { useDroppable } from '@dnd-kit/core';
 import cx from 'classnames';
 import { rectSortingStrategy, SortableContext, useSortable } from '@dnd-kit/sortable';
@@ -17,7 +17,7 @@ import { hasVisibilityCondition as hasVisibilityConditionFn } from "@/lib/blocks
 import { Badge } from '../ui/badge';
 import { Theme } from '@/types/theme';
 import { resolveThemeValue } from '@/lib/theme';
-import { NavigationBar } from '@/pages/checkout';
+import { NavigationBar } from '@/pages/client/checkout';
 import { EyeIcon, EyeOffIcon, GripVerticalIcon } from 'lucide-react';
 import { getLayoutJSONConfig } from '@/config/layouts';
 

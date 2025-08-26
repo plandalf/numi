@@ -6,7 +6,7 @@ import {
   useCheckoutState,
   useNavigation,
   useValidateFields
-} from '@/pages/checkout-main';
+} from '@/pages/client/checkout-main';
 import type { OfferConfiguration, Page, PageSection } from '@/types/offer';
 import { CheckoutPageProps, CheckoutSession, NavigationBarProps, TailwindLayoutRendererProps } from '@/types/checkout';
 import { Theme } from '@/types/theme';
@@ -454,7 +454,7 @@ export default function CheckoutPage({ offer, error, checkoutSession, subscripti
 
   useEffect(() => {
     sendMessage(new OnInit(checkoutSession));
-    
+
     // Track checkout cancellation on page unload
     const handleBeforeUnload = () => {
       // Only send cancel if checkout hasn't been completed
@@ -465,7 +465,7 @@ export default function CheckoutPage({ offer, error, checkoutSession, subscripti
 
     // Track when user navigates away or closes browser
     window.addEventListener('beforeunload', handleBeforeUnload);
-    
+
     return () => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
       // Send cancel event on component unmount if not completed

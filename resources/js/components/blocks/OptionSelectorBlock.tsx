@@ -6,7 +6,7 @@ import get from "lodash/get";
 import { useEditor } from "@/contexts/offer/editor-context";
 import { Event, EVENT_LABEL_MAP } from "../editor/interaction-event-editor";
 import { useDebounce } from "@/hooks/use-debounce";
-import { useCheckoutState } from "@/pages/checkout-main";
+import { useCheckoutState } from "@/pages/client/checkout-main";
 import { resolveThemeValue } from "@/lib/theme";
 import { addAlphaToColor } from "../ui/color-picker";
 // Define interfaces for the item structure
