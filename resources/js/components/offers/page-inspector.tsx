@@ -1,5 +1,5 @@
 import { useEffect, useContext, useState } from 'react';
-import { GlobalState, GlobalStateContext } from '@/pages/checkout-main';
+import { GlobalState, GlobalStateContext } from '@/pages/client/checkout-main';
 import { JSONSchemaEditor } from '@/components/editor/json-schema-editor';
 import { Block } from '@/types/offer';
 import { Label } from '../ui/label';
@@ -91,8 +91,8 @@ const SaveBlockDialog: React.FC<SaveBlockDialogProps> = ({ block, onSave, trigge
             <Button variant="outline" onClick={() => setOpen(false)}>
               Cancel
             </Button>
-            <Button 
-              onClick={handleSave} 
+            <Button
+              onClick={handleSave}
               disabled={!name.trim() || saving}
             >
               {saving ? 'Saving...' : 'Save as Reusable Block'}

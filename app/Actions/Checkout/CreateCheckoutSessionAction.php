@@ -112,6 +112,11 @@ class CreateCheckoutSessionAction
             }
         }
 
+        if (is_null($checkoutSession->currency)) {
+            $checkoutSession->currency = $checkoutSession->lineItems->first()?->price->currency;
+            $checkoutSession->save();
+        }
+
         return $checkoutSession;
     }
 

@@ -3,7 +3,7 @@ import Numi from "@/contexts/Numi";
 import { IntegrationClient } from "@/types/checkout";
 import StripeElementsComponent from "./StripeElementsBlock";
 import axios from "@/lib/axios";
-import { useNavigation } from '@/pages/checkout-main';
+import { useNavigation } from '@/pages/client/checkout-main';
 
 function PaymentMethodBlock() {
   const { currentPage, goToNextPage } = useNavigation();

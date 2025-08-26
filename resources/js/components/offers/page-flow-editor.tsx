@@ -27,7 +27,7 @@ import { cn } from '@/lib/utils';
 import PageTypeDialog from './page-type-dialog';
 import 'react-querybuilder/dist/query-builder.css';
 import { PageConditionEditor } from '../editor/page-condition-editor';
-import { GlobalStateContext } from '@/pages/checkout-main';
+import { GlobalStateContext } from '@/pages/client/checkout-main';
 import { RuleGroup } from '../editor/page-condition-editor';
 import { getLayoutConfig } from '@/config/layouts';
 
@@ -503,13 +503,13 @@ export default function PageFlowEditor({ view, onUpdateFlow }: PageFlowEditorPro
 
         const sourceId = params.source;
         const targetId = params.target;
-        
+
         // Prevent self-referencing connections
         if (sourceId === targetId) {
             console.warn('Attempted to create self-referencing connection, ignoring:', { sourceId, targetId });
             return;
         }
-        
+
         const sourcePage = view.pages[sourceId];
 
         if (!sourcePage) {

@@ -9,7 +9,14 @@ import path from 'path'
 export default defineConfig({
     plugins: [
         laravel({
-            input: ['resources/css/app.css', 'resources/js/app.tsx', ...getPageEntries()],
+            input: [
+              'resources/css/app.css',
+              'resources/js/app.tsx',
+              'resources/js/client.tsx',
+              // 'resources/js/pages/sequences/index.tsx',
+              'resources/js/pages/client/checkout.tsx',
+              ...getPageEntries()
+            ],
             ssr: 'resources/js/ssr.tsx',
             refresh: true,
         }),

@@ -103,6 +103,20 @@
     </div>
 
     <div class="container">
+        <h2>🌐 Domain</h2>
+        <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+            <label for="domainInput">Domain:</label>
+            <input id="domainInput" type="text" placeholder="https://checkout.plandalf.dev"
+                   style="flex:1; min-width:280px; padding:8px 10px; border:1px solid #cbd5e1; border-radius:6px; font-size:14px;" />
+            <button id="saveDomainBtn" class="test">Save</button>
+            <button id="resetDomainBtn" class="clear" title="Reset to default">Reset</button>
+        </div>
+        <div class="status info" style="margin-top:10px;">
+            <strong>Using domain:</strong> <code id="currentDomainDisplay">https://checkout.plandalf.dev</code>
+        </div>
+    </div>
+
+    <div class="container">
         <h2>📋 Event Log</h2>
         <div class="log" id="log"></div>
         <button onclick="clearLog()" class="clear">Clear Log</button>
@@ -125,7 +139,7 @@
                 data-numi-popup-size="medium" 
                 data-numi-offer="bing-bong-1-8Di1dEf1LTe" 
                 data-numi-embed-type="popup"
-            
+        
                 class="popup">
                 Popup (Medium)
             </button>
@@ -213,7 +227,9 @@
         // OFFER ID PERSISTENCE UTILS
         // =============================================================================
         const OFFER_STORAGE_KEY = 'plandalf.test.offerId';
+        const DOMAIN_STORAGE_KEY = 'plandalf.test.domain';
         const DEFAULT_OFFER_ID = 'bing-bong-1-8Di1dEf1LTe';
+        const DEFAULT_DOMAIN = 'https://checkout.plandalf.dev';
 
         function getStoredOfferId() {
             try {
@@ -226,6 +242,35 @@
         function setStoredOfferId(offerId) {
             try {
                 localStorage.setItem(OFFER_STORAGE_KEY, offerId);
+            } catch (_) { }
+        }
+
+        function getStoredDomain() {
+            try {
+                return localStorage.getItem(DOMAIN_STORAGE_KEY) || DEFAULT_DOMAIN;
+            } catch (_) {
+                return DEFAULT_DOMAIN;
+            }
+        }
+
+        function normalizeDomain(input) {
+            if (!input) return DEFAULT_DOMAIN;
+            let value = input.trim();
+            // Prepend https if no scheme provided
+            if (!/^https?:\/\//i.test(value)) {
+                value = 'https://' + value;
+            }
+            try {
+                const url = new URL(value);
+                return url.origin;
+            } catch (_) {
+                return DEFAULT_DOMAIN;
+            }
+        }
+
+        function setStoredDomain(domain) {
+            try {
+                localStorage.setItem(DOMAIN_STORAGE_KEY, normalizeDomain(domain));
             } catch (_) { }
         }
 
@@ -245,6 +290,17 @@
         }
 
         const CURRENT_OFFER_ID = getStoredOfferId();
+        const CURRENT_DOMAIN = getStoredDomain();
+
+        function applyDomain(domain) {
+            const normalized = normalizeDomain(domain);
+            const display = document.getElementById('currentDomainDisplay');
+            if (display) display.textContent = normalized;
+            const nodes = document.querySelectorAll('[data-numi-embed-type]');
+            nodes.forEach((el) => {
+                el.setAttribute('data-numi-domain', normalized.replace(/^https?:\/\//i, '').replace(/\/$/, ''));
+            });
+        }
 
         // =============================================================================
         // TEST UTILITIES
@@ -290,6 +346,7 @@
         // =============================================================================
         
         window.plandalfConfig = {
+            domain: CURRENT_DOMAIN,
             // Global event handlers
             onInit: function(data) {
                 log(`🚀 Session started: ${data.sessionId}`, 'info');
@@ -485,11 +542,20 @@
             if (input) input.value = CURRENT_OFFER_ID;
             applyOfferId(CURRENT_OFFER_ID);
 
+            // Wire up Domain input and initial application
+            const domainInput = document.getElementById('domainInput');
+            const saveDomainBtn = document.getElementById('saveDomainBtn');
+            const resetDomainBtn = document.getElementById('resetDomainBtn');
+            if (domainInput) domainInput.value = CURRENT_DOMAIN;
+            applyDomain(CURRENT_DOMAIN);
+
             const persistAndApply = () => {
                 const newId = (input?.value || '').trim() || DEFAULT_OFFER_ID;
                 setStoredOfferId(newId);
                 applyOfferId(newId);
                 log(`💾 Offer ID saved: ${newId}`, 'success');
+                // Reload to reinitialize v1.js with new attributes
+                setTimeout(() => window.location.reload(), 150);
             };
             if (saveBtn) saveBtn.addEventListener('click', persistAndApply);
             if (resetBtn) resetBtn.addEventListener('click', () => {
@@ -500,6 +566,26 @@
                 if (e.key === 'Enter') {
                     e.preventDefault();
                     persistAndApply();
+                }
+            });
+
+            const persistDomainAndApply = () => {
+                const newDomain = (domainInput?.value || '').trim() || DEFAULT_DOMAIN;
+                setStoredDomain(newDomain);
+                applyDomain(newDomain);
+                log(`🌐 Domain saved: ${normalizeDomain(newDomain)}`, 'success');
+                // Reload to reinitialize v1.js with new attributes
+                setTimeout(() => window.location.reload(), 150);
+            };
+            if (saveDomainBtn) saveDomainBtn.addEventListener('click', persistDomainAndApply);
+            if (resetDomainBtn) resetDomainBtn.addEventListener('click', () => {
+                if (domainInput) domainInput.value = DEFAULT_DOMAIN;
+                persistDomainAndApply();
+            });
+            if (domainInput) domainInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    persistDomainAndApply();
                 }
             });
 
@@ -545,6 +631,25 @@
                 const status = document.getElementById('billingPortalStatus');
                 if (status) status.textContent = '⚠️ Token fetch failed. You can still open the portal without a token.';
             }
+        })();
+    </script>
+    <!-- Pre-init script to set data attributes before v1.js runs -->
+    <script>
+        (function preinit() {
+            try {
+                const offerId = (localStorage.getItem('plandalf.test.offerId') || 'bing-bong-1-8Di1dEf1LTe');
+                const domain = (localStorage.getItem('plandalf.test.domain') || 'https://checkout.plandalf.dev');
+                // Apply immediately so v1.js sees correct attributes on first init
+                const nodes = document.querySelectorAll('[data-numi-embed-type]');
+                nodes.forEach((el) => {
+                    // Preserve any suffix on existing data-numi-offer
+                    const current = el.getAttribute('data-numi-offer') || '';
+                    const slashIdx = current.indexOf('/');
+                    const suffix = slashIdx !== -1 ? current.substring(slashIdx) : '';
+                    if (offerId) el.setAttribute('data-numi-offer', offerId + suffix);
+                    if (domain) el.setAttribute('data-numi-domain', domain.replace(/^https?:\/\//i, '').replace(/\/$/, ''));
+                });
+            } catch (_) { }
         })();
     </script>
     <!-- Load the enhanced v1.js script -->

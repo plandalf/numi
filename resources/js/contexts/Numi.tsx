@@ -5,7 +5,7 @@ import { createContext, useContext, useEffect, useState, useRef, useCallback, us
 import get from "lodash/get";
 import debounce from "lodash/debounce";
 import { Theme } from "@/types/theme";
-import { GlobalState, GlobalStateContext } from '@/pages/checkout-main';
+import { GlobalState, GlobalStateContext } from '@/pages/client/checkout-main';
 import { Event } from "@/components/editor/interaction-event-editor";
 import { SwitchProductActionValue } from '@/components/actions/switch-product-action';
 
@@ -443,7 +443,7 @@ const Numi = {
               break;
           }
         }
-        
+
         // Reload subscription preview after any mutation to ensure UI is updated
         if (checkout?.reloadSubscriptionPreview) {
           checkout.reloadSubscriptionPreview();

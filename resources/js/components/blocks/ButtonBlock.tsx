@@ -1,7 +1,7 @@
 // import { BlockContextType } from "@/types/blocks";
 import Numi, { Appearance, BorderValue, FontValue, IconValue, Style } from '@/contexts/Numi';
 import cx from "classnames";
-import { useCheckoutState } from "@/pages/checkout-main";
+import { useCheckoutState } from "@/pages/client/checkout-main";
 import { cn } from "@/lib/utils";
 import { useMemo, type CSSProperties } from "react";
 import { Event, EVENT_LABEL_MAP } from "../editor/interaction-event-editor";
@@ -10,7 +10,7 @@ import { resolveThemeValue } from "@/lib/theme";
 
 // Does Submitting of field forms.
 function ButtonBlockComponent() {
-  const { isSubmitting, submitError } = useCheckoutState() as import("@/pages/checkout-main").GlobalState;
+  const { isSubmitting, submitError } = useCheckoutState() as import("@/pages/client/checkout-main").GlobalState;
 
   const theme = Numi.useTheme();
 
@@ -118,9 +118,9 @@ function ButtonBlockComponent() {
   const resolvedBorderColor = resolveThemeValue(style.borderColor, theme) as string;
   const resolvedBorderRadius = resolveThemeValue(style?.borderRadius, theme, 'border_radius') as string;
   const resolvedShadow = resolveThemeValue(style?.shadow, theme, 'shadow') as string;
-  
+
   // Check if the background is a gradient
-  const isGradient = typeof resolvedBackgroundColor === 'string' && 
+  const isGradient = typeof resolvedBackgroundColor === 'string' &&
     (resolvedBackgroundColor.includes('linear-gradient') || resolvedBackgroundColor.includes('radial-gradient'));
 
   const buttonStyles = useMemo(() => {

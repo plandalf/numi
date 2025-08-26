@@ -1,7 +1,7 @@
 import { BlockContext } from '@/contexts/Numi';
 import { isEvaluatedVisible } from '@/lib/blocks';
 import { cn } from '@/lib/utils';
-import { GlobalStateContext } from '@/pages/checkout-main';
+import { GlobalStateContext } from '@/pages/client/checkout-main';
 import { BlockConfig, BlockContextType, FieldState, HookUsage } from '@/types/blocks';
 import { useContext, useMemo } from 'react';
 

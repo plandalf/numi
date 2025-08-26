@@ -1,8 +1,9 @@
 import { readFileSync } from 'fs';
 const manifestPath = 'public/build/manifest.json';
 const requiredEntries = [
-  'resources/js/pages/checkout.tsx',
+  'resources/js/pages/client/checkout.tsx',
   'resources/js/pages/sequences/index.tsx',
+  'resources/js/pages/auth/login.tsx',
 ];
 
 console.log('Checking Vite manifest...');

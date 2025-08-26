@@ -2,7 +2,7 @@ import Numi, { Appearance, FontValue, Style } from "@/contexts/Numi";
 import React, { useState, useEffect, useRef, useMemo, useCallback, CSSProperties } from "react";
 import { Elements, PaymentElement, useStripe, useElements, AddressElement } from '@stripe/react-stripe-js';
 import { loadStripe, Stripe } from '@stripe/stripe-js';
-import { useCheckoutState } from "@/pages/checkout-main";
+import { useCheckoutState } from "@/pages/client/checkout-main";
 import { resolveThemeValue } from "@/lib/theme";
 import { addAlphaToColor } from "../ui/color-picker";
 import { MarkdownText } from "../ui/markdown-text";

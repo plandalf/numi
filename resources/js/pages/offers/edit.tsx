@@ -31,7 +31,7 @@ import PageFlowEditor from '@/components/offers/page-flow-editor';
 import { ReactFlowProvider } from '@xyflow/react';
 import update from "immutability-helper";
 import { CreditCard } from 'lucide-react';
-import { GlobalStateProvider, NavigationProvider, useNavigation } from '@/pages/checkout-main';
+import { GlobalStateProvider, NavigationProvider, useNavigation } from '@/pages/client/checkout-main';
 import { DndContext, DragOverlay, DragStartEvent, useSensor, PointerSensor, useSensors, rectIntersection, DragOverEvent, DragEndEvent } from "@dnd-kit/core";
 
 import { v4 as uuidv4 } from 'uuid';

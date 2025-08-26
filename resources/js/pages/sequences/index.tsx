@@ -27,7 +27,6 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useForm } from '@inertiajs/react';
 import { type BreadcrumbItem, type PageProps } from '@/types';
-import { CardTitle } from '@/components/ui/card';
 
 interface Sequence {
   id: number;
@@ -58,17 +57,6 @@ interface SequencesIndexProps extends PageProps {
     total: number;
   };
 }
-
-const breadcrumbs: BreadcrumbItem[] = [
-  {
-    title: 'Dashboard',
-    href: '/dashboard',
-  },
-  {
-    title: 'Sequences',
-    href: '/sequences',
-  },
-];
 
 export default function Index({ sequences, workflows }: SequencesIndexProps) {
   const [search, setSearch] = useState('');
@@ -106,7 +94,7 @@ export default function Index({ sequences, workflows }: SequencesIndexProps) {
   );
 
   return (
-    <AppLayout breadcrumbs={breadcrumbs}>
+    <AppLayout>
       <Head title="Sequences" />
 
       <div className="container mx-auto py-8 px-4 sm:px-6 lg:px-8 mb-4">

@@ -16,7 +16,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
 } from '../ui/dropdown-menu';
-import { GlobalStateContext } from '@/pages/checkout-main';
+import { GlobalStateContext } from '@/pages/client/checkout-main';
 import { QueryBuilder, RuleGroupType } from 'react-querybuilder';
 import 'react-querybuilder/dist/query-builder.css';
 import { Trash2, ChevronDown } from 'lucide-react';
