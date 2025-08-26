@@ -13,7 +13,7 @@ export default defineConfig({
               'resources/css/app.css',
               'resources/js/app.tsx',
               'resources/js/client.tsx',
-              // ...getPageEntries()
+              ...getPageEntries()
             ],
             ssr: 'resources/js/ssr.tsx',
             refresh: true,
