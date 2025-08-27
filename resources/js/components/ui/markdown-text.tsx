@@ -171,7 +171,7 @@ const componentsForTheme = (
 });
 
 const preserveAllLineBreaks = (text: string) => {
-  return text ?? '';
+  return (text || '').split('\n').map((line) => (line.trim() === '' ? '&nbsp;' : line)).join('\n');
 };
 
 export const MarkdownText = ({ text, theme, style, className, listItemGap, ...props }: MarkdownTextProps) => {
