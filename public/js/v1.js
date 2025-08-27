@@ -237,7 +237,7 @@ ${spinAnimationStyles}
   border: none;
   overoffer: hidden;
   border-radius: 16px;
-  opacity: 0;
+  opacity: 1;
   transition: opacity 0.3s ease-in-out;
 }
 
