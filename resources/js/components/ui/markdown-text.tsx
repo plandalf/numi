@@ -175,13 +175,12 @@ const preserveAllLineBreaks = (text: string) => {
 };
 
 export const MarkdownText = ({ text, theme, style, className, listItemGap, ...props }: MarkdownTextProps) => {
-  //style
   return (
     <div className={cn('numi-markdown', className)} {...props}>
       <ReactMarkdown
         rehypePlugins={[rehypeRaw]}
         components={{
-          ...componentsForTheme(theme, {}, listItemGap),
+          ...componentsForTheme(theme, style, listItemGap),
           h6: ({ children }) => <p style={getTypographyStyleInline({ theme, element: 'body', style })}>{children}</p>,
         }}
       >
