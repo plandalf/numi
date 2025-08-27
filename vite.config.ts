@@ -15,7 +15,7 @@ export default defineConfig({
               'resources/js/client.tsx',
               // 'resources/js/pages/sequences/index.tsx',
               'resources/js/pages/client/checkout.tsx',
-              ...getPageEntries()
+              // ...getPageEntries()
             ],
             ssr: 'resources/js/ssr.tsx',
             refresh: true,

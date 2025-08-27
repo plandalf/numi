@@ -53,24 +53,18 @@ function TextBlockComponent({ context }: { context: BlockContextType }) {
   const shadow = style?.shadow as string;
 
   const textStyles = useMemo(() => ({
-    backgroundColor: resolveThemeValue(style.backgroundColor, theme),
+
     color: resolveThemeValue(font?.color, theme),
     fontFamily: font?.font,
     fontWeight: font?.weight,
     fontSize: font?.size,
     lineHeight: font?.lineHeight,
     letterSpacing: font?.letterSpacing,
-    borderColor: resolveThemeValue(style.borderColor, theme),
-    borderWidth: border?.width,
-    borderStyle: border?.style,
-    borderRadius : borderRadius ?? '3px',
-    boxShadow: shadow,
-    padding: appearance.padding,
-    margin: appearance.margin,
+
     whiteSpace: 'pre-line',
   }), [style, font, border, borderRadius, shadow]);
 
-  const textClasses = useMemo(() => cn("max-w-none",{
+  const textClasses = useMemo(() => cn("max-w-none whitespace-pre-wrap",{
     "text-start": style.alignment === 'left',
     "text-center": style.alignment === 'center',
     "text-end": style.alignment === 'right',
@@ -83,13 +77,26 @@ function TextBlockComponent({ context }: { context: BlockContextType }) {
     style: textStyles,
   }
 
+  const containerProps = {
+    style: {
+      backgroundColor: resolveThemeValue(style.backgroundColor, theme),
+      borderColor: resolveThemeValue(style.borderColor, theme),
+      borderWidth: border?.width,
+      borderStyle: border?.style,
+      borderRadius : borderRadius ?? '3px',
+      boxShadow: shadow,
+      padding: appearance.padding,
+      margin: appearance.margin,
+    }
+  }
+
   if (style.hidden) {
     return null;
   }
 
   return (
     isMarkdown ? (
-      <div {...textProps}>
+      <div {...containerProps}>
         <MarkdownText theme={theme} text={text} {...textProps}  />
       </div>
     ) : (
