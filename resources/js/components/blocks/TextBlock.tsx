@@ -58,9 +58,7 @@ function TextBlockComponent({ context }: { context: BlockContextType }) {
     fontFamily: font?.font,
     fontWeight: font?.weight,
     fontSize: font?.size,
-
     lineHeight: font?.lineHeight,
-
     letterSpacing: font?.letterSpacing,
     borderColor: resolveThemeValue(style.borderColor, theme),
     borderWidth: border?.width,
@@ -72,7 +70,7 @@ function TextBlockComponent({ context }: { context: BlockContextType }) {
     whiteSpace: 'pre-line',
   }), [style, font, border, borderRadius, shadow]);
 
-  const textClasses = useMemo(() => cn("max-w-none whitespace-pre-line",{
+  const textClasses = useMemo(() => cn("max-w-none",{
     "text-start": style.alignment === 'left',
     "text-center": style.alignment === 'center',
     "text-end": style.alignment === 'right',
@@ -91,7 +89,9 @@ function TextBlockComponent({ context }: { context: BlockContextType }) {
 
   return (
     isMarkdown ? (
-      <MarkdownText theme={theme} text={text} {...textProps} />
+      <div {...textProps}>
+        <MarkdownText theme={theme} text={text} {...textProps}  />
+      </div>
     ) : (
       <div {...textProps} >{text}</div>
     )

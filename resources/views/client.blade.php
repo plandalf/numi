@@ -46,7 +46,7 @@
         {{-- Restrict Ziggy to portal routes only --}}
         @routes('portal')
         @viteReactRefresh
-        @vite(['resources/js/client.tsx', "resources/js/pages/{$page['component']}.tsx"])
+        @vite(['resources/js/client.tsx'])
         @inertiaHead
     </head>
     <body class="font-sans antialiased">
