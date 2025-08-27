@@ -10,7 +10,7 @@ createInertiaApp({
   title: (title) => `${title} - ${appName}`,
   resolve: (name) => resolvePageComponent(
     `./pages/${name}.tsx`,
-    import.meta.glob('./pages/client/**/*.tsx',{ eager: true })
+    import.meta.glob('./pages/client/**/*.tsx')
   ),
   setup({ el, App, props }) {
     hydrateRoot(

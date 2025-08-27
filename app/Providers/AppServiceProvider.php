@@ -62,6 +62,7 @@ class AppServiceProvider extends ServiceProvider
         $this->bootPolicies();
 
 //        Vite::prefetch(3);
+        Vite::usePrefetchStrategy('waterfall');
         URL::forceHttps(app()->isProduction());
         Model::automaticallyEagerLoadRelationships();
         Date::use(CarbonImmutable::class);

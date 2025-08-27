@@ -60,7 +60,7 @@ class HandleInertiaRequests extends Middleware
 
     public function share(Request $request): array
     {
-        [$message, $author] = str(Inspiring::quotes()->random())->explode('-');
+//        [$message, $author] = str(Inspiring::quotes()->random())->explode('-');
         $user = $request->user();
 
         $isPortalRoute = $request->routeIs(
@@ -79,7 +79,7 @@ class HandleInertiaRequests extends Middleware
         return [
             ...parent::share($request),
             'name' => config('app.name'),
-            'quote' => ['message' => trim($message), 'author' => trim($author)],
+//            'quote' => ['message' => trim($message), 'author' => trim($author)],
             'auth' => [
                 'user' => $user ? [
                     'id' => $user->id,
