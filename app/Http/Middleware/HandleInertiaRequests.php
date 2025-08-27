@@ -60,7 +60,6 @@ class HandleInertiaRequests extends Middleware
 
     public function share(Request $request): array
     {
-//        [$message, $author] = str(Inspiring::quotes()->random())->explode('-');
         $user = $request->user();
 
         $isPortalRoute = $request->routeIs(

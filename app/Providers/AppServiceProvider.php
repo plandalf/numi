@@ -61,7 +61,6 @@ class AppServiceProvider extends ServiceProvider
         $this->bootObservers();
         $this->bootPolicies();
 
-//        Vite::prefetch(3);
         Vite::usePrefetchStrategy('waterfall');
         URL::forceHttps(app()->isProduction());
         Model::automaticallyEagerLoadRelationships();

@@ -486,29 +486,14 @@ ${spinAnimationStyles}
         // 1. Use configDomain if set
         let domain = null;
         if (configDomain) {
-            if (/^https?:\/\//i.test(configDomain)) {
-                domain = configDomain;
-            } else if (configDomain === 'localhost:8002') {
+            if (configDomain === 'localhost:8002') {
                 domain = `http://${configDomain}`;
             } else {
                 domain = `https://${configDomain}`;
             }
         } else {
-            // 1b. Use global config if provided
-            try {
-                const globalDomain = (typeof window !== 'undefined' && window.plandalfConfig && window.plandalfConfig.domain) ? window.plandalfConfig.domain : null;
-                if (globalDomain) {
-                    if (/^https?:\/\//i.test(globalDomain)) {
-                        domain = globalDomain;
-                    } else if (globalDomain === 'localhost:8002') {
-                        domain = `http://${globalDomain}`;
-                    } else {
-                        domain = `https://${globalDomain}`;
-                    }
-                }
-            } catch (_) {}
             // 2. Try to get the domain from the script's own src
-            let scriptSrc = domain ? null : null;
+            let scriptSrc = null;
             if (typeof document !== 'undefined') {
                 if (document.currentScript && document.currentScript.src) {
                     scriptSrc = document.currentScript.src;

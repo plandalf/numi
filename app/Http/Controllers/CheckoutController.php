@@ -128,8 +128,52 @@ class CheckoutController extends Controller
             $params['redirect_url'] = $request->get('redirect_url');
         }
 
-        return redirect()
-            ->to(URL::signedRoute('checkouts.show', $params, now()->addDays(5)));
+        $signedShowUrl = URL::signedRoute('checkouts.show', $params, now()->addDays(5));
+
+        // Render the checkout view directly to avoid initial redirect latency.
+        // The client will immediately replace the URL to the canonical signed /checkout route
+        // via an Inertia JSON-only navigation using the provided $signedShowUrl.
+
+        $checkoutSession->load([
+            'lineItems.offerItem.offerPrices',
+            'offer.theme',
+            'offer.organization.logoMedia',
+            'offer.socialImage',
+            'offer.organization.faviconMedia',
+            'offer.hostedPage.logoImage',
+            'offer.hostedPage.backgroundImage',
+            'lineItems.price.integration',
+            'lineItems.price.product',
+            'organization.integrations',
+            'paymentMethod',
+            'customer',
+        ]);
+
+        $offer = $checkoutSession->offer;
+        $json = $offer->view;
+
+        // Sync initial page state from checkout metadata
+        $json['first_page'] = data_get($checkoutSession->metadata, 'current_page_id', $json['first_page']);
+        $json['page_history'] = data_get($checkoutSession->metadata, 'page_history', []);
+        $offer->view = $json;
+
+        // Extract fonts for preloading
+        $customFonts = $this->fontExtractionService->extractAllFontsForOffer($offer);
+        $googleFontsUrl = $this->fontExtractionService->buildGoogleFontsUrl($customFonts);
+
+        return Inertia::render('client/checkout', [
+            'fonts' => FontResource::collection(FontElement::cases()),
+            'offer' => new OfferResource($offer),
+            'checkoutSession' => new CheckoutSessionResource($checkoutSession),
+            'subscriptionPreview' => Inertia::defer(function () use ($checkoutSession) {
+                return app(\App\Actions\Checkout\PreviewSubscriptionChangeAction::class)($checkoutSession);
+            }),
+            // Provide the canonical signed /checkout URL for a JSON-only replace on mount
+            'signedShowUrl' => $signedShowUrl,
+        ])->with([
+            'customFonts' => $customFonts,
+            'googleFontsUrl' => $googleFontsUrl,
+        ]);
     }
 
     public function show(CheckoutSession $checkout, Request $request)

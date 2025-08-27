@@ -188,6 +188,7 @@ export interface CheckoutPageProps {
   environment?: string;
   checkoutSession: CheckoutSession;
   subscriptionPreview?: SubscriptionPreview;
+  signedShowUrl?: string;
 }
 
 export interface TailwindLayoutConfig {

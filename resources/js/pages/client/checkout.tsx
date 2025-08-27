@@ -1,4 +1,4 @@
-import { Head, Deferred, usePage } from '@inertiajs/react';
+import { Head, Deferred, usePage, router } from '@inertiajs/react';
 import {
   GlobalStateProvider,
   LoadingError,
@@ -426,10 +426,30 @@ const CheckoutController = ({ offer, session }: { offer: OfferConfiguration, ses
 };
 
 
-export default function CheckoutPage({ offer, error, checkoutSession, subscriptionPreview }: CheckoutPageProps) {
+export default function CheckoutPage({ offer, error, checkoutSession, subscriptionPreview, signedShowUrl }: CheckoutPageProps) {
   const { url: inertiaUrl } = usePage();
   const currentUrl = typeof window === 'undefined' ? (inertiaUrl as string) : window.location.href;
   const firstPage = offer.view.pages[offer.view.first_page];
+
+  // Replace URL to the canonical signed /checkout route without a full redirect
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (!signedShowUrl) return;
+
+    // console.log('signedShowUrl', signedShowUrl);
+
+    const isOnCanonicalPath = window.location.pathname.startsWith('/checkout');
+    if (!isOnCanonicalPath) {
+      console.log('redirecting to', signedShowUrl);
+      setTimeout(() => {
+        router.visit(signedShowUrl, {
+          replace: true,
+          preserveState: true,
+          preserveScroll: true,
+        });
+      }, 50);
+    }
+  }, [signedShowUrl]);
 
   const containerStyle = useMemo(() => {
     if (offer?.is_hosted) {
