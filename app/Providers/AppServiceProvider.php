@@ -61,7 +61,7 @@ class AppServiceProvider extends ServiceProvider
         $this->bootObservers();
         $this->bootPolicies();
 
-        Vite::prefetch(3);
+//        Vite::prefetch(3);
         URL::forceHttps(app()->isProduction());
         Model::automaticallyEagerLoadRelationships();
         Date::use(CarbonImmutable::class);
