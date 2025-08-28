@@ -43,17 +43,39 @@ class SequencesController extends Controller
                             'id' => $log->id,
                             'created_at' => $log->created_at,
                             'class' => $log->class,
-                            'content' => Serializer::unserialize($log->result),
+                            'content' => value(function () use ($log) {
+                                try {
+                                    return Serializer::unserialize($log->result);
+                                } catch (\Exception $e) {
+                                    return null;
+                                }
+                            }),
                         ];
                     })
                     ->toArray(),
                 'exceptions' => collect($wf->exceptions)
                     ->map(function (\Workflow\Models\StoredWorkflowException $e) {
-                        return Serializer::unserialize($e->exception);
+                        try {
+                            return Serializer::unserialize($e->exception);
+                        } catch (\Exception $e) {
+                            return null;
+                        }
                     })
                     ->toArray(),
-                'arguments' => $wf->arguments ? Serializer::unserialize($wf->arguments) : null,
-                'output' => $wf->output ? Serializer::unserialize($wf->output) : null,
+                'arguments' => value(function () use ($wf) {
+                    try {
+                        return $wf->arguments ? Serializer::unserialize($wf->arguments) : null;
+                    } catch (\Throwable $e) {
+                        return null;
+                    }
+                }),
+                'output' => value(function () use ($wf) {
+                    try {
+                        return $wf->output ? Serializer::unserialize($wf->output) : null;
+                    } catch (\Throwable $e) {
+                        return null;
+                    }
+                }),
             ];
         });
 
