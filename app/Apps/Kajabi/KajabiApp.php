@@ -24,7 +24,6 @@ class KajabiApp extends AutomationApp
     {
         return [
             CreateContactTag::class,
-            CreateMember::class,
             FindOrCreateContact::class,
         ];
     }

@@ -52,13 +52,18 @@ class WorkflowsController extends Controller
                 })
                 ->values()
                 ->map(function ($log) {
-                    return [
-                        'id' => $log->id,
-                        'created_at' => $log->created_at,
-                        'class' => $log->class,
-                        'content' => $log->result ? Serializer::unserialize($log->result) : null,
-                    ];
+                    try {
+                        return [
+                            'id' => $log->id,
+                            'created_at' => $log->created_at,
+                            'class' => $log->class,
+                            'content' => $log->result ? Serializer::unserialize($log->result) : null,
+                        ];
+                    } catch (\Throwable $e) {
+                        return null;
+                    }
                 })
+                ->filter()
                 ->toArray();
 
             // Get workflow exceptions (latest first)
@@ -69,8 +74,13 @@ class WorkflowsController extends Controller
                 })
                 ->values()
                 ->map(function ($exception) {
-                    return Serializer::unserialize($exception->exception);
+                    try {
+                        return Serializer::unserialize($exception->exception);
+                    } catch (\Throwable $e) {
+                        return null;
+                    }
                 })
+                ->filter()
                 ->toArray();
 
             return [
@@ -81,8 +91,20 @@ class WorkflowsController extends Controller
                 // 'started_at' => $workflow->started_at,
                 // 'finished_at' => $workflow->finished_at,
 
-                'arguments' => $workflow->arguments ? Serializer::unserialize($workflow->arguments) : null,
-                'output' => $workflow->output ? Serializer::unserialize($workflow->output) : null,
+                'arguments' => value(function () use ($workflow) {
+                    try {
+                        return $workflow->arguments ? Serializer::unserialize($workflow->arguments) : null;
+                    } catch (\Throwable $e) {
+                        return null;
+                    }
+                }),
+                'output' => value(function () use ($workflow) {
+                    try {
+                        return $workflow->output ? Serializer::unserialize($workflow->output) : null;
+                    } catch (\Throwable $e) {
+                        return null;
+                    }
+                }),
                 'event' => $workflow->event ? [
                     'id' => $workflow->event->id,
                     'event_source' => $workflow->event->event_source ?? null,
