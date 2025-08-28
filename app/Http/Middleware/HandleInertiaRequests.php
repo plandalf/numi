@@ -93,6 +93,7 @@ class HandleInertiaRequests extends Middleware
                     ],
                 ] : null,
             ],
+            'organization' => $user && $user->currentOrganization ? new OrganizationResource($user->currentOrganization) : null,
             'ziggy' => fn (): array => [
                 ...$ziggy->toArray(),
                 'location' => $request->url(),

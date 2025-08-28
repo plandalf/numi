@@ -5,6 +5,7 @@ namespace App\Apps\Kajabi\Actions;
 use App\Apps\Kajabi\KajabiApp;
 use App\Apps\Kajabi\Requests\CreateContactRequest;
 use App\Apps\Kajabi\Requests\FindContactByEmailRequest;
+use App\Apps\Kajabi\Requests\GetContactsRequest;
 use App\Workflows\Attributes\IsAction;
 use App\Workflows\Automation\AppAction;
 use App\Workflows\Automation\Bundle;
@@ -25,12 +26,9 @@ class FindOrCreateContact extends AppAction
             Field::string('email', 'Email Address')
                 ->required()
                 ->help('The contact\'s email address.'),
-            Field::string('first_name', 'First Name')
+            Field::string('name', 'Contact Name')
                 ->optional()
-                ->help('The contact\'s first name (used when creating a new contact).'),
-            Field::string('last_name', 'Last Name')
-                ->optional()
-                ->help('The contact\'s last name (used when creating a new contact).'),
+                ->help('The contact\'s full name (used when creating a new contact).'),
         ];
     }
 
@@ -66,8 +64,6 @@ class FindOrCreateContact extends AppAction
             return [
                 'contact_id' => $contact['id'],
                 'email' => $contact['attributes']['email'],
-                'first_name' => $contact['attributes']['first_name'] ?? null,
-                'last_name' => $contact['attributes']['last_name'] ?? null,
                 'name' => $contact['attributes']['name'] ?? null,
                 'site_id' => $siteId,
                 'action' => 'found',
@@ -79,27 +75,9 @@ class FindOrCreateContact extends AppAction
         // Contact doesn't exist, create a new one
         $contactData = [
             'email' => $email,
+            'subscribed' => true,
+            'name' => $bundle->input['name'] ?? '',
         ];
-
-        // Build the name field from first_name and last_name
-        $nameParts = [];
-        if (!empty($bundle->input['first_name'])) {
-            $contactData['first_name'] = $bundle->input['first_name'];
-            $nameParts[] = $bundle->input['first_name'];
-        }
-
-        if (!empty($bundle->input['last_name'])) {
-            $contactData['last_name'] = $bundle->input['last_name'];
-            $nameParts[] = $bundle->input['last_name'];
-        }
-
-        // Set the name field as required by Kajabi API
-        if (!empty($nameParts)) {
-            $contactData['name'] = implode(' ', $nameParts);
-        } else {
-            // If no name provided, use email as name
-            $contactData['name'] = $email;
-        }
 
         $createRequest = new CreateContactRequest($contactData, $siteId);
         $createResponse = $connector->send($createRequest);
@@ -113,8 +91,6 @@ class FindOrCreateContact extends AppAction
         return [
             'contact_id' => $newContact['id'],
             'email' => $newContact['attributes']['email'],
-            'first_name' => $newContact['attributes']['first_name'] ?? null,
-            'last_name' => $newContact['attributes']['last_name'] ?? null,
             'name' => $newContact['attributes']['name'] ?? null,
             'site_id' => $siteId,
             'action' => 'created',
@@ -128,8 +104,6 @@ class FindOrCreateContact extends AppAction
         return [
             'contact_id' => '12345',
             'email' => 'john.doe@example.com',
-            'first_name' => 'John',
-            'last_name' => 'Doe',
             'name' => 'John Doe',
             'site_id' => 'your-kajabi-site',
             'action' => 'created',

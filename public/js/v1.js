@@ -665,7 +665,7 @@ ${spinAnimationStyles}
             : `numi-embed-${embedType}`;
         // Only set opacity 0 for popups, sliders need to be visible for their transform animations
         if (embedType === 'popup') {
-            popupContainer.style.opacity = '0';
+            // popupContainer.style.opacity = '0';
         }
         const popupLoading = document.createElement('div');
         popupLoading.className = 'numi-embed-loading';

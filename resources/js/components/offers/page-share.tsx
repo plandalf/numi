@@ -1,5 +1,5 @@
 import { useEditor } from '@/contexts/offer/editor-context';
-import { router } from "@inertiajs/react";
+import { router, usePage } from '@inertiajs/react';
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
 import { PublishStatusCard } from "./publish-status-card";
@@ -32,6 +32,8 @@ export function PageShare() {
   const [showEmbedInfo, setShowEmbedInfo] = useState(false);
   const [selectedEmbedType, setSelectedEmbedType] = useState();
 
+  const { props} = usePage();
+
   const offerUrl = offer.public_url;
 
   const copyToClipboard = (text: string) => {
@@ -39,19 +41,21 @@ export function PageShare() {
     toast.success('URL copied to clipboard');
   };
 
+  const host = props.organization.subdomain_host;
+
   const getEmbedCode = (type: string) => {
       switch (type) {
           case 'standard':
               return `<a href="${offerUrl}" target="_blank">Open Offer</a>`;
           case 'popup':
               return `<button data-numi-offer="${offer.id}" data-numi-embed-type="popup">Open Offer</button>
-<script src="${window.location.origin}/js/v1.js"></script>`;
+<script src="${host}js/v1.js"></script>`;
           case 'fullscreen':
               return `<div data-numi-offer="${offer.id}" data-numi-embed-type="fullscreen">Open Offer</div>
-<script src="${window.location.origin}/js/v1.js"></script>`;
+<script src="${host}js/v1.js"></script>`;
           case 'slider':
               return `<button data-numi-offer="${offer.id}" data-numi-embed-type="slider">Open Offer</button>
-<script src="${window.location.origin}/js/v1.js"></script>`;
+<script src="${host}js/v1.js"></script>`;
           default:
               return '';
       }

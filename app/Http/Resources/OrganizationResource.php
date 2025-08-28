@@ -2,8 +2,10 @@
 
 namespace App\Http\Resources;
 
+use GuzzleHttp\Psr7\Uri;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Facades\URL;
 
 class OrganizationResource extends JsonResource
 {
@@ -55,6 +57,12 @@ class OrganizationResource extends JsonResource
             'auto_fulfill_orders' => $this->auto_fulfill_orders,
             'fulfillment_config' => $this->fulfillment_config,
             'external_platform_config' => $this->external_platform_config,
+
+            'subdomain_host' => (new Uri())
+                ->withHost($this->getSubdomainHost())
+                ->withScheme($request->getScheme())
+                ->withPort(app()->isLocal() ? $request->getPort() : null)
+                ->withPath('/'),
 
             $this->when(
                 $this->resource->relationLoaded('subscriptions'),
