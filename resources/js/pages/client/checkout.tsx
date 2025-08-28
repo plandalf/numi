@@ -583,8 +583,8 @@ export default function CheckoutPage({ offer, error, checkoutSession, subscripti
       </Head>
       <GlobalStateProvider offer={offer} session={checkoutSession} offerItems={offer.items} subscriptionPreview={subscriptionPreview}>
         {checkoutSession.is_test_mode && (
-          <div className="bg-yellow-50 text-yellow-700 border-b border-yellow-200">
-            <p className="text-sm text-center py-1 font-semibold">You are in test mode. No real transactions will occur.</p>
+          <div className="fixed top-0 w-full z-100 bg-yellow-50 text-yellow-700 border-b border-yellow-200">
+            <p className="text-sm text-center py-1/2 font-semibold">You are in test mode. No real transactions will occur.</p>
           </div>
         )}
         <NavigationProvider>

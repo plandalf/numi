@@ -209,28 +209,28 @@ const LAYOUT_CONFIGS = {
       "type": "grid",
       "id": "1x2-grid",
       "props": {
-        "className": "min-h-[inherit] max-h-[inherit] grid grid-cols-1 md:grid-cols-2 h-full w-full bg-transparent"
+        "className": "min-h-[inherit] max-h-[inherit] grid grid-cols-1 md:grid-cols-2 md:h-full w-full bg-transparent"
       },
       "children": [
         {
           "type": "box",
           "id": "core-box",
           "props": {
-            "className": "order-2 md:order-1 max-h-[inherit] h-full overflow-y-auto bg-transparent"
+            "className": "order-2 md:order-1 max-h-[inherit] h-auto md:h-full sm:overflow-y-auto bg-transparent"
           },
           "children": [
             {
               "type": "flex",
               "id": "main_box",
               "props": {
-                "className": "flex flex-col h-full"
+                "className": "flex flex-col sm:h-full"
               },
               "children": [
                 {
                   "type": "flex",
                   "id": "header",
                   "props": {
-                    "className": "flex flex-col flex-grow overflow-y-auto bg-transparent"
+                    "className": "flex flex-col flex-grow sm:overflow-y-auto bg-transparent"
                   },
                   "children": [
                     {
@@ -278,7 +278,7 @@ const LAYOUT_CONFIGS = {
               "id": "promo_content",
               "type": "box",
               "props": {
-                "className": "flex flex-col h-full flex flex-col flex-grow space-y-2 p-6 min-h-max"
+                "className": "flex flex-col sm:h-full flex flex-col flex-grow space-y-2 p-6 min-h-max"
               }
             }
           ]
