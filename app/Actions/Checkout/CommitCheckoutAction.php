@@ -73,6 +73,14 @@ class CommitCheckoutAction
             $session->payment_method_id = $paymentMethod->id;
             $session->save();
 
+            $customer = $session->customer;
+
+            if ($customer && empty($customer->name)) {
+                $customer->update([
+                    'name' => $paymentMethod->billing_details?->name,
+                ]);
+            }
+
         }
 
         $process = app(ProcessOrderAction::class, ['session' => $session]);
