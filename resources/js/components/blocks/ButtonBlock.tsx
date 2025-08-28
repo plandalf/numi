@@ -18,7 +18,9 @@ function ButtonBlockComponent() {
     label: 'Text',
     name: 'value',
     defaultValue: 'Submit',
+    nullable: false,
   });
+  console.log("button", { text })
 
   const [type] = Numi.useStateEnumeration({
     name: 'type',

@@ -139,6 +139,7 @@ function StripeElementsComponent({
     defaultValue: 'Payment Information',
     inspector: 'multiline',
     format: 'markdown',
+    nullable: true,
   });
 
   const [collectsEmail] = Numi.useStateBoolean({
@@ -157,6 +158,7 @@ function StripeElementsComponent({
     defaultValue: 'Enter your payment details to complete your purchase',
     inspector: 'multiline',
     format: 'markdown',
+    nullable: true,
   });
 
   const fontConfig = {

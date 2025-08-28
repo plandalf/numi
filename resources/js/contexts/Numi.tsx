@@ -744,7 +744,7 @@ const Numi = {
     return [value, setFieldValue, sessionValue];
   },
 
-  useStateString(props: { label: string; name: string; defaultValue: string; inspector?: string, format?: string, config?: Record<string, any>, group?: string; asState?: boolean; }): [string, (value: string) => void, string] {
+  useStateString(props: { label: string; name: string; defaultValue: string; inspector?: string, format?: string, config?: Record<string, any>, group?: string; asState?: boolean; nullable?: boolean }): [string, (value: string) => void, string] {
     const blockContext = useContext(BlockContext);
 
     useEffect(() => {
@@ -754,7 +754,8 @@ const Numi = {
         type: 'string',
         defaultValue: props.defaultValue,
         inspector: props.inspector ?? 'text',
-        config: props.config ?? {},
+        // Surface nullable through config so editors can read it if needed
+        config: { ...(props.config ?? {}), nullable: props.nullable ?? false },
         group: props.group,
       });
 
@@ -764,9 +765,11 @@ const Numi = {
       );
 
       if (!existingState) {
-        // Prefer configured content when it is non-empty; otherwise use the provided default
+        // Determine initial value honoring nullable
         const configured = get(blockContext.blockConfig, `content.${props.name}`);
-        const hasConfigured = !(configured === undefined || (typeof configured === 'string' && configured.trim() === ''));
+        const hasConfigured = props.nullable
+          ? configured !== undefined
+          : !(configured === undefined || (typeof configured === 'string' && configured.trim() === ''));
         const initialValue = hasConfigured ? configured : props.defaultValue;
         blockContext.globalState.updateFieldState(
           blockContext.blockId,
@@ -779,8 +782,13 @@ const Numi = {
     // For editor-editable values (not hidden), prioritize block config
     // For runtime-editable values (hidden), prioritize field state
     const configured = get(blockContext.blockConfig, `content.${props.name}`);
-    const hasConfigured = !(configured === undefined || (typeof configured === 'string' && configured.trim() === ''));
-    const fieldValue = blockContext.getFieldValue(props.name);
+    const hasConfigured = (props.nullable ?? false)
+      ? configured !== undefined
+      : !(configured === undefined || (typeof configured === 'string' && configured.trim() === ''));
+    const rawFieldValue = blockContext.getFieldValue(props.name);
+    const fieldValue = (props.nullable ?? false)
+      ? rawFieldValue
+      : (typeof rawFieldValue === 'string' && rawFieldValue.trim() === '' ? undefined : rawFieldValue);
     const defaultValue = props.inspector !== 'hidden'
       ? (hasConfigured ? configured : (fieldValue ?? props.defaultValue))
       : (fieldValue ?? (hasConfigured ? configured : props.defaultValue));

@@ -23,33 +23,6 @@ function PaymentMethodBlock() {
     doSomething()
   }, []);
 
-
-  // // Reset form state when session changes (e.g., after refresh)
-  // useEffect(() => {
-  //   setShowForm(!session?.payment_method);
-  //
-  //   // Check if this is a redirect payment that needs completion
-  //   if (session?.metadata?.is_redirect_payment && session?.metadata?.pending_confirmation_token) {
-  //     setIsRedirectPayment(true);
-  //     completeRedirectPayment();
-  //   }
-  // }, [session?.payment_method, session?.metadata]);
-  //
-  // const completeRedirectPayment = useCallback(async () => {
-  //   try {
-  //     const response = await axios.post(`/checkouts/${session?.id}/mutations`, {
-  //       action: 'completeRedirectPayment'
-  //     });
-  //
-  //     if (response.data.checkout_session) {
-  //       // Refresh the session with the updated data
-  //       window.location.reload();
-  //     }
-  //   } catch (error) {
-  //     console.error('Failed to complete redirect payment:', error);
-  //   }
-  // }, [session?.id]);
-
   const handleSuccess = useCallback(() => {
     setShowForm(false);
   }, []);

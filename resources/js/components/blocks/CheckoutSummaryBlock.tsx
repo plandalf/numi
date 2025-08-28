@@ -24,7 +24,9 @@ function CheckoutSummaryComponent({ context: _context }: { context: BlockContext
     label: 'Title',
     name: 'title',
     defaultValue: 'Order Summary',
+    nullable: true,
   });
+  console.log('Title', { title });
 
   const [showImages] = Numi.useStateBoolean({
     label: 'Show Images',
