@@ -49,6 +49,18 @@ class Stripe extends AbstractIntegration implements AcceptsDiscount, CanCreateSu
         return $this->stripeClient->customers->create($attrs);
     }
 
+    public function updateCustomerName($id, $name)
+    {
+        Log::info(logname(), [
+            'id' => $id,
+            'name' => $name,
+        ]);
+
+        return $this->stripeClient->customers->update($id, [
+            'name' => $name,
+        ]);
+    }
+
     public function getStripeClient(): StripeClient
     {
         return $this->stripeClient;

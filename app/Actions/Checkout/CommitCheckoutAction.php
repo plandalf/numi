@@ -79,8 +79,13 @@ class CommitCheckoutAction
                 $customer->update([
                     'name' => $paymentMethod->billing_details?->name,
                 ]);
-            }
 
+                defer(function () use ($session) {
+                    $session->paymentsIntegration
+                        ->integrationClient()
+                        ->updateCustomerName($session->customer->reference_id, $session->customer->name);
+                });
+            }
         }
 
         $process = app(ProcessOrderAction::class, ['session' => $session]);
