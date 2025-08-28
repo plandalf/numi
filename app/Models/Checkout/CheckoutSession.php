@@ -91,6 +91,7 @@ class CheckoutSession extends Model
         'intent_id',
         'intent_type',
         'intent', 'subscription',
+        'currency',
 
         'client_secret',
         'return_url', // [stripe-intent]
@@ -224,11 +225,6 @@ class CheckoutSession extends Model
     public function getSubtotalAttribute()
     {
         return $this->lineItems->sum('total');
-    }
-
-    public function getCurrencyAttribute()
-    {
-        return $this->lineItems->first()?->currency ?? 'usd';
     }
 
     public function getPublishableKeyAttribute()

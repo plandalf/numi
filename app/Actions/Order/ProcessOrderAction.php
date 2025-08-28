@@ -146,6 +146,8 @@ class ProcessOrderAction
 
         $oneOffItems = [];
         foreach ($groupedItems->get('one_time', []) as $item) {
+
+            // orderItem
             if (empty($item['price']['gateway_price_id'])) {
                 continue;
             }
@@ -158,7 +160,6 @@ class ProcessOrderAction
         if ($orderItems->isEmpty()) {
             throw new \Exception('No items found in the order');
         }
-
 
         $subscriptionData = [
             'customer' => $order->customer->reference_id,

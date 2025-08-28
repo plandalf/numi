@@ -21,7 +21,8 @@ class CreateOrderAction
             ],
             [
                 'status' => OrderStatus::PENDING,
-                'currency' => 'USD',
+                'currency' => $checkoutSession->currency,
+                'payment_method_id' => $checkoutSession->payment_method_id,
             ]
         );
 

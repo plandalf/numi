@@ -56,6 +56,7 @@ class PreparePaymentAction
             $this->session->client_secret = $intent->client_secret;
         }
 
+        $this->session->customer_id = $this->session->customer_id ?? $customer?->id;
         $this->session->intent_type = $intentMode;
         $this->session->save();
 
