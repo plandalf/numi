@@ -217,7 +217,7 @@ class CheckoutSessionController extends Controller
         // Pick the most recent active list price for the product in the session currency
         $listPrice = Price::query()
             ->where('product_id', $validated['product_id'])
-            ->where('scope', 'list')
+//            ->where('scope', 'list')
             ->where('currency', $targetCurrency)
             ->orderByDesc('id')
             ->first();

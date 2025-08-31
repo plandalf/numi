@@ -122,7 +122,7 @@ class CheckoutController extends Controller
 
         $params = array_filter(array_merge([
             'checkout' => $checkoutSession->getRouteKey(),
-        ], $request->only(['numi-embed-id', 'numi-embed-type'])));
+        ], $request->only(['embed-id', 'embed-type'])));
 
         if ($request->has('redirect_url')) {
             $params['redirect_url'] = $request->get('redirect_url');
@@ -351,14 +351,14 @@ class CheckoutController extends Controller
 
         // Determine the appropriate redirect based on context
         $currentUrl = $session->metadata['current_url'] ?? null;
-        $isPopup = $request->query('numi-embed-type') === 'popup' ||
-                   $request->query('numi-embed-id') ||
+        $isPopup = $request->query('embed-type') === 'popup' ||
+                   $request->query('embed-id') ||
                    $session->metadata['is_popup'] ?? false;
 
         if ($isPopup && $currentUrl) {
             // For popup scenarios, redirect back to the original page with success state
             // This allows the parent window to handle the success and close the popup
-            $successUrl = $currentUrl.'?numi-state=payment_completed&checkout_id='.$session->getRouteKey();
+            $successUrl = $currentUrl.'?state=payment_completed&checkout_id='.$session->getRouteKey();
 
             return redirect()->away($successUrl);
         } else {
