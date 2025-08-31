@@ -606,14 +606,14 @@ export default function PriceForm({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const priceName = data.name || (isEditing ? 'this price' : 'new price');
+    
     const toastId = !hideSuccessToast ? toast.loading(isEditing ? `Updating ${priceName}...` : `Creating ${priceName}...`) : undefined;
-
     // Validate parent list price selection for custom/variant prices
     if ((data.scope === 'custom' || data.scope === 'variant') && !data.parent_list_price_id) {
       toast.error(`Please select a base list price for this ${data.scope} price`, { id: toastId });
       return;
     }
-
+    
     // Prepare the data for submission
     const formData = { ...data };
 
@@ -653,9 +653,11 @@ export default function PriceForm({
             // if (!hideSuccessToast) {
             //   toast.success(`Price ${priceName} updated successfully`, { id: toastId });
             // }
+            toast.dismiss(toastId);
             onOpenChange(false);
           },
           onError: () => {
+            toast.dismiss(toastId);
             toast.error(`Failed to update price`, { id: toastId });
           }
         });

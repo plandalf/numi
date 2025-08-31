@@ -5,6 +5,7 @@ namespace App\Apps\Plandalf;
 use App\Apps\AutomationApp;
 use App\Apps\Plandalf\Actions\SendEmailAction;
 use App\Apps\Plandalf\Actions\SendWebhookAction;
+use App\Apps\Plandalf\Actions\SendReceiptAction;
 use App\Apps\Plandalf\Resources\OfferResource;
 use App\Apps\Plandalf\Triggers\OrderCreated;
 use App\Apps\Plandalf\Triggers\WebhookTrigger;
@@ -24,6 +25,7 @@ class PlandalfApp extends AutomationApp
         return [
             SendEmailAction::class,
             SendWebhookAction::class,
+            SendReceiptAction::class,
         ];
     }
 

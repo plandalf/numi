@@ -30,6 +30,19 @@ use Inertia\Inertia;
 use App\Http\Controllers\Client\SubscriptionCancellationController;
 
 Route::get('test', function (\Illuminate\Http\Request $request) {
+    $order = \App\Models\Order\Order::query()
+        ->whereNotNull('completed_at')
+        ->inRandomOrder()
+        ->with(['items.price.product', 'customer', 'organization', 'paymentMethod', 'checkoutSession'])
+        ->first();
+
+    if (! $order) {
+        return 'No completed orders found.';
+    }
+
+    $mailable = new \App\Mail\OrderReceipt(order: $order, isTest: true);
+
+    return $mailable->render();
 });
 
 Route::redirect('/', '/dashboard')->name('home');
