@@ -420,27 +420,35 @@ const Numi = {
           ? blockContext.blockConfig.interaction[type].filter((callback: { element?: string }) => callback?.element === element)
           : blockContext.blockConfig.interaction[type];
 
+        console.group('[Interaction] executeCallbacks');
+        console.log('event:', type, 'element:', element, 'callbacks:', callbacks);
+
         for (const callback of callbacks) {
-          switch (callback.action) {
-            case 'setSlot':
-              // checkout.setSlot(callback.slot, callback.price);
-              break;
-            case 'setLineItemQuantity':
-            case 'changeLineItemPrice':
-            case 'deactivateLineItem':
-            case 'activateLineItem':
-            case 'setItem':
-              checkout?.updateLineItem(callback.value as any);
-              break;
-            case 'switchVariant':
-              checkout?.switchVariant(callback.value);
-              break;
-            case 'switchProduct':
-              checkout?.switchProduct(callback.value as SwitchProductActionValue);
-              break;
-            case 'redirect':
-              window.open(callback.value, '_blank');
-              break;
+          try {
+            console.log('→ dispatch action:', callback.action, 'value:', callback.value);
+            switch (callback.action) {
+              case 'setSlot':
+                // checkout.setSlot(callback.slot, callback.price);
+                break;
+              case 'setLineItemQuantity':
+              case 'changeLineItemPrice':
+              case 'deactivateLineItem':
+              case 'activateLineItem':
+              case 'setItem':
+                checkout?.updateLineItem(callback.value as any);
+                break;
+              case 'switchVariant':
+                checkout?.switchVariant(callback.value);
+                break;
+              case 'switchProduct':
+                checkout?.switchProduct(callback.value as SwitchProductActionValue);
+                break;
+              case 'redirect':
+                window.open(callback.value, '_blank');
+                break;
+            }
+          } catch (err) {
+            console.error('[Interaction] action error:', err);
           }
         }
 
@@ -448,6 +456,8 @@ const Numi = {
         if (checkout?.reloadSubscriptionPreview) {
           checkout.reloadSubscriptionPreview();
         }
+
+        console.groupEnd();
       }
     }, [blockContext]);
 

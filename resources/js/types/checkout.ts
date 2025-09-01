@@ -58,6 +58,9 @@ export interface CheckoutSession {
   // billing_address?: CheckoutAddress;
 
   metadata: Record<string, any>;
+  // Commonly surfaced defaults for UI blocks
+  // selected_interval?: string; // available via metadata.selected_interval
+  // selected_price_lookup_key?: string; // available via metadata.selected_price_lookup_key
   discount_code?: string;
   publishable_key?: string;
   discounts?: Discount[];

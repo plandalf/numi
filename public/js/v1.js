@@ -385,6 +385,55 @@ ${spinAnimationStyles}
     if (typeof window === 'undefined')
         return;
     
+    // Debug toggle: enable verbose logs only when explicitly requested
+    const __detectDebug = () => {
+        try {
+            // 1) Explicit global flag
+            if (window.PLANDALF_DEBUG === true || window.PLANDALF_DEBUG === '1') return true;
+
+            // 2) Script tag query param: ?debug=1 or ?plandalf_debug=1
+            const scripts = document.getElementsByTagName('script');
+            for (let i = 0; i < scripts.length; i++) {
+                const src = scripts[i].src || '';
+                if (/\/v1\.js(\?|#|$)/.test(src)) {
+                    try {
+                        const url = new URL(src, window.location.origin);
+                        if (url.searchParams.get('debug') === '1' || url.searchParams.get('plandalf_debug') === '1') {
+                            return true;
+                        }
+                    } catch (_) {}
+                }
+            }
+
+            // 3) Page URL param
+            const params = new URLSearchParams(window.location.search || '');
+            if (params.get('PLANDALF_DEBUG') === '1' || params.get('plandalf_debug') === '1' || params.get('debug') === '1') return true;
+
+            // 4) Local storage flag
+            try {
+                if (localStorage.getItem('plandalf.debug') === '1') return true;
+            } catch (_) {}
+
+            return false;
+        } catch (_) {
+            return false;
+        }
+    };
+
+    const __NUMI_DEBUG__ = __detectDebug();
+
+    // Locally shadow console to suppress noisy logs in production
+    const console = __NUMI_DEBUG__ ? window.console : {
+        log() {},
+        info() {},
+        warn() {},
+        group() {},
+        groupCollapsed() {},
+        groupEnd() {},
+        // Keep errors visible in prod (can be changed to noop if preferred)
+        error: (window.console && window.console.error) ? window.console.error.bind(window.console) : function() {}
+    };
+
     // Global tracking of embed types by embedId - must be declared early
     const embedTypeRegistry = new Map();
     
@@ -418,60 +467,48 @@ ${spinAnimationStyles}
     };
     // numi config
     const getConfig = (element) => {
-        const sliderDirection = element.dataset.numiSliderDirection === 'left' ? 'left' : 'right';
-        const buttonSize = element.dataset.numiButtonSize || 'medium';
-        const buttonColor = element.dataset.numiButtonColor || '#3b82f6';
-        const popupSize = element.dataset.numiPopupSize || 'large';
-        const hexToRgb = (hex) => {
-            // just in case someone passes in rgba() format, which we used to use in
-            // the past in the snippet
-            if (typeof hex !== 'string' ||
-                !/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/.test(hex)) {
-                return [59, 130, 246]; // default color values for '#3b82f6'
-            }
-            let bigint = parseInt(hex.slice(1), 16);
-            let r = (bigint >> 16) & 255;
-            let g = (bigint >> 8) & 255;
-            let b = bigint & 255;
-            return [r, g, b];
-        };
-        const getLuminance = (hexColor) => {
-            let [r, g, b] = hexToRgb(hexColor);
-            // Calculate relative luminance
-            // sRGB formula
-            const getComponent = (color) => {
-                color /= 255;
-                return color <= 0.03928
-                    ? color / 12.92
-                    : Math.pow((color + 0.055) / 1.055, 2.4);
-            };
-            r = getComponent(r);
-            g = getComponent(g);
-            b = getComponent(b);
-            return 0.2126 * r + 0.7152 * g + 0.0722 * b;
-        };
-        // smartly compute this to be black or white depending on the button color
-        const buttonTextColor = getLuminance(buttonColor) > 0.5 ? 'black' : 'white';
+        const globalConfig = (typeof window !== 'undefined' && window.plandalfConfig) ? window.plandalfConfig : {};
+        const sliderDirection = element.dataset.numiSliderDirection === 'left'
+          ? 'left'
+          : 'right';
+        const popupSize = element.dataset.numiPopupSize
+          || 'large';
+
         const isBillingPortal =
-            element.dataset.numiBillingPortal !== undefined ||
-            element.getAttribute('data-numi-embed-type') === 'billing-portal' ||
-            element.dataset.numiPortal === 'billing';
-        const customerToken = element.dataset.numiCustomer || element.dataset.numiCustomerToken || null;
-        const returnUrl = element.dataset.numiReturnUrl || null;
+            element.dataset.numiBillingPortal !== undefined
+          || element.getAttribute('data-numi-embed-type') === 'billing-portal'
+          || element.dataset.numiPortal === 'billing';
+
+        const customerToken = element.dataset.numiCustomer
+          || element.dataset.numiCustomerToken
+          || element.dataset.customer
+          || element.dataset.id
+          || globalConfig.customer
+          || null;
+
+        const returnUrl = element.dataset.numiReturnUrl
+          || null;
+
+        const domainFromAttr = element.dataset.numiDomain;
+        const domainFromGlobal = (globalConfig.domain
+          ? (function(v){
+                try {
+                  if (/^https?:\/\//i.test(v)) { return new URL(v).origin; }
+                  return `https://${v}`;
+                } catch(_) { return null; }
+             })(globalConfig.domain)
+          : null);
+
         const config = {
             initialized: element.dataset.numiInitialized !== undefined,
             inheritParameters: element.dataset.numiInheritParameters !== undefined,
             dynamicResize: element.dataset.numiDynamicResize !== undefined,
             offerPublicIdentifier: element.dataset.numiOffer,
-            buttonText: element.dataset.numiButtonText,
-            buttonFloat: element.dataset.numiButtonFloat,
-            buttonColor,
-            buttonSize,
-            buttonTextColor,
             sliderDirection,
-            domain: element.dataset.numiDomain,
+            domain: domainFromAttr || (domainFromGlobal ? domainFromGlobal.replace(/^https?:\/\//i, '').replace(/\/$/, '') : undefined),
             popupSize,
             preview: element.dataset.numiPreview !== undefined,
+
             // Billing portal support
             isBillingPortal,
             customerToken,
@@ -483,58 +520,80 @@ ${spinAnimationStyles}
         return config;
     };
     const getSharedIframeSrc = (configDomain, offerPublicIdentifier, inheritParameters, target, modeConfig) => {
-        // 1. Use configDomain if set
+        // Prefer explicit override domain (attributes/options), else use the script element origin
         let domain = null;
-        if (configDomain) {
-            if (configDomain === 'localhost:8002') {
-                domain = `http://${configDomain}`;
-            } else {
-                domain = `https://${configDomain}`;
-            }
+        const normalizeToOrigin = (value) => {
+            if (!value) return null;
+            try {
+                if (/^https?:\/\//i.test(value)) {
+                    return new URL(value).origin;
+                }
+                // Bare host value
+                if (/^localhost(?::\d+)?$/i.test(value)) {
+                    return `http://${value}`;
+                }
+                return `https://${value}`;
+            } catch (_) { return null; }
+        };
+        const overrideOrigin = normalizeToOrigin(configDomain);
+        if (overrideOrigin) {
+            domain = overrideOrigin;
+        }
+        try {
+            if (typeof window !== 'undefined' && typeof document !== 'undefined') {
+                // Cache script origin only when no explicit override provided
+                if (!domain) {
+                    // @ts-ignore
+                    if (window.__plandalfScriptOrigin && typeof window.__plandalfScriptOrigin === 'string') {
+                        // @ts-ignore
+                        domain = window.__plandalfScriptOrigin;
         } else {
-            // 2. Try to get the domain from the script's own src
             let scriptSrc = null;
-            if (typeof document !== 'undefined') {
                 if (document.currentScript && document.currentScript.src) {
                     scriptSrc = document.currentScript.src;
                 } else {
-                    // Fallback: search for a script tag ending in /js/v1.js
                     const scripts = document.getElementsByTagName('script');
                     for (let i = 0; i < scripts.length; i++) {
-                        if (scripts[i].src && scripts[i].src.match(/\/js\/v1\.js([?#].*)?$/)) {
+                                if (scripts[i].src && /\/v1\.js(\?|#|$)/.test(scripts[i].src)) {
                             scriptSrc = scripts[i].src;
                             break;
-                        }
                     }
                 }
             }
             if (scriptSrc) {
-                try {
                     const url = new URL(scriptSrc, window.location.origin);
                     domain = url.origin;
-                } catch (e) {
-                    // ignore, fallback below
+                            // @ts-ignore
+                            window.__plandalfScriptOrigin = domain;
+                        }
+                    }
                 }
             }
+        } catch (_) {}
+
+        // Fallback to page origin if script origin not found
+        if (!domain && typeof window !== 'undefined' && window.location) {
+            domain = window.location.origin;
         }
-        // 3. If still not set, use the domain argument (from config)
-        if (!domain && target && target.dataset && target.dataset.numiDomain) {
-            const fallbackDomain = target.dataset.numiDomain;
-            if (fallbackDomain === 'localhost:8002') {
-                domain = `http://${fallbackDomain}`;
-            } else {
-                domain = `https://${fallbackDomain}`;
-            }
-        }
-        // 4. Final fallback
-        if (!domain) {
-            domain = 'https://plandalf.dev';
-        }
+        // Final fallback
+        if (!domain) domain = 'https://plandalf.dev';
         // Determine path based on mode
         let path = `/o/${offerPublicIdentifier}`;
         if (modeConfig && modeConfig.mode === 'billing') {
             path = `/billing/portal`;
+        } else if (modeConfig && modeConfig.mode === 'widget') {
+            path = `/widgets`;
         }
+        // Environment handling for offers: if env === 'test' append '/test'
+        try {
+            const envAttr = target.getAttribute && (target.getAttribute('data-env') || target.getAttribute('data-plandalf-env'));
+            const envOpt = modeConfig && modeConfig.env;
+            const envGlobal = (typeof window !== 'undefined' && window.plandalfConfig && window.plandalfConfig.env) || undefined;
+            const envVal = (envOpt || envAttr || envGlobal || '').toString().toLowerCase();
+            if (path.startsWith('/o/') && envVal === 'test') {
+                path += '/test';
+            }
+        } catch (_) { }
         const formLink = `${domain}${path}`;
         const iframeSrc = new URL(formLink);
         // if we're passed the option to inherit search parameters, then we add
@@ -554,15 +613,41 @@ ${spinAnimationStyles}
             if (modeConfig.returnUrl) {
                 iframeSrc.searchParams.append('return_url', modeConfig.returnUrl);
             }
+        } else if (modeConfig && modeConfig.mode === 'widget') {
+            if (modeConfig.widgetType) {
+                iframeSrc.searchParams.append('type', modeConfig.widgetType);
+            }
+            if (modeConfig.widgetId) {
+                iframeSrc.searchParams.append('id', modeConfig.widgetId);
+            }
         }
         // we convert data- attributes into URL parameters. we use the ones passed
         // directly to the embed as taking priority (since explicitly set)
         const DATA_PREFIX = 'data-';
-        for (const attribute of target.attributes) {
-            if (attribute.name.startsWith('data-') &&
-                !attribute.name.startsWith('data-numi')) {
-                iframeSrc.searchParams.append(attribute.name.slice(DATA_PREFIX.length), attribute.value);
+        const appendPairsFromQueryString = (raw) => {
+            if (!raw || typeof raw !== 'string') return;
+            const parts = raw.split('&');
+            for (const part of parts) {
+                if (!part) continue;
+                const eq = part.indexOf('=');
+                if (eq === -1) {
+                    // key with no value
+                    iframeSrc.searchParams.append(part, '');
+                } else {
+                    const k = part.slice(0, eq);
+                    const v = part.slice(eq + 1);
+                    iframeSrc.searchParams.append(k, v);
+                }
             }
+        };
+        for (const attribute of target.attributes) {
+            if (!attribute.name.startsWith('data-') || attribute.name.startsWith('data-numi')) continue;
+            const key = attribute.name.slice(DATA_PREFIX.length);
+            if (key === 'items' || key === 'customer') {
+                appendPairsFromQueryString(attribute.value);
+                continue;
+            }
+            iframeSrc.searchParams.append(key, attribute.value);
         }
         return iframeSrc;
     };
@@ -813,9 +898,6 @@ ${spinAnimationStyles}
         }
         // close handlers
         const closePopup = () => {
-            if (window.location.href.includes('PLANDALF_DEBUG') || window.PLANDALF_DEBUG) {
-                console.log(`[Plandalf] closePopup called with embedId: ${embedId}`);
-            }
             // Fire cancel event before closing if there's an active session
             // Use embedId from closure scope since it's not set on iframe
             if (embedId && window.plandalf?.offers?._sessions?.has(embedId)) {
@@ -859,12 +941,10 @@ ${spinAnimationStyles}
             if (embedType === 'popup') {
                 // Add closing class to trigger CSS exit animations
                 popupContainer.classList.add('closing');
-            }
-            else if (embedType === 'slider') {
+          } else if (embedType === 'slider') {
                 if (sliderDirection === 'left') {
                     iframeContainer.style.transform = 'translateX(-100%)';
-                }
-                else {
+            } else {
                     iframeContainer.style.transform = 'translateX(100%)';
                 }
             }
@@ -910,7 +990,7 @@ ${spinAnimationStyles}
         target.setAttribute('data-numi-initialized', 'true');
     };
     const initializeStandardTarget = (target, isFullScreen) => {
-        const { initialized, offerPublicIdentifier, inheritParameters, dynamicResize, domain, preview, } = getConfig(target);
+        const { initialized, offerPublicIdentifier, inheritParameters, dynamicResize, domain, preview, isBillingPortal, customerToken, returnUrl } = getConfig(target);
         if (initialized)
             return;
         const standardContainer = document.createElement('div');
@@ -955,7 +1035,13 @@ ${spinAnimationStyles}
         }
         standardContainer.appendChild(iframeContainer);
         const iframe = document.createElement('iframe');
-        const iframeSrc = getSharedIframeSrc(domain, offerPublicIdentifier, inheritParameters, target);
+        const iframeSrc = getSharedIframeSrc(
+            domain,
+            offerPublicIdentifier || 'billing-portal',
+            inheritParameters,
+            target,
+            isBillingPortal ? { mode: 'billing', customerToken, returnUrl } : undefined
+        );
         const embedId = generateEmbedId();
         iframeSrc.searchParams.append('numi-embed-id', `${embedId}`);
         const embedType = isFullScreen ? 'fullscreen' : 'standard';
@@ -1006,11 +1092,17 @@ ${spinAnimationStyles}
             iframe.style.height = '100vh';
             iframe.style.display = 'block';
         }
-        iframe.title = `${offerPublicIdentifier}`;
+        iframe.title = isBillingPortal ? 'Billing Portal' : `${offerPublicIdentifier}`;
         
-        // Store embed ID and offer ID for session tracking
+        // Store embed ID and offer/portal marker for session tracking
         target.setAttribute('data-numi-embed-id', embedId);
+        if (isBillingPortal) {
+            target.setAttribute('data-numi-portal', 'billing-portal');
+            target.removeAttribute('data-numi-offer');
+        } else {
         target.setAttribute('data-numi-offer', offerPublicIdentifier);
+            target.removeAttribute('data-numi-portal');
+        }
         
         // Register embed type for session tracking  
         embedTypeRegistry.set(embedId, isFullScreen ? 'fullscreen' : 'standard');
@@ -1073,7 +1165,9 @@ ${spinAnimationStyles}
     };
     // @ts-ignore
     const popupsInitialized = window.__numiPopupsInitialized;
-    const popupTargets = document.querySelectorAll("[data-numi-embed-type='popup']");
+    const popupTargets = document.querySelectorAll(
+      "[data-numi-embed-type='popup'], [data-numi-popup]",
+    );
     if (popupTargets.length > 0) {
         if (!popupsInitialized) {
             // add the popup stylesheet
@@ -1092,7 +1186,9 @@ ${spinAnimationStyles}
 
     // Initialize Billing Portal embeds (reuse popup UI)
     // Supports any of: data-numi-embed-type="billing-portal", data-numi-billing-portal, data-numi-portal="billing"
-    const billingPortalTargets = document.querySelectorAll("[data-numi-embed-type='billing-portal'], [data-numi-billing-portal], [data-numi-portal='billing']");
+    const billingPortalTargets = document.querySelectorAll(
+      "[data-numi-embed-type='billing-portal'], [data-numi-billing-portal], [data-numi-portal='billing']"
+    );
     if (billingPortalTargets.length > 0) {
         // Ensure popup styles are present
         // @ts-ignore
@@ -1163,6 +1259,7 @@ ${spinAnimationStyles}
             this.embedId = data.embedId;
             this.offerId = data.offerId;
             this.embedType = data.embedType; // 'popup', 'slider', 'standard'
+            this.context = data.context || 'offer'; // 'offer' | 'portal' | 'widget'
             this.startTime = Date.now();
             this.events = [];
             this._callbacks = {};
@@ -1293,7 +1390,11 @@ ${spinAnimationStyles}
             if (this._callbacks[eventType]) {
                 this._callbacks[eventType].forEach(callback => {
                     try {
-                        callback(eventData);
+                        callback({
+                            ...eventData,
+                            sessionContext: this.context,
+                            sessionType: this.context === 'portal' ? 'PortalSession' : this.context === 'widget' ? 'WidgetSession' : 'CheckoutSession'
+                        });
                     } catch (err) {
                         console.error(`[Plandalf] Error in session ${this.id} ${eventType} callback:`, err);
                     }
@@ -1461,9 +1562,161 @@ ${spinAnimationStyles}
             },
             
             _notifyWaiters(session) {
+                // Only notify for offer sessions
+                if (session && (session.context === 'offer' || session.context === undefined)) {
+                this._waiters.forEach(waiter => waiter._checkSession(session));
+                }
+            }
+        },
+        widgets: {
+            // Placeholder Widgets API (pricing pages/tables)
+            mount(el, options = {}) {
+                if (!(el instanceof HTMLElement)) throw new Error('widgets.mount: el must be HTMLElement');
+                const globalConfig = (typeof window !== 'undefined' && window.plandalfConfig) ? window.plandalfConfig : {};
+                const widgetId = options.widgetId || el.getAttribute('data-widget-id') || 'pricing';
+                const widgetType = options.type || el.getAttribute('data-widget-type') || 'pricing-table';
+                const domainHost = (function(domain){
+                    if (!domain) return '';
+                    try { return (/^https?:\/\//i.test(domain) ? new URL(domain).origin : `https://${domain}`).replace(/^https?:\/\//i, '').replace(/\/$/, ''); } catch(_) { return ''; }
+                })(options.domain || globalConfig.domain);
+
+                el.setAttribute('data-numi-embed-type', 'standard');
+                el.setAttribute('data-numi-widget', 'true');
+                if (domainHost) el.setAttribute('data-numi-domain', domainHost);
+
+                // Reuse standard target with widget mode
+                const iframeContainer = document.createElement('div');
+                iframeContainer.className = 'numi-embed-iframe-container';
+                const iframe = document.createElement('iframe');
+                const iframeSrc = getSharedIframeSrc(domainHost, widgetId, false, el, { mode: 'widget', widgetType, widgetId });
+                const embedId = generateEmbedId();
+                iframeSrc.searchParams.append('numi-embed-id', `${embedId}`);
+                iframeSrc.searchParams.append('numi-embed-type', 'standard');
+                el.setAttribute('data-numi-embed-id', embedId);
+                embedTypeRegistry.set(embedId, 'standard');
+                iframe.src = iframeSrc.toString();
+                iframe.allow = 'microphone; camera; geolocation';
+                iframe.style.border = '0px';
+                iframe.title = `Widget: ${widgetType}`;
+                iframeContainer.appendChild(iframe);
+                el.innerHTML = '';
+                el.appendChild(iframeContainer);
+                el.setAttribute('data-numi-initialized', 'true');
+                return embedId;
+            }
+        }
+    };
+
+    // Present an offer programmatically in a modal popup
+    // Usage: plandalf.presentOffer('offerId', { size: 'lg'|'md'|'sm', domain, inheritParameters, dynamicResize, preview })
+    window.plandalf.presentOffer = function(offerId, options = {}) {
+        const mapSize = (s) => {
+            if (!s) return 'large';
+            const v = String(s).toLowerCase();
+            if (v === 'sm' || v === 'small') return 'small';
+            if (v === 'md' || v === 'medium') return 'medium';
+            return 'large';
+        };
+
+        const btn = document.createElement('button');
+        btn.setAttribute('data-numi-embed-type', 'popup');
+        btn.setAttribute('data-numi-offer', offerId);
+        btn.setAttribute('data-numi-popup-size', mapSize(options.size));
+        if (options.domain) {
+            // Accept full origin or host
+            try {
+                const origin = /^https?:\/\//i.test(options.domain) ? new URL(options.domain).origin : `https://${options.domain}`;
+                btn.setAttribute('data-numi-domain', origin.replace(/^https?:\/\//i, '').replace(/\/$/, ''));
+            } catch(_) {}
+        }
+        if (options.inheritParameters) btn.setAttribute('data-numi-inherit-parameters', 'true');
+        if (options.dynamicResize) btn.setAttribute('data-numi-dynamic-resize', 'true');
+        if (options.preview) btn.setAttribute('data-numi-preview', 'true');
+        // Forward common checkout params to the temporary trigger element
+        if (options.currency) btn.setAttribute('data-currency', String(options.currency));
+        if (options.interval) btn.setAttribute('data-interval', String(options.interval));
+        if (options.redirect_url) btn.setAttribute('data-redirect_url', String(options.redirect_url));
+        if (options.env) btn.setAttribute('data-env', String(options.env));
+        if (options.customer) btn.setAttribute('data-customer', String(options.customer));
+        if (options.items) {
+            // Expect a URL-encoded string (e.g., items[0][lookup_key]=price_xxx&items[0][quantity]=1)
+            // If an array/object is passed, ignore for now; SDK standard prefers string for attributes
+            if (typeof options.items === 'string') {
+                btn.setAttribute('data-items', options.items);
+            }
+        }
+
+        initializePopupLikeTarget(btn, 'popup');
+
+        const embedId = btn.getAttribute('data-numi-embed-id');
+        // Trigger open immediately
+        if (typeof btn.onclick === 'function') {
+            btn.onclick();
+        } else {
+            btn.click();
+        }
+
+        // Return a promise resolving to the checkout session
+        return new Promise((resolve, reject) => {
+            const start = Date.now();
+            const check = () => {
+                const session = window.plandalf?.offers?._sessions?.get(embedId);
+                if (session) {
+                    resolve(session);
+                    return;
+                }
+                if (Date.now() - start > 10000) {
+                    reject(new Error('Timeout waiting for session init'));
+                    return;
+                }
+                setTimeout(check, 100);
+            };
+            check();
+        });
+    };
+
+    // Portals namespace (listening and future controls)
+    window.plandalf.portals = {
+        _waiters: [],
+        get(selector) {
+            return new OfferWaiter(selector); // Reuse waiter; filtering happens on notify
+        },
+        _addWaiter(waiter) {
+            this._waiters.push(waiter);
+        },
+        _notifyWaiters(session) {
+            if (session && session.context === 'portal') {
                 this._waiters.forEach(waiter => waiter._checkSession(session));
             }
         }
+    };
+
+    // Programmatic inline mount for billing portal
+    // plandalf.mountPortal(element, { customer, returnUrl, domain, inheritParameters, preview })
+    window.plandalf.mountPortal = function(el, options = {}) {
+        if (!(el instanceof HTMLElement)) {
+            throw new Error('mountPortal: "el" must be an HTMLElement');
+        }
+        const globalConfig = (typeof window !== 'undefined' && window.plandalfConfig) ? window.plandalfConfig : {};
+        const customer = options.customer || globalConfig.customer || el.getAttribute('data-customer') || el.getAttribute('data-id') || '';
+        const returnUrl = options.returnUrl || el.getAttribute('data-return-url') || '';
+        let domainHost = '';
+        if (options.domain) {
+            try { domainHost = (/^https?:\/\//i.test(options.domain) ? new URL(options.domain).origin : `https://${options.domain}`).replace(/^https?:\/\//i, '').replace(/\/$/, ''); } catch(_) {}
+        } else if (globalConfig.domain) {
+            try { domainHost = (/^https?:\/\//i.test(globalConfig.domain) ? new URL(globalConfig.domain).origin : `https://${globalConfig.domain}`).replace(/^https?:\/\//i, '').replace(/\/$/, ''); } catch(_) {}
+        }
+
+        el.setAttribute('data-numi-embed-type', 'standard');
+        el.setAttribute('data-numi-portal', 'billing');
+        if (customer) el.setAttribute('data-numi-customer', customer);
+        if (returnUrl) el.setAttribute('data-numi-return-url', returnUrl);
+        if (domainHost) el.setAttribute('data-numi-domain', domainHost);
+        // default to dynamic resizing for inline portal
+        if (!el.hasAttribute('data-numi-dynamic-resize')) el.setAttribute('data-numi-dynamic-resize', 'true');
+
+        initializeStandardTarget(el);
+        return el.getAttribute('data-numi-embed-id');
     };
 
     // Enhanced message handler for session tracking
@@ -1544,18 +1797,27 @@ ${spinAnimationStyles}
             console.log('  - checkoutId:', checkoutId);
             console.groupEnd();
             
+            const context = findContextFromEmbedId(embedId);
             const session = new CheckoutSession({
                 checkoutId: checkoutId,
                 embedId: embedId,
                 offerId: offerId,
-                embedType: embedTypeRegistry.get(embedId) || 'unknown'
+                embedType: embedTypeRegistry.get(embedId) || 'unknown',
+                context: context
             });
             
             window.plandalf.offers._sessions.set(embedId, session);
             if (window.location.href.includes('PLANDALF_DEBUG') || window.PLANDALF_DEBUG) {
                 console.log(`[Plandalf] Session registered. Total sessions: ${window.plandalf.offers._sessions.size}`);
             }
+            // Notify waiters based on context
+            if (context === 'portal') {
+                if (window.plandalf?.portals?._notifyWaiters) {
+                    window.plandalf.portals._notifyWaiters(session);
+                }
+            } else {
             window.plandalf.offers._notifyWaiters(session);
+            }
             
             // Trigger init event with enhanced data
             const eventData = {
@@ -1618,6 +1880,15 @@ ${spinAnimationStyles}
         const element = document.querySelector(`[data-numi-embed-id="${embedId}"]`);
         // Prefer offer for checkout embeds; for billing portal use portal marker
         return element?.dataset.numiOffer || element?.dataset.numiPortal || 'unknown';
+    };
+
+    // Determine context from embed id: 'offer' | 'portal' | 'widget'
+    const findContextFromEmbedId = (embedId) => {
+        const element = document.querySelector(`[data-numi-embed-id="${embedId}"]`);
+        if (!element || !element.dataset) return 'offer';
+        if (element.dataset.numiPortal === 'billing' || element.dataset.numiPortal === 'billing-portal') return 'portal';
+        if (element.dataset.numiWidget) return 'widget';
+        return 'offer';
     };
 
     // Install the enhanced message listener
@@ -1720,6 +1991,85 @@ ${spinAnimationStyles}
         fullScreenTargets.forEach(target => {
             if (target instanceof HTMLElement) {
                 initializeStandardTarget(target, true);
+            }
+        });
+    }
+
+    // =============================================================================
+    // PLANDALF REBRAND ATTRIBUTES SUPPORT (data-plandalf)
+    // =============================================================================
+    const plandalfTargets = document.querySelectorAll('[data-plandalf]');
+    if (plandalfTargets.length > 0) {
+        plandalfTargets.forEach(el => {
+            if (!(el instanceof HTMLElement)) return;
+            const mode = (el.getAttribute('data-plandalf') || '').toLowerCase();
+            const sizeAttr = (el.getAttribute('data-size') || el.getAttribute('data-plandalf-size') || '').toLowerCase();
+            const mapSize = (s) => {
+                if (s === 'sm' || s === 'small') return 'small';
+                if (s === 'md' || s === 'medium') return 'medium';
+                return 'large';
+            };
+            const domainAttr = el.getAttribute('data-domain') || el.getAttribute('data-plandalf-domain') || (window.plandalfConfig && window.plandalfConfig.domain) || '';
+            const normalizedDomain = (function(v){
+                if (!v) return '';
+                try {
+                    const origin = /^https?:\/\//i.test(v) ? new URL(v).origin : `https://${v}`;
+                    return origin.replace(/^https?:\/\//i, '').replace(/\/$/, '');
+                } catch(_) { return ''; }
+            })(domainAttr);
+
+            if (mode === 'present-offer') {
+                const offerId = el.getAttribute('data-offer-id') || el.getAttribute('data-plandalf-offer') || '';
+                if (!offerId) return;
+                // Attach click handler to present on demand
+                el.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const ds = el.dataset || {};
+                    window.plandalf.presentOffer(offerId, {
+                        size: sizeAttr || 'large',
+                        domain: normalizedDomain || undefined,
+                        currency: ds.currency || undefined,
+                        interval: ds.interval || undefined,
+                        redirect_url: ds.redirectUrl || undefined,
+                        env: (ds.env || '').toLowerCase() || undefined,
+                        customer: ds.customer || undefined,
+                        items: ds.items || undefined,
+                        inheritParameters: el.hasAttribute('data-inherit-parameters') || el.hasAttribute('data-plandalf-inherit-parameters'),
+                        dynamicResize: el.hasAttribute('data-dynamic-resize') || el.hasAttribute('data-plandalf-dynamic-resize'),
+                        preview: el.hasAttribute('data-preview') || el.hasAttribute('data-plandalf-preview')
+                    });
+                });
+            } else if (mode === 'mount-offer') {
+                const offerId = el.getAttribute('data-offer-id') || el.getAttribute('data-plandalf-offer') || '';
+                if (!offerId) return;
+                el.setAttribute('data-numi-embed-type', 'standard');
+                el.setAttribute('data-numi-offer', offerId);
+                if (normalizedDomain) el.setAttribute('data-numi-domain', normalizedDomain);
+                // Enable dynamic resize by default for mount-offer
+                if (!el.hasAttribute('data-numi-dynamic-resize')) {
+                    el.setAttribute('data-numi-dynamic-resize', 'true');
+                }
+                initializeStandardTarget(el);
+            } else if (mode === 'mount-portal' || mode === 'mount-portal-inline') { // -inline kept for backwards compat
+                const customerLike = el.getAttribute('data-customer') || el.getAttribute('data-id') || (window.plandalfConfig && window.plandalfConfig.customer) || '';
+                const returnUrl = el.getAttribute('data-return-url') || '';
+                el.setAttribute('data-numi-embed-type', 'standard');
+                el.setAttribute('data-numi-portal', 'billing');
+                if (customerLike) el.setAttribute('data-numi-customer', customerLike);
+                if (returnUrl) el.setAttribute('data-numi-return-url', returnUrl);
+                if (normalizedDomain) el.setAttribute('data-numi-domain', normalizedDomain);
+                // default dynamic resize for portals
+                if (!el.hasAttribute('data-numi-dynamic-resize')) el.setAttribute('data-numi-dynamic-resize', 'true');
+                initializeStandardTarget(el);
+            } else if (mode === 'mount-widget') {
+                // Mount a widget inline (e.g., pricing table)
+                const widgetId = el.getAttribute('data-widget-id') || el.getAttribute('data-id') || 'pricing';
+                const widgetType = el.getAttribute('data-widget-type') || 'pricing-table';
+                const opts = { widgetId, widgetType: widgetType, type: widgetType };
+                if (normalizedDomain) opts.domain = normalizedDomain;
+                if (window.plandalf?.widgets?.mount) {
+                    window.plandalf.widgets.mount(el, opts);
+                }
             }
         });
     }

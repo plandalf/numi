@@ -15,6 +15,7 @@ use App\Models\Store\OfferItem;
 use App\Modules\Integrations\Contracts\AcceptsDiscount;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Log;
 use Stripe\Exception\InvalidRequestException;
 
 class CheckoutSessionController extends Controller
@@ -112,15 +113,42 @@ class CheckoutSessionController extends Controller
             }
         }
 
-        $checkoutSession->lineItems()->updateOrCreate([
-            'offer_item_id' => $request->input('offer_item_id'),
-        ], [
-            ...$args,
-            'organization_id' => $checkoutSession->organization_id,
-            'deleted_at' => null,
+        // Debug logging before mutation
+        Log::info('[API:setItem] before', [
+            'session_id' => $checkoutSession->id,
+            'line_items' => $checkoutSession->lineItems()->get(['id','offer_item_id','price_id'])->toArray(),
+            'payload' => $request->only(['offer_item_id','price_id','quantity','required'])
         ]);
 
+        // Prefer updating existing row for this offer_item_id; if not present, update a row with NULL offer_item_id
+        $targetOfferItemId = (int) $request->input('offer_item_id');
+        $existingForOfferItem = $checkoutSession->lineItems()->where('offer_item_id', $targetOfferItemId)->first();
+        if (! $existingForOfferItem) {
+            $existingForOfferItem = $checkoutSession->lineItems()->whereNull('offer_item_id')->orderBy('id')->first();
+        }
+
+        if ($existingForOfferItem) {
+            $existingForOfferItem->update(array_merge($args, [
+                'offer_item_id' => $targetOfferItemId,
+                'organization_id' => $checkoutSession->organization_id,
+                'deleted_at' => null,
+            ]));
+        } else {
+            $checkoutSession->lineItems()->updateOrCreate([
+                'offer_item_id' => $targetOfferItemId,
+            ], [
+                ...$args,
+                'organization_id' => $checkoutSession->organization_id,
+                'deleted_at' => null,
+            ]);
+        }
+
         $checkoutSession->load(['lineItems.offerItem.offerPrices', 'lineItems.price.product', 'lineItems.price']);
+
+        Log::info('[API:setItem] after', [
+            'session_id' => $checkoutSession->id,
+            'line_items' => $checkoutSession->lineItems->map->only(['id','offer_item_id','price_id'])->toArray(),
+        ]);
 
         return new CheckoutSessionResource($checkoutSession);
     }
@@ -224,13 +252,28 @@ class CheckoutSessionController extends Controller
 
         abort_if(! $listPrice, 404, 'Target product list price not found');
 
-        $checkoutSession->lineItems()->updateOrCreate([
-            'offer_item_id' => $offerItem->id,
-        ], [
-            'price_id' => $listPrice->id,
-            'organization_id' => $checkoutSession->organization_id,
-            'deleted_at' => null,
-        ]);
+        // Prefer updating an existing row for this offer_item_id; if not present, update a row with NULL offer_item_id
+        $existingForOfferItem = $checkoutSession->lineItems()->where('offer_item_id', $offerItem->id)->first();
+        if (! $existingForOfferItem) {
+            $existingForOfferItem = $checkoutSession->lineItems()->whereNull('offer_item_id')->orderBy('id')->first();
+        }
+
+        if ($existingForOfferItem) {
+            $existingForOfferItem->update([
+                'offer_item_id' => $offerItem->id,
+                'price_id' => $listPrice->id,
+                'organization_id' => $checkoutSession->organization_id,
+                'deleted_at' => null,
+            ]);
+        } else {
+            $checkoutSession->lineItems()->updateOrCreate([
+                'offer_item_id' => $offerItem->id,
+            ], [
+                'price_id' => $listPrice->id,
+                'organization_id' => $checkoutSession->organization_id,
+                'deleted_at' => null,
+            ]);
+        }
 
         $checkoutSession->load(['lineItems.offerItem.offerPrices', 'lineItems.price.product', 'lineItems.price']);
 

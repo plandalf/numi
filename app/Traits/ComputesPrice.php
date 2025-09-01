@@ -53,7 +53,7 @@ trait ComputesPrice
     {
         switch($this->currency) {
             default:
-                return round($this->getTotalAmount()-$this->getTotalAmount()/1.1);;
+                return round($this->getTotalAmount()-$this->getTotalAmount()/1.1);
         }
     }
 

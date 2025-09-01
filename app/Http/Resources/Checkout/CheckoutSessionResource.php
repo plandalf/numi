@@ -18,6 +18,7 @@ class CheckoutSessionResource extends JsonResource
             'id' => $this->getRouteKey(),
             'status' => $this->status,
             'properties' => $this->properties,
+            'metadata' => $this->metadata,
             'line_items' => CheckoutItemResource::collection($this->whenLoaded('lineItems')),
             'currency' => $this->currency,
             'total' => $this->total,
