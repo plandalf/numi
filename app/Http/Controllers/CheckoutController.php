@@ -141,7 +141,7 @@ class CheckoutController extends Controller
 
         $params = array_filter(array_merge([
             'checkout' => $checkoutSession->getRouteKey(),
-        ], $request->only(['embed-id', 'embed-type'])));
+        ], $request->only(['embed-id', 'embed-type', 'numi-embed-type', 'numi-embed-id', 'numi-embed-parent-page'])));
 
         if ($request->has('redirect_url')) {
             $params['redirect_url'] = $request->get('redirect_url');
