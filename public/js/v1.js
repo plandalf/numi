@@ -197,7 +197,7 @@ ${spinAnimationStyles}
   border-radius: 16px;
   overflow: visible;
   background: #ffffff; /* ensure clean look before iframe loads */
-  box-shadow: 
+  box-shadow:
     0 20px 25px -5px rgba(0, 0, 0, 0.1),
     0 10px 10px -5px rgba(0, 0, 0, 0.04),
     0 4px 6px -2px rgba(0, 0, 0, 0.05);
@@ -218,7 +218,7 @@ ${spinAnimationStyles}
   border-radius: 16px;
   overflow: visible;
   background: #ffffff; /* ensure clean look before iframe loads */
-  box-shadow: 
+  box-shadow:
     0 20px 25px -5px rgba(0, 0, 0, 0.1),
     0 10px 10px -5px rgba(0, 0, 0, 0.04),
     0 4px 6px -2px rgba(0, 0, 0, 0.05);
@@ -384,7 +384,7 @@ ${spinAnimationStyles}
 `;
     if (typeof window === 'undefined')
         return;
-    
+
     // Debug toggle: enable verbose logs only when explicitly requested
     const __detectDebug = () => {
         try {
@@ -436,7 +436,7 @@ ${spinAnimationStyles}
 
     // Global tracking of embed types by embedId - must be declared early
     const embedTypeRegistry = new Map();
-    
+
     // as long as the window is valid (and not embedding in e.g. nextJS improperly
     // or something similar), we initialize:
     // - popups
@@ -515,11 +515,10 @@ ${spinAnimationStyles}
             returnUrl,
         };
 
-        console.log('NUMI-V1', { config, data: element.dataset })
-
         return config;
     };
     const getSharedIframeSrc = (configDomain, offerPublicIdentifier, inheritParameters, target, modeConfig) => {
+
         // Prefer explicit override domain (attributes/options), else use the script element origin
         let domain = null;
         const normalizeToOrigin = (value) => {
@@ -586,7 +585,10 @@ ${spinAnimationStyles}
         }
         // Environment handling for offers: if env === 'test' append '/test'
         try {
-            const envAttr = target.getAttribute && (target.getAttribute('data-env') || target.getAttribute('data-plandalf-env'));
+            const envAttr = target.getAttribute
+              && (target.getAttribute('data-env')
+                || target.getAttribute('data-plandalf-env'));
+
             const envOpt = modeConfig && modeConfig.env;
             const envGlobal = (typeof window !== 'undefined' && window.plandalfConfig && window.plandalfConfig.env) || undefined;
             const envVal = (envOpt || envAttr || envGlobal || '').toString().toLowerCase();
@@ -640,8 +642,11 @@ ${spinAnimationStyles}
                 }
             }
         };
+
         for (const attribute of target.attributes) {
             if (!attribute.name.startsWith('data-') || attribute.name.startsWith('data-numi')) continue;
+
+
             const key = attribute.name.slice(DATA_PREFIX.length);
             if (key === 'items' || key === 'customer') {
                 appendPairsFromQueryString(attribute.value);
@@ -649,6 +654,7 @@ ${spinAnimationStyles}
             }
             iframeSrc.searchParams.append(key, attribute.value);
         }
+
         return iframeSrc;
     };
     // make popup/slider button
@@ -773,14 +779,14 @@ ${spinAnimationStyles}
             isBillingPortal ? { mode: 'billing', customerToken, returnUrl } : { mode: 'offer' }
         );
         const embedId = generateEmbedId();
-        iframeSrc.searchParams.append('numi-embed-id', `${embedId}`);
-        iframeSrc.searchParams.append('numi-embed-type', embedType);
+        iframeSrc.searchParams.append('embed-id', `${embedId}`);
+        iframeSrc.searchParams.append('embed-type', embedType);
         if (preview) {
-            iframeSrc.searchParams.append('numi-embed-preview', 'yes');
+            iframeSrc.searchParams.append('embed-preview', 'yes');
         }
         const parentPage = getParentUrl();
         if (parentPage) {
-            iframeSrc.searchParams.append('numi-embed-parent-page', parentPage);
+            iframeSrc.searchParams.append('embed-parent-page', parentPage);
         }
         if (dynamicResize && embedType === 'popup') {
             iframeSrc.searchParams.append('numi-embed-dynamic-resize', 'true');
@@ -794,7 +800,7 @@ ${spinAnimationStyles}
                     // only for this iframe in question
                     return;
                 }
-                
+
                 // Handle dynamic resize (preserve existing functionality)
                 if (event.data.size !== undefined) {
                     const newHeight = event.data.size;
@@ -806,15 +812,11 @@ ${spinAnimationStyles}
             window.addEventListener('message', receiveMessage, false);
         }
         iframe.src = iframeSrc.toString();
-        if (window.location.href.includes('PLANDALF_DEBUG') || window.PLANDALF_DEBUG) {
-            console.log('embedding plandalf iframe', iframeSrc.toString());
-            console.log(`[Plandalf] Popup created with embedId: ${embedId}`);
-        }
         iframe.allow = 'microphone; camera; geolocation';
         iframe.style.border = '0px';
         iframe.style.background = '#ffffff'; // hide any initial transparency while loading
         iframe.title = isBillingPortal ? 'Billing Portal' : `${offerPublicIdentifier}`;
-        
+
         // Store embed ID and context marker for session tracking
         target.setAttribute('data-numi-embed-id', embedId);
         if (isBillingPortal) {
@@ -824,10 +826,10 @@ ${spinAnimationStyles}
             target.setAttribute('data-numi-offer', offerPublicIdentifier);
             target.removeAttribute('data-numi-portal');
         }
-        
+
         // Register embed type for session tracking
         embedTypeRegistry.set(embedId, embedType);
-        
+
         const closeIcon = document.createElement('a');
         closeIcon.className = `numi-embed-${embedType}-close-icon`;
         closeIcon.innerHTML = XIcon;
@@ -913,7 +915,7 @@ ${spinAnimationStyles}
                         embedId: embedId,
                         sessionId: session.id
                     });
-                    
+
                     // Also fire cancel event if not completed
                     if (!session.isCompleted && !session.isCancelled) {
                         if (window.location.href.includes('PLANDALF_DEBUG') || window.PLANDALF_DEBUG) {
@@ -929,14 +931,14 @@ ${spinAnimationStyles}
                     console.log(`[Plandalf] Session not found for embedId: ${embedId}`);
                 }
             } else if (window.location.href.includes('PLANDALF_DEBUG') || window.PLANDALF_DEBUG) {
-                console.log(`[Plandalf] No active sessions found for embedId: ${embedId}`, { 
-                    embedId, 
-                    sessions: window.plandalf?.offers?._sessions, 
+                console.log(`[Plandalf] No active sessions found for embedId: ${embedId}`, {
+                    embedId,
+                    sessions: window.plandalf?.offers?._sessions,
                     hasSession: window.plandalf?.offers?._sessions?.has(embedId),
                     sessionKeys: Array.from(window.plandalf?.offers?._sessions?.keys() || [])
                 });
             }
-            
+
             document.body.classList.remove('noscroll');
             if (embedType === 'popup') {
                 // Add closing class to trigger CSS exit animations
@@ -1065,13 +1067,13 @@ ${spinAnimationStyles}
                     // only for this iframe in question
                     return;
                 }
-                
+
                 // Handle form resize (preserve existing functionality)
                 if (event.data.type === 'form_resized') {
                     const newHeight = event.data.size;
                     target.style.height = `${newHeight}px`;
                 }
-                
+
                 // Handle scroll up requests (preserve existing functionality)
                 if (event.data.type === 'check_scroll_up') {
                     const elementTopInParent = iframe.getBoundingClientRect().top;
@@ -1093,7 +1095,7 @@ ${spinAnimationStyles}
             iframe.style.display = 'block';
         }
         iframe.title = isBillingPortal ? 'Billing Portal' : `${offerPublicIdentifier}`;
-        
+
         // Store embed ID and offer/portal marker for session tracking
         target.setAttribute('data-numi-embed-id', embedId);
         if (isBillingPortal) {
@@ -1103,10 +1105,10 @@ ${spinAnimationStyles}
         target.setAttribute('data-numi-offer', offerPublicIdentifier);
             target.removeAttribute('data-numi-portal');
         }
-        
-        // Register embed type for session tracking  
+
+        // Register embed type for session tracking
         embedTypeRegistry.set(embedId, isFullScreen ? 'fullscreen' : 'standard');
-        
+
         iframe.addEventListener('load', () => {
             if (standardLoading) {
                 standardLoading.style.display = 'none';
@@ -1246,12 +1248,11 @@ ${spinAnimationStyles}
             }
         });
     }
-    console.log(standardTargets);
 
     // =============================================================================
     // PLANDALF SESSION-BASED API
     // =============================================================================
-    
+
     // Checkout Session - represents one complete checkout flow
     class CheckoutSession {
         constructor(data) {
@@ -1269,11 +1270,11 @@ ${spinAnimationStyles}
             this.currentPage = null;
             this.formHeight = null;
         }
-        
+
         // Unified event listener - supports callback or promise
         on(events, callback) {
             const eventArray = Array.isArray(events) ? events : [events];
-            
+
             if (callback && typeof callback === 'function') {
                 // Callback style
                 eventArray.forEach(eventType => {
@@ -1287,7 +1288,7 @@ ${spinAnimationStyles}
                 // Promise style
                 return new Promise((resolve, reject) => {
                     let resolved = false;
-                    
+
                     const oneTimeCallback = (data) => {
                         if (!resolved) {
                             resolved = true;
@@ -1299,9 +1300,9 @@ ${spinAnimationStyles}
                             });
                         }
                     };
-                    
+
                     eventArray.forEach(eventType => this.on(eventType, oneTimeCallback));
-                    
+
                     setTimeout(() => {
                         if (!resolved) {
                             resolved = true;
@@ -1311,7 +1312,7 @@ ${spinAnimationStyles}
                 });
             }
         }
-        
+
         // Specific event methods
         onInit(callback) { return this.on('init', callback); }
         onPageChange(callback) { return this.on('page_change', callback); }
@@ -1323,25 +1324,25 @@ ${spinAnimationStyles}
         onClosed(callback) { return this.on('closed', callback); }
         onLineItemChange(callback) { return this.on('lineitem_change', callback); }
         onResize(callback) { return this.on('resize', callback); }
-        
+
         // Convenience methods
         async waitForCompletion() {
             await this.on('success');
             return this.on('complete');
         }
-        
+
         async waitForSubmission() {
             return this.on('submit');
         }
-        
+
         async waitForSuccess() {
             return this.on('success');
         }
-        
+
         async waitForAnyCompletion() {
             return this.on(['success', 'complete']);
         }
-        
+
         // Get current session state
         getState() {
             return {
@@ -1359,7 +1360,7 @@ ${spinAnimationStyles}
                 isComplete: this.events.some(e => e.type === 'complete')
             };
         }
-        
+
         // Internal: trigger event
         _triggerEvent(eventType, data) {
             const eventData = {
@@ -1368,9 +1369,9 @@ ${spinAnimationStyles}
                 sessionId: this.id,
                 timestamp: Date.now()
             };
-            
+
             this.events.push(eventData);
-            
+
             // Update session state
             if (eventType === 'page_change') {
                 this.currentPage = data.pageId;
@@ -1385,7 +1386,7 @@ ${spinAnimationStyles}
                 this.isCancelled = true;
                 this.isActive = false;
             }
-            
+
             // Trigger callbacks
             if (this._callbacks[eventType]) {
                 this._callbacks[eventType].forEach(callback => {
@@ -1409,7 +1410,7 @@ ${spinAnimationStyles}
             this._sessionCallbacks = [];
             window.plandalf.offers._addWaiter(this);
         }
-        
+
         // Listen for new checkout sessions
         onCheckout(callback) {
             if (callback && typeof callback === 'function') {
@@ -1419,30 +1420,30 @@ ${spinAnimationStyles}
                 return new Promise((resolve, reject) => {
                     const oneTimeCallback = (session) => resolve(session);
                     this._sessionCallbacks.push(oneTimeCallback);
-                    
+
                     setTimeout(() => {
                         reject(new Error(`Timeout waiting for checkout on pattern: ${this.selector}`));
                     }, 300000);
                 });
             }
         }
-        
+
         // Convenience methods
         async onAnyInit() {
             const session = await this.onCheckout();
             return session.onInit();
         }
-        
+
         async onAnySuccess() {
             const session = await this.onCheckout();
             return session.onSuccess();
         }
-        
+
         async onAnyComplete() {
             const session = await this.onCheckout();
             return session.onComplete();
         }
-        
+
         _matches(offerId) {
             if (typeof this.selector === 'string') {
                 if (this.selector === '*') return true;
@@ -1457,7 +1458,7 @@ ${spinAnimationStyles}
             }
             return false;
         }
-        
+
         _checkSession(session) {
             if (this._matches(session.offerId)) {
                 this._sessionCallbacks.forEach(callback => {
@@ -1479,17 +1480,17 @@ ${spinAnimationStyles}
             this.isVisible = false;
             this.currentSession = null;
         }
-        
+
         show(overrideOptions = {}) {
             const finalOptions = { ...this.options, ...overrideOptions };
-            
+
             if (!this.embedId) {
                 this.embedId = this._createEmbed(finalOptions);
             }
-            
+
             this._showEmbed();
             this.isVisible = true;
-            
+
             // Return promise that resolves with the checkout session
             return new Promise((resolve, reject) => {
                 const checkForSession = () => {
@@ -1502,30 +1503,30 @@ ${spinAnimationStyles}
                     }
                 };
                 checkForSession();
-                
+
                 setTimeout(() => reject(new Error('Timeout waiting for session')), 10000);
             });
         }
-        
+
         hide() {
             this._hideEmbed();
             this.isVisible = false;
             return this;
         }
-        
+
         getSession() {
             return this.currentSession;
         }
-        
+
         // Placeholder methods - would be implemented with actual embed creation
         _createEmbed(options) {
             return generateEmbedId();
         }
-        
+
         _showEmbed() {
             // Implementation would trigger the actual embed showing
         }
-        
+
         _hideEmbed() {
             // Implementation would hide the embed
         }
@@ -1537,7 +1538,7 @@ ${spinAnimationStyles}
             get(selector) {
                 return new OfferWaiter(selector);
             },
-            
+
             show(selector, options = {}) {
                 if (typeof selector === 'string' && !selector.includes('*') && !Array.isArray(selector)) {
                     return this.create(selector, options).show();
@@ -1545,22 +1546,22 @@ ${spinAnimationStyles}
                     return this.get(selector).show(options);
                 }
             },
-            
+
             create(offerId, options = {}) {
                 if (!this._instances[offerId]) {
                     this._instances[offerId] = new PlandalfOffer(offerId, options);
                 }
                 return this._instances[offerId];
             },
-            
+
             _instances: {},
             _sessions: new Map(),
             _waiters: [],
-            
+
             _addWaiter(waiter) {
                 this._waiters.push(waiter);
             },
-            
+
             _notifyWaiters(session) {
                 // Only notify for offer sessions
                 if (session && (session.context === 'offer' || session.context === undefined)) {
@@ -1645,6 +1646,9 @@ ${spinAnimationStyles}
                 btn.setAttribute('data-items', options.items);
             }
         }
+        if (options.price && !options.items) {
+          btn.setAttribute('data-items', `items[0][lookup_key]=${options.price}&items[0][quantity]=1`);
+        }
 
         initializePopupLikeTarget(btn, 'popup');
 
@@ -1722,24 +1726,24 @@ ${spinAnimationStyles}
     // Enhanced message handler for session tracking
     const plandalfReceiveMessage = (event) => {
         if (!event.data || event.data.source !== 'plandalf') return;
-        
+
         // ALWAYS log the full event structure for debugging
         console.group(`🔍 [Plandalf] PostMessage Event: ${event.data.type}`);
         console.log('📦 Full event.data:', JSON.stringify(event.data, null, 2));
         console.log('📋 Raw event.data object:', event.data);
         console.groupEnd();
-        
+
         const { type, data } = event.data;
-        
+
         // Try multiple ways to extract embedId with detailed logging
         console.group('🔍 EmbedId Extraction Process');
         console.log('Method 1 - event.data.embedId:', event.data.embedId);
         console.log('Method 2 - data?.embedId:', data?.embedId);
         console.log('Method 3 - data?.data?.embedId:', data?.data?.embedId);
-        
+
         let embedId = event.data.embedId || data?.embedId || data?.data?.embedId;
         console.log('🎯 Initial embedId result:', embedId);
-        
+
         // If still no embedId, try to extract from the iframe source
         if (!embedId && event.source && event.source.location) {
             try {
@@ -1750,7 +1754,7 @@ ${spinAnimationStyles}
                 console.log('Method 4 - Failed:', e.message);
             }
         }
-        
+
         // Last resort: try to find iframe by matching the event source
         if (!embedId && event.source) {
             const iframes = document.querySelectorAll('iframe[src*="numi-embed-id"]');
@@ -1764,10 +1768,9 @@ ${spinAnimationStyles}
                 }
             }
         }
-        
-        console.log('🎯 Final embedId:', embedId);
+
         console.groupEnd();
-        
+
         // Debug logging (only when debugging)
         if (window.location.href.includes('PLANDALF_DEBUG') || window.PLANDALF_DEBUG) {
             console.log(`[Plandalf] Received message: ${type} with embedId: ${embedId}`);
@@ -1775,7 +1778,7 @@ ${spinAnimationStyles}
         if (window.location.href.includes('PLANDALF_DEBUG') || window.PLANDALF_DEBUG) {
             console.log(`[Plandalf] Received: ${type}`, { embedId, data });
         }
-        
+
         // Handle session initialization
         if (type === 'on_init') {
             console.group('🚀 Session Initialization');
@@ -1787,16 +1790,16 @@ ${spinAnimationStyles}
             console.log('  - data.data?.checkoutId:', data.data?.checkoutId);
             console.log('  - data.session?.id:', data.session?.id);
             console.log('  - data.data?.session?.id:', data.data?.session?.id);
-            
+
             const offerId = data.offerId || data.data?.offerId || findOfferIdFromEmbedId(embedId);
             const checkoutId = data.checkoutId || data.data?.checkoutId || data.session?.id || data.data?.session?.id || embedId;
-            
+
             console.log('🎯 Final session values:');
             console.log('  - embedId:', embedId);
             console.log('  - offerId:', offerId);
             console.log('  - checkoutId:', checkoutId);
             console.groupEnd();
-            
+
             const context = findContextFromEmbedId(embedId);
             const session = new CheckoutSession({
                 checkoutId: checkoutId,
@@ -1805,7 +1808,7 @@ ${spinAnimationStyles}
                 embedType: embedTypeRegistry.get(embedId) || 'unknown',
                 context: context
             });
-            
+
             window.plandalf.offers._sessions.set(embedId, session);
             if (window.location.href.includes('PLANDALF_DEBUG') || window.PLANDALF_DEBUG) {
                 console.log(`[Plandalf] Session registered. Total sessions: ${window.plandalf.offers._sessions.size}`);
@@ -1818,7 +1821,7 @@ ${spinAnimationStyles}
             } else {
             window.plandalf.offers._notifyWaiters(session);
             }
-            
+
             // Trigger init event with enhanced data
             const eventData = {
                 ...data,
@@ -1830,18 +1833,18 @@ ${spinAnimationStyles}
             session._triggerEvent('init', eventData);
             return;
         }
-        
+
         // Route events to existing session
         const session = window.plandalf.offers._sessions.get(embedId);
         if (session) {
             console.group(`🔄 Event Routing: ${type}`);
             console.log('📍 Found session:', session.id);
-            
+
             // Map event types
             const eventMap = {
                 'page_change': 'page_change',
                 'payment_init': 'payment_init',
-                'checkout_submit': 'submit', 
+                'checkout_submit': 'submit',
                 'checkout_success': 'success',
                 'checkout_complete': 'complete',
                 'checkout_cancel': 'cancel',
@@ -1849,10 +1852,10 @@ ${spinAnimationStyles}
                 'checkout_lineitem_changed': 'lineitem_change',
                 'form_resized': 'resize'
             };
-            
+
             const eventType = eventMap[type] || type;
             console.log('🏷️ Event type mapping:', type, '->', eventType);
-            
+
             // Enhance event data with session context
             const eventData = {
                 ...data,
@@ -1861,13 +1864,13 @@ ${spinAnimationStyles}
                 offerId: session.offerId,
                 embedId: embedId
             };
-            
+
             console.log('📦 Enhanced event data:');
             console.log('  - Original data:', data);
             console.log('  - Enhanced data:', eventData);
             console.log('  - Data structure:', JSON.stringify(eventData, null, 2));
             console.groupEnd();
-            
+
             session._triggerEvent(eventType, eventData);
         } else {
             console.warn(`⚠️ No session found for embedId: ${embedId}`);
@@ -1904,56 +1907,56 @@ ${spinAnimationStyles}
     // Process global configuration if provided
     const processGlobalConfig = () => {
         const config = window.plandalfConfig || {};
-        
+
         // Set up global event listeners from config
         if (config.onInit) {
             plandalf.offers.get('*').onCheckout((checkout) => {
                 checkout.onInit(config.onInit);
             });
         }
-        
+
         if (config.onSuccess) {
             plandalf.offers.get('*').onCheckout((checkout) => {
                 checkout.onSuccess(config.onSuccess);
             });
         }
-        
+
         if (config.onComplete) {
             plandalf.offers.get('*').onCheckout((checkout) => {
                 checkout.onComplete(config.onComplete);
             });
         }
-        
+
         if (config.onSubmit) {
             plandalf.offers.get('*').onCheckout((checkout) => {
                 checkout.onSubmit(config.onSubmit);
             });
         }
-        
+
         if (config.onPageChange) {
             plandalf.offers.get('*').onCheckout((checkout) => {
                 checkout.onPageChange(config.onPageChange);
             });
         }
-        
+
         if (config.onCancel) {
             plandalf.offers.get('*').onCheckout((checkout) => {
                 checkout.onCancel(config.onCancel);
             });
         }
-        
+
         if (config.onLineItemChange) {
             plandalf.offers.get('*').onCheckout((checkout) => {
                 checkout.onLineItemChange(config.onLineItemChange);
             });
         }
-        
+
         if (config.onClosed) {
             plandalf.offers.get('*').onCheckout((checkout) => {
                 checkout.onClosed(config.onClosed);
             });
         }
-        
+
         // Per-offer configuration
         if (config.offers) {
             Object.entries(config.offers).forEach(([offerId, offerConfig]) => {
@@ -1973,6 +1976,8 @@ ${spinAnimationStyles}
 
     // Process configuration
     processGlobalConfig();
+
+    console.log("FUCK")
 
     // @ts-ignore
     const fullScreenInitialized = window.__numiFullScreenInitialized;
@@ -2019,7 +2024,7 @@ ${spinAnimationStyles}
             })(domainAttr);
 
             if (mode === 'present-offer') {
-                const offerId = el.getAttribute('data-offer-id') || el.getAttribute('data-plandalf-offer') || '';
+                const offerId = el.getAttribute('data-offer-id') || '';
                 if (!offerId) return;
                 // Attach click handler to present on demand
                 el.addEventListener('click', (e) => {
@@ -2034,6 +2039,7 @@ ${spinAnimationStyles}
                         env: (ds.env || '').toLowerCase() || undefined,
                         customer: ds.customer || undefined,
                         items: ds.items || undefined,
+                        price: ds.price || undefined,
                         inheritParameters: el.hasAttribute('data-inherit-parameters') || el.hasAttribute('data-plandalf-inherit-parameters'),
                         dynamicResize: el.hasAttribute('data-dynamic-resize') || el.hasAttribute('data-plandalf-dynamic-resize'),
                         preview: el.hasAttribute('data-preview') || el.hasAttribute('data-plandalf-preview')

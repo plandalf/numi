@@ -322,8 +322,6 @@ export function GlobalStateProvider({ offer, offerItems, session: defaultSession
 
         const body = (await submissionProps?.() ?? {}) as { error?: string, confirmation_token?: string };
 
-        console.log('action-submit', { body });
-
         if (body.type && body.type === 'intercept') {
           console.log("INTERCEPTING SUBMISSION");
           setSubmitError(body.error);
@@ -483,7 +481,7 @@ export function GlobalStateProvider({ offer, offerItems, session: defaultSession
     const previousLineItems = session.line_items || [];
     const previousTotal = session.total;
 
-    // how do we do this if we dont have offer_items, they're generated? 
+    // how do we do this if we dont have offer_items, they're generated?
 
     const response = await axios.post(`/checkouts/${session.id}/mutations`, {
       action: 'switchProduct',
@@ -716,7 +714,7 @@ export function GlobalStateProvider({ offer, offerItems, session: defaultSession
 
     // Generic preview scenarios (fallback)
     const previewAmount = totalDueAtEffective || 0;
-    
+
     // Add preview lines as additional line items to show the breakdown
     const previewLineItems: CheckoutItem[] = currentSubscriptionPreview.invoice_preview?.lines?.map((line, index) => ({
       id: -(index + 1),
@@ -1076,7 +1074,6 @@ export const useValidateFields = () => {
       return acc;
     }, {} as Record<string, any>);
 
-    console.log('validateAllFields', { fieldStates, fields })
     // Validate each field
     Object.keys(fields).forEach((field) => {
       const fieldState = fields[field];

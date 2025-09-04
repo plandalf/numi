@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Plandalf Session API Test</title>
+    <script>
+        window.PLANDALF_DEBUG = true;
+    </script>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -79,6 +82,8 @@
         .buttons { display: flex; flex-wrap: wrap; gap: 8px; margin: 15px 0; }
         code { background: #f1f5f9; padding: 2px 6px; border-radius: 3px; font-family: monospace; font-size: 13px; }
     </style>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+
 </head>
 <body>
     <div class="container">
@@ -238,7 +243,7 @@
                         data-plandalf="present-offer"
                         data-size="md"
                         data-currency="aud"
-                        data-offer-id="pybites-a-DQQ6wx49P6j"
+                        data-offer-id="HpyJhDRAUZC"
                     >Present MD Offer</button>
                 </div>
             </div>
@@ -262,6 +267,23 @@
                 <div class="buttons" style="gap:8px; align-items:center;">
                     <label for="pybitesPriceInput">Primary price:</label>
                     <input id="pybitesPriceInput" type="text" value="price_1S1K4CJqcZGQsnciIslzdvaM" style="padding:6px 8px; border:1px solid #cbd5e1; border-radius:6px;" />
+
+                    <button
+                        data-price-id="price_1Q8JB5JqcZGQsnciVcCrtT4R"
+                        class="checkout-button inline-block bg-green-600 text-white font-semibold py-2 px-4 rounded hover:bg-green-700">
+                        Subscribe OLD
+                    </button>
+
+                    <button
+                        data-plandalf="present-offer"
+                        data-size="md"
+                        data-plandalf-domain="https://pybites.plandalf.dev"
+                        data-offer-id="pybites-a-DQQ6wx49P6j"
+                        data-price="price_1S1K4CJqcZGQsnciIslzdvaM"
+                        class="checkout-button inline-block bg-green-600 text-white font-semibold py-2 px-4 rounded hover:bg-green-700">
+                        Subscribe New
+                    </button>
+
                     <button
                         id="pybitesPresentBtn"
                         data-plandalf="present-offer"
@@ -270,6 +292,17 @@
                         data-offer-id="pybites-a-DQQ6wx49P6j"
                         data-price="price_1S1K4CJqcZGQsnciIslzdvaM"
                     >Present PyBites MD Offer</button>
+
+                    <button
+                        id="pybitesPresentBtn2"
+                        data-plandalf="present-offer"
+                        data-size="md"
+                        data-plandalf-domain="http://localhost:8000"
+                        data-offer-id="HpyJhDRAUZC"
+                        data-env="test"
+                        data-currency="AUD"
+                        data-items="items[0][lookup_key]=price_1RsreVFmvUKqVS2H9ytjMct3&amp;items[0][quantity]=1"
+                    >Present PyBites MD Offer TWO</button>
                 </div>
             </div>
             <div class="action-right">
@@ -343,7 +376,7 @@
                     id="offer-args"
                     data-plandalf="present-offer"
                     data-offer-id="payments-example-VSfZ8ZeG5jz"
-            
+
                     data-currency="GBP"
                     data-interval="year"
                     data-size="md"

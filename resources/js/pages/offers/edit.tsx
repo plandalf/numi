@@ -23,7 +23,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { getAllLayouts } from '@/config/layouts';
-import { useState, useRef, useMemo } from 'react';
+import { useState, useRef, useMemo, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { MoreVertical, ArrowRightToLine, FileText, CheckSquare, Plus, BookmarkIcon } from 'lucide-react';
 import PagePreview from '@/components/offers/page-preview';
@@ -48,7 +48,7 @@ import { allElementTypes, CustomElementIcon } from '@/components/offers/page-ele
 import { blockTypes } from '@/components/blocks';
 import { Font } from '@/types';
 import axios from '@/lib/axios';
-import WebFont from 'webfontloader';
+// import WebFont from 'webfontloader';
 import { PageIframePreview } from '@/components/offers/page-iframe-preview';
 import { computeInclusiveTaxes } from '@/utils/editor-session';
 import { PageEditorDialog, PageEditorDialogPayload } from '@/components/offers/dialogs/page-editor-dialog';
@@ -80,13 +80,15 @@ interface ActiveDndItem {
 
 function Edit({ offer, theme, organizationThemes, organizationTemplates, globalThemes, showNameDialog, fonts, publishableKey }: EditProps) {
 
-  WebFont.load({
-    google: {
-      families: fonts?.reduce<string[]>((items, font) => {
-        return [...items, `${font.name}:${font.weights.join(',')}`];
-      }, []),
-    },
-  });
+  useEffect(() => {
+    // WebFont.load({
+    //   google: {
+    //     families: fonts?.reduce<string[]>((items, font) => {
+    //       return [...items, `${font.name}:${font.weights.join(',')}`];
+    //     }, []),
+    //   },
+    // });
+  }, []);
 
   return (
     <EditorProvider
