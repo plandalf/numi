@@ -34,6 +34,12 @@ class CheckoutController extends Controller
         $offer->load('organization');
         $checkoutItems = $request->get('items', []);
 
+        // Accept 'price' shortcut as primary item (lookup_key)
+        $primaryPriceLookup = $request->query('price');
+        if ($primaryPriceLookup && empty($checkoutItems)) {
+            $checkoutItems = [['lookup_key' => $primaryPriceLookup]];
+        }
+
         // Get override parameters from query string
         $intervalOverride = $request->query('interval');
         $currencyOverride = $request->query('currency');
@@ -100,6 +106,19 @@ class CheckoutController extends Controller
 
         $testMode = $environment === 'test';
 
+        // If no explicit interval override provided, derive from primary price if available
+        if (! $intervalOverride && $primaryPriceLookup) {
+            $primaryPrice = Price::query()
+                ->where('organization_id', $offer->organization_id)
+                ->where('lookup_key', $primaryPriceLookup)
+                ->where('is_active', true)
+                ->first();
+
+            if ($primaryPrice && $primaryPrice->renew_interval) {
+                $intervalOverride = strtolower($primaryPrice->renew_interval);
+            }
+        }
+
         // New: handle intent and subscription for upgrades
         $intent = $request->query('intent', 'purchase');
         $subscription = $intent === 'upgrade' ? $request->query('subscription') : null;
@@ -130,10 +149,11 @@ class CheckoutController extends Controller
 
         $signedShowUrl = URL::signedRoute('checkouts.show', $params, now()->addDays(5));
 
-        // Render the checkout view directly to avoid initial redirect latency.
-        // The client will immediately replace the URL to the canonical signed /checkout route
-        // via an Inertia JSON-only navigation using the provided $signedShowUrl.
+        // extremely stupid here.
 
+        // Derive a simple selected_option (e.g., 'sm'|'md') based on chosen product name if available
+        $checkoutSession->loadMissing(['lineItems.price.product']);
+ 
         $checkoutSession->load([
             'lineItems.offerItem.offerPrices',
             'offer.theme',

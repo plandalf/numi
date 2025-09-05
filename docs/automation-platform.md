@@ -3457,7 +3457,7 @@ class KajabiConnector extends AppConnector {
             'Authorization' => 'Bearer ' . $this->getCredentials('api_key'),
             'Content-Type' => 'application/json',
             'Accept' => 'application/json',
-            'User-Agent' => 'NumiAutomation/1.0',
+            'User-Agent' => 'Plandalf-Automation/1.0',
         ];
     }
     

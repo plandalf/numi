@@ -1,23 +1,21 @@
-import Numi, { Style, BlockContext, Appearance, FontValue } from "@/contexts/Numi";
+import Numi, { Style, BlockContext, Appearance, FontValue, JSONSchemaValue } from "@/contexts/Numi";
 import { BlockContextType } from "@/types/blocks";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useContext, useEffect, useMemo, useRef, useCallback } from "react";
-import get from "lodash/get";
-import { useEditor } from "@/contexts/offer/editor-context";
 import { Event, EVENT_LABEL_MAP } from "../editor/interaction-event-editor";
-import { useDebounce } from "@/hooks/use-debounce";
-import { useCheckoutState } from "@/pages/client/checkout-main";
 import { resolveThemeValue } from "@/lib/theme";
 import { addAlphaToColor } from "../ui/color-picker";
 // Define interfaces for the item structure
 interface ItemType {
   key: string;
   label?: string;
+  value?: string;
 }
 
 function OptionSelectorComponent({ context }: { context: BlockContextType }) {
 
-  const { updateSessionProperties } = Numi.useCheckout({});
+  const checkout = Numi.useCheckout({});
+  const { updateSessionProperties } = checkout;
   const theme = Numi.useTheme();
 
   const defaultValue = [{
@@ -29,11 +27,19 @@ function OptionSelectorComponent({ context }: { context: BlockContextType }) {
   }];
 
   const blockContext = useContext(BlockContext);
-  const options = get(blockContext.blockConfig, `content.items`, defaultValue) as ItemType[];
+  const options = (blockContext.blockConfig?.content?.items ?? defaultValue) as ItemType[];
+
+  // Helper: simple template evaluator for strings like {{ checkout.items[0].renewal_interval }}
+  const isTemplate = Numi.isTemplate;
+
+  const initialSelected = useMemo(() => {
+    return options[0]?.key ?? undefined;
+  }, [options]);
+
 
   const [selectedTab, setSelectedTab, updateSelectedTabHook] = Numi.useStateEnumeration({
     name: 'value',
-    initialValue: options[0]?.key ?? undefined,
+    initialValue: initialSelected,
     options: Array.isArray(options) ? options?.filter((item) => item.key).map((item) => item.key) : [],
     inspector: 'select',
     label: 'Default (Selected Tab)',
@@ -42,22 +48,19 @@ function OptionSelectorComponent({ context }: { context: BlockContextType }) {
 
   const [items] = Numi.useStateJsonSchema({
     name: 'items',
+    label: 'Options',
     defaultValue,
-    schema: {
+    schema: ({
       $schema: "http://json-schema.org/draft-07/schema#",
       type: "array",
       items: {
         type: "object",
         properties: {
+          // key: { title: "Value", type: "string" },
+          // value: { title: "Value", type: "string" },
           key: {
             title: "Value",
             type: "string",
-          },
-          children: {
-            type: "array",
-            items: {
-              type: "object"
-            }
           },
           label: {
             title: "Label",
@@ -66,11 +69,30 @@ function OptionSelectorComponent({ context }: { context: BlockContextType }) {
           badge: {
             title: "Badge",
             type: "string"
+          },
+          children: {
+            type: "array",
+            items: {
+              type: "object",
+              // properties: {
+              //   key: { type: "string" },
+              //   label: { type: "string" },
+              //   caption: { type: "string" },
+              //   color: { type: "string" },
+              //   prefixImage: { type: "string", format: "uri", description: "Image URL", meta: { editor: "file" } },
+              //   prefixIcon: { type: "string", description: "Icon name", meta: { editor: "icon" } },
+              //   prefixText: { type: "string" },
+              //   tooltip: { type: "string" },
+              //   disabled: { type: "string" },
+              //   hidden: { type: "string" },
+              // },
+              required: [],
+            }
           }
         },
-        required: ["key", "label"]
+        required: ["key", "label"],
       }
-    }
+    } as unknown) as JSONSchemaValue
   });
 
   const appearance = Numi.useAppearance([
@@ -134,65 +156,67 @@ function OptionSelectorComponent({ context }: { context: BlockContextType }) {
   const activeBackgroundColor = resolveThemeValue(style.activeBackgroundColor, theme, 'secondary_color') as string;
   const activeBackgroundColorWithAlpha = addAlphaToColor(activeBackgroundColor, 0.10);
 
-  const activeTextFont = {
+  const activeTextFont = useMemo(() => ({
     ...resolveThemeValue(style.activeTextFont, theme, 'body_typography') as FontValue,
     color: resolveThemeValue(style.activeTextFont?.color, theme, 'secondary_color') as string,
-  };
+  }), [style.activeTextFont, theme]);
 
-  const inactiveTextFont = {
+  const inactiveTextFont = useMemo(() => ({
     ...resolveThemeValue(style.inactiveTextFont, theme, 'body_typography') as FontValue,
     color: resolveThemeValue(style.inactiveTextFont?.color, theme),
-  };
+  }), [style.inactiveTextFont, theme]);
 
   const badgeBackgroundColor = resolveThemeValue(style.badgeBackgroundColor, theme, 'secondary_color') as string;
-  const badgeTextFont = {
+  const badgeTextFont = useMemo(() => ({
     ...resolveThemeValue(style.badgeTextFont, theme, 'body_typography') as FontValue,
     color: resolveThemeValue(style.badgeTextFont?.color, theme, 'secondary_color') as string,
-  };
+  }), [style.badgeTextFont, theme]);
 
   const containerStyle = useMemo(() => ({
-    backgroundColor: resolveThemeValue(style.backgroundColor, theme),
-    borderColor: resolveThemeValue(style.borderColor, theme),
+    backgroundColor: resolveThemeValue(style.backgroundColor, theme) as string | undefined,
+    borderColor: resolveThemeValue(style.borderColor, theme) as string | undefined,
     borderWidth: style.border?.width,
     borderStyle: style.border?.style,
     borderRadius : style.borderRadius,
     boxShadow: style.shadow,
-    padding: appearance.padding,
-    margin: appearance.margin,
-    gap: appearance.spacing,
-  }), [style, appearance]);
+    padding: (appearance.padding as unknown as string | number | undefined),
+    margin: (appearance.margin as unknown as string | number | undefined),
+    gap: (appearance.spacing as unknown as string | number | undefined),
+  }), [style, appearance, theme]);
 
   const activeTabStyle = useMemo(() => ({
     justifyContent: style.activeTextAlignment,
-    backgroundColor:  style?.activeBackgroundColor ? resolveThemeValue(style?.activeBackgroundColor, theme) : activeBackgroundColorWithAlpha,
-    color: activeTextFont?.color,
+    backgroundColor:  style?.activeBackgroundColor ? (resolveThemeValue(style?.activeBackgroundColor, theme) as string | undefined) : activeBackgroundColorWithAlpha,
+    color: activeTextFont?.color as string | undefined,
     fontSize: activeTextFont?.size,
     fontWeight: activeTextFont?.weight,
     fontFamily: activeTextFont?.font,
     lineHeight: activeTextFont?.lineHeight,
     letterSpacing: activeTextFont?.letterSpacing,
-    borderColor: style?.activeBorderColor ? resolveThemeValue(style?.activeBorderColor, theme) : activeBackgroundColor,
-    borderWidth: style.activeBorder?.width,
+    borderColor: style?.activeBorderColor ? (resolveThemeValue(style?.activeBorderColor, theme) as string | undefined) : activeBackgroundColor,
+    // Keep border width consistent between active/inactive to prevent size shift
+    borderWidth: style.activeBorder?.width ?? style.inactiveBorder?.width ?? '2px',
     borderStyle: style.activeBorder?.style,
     borderRadius: style.activeBorderRadius,
     boxShadow: style.activeShadow,
-  }), [style, activeTextFont]);
+  }), [style, activeTextFont, theme, activeBackgroundColorWithAlpha, activeBackgroundColor]);
 
   const inactiveTabStyle = useMemo(() => ({
     justifyContent: style.inactiveTextAlignment,
-    backgroundColor: resolveThemeValue(style?.inactiveBackgroundColor, theme),
-    color: inactiveTextFont?.color,
+    backgroundColor: resolveThemeValue(style?.inactiveBackgroundColor, theme) as string | undefined,
+    color: inactiveTextFont?.color as string | undefined,
     fontSize: inactiveTextFont?.size,
     fontWeight: inactiveTextFont?.weight,
     fontFamily: inactiveTextFont?.font,
     lineHeight: inactiveTextFont?.lineHeight,
     letterSpacing: inactiveTextFont?.letterSpacing,
-    borderColor: resolveThemeValue(style?.inactiveBorderColor, theme),
-    borderWidth: style.inactiveBorder?.width,
+    // Use transparent border color if none set, so width matches active state without visual border
+    borderColor: (resolveThemeValue(style?.inactiveBorderColor, theme) as string | undefined) || 'transparent',
+    borderWidth: style.activeBorder?.width ?? style.inactiveBorder?.width ?? '2px',
     borderStyle: style.inactiveBorder?.style,
     borderRadius: style.inactiveBorderRadius,
     boxShadow: style.inactiveShadow,
-  }), [style, inactiveTextFont]);
+  }), [style, inactiveTextFont, theme]);
 
   const badgeStyle = useMemo(() => ({
     backgroundColor: badgeBackgroundColor,
@@ -202,16 +226,20 @@ function OptionSelectorComponent({ context }: { context: BlockContextType }) {
     fontFamily: badgeTextFont?.font,
     lineHeight: badgeTextFont?.lineHeight,
     letterSpacing: badgeTextFont?.letterSpacing,
-    borderColor: resolveThemeValue(style.badgeBorderColor, theme),
+    borderColor: resolveThemeValue(style.badgeBorderColor, theme) as string | undefined,
     borderWidth: style.badgeBorder?.width,
     borderStyle: style.badgeBorder?.style,
     borderRadius: style.badgeBorderRadius,
     boxShadow: style.badgeShadow,
-  }), [style, badgeTextFont, badgeBackgroundColor]);
+  }), [style, badgeTextFont, badgeBackgroundColor, theme]);
 
 
   const interactionElements = useMemo(() => {
-    return Array.isArray(items) ? items.filter(item => item.key).map(item => ({ value: item.key, label: item.label })) : [];
+    return Array.isArray(items)
+      ? items
+          .filter(item => item.key)
+          .map(item => ({ value: item.key, label: item.label }))
+      : [];
   }, [items]);
 
   const { executeCallbacks, updateHook: updateEventCallbackHook } = Numi.useEventCallback({
@@ -223,15 +251,35 @@ function OptionSelectorComponent({ context }: { context: BlockContextType }) {
     }]
   });
 
+  // Compute resolved selection if the configured value is a template string
+  const resolvedSelectedTab = Numi.useEvaluatedTemplate(selectedTab);
+
+  // Ensure the value passed to Tabs is one of the option keys
+  const tabValue = useMemo(() => {
+    const keys = Array.isArray(options) ? options.map(o => o.key) : [];
+    if (resolvedSelectedTab && keys.includes(resolvedSelectedTab)) return resolvedSelectedTab;
+    return options[0]?.key;
+  }, [resolvedSelectedTab, options]);
+
   const handleTabChange = useCallback((value: string) => {
+    if (value === tabValue) {
+      console.log('[OptionSelector] Ignoring click on already-selected tab:', value);
+      return;
+    }
     setSelectedTab(value);
     executeCallbacks(Event.onClick, value);
     updateSessionProperties(context.blockId, value);
-  }, [executeCallbacks, updateSessionProperties, context.blockId, selectedTab]);
+  }, [executeCallbacks, updateSessionProperties, context.blockId, setSelectedTab, tabValue]);
 
-  // useEffect(() => {
-  //   executeCallbacks(Event.onClick, selectedTab);
-  // }, []);
+  // If the stored value is a template, sync the evaluated value to session properties once
+  const appliedTemplateDefaultRef = useRef(false);
+  useEffect(() => {
+    if (appliedTemplateDefaultRef.current) return;
+    if (!isTemplate(selectedTab)) return;
+    if (!tabValue) return;
+    appliedTemplateDefaultRef.current = true;
+    updateSessionProperties(context.blockId, tabValue);
+  }, [selectedTab, tabValue, updateSessionProperties, context.blockId, isTemplate]);
 
   const prevItemsRef = useRef(items);
 
@@ -246,28 +294,30 @@ function OptionSelectorComponent({ context }: { context: BlockContextType }) {
 
       prevItemsRef.current = items;
     }
-  }, [items, updateSelectedTabHook]);
+  }, [items, updateSelectedTabHook, interactionElements, updateEventCallbackHook]);
 
   return (
-    <Tabs
-      defaultValue={selectedTab}
-      onValueChange={handleTabChange}
-      className="w-full flex"
-    >
-      <TabsList className="h-auto p-0 w-full" style={containerStyle}>
-        {Array.isArray(items) && items.map((item) => (
-          <TabsTrigger
-            key={item.key}
-            value={item.key}
-            className="w-full h-10 flex flex-row gap-2"
-            style={item.key === selectedTab ? activeTabStyle : inactiveTabStyle}
-          >
-            {item.label}
-            {item.badge && <div className='px-3 py-1' style={badgeStyle}>{item.badge}</div>}
-          </TabsTrigger>
-        ))}
-      </TabsList>
-    </Tabs>
+    <>
+      <Tabs
+        value={tabValue}
+        onValueChange={handleTabChange}
+        className="w-full flex"
+      >
+        <TabsList className="h-auto p-0 w-full" style={containerStyle}>
+          {Array.isArray(items) && items.map((item) => (
+            <TabsTrigger
+              key={item.key}
+              value={item.key}
+              className="w-full h-10 flex flex-row gap-2"
+              style={item.key === tabValue ? activeTabStyle : inactiveTabStyle}
+            >
+              {item.label}
+              {item.badge && <div className='px-3 py-1' style={badgeStyle}>{item.badge}</div>}
+            </TabsTrigger>
+          ))}
+        </TabsList>
+      </Tabs>
+    </>
   );
 }
 

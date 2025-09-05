@@ -4,12 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Plandalf Session API Test</title>
+    <script>
+        window.PLANDALF_DEBUG = true;
+    </script>
     <style>
-        body { 
-            font-family: Arial, sans-serif; 
-            max-width: 1000px; 
-            margin: 0 auto; 
-            padding: 20px; 
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
             background: #f8fafc;
         }
         .container {
@@ -19,25 +22,45 @@
             box-shadow: 0 1px 3px rgba(0,0,0,0.1);
             margin-bottom: 20px;
         }
-        .log { 
-            background: #0f172a; 
-            color: #22c55e; 
-            padding: 15px; 
-            border-radius: 6px; 
-            font-family: 'SF Mono', 'Monaco', 'Cascadia Code', monospace; 
-            height: 250px; 
-            overflow-y: auto; 
+        .action-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            align-items: start;
+        }
+        .action-left { padding: 8px 0; grid-column: span 1; }
+        .action-right { padding: 8px 0; grid-column: span 3; }
+        .tiles-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+        .tile { padding: 8px 0; }
+        .code-block {
+            background: #0f172a;
+            color: #e2e8f0;
+            padding: 12px;
+            border-radius: 6px;
+            font-family: 'SF Mono', 'Monaco', 'Cascadia Code', monospace;
+            font-size: 12px;
+            overflow-x: auto;
+            line-height: 1.5;
+        }
+        .log {
+            background: #0f172a;
+            color: #22c55e;
+            padding: 15px;
+            border-radius: 6px;
+            font-family: 'SF Mono', 'Monaco', 'Cascadia Code', monospace;
+            height: 250px;
+            overflow-y: auto;
             margin: 15px 0;
             font-size: 13px;
             line-height: 1.4;
             border: 1px solid #1e293b;
         }
-        button { 
-            padding: 10px 20px; 
-            margin: 6px; 
-            border: none; 
-            border-radius: 6px; 
-            cursor: pointer; 
+        button {
+            padding: 10px 20px;
+            margin: 6px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
             font-weight: 500;
             font-size: 14px;
             transition: all 0.15s;
@@ -59,121 +82,232 @@
         .buttons { display: flex; flex-wrap: wrap; gap: 8px; margin: 15px 0; }
         code { background: #f1f5f9; padding: 2px 6px; border-radius: 3px; font-family: monospace; font-size: 13px; }
     </style>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+
 </head>
 <body>
-    <h1>🚀 Plandalf Session API Test Page</h1>
-    
     <div class="container">
-        <div class="status info">
-            <strong>Status:</strong> <span id="status">Loading...</span>
-        </div>
-        
-        <div class="stats">
-            <div class="stat">
-                <div class="stat-value" id="activeSessions">0</div>
-                <div class="stat-label">Active Sessions</div>
-            </div>
-            <div class="stat">
-                <div class="stat-value" id="completedSessions">0</div>
-                <div class="stat-label">Completed</div>
-            </div>
-            <div class="stat">
-                <div class="stat-value" id="cancelledSessions">0</div>
-                <div class="stat-label">Cancelled</div>
-            </div>
-            <div class="stat">
-                <div class="stat-value" id="totalEvents">0</div>
-                <div class="stat-label">Total Events</div>
-            </div>
-        </div>
-    </div>
-
-    <div class="container">
-        <h2>🆔 Offer ID</h2>
         <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
             <label for="offerInput">Offer ID:</label>
-            <input id="offerInput" type="text" placeholder="Enter offer ID"
-                   style="flex:1; min-width:280px; padding:8px 10px; border:1px solid #cbd5e1; border-radius:6px; font-size:14px;" />
+            <input id="offerInput" type="text" placeholder="Enter offer ID" style="flex:1; min-width:280px; padding:8px 10px; border:1px solid #cbd5e1; border-radius:6px; font-size:14px;" />
             <button id="saveOfferBtn" class="test">Save</button>
-            <button id="resetOfferBtn" class="clear" title="Reset to default">Reset</button>
         </div>
-        <div class="status info" style="margin-top:10px;">
-            <strong>Using offer:</strong> <code id="currentOfferDisplay">bing-bong-1-8Di1dEf1LTe</code>
-        </div>
-    </div>
 
-    <div class="container">
-        <h2>🌐 Domain</h2>
         <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
             <label for="domainInput">Domain:</label>
-            <input id="domainInput" type="text" placeholder="https://checkout.plandalf.dev"
-                   style="flex:1; min-width:280px; padding:8px 10px; border:1px solid #cbd5e1; border-radius:6px; font-size:14px;" />
+            <input id="domainInput" type="text" placeholder="https://checkout.plandalf.dev" style="flex:1; min-width:280px; padding:8px 10px; border:1px solid #cbd5e1; border-radius:6px; font-size:14px;" />
             <button id="saveDomainBtn" class="test">Save</button>
-            <button id="resetDomainBtn" class="clear" title="Reset to default">Reset</button>
         </div>
-        <div class="status info" style="margin-top:10px;">
-            <strong>Using domain:</strong> <code id="currentDomainDisplay">https://checkout.plandalf.dev</code>
-        </div>
-    </div>
-
-    <div class="container">
-        <h2>📋 Event Log</h2>
         <div class="log" id="log"></div>
-        <button onclick="clearLog()" class="clear">Clear Log</button>
     </div>
 
     <div class="container">
         <h2>🧪 Embed Type Tests</h2>
         <p>Test different embed types using offer: <code id="currentOfferDisplayInline">bing-bong-1-8Di1dEf1LTe</code></p>
-        
-        <div class="buttons">
-            <button 
-                data-numi-popup-size="large" 
-                data-numi-offer="payments-example-VSfZ8ZeG5jz/test" 
-                data-numi-embed-type="popup"
-                class="popup">
-                Popup (Large)
-            </button>
-            
-            <button 
-                data-numi-popup-size="medium" 
-                data-numi-offer="bing-bong-1-8Di1dEf1LTe" 
-                data-numi-embed-type="popup"
-        
-                class="popup">
-                Popup (Medium)
-            </button>
-            
-            <button 
-                data-numi-popup-size="small" 
-                data-numi-offer="bing-bong-1-8Di1dEf1LTe" 
-                data-numi-embed-type="popup"
-                class="popup">
-                Popup (Small)
-            </button>
-            
-            <!-- <button 
-                data-numi-offer="bing-bong-1-8Di1dEf1LTe" 
-                data-numi-embed-type="standard"
-                class="standard">
-                Standard Embed
-            </button> -->
-            
-            <button 
-                data-numi-slider-direction="right" 
-                data-numi-offer="bing-bong-1-8Di1dEf1LTe" 
-                data-numi-embed-type="slider"
-                class="slider">
-                Slider (Right)
-            </button>
-            
-            <button 
-                data-numi-slider-direction="left" 
-                data-numi-offer="bing-bong-1-8Di1dEf1LTe" 
-                data-numi-embed-type="slider"
-                class="slider">
-                Slider (Left)
-            </button>
+
+        <!-- 1) Present via JavaScript (Popup) -->
+        <div class="action-grid">
+            <div class="action-left">
+                <p>Present offer via JavaScript</p>
+                <div class="code-block"><pre>plandalf.presentOffer('OFFER_ID', { size: 'md' })</pre></div>
+                <div class="buttons">
+                    <button class="test" onclick="plandalf.presentOffer(getStoredOfferId(), { size: 'md', domain: getStoredDomain(), env: 'test', price: 'price_1RsreVFmvUKqVS2H9ytjMct3' })">Present Offer (JS)</button>
+                </div>
+            </div>
+            <div class="action-right">
+                <div class="status info">No inline preview for modal actions.</div>
+            </div>
+        </div>
+
+        <!-- 2) Present via data attributes (Popup) -->
+        <div class="tiles-grid">
+            <div class="tile">
+                <p>Present offer using data attributes</p>
+                <div class="code-block"><pre>&lt;button data-plandalf="present-offer" data-offer-id="OFFER_ID" data-size="lg"&gt;Open&lt;/button&gt;</pre></div>
+                <div class="buttons">
+                    <button
+                        data-plandalf="present-offer"
+                        data-offer-id="VSfZ8ZeG5jz"
+                        data-size="lg"
+                        data-env="test"
+                    >
+                        Present Offer (data)
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3) Legacy Numi Popups -->
+        <div class="tiles-grid">
+            <div class="tile">
+                <p>Legacy Numi popups</p>
+                <div class="code-block"><pre>&lt;button data-numi-embed-type="popup" data-numi-offer="OFFER_ID" data-numi-popup-size="medium"&gt;Open&lt;/button&gt;</pre></div>
+                <div class="buttons">
+                    <button
+                        data-numi-popup-size="medium"
+                        data-numi-offer="bing-bong-1-8Di1dEf1LTe"
+                        data-numi-embed-type="popup"
+                        class="popup">
+                        Popup Numi (Medium)
+                    </button>
+                    <button
+                        data-numi-popup-size="small"
+                        data-numi-offer="bing-bong-1-8Di1dEf1LTe"
+                        data-numi-embed-type="popup"
+                        class="popup">
+                        Popup Numi (Small)
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 4) Sliders -->
+        <div class="tiles-grid">
+            <div class="tile">
+                <p>Slider (Left/Right)</p>
+                <div class="code-block"><pre>&lt;button data-numi-embed-type="slider" data-numi-offer="OFFER_ID" data-numi-slider-direction="right"&gt;Open&lt;/button&gt;</pre></div>
+                <div class="buttons">
+                    <button
+                        data-numi-slider-direction="right"
+                        data-numi-offer="bing-bong-1-8Di1dEf1LTe"
+                        data-numi-embed-type="slider"
+                        class="slider">
+                        Slider (Right)
+                    </button>
+                    <button
+                        data-numi-slider-direction="left"
+                        data-numi-offer="bing-bong-1-8Di1dEf1LTe"
+                        data-numi-embed-type="slider"
+                        class="slider">
+                        Slider (Left)
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 5) Inline Mount Offer -->
+        <div class="action-grid">
+            <div class="action-left">
+                <p>Inline mount (standard embed)</p>
+                <div class="code-block"><pre>&lt;div
+  data-plandalf="mount-offer"
+  data-offer-id="OFFER_ID"
+  data-currency="GBP"
+  data-interval="year"
+  data-redirect_url="https://example.com/return"
+  data-customer="customer[email]=alice%40example.com&amp;customer[name]=Alice"
+  data-items="items[0][lookup_key]=parent-price-key&amp;items[0][quantity]=1"
+&gt;&lt;/div&gt;</pre></div>
+            </div>
+            <div class="action-right">
+                <div
+                    id="embedTypeOfferInline"
+                    data-plandalf="mount-offer"
+                    data-offer-id=""
+                    data-plandalf-domain=""
+                    data-currency="GBP"
+                    data-interval="year"
+                    data-redirect_url="https://example.com/return"
+                    data-customer="customer[email]=alice%40example.com&amp;customer[name]=Alice"
+                    data-items="items[0][lookup_key]=parent-price-key&amp;items[0][quantity]=1"
+                    style="width:100%; min-height:520px;"
+                ></div>
+            </div>
+        </div>
+
+        <!-- 6) Modal Offer (MD) with currency dropdown -->
+        <div class="action-grid">
+            <div class="action-left">
+                <p>Present MD modal with dynamic currency override</p>
+                <div class="code-block"><pre>&lt;select id="presentCurrencySelect"&gt;
+  &lt;option value="aud" selected&gt;AUD&lt;/option&gt;
+  &lt;option value="usd"&gt;USD&lt;/option&gt;
+  &lt;option value="eur"&gt;EUR&lt;/option&gt;
+  &lt;option value="gbp"&gt;GBP&lt;/option&gt;
+&lt;/select&gt;
+&lt;button
+  data-plandalf="present-offer"
+  data-size="md"
+  data-currency="aud"
+  id="presentOfferWithCurrency"
+&gt;Present MD Offer&lt;/button&gt;</pre></div>
+                <div class="buttons" style="gap:6px; align-items:center;">
+                    <label for="presentCurrencySelect">Currency:</label>
+                    <select id="presentCurrencySelect" style="padding:6px 8px; border:1px solid #cbd5e1; border-radius:6px;">
+                        <option value="aud" selected>AUD</option>
+                        <option value="usd">USD</option>
+                        <option value="eur">EUR</option>
+                        <option value="gbp">GBP</option>
+                    </select>
+                    <button
+                        data-plandalf="present-offer"
+                        data-size="md"
+                        data-currency="aud"
+                        data-offer-id="HpyJhDRAUZC"
+                    >Present MD Offer</button>
+                </div>
+            </div>
+            <div class="action-right">
+                <div class="status info">No inline preview for modal actions. Uses Offer ID and Domain from the top inputs.</div>
+            </div>
+        </div>
+
+        <!-- 7) PyBites Checkout Example (price param) -->
+        <div class="action-grid">
+            <div class="action-left">
+                <p>Send a primary <code>price</code> key for the main item.</p>
+                <div class="code-block"><pre>&lt;input id="pybitesPriceInput" value="price_1S1K4CJqcZGQsnciIslzdvaM" /&gt;
+&lt;button
+  id="pybitesPresentBtn"
+  data-plandalf="present-offer"
+  data-size="md"
+  data-offer-id="pybites-a-DQQ6wx49P6j"
+  data-price="price_1S1K4CJqcZGQsnciIslzdvaM"
+&gt;Present PyBites MD Offer&lt;/button&gt;</pre></div>
+                <div class="buttons" style="gap:8px; align-items:center;">
+                    <label for="pybitesPriceInput">Primary price:</label>
+                    <input id="pybitesPriceInput" type="text" value="price_1S1K4CJqcZGQsnciIslzdvaM" style="padding:6px 8px; border:1px solid #cbd5e1; border-radius:6px;" />
+
+                    <button
+                        data-price-id="price_1Q8JB5JqcZGQsnciVcCrtT4R"
+                        class="checkout-button inline-block bg-green-600 text-white font-semibold py-2 px-4 rounded hover:bg-green-700">
+                        Subscribe OLD
+                    </button>
+
+                    <button
+                        data-plandalf="present-offer"
+                        data-size="md"
+                        data-plandalf-domain="https://pybites.plandalf.dev"
+                        data-offer-id="pybites-a-DQQ6wx49P6j"
+                        data-price="price_1S1K4CJqcZGQsnciIslzdvaM"
+                        class="checkout-button inline-block bg-green-600 text-white font-semibold py-2 px-4 rounded hover:bg-green-700">
+                        Subscribe New
+                    </button>
+
+                    <button
+                        id="pybitesPresentBtn"
+                        data-plandalf="present-offer"
+                        data-size="md"
+                        data-plandalf-domain="https://pybites.plandalf.dev"
+                        data-offer-id="pybites-a-DQQ6wx49P6j"
+                        data-price="price_1S1K4CJqcZGQsnciIslzdvaM"
+                    >Present PyBites MD Offer</button>
+
+                    <button
+                        id="pybitesPresentBtn2"
+                        data-plandalf="present-offer"
+                        data-size="md"
+                        data-plandalf-domain="http://localhost:8000"
+                        data-offer-id="HpyJhDRAUZC"
+                        data-env="test"
+                        data-currency="AUD"
+                        data-items="items[0][lookup_key]=price_1RsreVFmvUKqVS2H9ytjMct3&amp;items[0][quantity]=1"
+                    >Present PyBites MD Offer TWO</button>
+                </div>
+            </div>
+            <div class="action-right">
+                <div class="status info">No inline preview for modal actions. Offer ID and Domain come from the top inputs.</div>
+            </div>
         </div>
     </div>
 
@@ -207,6 +341,95 @@
     </div>
 
     <div class="container">
+        <h2>🧾 Billing Portal Inline (data-plandalf)</h2>
+        <div class="action-grid">
+            <div class="action-left">
+                <p>Inline mount using the new <code>data-plandalf</code> API. Uses <code>window.plandalfConfig.customer</code> if present.</p>
+                <div class="code-block"><pre>&lt;div data-plandalf="mount-portal" data-id="{SIGNED_JWT}"&gt;&lt;/div&gt;</pre></div>
+                <div class="buttons">
+                    <button class="test" id="mountPortalProgrammatically">Mount Portal Programmatically</button>
+                </div>
+            </div>
+            <div class="action-right">
+                <div id="portalInlineMount" data-plandalf="mount-portal" data-id="" style="width:100%; min-height:420px;"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <h2>📦 Plandalf Offer - Mount (Inline)</h2>
+        <div class="action-grid">
+            <div class="action-left">
+                <p>Embed an offer inline in your page. The embed auto-resizes.</p>
+                <div class="code-block"><pre>&lt;div
+  data-plandalf="mount-offer"
+  data-offer-id="OFFER_ID"
+  data-currency="GBP"
+  data-interval="year"
+  data-redirect_url="https://example.com/return"
+  data-customer="customer[email]=alice%40example.com&amp;customer[name]=Alice"
+  data-items="items[0][lookup_key]=parent-price-key&amp;items[0][quantity]=1"
+&gt;&lt;/div&gt;</pre></div>
+            </div>
+            <div class="action-right">
+                <button
+                    id="offer-args"
+                    data-plandalf="present-offer"
+                    data-offer-id="payments-example-VSfZ8ZeG5jz"
+
+                    data-currency="GBP"
+                    data-interval="year"
+                    data-size="md"
+                    data-redirect_url="https://example.com/return"
+                    data-customer="customer[email]=alice%40example.com&amp;customer[name]=Alice"
+                    data-items="items[0][lookup_key]=parent-price-key&amp;items[0][quantity]=1"
+                >start</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <h2>🧪 Option Selector Default via price param (md)</h2>
+        <div class="action-grid">
+            <div class="action-left">
+                <p>Mounts the offer with a specific price so the Option Selector should default to the MD option.</p>
+                <div class="code-block"><pre>&lt;div
+  data-plandalf="mount-offer"
+  data-offer-id="HpyJhDRAUZC"
+  data-domain="http://localhost:8000"
+  data-items="items[0][lookup_key]=price_1RsreVFmvUKqVS2H9ytjMct3&amp;items[0][quantity]=1"
+  style="width:100%; min-height:560px;"
+&gt;&lt;/div&gt;</pre></div>
+            </div>
+            <div class="action-right">
+                <button
+                    data-plandalf="present-offer"
+                    data-offer-id="HpyJhDRAUZC"
+                    data-domain="http://localhost:8000"
+                    data-env="test"
+                    data-items="items[0][lookup_key]=price_1RsreVFmvUKqVS2H9ytjMct3&amp;items[0][quantity]=1"
+                >start</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <h2>🪄 Plandalf Offer - Present (Modal)</h2>
+        <div class="action-grid">
+            <div class="action-left">
+                <p>Programmatically present an offer in a modal.</p>
+                <div class="code-block"><pre>&lt;script&gt;\nplandalf.presentOffer('OFFER_ID', { size: 'lg' });\n&lt;/script&gt;</pre></div>
+                <div class="buttons">
+                    <button class="test" onclick="plandalf.presentOffer(getStoredOfferId(), { size: 'lg', domain: getStoredDomain() })">Present Offer</button>
+                </div>
+            </div>
+            <div class="action-right">
+                <div class="status info">No inline preview for modal actions.</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
         <h2>🧾 Billing Portal Test (Provided Token)</h2>
         <p>Uses a hardcoded token via <code>data-numi-customer</code>.</p>
         <div class="buttons">
@@ -219,6 +442,24 @@
             >
                 Billing Portal (Provided Token)
             </button>
+        </div>
+
+        <h4>Portal Programmatic Mount Target</h4>
+        <div id="portalProgrammaticMount" style="width:100%; min-height:420px;"></div>
+    </div>
+
+    <div class="container">
+        <h2>🧱 Widgets - Pricing Table</h2>
+        <div class="action-grid">
+            <div class="action-left">
+                <p>Mount a pricing table widget inline with data attributes.</p>
+                <div class="code-block"><pre>&lt;div data-plandalf="mount-widget" data-widget-type="pricing-table" data-widget-id="pricing"&gt;&lt;/div&gt;</pre></div>
+                <p>Or programmatically:</p>
+                <div class="code-block"><pre>plandalf.widgets.mount(document.getElementById('widgetMount'), {\n  type: 'pricing-table',\n  widgetId: 'pricing'\n});</pre></div>
+            </div>
+            <div class="action-right">
+                <div id="widgetMount" data-plandalf="mount-widget" data-widget-type="pricing-table" data-widget-id="pricing" style="width:100%; min-height:520px;"></div>
+            </div>
         </div>
     </div>
 
@@ -287,6 +528,13 @@
                 const suffix = slashIdx !== -1 ? current.substring(slashIdx) : '';
                 el.setAttribute('data-numi-offer', offerId + suffix);
             });
+
+            const newApiNodes = document.querySelectorAll('[data-plandalf][data-offer-id]');
+            newApiNodes.forEach((el) => {
+                if (el.getAttribute('data-offer-id')) {
+                    el.setAttribute('data-offer-id', offerId);
+                }
+            });
         }
 
         const CURRENT_OFFER_ID = getStoredOfferId();
@@ -300,93 +548,109 @@
             nodes.forEach((el) => {
                 el.setAttribute('data-numi-domain', normalized.replace(/^https?:\/\//i, '').replace(/\/$/, ''));
             });
+
+            const plandalfNodes = document.querySelectorAll('[data-plandalf]');
+            plandalfNodes.forEach((el) => {
+                el.setAttribute('data-plandalf-domain', normalized);
+            });
         }
 
         // =============================================================================
         // TEST UTILITIES
         // =============================================================================
-        
+
         let stats = {
             activeSessions: 0,
             completedSessions: 0,
             cancelledSessions: 0,
             totalEvents: 0
         };
-        
+
         function log(message, type = 'info') {
             const logDiv = document.getElementById('log');
             const time = new Date().toLocaleTimeString();
             const emoji = type === 'error' ? '❌' : type === 'success' ? '✅' : type === 'warning' ? '⚠️' : '📝';
             logDiv.innerHTML += `<div>[${time}] ${emoji} ${message}</div>`;
             logDiv.scrollTop = logDiv.scrollHeight;
-            
+
             stats.totalEvents++;
             updateStats();
         }
-        
+
         function clearLog() {
             document.getElementById('log').innerHTML = '';
             stats.totalEvents = 0;
             updateStats();
         }
-        
+
         function updateStats() {
-            document.getElementById('activeSessions').textContent = stats.activeSessions;
-            document.getElementById('completedSessions').textContent = stats.completedSessions;
-            document.getElementById('cancelledSessions').textContent = stats.cancelledSessions;
-            document.getElementById('totalEvents').textContent = stats.totalEvents;
         }
-        
+
         function updateStatus(status) {
-            document.getElementById('status').textContent = status;
+            const s = document.getElementById('status');
+            if (s) s.textContent = status;
+        }
+
+        // Prefix helper for session type in logs
+        function getSessionTypeTag(source) {
+            try {
+                const t = source?.sessionType || source?.session?.sessionType;
+                if (t) return t;
+                const c = source?.sessionContext || source?.session?.sessionContext;
+                if (c === 'portal') return 'PortalSession';
+                if (c === 'widget') return 'WidgetSession';
+                return 'CheckoutSession';
+            } catch (_) {
+                return 'CheckoutSession';
+            }
         }
 
         // =============================================================================
         // PLANDALF CONFIG (runs before script loads)
         // =============================================================================
-        
+
         window.plandalfConfig = {
             domain: CURRENT_DOMAIN,
             // Global event handlers
             onInit: function(data) {
-                log(`🚀 Session started: ${data.sessionId}`, 'info');
+                log(`[${getSessionTypeTag(data)}] 🚀 Session started: ${data.sessionId}`, 'info');
                 stats.activeSessions++;
                 updateStats();
             },
-            
+
             onSuccess: function(data) {
-                log(`💰 Payment succeeded: ${data.orderNumber || 'N/A'}`, 'success');
+                log(`[${getSessionTypeTag(data)}] 💰 Payment succeeded: ${data.orderNumber || 'N/A'}`, 'success');
             },
-            
+
             onComplete: function(data) {
-                log(`✅ Session completed: ${data.orderNumber || 'N/A'}`, 'success');
+                log(`[${getSessionTypeTag(data)}] ✅ Session completed: ${data.orderNumber || 'N/A'}`, 'success');
                 stats.activeSessions = Math.max(0, stats.activeSessions - 1);
                 stats.completedSessions++;
                 updateStats();
             },
-            
+
             onCancel: function(data) {
-                log(`❌ Session cancelled: ${data.cancelReason}`, 'error');
+                log(`[${getSessionTypeTag(data)}] ❌ Session cancelled: ${data.cancelReason}`, 'error');
                 stats.activeSessions = Math.max(0, stats.activeSessions - 1);
                 stats.cancelledSessions = (stats.cancelledSessions || 0) + 1;
                 updateStats();
             },
-            
+
             onLineItemChange: function(data) {
                 const changeTypeEmoji = {
                     'added': '➕',
-                    'removed': '➖', 
+                    'removed': '➖',
                     'quantity_changed': '🔢',
                     'price_changed': '💰'
                 };
-                log(`${changeTypeEmoji[data.changeType] || '🛒'} Cart updated: ${data.changeType} - Total: ${data.newTotal || 'N/A'} ${data.currency || ''}`, 'info');
+                log(`[${getSessionTypeTag(data)}] ${changeTypeEmoji[data.changeType] || '🛒'} Cart updated: ${data.changeType} - Total: ${data.newTotal || 'N/A'} ${data.currency || ''}`, 'info');
             },
-            
+
             onClosed: function(data) {
                 const statusEmoji = data.wasCompleted ? '✅' : '🚪';
-                log(`${statusEmoji} ${data.embedType} closed - Completed: ${data.wasCompleted}`, data.wasCompleted ? 'success' : 'warning');
+                log(`[${getSessionTypeTag(data)}] ${statusEmoji} ${data.embedType} closed - Completed: ${data.wasCompleted}`, data.wasCompleted ? 'success' : 'warning');
             },
-            
+
             // Specific offer configuration
             offers: {
                 'bing-bong-1-8Di1dEf1LTe': {
@@ -414,117 +678,117 @@
         // =============================================================================
         // PROGRAMMATIC API TESTS
         // =============================================================================
-        
+
         async function testPromiseAPI() {
             try {
                 log('🔄 Testing Promise API - waiting for any checkout...', 'info');
-                
+
                 const checkout = await plandalf.offers.get('*').onCheckout();
                 log(`🎯 Promise API: Caught session ${checkout.id} for ${checkout.offerId}`, 'success');
-                
+
                 const result = await checkout.waitForCompletion();
                 log(`🎉 Promise API: Session completed successfully!`, 'success');
-                
+
             } catch (error) {
                 log(`⚠️ Promise API test cancelled: ${error.message}`, 'warning');
             }
         }
-        
+
         async function testSessionTracking() {
             log('📋 Setting up detailed session tracking...', 'info');
-            
+
             plandalf.offers.get('*').onCheckout((checkout) => {
-                log(`📊 Session Tracker: Monitoring ${checkout.id}`, 'info');
-                
+                log(`[${getSessionTypeTag(checkout)}] 📊 Session Tracker: Monitoring ${checkout.id}`, 'info');
+
                 checkout
                     .onPageChange((data) => {
-                        log(`📄 Session ${checkout.id}: Page changed to ${data.pageId}`, 'info');
+                        log(`[${getSessionTypeTag(data)}] 📄 Session ${checkout.id}: Page changed to ${data.pageId}`, 'info');
                     })
                     .onSubmit((data) => {
-                        log(`📤 Session ${checkout.id}: Payment submitted`, 'info');
+                        log(`[${getSessionTypeTag(data)}] 📤 Session ${checkout.id}: Payment submitted`, 'info');
                     })
                     .onResize((data) => {
-                        log(`📏 Session ${checkout.id}: Form resized to ${data.size}px`, 'info');
+                        log(`[${getSessionTypeTag(data)}] 📏 Session ${checkout.id}: Form resized to ${data.size}px`, 'info');
                     });
             });
-            
+
             log('✅ Session tracking active!', 'success');
         }
-        
+
         async function testWildcardMatching() {
             log('🔍 Testing wildcard pattern matching...', 'info');
-            
+
             // Test bing-bong wildcard
             plandalf.offers.get('bing-bong-*').onCheckout((checkout) => {
                 log(`🎯 Wildcard matched: ${checkout.offerId}`, 'success');
             });
-            
+
             // Test universal wildcard
             plandalf.offers.get('*').onCheckout((checkout) => {
                 log(`⭐ Universal wildcard matched: ${checkout.offerId}`, 'success');
             });
-            
+
             log('✅ Wildcard listeners active!', 'success');
         }
-        
+
         function testAnalyticsSetup() {
             log('📈 Setting up analytics tracking...', 'info');
-            
+
             plandalf.offers.get('*').onCheckout((checkout) => {
-                log(`📊 Analytics: Tracking session ${checkout.id}`, 'info');
-                
+                log(`[${getSessionTypeTag(checkout)}] 📊 Analytics: Tracking session ${checkout.id}`, 'info');
+
                 checkout
                     .onInit((data) => {
-                        log(`📈 Analytics: begin_checkout for ${checkout.offerId}`, 'info');
+                        log(`[${getSessionTypeTag(data)}] 📈 Analytics: begin_checkout for ${checkout.offerId}`, 'info');
                         // gtag('event', 'begin_checkout', { checkout_id: checkout.id });
                     })
                     .onSubmit((data) => {
-                        log(`📈 Analytics: add_payment_info for ${checkout.id}`, 'info');
+                        log(`[${getSessionTypeTag(data)}] 📈 Analytics: add_payment_info for ${checkout.id}`, 'info');
                         // gtag('event', 'add_payment_info', { checkout_id: checkout.id });
                     })
                     .onSuccess((data) => {
-                        log(`📈 Analytics: purchase event for ${data.orderNumber}`, 'success');
+                        log(`[${getSessionTypeTag(data)}] 📈 Analytics: purchase event for ${data.orderNumber}`, 'success');
                         // gtag('event', 'purchase', { transaction_id: data.orderNumber });
                     });
             });
-            
+
             log('✅ Analytics tracking setup complete!', 'success');
         }
 
         async function waitForAnyPurchase() {
             try {
                 log('⏳ Waiting for any purchase to complete...', 'info');
-                
+
                 const result = await plandalf.offers.get('*').onAnyComplete();
-                
+
                 log(`🎉 Purchase completed!`, 'success');
                 log(`📦 Offer: ${result.session.offerId}`, 'info');
                 log(`🆔 Order: ${result.orderNumber || 'N/A'}`, 'info');
                 log(`⏱️ Duration: ${result.sessionDuration}ms`, 'info');
-                
+
             } catch (error) {
                 log(`⚠️ No purchases completed: ${error.message}`, 'warning');
             }
         }
-        
+
         async function testSessionState() {
             try {
                 log('🔍 Testing session state tracking...', 'info');
-                
+
                 const checkout = await plandalf.offers.get('*').onCheckout();
-                log(`📋 Monitoring session state for ${checkout.id}`, 'info');
-                
+                log(`[${getSessionTypeTag(checkout)}] 📋 Monitoring session state for ${checkout.id}`, 'info');
+
                 // Monitor state changes
                 const interval = setInterval(() => {
                     const state = checkout.getState();
-                    log(`📊 State: ${state.events.length} events, Active: ${state.isActive}`, 'info');
-                    
+                    log(`[${getSessionTypeTag(checkout)}] 📊 State: ${state.events.length} events, Active: ${state.isActive}`, 'info');
+
                     if (!state.isActive) {
                         clearInterval(interval);
                         log(`📈 Final state: ${JSON.stringify(state, null, 2)}`, 'success');
                     }
                 }, 2000);
-                
+
             } catch (error) {
                 log(`⚠️ Session state test cancelled: ${error.message}`, 'warning');
             }
@@ -533,7 +797,7 @@
         // =============================================================================
         // INITIALIZATION
         // =============================================================================
-        
+
         document.addEventListener('DOMContentLoaded', () => {
             // Wire up Offer ID input and initial application
             const input = document.getElementById('offerInput');
@@ -541,6 +805,12 @@
             const resetBtn = document.getElementById('resetOfferBtn');
             if (input) input.value = CURRENT_OFFER_ID;
             applyOfferId(CURRENT_OFFER_ID);
+            // Also set new API mounts to current input values
+            const offerMounts = document.querySelectorAll('#embedTypeOfferInline, #offerInlineMount, [data-plandalf="present-offer"]');
+            offerMounts.forEach((el) => {
+                el.setAttribute('data-offer-id', CURRENT_OFFER_ID);
+                el.setAttribute('data-plandalf-domain', CURRENT_DOMAIN);
+            });
 
             // Wire up Domain input and initial application
             const domainInput = document.getElementById('domainInput');
@@ -553,6 +823,8 @@
                 const newId = (input?.value || '').trim() || DEFAULT_OFFER_ID;
                 setStoredOfferId(newId);
                 applyOfferId(newId);
+                document.querySelectorAll('[data-offer-id]').forEach((el) => el.setAttribute('data-offer-id', newId));
+                document.querySelectorAll('[data-plandalf="present-offer"]').forEach((el) => el.setAttribute('data-offer-id', newId));
                 log(`💾 Offer ID saved: ${newId}`, 'success');
                 // Reload to reinitialize v1.js with new attributes
                 setTimeout(() => window.location.reload(), 150);
@@ -573,6 +845,8 @@
                 const newDomain = (domainInput?.value || '').trim() || DEFAULT_DOMAIN;
                 setStoredDomain(newDomain);
                 applyDomain(newDomain);
+                document.querySelectorAll('[data-plandalf]')
+                  .forEach((el) => el.setAttribute('data-plandalf-domain', normalizeDomain(newDomain)));
                 log(`🌐 Domain saved: ${normalizeDomain(newDomain)}`, 'success');
                 // Reload to reinitialize v1.js with new attributes
                 setTimeout(() => window.location.reload(), 150);
@@ -590,7 +864,7 @@
             });
 
             updateStatus('Waiting for plandalf.js to load...');
-            
+
             const checkPlandalf = () => {
                 if (window.plandalf) {
                     updateStatus('✅ Ready');
@@ -599,8 +873,75 @@
                     setTimeout(checkPlandalf, 100);
                 }
             };
-            
+
             checkPlandalf();
+
+            // Programmatic mount demo
+            const mountBtn = document.getElementById('mountPortalProgrammatically');
+            if (mountBtn) {
+                mountBtn.addEventListener('click', () => {
+                    const el = document.getElementById('portalProgrammaticMount');
+                    if (!el) return;
+                    try {
+                        plandalf.mountPortal(el, { customer: (window.plandalfConfig && window.plandalfConfig.customer) || '' });
+                        log('📌 Portal mounted programmatically.', 'success');
+                    } catch (e) {
+                        log('❌ Failed to mount portal programmatically: ' + e.message, 'error');
+                    }
+                });
+            }
+
+            // Wire currency dropdown to present-offer button (MD)
+            const currencySelect = document.getElementById('presentCurrencySelect');
+            const presentBtn = document.getElementById('presentOfferWithCurrency');
+            if (currencySelect && presentBtn) {
+                const syncCurrency = () => {
+                    const val = (currencySelect.value || '').toLowerCase();
+                    presentBtn.setAttribute('data-currency', val);
+                };
+                currencySelect.addEventListener('change', syncCurrency);
+                syncCurrency();
+            }
+
+            // PyBites price input sync
+            const pyPrice = document.getElementById('pybitesPriceInput');
+            const pyBtn = document.getElementById('pybitesPresentBtn');
+            if (pyPrice && pyBtn) {
+                const syncPrice = () => {
+                    const v = (pyPrice.value || '').trim();
+                    if (v) pyBtn.setAttribute('data-price', v);
+                };
+                pyPrice.addEventListener('input', syncPrice);
+                syncPrice();
+            }
+
+            // Present MD Offer with currency dropdown
+            const presentOfferWithCurrencyBtn = document.getElementById('presentOfferWithCurrency');
+            const presentCurrencySelect = document.getElementById('presentCurrencySelect');
+
+            if (presentOfferWithCurrencyBtn && presentCurrencySelect) {
+                presentOfferWithCurrencyBtn.addEventListener('click', () => {
+                    const selectedCurrency = presentCurrencySelect.value;
+                    presentOfferWithCurrencyBtn.setAttribute('data-currency', selectedCurrency);
+                    log(`💰 Present MD Offer with currency: ${selectedCurrency}`, 'info');
+                });
+            }
+
+            // Sync price input to present-offer button (PyBites)
+            const pybitesPriceInput = document.getElementById('pybitesPriceInput');
+            const pybitesPresentBtn = document.getElementById('pybitesPresentBtn');
+
+            if (pybitesPriceInput && pybitesPresentBtn) {
+                const syncPrice = () => {
+                    const priceKey = (pybitesPriceInput.value || '').trim();
+                    if (priceKey) {
+                        pybitesPresentBtn.setAttribute('data-price', priceKey);
+                        log(`💰 PyBites Price Key synced: ${priceKey}`, 'info');
+                    }
+                };
+                pybitesPriceInput.addEventListener('input', syncPrice);
+                syncPrice(); // Initial sync
+            }
         });
     </script>
 
@@ -614,6 +955,11 @@
                 const btn = document.getElementById('billingPortalButton');
                 if (btn && data && data.token) {
                     btn.setAttribute('data-numi-customer', data.token);
+                    // also feed global config for plandalf inline portal
+                    try { window.plandalfConfig = window.plandalfConfig || {}; window.plandalfConfig.customer = data.token; } catch(_) {}
+                    // update inline plandalf portal mount id if present
+                    const inline = document.getElementById('portalInlineMount');
+                    if (inline) inline.setAttribute('data-id', '');
                     const status = document.getElementById('billingPortalStatus');
                     if (status) {
                         status.textContent = '✅ Test token attached. Click the button to open the portal.';

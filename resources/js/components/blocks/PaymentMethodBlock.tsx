@@ -11,6 +11,13 @@ function PaymentMethodBlock() {
   const [showForm, setShowForm] = useState(!session?.payment_method);
   const [isRedirectPayment, setIsRedirectPayment] = useState(false);
 
+  // Toggle address collection on/off from block settings
+  const [collectsAddress] = Numi.useStateBoolean({
+    label: 'Collect Address',
+    name: 'collectsAddress',
+    defaultValue: true,
+  });
+
   // useeffect, if theres a next_action=confirm_automatically in the url we need to submit the form! (somehow)
   useEffect( () => {
     const doSomething = async () => {
@@ -72,6 +79,7 @@ function PaymentMethodBlock() {
       <StripeElementsComponent
         onSuccess={handleSuccess}
         emailAddress={session.properties?.email}
+        collectsAddress={collectsAddress}
         onEmailChange={(email) => {
           // Update session properties with email
           // console.log('PaymentMethodBlock: Email changed to', email);

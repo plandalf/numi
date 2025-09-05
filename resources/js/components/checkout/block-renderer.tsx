@@ -17,6 +17,10 @@ export function BlockRenderer({ block, children }: {
   const isVisible = useMemo(() => {
     const visibility = block.appearance?.visibility;
 
+    if (Object.keys(globalStateContext.fields).length === 0 && visibility) {
+      return false;
+    }
+
     return isEvaluatedVisible({ fields: globalStateContext.fields }, visibility);
   }, [block, globalStateContext]);
 
@@ -44,7 +48,7 @@ export function BlockRenderer({ block, children }: {
 
   return (
     <BlockContext.Provider value={blockContext}>
-      <div className={cn('m-0 p-0', {
+      <div style={{ visibility: isVisible ? 'visible' : 'collapse'}} className={cn('m-0 p-0', {
         '!hidden': !isVisible,
       })}>{children(blockContext)}</div>
     </BlockContext.Provider>

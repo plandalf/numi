@@ -22,7 +22,7 @@ class OrderReceipt extends Mailable
 
     /**
      *
-     * 
+     *
      * Get the message envelope.
      */
     public function envelope(): Envelope
