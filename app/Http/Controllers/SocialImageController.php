@@ -6,6 +6,8 @@ use App\Models\Store\Offer;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\URL;
+use Money\Currencies\ISOCurrencies;
+use Money\Formatter\IntlMoneyFormatter;
 
 class SocialImageController extends Controller
 {
@@ -23,7 +25,7 @@ class SocialImageController extends Controller
 
         // Retrieve the offer
         $offer = Offer::retrieve($offerId);
-        
+
         if (!$offer) {
             abort(404, 'Offer not found.');
         }
@@ -66,14 +68,20 @@ class SocialImageController extends Controller
                 'font_family' => $offer->theme->font_family ?? 'Inter, system-ui, sans-serif',
             ] : null,
             'items' => $offer->offerItems->map(function ($item) {
+
+
                 return [
                     'name' => $item->name ?? 'Untitled Item',
                     'description' => $item->description ?? '',
-                    'prices' => $item->offerPrices->map(function ($price) {
+                    'prices' => $item->offerPrices->map(function ($offerPrice) {
+                        $currencies = new ISOCurrencies();
+                        $numberFormatter = new \NumberFormatter('en_US', \NumberFormatter::CURRENCY);
+                        $moneyFormatter = new IntlMoneyFormatter($numberFormatter, $currencies);
+
                         return [
-                            'amount' => $price->amount ?? 0,
-                            'currency' => $price->currency ?? 'USD',
-                            'formatted' => $price->formatted_amount ?? '$0.00',
+                            'amount' => $offerPrice->price->calculateAmount(1) ?? 0,
+                            'currency' => $offerPrice->price->currency ?? 'USD',
+                            'formatted' => $moneyFormatter->format($offerPrice->price->calculateAmount(1)) ?? '$0.00',
                         ];
                     }),
                 ];
@@ -103,4 +111,4 @@ class SocialImageController extends Controller
             ['offer' => $offer->getRouteKey()]
         );
     }
-} 
+}

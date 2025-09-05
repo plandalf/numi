@@ -25,6 +25,7 @@ use App\Http\Controllers\PriceController;
 use App\Http\Controllers\ProductsController;
 use App\Http\Controllers\ReusableBlockController;
 use App\Http\Controllers\Settings\ProfileController;
+use App\Http\Controllers\SocialImageController;
 use App\Http\Controllers\TemplateController;
 use App\Http\Controllers\ThemeController;
 use App\Http\Controllers\WebhookController;
@@ -90,7 +91,7 @@ Route::prefix('billing/subscriptions')
     });
 
 // Social image generation route (signed URL required)
-Route::get('/social-image/{offer}', [\App\Http\Controllers\SocialImageController::class, 'generate'])
+Route::get('/social-image/{offer}', [SocialImageController::class, 'generate'])
     ->name('social-image.generate');
 
 // Internal route to generate signed order status URL for admins
