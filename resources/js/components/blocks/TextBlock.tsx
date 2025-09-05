@@ -20,6 +20,9 @@ function TextBlockComponent({ context }: { context: BlockContextType }) {
   const theme = Numi.useTheme();
 
   const isMarkdown = format === 'markdown';
+  const evaluatedText = Numi.useEvaluatedTemplate(text) ?? text;
+  const checkoutState = Numi.useCheckout();
+  const templateDebug = Numi.useTemplateDebug(text);
 
   const appearance = Numi.useAppearance([
     Appearance.padding('padding', 'Padding', {}, '0px'),
@@ -95,13 +98,15 @@ function TextBlockComponent({ context }: { context: BlockContextType }) {
   }
 
   return (
-    isMarkdown ? (
-      <div {...containerProps}>
-        <MarkdownText theme={theme} text={text} {...textProps}  />
-      </div>
-    ) : (
-      <div {...textProps} >{text}</div>
-    )
+    <div>
+      {isMarkdown ? (
+        <div {...containerProps}>
+          <MarkdownText theme={theme} text={evaluatedText} {...textProps}  />
+        </div>
+      ) : (
+        <div {...textProps} >{evaluatedText}</div>
+      )}
+    </div>
   );
 }
 

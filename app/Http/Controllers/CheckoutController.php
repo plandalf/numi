@@ -158,6 +158,8 @@ class CheckoutController extends Controller
             $checkoutSession->update(['metadata' => $metadata]);
         }
 
+        // extremely stupid here.
+
         // Derive a simple selected_option (e.g., 'sm'|'md') based on chosen product name if available
         $checkoutSession->loadMissing(['lineItems.price.product']);
         $selectedOption = null;
@@ -170,6 +172,10 @@ class CheckoutController extends Controller
                 $selectedOption = 'sm';
             }
         }
+
+        // just put something into the session
+        // then allow the toggle to pick it up
+
         if ($selectedOption) {
             $checkoutSession->update([
                 'metadata' => array_merge($checkoutSession->metadata ?? [], [

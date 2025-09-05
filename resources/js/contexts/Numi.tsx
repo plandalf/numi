@@ -474,6 +474,275 @@ const Numi = {
     };
   },
 
+  // Template utilities
+  isTemplate(value: unknown): value is string {
+    return typeof value === 'string' && /\{\{.*\}\}/.test(value);
+  },
+
+  evaluateTemplate(template: string, scope: Record<string, unknown>): unknown {
+    const evalPath = (expr: string): unknown => {
+      try {
+        const inner = expr.trim();
+        if (!inner) return undefined;
+
+        const tokens: (string | number)[] = [];
+        const re = /[^.\[\]]+|\[(\d+)\]/g; // eslint-disable-line no-useless-escape
+        let match: RegExpExecArray | null;
+        while ((match = re.exec(inner)) !== null) {
+          if (match[1] !== undefined) {
+            tokens.push(Number(match[1]));
+          } else if (match[0] !== undefined) {
+            tokens.push(match[0]);
+          }
+        }
+
+        let current: unknown = scope;
+        for (const token of tokens) {
+          if (current == null) return undefined;
+          if (typeof token === 'number') {
+            if (Array.isArray(current)) {
+              current = current[token];
+            } else {
+              return undefined;
+            }
+          } else {
+            if (typeof current === 'object') {
+              current = (current as Record<string, unknown>)[token];
+            } else {
+              return undefined;
+            }
+          }
+        }
+        return current;
+      } catch {
+        return undefined;
+      }
+    };
+
+    try {
+      // Pure expression inside {{ }} only
+      const pureExpr = /^\s*\{\{[\s\S]*\}\}\s*$/.test(template);
+      if (pureExpr) {
+        const inner = template.replace(/^\s*\{\{\s*/, '').replace(/\s*\}\}\s*$/, '');
+        return evalPath(inner);
+      }
+
+      // Interpolate occurrences of {{ ... }} within text
+      const result = template.replace(/\{\{\s*([\s\S]*?)\s*\}\}/g, (_m, expr) => {
+        const value = evalPath(expr);
+        return value == null ? '' : String(value);
+      });
+      return result;
+    } catch {
+      return template;
+    }
+  },
+
+  useEvaluatedTemplate(template?: string): string | undefined {
+    const checkout = Numi.useCheckout();
+
+    const scope = useMemo(() => ({
+      checkout: {
+        line_items: checkout?.session?.line_items ?? [],
+        properties: checkout?.session?.properties ?? {},
+        metadata: checkout?.session?.metadata ?? {},
+      },
+      fields: checkout?.fields ?? {},
+    }), [checkout?.session?.line_items, checkout?.session?.properties, checkout?.session?.metadata, checkout?.fields]);
+
+    // Extract all {{ ... }} expressions once per template
+    const expressions = useMemo((): string[] => {
+      if (!template || typeof template !== 'string') return [];
+      const matches = template.match(/\{\{\s*([\s\S]*?)\s*\}\}/g);
+      if (!matches) return [];
+      return matches.map(m => m.replace(/^\{\{\s*/, '').replace(/\s*\}\}$/, ''));
+    }, [template]);
+
+    // Safe resolver for a single path expression
+    const resolveExpr = useCallback((expr: string): unknown => {
+      try {
+        const tokens: (string | number)[] = [];
+        const re = /[^.\[\]]+|\[(\d+)\]/g; // eslint-disable-line no-useless-escape
+        let match: RegExpExecArray | null;
+        while ((match = re.exec(expr.trim())) !== null) {
+          if (match[1] !== undefined) tokens.push(Number(match[1]));
+          else if (match[0] !== undefined) tokens.push(match[0]);
+        }
+        let current: unknown = scope;
+        for (const token of tokens) {
+          if (current == null) return undefined;
+          if (typeof token === 'number') {
+            if (Array.isArray(current)) current = current[token];
+            else return undefined;
+          } else {
+            if (typeof current === 'object') current = (current as Record<string, unknown>)[token];
+            else return undefined;
+          }
+        }
+        return current;
+      } catch {
+        return undefined;
+      }
+    }, [scope]);
+
+    // Build a light dependency signature only for referenced expressions
+    const depKey = useMemo(() => {
+      const signatureFor = (val: unknown): unknown => {
+        if (val === null) return null;
+        const t = typeof val;
+        if (t === 'string' || t === 'number' || t === 'boolean' || t === 'undefined') return val as unknown;
+        if (Array.isArray(val)) {
+          // Prefer stable identity from common fields to avoid large JSON
+          return val.map((v) => {
+            if (v && typeof v === 'object') {
+              const obj = v as Record<string, unknown>;
+              return obj.id ?? obj.key ?? obj.name ?? null;
+            }
+            return v ?? null;
+          });
+        }
+        if (t === 'object') {
+          const obj = val as Record<string, unknown>;
+          // Pick common identity fields only
+          return { id: obj.id, key: obj.key, name: obj.name, value: obj.value };
+        }
+        return undefined;
+      };
+      const values = expressions.map(e => signatureFor(resolveExpr(e)));
+
+      // If the template references checkout.line_items, add a compact items signature to improve sensitivity
+      const referencesLineItems = expressions.some(e => /(^|\.)checkout\.line_items(\.|\[|$)/.test(e));
+      if (referencesLineItems) {
+        const items = checkout?.session?.line_items ?? [];
+        const itemsSig = items.map((li: any) => ({
+          id: li?.id,
+          productId: li?.product?.id,
+          productName: li?.product?.name,
+          priceId: li?.price?.id,
+          qty: li?.quantity,
+        }));
+        values.push(itemsSig);
+      }
+
+      // If the template references fields, include a compact signature of field values
+      const referencesFields = expressions.some(e => /(^|)fields(\.|$)/.test(e));
+      if (referencesFields) {
+        const fields = checkout?.fields ?? {} as Record<string, { value?: unknown }>;
+        const fieldsSig = Object.keys(fields).sort().map((key) => ({ key, value: (fields as any)[key]?.value }));
+        values.push(fieldsSig);
+      }
+
+      try { return JSON.stringify(values); } catch { return String(values); }
+    }, [expressions, resolveExpr, checkout?.session?.line_items, checkout?.fields]);
+
+    return useMemo(() => {
+      if (!template) return undefined;
+      if (!Numi.isTemplate(template)) return template;
+      const resolved = Numi.evaluateTemplate(template, scope as Record<string, unknown>);
+      return typeof resolved === 'string' || typeof resolved === 'number' ? String(resolved) : undefined;
+    }, [template, depKey]);
+  },
+
+  useTemplateDebug(template?: string): { expressions: string[]; values: unknown[]; depKey: string } {
+    const checkout = Numi.useCheckout();
+
+    // Only build debug data in editor and when a template is present
+    const isEditor = checkout?.isEditor;
+    const shouldDebug = Boolean(isEditor && typeof template === 'string' && /\{\{/.test(template));
+    if (!shouldDebug) {
+      return { expressions: [], values: [], depKey: '' };
+    }
+
+    const scope = useMemo(() => ({
+      checkout: {
+        line_items: checkout?.session?.line_items ?? [],
+        properties: checkout?.session?.properties ?? {},
+        metadata: checkout?.session?.metadata ?? {},
+      },
+      fields: checkout?.fields ?? {},
+    }), [checkout?.session?.line_items, checkout?.session?.properties, checkout?.session?.metadata, checkout?.fields]);
+
+    const expressions = useMemo((): string[] => {
+      if (!template || typeof template !== 'string') return [];
+      const matches = template.match(/\{\{\s*([\s\S]*?)\s*\}\}/g);
+      if (!matches) return [];
+      return matches.map(m => m.replace(/^\{\{\s*/, '').replace(/\s*\}\}$/, ''));
+    }, [template]);
+
+    const resolveExpr = useCallback((expr: string): unknown => {
+      try {
+        const tokens: (string | number)[] = [];
+        const re = /[^.\[\]]+|\[(\d+)\]/g; // eslint-disable-line no-useless-escape
+        let match: RegExpExecArray | null;
+        while ((match = re.exec(expr.trim())) !== null) {
+          if (match[1] !== undefined) tokens.push(Number(match[1]));
+          else if (match[0] !== undefined) tokens.push(match[0]);
+        }
+        let current: unknown = scope;
+        for (const token of tokens) {
+          if (current == null) return undefined;
+          if (typeof token === 'number') {
+            if (Array.isArray(current)) current = current[token];
+            else return undefined;
+          } else {
+            if (typeof current === 'object') current = (current as Record<string, unknown>)[token];
+            else return undefined;
+          }
+        }
+        return current;
+      } catch {
+        return undefined;
+      }
+    }, [scope]);
+
+    const signatureFor = useCallback((val: unknown): unknown => {
+      if (val === null) return null;
+      const t = typeof val;
+      if (t === 'string' || t === 'number' || t === 'boolean' || t === 'undefined') return val as unknown;
+      if (Array.isArray(val)) {
+        return val.map((v) => {
+          if (v && typeof v === 'object') {
+            const obj = v as Record<string, unknown>;
+            return obj.id ?? obj.key ?? obj.name ?? null;
+          }
+          return v ?? null;
+        });
+      }
+      if (t === 'object') {
+        const obj = val as Record<string, unknown>;
+        return { id: obj.id, key: obj.key, name: obj.name, value: obj.value };
+      }
+      return undefined;
+    }, []);
+
+    const values = useMemo(() => expressions.map(e => resolveExpr(e)), [expressions, resolveExpr]);
+
+    const depKey = useMemo(() => {
+      const sigValues: unknown[] = expressions.map(e => signatureFor(resolveExpr(e)));
+      const referencesLineItems = expressions.some(e => /(^|\.)checkout\.line_items(\.|\[|$)/.test(e));
+      if (referencesLineItems) {
+        const items = checkout?.session?.line_items ?? [];
+        const itemsSig = items.map((li: any) => ({
+          id: li?.id,
+          productId: li?.product?.id,
+          productName: li?.product?.name,
+          priceId: li?.price?.id,
+          qty: li?.quantity,
+        }));
+        sigValues.push(itemsSig);
+      }
+      const referencesFields = expressions.some(e => /(^|)fields(\.|$)/.test(e));
+      if (referencesFields) {
+        const fields = checkout?.fields ?? {} as Record<string, { value?: unknown }>;
+        const fieldsSig = Object.keys(fields).sort().map((key) => ({ key, value: (fields as any)[key]?.value }));
+        sigValues.push(fieldsSig);
+      }
+      try { return JSON.stringify(sigValues); } catch { return String(sigValues); }
+    }, [expressions, resolveExpr, signatureFor, checkout?.session?.line_items, checkout?.fields]);
+
+    return { expressions, values, depKey };
+  },
+
   useStateJsonSchema(props: {
     name: string;
     label: string;
@@ -531,6 +800,8 @@ const Numi = {
 
       setRegistered(true);
     }, [blockContext.blockId, appearanceProps]);
+
+    // "sm" , or product ID
 
 
     // Calculate appearance using useMemo to prevent unnecessary recalculations
@@ -756,6 +1027,7 @@ const Numi = {
 
   useStateString(props: { label: string; name: string; defaultValue: string; inspector?: string, format?: string, config?: Record<string, any>, group?: string; asState?: boolean; nullable?: boolean }): [string, (value: string) => void, string] {
     const blockContext = useContext(BlockContext);
+    const checkout = Numi.useCheckout();
 
     useEffect(() => {
       blockContext.registerHook({
@@ -775,12 +1047,15 @@ const Numi = {
       );
 
       if (!existingState) {
-        // Determine initial value honoring nullable
+        // Determine initial value honoring nullable, with session.properties precedence if used as state/hidden
         const configured = get(blockContext.blockConfig, `content.${props.name}`);
+        const sessionValue = checkout?.session?.properties?.[blockContext.blockId];
         const hasConfigured = props.nullable
           ? configured !== undefined
           : !(configured === undefined || (typeof configured === 'string' && configured.trim() === ''));
-        const initialValue = hasConfigured ? configured : props.defaultValue;
+        const initialValue = (props.asState || props.inspector === 'hidden')
+          ? (sessionValue ?? (hasConfigured ? configured : props.defaultValue))
+          : (hasConfigured ? configured : props.defaultValue);
         blockContext.globalState.updateFieldState(
           blockContext.blockId,
           props.name,
@@ -792,6 +1067,7 @@ const Numi = {
     // For editor-editable values (not hidden), prioritize block config
     // For runtime-editable values (hidden), prioritize field state
     const configured = get(blockContext.blockConfig, `content.${props.name}`);
+    const sessionValue = checkout?.session?.properties?.[blockContext.blockId];
     const hasConfigured = (props.nullable ?? false)
       ? configured !== undefined
       : !(configured === undefined || (typeof configured === 'string' && configured.trim() === ''));
@@ -800,8 +1076,8 @@ const Numi = {
       ? rawFieldValue
       : (typeof rawFieldValue === 'string' && rawFieldValue.trim() === '' ? undefined : rawFieldValue);
     const defaultValue = props.inspector !== 'hidden'
-      ? (hasConfigured ? configured : (fieldValue ?? props.defaultValue))
-      : (fieldValue ?? (hasConfigured ? configured : props.defaultValue));
+      ? (hasConfigured ? configured : (fieldValue ?? sessionValue ?? props.defaultValue))
+      : (fieldValue ?? sessionValue ?? (hasConfigured ? configured : props.defaultValue));
 
     const value = defaultValue;
     const format = get(blockContext.blockConfig, `content.format`) ?? props.format ?? 'plain';

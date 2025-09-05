@@ -118,11 +118,13 @@ const EmailInput = React.memo(({
 function StripeElementsComponent({
   onSuccess,
   emailAddress: externalEmailAddress,
-  onEmailChange: externalOnEmailChange
+  onEmailChange: externalOnEmailChange,
+  collectsAddress: externalCollectsAddress,
 }: {
   onSuccess?: () => void;
   emailAddress?: string;
   onEmailChange?: (email: string) => void;
+  collectsAddress?: boolean;
 }) {
   const { session, isEditor } = Numi.useCheckout({});
   const pageProps = usePage().props as any;
@@ -694,6 +696,7 @@ function StripeElementsComponent({
                 emailAddress={emailAddress || ''}
                 onEmailChange={handleEmailChange}
                 collectsEmail={shouldShowEmail}
+                collectsAddress={externalCollectsAddress}
                 sessionId={session.id}
                 onSuccess={onSuccess}
               />
@@ -713,6 +716,7 @@ function PaymentForm({
   emailAddress,
   onEmailChange,
   collectsEmail,
+  collectsAddress,
   sessionId,
   onSuccess
 }: {
@@ -720,6 +724,7 @@ function PaymentForm({
   emailAddress: string;
   onEmailChange: (email: string) => void;
   collectsEmail: boolean;
+  collectsAddress?: boolean;
   sessionId: string|number;
   onSuccess?: () => void;
 }) {
@@ -1121,6 +1126,12 @@ function PaymentForm({
   }, [stripe, elements, emailAddress, collectsEmail, sessionId, paymentType]);
 
   const [shouldShowAddress, setShouldShowAddress] = useState(true);
+
+  // Reflect external collectsAddress flag
+  useEffect(() => {
+    if (collectsAddress === undefined) return;
+    setShouldShowAddress(!!collectsAddress);
+  }, [collectsAddress]);
 
   // Get enabled payment methods from session using intelligence service - memoized
   const paymentSessionForForm = useMemo(() => toPaymentSession(session), [session]);

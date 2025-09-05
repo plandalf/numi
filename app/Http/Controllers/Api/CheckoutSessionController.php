@@ -113,13 +113,6 @@ class CheckoutSessionController extends Controller
             }
         }
 
-        // Debug logging before mutation
-        Log::info('[API:setItem] before', [
-            'session_id' => $checkoutSession->id,
-            'line_items' => $checkoutSession->lineItems()->get(['id','offer_item_id','price_id'])->toArray(),
-            'payload' => $request->only(['offer_item_id','price_id','quantity','required'])
-        ]);
-
         // Prefer updating existing row for this offer_item_id; if not present, update a row with NULL offer_item_id
         $targetOfferItemId = (int) $request->input('offer_item_id');
         $existingForOfferItem = $checkoutSession->lineItems()->where('offer_item_id', $targetOfferItemId)->first();
@@ -144,11 +137,6 @@ class CheckoutSessionController extends Controller
         }
 
         $checkoutSession->load(['lineItems.offerItem.offerPrices', 'lineItems.price.product', 'lineItems.price']);
-
-        Log::info('[API:setItem] after', [
-            'session_id' => $checkoutSession->id,
-            'line_items' => $checkoutSession->lineItems->map->only(['id','offer_item_id','price_id'])->toArray(),
-        ]);
 
         return new CheckoutSessionResource($checkoutSession);
     }

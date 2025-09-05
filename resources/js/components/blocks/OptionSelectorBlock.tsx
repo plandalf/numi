@@ -1,4 +1,4 @@
-import Numi, { Style, BlockContext, Appearance, FontValue } from "@/contexts/Numi";
+import Numi, { Style, BlockContext, Appearance, FontValue, JSONSchemaValue } from "@/contexts/Numi";
 import { BlockContextType } from "@/types/blocks";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useContext, useEffect, useMemo, useRef, useCallback } from "react";
@@ -30,28 +30,17 @@ function OptionSelectorComponent({ context }: { context: BlockContextType }) {
   const blockContext = useContext(BlockContext);
   const options = (blockContext.blockConfig?.content?.items ?? defaultValue) as ItemType[];
 
-  const serverSelectedInterval = typeof checkout?.session?.metadata?.selected_interval === 'string'
-    ? checkout.session.metadata.selected_interval as string
-    : undefined;
-  const serverSelectedOption = typeof checkout?.session?.metadata?.selected_option === 'string'
-    ? (checkout.session.metadata.selected_option as string)
-    : undefined;
-  const initialSelected = useMemo(() => {
-    const keys = Array.isArray(options) ? options.map(o => o.key) : [];
-    if (serverSelectedOption && keys.includes(serverSelectedOption)) return serverSelectedOption;
-    if (serverSelectedInterval && keys.includes(serverSelectedInterval)) return serverSelectedInterval;
-    return options[0]?.key ?? undefined;
-  }, [serverSelectedInterval, serverSelectedOption, options]);
+  // Helper: simple template evaluator for strings like {{ checkout.items[0].renewal_interval }}
+  const isTemplate = Numi.isTemplate;
 
-  useEffect(() => {
-    // Debug initial selection determination
-    console.log('[OptionSelector:init]', {
-      serverSelectedOption,
-      serverSelectedInterval,
-      initialSelected,
-      optionKeys: Array.isArray(options) ? options.map(o => o.key) : [],
-    });
-  }, [serverSelectedOption, serverSelectedInterval, initialSelected, options]);
+  const initialSelected = useMemo(() => {
+    return options[0]?.key ?? undefined;
+  }, [options]);
+
+  // removed noisy init debug
+
+  // default value needs to come from somewhere else?
+  // and hte "Values" of each of these need to probabl match product name, sometimes it will match price, or interval?
 
   const [selectedTab, setSelectedTab, updateSelectedTabHook] = Numi.useStateEnumeration({
     name: 'value',
@@ -77,35 +66,39 @@ function OptionSelectorComponent({ context }: { context: BlockContextType }) {
 
   const [items] = Numi.useStateJsonSchema({
     name: 'items',
+    label: 'Options',
     defaultValue,
-    schema: {
+    schema: ({
       $schema: "http://json-schema.org/draft-07/schema#",
       type: "array",
       items: {
         type: "object",
         properties: {
-          key: {
-            title: "Value",
-            type: "string",
-          },
+          key: { title: "Value", type: "string" },
+          value: { title: "Value", type: "string" },
           children: {
             type: "array",
             items: {
-              type: "object"
+              type: "object",
+              properties: {
+                key: { type: "string" },
+                label: { type: "string" },
+                caption: { type: "string" },
+                color: { type: "string" },
+                prefixImage: { type: "string", format: "uri", description: "Image URL", meta: { editor: "file" } },
+                prefixIcon: { type: "string", description: "Icon name", meta: { editor: "icon" } },
+                prefixText: { type: "string" },
+                tooltip: { type: "string" },
+                disabled: { type: "string" },
+                hidden: { type: "string" },
+              },
+              required: [],
             }
-          },
-          label: {
-            title: "Label",
-            type: "string"
-          },
-          badge: {
-            title: "Badge",
-            type: "string"
           }
         },
-        required: ["key", "label"]
+        required: ["key"],
       }
-    }
+    } as unknown) as JSONSchemaValue
   });
 
   const appearance = Numi.useAppearance([
@@ -262,32 +255,35 @@ function OptionSelectorComponent({ context }: { context: BlockContextType }) {
     }]
   });
 
+  // Compute resolved selection if the configured value is a template string
+  const resolvedSelectedTab = Numi.useEvaluatedTemplate(selectedTab);
+
+  // Ensure the value passed to Tabs is one of the option keys
+  const tabValue = useMemo(() => {
+    const keys = Array.isArray(options) ? options.map(o => o.key) : [];
+    if (resolvedSelectedTab && keys.includes(resolvedSelectedTab)) return resolvedSelectedTab;
+    return options[0]?.key;
+  }, [resolvedSelectedTab, options]);
+
   const handleTabChange = useCallback((value: string) => {
-    if (value === selectedTab) {
+    if (value === tabValue) {
       console.log('[OptionSelector] Ignoring click on already-selected tab:', value);
       return;
     }
     setSelectedTab(value);
     executeCallbacks(Event.onClick, value);
     updateSessionProperties(context.blockId, value);
-  }, [executeCallbacks, updateSessionProperties, context.blockId, setSelectedTab, selectedTab]);
+  }, [executeCallbacks, updateSessionProperties, context.blockId, setSelectedTab, tabValue]);
 
-  // One-time server default application to override stale session property
-  const appliedServerDefaultRef = useRef(false);
+  // If the stored value is a template, sync the evaluated value to session properties once
+  const appliedTemplateDefaultRef = useRef(false);
   useEffect(() => {
-    if (appliedServerDefaultRef.current) return;
-    const keys = Array.isArray(options) ? options.map(o => o.key) : [];
-    const pick = serverSelectedOption && keys.includes(serverSelectedOption)
-      ? serverSelectedOption
-      : (serverSelectedInterval && keys.includes(serverSelectedInterval) ? serverSelectedInterval : undefined);
-    if (pick && selectedTab !== pick) {
-      appliedServerDefaultRef.current = true;
-      setSelectedTab(pick);
-      updateSessionProperties(context.blockId, pick);
-    } else if (pick) {
-      appliedServerDefaultRef.current = true;
-    }
-  }, [serverSelectedOption, serverSelectedInterval, options]);
+    if (appliedTemplateDefaultRef.current) return;
+    if (!isTemplate(selectedTab)) return;
+    if (!tabValue) return;
+    appliedTemplateDefaultRef.current = true;
+    updateSessionProperties(context.blockId, tabValue);
+  }, [selectedTab, tabValue, updateSessionProperties, context.blockId, isTemplate]);
 
   // useEffect(() => {
   //   executeCallbacks(Event.onClick, selectedTab);
@@ -311,7 +307,7 @@ function OptionSelectorComponent({ context }: { context: BlockContextType }) {
   return (
     <>
       <Tabs
-        value={selectedTab}
+        value={tabValue}
         onValueChange={handleTabChange}
         className="w-full flex"
       >
@@ -321,7 +317,7 @@ function OptionSelectorComponent({ context }: { context: BlockContextType }) {
               key={item.key}
               value={item.key}
               className="w-full h-10 flex flex-row gap-2"
-              style={item.key === selectedTab ? activeTabStyle : inactiveTabStyle}
+              style={item.key === tabValue ? activeTabStyle : inactiveTabStyle}
             >
               {item.label}
               {item.badge && <div className='px-3 py-1' style={badgeStyle}>{item.badge}</div>}
@@ -329,7 +325,6 @@ function OptionSelectorComponent({ context }: { context: BlockContextType }) {
           ))}
         </TabsList>
       </Tabs>
-      
     </>
   );
 }
