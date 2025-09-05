@@ -33,16 +33,17 @@ class CheckoutItemResource extends JsonResource
                 },
             ),
             // 'price' => new PriceResource($this->whenLoaded('price')),
-            'price' => $this->when(
-                $this->resource->relationLoaded('offerItem') &&
-                $this->offerItem != null &&
-                $this->offerItem->relationLoaded('offerPrices'),
-                function () {
-                    $offerPrice = $this->offerItem->offerPrices->firstWhere('price_id', $this->price->id);
-                    $this->price->name = $offerPrice?->name ?? $this->price->name;
-                    return $this->price;
-                },
-            ),
+            'price' => $this->price,
+//            $this->when(
+//                $this->resource->relationLoaded('offerItem') &&
+//                $this->offerItem != null &&
+//                $this->offerItem->relationLoaded('offerPrices'),
+//                function () {
+//                    $offerPrice = $this->offerItem->offerPrices->firstWhere('price_id', $this->price->id);
+//                    $this->price->name = $offerPrice?->name ?? $this->price->name;
+//                    return $this->price;
+//                },
+//            ),
             // 'discount' => $this->price->calculateDiscount()->getAmount(),
         ];
     }
