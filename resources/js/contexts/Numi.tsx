@@ -420,12 +420,8 @@ const Numi = {
           ? blockContext.blockConfig.interaction[type].filter((callback: { element?: string }) => callback?.element === element)
           : blockContext.blockConfig.interaction[type];
 
-        console.group('[Interaction] executeCallbacks');
-        console.log('event:', type, 'element:', element, 'callbacks:', callbacks);
-
         for (const callback of callbacks) {
           try {
-            console.log('→ dispatch action:', callback.action, 'value:', callback.value);
             switch (callback.action) {
               case 'setSlot':
                 // checkout.setSlot(callback.slot, callback.price);
@@ -456,8 +452,6 @@ const Numi = {
         if (checkout?.reloadSubscriptionPreview) {
           checkout.reloadSubscriptionPreview();
         }
-
-        console.groupEnd();
       }
     }, [blockContext]);
 
@@ -800,9 +794,6 @@ const Numi = {
 
       setRegistered(true);
     }, [blockContext.blockId, appearanceProps]);
-
-    // "sm" , or product ID
-
 
     // Calculate appearance using useMemo to prevent unnecessary recalculations
     return useMemo(() => {

@@ -15,14 +15,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from '@/components/ui/input';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { getAllLayouts } from '@/config/layouts';
 import { useState, useRef, useMemo, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { MoreVertical, ArrowRightToLine, FileText, CheckSquare, Plus, BookmarkIcon } from 'lucide-react';
@@ -81,13 +73,15 @@ interface ActiveDndItem {
 function Edit({ offer, theme, organizationThemes, organizationTemplates, globalThemes, showNameDialog, fonts, publishableKey }: EditProps) {
 
   useEffect(() => {
-    // WebFont.load({
-    //   google: {
-    //     families: fonts?.reduce<string[]>((items, font) => {
-    //       return [...items, `${font.name}:${font.weights.join(',')}`];
-    //     }, []),
-    //   },
-    // });
+    import('webfontloader').then(WebFontLoader => {
+      WebFontLoader.load({
+        google: {
+          families: fonts?.reduce<string[]>((items, font) => {
+            return [...items, `${font.name}:${font.weights.join(',')}`];
+          }, []),
+        },
+      })
+    })
   }, []);
 
   return (

@@ -21,8 +21,6 @@ function TextBlockComponent({ context }: { context: BlockContextType }) {
 
   const isMarkdown = format === 'markdown';
   const evaluatedText = Numi.useEvaluatedTemplate(text) ?? text;
-  const checkoutState = Numi.useCheckout();
-  const templateDebug = Numi.useTemplateDebug(text);
 
   const appearance = Numi.useAppearance([
     Appearance.padding('padding', 'Padding', {}, '0px'),

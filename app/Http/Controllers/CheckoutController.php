@@ -149,45 +149,11 @@ class CheckoutController extends Controller
 
         $signedShowUrl = URL::signedRoute('checkouts.show', $params, now()->addDays(5));
 
-        // Surface defaults for client blocks (e.g., OptionSelector) via session metadata
-        $metadata = array_merge($checkoutSession->metadata ?? [], array_filter([
-            'selected_interval' => $intervalOverride ?: null,
-            'selected_price_lookup_key' => $primaryPriceLookup ?: null,
-        ]));
-        if ($metadata !== ($checkoutSession->metadata ?? [])) {
-            $checkoutSession->update(['metadata' => $metadata]);
-        }
-
         // extremely stupid here.
 
         // Derive a simple selected_option (e.g., 'sm'|'md') based on chosen product name if available
         $checkoutSession->loadMissing(['lineItems.price.product']);
-        $selectedOption = null;
-        $firstItem = $checkoutSession->lineItems->first();
-        if ($firstItem && $firstItem->price && $firstItem->price->product) {
-            $productName = strtolower($firstItem->price->product->name ?? '');
-            if (str_contains($productName, ' md') || str_contains($productName, '-md') || $productName === 'md') {
-                $selectedOption = 'md';
-            } elseif (str_contains($productName, ' sm') || str_contains($productName, '-sm') || $productName === 'sm') {
-                $selectedOption = 'sm';
-            }
-        }
-
-        // just put something into the session
-        // then allow the toggle to pick it up
-
-        if ($selectedOption) {
-            $checkoutSession->update([
-                'metadata' => array_merge($checkoutSession->metadata ?? [], [
-                    'selected_option' => $selectedOption,
-                ]),
-            ]);
-        }
-
-        // Render the checkout view directly to avoid initial redirect latency.
-        // The client will immediately replace the URL to the canonical signed /checkout route
-        // via an Inertia JSON-only navigation using the provided $signedShowUrl.
-
+ 
         $checkoutSession->load([
             'lineItems.offerItem.offerPrices',
             'offer.theme',

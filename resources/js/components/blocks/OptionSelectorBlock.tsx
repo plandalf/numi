@@ -16,7 +16,6 @@ function OptionSelectorComponent({ context }: { context: BlockContextType }) {
 
   const checkout = Numi.useCheckout({});
   const { updateSessionProperties } = checkout;
-  const session = checkout?.session;
   const theme = Numi.useTheme();
 
   const defaultValue = [{
@@ -37,10 +36,6 @@ function OptionSelectorComponent({ context }: { context: BlockContextType }) {
     return options[0]?.key ?? undefined;
   }, [options]);
 
-  // removed noisy init debug
-
-  // default value needs to come from somewhere else?
-  // and hte "Values" of each of these need to probabl match product name, sometimes it will match price, or interval?
 
   const [selectedTab, setSelectedTab, updateSelectedTabHook] = Numi.useStateEnumeration({
     name: 'value',
@@ -50,19 +45,6 @@ function OptionSelectorComponent({ context }: { context: BlockContextType }) {
     label: 'Default (Selected Tab)',
     asState: true,
   });
-
-  useEffect(() => {
-    // Debug when user changes selection
-    console.log('[OptionSelector:change]', { selectedTab });
-  }, [selectedTab]);
-
-  useEffect(() => {
-    // Log when session line items change
-    console.log('[OptionSelector:session]', {
-      line_items: session?.line_items?.map(li => ({ id: li.id, product: li.product?.name, price_id: li.price?.id })) || [],
-      total: session?.total
-    });
-  }, [session?.line_items, session?.total]);
 
   const [items] = Numi.useStateJsonSchema({
     name: 'items',
@@ -74,29 +56,41 @@ function OptionSelectorComponent({ context }: { context: BlockContextType }) {
       items: {
         type: "object",
         properties: {
-          key: { title: "Value", type: "string" },
-          value: { title: "Value", type: "string" },
+          // key: { title: "Value", type: "string" },
+          // value: { title: "Value", type: "string" },
+          key: {
+            title: "Value",
+            type: "string",
+          },
+          label: {
+            title: "Label",
+            type: "string"
+          },
+          badge: {
+            title: "Badge",
+            type: "string"
+          },
           children: {
             type: "array",
             items: {
               type: "object",
-              properties: {
-                key: { type: "string" },
-                label: { type: "string" },
-                caption: { type: "string" },
-                color: { type: "string" },
-                prefixImage: { type: "string", format: "uri", description: "Image URL", meta: { editor: "file" } },
-                prefixIcon: { type: "string", description: "Icon name", meta: { editor: "icon" } },
-                prefixText: { type: "string" },
-                tooltip: { type: "string" },
-                disabled: { type: "string" },
-                hidden: { type: "string" },
-              },
+              // properties: {
+              //   key: { type: "string" },
+              //   label: { type: "string" },
+              //   caption: { type: "string" },
+              //   color: { type: "string" },
+              //   prefixImage: { type: "string", format: "uri", description: "Image URL", meta: { editor: "file" } },
+              //   prefixIcon: { type: "string", description: "Icon name", meta: { editor: "icon" } },
+              //   prefixText: { type: "string" },
+              //   tooltip: { type: "string" },
+              //   disabled: { type: "string" },
+              //   hidden: { type: "string" },
+              // },
               required: [],
             }
           }
         },
-        required: ["key"],
+        required: ["key", "label"],
       }
     } as unknown) as JSONSchemaValue
   });
@@ -162,21 +156,21 @@ function OptionSelectorComponent({ context }: { context: BlockContextType }) {
   const activeBackgroundColor = resolveThemeValue(style.activeBackgroundColor, theme, 'secondary_color') as string;
   const activeBackgroundColorWithAlpha = addAlphaToColor(activeBackgroundColor, 0.10);
 
-  const activeTextFont = {
+  const activeTextFont = useMemo(() => ({
     ...resolveThemeValue(style.activeTextFont, theme, 'body_typography') as FontValue,
     color: resolveThemeValue(style.activeTextFont?.color, theme, 'secondary_color') as string,
-  };
+  }), [style.activeTextFont, theme]);
 
-  const inactiveTextFont = {
+  const inactiveTextFont = useMemo(() => ({
     ...resolveThemeValue(style.inactiveTextFont, theme, 'body_typography') as FontValue,
     color: resolveThemeValue(style.inactiveTextFont?.color, theme),
-  };
+  }), [style.inactiveTextFont, theme]);
 
   const badgeBackgroundColor = resolveThemeValue(style.badgeBackgroundColor, theme, 'secondary_color') as string;
-  const badgeTextFont = {
+  const badgeTextFont = useMemo(() => ({
     ...resolveThemeValue(style.badgeTextFont, theme, 'body_typography') as FontValue,
     color: resolveThemeValue(style.badgeTextFont?.color, theme, 'secondary_color') as string,
-  };
+  }), [style.badgeTextFont, theme]);
 
   const containerStyle = useMemo(() => ({
     backgroundColor: resolveThemeValue(style.backgroundColor, theme) as string | undefined,
@@ -200,7 +194,8 @@ function OptionSelectorComponent({ context }: { context: BlockContextType }) {
     lineHeight: activeTextFont?.lineHeight,
     letterSpacing: activeTextFont?.letterSpacing,
     borderColor: style?.activeBorderColor ? (resolveThemeValue(style?.activeBorderColor, theme) as string | undefined) : activeBackgroundColor,
-    borderWidth: style.activeBorder?.width,
+    // Keep border width consistent between active/inactive to prevent size shift
+    borderWidth: style.activeBorder?.width ?? style.inactiveBorder?.width ?? '2px',
     borderStyle: style.activeBorder?.style,
     borderRadius: style.activeBorderRadius,
     boxShadow: style.activeShadow,
@@ -215,8 +210,9 @@ function OptionSelectorComponent({ context }: { context: BlockContextType }) {
     fontFamily: inactiveTextFont?.font,
     lineHeight: inactiveTextFont?.lineHeight,
     letterSpacing: inactiveTextFont?.letterSpacing,
-    borderColor: resolveThemeValue(style?.inactiveBorderColor, theme) as string | undefined,
-    borderWidth: style.inactiveBorder?.width,
+    // Use transparent border color if none set, so width matches active state without visual border
+    borderColor: (resolveThemeValue(style?.inactiveBorderColor, theme) as string | undefined) || 'transparent',
+    borderWidth: style.activeBorder?.width ?? style.inactiveBorder?.width ?? '2px',
     borderStyle: style.inactiveBorder?.style,
     borderRadius: style.inactiveBorderRadius,
     boxShadow: style.inactiveShadow,
@@ -284,10 +280,6 @@ function OptionSelectorComponent({ context }: { context: BlockContextType }) {
     appliedTemplateDefaultRef.current = true;
     updateSessionProperties(context.blockId, tabValue);
   }, [selectedTab, tabValue, updateSessionProperties, context.blockId, isTemplate]);
-
-  // useEffect(() => {
-  //   executeCallbacks(Event.onClick, selectedTab);
-  // }, []);
 
   const prevItemsRef = useRef(items);
 
