@@ -11,10 +11,11 @@ use Illuminate\Support\Facades\Route;
 Route::middleware(['force-json', 'api-key'])->group(function () {
     // Protected API routes (require API key authentication)
 
-    Route::resource('checkouts', CheckoutSessionAPIController::class);
-    Route::resource('customers', CustomerAPIController::class);
-
+    
     Route::prefix('v1')->name('api.v1.')->group(function () {
+        Route::resource('checkouts', CheckoutSessionAPIController::class);
+        Route::resource('customers', CustomerAPIController::class);
+
         Route::get('orders', function () {
             $organization = request('api_organization');
             return response()->json([
