@@ -436,6 +436,8 @@ ${spinAnimationStyles}
 
     // Global tracking of embed types by embedId - must be declared early
     const embedTypeRegistry = new Map();
+    // Track popups/sliders that have been shown before session init so we can fire a 'shown' event
+    const pendingShownEmbeds = new Set();
 
     // as long as the window is valid (and not embedding in e.g. nextJS improperly
     // or something similar), we initialize:
@@ -626,20 +628,34 @@ ${spinAnimationStyles}
         // we convert data- attributes into URL parameters. we use the ones passed
         // directly to the embed as taking priority (since explicitly set)
         const DATA_PREFIX = 'data-';
-        const appendPairsFromQueryString = (raw) => {
+        const appendPairsFromQueryString = (raw, prefixForKeys) => {
             if (!raw || typeof raw !== 'string') return;
-            const parts = raw.split('&');
-            for (const part of parts) {
-                if (!part) continue;
-                const eq = part.indexOf('=');
-                if (eq === -1) {
-                    // key with no value
-                    iframeSrc.searchParams.append(part, '');
-                } else {
-                    const k = part.slice(0, eq);
-                    const v = part.slice(eq + 1);
-                    iframeSrc.searchParams.append(k, v);
+            let params;
+            try {
+                params = new URLSearchParams(raw);
+            } catch (_) {
+                // Fallback simple parser if URLSearchParams fails
+                params = new URLSearchParams();
+                const parts = raw.split('&');
+                for (const part of parts) {
+                    if (!part) continue;
+                    const eq = part.indexOf('=');
+                    if (eq === -1) {
+                        params.append(part, '');
+                    } else {
+                        params.append(part.slice(0, eq), part.slice(eq + 1));
+                    }
                 }
+            }
+            for (const [origK, origV] of params.entries()) {
+                let k = origK;
+                // Auto-namespace flat keys into e.g., customer[key]
+                if (prefixForKeys && !/\[.+\]/.test(k) && !k.startsWith(prefixForKeys + '[')) {
+                    k = `${prefixForKeys}[${k}]`;
+                }
+                // Use decoded value so we only encode once in the final URL
+                const decodedVal = (() => { try { return decodeURIComponent(origV); } catch(_) { return origV; } })();
+                iframeSrc.searchParams.append(k, decodedVal);
             }
         };
 
@@ -648,8 +664,13 @@ ${spinAnimationStyles}
 
 
             const key = attribute.name.slice(DATA_PREFIX.length);
-            if (key === 'items' || key === 'customer') {
+            if (key === 'items') {
                 appendPairsFromQueryString(attribute.value);
+                continue;
+            }
+            if (key === 'customer') {
+                // Auto-namespace flat keys into customer[...] if needed
+                appendPairsFromQueryString(attribute.value, 'customer');
                 continue;
             }
             iframeSrc.searchParams.append(key, attribute.value);
@@ -988,6 +1009,12 @@ ${spinAnimationStyles}
             document.body.classList.add('noscroll');
             // Remove the manual opacity setting - let CSS animations handle it
             // The animations are already defined in CSS and will start automatically
+            try {
+                // Mark as shown so we can emit 'shown' once the session is created
+                if (embedType === 'popup' || embedType === 'slider') {
+                    pendingShownEmbeds.add(embedId);
+                }
+            } catch (_) {}
         });
         target.setAttribute('data-numi-initialized', 'true');
     };
@@ -1324,6 +1351,8 @@ ${spinAnimationStyles}
         onClosed(callback) { return this.on('closed', callback); }
         onLineItemChange(callback) { return this.on('lineitem_change', callback); }
         onResize(callback) { return this.on('resize', callback); }
+        onShown(callback) { return this.on('shown', callback); }
+        onError(callback) { return this.on('error', callback); }
 
         // Convenience methods
         async waitForCompletion() {
@@ -1367,7 +1396,9 @@ ${spinAnimationStyles}
                 ...data,
                 type: eventType,
                 sessionId: this.id,
-                timestamp: Date.now()
+                timestamp: Date.now(),
+                // Convenience payload for external handlers expecting data.checkout.id
+                checkout: { id: this.id }
             };
 
             this.events.push(eventData);
@@ -1667,7 +1698,28 @@ ${spinAnimationStyles}
         if (options.interval) btn.setAttribute('data-interval', String(options.interval));
         if (options.redirect_url) btn.setAttribute('data-redirect_url', String(options.redirect_url));
         if (options.env) btn.setAttribute('data-env', String(options.env));
-        if (options.customer) btn.setAttribute('data-customer', String(options.customer));
+        if (options.customer) {
+            if (typeof options.customer === 'string') {
+                btn.setAttribute('data-customer', options.customer);
+            } else if (typeof options.customer === 'object') {
+                try {
+                    const parts = [];
+                    for (const k in options.customer) {
+                        if (!Object.prototype.hasOwnProperty.call(options.customer, k)) continue;
+                        const v = options.customer[k];
+                        if (v === undefined || v === null) continue;
+                        parts.push(`${encodeURIComponent(k)}=${encodeURIComponent(String(v))}`);
+                    }
+                    if (parts.length > 0) {
+                        btn.setAttribute('data-customer', parts.join('&'));
+                    }
+                } catch(_) {
+                    btn.setAttribute('data-customer', String(options.customer));
+                }
+            } else {
+                btn.setAttribute('data-customer', String(options.customer));
+            }
+        }
         if (options.items) {
             // Expect a URL-encoded string (e.g., items[0][lookup_key]=price_xxx&items[0][quantity]=1)
             if (typeof options.items === 'string') {
@@ -1863,6 +1915,14 @@ ${spinAnimationStyles}
                 embedId: embedId
             };
             session._triggerEvent('init', eventData);
+
+            // Fire 'shown' if popup/slider was opened before session existed
+            try {
+                if (pendingShownEmbeds.has(embedId)) {
+                    pendingShownEmbeds.delete(embedId);
+                    session._triggerEvent('shown', { embedId, offerId, sessionId: checkoutId });
+                }
+            } catch (_) {}
             return;
         }
 
@@ -1882,7 +1942,9 @@ ${spinAnimationStyles}
                 'checkout_cancel': 'cancel',
                 'checkout_closed': 'closed',
                 'checkout_lineitem_changed': 'lineitem_change',
-                'form_resized': 'resize'
+                'form_resized': 'resize',
+                // Optional error channel if emitted by the iframe
+                'checkout_error': 'error'
             };
 
             const eventType = eventMap[type] || type;
@@ -1946,6 +2008,12 @@ ${spinAnimationStyles}
                 checkout.onInit(config.onInit);
             });
         }
+        // Alias onReady -> init for convenience
+        if (config.onReady) {
+            plandalf.offers.get('*').onCheckout((checkout) => {
+                checkout.onInit(config.onReady);
+            });
+        }
 
         if (config.onSuccess) {
             plandalf.offers.get('*').onCheckout((checkout) => {
@@ -1988,12 +2056,29 @@ ${spinAnimationStyles}
                 checkout.onClosed(config.onClosed);
             });
         }
+        // Additional convenience hooks
+        if (config.onShown) {
+            plandalf.offers.get('*').onCheckout((checkout) => {
+                checkout.onShown(config.onShown);
+            });
+        }
+        if (config.onError) {
+            plandalf.offers.get('*').onCheckout((checkout) => {
+                checkout.onError(config.onError);
+            });
+        }
+        if (config.onExit) {
+            plandalf.offers.get('*').onCheckout((checkout) => {
+                checkout.onClosed(config.onExit);
+            });
+        }
 
         // Per-offer configuration
         if (config.offers) {
             Object.entries(config.offers).forEach(([offerId, offerConfig]) => {
                 plandalf.offers.get(offerId).onCheckout((checkout) => {
                     if (offerConfig.onInit) checkout.onInit(offerConfig.onInit);
+                    if (offerConfig.onReady) checkout.onInit(offerConfig.onReady);
                     if (offerConfig.onSuccess) checkout.onSuccess(offerConfig.onSuccess);
                     if (offerConfig.onComplete) checkout.onComplete(offerConfig.onComplete);
                     if (offerConfig.onSubmit) checkout.onSubmit(offerConfig.onSubmit);
@@ -2001,6 +2086,9 @@ ${spinAnimationStyles}
                     if (offerConfig.onCancel) checkout.onCancel(offerConfig.onCancel);
                     if (offerConfig.onClosed) checkout.onClosed(offerConfig.onClosed);
                     if (offerConfig.onLineItemChange) checkout.onLineItemChange(offerConfig.onLineItemChange);
+                    if (offerConfig.onShown) checkout.onShown(offerConfig.onShown);
+                    if (offerConfig.onError) checkout.onError(offerConfig.onError);
+                    if (offerConfig.onExit) checkout.onClosed(offerConfig.onExit);
                 });
             });
         }
