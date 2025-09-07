@@ -1608,8 +1608,8 @@ ${spinAnimationStyles}
         }
     };
 
-    // Present an offer programmatically in a modal popup
-    // Usage: plandalf.presentOffer('offerId', { size: 'lg'|'md'|'sm', domain, inheritParameters, dynamicResize, preview })
+    // Present an offer programmatically in a modal popup/slider
+    // Usage: plandalf.presentOffer('offerId', { size: 'lg'|'md'|'sm', domain, inheritParameters, dynamicResize, preview, embedType: 'popup'|'slider', sliderDirection: 'left'|'right' })
     window.plandalf.presentOffer = function(offerId, options = {}) {
         const mapSize = (s) => {
             if (!s) return 'large';
@@ -1619,8 +1619,37 @@ ${spinAnimationStyles}
             return 'large';
         };
 
+        // Determine embed type (default popup) and ensure the correct stylesheet is injected
+        const embedType = (options.embedType || 'popup').toString().toLowerCase();
+        try {
+            if (embedType === 'slider') {
+                // @ts-ignore
+                if (!window.__numiSlidersInitialized) {
+                    const sliderStylesheet = document.createElement('style');
+                    sliderStylesheet.innerHTML = sliderStyles;
+                    document.head.appendChild(sliderStylesheet);
+                    // @ts-ignore
+                    window.__numiSlidersInitialized = true;
+                }
+            } else {
+                // @ts-ignore
+                if (!window.__numiPopupEmbedsInitialized) {
+                    const popupStylesheet = document.createElement('style');
+                    popupStylesheet.innerHTML = popupStyles;
+                    document.head.appendChild(popupStylesheet);
+                    // @ts-ignore
+                    window.__numiPopupEmbedsInitialized = true;
+                }
+            }
+        } catch (_) {}
+
         const btn = document.createElement('button');
-        btn.setAttribute('data-numi-embed-type', 'popup');
+        btn.setAttribute('data-numi-embed-type', embedType === 'slider' ? 'slider' : 'popup');
+        // Optional slider direction (default right)
+        if (embedType === 'slider') {
+            const dir = ((options.sliderDirection || 'right') + '').toLowerCase() === 'left' ? 'left' : 'right';
+            btn.setAttribute('data-numi-slider-direction', dir);
+        }
         btn.setAttribute('data-numi-offer', offerId);
         btn.setAttribute('data-numi-popup-size', mapSize(options.size));
         if (options.domain) {
@@ -1641,7 +1670,6 @@ ${spinAnimationStyles}
         if (options.customer) btn.setAttribute('data-customer', String(options.customer));
         if (options.items) {
             // Expect a URL-encoded string (e.g., items[0][lookup_key]=price_xxx&items[0][quantity]=1)
-            // If an array/object is passed, ignore for now; SDK standard prefers string for attributes
             if (typeof options.items === 'string') {
                 btn.setAttribute('data-items', options.items);
             }
@@ -1650,7 +1678,7 @@ ${spinAnimationStyles}
           btn.setAttribute('data-items', `items[0][lookup_key]=${options.price}&items[0][quantity]=1`);
         }
 
-        initializePopupLikeTarget(btn, 'popup');
+        initializePopupLikeTarget(btn, embedType === 'slider' ? 'slider' : 'popup');
 
         const embedId = btn.getAttribute('data-numi-embed-id');
         // Trigger open immediately
@@ -2025,6 +2053,31 @@ ${spinAnimationStyles}
             if (mode === 'present-offer') {
                 const offerId = el.getAttribute('data-offer-id') || '';
                 if (!offerId) return;
+                // Determine embed type from plandalf attribute; default popup
+                const embedTypeAttr = (el.getAttribute('data-embed-type') || 'popup').toLowerCase();
+
+                // Ensure stylesheet for chosen embed type is present
+                try {
+                    if (embedTypeAttr === 'slider') {
+                        // @ts-ignore
+                        if (!window.__numiSlidersInitialized) {
+                            const sliderStylesheet = document.createElement('style');
+                            sliderStylesheet.innerHTML = sliderStyles;
+                            document.head.appendChild(sliderStylesheet);
+                            // @ts-ignore
+                            window.__numiSlidersInitialized = true;
+                        }
+                    } else {
+                        // @ts-ignore
+                        if (!window.__numiPopupEmbedsInitialized) {
+                            const popupStylesheet = document.createElement('style');
+                            popupStylesheet.innerHTML = popupStyles;
+                            document.head.appendChild(popupStylesheet);
+                            // @ts-ignore
+                            window.__numiPopupEmbedsInitialized = true;
+                        }
+                    }
+                } catch (_) {}
                 // Attach click handler to present on demand
                 el.addEventListener('click', (e) => {
                     e.preventDefault();
@@ -2041,10 +2094,23 @@ ${spinAnimationStyles}
                         price: ds.price || undefined,
                         inheritParameters: el.hasAttribute('data-inherit-parameters') || el.hasAttribute('data-plandalf-inherit-parameters'),
                         dynamicResize: el.hasAttribute('data-dynamic-resize') || el.hasAttribute('data-plandalf-dynamic-resize'),
-                        preview: el.hasAttribute('data-preview') || el.hasAttribute('data-plandalf-preview')
+                        preview: el.hasAttribute('data-preview') || el.hasAttribute('data-plandalf-preview'),
+                        // Forward embed type and optional slider direction
+                        embedType: embedTypeAttr,
+                        sliderDirection: (ds.sliderDirection || ds.direction || 'right')
                     });
                 });
             } else if (mode === 'mount-offer') {
+                // Ensure standard stylesheet is present for inline offers
+                // @ts-ignore
+                if (!window.__numiStandardInitialized) {
+                    const standardStylesheet = document.createElement('style');
+                    standardStylesheet.innerHTML = standardStyles;
+                    // TODO mobile styles?
+                    document.head.appendChild(standardStylesheet);
+                    // @ts-ignore
+                    window.__numiStandardInitialized = true;
+                }
                 const offerId = el.getAttribute('data-offer-id') || el.getAttribute('data-plandalf-offer') || '';
                 if (!offerId) return;
                 el.setAttribute('data-numi-embed-type', 'standard');
