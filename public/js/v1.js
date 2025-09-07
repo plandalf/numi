@@ -1977,8 +1977,6 @@ ${spinAnimationStyles}
     // Process configuration
     processGlobalConfig();
 
-    console.log("FUCK")
-
     // @ts-ignore
     const fullScreenInitialized = window.__numiFullScreenInitialized;
     const fullScreenTargets = document.querySelectorAll("[data-numi-embed-type='fullscreen']");
@@ -2006,6 +2004,7 @@ ${spinAnimationStyles}
     const plandalfTargets = document.querySelectorAll('[data-plandalf]');
     if (plandalfTargets.length > 0) {
         plandalfTargets.forEach(el => {
+            console.log('plandalfTarget ', el);
             if (!(el instanceof HTMLElement)) return;
             const mode = (el.getAttribute('data-plandalf') || '').toLowerCase();
             const sizeAttr = (el.getAttribute('data-size') || el.getAttribute('data-plandalf-size') || '').toLowerCase();
