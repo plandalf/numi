@@ -166,7 +166,7 @@ export const AddActionDialog: React.FC<ActionEditorProps> = ({ label, value, onC
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="md:min-w-[600px] flex flex-col max-h-[90vh] overflow-hidden">
+      <DialogContent className="md:min-w-[600px] flex flex-col max-h-[90vh] overflow-scroll">
         <DialogHeader>
           <DialogTitle>Edit {label} Actions</DialogTitle>
         </DialogHeader>

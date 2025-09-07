@@ -1730,7 +1730,11 @@ ${spinAnimationStyles}
             throw new Error('mountPortal: "el" must be an HTMLElement');
         }
         const globalConfig = (typeof window !== 'undefined' && window.plandalfConfig) ? window.plandalfConfig : {};
-        const customer = options.customer || globalConfig.customer || el.getAttribute('data-customer') || el.getAttribute('data-id') || '';
+        const customer = options.customer
+          || globalConfig.customer
+          || el.getAttribute('data-customer')
+          || el.getAttribute('data-id')
+          || '';
         const returnUrl = options.returnUrl || el.getAttribute('data-return-url') || '';
         let domainHost = '';
         if (options.domain) {
