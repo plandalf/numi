@@ -89,7 +89,7 @@ class CheckoutSessionApiResponse extends JsonResource
              */
             'currency' => $this->currency,
 
-            // Payment Information  
+            // Payment Information
             'payment_confirmed_at' => $this->payment_confirmed_at,
             'payment_method_locked' => $this->payment_method_locked,
             'payment_method' => $this->whenLoaded('paymentMethod', function () {
@@ -107,13 +107,13 @@ class CheckoutSessionApiResponse extends JsonResource
             }),
 
             // Organization Information
-            'organization' => $this->whenLoaded('organization', function () {
-                return [
-                    'id' => $this->organization->id,
-                    'name' => $this->organization->name,
-                    'subdomain' => $this->organization->subdomain,
-                ];
-            }),
+//            'organization' => $this->whenLoaded('organization', function () {
+//                return [
+//                    'id' => $this->organization->id,
+//                    'name' => $this->organization->name,
+//                    'subdomain' => $this->organization->subdomain,
+//                ];
+//            }),
 
             // Order Information for Provisioning
             'order' => $this->whenLoaded('order', function () {

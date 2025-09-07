@@ -20,7 +20,7 @@ class CheckoutSessionAPIController
     public function index(Request $request)
     {
         $organization = request('api_organization');
-        
+
         $sessions = CheckoutSession::query()
             ->where('organization_id', $organization->id)
             ->with([
