@@ -19,6 +19,9 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
+use App\Models\ApiKey;
+use Firebase\JWT\JWT;
+use Firebase\JWT\Key;
 
 class CheckoutController extends Controller
 {
@@ -44,20 +47,42 @@ class CheckoutController extends Controller
         $intervalOverride = $request->query('interval');
         $currencyOverride = $request->query('currency');
 
-        // Extract customer data from query string
-        $customerData = $request->query('customer', []);
+        // Extract customer data from query string or JWT token
+        $rawCustomerParam = $request->query('customer');
         $customerProperties = [];
+        $jwtStripeCustomerId = null;
+        $jwtUserId = null;
+        $jwtGroupId = null;
 
-        if (is_array($customerData) && ! empty($customerData)) {
-            // Extract email and other customer fields
-            if (isset($customerData['email'])) {
-                $customerProperties['email'] = $customerData['email'];
+        if (is_string($rawCustomerParam) && substr_count($rawCustomerParam, '.') === 2) {
+            try {
+                [$apiKey, $payload] = $this->decodeCustomerToken($rawCustomerParam);
+                // Accept canonical fields from payload
+                $email = data_get($payload, 'email');
+                $name = data_get($payload, 'name');
+                $phone = data_get($payload, 'phone');
+                $company = data_get($payload, 'company');
+                $jwtStripeCustomerId = data_get($payload, 'customer_id') ?? data_get($payload, 'id');
+                $jwtUserId = data_get($payload, 'sub');
+                $jwtGroupId = data_get($payload, 'grp');
+
+                if ($email) { $customerProperties['email'] = $email; }
+                if ($name) { $customerProperties['name'] = $name; }
+                if ($phone) { $customerProperties['phone'] = $phone; }
+                if ($company) { $customerProperties['company'] = $company; }
+            } catch (\Throwable $e) {
+                Log::warning('Invalid checkout customer token', ['error' => $e->getMessage()]);
             }
-
-            // You can add more customer fields here as needed
-            foreach (['name', 'phone', 'company'] as $field) {
-                if (isset($customerData[$field])) {
-                    $customerProperties[$field] = $customerData[$field];
+        } else {
+            $customerData = $request->query('customer', []);
+            if (is_array($customerData) && ! empty($customerData)) {
+                if (isset($customerData['email'])) {
+                    $customerProperties['email'] = $customerData['email'];
+                }
+                foreach (['name', 'phone', 'company'] as $field) {
+                    if (isset($customerData[$field])) {
+                        $customerProperties[$field] = $customerData[$field];
+                    }
                 }
             }
         }
@@ -137,6 +162,38 @@ class CheckoutController extends Controller
                 $quantity // Pass quantity to the action
             );
 
+        // If a JWT provided a Stripe customer id, associate or create a local Customer and link to session
+        if ($jwtStripeCustomerId) {
+            try {
+                $integrationId = $checkoutSession->payments_integration_id;
+                if ($integrationId) {
+                    $localCustomer = \App\Models\Customer::query()->firstOrCreate([
+                        'organization_id' => $offer->organization_id,
+                        'integration_id' => $integrationId,
+                        'reference_id' => (string) $jwtStripeCustomerId,
+                    ], [
+                        'email' => $customerProperties['email'] ?? null,
+                        'name' => $customerProperties['name'] ?? null,
+                    ]);
+
+                    $checkoutSession->customer_id = $localCustomer->id;
+                    // Persist JWT claims for later use
+                    $checkoutSession->metadata = array_merge($checkoutSession->metadata ?? [], [
+                        'jwt' => array_filter([
+                            'sub' => $jwtUserId,
+                            'grp' => $jwtGroupId,
+                            'customer_id' => $jwtStripeCustomerId,
+                        ], fn ($v) => ! is_null($v)),
+                    ]);
+                    $checkoutSession->save();
+                }
+            } catch (\Throwable $e) {
+                Log::warning('Failed to associate JWT customer to checkout', [
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
         $this->handleInvalidDomain($request, $checkoutSession);
 
         $params = array_filter(array_merge([
@@ -187,6 +244,49 @@ class CheckoutController extends Controller
             'checkoutSession' => new CheckoutSessionResource($checkoutSession),
             'subscriptionPreview' => Inertia::defer(function () use ($checkoutSession) {
                 return app(\App\Actions\Checkout\PreviewSubscriptionChangeAction::class)($checkoutSession);
+            }),
+            // List locally saved payment methods (cards) for selection in checkout UI
+            'savedPaymentMethods' => Inertia::defer(function () use ($checkoutSession) {
+                try {
+                    $customer = $checkoutSession->customer;
+                    if (! $customer) {
+                        return [];
+                    }
+                    $defaultLocalId = $customer->default_payment_method_id;
+                    $methods = PaymentMethod::query()
+                        ->where('customer_id', $customer->id)
+                        ->orderByDesc('id')
+                        ->get();
+
+                    return $methods->map(function (PaymentMethod $pm) use ($defaultLocalId) {
+                        $props = $pm->properties ?? [];
+                        $card = is_array($props) ? ($props['card'] ?? []) : [];
+                        $brand = data_get($card, 'display_brand')
+                            ?? data_get($card, 'brand')
+                            ?? data_get($props, 'display_brand')
+                            ?? data_get($props, 'brand');
+                        $last4 = data_get($card, 'last4') ?? data_get($props, 'last4');
+                        $expMonth = data_get($card, 'exp_month') ?? data_get($props, 'exp_month');
+                        $expYear = data_get($card, 'exp_year') ?? data_get($props, 'exp_year');
+                        $exp = null;
+                        if ($expMonth !== null && $expYear !== null) {
+                            $exp = sprintf('%02d/%02d', (int) $expMonth, ((int) $expYear) % 100);
+                        }
+                        return [
+                            // Use external_id (Stripe PM id) so we can set default in Stripe when chosen
+                            'id' => $pm->external_id,
+                            'type' => $pm->type,
+                            'properties' => $pm->properties,
+                            'brand' => $brand,
+                            'last4' => $last4,
+                            'exp' => $exp,
+                            'isDefault' => $pm->id === $defaultLocalId,
+                        ];
+                    })->all();
+                } catch (\Throwable $e) {
+                    Log::warning('Local saved payment methods fetch failed', ['error' => $e->getMessage()]);
+                    return [];
+                }
             }),
             // Provide the canonical signed /checkout URL for a JSON-only replace on mount
             'signedShowUrl' => $signedShowUrl,
@@ -248,6 +348,35 @@ class CheckoutController extends Controller
             // Deferred preview for subscription upgrade/swap deltas
             'subscriptionPreview' => Inertia::defer(function () use ($checkout) {
                 return app(\App\Actions\Checkout\PreviewSubscriptionChangeAction::class)($checkout);
+            }),
+            // Also provide saved payment methods on the canonical show route
+            'savedPaymentMethods' => Inertia::defer(function () use ($checkout) {
+                try {
+                    $customer = $checkout->customer;
+                    if (! $customer) {
+                        return [];
+                    }
+                    $defaultLocalId = $customer->default_payment_method_id;
+                    $methods = PaymentMethod::query()
+                        ->where('customer_id', $customer->id)
+                        ->orderByDesc('id')
+                        ->get();
+
+                    return $methods->map(function (PaymentMethod $pm) use ($defaultLocalId) {
+                        return [
+                            'id' => $pm->external_id,
+                            'type' => $pm->type,
+                            'properties' => $pm->properties,
+                            'brand' => data_get($pm->properties, 'card.brand'),
+                            'last4' => data_get($pm->properties, 'card.last4'),
+                            'exp' => sprintf('%02d/%02d', (int) data_get($pm->properties, 'card.exp_month'), ((int) data_get($pm->properties, 'card.exp_year')) % 100),
+                            'isDefault' => $pm->id === $defaultLocalId,
+                        ];
+                    })->all();
+                } catch (\Throwable $e) {
+                    Log::warning('Local saved payment methods fetch failed (show)', ['error' => $e->getMessage()]);
+                    return [];
+                }
             }),
         ])->with([
             'customFonts' => $customFonts,
@@ -412,5 +541,32 @@ class CheckoutController extends Controller
 
         // Return the first matching child price
         return $query->first();
+    }
+
+    /**
+     * Decode a JWT customer token using ApiKey HS256 secret. Returns [ApiKey, payload array].
+     */
+    private function decodeCustomerToken(string $jwt): array
+    {
+        $headers = json_decode(JWT::urlsafeB64Decode(collect(explode('.', $jwt))->first()), true);
+        $kid = $headers['kid'] ?? null;
+
+        $apiKey = ApiKey::retrieve($kid);
+
+        $keys = new Key($apiKey->key, 'HS256');
+
+        throw_if(empty($keys), new \RuntimeException('No active API key secret available'));
+
+        $decoded = JWT::decode($jwt, $keys);
+        // Normalize to array
+        $payload = json_decode(json_encode($decoded), true);
+
+        Log::info(logname(), [
+            'payload_keys' => array_keys($payload ?? []),
+            'kid' => $kid,
+            'api_key_id' => $apiKey?->id,
+        ]);
+
+        return [$apiKey, $payload];
     }
 }

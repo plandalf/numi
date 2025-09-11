@@ -947,35 +947,21 @@
 
     <script>
         // Attempt to fetch a local test token and attach it before v1.js initializes embeds
-        (async function attachBillingTestToken() {
+        (async function attachCheckoutTestTokenToNewAPI() {
             try {
-                const res = await fetch('/dev/billing/test-token');
+                const res = await fetch('/dev/checkout/test-token');
                 if (!res.ok) throw new Error('non-200');
                 const data = await res.json();
-                const btn = document.getElementById('billingPortalButton');
-                if (btn && data && data.token) {
-                    btn.setAttribute('data-numi-customer', data.token);
-                    // also feed global config for plandalf inline portal
+                if (data && data.token) {
+                    // Feed global config so offer embeds adopt the JWT automatically
                     try { window.plandalfConfig = window.plandalfConfig || {}; window.plandalfConfig.customer = data.token; } catch(_) {}
-                    // update inline plandalf portal mount id if present
-                    const inline = document.getElementById('portalInlineMount');
-                    if (inline) inline.setAttribute('data-id', '');
-                    const status = document.getElementById('billingPortalStatus');
-                    if (status) {
-                        status.textContent = '✅ Test token attached. Click the button to open the portal.';
-                    }
-                    // Log for visibility
                     if (window.console) {
-                        console.log('[Billing Test] token:', data.token);
-                        console.log('[Billing Test] example_url:', data.example_url);
+                        console.log('[Checkout Test] token:', data.token);
+                        console.log('[Checkout Test] example_url:', data.example_url);
                     }
-                } else {
-                    const status = document.getElementById('billingPortalStatus');
-                    if (status) status.textContent = '⚠️ No token available (not local or no ApiKey). You can still open the portal without a token.';
                 }
             } catch (e) {
-                const status = document.getElementById('billingPortalStatus');
-                if (status) status.textContent = '⚠️ Token fetch failed. You can still open the portal without a token.';
+                // swallow
             }
         })();
     </script>

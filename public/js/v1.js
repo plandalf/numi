@@ -429,12 +429,47 @@ ${spinAnimationStyles}
             window.plandalf = {};
         }
         const g = window.plandalf;
-        // All project logging disabled
-        g.log = function() {};
-        g.warn = function() {};
-        g.error = function() {};
+        // Logging helpers
+        g.log = function() {
+            try { if (__NUMI_DEBUG__) { console.log.apply(console, arguments); } } catch (_) {}
+        };
+        g.warn = function() {
+            try { console.warn.apply(console, arguments); } catch (_) {}
+        };
+        g.error = function() {
+            try { console.error.apply(console, arguments); } catch (_) {}
+        };
         return g;
     })();
+
+    // Provide a local alias so internal calls like plandalf.log(...) work
+    const plandalf = window.plandalf;
+
+    // Single-overlay guard (prevents multiple popup/slider at once)
+    // Structure: { embedId: string, type: 'popup'|'slider', startedAt: number }
+    try { if (!window.__plandalfActiveOverlay) window.__plandalfActiveOverlay = null; } catch (_) {}
+    const isOverlayActive = () => !!(window.__plandalfActiveOverlay && window.__plandalfActiveOverlay.embedId);
+    const setActiveOverlay = (embedId, type) => {
+        try { window.__plandalfActiveOverlay = { embedId, type, startedAt: Date.now() }; } catch (_) {}
+    };
+    const clearActiveOverlayIf = (embedId) => {
+        try {
+            if (window.__plandalfActiveOverlay && window.__plandalfActiveOverlay.embedId === embedId) {
+                window.__plandalfActiveOverlay = null;
+            }
+        } catch (_) {}
+    };
+    // On script (re)load, detect any existing open popup/slider and restore the lock
+    try {
+        const openOverlayEl = document.querySelector('[data-numi-embed-id][data-numi-embed-type="popup"], [data-numi-embed-id][data-numi-embed-type="slider"]');
+        if (openOverlayEl instanceof HTMLElement) {
+            const existingEmbedId = openOverlayEl.getAttribute('data-numi-embed-id');
+            const existingType = openOverlayEl.getAttribute('data-numi-embed-type');
+            if (existingEmbedId && (existingType === 'popup' || existingType === 'slider')) {
+                setActiveOverlay(existingEmbedId, existingType);
+            }
+        }
+    } catch (_) {}
 
     // Global tracking of embed types by embedId - must be declared early
     const embedTypeRegistry = new Map();
@@ -478,10 +513,7 @@ ${spinAnimationStyles}
         const popupSize = element.dataset.numiPopupSize
           || 'large';
 
-        const isBillingPortal =
-            element.dataset.numiBillingPortal !== undefined
-          || element.getAttribute('data-numi-embed-type') === 'billing-portal'
-          || element.dataset.numiPortal === 'billing';
+        const isBillingPortal = element.dataset.numiPortal === 'billing';
 
         const customerToken = element.dataset.numiCustomer
           || element.dataset.numiCustomerToken
@@ -619,6 +651,11 @@ ${spinAnimationStyles}
             if (modeConfig.returnUrl) {
                 iframeSrc.searchParams.append('return_url', modeConfig.returnUrl);
             }
+        } else if (modeConfig && modeConfig.mode === 'offer') {
+            // Pass JWT customer token directly for offers, if provided
+            if (modeConfig.customerToken) {
+                iframeSrc.searchParams.append('customer', modeConfig.customerToken);
+            }
         } else if (modeConfig && modeConfig.mode === 'widget') {
             if (modeConfig.widgetType) {
                 iframeSrc.searchParams.append('type', modeConfig.widgetType);
@@ -682,11 +719,19 @@ ${spinAnimationStyles}
     };
     // make popup/slider button
     const initializePopupButton = (element, onclick) => {
-        // leave previous button snippet as it is
+        // If element is already an interactive control, bind directly
         if (element.tagName !== 'DIV') {
             element.onclick = onclick;
             return;
         }
+        // If there's a single child button or anchor, use that instead of creating a nested button
+        try {
+            const existing = element.querySelector('button, a');
+            if (existing && existing.parentElement === element) {
+                existing.addEventListener('click', (e) => { e.preventDefault(); onclick(e); });
+                return;
+            }
+        } catch (_) {}
         const { buttonText, buttonColor, buttonTextColor, buttonFloat, buttonSize, } = getConfig(element);
         const button = document.createElement('button');
         button.innerText = buttonText || 'Open form';
@@ -771,6 +816,9 @@ ${spinAnimationStyles}
     // code together here and just adjust classes dependent on the embed type
     const initializePopupLikeTarget = (target, embedType) => {
         const { offerPublicIdentifier, initialized, inheritParameters, sliderDirection, domain, dynamicResize, popupSize, preview, isBillingPortal, customerToken, returnUrl } = getConfig(target);
+        if ((embedType === 'popup' || embedType === 'slider') && !isBillingPortal && !offerPublicIdentifier) {
+            try { window.plandalf?.warn?.('[Plandalf] Missing data-numi-offer for', embedType, 'trigger:', target); } catch (_) {}
+        }
         if (initialized)
             return;
         const popupContainer = document.createElement('div');
@@ -799,7 +847,7 @@ ${spinAnimationStyles}
             offerPublicIdentifier || 'billing-portal',
             inheritParameters,
             target,
-            isBillingPortal ? { mode: 'billing', customerToken, returnUrl } : { mode: 'offer' }
+            isBillingPortal ? { mode: 'billing', customerToken, returnUrl } : { mode: 'offer', customerToken }
         );
         const embedId = generateEmbedId();
         // Include both modern and legacy param names for robustness
@@ -836,7 +884,9 @@ ${spinAnimationStyles}
             window.addEventListener('message', receiveMessage, false);
         }
         iframe.src = iframeSrc.toString();
-        iframe.allow = 'microphone; camera; geolocation';
+        //microphone; camera; 
+        iframe.allow = 'geolocation; payment';
+        console.log("BING");
         iframe.style.border = '0px';
         iframe.style.background = '#ffffff'; // hide any initial transparency while loading
         iframe.title = isBillingPortal ? 'Billing Portal' : `${offerPublicIdentifier}`;
@@ -992,6 +1042,8 @@ ${spinAnimationStyles}
                 target.removeAttribute('data-numi-embed-id');
                 embedTypeRegistry.delete(embedId);
                 popupContainer.remove();
+                // Clear global active overlay guard
+                clearActiveOverlayIf(embedId);
                 // we give enough time for the animation to finish
             }, timeout);
         };
@@ -1008,6 +1060,19 @@ ${spinAnimationStyles}
             closePopup();
         };
         initializePopupButton(target, () => {
+            // Block if another overlay (popup/slider) is already active
+            if (isOverlayActive()) {
+                try { plandalf.warn('[Plandalf] Popup/slider already active; ignoring new trigger'); } catch (_) {}
+                return;
+            }
+            // Additionally, check DOM for any existing overlay containers to be extra safe
+            try {
+                const existingOverlay = document.querySelector('.numi-embed-popup, .numi-embed-dynamic-popup, .numi-embed-slider, .numi-embed-dynamic-slider, .numi-embed-fullscreen-modal');
+                if (existingOverlay) {
+                    try { plandalf.warn('[Plandalf] Detected existing overlay container in DOM; rejecting new overlay'); } catch (_) {}
+                    return;
+                }
+            } catch (_) {}
             document.body.appendChild(popupContainer);
             document.body.classList.add('noscroll');
             // Remove the manual opacity setting - let CSS animations handle it
@@ -1016,6 +1081,17 @@ ${spinAnimationStyles}
                 // Mark as shown so we can emit 'shown' once the session is created
                 if (embedType === 'popup' || embedType === 'slider') {
                     pendingShownEmbeds.add(embedId);
+                }
+            } catch (_) {}
+            // Mark active overlay
+            setActiveOverlay(embedId, embedType);
+            // Ensure only one overlay container exists in DOM (defensive)
+            try {
+                const overlays = document.querySelectorAll('.numi-embed-popup, .numi-embed-dynamic-popup, .numi-embed-slider, .numi-embed-dynamic-slider, .numi-embed-fullscreen-modal');
+                if (overlays.length > 1) {
+                    for (let i = 1; i < overlays.length; i++) {
+                        overlays[i].remove();
+                    }
                 }
             } catch (_) {}
         });
@@ -1072,22 +1148,18 @@ ${spinAnimationStyles}
             offerPublicIdentifier || 'billing-portal',
             inheritParameters,
             target,
-            isBillingPortal ? { mode: 'billing', customerToken, returnUrl } : undefined
+            isBillingPortal ? { mode: 'billing', customerToken, returnUrl } : { mode: 'offer', customerToken }
         );
         const embedId = generateEmbedId();
-        // Standard embeds: include both param styles
-        iframeSrc.searchParams.append('numi-embed-id', `${embedId}`);
+        // Standard embeds: single canonical param names
         iframeSrc.searchParams.append('embed-id', `${embedId}`);
         const embedType = isFullScreen ? 'fullscreen' : 'standard';
-        iframeSrc.searchParams.append('numi-embed-type', embedType);
         iframeSrc.searchParams.append('embed-type', embedType);
         if (preview) {
-            iframeSrc.searchParams.append('numi-embed-preview', 'yes');
             iframeSrc.searchParams.append('embed-preview', 'yes');
         }
         const parentPage = getParentUrl();
         if (parentPage) {
-            iframeSrc.searchParams.append('numi-embed-parent-page', parentPage);
             iframeSrc.searchParams.append('embed-parent-page', parentPage);
         }
         if (dynamicResize && !isFullScreen) {
@@ -1200,89 +1272,261 @@ ${spinAnimationStyles}
         // this again
         target.setAttribute('data-numi-initialized', 'true');
     };
+    // =============================================================================
+    // UNIFIED SPA-SAFE INITIALIZER (supports only data-numi-embed-type and data-plandalf)
+    // =============================================================================
+
+    const ensureStyles = (kind) => {
+        try {
+            if (kind === 'popup') {
     // @ts-ignore
-    const popupsInitialized = window.__numiPopupsInitialized;
-    const popupTargets = document.querySelectorAll(
-      "[data-numi-embed-type='popup'], [data-numi-popup]",
-    );
-    if (popupTargets.length > 0) {
-        if (!popupsInitialized) {
-            // add the popup stylesheet
-            const popupStylesheet = document.createElement('style');
-            popupStylesheet.innerHTML = popupStyles;
-            document.head.appendChild(popupStylesheet);
+                if (!window.__numiPopupEmbedsInitialized) {
+                    const s = document.createElement('style');
+                    s.innerHTML = popupStyles;
+                    document.head.appendChild(s);
             // @ts-ignore
             window.__numiPopupEmbedsInitialized = true;
         }
-        popupTargets.forEach(target => {
-            if (target instanceof HTMLElement) {
-                initializePopupLikeTarget(target, 'popup');
-            }
-        });
-    }
-
-    // Initialize Billing Portal embeds (reuse popup UI)
-    // Supports any of: data-numi-embed-type="billing-portal", data-numi-billing-portal, data-numi-portal="billing"
-    const billingPortalTargets = document.querySelectorAll(
-      "[data-numi-embed-type='billing-portal'], [data-numi-billing-portal], [data-numi-portal='billing']"
-    );
-    if (billingPortalTargets.length > 0) {
-        // Ensure popup styles are present
+            } else if (kind === 'slider') {
+                // @ts-ignore
+                if (!window.__numiSlidersInitialized) {
+                    const s = document.createElement('style');
+                    s.innerHTML = sliderStyles;
+                    document.head.appendChild(s);
+                    // @ts-ignore
+                    window.__numiSlidersInitialized = true;
+                }
+            } else if (kind === 'standard' || kind === 'fullscreen') {
         // @ts-ignore
-        if (!window.__numiPopupEmbedsInitialized) {
-            const popupStylesheet = document.createElement('style');
-            popupStylesheet.innerHTML = popupStyles;
-            document.head.appendChild(popupStylesheet);
+                if (!window.__numiStandardInitialized) {
+                    const s = document.createElement('style');
+                    s.innerHTML = standardStyles;
+                    document.head.appendChild(s);
             // @ts-ignore
-            window.__numiPopupEmbedsInitialized = true;
-        }
-        billingPortalTargets.forEach(target => {
-            if (target instanceof HTMLElement) {
-                // Force popup behavior
-                target.setAttribute('data-numi-embed-type', 'popup');
-                // Mark portal mode explicitly so getConfig picks it up after we change the embed-type
-                target.setAttribute('data-numi-portal', 'billing');
-                initializePopupLikeTarget(target, 'popup');
+                    window.__numiStandardInitialized = true;
+                }
+                if (kind === 'fullscreen') {
+                    // @ts-ignore
+                    window.__numiFullScreenInitialized = true;
+                }
             }
-        });
+        } catch (_) {}
+    };
+
+    const __numiInitEmbedsIn = (root = document) => {
+        const $all = (sel) => (root && root.querySelectorAll ? root.querySelectorAll(sel) : []);
+        const asArray = (nl) => Array.prototype.slice.call(nl || []);
+
+        // 1) Initialize elements by data-numi-embed-type
+        const candidates = asArray($all('[data-numi-embed-type]'));
+        if (root instanceof HTMLElement && root.hasAttribute && root.hasAttribute('data-numi-embed-type')) {
+            candidates.unshift(root);
+        }
+
+        for (const el of candidates) {
+            if (!(el instanceof HTMLElement)) continue;
+            if (el.dataset.numiInitialized !== undefined || el.getAttribute('data-numi-initialized') === 'true') {
+                continue; // idempotent
+            }
+
+            const type = (el.getAttribute('data-numi-embed-type') || '').toLowerCase();
+            if (type === 'popup') {
+                ensureStyles('popup');
+                initializePopupLikeTarget(el, 'popup');
+            } else if (type === 'slider') {
+                ensureStyles('slider');
+                initializePopupLikeTarget(el, 'slider');
+            } else if (type === 'standard') {
+                ensureStyles('standard');
+                initializeStandardTarget(el);
+            } else if (type === 'fullscreen') {
+                ensureStyles('fullscreen');
+                initializeStandardTarget(el, true);
+            }
+        }
+
+        // 2) data-plandalf API (present-offer, mount-offer, mount-portal, mount-widget)
+        const plandalfTargets = asArray($all('[data-plandalf]'));
+        if (root instanceof HTMLElement && root.hasAttribute && root.hasAttribute('data-plandalf')) {
+            plandalfTargets.unshift(root);
+        }
+
+        for (const el of plandalfTargets) {
+            if (!(el instanceof HTMLElement)) continue;
+            if (el.dataset.numiInitialized !== undefined || el.getAttribute('data-numi-initialized') === 'true') {
+                continue; // already processed
+            }
+            const mode = (el.getAttribute('data-plandalf') || '').toLowerCase();
+            const sizeAttr = (el.getAttribute('data-size') || el.getAttribute('data-plandalf-size') || '').toLowerCase();
+            const mapSize = (s) => (s === 'sm' || s === 'small') ? 'small' : (s === 'md' || s === 'medium') ? 'medium' : 'large';
+            const domainAttr = el.getAttribute('data-domain') || el.getAttribute('data-plandalf-domain') || (window.plandalfConfig && window.plandalfConfig.domain) || '';
+            const normalizedDomain = (function(v){
+                if (!v) return '';
+                try {
+                    const origin = /^https?:\/\//i.test(v) ? new URL(v).origin : `https://${v}`;
+                    return origin.replace(/^https?:\/\//i, '').replace(/\/$/, '');
+                } catch(_) { return ''; }
+            })(domainAttr);
+
+            if (mode === 'present-offer') {
+                const offerId = el.getAttribute('data-offer-id') || '';
+                if (!offerId) continue;
+                const embedTypeAttr = (el.getAttribute('data-embed-type') || 'popup').toLowerCase();
+                if (embedTypeAttr === 'slider') { ensureStyles('slider'); } else { ensureStyles('popup'); }
+                if (el.__plandalfPresentOfferBound) continue;
+                el.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const ds = el.dataset || {};
+                    window.plandalf.presentOffer(offerId, {
+                        size: mapSize(sizeAttr || 'large'),
+                        domain: normalizedDomain || undefined,
+                        currency: ds.currency || undefined,
+                        interval: ds.interval || undefined,
+                        redirect_url: ds.redirectUrl || undefined,
+                        env: (ds.env || '').toLowerCase() || undefined,
+                        customer: ds.customer || undefined,
+                        items: ds.items || undefined,
+                        price: ds.price || undefined,
+                        inheritParameters: el.hasAttribute('data-inherit-parameters') || el.hasAttribute('data-plandalf-inherit-parameters'),
+                        dynamicResize: el.hasAttribute('data-dynamic-resize') || el.hasAttribute('data-plandalf-dynamic-resize'),
+                        preview: el.hasAttribute('data-preview') || el.hasAttribute('data-plandalf-preview'),
+                        embedType: embedTypeAttr,
+                        sliderDirection: (ds.sliderDirection || ds.direction || 'right')
+                    });
+                });
+                el.__plandalfPresentOfferBound = true;
+                el.setAttribute('data-numi-initialized', 'true');
+            } else if (mode === 'mount-offer') {
+                ensureStyles('standard');
+                const offerId = el.getAttribute('data-offer-id') || el.getAttribute('data-plandalf-offer') || '';
+                if (!offerId) continue;
+
+                // Temporarily disconnect observer to prevent infinite loop
+    // @ts-ignore
+                const obs = window.__numiObserver;
+                if (obs) obs.disconnect();
+
+                el.setAttribute('data-numi-embed-type', 'standard');
+                el.setAttribute('data-numi-offer', offerId);
+                if (normalizedDomain) el.setAttribute('data-numi-domain', normalizedDomain);
+                if (!el.hasAttribute('data-numi-dynamic-resize')) el.setAttribute('data-numi-dynamic-resize', 'true');
+
+                // Reconnect observer
+                if (obs) {
+                    const observerTarget = document.documentElement || document;
+                    obs.observe(observerTarget, {
+                        childList: true,
+                        subtree: true,
+                        attributes: true,
+                        attributeFilter: [
+                            'data-numi-embed-type',
+                            'data-numi-portal',
+                            'data-plandalf',
+                            'data-numi-initialized',
+                        ],
+                    });
+                }
+
+                initializeStandardTarget(el);
+                el.setAttribute('data-numi-initialized', 'true');
+            } else if (mode === 'mount-portal' || mode === 'mount-portal-inline') {
+                ensureStyles('standard');
+                const customerLike = el.getAttribute('data-customer') || el.getAttribute('data-id') || (window.plandalfConfig && window.plandalfConfig.customer) || '';
+                const returnUrl = el.getAttribute('data-return-url') || '';
+
+                // Temporarily disconnect observer to prevent infinite loop
+            // @ts-ignore
+                const obs = window.__numiObserver;
+                if (obs) obs.disconnect();
+
+                el.setAttribute('data-numi-embed-type', 'standard');
+                el.setAttribute('data-numi-portal', 'billing');
+                if (customerLike) el.setAttribute('data-numi-customer', customerLike);
+                if (returnUrl) el.setAttribute('data-numi-return-url', returnUrl);
+                if (normalizedDomain) el.setAttribute('data-numi-domain', normalizedDomain);
+                if (!el.hasAttribute('data-numi-dynamic-resize')) el.setAttribute('data-numi-dynamic-resize', 'true');
+
+                // Reconnect observer
+                if (obs) {
+                    const observerTarget = document.documentElement || document;
+                    obs.observe(observerTarget, {
+                        childList: true,
+                        subtree: true,
+                        attributes: true,
+                        attributeFilter: [
+                            'data-numi-embed-type',
+                            'data-numi-portal',
+                            'data-plandalf',
+                            'data-numi-initialized',
+                        ],
+                    });
+                }
+
+                initializeStandardTarget(el);
+                el.setAttribute('data-numi-initialized', 'true');
+            } else if (mode === 'mount-widget') {
+                ensureStyles('standard');
+                const widgetId = el.getAttribute('data-widget-id') || el.getAttribute('data-id') || 'pricing';
+                const widgetType = el.getAttribute('data-widget-type') || 'pricing-table';
+                const opts = { widgetId, widgetType: widgetType, type: widgetType };
+                if (normalizedDomain) opts.domain = normalizedDomain;
+                if (window.plandalf?.widgets?.mount) {
+                    window.plandalf.widgets.mount(el, opts);
+                }
+                el.setAttribute('data-numi-initialized', 'true');
+            }
+        }
+    };
+
+    // Expose manual re-scan for SPA frameworks
+    try {
+        window.plandalf = window.plandalf || {};
+        window.plandalf.initEmbeds = (root) => __numiInitEmbedsIn(root || document);
+    } catch (_) {}
+
+    // First scan (head-safe) and DOM-ready
+    const __numiDoInitialScan = () => { try { __numiInitEmbedsIn(document); } catch (_) {} };
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', __numiDoInitialScan, { once: true });
+    } else {
+        __numiDoInitialScan();
     }
 
-    // @ts-ignore
-    const slidersInitialized = window.__numiSlidersInitialized;
-    const sliderTargets = document.querySelectorAll("[data-numi-embed-type='slider']");
-    if (sliderTargets.length > 0) {
-        if (!slidersInitialized) {
-            const sliderStylesheet = document.createElement('style');
-            sliderStylesheet.innerHTML = sliderStyles;
-            document.head.appendChild(sliderStylesheet);
-            // @ts-ignore
-            window.__numiSlidersInitialized = true;
-        }
-        sliderTargets.forEach(target => {
-            if (target instanceof HTMLElement) {
-                initializePopupLikeTarget(target, 'slider');
+    // Observe SPA mutations and relevant attribute changes
+    try {
+        const observerTarget = document.documentElement || document;
+        const mo = new MutationObserver((mutations) => {
+            for (const m of mutations) {
+                if (m.type === 'childList') {
+                    m.addedNodes && m.addedNodes.forEach((n) => {
+                        if (n && n.nodeType === 1) {
+                            console.log('📦 Initializing added node:', n);
+                            __numiInitEmbedsIn(n);
+                        }
+                    });
+                } else if (m.type === 'attributes' && m.target) {
+                    const target = m.target;
+                    const attr = m.attributeName;
+                    console.log('🔧 Attribute changed:', attr, 'on', target);
+                    __numiInitEmbedsIn(target);
+                }
             }
         });
-    }
-    // @ts-ignore
-    const standardInitialized = window.__numiStandardInitialized;
-    const standardTargets = document.querySelectorAll("[data-numi-embed-type='standard']");
-    if (standardTargets.length > 0) {
-        if (!standardInitialized) {
-            const standardStylesheet = document.createElement('style');
-            standardStylesheet.innerHTML = standardStyles;
-            // TODO mobile styles?
+        mo.observe(observerTarget, {
+            childList: true,
+            subtree: true,
+            attributes: true,
+            attributeFilter: [
+                'data-numi-embed-type',
+                'data-numi-portal',
+                'data-plandalf',
+                'data-numi-initialized',
+            ],
+        });
+        // @ts-ignore
+        window.__numiObserver = mo;
+    } catch (_) {}
 
-            document.head.appendChild(standardStylesheet);
-            // @ts-ignore
-            window.__numiStandardInitialized = true;
-        }
-        standardTargets.forEach(target => {
-            if (target instanceof HTMLElement) {
-                initializeStandardTarget(target);
-            }
-        });
-    }
 
     // =============================================================================
     // PLANDALF SESSION-BASED API
@@ -1571,8 +1815,8 @@ ${spinAnimationStyles}
         }
     }
 
-    // Global Plandalf API
-    window.plandalf = {
+    // Global Plandalf API (merge without overwriting existing methods like log/warn/error/initEmbeds)
+    window.plandalf = Object.assign(window.plandalf || {}, {
         offers: {
             get(selector) {
                 return new OfferWaiter(selector);
@@ -1630,12 +1874,12 @@ ${spinAnimationStyles}
                 const iframe = document.createElement('iframe');
                 const iframeSrc = getSharedIframeSrc(domainHost, widgetId, false, el, { mode: 'widget', widgetType, widgetId });
                 const embedId = generateEmbedId();
-                iframeSrc.searchParams.append('numi-embed-id', `${embedId}`);
-                iframeSrc.searchParams.append('numi-embed-type', 'standard');
+                iframeSrc.searchParams.append('embed-id', `${embedId}`);
+                iframeSrc.searchParams.append('embed-type', 'standard');
                 el.setAttribute('data-numi-embed-id', embedId);
                 embedTypeRegistry.set(embedId, 'standard');
                 iframe.src = iframeSrc.toString();
-                iframe.allow = 'microphone; camera; geolocation';
+                iframe.allow = 'payment; geolocation';
                 iframe.style.border = '0px';
                 iframe.title = `Widget: ${widgetType}`;
                 iframeContainer.appendChild(iframe);
@@ -1645,7 +1889,7 @@ ${spinAnimationStyles}
                 return embedId;
             }
         }
-    };
+    });
 
     // Present an offer programmatically in a modal popup/slider
     // Usage: plandalf.presentOffer('offerId', { size: 'lg'|'md'|'sm', domain, inheritParameters, dynamicResize, preview, embedType: 'popup'|'slider', sliderDirection: 'left'|'right' })
@@ -1727,6 +1971,10 @@ ${spinAnimationStyles}
             } else {
                 btn.setAttribute('data-customer', String(options.customer));
             }
+        }
+        // Optional: pass JWT customer token directly for offer checkouts
+        if (options.customerToken && typeof options.customerToken === 'string') {
+            btn.setAttribute('data-numi-customer-token', options.customerToken);
         }
         if (options.items) {
             // Expect a URL-encoded string (e.g., items[0][lookup_key]=price_xxx&items[0][quantity]=1)
@@ -1841,7 +2089,7 @@ ${spinAnimationStyles}
         if (!embedId && event.source && event.source.location) {
             try {
                 const iframeUrl = new URL(event.source.location.href);
-                embedId = iframeUrl.searchParams.get('numi-embed-id');
+                embedId = iframeUrl.searchParams.get('embed-id') || iframeUrl.searchParams.get('numi-embed-id');
                 // logging disabled
             } catch (e) {
                 // logging disabled
@@ -1850,12 +2098,12 @@ ${spinAnimationStyles}
 
         // Last resort: try to find iframe by matching the event source
         if (!embedId && event.source) {
-            const iframes = document.querySelectorAll('iframe[src*="numi-embed-id"]');
+            const iframes = document.querySelectorAll('iframe[src*="embed-id"], iframe[src*="numi-embed-id"]');
             // logging disabled
             for (const iframe of iframes) {
                 if (iframe.contentWindow === event.source) {
                     const srcUrl = new URL(iframe.src);
-                    embedId = srcUrl.searchParams.get('numi-embed-id');
+                    embedId = srcUrl.searchParams.get('embed-id') || srcUrl.searchParams.get('numi-embed-id');
                     // logging disabled
                     break;
                 }
@@ -1911,6 +2159,20 @@ ${spinAnimationStyles}
             };
             session._triggerEvent('init', eventData);
 
+            // If an overlay is already active and does not match this embed, reject this session early.
+            try {
+                if (isOverlayActive() && window.__plandalfActiveOverlay.embedId !== embedId && (session.embedType === 'popup' || session.embedType === 'slider')) {
+                    plandalf.warn('[Plandalf] Rejecting secondary popup/slider session while another is active', {
+                        active: window.__plandalfActiveOverlay,
+                        rejected: { embedId, type: session.embedType }
+                    });
+                    // Send a cancel + closed to keep external listeners consistent
+                    session._triggerEvent('cancel', { cancelReason: 'secondary_overlay_blocked' });
+                    session._triggerEvent('closed', { embedType: session.embedType, wasCompleted: false, embedId, sessionId: session.id });
+                    return;
+                }
+            } catch (_) {}
+
             // Fire 'shown' if popup/slider was opened before session existed
             try {
                 if (pendingShownEmbeds.has(embedId)) {
@@ -1956,6 +2218,10 @@ ${spinAnimationStyles}
             // logging disabled
 
             session._triggerEvent(eventType, eventData);
+            // Release overlay when closed/complete/cancel for this embed
+            if (eventType === 'closed' || eventType === 'complete' || eventType === 'cancel') {
+                clearActiveOverlayIf(embedId);
+            }
         } else {
             plandalf.warn(`⚠️ No session found for embedId: ${embedId}`);
             plandalf.log('Available sessions:', Array.from(window.plandalf?.offers?._sessions?.keys() || []));
@@ -2087,143 +2353,5 @@ ${spinAnimationStyles}
     // Process configuration
     processGlobalConfig();
 
-    // @ts-ignore
-    const fullScreenInitialized = window.__numiFullScreenInitialized;
-    const fullScreenTargets = document.querySelectorAll("[data-numi-embed-type='fullscreen']");
-    if (fullScreenTargets.length > 0) {
-        // pretty much everything is the same as the standard embed
-        if (!fullScreenInitialized) {
-            // only need to add styles once
-            const standardStylesheet = document.createElement('style');
-            standardStylesheet.innerHTML = standardStyles;
-            // TODO mobile styles?
-            document.head.appendChild(standardStylesheet);
-            // @ts-ignore
-            window.__numiFullScreenInitialized = true;
-        }
-        fullScreenTargets.forEach(target => {
-            if (target instanceof HTMLElement) {
-                initializeStandardTarget(target, true);
-            }
-        });
-    }
 
-    // =============================================================================
-    // PLANDALF REBRAND ATTRIBUTES SUPPORT (data-plandalf)
-    // =============================================================================
-    const plandalfTargets = document.querySelectorAll('[data-plandalf]');
-    if (plandalfTargets.length > 0) {
-        plandalfTargets.forEach(el => {
-            // plandalf.log('plandalfTarget ', el);
-            if (!(el instanceof HTMLElement)) return;
-            const mode = (el.getAttribute('data-plandalf') || '').toLowerCase();
-            const sizeAttr = (el.getAttribute('data-size') || el.getAttribute('data-plandalf-size') || '').toLowerCase();
-            const mapSize = (s) => {
-                if (s === 'sm' || s === 'small') return 'small';
-                if (s === 'md' || s === 'medium') return 'medium';
-                return 'large';
-            };
-            const domainAttr = el.getAttribute('data-domain') || el.getAttribute('data-plandalf-domain') || (window.plandalfConfig && window.plandalfConfig.domain) || '';
-            const normalizedDomain = (function(v){
-                if (!v) return '';
-                try {
-                    const origin = /^https?:\/\//i.test(v) ? new URL(v).origin : `https://${v}`;
-                    return origin.replace(/^https?:\/\//i, '').replace(/\/$/, '');
-                } catch(_) { return ''; }
-            })(domainAttr);
-
-            if (mode === 'present-offer') {
-                const offerId = el.getAttribute('data-offer-id') || '';
-                if (!offerId) return;
-                // Determine embed type from plandalf attribute; default popup
-                const embedTypeAttr = (el.getAttribute('data-embed-type') || 'popup').toLowerCase();
-
-                // Ensure stylesheet for chosen embed type is present
-                try {
-                    if (embedTypeAttr === 'slider') {
-                        // @ts-ignore
-                        if (!window.__numiSlidersInitialized) {
-                            const sliderStylesheet = document.createElement('style');
-                            sliderStylesheet.innerHTML = sliderStyles;
-                            document.head.appendChild(sliderStylesheet);
-                            // @ts-ignore
-                            window.__numiSlidersInitialized = true;
-                        }
-                    } else {
-                        // @ts-ignore
-                        if (!window.__numiPopupEmbedsInitialized) {
-                            const popupStylesheet = document.createElement('style');
-                            popupStylesheet.innerHTML = popupStyles;
-                            document.head.appendChild(popupStylesheet);
-                            // @ts-ignore
-                            window.__numiPopupEmbedsInitialized = true;
-                        }
-                    }
-                } catch (_) {}
-                // Attach click handler to present on demand
-                el.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    const ds = el.dataset || {};
-                    window.plandalf.presentOffer(offerId, {
-                        size: sizeAttr || 'large',
-                        domain: normalizedDomain || undefined,
-                        currency: ds.currency || undefined,
-                        interval: ds.interval || undefined,
-                        redirect_url: ds.redirectUrl || undefined,
-                        env: (ds.env || '').toLowerCase() || undefined,
-                        customer: ds.customer || undefined,
-                        items: ds.items || undefined,
-                        price: ds.price || undefined,
-                        inheritParameters: el.hasAttribute('data-inherit-parameters') || el.hasAttribute('data-plandalf-inherit-parameters'),
-                        dynamicResize: el.hasAttribute('data-dynamic-resize') || el.hasAttribute('data-plandalf-dynamic-resize'),
-                        preview: el.hasAttribute('data-preview') || el.hasAttribute('data-plandalf-preview'),
-                        // Forward embed type and optional slider direction
-                        embedType: embedTypeAttr,
-                        sliderDirection: (ds.sliderDirection || ds.direction || 'right')
-                    });
-                });
-            } else if (mode === 'mount-offer') {
-                // Ensure standard stylesheet is present for inline offers
-                // @ts-ignore
-                if (!window.__numiStandardInitialized) {
-                    const standardStylesheet = document.createElement('style');
-                    standardStylesheet.innerHTML = standardStyles;
-                    // TODO mobile styles?
-                    document.head.appendChild(standardStylesheet);
-                    // @ts-ignore
-                    window.__numiStandardInitialized = true;
-                }
-                const offerId = el.getAttribute('data-offer-id') || el.getAttribute('data-plandalf-offer') || '';
-                if (!offerId) return;
-                el.setAttribute('data-numi-embed-type', 'standard');
-                el.setAttribute('data-numi-offer', offerId);
-                if (normalizedDomain) el.setAttribute('data-numi-domain', normalizedDomain);
-                // Enable dynamic resize by default for mount-offer
-                if (!el.hasAttribute('data-numi-dynamic-resize')) {
-                    el.setAttribute('data-numi-dynamic-resize', 'true');
-                }
-                initializeStandardTarget(el);
-            } else if (mode === 'mount-portal' || mode === 'mount-portal-inline') { // -inline kept for backwards compat
-                const customerLike = el.getAttribute('data-customer') || el.getAttribute('data-id') || (window.plandalfConfig && window.plandalfConfig.customer) || '';
-                const returnUrl = el.getAttribute('data-return-url') || '';
-                el.setAttribute('data-numi-embed-type', 'standard');
-                el.setAttribute('data-numi-portal', 'billing');
-                if (customerLike) el.setAttribute('data-numi-customer', customerLike);
-                if (returnUrl) el.setAttribute('data-numi-return-url', returnUrl);
-                if (normalizedDomain) el.setAttribute('data-numi-domain', normalizedDomain);
-                // default dynamic resize for portals
-                if (!el.hasAttribute('data-numi-dynamic-resize')) el.setAttribute('data-numi-dynamic-resize', 'true');
-                initializeStandardTarget(el);
-            } else if (mode === 'mount-widget') {
-                // Mount a widget inline (e.g., pricing table)
-                const widgetId = el.getAttribute('data-widget-id') || el.getAttribute('data-id') || 'pricing';
-                const widgetType = el.getAttribute('data-widget-type') || 'pricing-table';
-                const opts = { widgetId, widgetType: widgetType, type: widgetType };
-                if (normalizedDomain) opts.domain = normalizedDomain;
-                if (window.plandalf?.widgets?.mount) {
-                    window.plandalf.widgets.mount(el, opts);
-                }
-            }
-        });
-    }
 })();

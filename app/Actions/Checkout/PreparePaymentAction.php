@@ -38,7 +38,7 @@ class PreparePaymentAction
         $currentUrl = Uri::of($data['current_url'] ?? '');
 
         $this->session->fill([
-            'properties' => array_merge($session->properties ?? [], $data)
+            'properties' => array_merge($this->session->properties ?? [], $data)
         ]);
 
         // Create or get customer for this email
@@ -92,6 +92,7 @@ class PreparePaymentAction
             'client_secret' => $intent?->client_secret,
             'is_redirect_method' => $isRedirectMethod,
             'return_url' => route('checkout.redirect.callback', [$this->session]),
+            'supported_payment_methods' => $this->getFilteredPaymentMethods($intentMode),
         ];
 
         return $response;
@@ -144,7 +145,7 @@ class PreparePaymentAction
     /**
      * Create the appropriate Stripe intent based on cart contents
      */
-    private function createStripeIntent(?Customer $customer, string $intentMode, string $selectedPmType): PaymentIntent|SetupIntent|null
+    private function createStripeIntent(?Customer $customer, string $intentMode, ?string $selectedPmType): PaymentIntent|SetupIntent|null
     {
         if ($intentMode === 'free') {
             return null;
@@ -160,7 +161,7 @@ class PreparePaymentAction
     /**
      * Create a PaymentIntent for one-time payments
      */
-    private function createPaymentIntent(Customer $customer, string $selectedPmType): PaymentIntent|null
+    private function createPaymentIntent(Customer $customer, ?string $selectedPmType): PaymentIntent|null
     {
         $paymentMethods = $this->getFilteredPaymentMethods('payment');
 
@@ -170,7 +171,7 @@ class PreparePaymentAction
     /**
      * Create a SetupIntent for subscriptions
      */
-    private function createSetupIntent(Customer $customer, string $selectedPmType): SetupIntent|null
+    private function createSetupIntent(Customer $customer, ?string $selectedPmType): SetupIntent|null
     {
         // Get filtered payment methods for this context
         $paymentMethods = $this->getFilteredPaymentMethods('setup');
