@@ -589,7 +589,8 @@ export default function CheckoutPage({ offer, error, checkoutSession, subscripti
         )}
         <NavigationProvider>
           <div className="min-h-screen bg-gray-50 flex flex-col gap-4 justify-center items-center" style={containerStyle}>
-            <Deferred data="subscriptionPreview" fallback={
+            {/* Ensure savedPaymentMethods deferred prop resolves before rendering blocks that may use it */}
+            <Deferred data="savedPaymentMethods" fallback={
               error ? (
                 <div className="p-4">
                   <div className="bg-red-50 text-red-900 p-4 rounded-md">
@@ -597,18 +598,50 @@ export default function CheckoutPage({ offer, error, checkoutSession, subscripti
                   </div>
                 </div>
               ) : (
-                <CheckoutController offer={offer} session={checkoutSession} />
+                <Deferred data="subscriptionPreview" fallback={
+                  error ? (
+                    <div className="p-4">
+                      <div className="bg-red-50 text-red-900 p-4 rounded-md">
+                        {error}
+                      </div>
+                    </div>
+                  ) : (
+                    <CheckoutController offer={offer} session={checkoutSession} />
+                  )
+                }>
+                  {error ? (
+                    <div className="p-4">
+                      <div className="bg-red-50 text-red-900 p-4 rounded-md">
+                        {error}
+                      </div>
+                    </div>
+                  ) : (
+                    <CheckoutController offer={offer} session={checkoutSession} />
+                  )}
+                </Deferred>
               )
             }>
-              {error ? (
-                <div className="p-4">
-                  <div className="bg-red-50 text-red-900 p-4 rounded-md">
-                    {error}
+              <Deferred data="subscriptionPreview" fallback={
+                error ? (
+                  <div className="p-4">
+                    <div className="bg-red-50 text-red-900 p-4 rounded-md">
+                      {error}
+                    </div>
                   </div>
-                </div>
-              ) : (
-                <CheckoutController offer={offer} session={checkoutSession} />
-              )}
+                ) : (
+                  <CheckoutController offer={offer} session={checkoutSession} />
+                )
+              }>
+                {error ? (
+                  <div className="p-4">
+                    <div className="bg-red-50 text-red-900 p-4 rounded-md">
+                      {error}
+                    </div>
+                  </div>
+                ) : (
+                  <CheckoutController offer={offer} session={checkoutSession} />
+                )}
+              </Deferred>
             </Deferred>
           </div>
         </NavigationProvider>

@@ -519,12 +519,12 @@ function StripeElementsComponent({
         // '.PaymentMethodSelector': {
         //   borderRadius: style.inputBorderRadius,
         // },
-        '.PaymentMethodSelectorTab': {
-          borderRadius: style.inputBorderRadius,
-          borderColor: resolveThemeValue(style.inputBorderColor, theme),
-          color: resolveThemeValue(style.inputTextFont?.color, theme),
-          backgroundColor: resolveThemeValue(style.inputBackgroundColor, theme),
-        },
+        // '.PaymentMethodSelectorTab': {
+        //   borderRadius: style.inputBorderRadius,
+        //   borderColor: resolveThemeValue(style.inputBorderColor, theme),
+        //   color: resolveThemeValue(style.inputTextFont?.color, theme),
+        //   backgroundColor: resolveThemeValue(style.inputBackgroundColor, theme),
+        // },
         // '.PaymentMethodSelectorTab--selected': {
         //   borderColor: resolveThemeValue(style.inputBorderColor, theme),
         //   backgroundColor: resolveThemeValue(style.paymentFormBackgroundColor, theme),
@@ -745,7 +745,7 @@ function PaymentForm({
     const newMethod = evt.value?.type || '';
     setPaymentType(newMethod);
     if (newMethod) {
-      console.log('JIT: Selected payment type:', newMethod, evt);
+      // console.log('JIT: Selected payment type:', newMethod, evt);
     }
   }, []);
 
@@ -1059,7 +1059,7 @@ function PaymentForm({
         if (confirmResult && confirmResult.paymentIntent
           && confirmResult.paymentIntent.status === 'requires_action'
         ) {
-          console.log('StripeBlock@paymentIntent.requires-action', confirmResult.paymentIntent);
+          // console.log('StripeBlock@paymentIntent.requires-action', confirmResult.paymentIntent);
           addDebugMessage('Step 2: Redirect payment requires action');
           setIsProcessing(false);
 
@@ -1086,7 +1086,7 @@ function PaymentForm({
         addDebugMessage('Step 2 passed: Payment confirmed successfully (immediate)');
         setIsProcessing(false);
 
-        console.log('CONFMRING AND PROCEEDING!');
+        // console.log('CONFMRING AND PROCEEDING!');
 
         if (onSuccess) onSuccess();
 

@@ -17,6 +17,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Log;
 use Stripe\Exception\InvalidRequestException;
+use App\Modules\Integrations\Stripe\Stripe as StripeIntegration;
 
 class CheckoutSessionController extends Controller
 {
@@ -52,6 +53,9 @@ class CheckoutSessionController extends Controller
                     return $this->addDiscount($checkoutSession, $request);
                 case 'removeDiscount':
                     return $this->removeDiscount($checkoutSession, $request);
+                case 'setDefaultPaymentMethod':
+                case 'setPaymentMethod':
+                    return $this->setDefaultPaymentMethod($checkoutSession, $request);
                 case 'commit':
                     return $this->commit($checkoutSession, $request);
                 case 'prepare_payment':
@@ -346,6 +350,75 @@ class CheckoutSessionController extends Controller
 
         return new CheckoutSessionResource($checkoutSession);
     }
+
+    /**
+     * Set a saved payment method as default and prepare an intent using it.
+     * Supports both setup/payment modes, same as preparePayment but without Elements.
+     */
+    protected function setDefaultPaymentMethod(CheckoutSession $session, Request $request)
+    {
+        $validated = $request->validate([
+            'payment_method_id' => 'required|string',
+        ]);
+
+        abort_if($session->status === CheckoutSessionStatus::CLOSED, 400, 'Checkout session is not active');
+        abort_if($session->hasACompletedOrder(), 400, 'Checkout session is already completed');
+
+        $integrationClient = $session->integrationClient();
+        abort_if(! $integrationClient || ! $integrationClient instanceof StripeIntegration, 400, 'Integration client not found');
+        abort_if(is_null($session->customer), 400, 'No customer found for this checkout session.');
+
+        // 1) Set default payment method at the provider
+        $integrationClient->setDefaultPaymentMethod(
+            $session->customer->reference_id,
+            $validated['payment_method_id']
+        );
+
+        // 2) Prepare an intent JIT (same as preparePayment) so commit can proceed
+        $prepare = app(PreparePaymentAction::class, ['session' => $session]);
+        $extras = $prepare([
+            'email' => $session->customer->email ?? data_get($session->properties, 'email'),
+            'current_url' => $request->fullUrl(),
+            // No payment_type because we are using an existing saved method
+        ]);
+
+        // 3) Attach and confirm the intent with the saved payment method (no Elements)
+        try {
+            $client = $integrationClient->getStripeClient();
+            if ($session->intent_type === 'payment' && $session->intent_id && $session->intent_id !== 'skipped') {
+                $pi = $client->paymentIntents->confirm($session->intent_id, [
+                    'payment_method' => $validated['payment_method_id'],
+                    'return_url' => route('checkout.redirect.callback', [$session]),
+                ]);
+                $extras['intent_status'] = $pi->status ?? null;
+                $extras['next_action'] = $pi->next_action ?? null;
+            } elseif ($session->intent_type === 'setup' && $session->intent_id) {
+                $si = $client->setupIntents->confirm($session->intent_id, [
+                    'payment_method' => $validated['payment_method_id'],
+                    'return_url' => route('checkout.redirect.callback', [$session]),
+                ]);
+                $extras['intent_status'] = $si->status ?? null;
+                $extras['next_action'] = $si->next_action ?? null;
+            }
+        } catch (\Throwable $e) {
+            report($e);
+            // Surface a friendly error while keeping original flow intact
+            return response()->json([
+                'message' => 'Failed to confirm payment with the selected method: '.$e->getMessage(),
+            ], 400);
+        }
+
+        // Reload relationships for updated resource
+        $session->refresh();
+        $session->loadMissing(['lineItems.offerItem.offerPrices', 'lineItems.price.product', 'lineItems.price']);
+
+        return array_merge([
+            'message' => 'Default payment method set and intent prepared',
+            'checkout_session' => new CheckoutSessionResource($session),
+        ], $extras ?? []);
+    }
+
+    // public function set
 
     /**
      * JIT: Prepare payment by creating the appropriate Stripe intent just-in-time

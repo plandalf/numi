@@ -55,6 +55,7 @@ class CheckoutSessionResource extends JsonResource
             'customer' => $this->whenLoaded('customer', function () {
                 return [
                     'id' => $this->customer->id,
+                    'reference_id' => $this->customer->reference_id,
                     'email' => $this->customer->email,
                     'name' => $this->customer->name,
                 ];

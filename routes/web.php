@@ -33,8 +33,54 @@ use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use App\Http\Controllers\Client\SubscriptionCancellationController;
 
-Route::get('test', function (\Illuminate\Http\Request $request) {
-});
+Route::get('dev/test-checkout-jwt', function (\Illuminate\Http\Request $request) {
+    abort_unless(auth()->check(), 403);
+
+    $user = auth()->user();
+    $organization = method_exists($user, 'currentOrganization') ? $user->currentOrganization : ($user->currentOrganization ?? null);
+    abort_unless($organization, 400, 'No current organization');
+
+    // Find first active API key for the organization
+    /** @var \App\Models\ApiKey|null $apiKey */
+    $apiKey = \App\Models\ApiKey::query()
+        ->where('organization_id', $organization->id)
+        ->active()
+        ->orderBy('id')
+        ->first();
+    abort_unless($apiKey, 404, 'No API key found for org');
+
+    // Build JWT similar to BillingPortalController format
+    $payload = [
+        'iss' => config('app.url'),
+        'sub' => (string) $user->id,
+        'grp' => (string) $organization->id,
+        'customer_id' => 'cus_Sx7zBCgAFAnmvj',
+        'email' => $user->email,
+        'iat' => time(),
+        'exp' => time() + 3600,
+    ];
+
+    $headers = [ 'kid' => $apiKey->id ];
+
+    $token = \Firebase\JWT\JWT::encode($payload, $apiKey->key, 'HS256', null, $headers);
+
+    // Find a recent published offer in this organization
+    /** @var \App\Models\Store\Offer|null $offer */
+    $offer = \App\Models\Store\Offer::query()
+        ->where('organization_id', $organization->id)
+        ->latest()
+        ->first();
+    abort_unless($offer, 404, 'No offer found');
+
+    $url = route('offers.show', ['offer' => $offer, 'environment' => 'live']);
+    $testUrl = $url.'?customer='.urlencode($token);
+
+    return Inertia::render('dev/test-checkout', [
+        'offerId' => $offer->getRouteKey(),
+        'jwt' => $token,
+        'url' => $testUrl,
+    ]);
+})->name('dev.test-checkout-jwt');
 
 Route::redirect('/', '/dashboard')->name('home');
 
