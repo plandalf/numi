@@ -886,7 +886,7 @@ ${spinAnimationStyles}
         iframe.src = iframeSrc.toString();
         //microphone; camera; 
         iframe.allow = 'geolocation; payment';
-        console.log("BING");
+        
         iframe.style.border = '0px';
         iframe.style.background = '#ffffff'; // hide any initial transparency while loading
         iframe.title = isBillingPortal ? 'Billing Portal' : `${offerPublicIdentifier}`;
@@ -1499,16 +1499,21 @@ ${spinAnimationStyles}
             for (const m of mutations) {
                 if (m.type === 'childList') {
                     m.addedNodes && m.addedNodes.forEach((n) => {
-                        if (n && n.nodeType === 1) {
-                            console.log('📦 Initializing added node:', n);
-                            __numiInitEmbedsIn(n);
+                        if (!(n && n.nodeType === 1)) return;
+                        const el = n;
+                        // Only initialize if the node or its subtree contains our attributes
+                        const hasEmbed = (el.matches && (el.matches('[data-numi-embed-type], [data-plandalf]')))
+                            || (el.querySelector && el.querySelector('[data-numi-embed-type], [data-plandalf]'));
+                        if (hasEmbed) {
+                            __numiInitEmbedsIn(el);
                         }
                     });
                 } else if (m.type === 'attributes' && m.target) {
                     const target = m.target;
-                    const attr = m.attributeName;
-                    console.log('🔧 Attribute changed:', attr, 'on', target);
-                    __numiInitEmbedsIn(target);
+                    // Only react if the changed attribute is one we care about
+                    if (m.attributeName === 'data-numi-embed-type' || m.attributeName === 'data-plandalf' || m.attributeName === 'data-numi-portal' || m.attributeName === 'data-numi-initialized') {
+                        __numiInitEmbedsIn(target);
+                    }
                 }
             }
         });
