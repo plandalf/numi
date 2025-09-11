@@ -60,16 +60,12 @@ class CheckoutController extends Controller
                 // Accept canonical fields from payload
                 $email = data_get($payload, 'email');
                 $name = data_get($payload, 'name');
-                $phone = data_get($payload, 'phone');
-                $company = data_get($payload, 'company');
                 $jwtStripeCustomerId = data_get($payload, 'customer_id') ?? data_get($payload, 'id');
                 $jwtUserId = data_get($payload, 'sub');
                 $jwtGroupId = data_get($payload, 'grp');
 
                 if ($email) { $customerProperties['email'] = $email; }
                 if ($name) { $customerProperties['name'] = $name; }
-                if ($phone) { $customerProperties['phone'] = $phone; }
-                if ($company) { $customerProperties['company'] = $company; }
             } catch (\Throwable $e) {
                 Log::warning('Invalid checkout customer token', ['error' => $e->getMessage()]);
             }
@@ -79,7 +75,7 @@ class CheckoutController extends Controller
                 if (isset($customerData['email'])) {
                     $customerProperties['email'] = $customerData['email'];
                 }
-                foreach (['name', 'phone', 'company'] as $field) {
+                foreach (['name'] as $field) {
                     if (isset($customerData[$field])) {
                         $customerProperties[$field] = $customerData[$field];
                     }
@@ -259,27 +255,11 @@ class CheckoutController extends Controller
                         ->get();
 
                     return $methods->map(function (PaymentMethod $pm) use ($defaultLocalId) {
-                        $props = $pm->properties ?? [];
-                        $card = is_array($props) ? ($props['card'] ?? []) : [];
-                        $brand = data_get($card, 'display_brand')
-                            ?? data_get($card, 'brand')
-                            ?? data_get($props, 'display_brand')
-                            ?? data_get($props, 'brand');
-                        $last4 = data_get($card, 'last4') ?? data_get($props, 'last4');
-                        $expMonth = data_get($card, 'exp_month') ?? data_get($props, 'exp_month');
-                        $expYear = data_get($card, 'exp_year') ?? data_get($props, 'exp_year');
-                        $exp = null;
-                        if ($expMonth !== null && $expYear !== null) {
-                            $exp = sprintf('%02d/%02d', (int) $expMonth, ((int) $expYear) % 100);
-                        }
                         return [
                             // Use external_id (Stripe PM id) so we can set default in Stripe when chosen
                             'id' => $pm->external_id,
                             'type' => $pm->type,
                             'properties' => $pm->properties,
-                            'brand' => $brand,
-                            'last4' => $last4,
-                            'exp' => $exp,
                             'isDefault' => $pm->id === $defaultLocalId,
                         ];
                     })->all();
@@ -367,9 +347,6 @@ class CheckoutController extends Controller
                             'id' => $pm->external_id,
                             'type' => $pm->type,
                             'properties' => $pm->properties,
-                            'brand' => data_get($pm->properties, 'card.brand'),
-                            'last4' => data_get($pm->properties, 'card.last4'),
-                            'exp' => sprintf('%02d/%02d', (int) data_get($pm->properties, 'card.exp_month'), ((int) data_get($pm->properties, 'card.exp_year')) % 100),
                             'isDefault' => $pm->id === $defaultLocalId,
                         ];
                     })->all();
