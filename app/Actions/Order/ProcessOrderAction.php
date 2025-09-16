@@ -96,7 +96,8 @@ class ProcessOrderAction
 
     protected function processSetupIntent(Order $order): ?Order
     {
-        $intent = $this->stripeClient->setupIntents->retrieve($this->session->intent_id);
+        $intent = $this->stripeClient->setupIntents
+            ->retrieve($this->session->intent_id);
 
         // Check if the setup intent was successful
         if ($intent->status !== 'succeeded') {

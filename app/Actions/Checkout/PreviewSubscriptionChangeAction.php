@@ -6,8 +6,10 @@ namespace App\Actions\Checkout;
 
 use App\Models\Checkout\CheckoutLineItem;
 use App\Models\Checkout\CheckoutSession;
+use App\Models\Catalog\Price as LocalPrice;
 use App\Modules\Integrations\Stripe\Stripe;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Compute a preview of the delta (proration, immediate or future invoice impact) for changing the base plan.
@@ -30,9 +32,14 @@ class PreviewSubscriptionChangeAction
         $this->stripeIntegration = $integration;
     }
 
-
     public function __invoke(CheckoutSession $session, ?string $effectiveAt = null): array
     {
+        Log::info(logname(), [
+            'session_id' => $session->id,
+            'intent' => $session->intent,
+            'subscription' => $session->subscription,
+        ]);
+
         if ($session->intent !== 'upgrade' || empty($session->subscription)) {
             return [
                 'enabled' => false,
@@ -74,7 +81,20 @@ class PreviewSubscriptionChangeAction
         $periodEndTs = $this->tsOrNull($subscription->current_period_end ?? null);
 
         // Decide effective timestamp and strategy
-        [$effectiveTs, $strategy] = $this->resolveEffectiveTimestamp($effectiveAt, $trialEndTs, $periodEndTs);
+        [$effectiveTs, $strategy] = $this->resolveEffectiveTimestamp(
+            $effectiveAt,
+            $trialEndTs,
+            $periodEndTs
+        );
+
+        // For upgrades, default to immediate proration unless an explicit effectiveAt is provided
+        if ($session->intent === 'upgrade' && empty($effectiveAt)) {
+            $effectiveTs = now()->timestamp;
+            $strategy = 'at_date';
+        }
+
+        // Determine whether proration is even applicable for the proposed change (without relying on invoice lines)
+        $effectiveIsImmediate = $strategy === 'at_date' && $effectiveTs <= now()->timestamp + 60;
 
         // Determine the new base plan from checkout
         $newBase = $this->resolveNewBaseRecurringLine($session);
@@ -102,6 +122,16 @@ class PreviewSubscriptionChangeAction
 
         // Build items: keep addons, swap base price only
         $subItemsPreview = [];
+        $existingQuantity = (int) ($existingBaseItem->quantity ?? 1);
+        $checkoutBaseLineItem = $session->lineItems->first(function ($lineItem) use ($newBase) {
+            return $lineItem->price_id === $newBase['local_price_id'];
+        });
+        $newQuantityWanted = (int) ($checkoutBaseLineItem?->quantity ?? $existingQuantity);
+        $priceChanged = ($existingBaseItem->price->id ?? null) !== $newBase['gateway_price_id'];
+        $quantityChanged = $existingQuantity !== $newQuantityWanted;
+        $canProrate = $effectiveIsImmediate
+            && in_array($currentStatus, ['active', 'past_due'], true)
+            && ($priceChanged || $quantityChanged);
         foreach ($existingItems as $item) {
             // Get the new quantity from checkout session if this is the base item
             $newQuantity = $item->quantity ?? 1;
@@ -130,7 +160,7 @@ class PreviewSubscriptionChangeAction
             'subscription_proration_date' => $effectiveTs,
             'customer' => $subscription->customer ?? null,
             'subscription_trial_end' => ($trialEndTs && $effectiveTs === $trialEndTs) ? $trialEndTs : null,
-            'expand' => ['discounts', 'lines.data.discounts', 'lines.data.price.product'],
+            'expand' => ['discounts', 'lines.data.discounts', 'lines.data.price.product', 'lines.data.tax_amounts', 'total_tax_amounts'],
         ]);
 
         try {
@@ -149,8 +179,36 @@ class PreviewSubscriptionChangeAction
         });
 
         $prorationSubtotal = (int) $prorationLines->sum('amount');
-        $totalDueAtEffective = (int) ($upcoming->amount_due ?? 0);
+        // Compute amount due now as proration-only (exclude next period full recurring charge)
+        $totalDueAtEffective = $prorationSubtotal;
         $currency = strtolower($upcoming->currency ?? ($session->currency ?? 'usd'));
+
+        // Capture next period (non-proration) line summary for UI, but don't include it in due-now
+        $nextPeriodLine = $lines->first(function ($line) {
+            return ! (bool) ($line->proration ?? false) && ! empty($line->price?->recurring);
+        });
+
+        // Attempt to resolve the local price record for the existing base Stripe price
+        $currentLocalPrice = null;
+        try {
+            $gatewayPriceId = $existingBaseItem->price->id ?? null;
+            if ($gatewayPriceId) {
+                $currentLocalPrice = LocalPrice::query()
+                    ->where('organization_id', $session->organization_id)
+                    ->where('gateway_price_id', $gatewayPriceId)
+                    ->first();
+            }
+        } catch (\Throwable) {
+            // no-op
+        }
+
+        $currentBaseAmount = (int) (
+            $existingBaseItem->price->unit_amount
+                ?? ($currentLocalPrice?->amount instanceof \Money\Money
+                    ? $currentLocalPrice->amount->getAmount()
+                    : (int) ($currentLocalPrice?->amount ?? 0))
+        );
+        $currentBaseInterval = $existingBaseItem->price->recurring->interval ?? null;
 
         return [
             'enabled' => true,
@@ -164,6 +222,9 @@ class PreviewSubscriptionChangeAction
                 'subscription_id' => $subscription->id ?? null,
                 'base_item' => [
                     'stripe_price' => $existingBaseItem->price->id ?? null,
+                    'price_id' => $currentLocalPrice?->id,
+                    'amount' => $currentBaseAmount,
+                    'interval' => $currentBaseInterval,
                     'quantity' => $existingBaseItem->quantity ?? 1,
                     'product' => [
                         'id' => $existingBaseItem->price->product?->id ?? $existingBaseItem->price->product ?? null,
@@ -174,6 +235,10 @@ class PreviewSubscriptionChangeAction
                 'period_end' => $periodEndTs ? Carbon::createFromTimestamp($periodEndTs)->toISOString() : null,
             ],
             'proposed' => [
+                'status' => $currentStatus,
+                'subscription_id' => $subscription->id ?? null,
+                'trial_end' => $trialEndTs ? Carbon::createFromTimestamp($trialEndTs)->toISOString() : null,
+                'period_end' => $periodEndTs ? Carbon::createFromTimestamp($periodEndTs)->toISOString() : null,
                 'base_item' => [
                     'price_id' => $newBase['local_price_id'],
                     'stripe_price' => $newBase['gateway_price_id'],
@@ -193,6 +258,7 @@ class PreviewSubscriptionChangeAction
                 'proration_subtotal' => $prorationSubtotal,
                 'total_due_at_effective' => $totalDueAtEffective,
                 'currency' => $currency,
+                'can_prorate' => $canProrate,
             ],
             'invoice_preview' => [
                 'lines' => $lines->map(function ($l) {
@@ -211,8 +277,21 @@ class PreviewSubscriptionChangeAction
                                 'name' => $l->price?->product?->name ?? null,
                             ],
                         ],
+                        'tax_amounts' => collect($l->tax_amounts ?? [])->map(function ($t) {
+                            return [
+                                'amount' => (int) ($t->amount ?? 0),
+                                'inclusive' => (bool) ($t->inclusive ?? false),
+                                'tax_rate' => $t->tax_rate ?? null,
+                            ];
+                        })->all(),
                     ];
                 })->values()->all(),
+                'next_period' => $nextPeriodLine ? [
+                    'amount' => (int) ($nextPeriodLine->amount ?? 0),
+                    'period' => $nextPeriodLine->period ?? null,
+                    'currency' => $nextPeriodLine->currency ?? null,
+                    'price_id' => $nextPeriodLine->price?->id ?? null,
+                ] : null,
             ],
         ];
     }

@@ -1,5 +1,5 @@
 import { Head, Deferred } from '@inertiajs/react';
-import { useState, createContext, useContext, useMemo, useEffect, useRef } from 'react';
+import { useState, createContext, useContext, useMemo, useEffect, useRef, useCallback } from 'react';
 import { type Block, type Page as OfferPage, type OfferConfiguration, OfferItem, Page, } from '@/types/offer';
 import { cn } from '@/lib/utils';
 
@@ -264,9 +264,9 @@ export function GlobalStateProvider({ offer, offerItems, session: defaultSession
     return true;
   };
 
-  const setPageSubmissionProps = (callback: () => Promise<unknown>) => {
+  const setPageSubmissionProps = useCallback((callback: () => Promise<unknown>) => {
     setSubmissionProps(() => callback);
-  };
+  }, []);
 
 
   const updateSessionProperties = async (blockId: string, value: any) => {

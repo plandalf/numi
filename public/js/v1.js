@@ -547,8 +547,9 @@ ${spinAnimationStyles}
 
             // Billing portal support
             isBillingPortal,
-            customerToken,
+            customer: customerToken,
             returnUrl,
+            subject: element.dataset.subject || (globalConfig && globalConfig.subject) || null,
         };
 
         return config;
@@ -644,17 +645,40 @@ ${spinAnimationStyles}
         }
         // Attach known params for billing portal
         if (modeConfig && modeConfig.mode === 'billing') {
-            if (modeConfig.customerToken) {
-                // The controller accepts 'customer'|'customer_id'|'cid'. Use 'customer'.
-                iframeSrc.searchParams.append('customer', modeConfig.customerToken);
+            if (modeConfig.customer) {
+                const c = modeConfig.customer;
+                if (typeof c === 'string') {
+                    iframeSrc.searchParams.append('customer', c);
+                } else if (typeof c === 'object') {
+                    // Serialize as customer[key]=value pairs
+                    Object.keys(c).forEach((k) => {
+                        const v = c[k];
+                        if (v !== undefined && v !== null) {
+                            iframeSrc.searchParams.append(`customer[${k}]`, String(v));
+                        }
+                    });
+                }
             }
             if (modeConfig.returnUrl) {
                 iframeSrc.searchParams.append('return_url', modeConfig.returnUrl);
             }
         } else if (modeConfig && modeConfig.mode === 'offer') {
             // Pass JWT customer token directly for offers, if provided
-            if (modeConfig.customerToken) {
-                iframeSrc.searchParams.append('customer', modeConfig.customerToken);
+            if (modeConfig.customer) {
+                const c = modeConfig.customer;
+                if (typeof c === 'string') {
+                    iframeSrc.searchParams.append('customer', c);
+                } else if (typeof c === 'object') {
+                    Object.keys(c).forEach((k) => {
+                        const v = c[k];
+                        if (v !== undefined && v !== null) {
+                            iframeSrc.searchParams.append(`customer[${k}]`, String(v));
+                        }
+                    });
+                }
+            }
+            if (modeConfig.subject) {
+                iframeSrc.searchParams.append('subject', modeConfig.subject);
             }
         } else if (modeConfig && modeConfig.mode === 'widget') {
             if (modeConfig.widgetType) {
@@ -708,8 +732,22 @@ ${spinAnimationStyles}
                 continue;
             }
             if (key === 'customer') {
-                // Auto-namespace flat keys into customer[...] if needed
-                appendPairsFromQueryString(attribute.value, 'customer');
+                // If the provided value looks like a JWT token, pass directly as ?customer=TOKEN
+                try {
+                    const raw = attribute.value || '';
+                    if (raw && (raw.includes('.') || raw.length > 60)) {
+                        iframeSrc.searchParams.append('customer', raw);
+                    } else {
+                        // Treat as key/value pairs to be nested under customer[...]
+                        appendPairsFromQueryString(attribute.value, 'customer');
+                    }
+                } catch (_) {
+                    iframeSrc.searchParams.append('customer', attribute.value);
+                }
+                continue;
+            }
+            if (key === 'subject') {
+                iframeSrc.searchParams.append('subject', attribute.value);
                 continue;
             }
             iframeSrc.searchParams.append(key, attribute.value);
@@ -849,6 +887,12 @@ ${spinAnimationStyles}
             target,
             isBillingPortal ? { mode: 'billing', customerToken, returnUrl } : { mode: 'offer', customerToken }
         );
+        // Ensure customer token is propagated even if attribute parsing path skipped it
+        try {
+            if (customerToken && !iframeSrc.searchParams.get('customer')) {
+                iframeSrc.searchParams.append('customer', customerToken);
+            }
+        } catch(_) {}
         const embedId = generateEmbedId();
         // Include both modern and legacy param names for robustness
         iframeSrc.searchParams.append('embed-id', `${embedId}`);
@@ -1059,7 +1103,7 @@ ${spinAnimationStyles}
         closeIcon.onclick = () => {
             closePopup();
         };
-        initializePopupButton(target, () => {
+        const __openOverlay = () => {
             // Block if another overlay (popup/slider) is already active
             if (isOverlayActive()) {
                 try { plandalf.warn('[Plandalf] Popup/slider already active; ignoring new trigger'); } catch (_) {}
@@ -1094,8 +1138,15 @@ ${spinAnimationStyles}
                     }
                 }
             } catch (_) {}
-        });
+        };
+        initializePopupButton(target, __openOverlay);
         target.setAttribute('data-numi-initialized', 'true');
+        // If marked as direct, open immediately (no visible trigger element)
+        try {
+            if (target.getAttribute && target.getAttribute('data-numi-direct') === 'true') {
+                __openOverlay();
+            }
+        } catch (_) {}
     };
     const initializeStandardTarget = (target, isFullScreen) => {
         const { initialized, offerPublicIdentifier, inheritParameters, dynamicResize, domain, preview, isBillingPortal, customerToken, returnUrl } = getConfig(target);
@@ -1150,6 +1201,12 @@ ${spinAnimationStyles}
             target,
             isBillingPortal ? { mode: 'billing', customerToken, returnUrl } : { mode: 'offer', customerToken }
         );
+        // Ensure customer token is propagated even if attribute parsing path skipped it
+        try {
+            if (customerToken && !iframeSrc.searchParams.get('customer')) {
+                iframeSrc.searchParams.append('customer', customerToken);
+            }
+        } catch(_) {}
         const embedId = generateEmbedId();
         // Standard embeds: single canonical param names
         iframeSrc.searchParams.append('embed-id', `${embedId}`);
@@ -1907,6 +1964,8 @@ ${spinAnimationStyles}
             return 'large';
         };
 
+        console.log('presentOffer', offerId, options);
+
         // Determine embed type (default popup) and ensure the correct stylesheet is injected
         const embedType = (options.embedType || 'popup').toString().toLowerCase();
         try {
@@ -1933,6 +1992,8 @@ ${spinAnimationStyles}
 
         const btn = document.createElement('button');
         btn.setAttribute('data-numi-embed-type', embedType === 'slider' ? 'slider' : 'popup');
+        // Mark as direct so initializer opens immediately without user click
+        btn.setAttribute('data-numi-direct', 'true');
         // Optional slider direction (default right)
         if (embedType === 'slider') {
             const dir = ((options.sliderDirection || 'right') + '').toLowerCase() === 'left' ? 'left' : 'right';
@@ -1958,6 +2019,8 @@ ${spinAnimationStyles}
         if (options.customer) {
             if (typeof options.customer === 'string') {
                 btn.setAttribute('data-customer', options.customer);
+                // Also set explicit numi customer token to ensure correct handling
+                try { if (options.customer && options.customer.length) { btn.setAttribute('data-numi-customer', options.customer); } } catch(_) {}
             } else if (typeof options.customer === 'object') {
                 try {
                     const parts = [];
@@ -2001,12 +2064,7 @@ ${spinAnimationStyles}
                 window.__plandalfLastEmbedId = embedId;
             }
         } catch (_) {}
-        // Trigger open immediately
-        if (typeof btn.onclick === 'function') {
-            btn.onclick();
-        } else {
-            btn.click();
-        }
+        // Direct open is handled by data-numi-direct in initializePopupLikeTarget
 
         // Return a promise resolving to the checkout session
         return new Promise((resolve, reject) => {

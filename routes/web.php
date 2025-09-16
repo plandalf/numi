@@ -53,10 +53,11 @@ Route::get('dev/test-checkout-jwt', function (\Illuminate\Http\Request $request)
     $payload = [
         'iss' => config('app.url'),
         'sub' => (string) $user->id,
-        'grp' => (string) $organization->id,
-        'customer_id' => 'cus_Sx7zBCgAFAnmvj',
+//        'grp' => (string) $organization->id,
+        'customer' => 'cus_Sx7zBCgAFAnmvj',
+        'subscription' => 'sub_1S6O9VFmvUKqVS2H156ckW67',
         'email' => $user->email,
-        'iat' => time(),
+//        'iat' => time(),
         'exp' => time() + 3600,
     ];
 
@@ -79,6 +80,7 @@ Route::get('dev/test-checkout-jwt', function (\Illuminate\Http\Request $request)
         'offerId' => $offer->getRouteKey(),
         'jwt' => $token,
         'url' => $testUrl,
+        'payload' => $payload,
     ]);
 })->name('dev.test-checkout-jwt');
 
@@ -88,9 +90,6 @@ Route::middleware(['frame-embed'])->group(function () {
     Route::get('/o/{offer}/{environment?}', [CheckoutController::class, 'initialize'])
         ->name('offers.show')
         ->where('environment', 'live|test');
-
-    Route::get('/checkout/{checkout}', [CheckoutController::class, 'show'])
-        ->name('checkouts.show');
 
     Route::get('/billing/portal', [BillingPortalController::class, 'show'])
         ->name('client.billing-portal.show');
@@ -104,7 +103,7 @@ Route::middleware(['frame-embed'])
             ->where('environment', 'live|test');
 
         // Show checkout
-        Route::get('/checkout/{checkout}', [CheckoutController::class, 'show'])
+        Route::get('/checkout/{session}', [CheckoutController::class, 'show'])
             ->name('checkouts.show');
 
         Route::get('/checkout/{session}/callback', [CheckoutController::class, 'callback'])

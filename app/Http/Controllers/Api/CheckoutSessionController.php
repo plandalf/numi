@@ -378,8 +378,6 @@ class CheckoutSessionController extends Controller
         $prepare = app(PreparePaymentAction::class, ['session' => $session]);
         $extras = $prepare([
             'email' => $session->customer->email ?? data_get($session->properties, 'email'),
-            'current_url' => $request->fullUrl(),
-            // No payment_type because we are using an existing saved method
         ]);
 
         // 3) Attach and confirm the intent with the saved payment method (no Elements)
@@ -417,8 +415,6 @@ class CheckoutSessionController extends Controller
             'checkout_session' => new CheckoutSessionResource($session),
         ], $extras ?? []);
     }
-
-    // public function set
 
     /**
      * JIT: Prepare payment by creating the appropriate Stripe intent just-in-time
