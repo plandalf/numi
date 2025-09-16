@@ -95,6 +95,7 @@ class CheckoutSession extends Model
         'ip_country',
         'parent_page_url',
 
+        'subject',
         'intent_id',
         'intent_type',
         'intent', 'subscription',

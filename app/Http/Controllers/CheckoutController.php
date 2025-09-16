@@ -9,15 +9,15 @@ use App\Enums\Theme\FontElement;
 use App\Http\Resources\Checkout\CheckoutSessionResource;
 use App\Http\Resources\FontResource;
 use App\Http\Resources\OfferResource;
-use App\Models\ApiKey;
+use App\Http\Requests\Checkout\InitializeCheckoutRequest;
 use App\Models\Catalog\Price;
 use App\Models\Checkout\CheckoutSession;
 use App\Models\PaymentMethod;
 use App\Models\Store\Offer;
+use App\Services\CustomerTokenService;
 use App\Services\FontExtractionService;
 use App\Traits\HandlesLandingPageDomains;
-use Firebase\JWT\JWT;
-use Firebase\JWT\Key;
+use App\ValueObjects\CheckoutAuthorization;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Log;
@@ -30,214 +30,37 @@ class CheckoutController extends Controller
     use HandlesLandingPageDomains;
 
     public function __construct(
-        private readonly CreateCheckoutSessionAction $createCheckoutSessionAction,
-        private readonly FontExtractionService $fontExtractionService
+        private readonly FontExtractionService $fontExtractionService,
+        private readonly CustomerTokenService $customerTokenService,
     ) {}
 
-    public function initialize(Offer $offer, Request $request, string $environment = 'live')
+    public function initialize(Offer $offer, InitializeCheckoutRequest $request, string $environment = 'live')
     {
         $offer->loadMissing('organization');
-        $checkoutItems = $request->get('items', []);
-
-        // Accept 'price' shortcut as primary item (lookup_key)
-        $primaryPriceLookup = $request->query('price');
-        if ($primaryPriceLookup && empty($checkoutItems)) {
-            $checkoutItems = [['lookup_key' => $primaryPriceLookup]];
+        $jwtContext = null;
+        if ($token = $request->customerToken()) {
+            $jwtContext = $this->customerTokenService->decode($token);
         }
 
-        // Get override parameters from query string
-        $intervalOverride = $request->query('interval');
-        $currencyOverride = $request->query('currency');
-
-        // pull these out FIRST
-        dump($request->all());
-
-        // get customer
-        // then defer?
-
-        // Extract customer data from query string or JWT token
-        $rawCustomerParam = $request->query('customer');
-        $customerProperties = [];
-        $jwtStripeCustomerId = null;
-        $jwtUserId = null;
-        $jwtGroupId = null;
-        $jwtSubscriptionId = null;
-
-        dump($rawCustomerParam);
-
-        if (is_string($rawCustomerParam) && substr_count($rawCustomerParam, '.') === 2) {
-            try {
-                [$apiKey, $payload] = $this->decodeCustomerToken($rawCustomerParam);
-                dump($apiKey?->id,$payload);
-                // Accept canonical fields from payload
-                $email = data_get($payload, 'email');
-                $name = data_get($payload, 'name');
-                // Prefer 'customer' (no _id), else fall back
-                $jwtStripeCustomerId = data_get($payload, 'customer')
-                    ?? data_get($payload, 'customer_id')
-                    ?? data_get($payload, 'id');
-                // Optional subject/user id
-                $jwtUserId = data_get($payload, 'sub');
-                $jwtGroupId = data_get($payload, 'grp');
-                // Subscription can be 'subscription' or 'subscription_id'
-                $jwtSubscriptionId = data_get($payload, 'subscription')
-                    ?? data_get($payload, 'subscription_id');
-
-                // we're going to re-use the existing pm for this customer
-                // if they exist!
-
-                if ($email) {
-                    $customerProperties['email'] = $email;
-                }
-                if ($name) {
-                    $customerProperties['name'] = $name;
-                }
-            } catch (\Throwable $e) {
-                Log::warning('Invalid checkout customer token', ['error' => $e->getMessage()]);
-            }
-        } else {
-            $customerData = $request->query('customer', []);
-
-            // set up this info so its saved?
-
-            if (is_array($customerData) && ! empty($customerData)) {
-                if (isset($customerData['email'])) {
-                    $customerProperties['email'] = $customerData['email'];
-                }
-                foreach (['name'] as $field) {
-                    if (isset($customerData[$field])) {
-                        $customerProperties[$field] = $customerData[$field];
-                    }
-                }
-            }
-        }
-
-        dd($customerProperties);
-
-        // Optional subject (user id) can be provided via query 'subject'
-        $subjectFromQuery = $request->query('subject');
-        // todo: swap to "user"
-
-        // If no currency override is provided, check for regional currency based on CloudFlare header
-        if (! $currencyOverride) {
+        // Resolve currency at the request level (prefer explicit, else CF fallback)
+        $currency = $request->currencyOverride();
+        if (! $currency) {
             $countryCode = $request->header('CF-IPCountry');
             $regionalCurrency = $offer->organization->getRegionalCurrency($countryCode);
             if ($regionalCurrency) {
-                $currencyOverride = strtolower($regionalCurrency);
+                $currency = strtolower($regionalCurrency);
             }
         }
+        $request->setResolvedCurrency($currency);
 
-        // Process any explicit checkout items from query string
-        $checkoutItems = collect(Arr::wrap($checkoutItems))
-            ->map(function ($item, $key) use ($offer) {
-                if (! isset($item['lookup_key'])) {
-                    throw ValidationException::withMessages([
-                        'items' => ['Each item must have a lookup_key'],
-                    ]);
-                }
+        $action = app(CreateCheckoutSessionAction::class, [
+            'offer' => $offer,
+            'testMode' => $environment === 'test',
+        ]);
 
-                $price = Price::query()
-                    ->where('organization_id', $offer->organization_id)
-                    ->where('lookup_key', $item['lookup_key'])
-                    ->where('is_active', true)
-                    ->first();
+        $checkoutSession = $action->execute($request, $jwtContext);
 
-                if (! $price) {
-                    return [
-                        'items' => ["Price with lookup_key '{$item['lookup_key']}' not found"],
-                    ];
-                }
-
-                return ['price_id' => $price->id];
-            })
-            ->all();
-
-        // Check for any errors in the checkout items
-        foreach ($checkoutItems as $item) {
-            if (isset($item['items'])) {
-                // This is an error, return it as JSON response
-                return response()->json($item);
-            }
-        }
-
-        $testMode = $environment === 'test';
-
-        // If no explicit interval override provided, derive from primary price if available
-        if (! $intervalOverride && $primaryPriceLookup) {
-            $primaryPrice = Price::query()
-                ->where('organization_id', $offer->organization_id)
-                ->where('lookup_key', $primaryPriceLookup)
-                ->where('is_active', true)
-                ->first();
-
-            if ($primaryPrice && $primaryPrice->renew_interval) {
-                $intervalOverride = strtolower($primaryPrice->renew_interval);
-            }
-        }
-
-        // todo: set the subscription, somehow?
-
-        // New: handle intent and subscription for upgrades
-        $subscription = $request->query('subscription') ?? $jwtSubscriptionId;
-        $intent = $request->query('intent', $subscription ? 'upgrade' : 'purchase');
-
-        // todo: look up subscription related to this checkout, also somehow
-
-        // If not provided via query and a JWT carries subscription_id, remember it
-        $subscription = $subscription ?: $jwtSubscriptionId;
-        $quantity = $request->query('quantity'); // Handle quantity for expansion scenarios
-
-        $checkoutSession = $this->createCheckoutSessionAction
-            ->execute(
-                $offer,
-                $checkoutItems,
-                $testMode,
-                $intervalOverride,
-                $currencyOverride,
-                $customerProperties,
-                $intent,
-                $subscription,
-                $quantity // Pass quantity to the action
-            );
-
-        // Persist subject when provided (from JWT sub or query)
-        $subjectValue = $subjectFromQuery ?: $jwtUserId;
-        if ($subjectValue) {
-            $checkoutSession->subject = (string) $subjectValue;
-            $checkoutSession->save();
-        }
-
-        // Persist JWT identifiers on the session immediately so follow-up show route can use them
-        if ($jwtStripeCustomerId || $jwtUserId || $jwtGroupId) {
-            $checkoutSession->metadata = array_merge($checkoutSession->metadata ?? [], [
-                'jwt' => array_merge(
-                    data_get($checkoutSession->metadata, 'jwt', []) ?: [],
-                    array_filter([
-                        'customer_id' => $jwtStripeCustomerId ? (string) $jwtStripeCustomerId : null,
-                        'sub' => $jwtUserId,
-                        'grp' => $jwtGroupId,
-                    ], fn ($v) => ! is_null($v))
-                ),
-            ]);
-            $checkoutSession->save();
-        }
-
-        // Persist JWT subscription id into the session for later modifications
-        if ($jwtSubscriptionId) {
-            $checkoutSession->subscription = $checkoutSession->subscription ?: (string) $jwtSubscriptionId;
-            $checkoutSession->metadata = array_merge($checkoutSession->metadata ?? [], [
-                'jwt' => array_merge(
-                    data_get($checkoutSession->metadata, 'jwt', []) ?: [],
-                    array_filter([
-                        'subscription_id' => (string) $jwtSubscriptionId,
-                    ])
-                ),
-            ]);
-            $checkoutSession->save();
-        }
-
-        // If a JWT provided a Stripe customer id, defer verification + local association using Inertia::defer
-        $verifyJwtCustomerId = $jwtStripeCustomerId; // keep primitive for closure use
+        // All JWT subject/metadata persisted during session creation in the action
 
         $this->handleInvalidDomain($request, $checkoutSession);
 
@@ -250,8 +73,6 @@ class CheckoutController extends Controller
         }
 
         $signedShowUrl = URL::signedRoute('checkouts.show', $params, now()->addDays(5));
-
-        // extremely stupid here.
 
         // Derive a simple selected_option (e.g., 'sm'|'md') based on chosen product name if available
         $checkoutSession->loadMissing(['lineItems.price.product']);
@@ -283,8 +104,6 @@ class CheckoutController extends Controller
         $customFonts = $this->fontExtractionService->extractAllFontsForOffer($offer);
         $googleFontsUrl = $this->fontExtractionService->buildGoogleFontsUrl($customFonts);
 
-        dd($checkoutSession->toArray());
-
         return Inertia::render('client/checkout', [
             'fonts' => FontResource::collection(FontElement::cases()),
             'offer' => new OfferResource($offer),
@@ -292,7 +111,7 @@ class CheckoutController extends Controller
             'subscriptionPreview' => Inertia::defer(function () use ($checkoutSession) {
                 return app(PreviewSubscriptionChangeAction::class)($checkoutSession);
             }),
-            'savedPaymentMethods' => Inertia::defer(function () use ($checkoutSession, $offer, $verifyJwtCustomerId, $customerProperties, $jwtUserId, $jwtGroupId) {
+            'savedPaymentMethods' => Inertia::defer(function () use ($checkoutSession, $offer) {
                 return app(FetchSavedPaymentMethodsAction::class)($checkoutSession);
             }),
             'signedShowUrl' => $signedShowUrl,
@@ -573,30 +392,4 @@ class CheckoutController extends Controller
         return $query->first();
     }
 
-    /**
-     * Decode a JWT customer token using ApiKey HS256 secret. Returns [ApiKey, payload array].
-     */
-    private function decodeCustomerToken(string $jwt): array
-    {
-        $headers = json_decode(JWT::urlsafeB64Decode(collect(explode('.', $jwt))->first()), true);
-        $kid = $headers['kid'] ?? null;
-
-        $apiKey = ApiKey::retrieve($kid);
-
-        $keys = new Key($apiKey->key, 'HS256');
-
-        throw_if(empty($keys), new \RuntimeException('No active API key secret available'));
-
-        $decoded = JWT::decode($jwt, $keys);
-        // Normalize to array
-        $payload = json_decode(json_encode($decoded), true);
-
-        Log::info(logname(), [
-            'payload_keys' => array_keys($payload ?? []),
-            'kid' => $kid,
-            'api_key_id' => $apiKey?->id,
-        ]);
-
-        return [$apiKey, $payload];
-    }
 }

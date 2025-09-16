@@ -97,8 +97,6 @@ class BillingController extends Controller
                 'expand' => ['product']
             ]);
 
-            // dd($price->product);
-
             return [
                 'id' => $price->id,
                 'currency' => $price->currency,
