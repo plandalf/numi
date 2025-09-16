@@ -17,12 +17,9 @@ use App\Models\Store\Offer;
 use App\Services\CustomerTokenService;
 use App\Services\FontExtractionService;
 use App\Traits\HandlesLandingPageDomains;
-use App\ValueObjects\CheckoutAuthorization;
 use Illuminate\Http\Request;
-use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\URL;
-use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 
 class CheckoutController extends Controller

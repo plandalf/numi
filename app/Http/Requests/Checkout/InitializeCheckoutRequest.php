@@ -55,14 +55,18 @@ class InitializeCheckoutRequest extends FormRequest
     }
 
     /**
-     * @return array<int, array{lookup_key:string}>
+     * @return array<int, array{lookup_key:string, quantity?:int}>
      */
     public function items(): array
     {
         $items = Arr::wrap($this->input('items', []));
         return array_values(array_filter(array_map(function ($item) {
             if (is_array($item) && isset($item['lookup_key']) && is_string($item['lookup_key'])) {
-                return ['lookup_key' => $item['lookup_key']];
+                $normalized = ['lookup_key' => $item['lookup_key']];
+                if (isset($item['quantity']) && is_numeric($item['quantity'])) {
+                    $normalized['quantity'] = max(1, (int) $item['quantity']);
+                }
+                return $normalized;
             }
             return null;
         }, $items)));

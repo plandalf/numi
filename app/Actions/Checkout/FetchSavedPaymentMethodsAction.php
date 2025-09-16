@@ -2,25 +2,20 @@
 
 namespace App\Actions\Checkout;
 
+use App\Models\Checkout\CheckoutSession;
 use App\Models\PaymentMethod;
 use Illuminate\Support\Facades\Log;
 
 class FetchSavedPaymentMethodsAction
 {
-    public function __invoke()
+    public function __invoke(CheckoutSession $checkoutSession): array
     {
         try {
-            // If no local customer yet, verify/associate from JWT in deferred context
-            if (! $checkoutSession->customer && $verifyJwtCustomerId && $checkoutSession->payments_integration_id) {
-                $this->verifyAndAssociateJwtCustomer($checkoutSession, $offer, (string) $verifyJwtCustomerId, $customerProperties, $jwtUserId, $jwtGroupId);
-                $checkoutSession->refresh();
-            }
-
+            $checkoutSession->loadMissing(['customer']);
             $customer = $checkoutSession->customer;
             if (! $customer) {
-                \Log::info('savedPaymentMethods: no local customer', [
+                Log::info('savedPaymentMethods: no local customer', [
                     'checkout_session_id' => $checkoutSession->id,
-                    'verify_jwt_customer_id' => $verifyJwtCustomerId,
                 ]);
                 return [];
             }
@@ -30,7 +25,7 @@ class FetchSavedPaymentMethodsAction
                 ->orderByDesc('id')
                 ->get();
 
-            \Log::info('savedPaymentMethods: local count', [
+            Log::info('savedPaymentMethods: local count', [
                 'checkout_session_id' => $checkoutSession->id,
                 'customer_id' => $customer->id,
                 'count' => $methods->count(),
@@ -87,11 +82,11 @@ class FetchSavedPaymentMethodsAction
                         ->orderByDesc('id')
                         ->get();
 
-                    \Log::info('savedPaymentMethods: synced from stripe', [
+                    Log::info('savedPaymentMethods: synced from stripe', [
                         'count' => $methods->count(),
                     ]);
                 } catch (\Throwable $e) {
-                    \Log::warning('savedPaymentMethods: stripe sync failed', [
+                    Log::warning('savedPaymentMethods: stripe sync failed', [
                         'customer_reference_id' => $customer->reference_id,
                         'error' => $e->getMessage(),
                     ]);
@@ -109,7 +104,6 @@ class FetchSavedPaymentMethodsAction
             })->all();
         } catch (\Throwable $e) {
             Log::warning('Local saved payment methods fetch failed', ['error' => $e->getMessage()]);
-
             return [];
         }
     }

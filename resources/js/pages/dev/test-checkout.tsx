@@ -74,7 +74,7 @@ export default function TestCheckout() {
     }
   }, [props.jwt, props.offerId])
 
-  const testUrl = `/o/${props.offerId}/test?customer=${props.jwt}`
+  const testUrl = props.url
 
   return (
     <div className="p-6 max-w-3xl mx-auto">

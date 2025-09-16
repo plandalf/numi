@@ -902,7 +902,7 @@ ${spinAnimationStyles}
         }
         const parentPage = getParentUrl();
         if (parentPage) {
-            iframeSrc.searchParams.append('embed-parent-page', parentPage);
+            iframeSrc.searchParams.append('numi-embed-parent-page', parentPage);
         }
         if (dynamicResize && embedType === 'popup') {
             iframeSrc.searchParams.append('numi-embed-dynamic-resize', 'true');
@@ -1217,7 +1217,7 @@ ${spinAnimationStyles}
         }
         const parentPage = getParentUrl();
         if (parentPage) {
-            iframeSrc.searchParams.append('embed-parent-page', parentPage);
+            iframeSrc.searchParams.append('numi-embed-parent-page', parentPage);
         }
         if (dynamicResize && !isFullScreen) {
             iframeSrc.searchParams.append('numi-embed-dynamic-resize', 'true');
