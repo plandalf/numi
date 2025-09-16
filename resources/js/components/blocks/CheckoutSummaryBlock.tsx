@@ -203,7 +203,11 @@ function CheckoutSummaryComponent({ context: _context }: { context: BlockContext
   }, [session.currency, showCurrency]);
 
   const lineItems = useMemo(() => {
-    return session.line_items
+    const items = isImmediateSwap
+      ? session.line_items.filter((li: CheckoutItem) => li.id > 0)
+      : session.line_items;
+
+    return items
       .sort((a: CheckoutItem, b: CheckoutItem) => {
         // Sort by type: 'standard' first, 'optional' last
         if (a.type === OfferItemType.STANDARD && b.type === OfferItemType.OPTIONAL) return -1;
@@ -215,7 +219,7 @@ function CheckoutSummaryComponent({ context: _context }: { context: BlockContext
           ...item,
         }
       });
-  }, [session.line_items]);
+  }, [session.line_items, isImmediateSwap]);
 
   const containerStyle = useMemo<React.CSSProperties>(() => ({
     backgroundColor: String(resolveThemeValue(style.backgroundColor, theme, 'primary_surface_color') ?? ''),
@@ -544,6 +548,50 @@ function CheckoutSummaryComponent({ context: _context }: { context: BlockContext
           </div>
         ))}
       </div>
+      {/* Immediate swap highlights: concise proration summary */}
+      {isImmediateSwap && subscriptionPreview && (
+        (() => {
+          const lines = (subscriptionPreview as any)?.invoice_preview?.lines as any[] | undefined;
+          const proration = Array.isArray(lines) ? lines.filter(l => l?.proration) : [];
+          const credit = proration.find(l => (l?.amount ?? 0) < 0);
+          const charge = proration.find(l => (l?.amount ?? 0) > 0);
+          const dueNow = (swapAmount ?? (subscriptionPreview as any)?.delta?.total_due_at_effective) as number | undefined;
+          const nextPeriod = (subscriptionPreview as any)?.invoice_preview?.next_period as any | undefined;
+
+          return (
+            <div className="space-y-2 text-sm">
+              {(credit || charge) && (
+                <>
+                  {credit && (
+                    <div className="flex justify-between">
+                      <span style={summaryTextStyle}>Credit for unused time</span>
+                      <span style={summaryTextStyle}>-{formatMoney(Math.abs(credit.amount || 0), currency)}</span>
+                    </div>
+                  )}
+                  {charge && (
+                    <div className="flex justify-between">
+                      <span style={summaryTextStyle}>Charge for remaining time</span>
+                      <span style={summaryTextStyle}>{formatMoney(charge.amount || 0, currency)}</span>
+                    </div>
+                  )}
+                </>
+              )}
+              {typeof dueNow === 'number' && (
+                <div className="flex justify-between">
+                  <span style={summaryTextStyle}>Plan change fee</span>
+                  <span style={summaryTextStyle}>{formatMoney(dueNow, currency)}</span>
+                </div>
+              )}
+              {/*{nextPeriod && typeof nextPeriod.amount === 'number' && (*/}
+              {/*  <div className="flex justify-between text-gray-600">*/}
+              {/*    <span style={summaryTextStyle}>Next period total</span>*/}
+              {/*    <span style={summaryTextStyle}>{formatMoney(nextPeriod.amount, currency)}</span>*/}
+              {/*  </div>*/}
+              {/*)}*/}
+            </div>
+          );
+        })()
+      )}
       {(showDiscountForm || showSubtotal || showShipping || showTaxes) && (
         <Separator style={dividerStyle} />
       )}
@@ -594,7 +642,7 @@ function CheckoutSummaryComponent({ context: _context }: { context: BlockContext
       )}
 
       {/* Order Summary Calculations */}
-      {(showSubtotal ||
+      {!isImmediateSwap && (showSubtotal ||
         (showShipping && session.shipping > 0) ||
         (showTaxes && session.inclusive_taxes > 0 && session.subtotal > 0 && !isTrialCheckout && !isTrialExpansionCheckout && !isPeriodEndSwap) ||
         (session.discounts && session.discounts.length > 0)
@@ -651,7 +699,12 @@ function CheckoutSummaryComponent({ context: _context }: { context: BlockContext
              'Total Due Today'}
           </span>
           <span style={totalTextStyle}>
-            {formatMoney(isTrialCheckout || isTrialExpansionCheckout || isPeriodEndSwap ? 0 : session.total, currency)}
+            {formatMoney(
+              isTrialCheckout || isTrialExpansionCheckout || isPeriodEndSwap
+                ? 0
+                : (isImmediateSwap && swapAmount !== undefined ? swapAmount : session.total),
+              currency
+            )}
           </span>
         </div>
 

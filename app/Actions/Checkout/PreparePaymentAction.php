@@ -34,7 +34,7 @@ class PreparePaymentAction
     public function __invoke(array $data = [])
     {;
         $email = $data['email'] ?? null;
-        $paymentType = $data['payment_type'] ?? null;
+        $paymentType = $data['payment_type'] ?? $this->session->intent;
         $currentUrl = Uri::of($data['current_url'] ?? '');
 
         $this->session->fill([

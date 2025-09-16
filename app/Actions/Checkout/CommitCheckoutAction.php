@@ -57,6 +57,7 @@ class CommitCheckoutAction
         }
 
         if (filled($intent)) {
+
             $paymentMethod = PaymentMethod::query()
                 ->firstOrCreate([
                     'customer_id' => $session->customer_id,

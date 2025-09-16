@@ -3,197 +3,69 @@
 namespace App\Http\Controllers;
 
 use App\Actions\Checkout\CreateCheckoutSessionAction;
+use App\Actions\Checkout\FetchSavedPaymentMethodsAction;
+use App\Actions\Checkout\PreviewSubscriptionChangeAction;
 use App\Enums\Theme\FontElement;
 use App\Http\Resources\Checkout\CheckoutSessionResource;
 use App\Http\Resources\FontResource;
 use App\Http\Resources\OfferResource;
+use App\Http\Requests\Checkout\InitializeCheckoutRequest;
 use App\Models\Catalog\Price;
 use App\Models\Checkout\CheckoutSession;
 use App\Models\PaymentMethod;
 use App\Models\Store\Offer;
+use App\Services\CustomerTokenService;
 use App\Services\FontExtractionService;
 use App\Traits\HandlesLandingPageDomains;
+use App\ValueObjects\CheckoutAuthorization;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
-use App\Models\ApiKey;
-use Firebase\JWT\JWT;
-use Firebase\JWT\Key;
 
 class CheckoutController extends Controller
 {
     use HandlesLandingPageDomains;
 
     public function __construct(
-        private readonly CreateCheckoutSessionAction $createCheckoutSessionAction,
-        private readonly FontExtractionService $fontExtractionService
+        private readonly FontExtractionService $fontExtractionService,
+        private readonly CustomerTokenService $customerTokenService,
     ) {}
 
-    public function initialize(Offer $offer, Request $request, string $environment = 'live')
+    public function initialize(Offer $offer, InitializeCheckoutRequest $request, string $environment = 'live')
     {
-        $offer->load('organization');
-        $checkoutItems = $request->get('items', []);
-
-        // Accept 'price' shortcut as primary item (lookup_key)
-        $primaryPriceLookup = $request->query('price');
-        if ($primaryPriceLookup && empty($checkoutItems)) {
-            $checkoutItems = [['lookup_key' => $primaryPriceLookup]];
+        $offer->loadMissing('organization');
+        $jwtContext = null;
+        if ($token = $request->customerToken()) {
+            $jwtContext = $this->customerTokenService->decode($token);
         }
 
-        // Get override parameters from query string
-        $intervalOverride = $request->query('interval');
-        $currencyOverride = $request->query('currency');
-
-        // Extract customer data from query string or JWT token
-        $rawCustomerParam = $request->query('customer');
-        $customerProperties = [];
-        $jwtStripeCustomerId = null;
-        $jwtUserId = null;
-        $jwtGroupId = null;
-
-        if (is_string($rawCustomerParam) && substr_count($rawCustomerParam, '.') === 2) {
-            try {
-                [$apiKey, $payload] = $this->decodeCustomerToken($rawCustomerParam);
-                // Accept canonical fields from payload
-                $email = data_get($payload, 'email');
-                $name = data_get($payload, 'name');
-                $jwtStripeCustomerId = data_get($payload, 'customer_id') ?? data_get($payload, 'id');
-                $jwtUserId = data_get($payload, 'sub');
-                $jwtGroupId = data_get($payload, 'grp');
-
-                if ($email) { $customerProperties['email'] = $email; }
-                if ($name) { $customerProperties['name'] = $name; }
-            } catch (\Throwable $e) {
-                Log::warning('Invalid checkout customer token', ['error' => $e->getMessage()]);
-            }
-        } else {
-            $customerData = $request->query('customer', []);
-            if (is_array($customerData) && ! empty($customerData)) {
-                if (isset($customerData['email'])) {
-                    $customerProperties['email'] = $customerData['email'];
-                }
-                foreach (['name'] as $field) {
-                    if (isset($customerData[$field])) {
-                        $customerProperties[$field] = $customerData[$field];
-                    }
-                }
-            }
-        }
-
-        // If no currency override is provided, check for regional currency based on CloudFlare header
-        if (! $currencyOverride) {
+        // Resolve currency at the request level (prefer explicit, else CF fallback)
+        $currency = $request->currencyOverride();
+        if (! $currency) {
             $countryCode = $request->header('CF-IPCountry');
             $regionalCurrency = $offer->organization->getRegionalCurrency($countryCode);
             if ($regionalCurrency) {
-                $currencyOverride = strtolower($regionalCurrency);
+                $currency = strtolower($regionalCurrency);
             }
         }
+        $request->setResolvedCurrency($currency);
 
-        // Process any explicit checkout items from query string
-        $checkoutItems = collect(Arr::wrap($checkoutItems))
-            ->map(function ($item, $key) use ($offer) {
-                if (! isset($item['lookup_key'])) {
-                    throw ValidationException::withMessages([
-                        'items' => ['Each item must have a lookup_key'],
-                    ]);
-                }
+        $action = app(CreateCheckoutSessionAction::class, [
+            'offer' => $offer,
+            'testMode' => $environment === 'test',
+        ]);
 
-                $price = Price::query()
-                    ->where('organization_id', $offer->organization_id)
-                    ->where('lookup_key', $item['lookup_key'])
-                    ->where('is_active', true)
-                    ->first();
+        $checkoutSession = $action->execute($request, $jwtContext);
 
-                if (! $price) {
-                    return [
-                        'items' => ["Price with lookup_key '{$item['lookup_key']}' not found"],
-                    ];
-                }
-
-                return ['price_id' => $price->id];
-            })
-            ->all();
-
-        // Check for any errors in the checkout items
-        foreach ($checkoutItems as $item) {
-            if (isset($item['items'])) {
-                // This is an error, return it as JSON response
-                return response()->json($item);
-            }
-        }
-
-        $testMode = $environment === 'test';
-
-        // If no explicit interval override provided, derive from primary price if available
-        if (! $intervalOverride && $primaryPriceLookup) {
-            $primaryPrice = Price::query()
-                ->where('organization_id', $offer->organization_id)
-                ->where('lookup_key', $primaryPriceLookup)
-                ->where('is_active', true)
-                ->first();
-
-            if ($primaryPrice && $primaryPrice->renew_interval) {
-                $intervalOverride = strtolower($primaryPrice->renew_interval);
-            }
-        }
-
-        // New: handle intent and subscription for upgrades
-        $intent = $request->query('intent', 'purchase');
-        $subscription = $intent === 'upgrade' ? $request->query('subscription') : null;
-        $quantity = $request->query('quantity'); // Handle quantity for expansion scenarios
-
-        $checkoutSession = $this->createCheckoutSessionAction
-            ->execute(
-                $offer,
-                $checkoutItems,
-                $testMode,
-                $intervalOverride,
-                $currencyOverride,
-                $customerProperties,
-                $intent,
-                $subscription,
-                $quantity // Pass quantity to the action
-            );
-
-        // If a JWT provided a Stripe customer id, associate or create a local Customer and link to session
-        if ($jwtStripeCustomerId) {
-            try {
-                $integrationId = $checkoutSession->payments_integration_id;
-                if ($integrationId) {
-                    $localCustomer = \App\Models\Customer::query()->firstOrCreate([
-                        'organization_id' => $offer->organization_id,
-                        'integration_id' => $integrationId,
-                        'reference_id' => (string) $jwtStripeCustomerId,
-                    ], [
-                        'email' => $customerProperties['email'] ?? null,
-                        'name' => $customerProperties['name'] ?? null,
-                    ]);
-
-                    $checkoutSession->customer_id = $localCustomer->id;
-                    // Persist JWT claims for later use
-                    $checkoutSession->metadata = array_merge($checkoutSession->metadata ?? [], [
-                        'jwt' => array_filter([
-                            'sub' => $jwtUserId,
-                            'grp' => $jwtGroupId,
-                            'customer_id' => $jwtStripeCustomerId,
-                        ], fn ($v) => ! is_null($v)),
-                    ]);
-                    $checkoutSession->save();
-                }
-            } catch (\Throwable $e) {
-                Log::warning('Failed to associate JWT customer to checkout', [
-                    'error' => $e->getMessage(),
-                ]);
-            }
-        }
+        // All JWT subject/metadata persisted during session creation in the action
 
         $this->handleInvalidDomain($request, $checkoutSession);
 
         $params = array_filter(array_merge([
-            'checkout' => $checkoutSession->getRouteKey(),
+            'session' => $checkoutSession->getRouteKey(),
         ], $request->only(['embed-id', 'embed-type', 'numi-embed-type', 'numi-embed-id', 'numi-embed-parent-page'])));
 
         if ($request->has('redirect_url')) {
@@ -202,11 +74,9 @@ class CheckoutController extends Controller
 
         $signedShowUrl = URL::signedRoute('checkouts.show', $params, now()->addDays(5));
 
-        // extremely stupid here.
-
         // Derive a simple selected_option (e.g., 'sm'|'md') based on chosen product name if available
         $checkoutSession->loadMissing(['lineItems.price.product']);
- 
+
         $checkoutSession->load([
             'lineItems.offerItem.offerPrices',
             'offer.theme',
@@ -239,36 +109,11 @@ class CheckoutController extends Controller
             'offer' => new OfferResource($offer),
             'checkoutSession' => new CheckoutSessionResource($checkoutSession),
             'subscriptionPreview' => Inertia::defer(function () use ($checkoutSession) {
-                return app(\App\Actions\Checkout\PreviewSubscriptionChangeAction::class)($checkoutSession);
+                return app(PreviewSubscriptionChangeAction::class)($checkoutSession);
             }),
-            // List locally saved payment methods (cards) for selection in checkout UI
-            'savedPaymentMethods' => Inertia::defer(function () use ($checkoutSession) {
-                try {
-                    $customer = $checkoutSession->customer;
-                    if (! $customer) {
-                        return [];
-                    }
-                    $defaultLocalId = $customer->default_payment_method_id;
-                    $methods = PaymentMethod::query()
-                        ->where('customer_id', $customer->id)
-                        ->orderByDesc('id')
-                        ->get();
-
-                    return $methods->map(function (PaymentMethod $pm) use ($defaultLocalId) {
-                        return [
-                            // Use external_id (Stripe PM id) so we can set default in Stripe when chosen
-                            'id' => $pm->external_id,
-                            'type' => $pm->type,
-                            'properties' => $pm->properties,
-                            'isDefault' => $pm->id === $defaultLocalId,
-                        ];
-                    })->all();
-                } catch (\Throwable $e) {
-                    Log::warning('Local saved payment methods fetch failed', ['error' => $e->getMessage()]);
-                    return [];
-                }
+            'savedPaymentMethods' => Inertia::defer(function () use ($checkoutSession, $offer) {
+                return app(FetchSavedPaymentMethodsAction::class)($checkoutSession);
             }),
-            // Provide the canonical signed /checkout URL for a JSON-only replace on mount
             'signedShowUrl' => $signedShowUrl,
         ])->with([
             'customFonts' => $customFonts,
@@ -276,20 +121,68 @@ class CheckoutController extends Controller
         ]);
     }
 
-    public function show(CheckoutSession $checkout, Request $request)
+    /**
+     * Verify a JWT-provided Stripe customer id exists for the session's connected account and
+     * associate/create a local Customer accordingly.
+     */
+    private function verifyAndAssociateJwtCustomer(CheckoutSession $checkoutSession, Offer $offer, string $stripeCustomerId, array $customerProperties = [], ?string $jwtUserId = null, ?string $jwtGroupId = null): void
+    {
+        try {
+            if (! $checkoutSession->payments_integration_id || empty($stripeCustomerId)) {
+                return;
+            }
+
+            $checkoutSession->loadMissing('paymentsIntegration');
+            $stripeClient = $checkoutSession->paymentsIntegration
+                ->integrationClient()
+                ->getStripeClient();
+
+            // Throws if not found/unauthorized
+            $stripeClient->customers->retrieve($stripeCustomerId);
+
+            $local = \App\Models\Customer::query()->firstOrCreate([
+                'organization_id' => $offer->organization_id,
+                'integration_id' => $checkoutSession->payments_integration_id,
+                'reference_id' => (string) $stripeCustomerId,
+            ], [
+                'email' => $customerProperties['email'] ?? null,
+                'name' => $customerProperties['name'] ?? null,
+            ]);
+
+            if (! $checkoutSession->customer_id) {
+                $checkoutSession->customer_id = $local->id;
+                $checkoutSession->metadata = array_merge($checkoutSession->metadata ?? [], [
+                    'jwt' => array_filter([
+                        'sub' => $jwtUserId,
+                        'grp' => $jwtGroupId,
+                        'customer_id' => $stripeCustomerId,
+                    ], fn ($v) => ! is_null($v)),
+                ]);
+                $checkoutSession->save();
+            }
+        } catch (\Throwable $e) {
+            Log::warning('verifyAndAssociateJwtCustomer failed', [
+                'checkout_session_id' => $checkoutSession->id,
+                'customer_id' => $stripeCustomerId,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    public function show(CheckoutSession $session, Request $request)
     {
         if (! $request->hasValidSignature()) {
             abort(403, 'Invalid or expired checkout link.');
         }
 
-        $this->handleInvalidDomain($request, $checkout);
+        $this->handleInvalidDomain($request, $session);
 
-        if ($checkout->hasACompletedOrder()) {
+        if ($session->hasACompletedOrder()) {
             return redirect()
-                ->to(URL::signedRoute('order-status.show', ['order' => $checkout->order], now()->addDays(30)));
+                ->to(URL::signedRoute('order-status.show', ['order' => $session->order], now()->addDays(30)));
         }
 
-        $checkout->load([
+        $session->load([
             'lineItems.offerItem.offerPrices',
             'offer.theme',
             'offer.organization.logoMedia',
@@ -304,14 +197,14 @@ class CheckoutController extends Controller
             'customer',
         ]);
 
-        $offer = $checkout->offer;
+        $offer = $session->offer;
         $json = $offer->view;
 
         /**
          * @todo Replace with the actual view json
          */
-        $json['first_page'] = data_get($checkout->metadata, 'current_page_id', $json['first_page']);
-        $json['page_history'] = data_get($checkout->metadata, 'page_history', []);
+        $json['first_page'] = data_get($session->metadata, 'current_page_id', $json['first_page']);
+        $json['page_history'] = data_get($session->metadata, 'page_history', []);
         $offer->view = $json;
 
         // Extract fonts for preloading
@@ -323,37 +216,16 @@ class CheckoutController extends Controller
             'offer' => new OfferResource($offer),
 
             // calculation ?
-            'checkoutSession' => new CheckoutSessionResource($checkout),
+            'checkoutSession' => new CheckoutSessionResource($session),
 
             // Deferred preview for subscription upgrade/swap deltas
-            'subscriptionPreview' => Inertia::defer(function () use ($checkout) {
-                return app(\App\Actions\Checkout\PreviewSubscriptionChangeAction::class)($checkout);
+            'subscriptionPreview' => Inertia::defer(function () use ($session) {
+                return app(PreviewSubscriptionChangeAction::class)($session);
             }),
             // Also provide saved payment methods on the canonical show route
-            'savedPaymentMethods' => Inertia::defer(function () use ($checkout) {
-                try {
-                    $customer = $checkout->customer;
-                    if (! $customer) {
-                        return [];
-                    }
-                    $defaultLocalId = $customer->default_payment_method_id;
-                    $methods = PaymentMethod::query()
-                        ->where('customer_id', $customer->id)
-                        ->orderByDesc('id')
-                        ->get();
-
-                    return $methods->map(function (PaymentMethod $pm) use ($defaultLocalId) {
-                        return [
-                            'id' => $pm->external_id,
-                            'type' => $pm->type,
-                            'properties' => $pm->properties,
-                            'isDefault' => $pm->id === $defaultLocalId,
-                        ];
-                    })->all();
-                } catch (\Throwable $e) {
-                    Log::warning('Local saved payment methods fetch failed (show)', ['error' => $e->getMessage()]);
-                    return [];
-                }
+            'savedPaymentMethods' => Inertia::defer(function () use ($session, $offer) {
+                //, $verifyJwtCustomerId, $customerProperties, $jwtUserId, $jwtGroupId
+                return app(FetchSavedPaymentMethodsAction::class)($session);
             }),
         ])->with([
             'customFonts' => $customFonts,
@@ -520,30 +392,4 @@ class CheckoutController extends Controller
         return $query->first();
     }
 
-    /**
-     * Decode a JWT customer token using ApiKey HS256 secret. Returns [ApiKey, payload array].
-     */
-    private function decodeCustomerToken(string $jwt): array
-    {
-        $headers = json_decode(JWT::urlsafeB64Decode(collect(explode('.', $jwt))->first()), true);
-        $kid = $headers['kid'] ?? null;
-
-        $apiKey = ApiKey::retrieve($kid);
-
-        $keys = new Key($apiKey->key, 'HS256');
-
-        throw_if(empty($keys), new \RuntimeException('No active API key secret available'));
-
-        $decoded = JWT::decode($jwt, $keys);
-        // Normalize to array
-        $payload = json_decode(json_encode($decoded), true);
-
-        Log::info(logname(), [
-            'payload_keys' => array_keys($payload ?? []),
-            'kid' => $kid,
-            'api_key_id' => $apiKey?->id,
-        ]);
-
-        return [$apiKey, $payload];
-    }
 }

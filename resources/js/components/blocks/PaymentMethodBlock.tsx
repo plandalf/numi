@@ -1,10 +1,32 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import Numi from "@/contexts/Numi";
 import { IntegrationClient } from "@/types/checkout";
 import StripeElementsComponent from "./StripeElementsBlock";
 import axios from "@/lib/axios";
-import { useNavigation } from '@/pages/client/checkout-main';
+import { useNavigation, useCheckoutState } from '@/pages/client/checkout-main';
 import { usePage } from '@inertiajs/react';
+
+type SavedPM = {
+  id: string;
+  type?: string;
+  properties?: {
+    display_brand?: string;
+    brand?: string;
+    last4?: string;
+    exp_month?: number | string;
+    exp_year?: number | string;
+    card?: {
+      brand?: string;
+      last4?: string;
+      exp_month?: number | string;
+      exp_year?: number | string;
+    };
+  } | null;
+  brand?: string;
+  last4?: string;
+  exp?: string;
+  isDefault?: boolean;
+};
 
 const CardBrandIcon = ({ brand }: { brand: string }) => {
   const b = (brand || '').toLowerCase();
@@ -42,20 +64,21 @@ const displayBrand = (pm: SavedPM): string => {
   if (pm.type !== 'card') {
     return (pm.properties?.display_brand || pm.properties?.brand || pm.brand || 'Card').toString();
   }
-  const card = pm.properties;
-  return (card.brand);
+  return (pm.properties?.card?.brand || pm.properties?.brand || pm.brand || 'Card').toString();
 };
 
 function PaymentMethodBlock() {
   const { currentPage, goToNextPage } = useNavigation();
   const { session, submitPage} = Numi.useCheckout({});
+  const { setPageSubmissionProps } = useCheckoutState() as { setPageSubmissionProps: (cb: () => Promise<any>) => void };
   const [showForm, setShowForm] = useState(!session?.payment_method);
   const [isRedirectPayment] = useState(false);
-  type SavedPM = { id: string; type?: string; properties?: { card?: { brand?: string; last4?: string; exp_month?: number|string; exp_year?: number|string } } | null; brand?: string; last4?: string; exp?: string; isDefault?: boolean };
   const page = usePage<{ savedPaymentMethods?: SavedPM[] }>();
   const savedPaymentMethods: SavedPM[] = page.props.savedPaymentMethods ?? [];
   const [debugMessages, setDebugMessages] = useState<string[]>([]);
-  const [useSaved, setUseSaved] = useState<boolean>(true);
+  const initialMode = useMemo<'saved' | 'new'>(() => (savedPaymentMethods && savedPaymentMethods.length > 0) ? 'saved' : 'new', [savedPaymentMethods?.length]);
+  const [mode, setMode] = useState<'saved' | 'new'>(initialMode);
+  const useSaved = mode === 'saved';
   const initialEmail = (session.properties?.email || session.customer?.email || session.payment_method?.billing_details?.email || '') as string;
   const [email, setEmail] = useState<string>(initialEmail);
   // Address is collected via Stripe AddressElement when needed
@@ -120,11 +143,146 @@ function PaymentMethodBlock() {
     setShowForm(false);
   }, []);
 
+  // Override submission props when using saved card to prevent Stripe flow from intercepting
+  useEffect(() => {
+    if (useSaved) {
+      setPageSubmissionProps(async () => {
+        return { use_saved_payment_method: true };
+      });
+    }
+  }, [useSaved, setPageSubmissionProps]);
+
   if (
     session.integration_client === IntegrationClient.STRIPE ||
     session.integration_client === IntegrationClient.STRIPE_TEST
   ) {
+    // Tabs: Saved vs New
+    const hasSaved = savedPaymentMethods && savedPaymentMethods.length > 0;
+    return (
+      <div className="mb-4">
+        {hasSaved && (
+          <div className="flex items-center gap-2 mb-3">
+            <button
+              type="button"
+              onClick={() => setMode('saved')}
+              className={`px-3 py-1 rounded-full text-sm ${useSaved ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-700'}`}
+            >
+              Use saved card
+            </button>
+            <button
+              type="button"
+              onClick={() => setMode('new')}
+              className={`px-3 py-1 rounded-full text-sm ${!useSaved ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-700'}`}
+            >
+              Add new card
+            </button>
+          </div>
+        )}
+
+        {/* Saved card list */}
+        {hasSaved && useSaved && (
+          <>
+            {/* Contact */}
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <div className="sm:col-span-2">
+                <label className="block text-sm font-medium text-gray-700">Email</label>
+                <input
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  onBlur={() => persistProps({ email })}
+                  type="email"
+                  inputMode="email"
+                  placeholder="you@example.com"
+                  className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 shadow-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30"
+                />
+              </div>
+            </div>
+
+            <div className="mt-3 flex flex-col gap-3">
+              {savedPaymentMethods.map((pm) => (
+                <button
+                  type="button"
+                  key={pm.id}
+                  onClick={async () => {
+                    try {
+                      addDebug(`select_saved_pm: ${pm.id}`);
+                      try {
+                        await axios.post(`/checkouts/${session.id}/mutations`, {
+                          action: 'setDefaultPaymentMethod',
+                          payment_method_id: pm.id,
+                        });
+                        // Ensure submit flow uses saved method
+                        setPageSubmissionProps(async () => ({ use_saved_payment_method: true }));
+                      } catch (err) {
+                        console.warn('persistProps failed', err);
+                      }
+                    } catch {
+                      addDebug('select_saved_pm_failed');
+                    }
+                  }}
+                  aria-label={`Use ${displayBrand(pm)} card ending ${pm.properties?.card?.last4 || pm.last4 || ''}`}
+                  className={`group flex w-full items-center justify-between rounded-xl border px-3 py-2 text-left ${pm.isDefault ? 'border-blue-300/70 ' : 'border-gray-200 bg-white hover:bg-gray-50'}`}
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="shrink-0">
+                      <CardBrandIcon brand={displayBrand(pm)} />
+                    </div>
+                    <div className="flex flex-col">
+                      <div className="text-sm font-medium text-gray-900">
+                        {displayBrand(pm).toUpperCase()} <span className="tracking-widest">•••• {pm.properties?.last4 || pm.last4 || ''}</span>
+                      </div>
+                      <div className="text-xs text-gray-500">Expires {formatExp(pm)}</div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {pm.isDefault && (
+                      <span className="inline-flex items-center rounded-full bg-blue-600/10 px-2 py-0.5 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-600/20">Default</span>
+                    )}
+                    <svg className="h-5 w-5 text-gray-300 group-hover:text-gray-400" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fillRule="evenodd" d="M7.21 14.77a.75.75 0 0 1 0-1.06L10.92 10 7.2 6.29a.75.75 0 1 1 1.06-1.06L12.5 9.38c.3.3.3.77 0 1.06l-4.24 4.24a.75.75 0 0 1-1.06 0Z" clipRule="evenodd"/></svg>
+                  </div>
+                </button>
+              ))}
+            </div>
+
+            <div className="mt-3 flex items-center justify-between">
+              {hasSaved && (
+                <button type="button" className="text-sm font-medium text-blue-700 hover:text-blue-800 underline" onClick={() => setMode('new')}>Use a different card</button>
+              )}
+              <div className="text-[11px] text-gray-500">Secured by Stripe</div>
+            </div>
+          </>
+        )}
+
+        {/* New card form */}
+        {(!hasSaved || !useSaved) && (
+          <>
+            {/* Show loading state for redirect payment completion */}
+            {isRedirectPayment ? (
+              <div className="border p-4 rounded bg-blue-50 flex items-center justify-center">
+                <div className="text-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
+                  <div className="text-sm text-blue-700">Completing your payment...</div>
+                </div>
+              </div>
+            ) : (
+              <StripeElementsComponent
+                onSuccess={handleSuccess}
+                emailAddress={email || session.properties?.email}
+                collectsAddress={collectsAddress}
+                onEmailChange={() => {
+                  // Update session properties with email
+                  console.log('PaymentMethodBlock: Email changed to', email);
+                }}
+              />
+            )}
+          </>
+        )}
+      </div>
+    );
+
+    // Legacy early returns retained below if needed
     // If saved methods are available and user chose to use them, show selector
+    // (This block is now superseded by the tabbed UI above)
     if (savedPaymentMethods && savedPaymentMethods.length > 0 && useSaved) {
       return (
         <div className="mb-4">
@@ -156,7 +314,7 @@ function PaymentMethodBlock() {
                 onClick={async () => {
                   try {
                     addDebug(`select_saved_pm: ${pm.id}`);
-                    
+
                     try {
                       await axios.post(`/checkouts/${session.id}/mutations`, {
                         action: 'setDefaultPaymentMethod',
@@ -197,10 +355,10 @@ function PaymentMethodBlock() {
           </div>
 
           <div className="mt-3 flex items-center justify-between">
-            <button className="text-sm font-medium text-blue-700 hover:text-blue-800 underline" onClick={() => setUseSaved(false)}>Use a different card</button>
+            <button className="text-sm font-medium text-blue-700 hover:text-blue-800 underline" onClick={() => setMode('new')}>Use a different card</button>
             <div className="text-[11px] text-gray-500">Secured by Stripe</div>
           </div>
-        
+
         </div>
       );
     }
@@ -218,19 +376,19 @@ function PaymentMethodBlock() {
     }
 
     if (session.payment_method && !useSaved) {
-      const pm = session.payment_method;
+      const pm = session.payment_method as any;
       return (
         <div className="border p-4 rounded bg-gray-50 flex items-center justify-between">
           <div>
             <div>
-              {pm.type === 'card' && (
+              {pm?.type === 'card' && (
                 <>
-                  {pm.properties.brand} •••• {pm.properties.last4} (exp {pm.properties.exp_month}/{pm.properties.exp_year})
+                  {pm?.properties?.brand} •••• {pm?.properties?.last4} (exp {pm?.properties?.exp_month}/{pm?.properties?.exp_year})
                 </>
               )}
             </div>
             <div className="text-xs text-gray-500">
-              {pm.billing_details?.name} &lt;{pm.billing_details?.email}&gt;
+              {pm?.billing_details?.name} &lt;{pm?.billing_details?.email}&gt;
             </div>
           </div>
           <button

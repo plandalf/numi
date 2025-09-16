@@ -21,6 +21,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Str;
 
 /**
  * @property int $organization_id
@@ -49,6 +50,9 @@ use Illuminate\Support\Arr;
  * @property string $payment_confirmed_at
  * @property bool $payment_method_locked
  * @property string $return_url
+ * @property string|null $ip_address
+ * @property string|null $ip_country
+ * @property string|null $parent_page_url
  *
  * # dynamic
  * @property int $total
@@ -87,7 +91,11 @@ class CheckoutSession extends Model
         'test_mode',
         'customer_id',
         'payment_method_id',
+        'ip_address',
+        'ip_country',
+        'parent_page_url',
 
+        'subject',
         'intent_id',
         'intent_type',
         'intent', 'subscription',
@@ -114,6 +122,33 @@ class CheckoutSession extends Model
     protected $attributes = [
         'status' => CheckoutSessionStatus::STARTED,
     ];
+
+    protected static function booted(): void
+    {
+        static::creating(function (self $model) {
+            try {
+                $request = request();
+                if ($request) {
+                    // Set client IP and country if available
+                    $model->ip_address = $model->ip_address ?? $request->ip();
+                    $cfCountry = $request->header('CF-IPCountry');
+                    if (! empty($cfCountry)) {
+                        $model->ip_country = $model->ip_country ?? strtoupper(substr((string) $cfCountry, 0, 2));
+                    }
+
+                    // Prefer new param, fall back to legacy
+                    $parentUrl = $request->query('embed-parent-page')
+                        ?? $request->query('numi-embed-parent-page');
+
+                    if (! empty($parentUrl)) {
+                        $model->parent_page_url = Str::limit($model->parent_page_url ?? (string) $parentUrl, 2048, '');
+                    }
+                }
+            } catch (\Throwable $e) {
+                // no-op; keep nullable for historical reasons
+            }
+        });
+    }
 
     public function organization(): BelongsTo
     {

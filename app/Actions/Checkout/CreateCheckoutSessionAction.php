@@ -3,6 +3,8 @@
 namespace App\Actions\Checkout;
 
 use App\Enums\IntegrationType;
+use App\Http\Requests\Checkout\InitializeCheckoutRequest;
+use App\ValueObjects\CheckoutAuthorization;
 use App\Models\Catalog\Price;
 use App\Models\Checkout\CheckoutSession;
 use App\Models\Store\Offer;
@@ -12,37 +14,64 @@ use Illuminate\Support\Facades\Log;
 class CreateCheckoutSessionAction
 {
     public function __construct(
-        private readonly CreateCheckoutLineItemAction $createCheckoutLineItemAction
+        private readonly CreateCheckoutLineItemAction $createCheckoutLineItemAction,
+        private readonly Offer $offer,
+        private readonly bool $testMode,
     ) {}
 
-    public function execute(
-        Offer $offer,
-        array $checkoutItems,
-        bool $testMode = false,
-        ?string $intervalOverride = null,
-        ?string $currencyOverride = null,
-        array $customerProperties = [],
-        string $intent = 'purchase',
-        ?string $subscription = null,
-        ?int $quantity = null
-    ): CheckoutSession {
+    public function execute(InitializeCheckoutRequest $request, ?CheckoutAuthorization $auth = null): CheckoutSession
+    {
+        $offer = $this->offer;
+        $checkoutItems = $request->items();
+
+        $intervalOverride = $request->intervalOverride();
+        $currencyOverride = $request->currency();
+
+        $primaryPriceLookup = $request->primaryPriceLookup();
+        if (! $intervalOverride && $primaryPriceLookup) {
+            $primaryPrice = Price::query()
+                ->where('organization_id', $offer->organization_id)
+                ->where('lookup_key', $primaryPriceLookup)
+                ->where('is_active', true)
+                ->first();
+
+            if ($primaryPrice && $primaryPrice->renew_interval) {
+                $intervalOverride = strtolower($primaryPrice->renew_interval);
+            }
+        }
+
+        $customerProperties = ($auth?->customerProperties ?? $request->customerAsArray());
+        $subscription = $request->subscription() ?: ($auth?->subscriptionId);
+        $intent = $request->intent($subscription);
+        $quantity = $request->quantity();
         $paymentIntegration = $offer->organization
             ->integrations()
-            ->where('type', $testMode
+            ->where('type', $this->testMode
                 ? IntegrationType::STRIPE_TEST
                 : IntegrationType::STRIPE)
             ->first();
 
-        $checkoutSession = CheckoutSession::query()
-            ->create([
-                'organization_id' => $offer->organization_id,
-                'offer_id' => $offer->id,
-                'payments_integration_id' => $paymentIntegration?->id,
-                'test_mode' => $testMode,
-                'properties' => $customerProperties,
-                'intent' => $intent ?? 'purchase',
-                'subscription' => $intent === 'upgrade' ? $subscription : null,
-            ]);
+        $metadata = [];
+        if ($auth) {
+            $metadata['jwt'] = array_filter([
+                'customer_id' => $auth->stripeCustomerId,
+                'sub' => $auth->userId,
+                'grp' => $auth->groupId,
+                'subscription_id' => $auth->subscriptionId,
+            ], fn ($v) => ! is_null($v));
+        }
+
+        $checkoutSession = CheckoutSession::query()->create([
+            'organization_id' => $offer->organization_id,
+            'offer_id' => $offer->id,
+            'payments_integration_id' => $paymentIntegration?->id,
+            'test_mode' => $this->testMode,
+            'properties' => $customerProperties,
+            'intent' => $intent ?? 'purchase',
+            'subscription' => $intent === 'upgrade' ? ($subscription ? (string) $subscription : null) : null,
+            'subject' => ($request->subject() ?: ($auth?->userId)) ? (string) ($request->subject() ?: ($auth?->userId)) : null,
+            'metadata' => !empty($metadata) ? $metadata : null,
+        ]);
 
         // If no explicit checkout items provided, use offer's default items
         if (empty($checkoutItems)) {
@@ -85,22 +114,32 @@ class CreateCheckoutSessionAction
                 );
             }
         } else {
-            // Process explicit checkout items with overrides
+            // Process explicit checkout items; resolve by lookup_key if provided
             foreach ($checkoutItems as $item) {
-                $priceId = $item['price_id'];
+                $resolvedPrice = null;
+                if (isset($item['lookup_key'])) {
+                    $resolvedPrice = Price::query()
+                        ->where('organization_id', $offer->organization_id)
+                        ->where('lookup_key', $item['lookup_key'])
+                        ->where('is_active', true)
+                        ->first();
+                }
 
-                // Apply interval/currency overrides if provided
+                if (! $resolvedPrice) {
+                    throw \Illuminate\Validation\ValidationException::withMessages([
+                        'items' => ["Price not found for provided item"],
+                    ]);
+                }
+
+                $priceId = $resolvedPrice->id;
+
                 if ($intervalOverride || $currencyOverride) {
-                    $originalPrice = Price::find($item['price_id']);
-                    if ($originalPrice) {
-                        $overriddenPrice = $this->findPriceWithOverrides($originalPrice, $intervalOverride, $currencyOverride);
-                        if ($overriddenPrice) {
-                            $priceId = $overriddenPrice->id;
-                        }
+                    $overriddenPrice = $this->findPriceWithOverrides($resolvedPrice, $intervalOverride, $currencyOverride);
+                    if ($overriddenPrice) {
+                        $priceId = $overriddenPrice->id;
                     }
                 }
 
-                // Use provided quantity or item quantity or default to 1
                 $itemQuantity = $quantity ?? Arr::get($item, 'quantity', 1);
 
                 $this->createCheckoutLineItemAction->execute(
