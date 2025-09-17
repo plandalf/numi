@@ -45,6 +45,11 @@ function HorizontalProductsComponent({ context }: { context: BlockContextType })
 
   const blockContext = useContext(BlockContext);
   const options = (blockContext?.blockConfig?.content?.items ?? defaultValue) as ProductItemType[];
+  console.debug('[HorizontalProducts] init', {
+    blockId: context?.blockId,
+    options,
+    optionKeys: Array.isArray(options) ? options.map(o => o.key) : [],
+  });
 
   // Helper: simple template evaluator for strings like {{ checkout.items[0].renewal_interval }}
   const isTemplate = Numi.isTemplate;
@@ -57,15 +62,33 @@ function HorizontalProductsComponent({ context }: { context: BlockContextType })
     label: 'Default (Selected Product)',
     asState: true,
   });
+  console.debug('[HorizontalProducts] state.enumeration', {
+    selectedProduct,
+    initialKey: options[0]?.key,
+    enumerationOptions: Array.isArray(options) ? options?.filter((item) => item.key).map((item) => item.key) : [],
+  });
 
   // Compute resolved selection if the configured value is a template string
   const resolvedSelectedProduct = Numi.useEvaluatedTemplate(selectedProduct);
+  console.debug('[HorizontalProducts] resolved template', {
+    selectedProduct,
+    resolvedSelectedProduct,
+    isTemplate: Numi.isTemplate(selectedProduct),
+  });
 
   // Ensure the value used is one of the option keys
   const productValue = useMemo(() => {
     const keys = Array.isArray(options) ? options.map(o => o.key) : [];
-    if (resolvedSelectedProduct && keys.includes(resolvedSelectedProduct)) return resolvedSelectedProduct;
-    return options[0]?.key;
+    const computed = (resolvedSelectedProduct && keys.includes(resolvedSelectedProduct))
+      ? resolvedSelectedProduct
+      : options[0]?.key;
+    console.debug('[HorizontalProducts] productValue computed', {
+      resolvedSelectedProduct,
+      keys,
+      fallback: options[0]?.key,
+      productValue: computed,
+    });
+    return computed;
   }, [resolvedSelectedProduct, options]);
 
   const [items] = Numi.useStateJsonSchema({
@@ -316,8 +339,10 @@ function HorizontalProductsComponent({ context }: { context: BlockContextType })
 
   const handleProductSelect = useCallback((value: string) => {
     if (value === productValue) {
+      console.log('[HorizontalProducts] Ignoring click on already-selected option', { value, productValue });
       return;
     }
+    console.debug('[HorizontalProducts] Selecting option', { from: productValue, to: value, blockId: context.blockId });
     setSelectedProduct(value);
     executeCallbacks(Event.onClick, value);
     updateSessionProperties(context.blockId, value);
@@ -330,6 +355,7 @@ function HorizontalProductsComponent({ context }: { context: BlockContextType })
     if (!isTemplate(selectedProduct)) return;
     if (!productValue) return;
     appliedTemplateDefaultRef.current = true;
+    console.debug('[HorizontalProducts] Applying template default to session', { productValue, blockId: context.blockId });
     updateSessionProperties(context.blockId, productValue);
   }, [selectedProduct, productValue, updateSessionProperties, context.blockId, isTemplate]);
 
@@ -341,6 +367,11 @@ function HorizontalProductsComponent({ context }: { context: BlockContextType })
     const prevItems = prevItemsRef.current;
     // Only update if the items have actually changed
     if (JSON.stringify(items) !== JSON.stringify(prevItems)) {
+      console.debug('[HorizontalProducts] Items changed; updating hooks', {
+        prev: prevItems,
+        next: items,
+        enumerationOptions: items?.map(i => i.key),
+      });
       updateSelectedProductHook({ options: items });
       updateEventCallbackHook({ options: interactionElements });
 
