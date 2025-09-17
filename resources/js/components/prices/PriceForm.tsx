@@ -96,6 +96,7 @@ interface PriceFormData {
   billing_anchor: string | null;
   recurring_interval_count: number | null;
   cancel_after_cycles: number | null;
+  trial_period_days: number | null;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   properties: Record<string, any> | null;
   is_active: boolean;
@@ -238,6 +239,9 @@ export default function PriceForm({
       billing_anchor: initialData?.billing_anchor || null,
       recurring_interval_count: initialData?.recurring_interval_count || null,
       cancel_after_cycles: initialData?.cancel_after_cycles || null,
+      trial_period_days: (initialData && 'trial_period_days' in initialData)
+        ? (initialData as { trial_period_days?: number | null }).trial_period_days || null
+        : null,
       properties: initialData?.properties || null,
       is_active: initialData?.is_active === undefined ? true : initialData.is_active,
       gateway_provider: initialData?.gateway_provider || null,
@@ -322,6 +326,7 @@ export default function PriceForm({
       setData('renew_interval', null);
       setData('recurring_interval_count', null);
       setData('billing_anchor', null);
+      setData('trial_period_days', null);
     } else if (['recurring', 'tiered', 'volume', 'graduated', 'package'].includes(data.type)) {
       // Set sensible defaults for recurring types if not already set
       if (!data.renew_interval) {
@@ -1181,6 +1186,26 @@ export default function PriceForm({
                         {errors.cancel_after_cycles && <p className="text-sm text-red-500">{errors.cancel_after_cycles}</p>}
                         <p className="text-xs text-muted-foreground">
                           Automatically cancel subscription after this many billing cycles. Leave blank for indefinite billing.
+                        </p>
+                      </div>
+
+                      <div className="flex flex-col gap-2">
+                        <Label htmlFor="trial_period_days">Trial Days (Optional)</Label>
+                        <Input
+                          id="trial_period_days"
+                          autoComplete="off"
+                          type="number"
+                          min="1"
+                          step="1"
+                          value={data.trial_period_days || ''}
+                          onChange={e => setData('trial_period_days', e.target.value ? Number(e.target.value) : null)}
+                          disabled={processing}
+                          placeholder="e.g., 14"
+                          className="bg-white"
+                        />
+                        {errors.trial_period_days && <p className="text-sm text-red-500">{errors.trial_period_days}</p>}
+                        <p className="text-xs text-muted-foreground">
+                          Number of free trial days for new subscriptions on this price.
                         </p>
                       </div>
                     </div>

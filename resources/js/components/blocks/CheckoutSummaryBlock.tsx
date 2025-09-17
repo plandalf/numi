@@ -1,4 +1,5 @@
 import Numi, { Appearance, FontValue, Style } from "@/contexts/Numi";
+import type { SubscriptionPreview } from "@/types/checkout";
 import { resolveThemeValue } from "@/lib/theme";
 import { formatMoney } from "@/lib/utils";
 import { BlockContextType } from "@/types/blocks";
@@ -11,14 +12,17 @@ import { MarkdownText } from "../ui/markdown-text";
 import { OfferItemType } from "@/types/offer";
 
 function CheckoutSummaryComponent({ context: _context }: { context: BlockContextType }) {
+  void _context;
   const theme = Numi.useTheme();
+  const checkoutCtx = Numi.useCheckout({});
   const {
     session,
     subscriptionPreview,
     addDiscount,
     removeDiscount,
     isEditor
-  } = Numi.useCheckout({});
+  } = checkoutCtx;
+  const preview = (checkoutCtx as unknown as { preview?: SubscriptionPreview }).preview;
 
   const [title] = Numi.useStateString({
     label: 'Title',
@@ -177,18 +181,38 @@ function CheckoutSummaryComponent({ context: _context }: { context: BlockContext
   const isSkipTrial = Boolean(session?.metadata?.isSkipTrial);
   const isGenericPreview = Boolean(session?.metadata?.isGenericPreview);
 
-  const trialStartIso = session?.metadata?.billingStartDate as string | undefined;
-  const postTrialAmount = session?.metadata?.postTrialAmount as number | undefined;
+  const priceTrialDays = useMemo(() => {
+    try {
+      const li = (session?.line_items || []).find((li: CheckoutItem) => {
+        const p = li?.price as unknown as { type?: string; trial_period_days?: number };
+        return p?.type !== 'one_time' && Number(p?.trial_period_days) > 0;
+      });
+      const p = li?.price as unknown as { trial_period_days?: number } | undefined;
+      return p?.trial_period_days !== undefined ? Number(p.trial_period_days) : undefined;
+    } catch {
+      return undefined;
+    }
+  }, [session?.line_items]);
+
+  const isTrialCheckoutUI = isTrialCheckout || (priceTrialDays !== undefined && priceTrialDays > 0);
+
+  const trialStartIso = preview?.proposed?.trial_end || (session?.metadata?.billingStartDate as string | undefined);
+  const postTrialAmount = preview?.invoice_preview?.next_period?.amount ?? (session?.metadata?.postTrialAmount as number | undefined);
   const swapAmount = session?.metadata?.swapAmount as number | undefined;
   const nextPeriodAmount = session?.metadata?.nextPeriodAmount as number | undefined;
   const skipAmount = session?.metadata?.skipAmount as number | undefined;
   const previewAmount = session?.metadata?.previewAmount as number | undefined;
-  const effectiveDate = session?.metadata?.effectiveDate as string | undefined;
+  const effectiveDate = preview?.effective?.at || (session?.metadata?.effectiveDate as string | undefined);
 
   const trialStartDateLabel = useMemo(() => {
-    if (!trialStartIso) return '';
-    try { return new Date(trialStartIso).toLocaleDateString(); } catch { return ''; }
-  }, [trialStartIso]);
+    if (trialStartIso) {
+      try { return new Date(trialStartIso).toLocaleDateString(); } catch { /* ignore */ }
+    }
+    if (priceTrialDays && priceTrialDays > 0) {
+      try { return new Date(Date.now() + priceTrialDays * 86400000).toLocaleDateString(); } catch { /* ignore */ }
+    }
+    return '';
+  }, [trialStartIso, priceTrialDays]);
 
   const effectiveDateLabel = useMemo(() => {
     if (!effectiveDate) return '';
@@ -201,6 +225,8 @@ function CheckoutSummaryComponent({ context: _context }: { context: BlockContext
     }
     return undefined;
   }, [session.currency, showCurrency]);
+
+  // Removed unused baseRecurringItem after header copy cleanup
 
   const lineItems = useMemo(() => {
     const items = isImmediateSwap
@@ -397,9 +423,9 @@ function CheckoutSummaryComponent({ context: _context }: { context: BlockContext
           style={itemStyle}
         >
           {item.price?.name}
-          {isTrialCheckout && (
+          {isTrialCheckoutUI && (
             <div className="text-sm text-emerald-600 font-normal">
-              {trialDays ? `${trialDays}-day free trial` : 'Free trial'}
+              {(trialDays || priceTrialDays) ? `${(trialDays || priceTrialDays)}-day free trial` : 'Free trial'}
             </div>
           )}
           {isTrialExpansionCheckout && (
@@ -444,11 +470,11 @@ function CheckoutSummaryComponent({ context: _context }: { context: BlockContext
               />
             :
             <div className="text-gray-700" style={itemPriceStyle}>
-              {isTrialCheckout ? (
+              {isTrialCheckoutUI ? (
                 <div className="text-right">
-                  <div className="text-emerald-600">Free</div>
+                  <div className="text-gray-800">{formatMoney(item.total, currency)}</div>
                   <div className="text-sm text-gray-500">
-                    Then {formatMoney(postTrialAmount || item.total, currency)}/{item.price?.renew_interval}
+                    Billing starts{trialStartDateLabel ? `: ${trialStartDateLabel}` : ''}
                   </div>
                 </div>
               ) : isTrialExpansionCheckout ? (
@@ -496,12 +522,7 @@ function CheckoutSummaryComponent({ context: _context }: { context: BlockContext
         )}
         {item.price && item.price.type !== 'one_time' && (
           <>
-            {isTrialCheckout ? (
-              <div style={itemQuantityStyle}>
-                <div>Billing starts: {billingStartDate ? new Date(billingStartDate).toLocaleDateString() : 'After trial'}</div>
-                <div>Price per {item.price.renew_interval}: {formatMoney(postTrialAmount || item.total, currency)}</div>
-              </div>
-            ) : isTrialExpansionCheckout ? (
+            {isTrialCheckoutUI ? null : isTrialExpansionCheckout ? (
               <div style={itemQuantityStyle}>
                 <div>Billing starts: {billingStartDate ? new Date(billingStartDate).toLocaleDateString() : 'After trial'}</div>
                 <div>Price per {item.price.renew_interval}: {formatMoney(postTrialAmount || item.total, currency)}</div>
@@ -551,12 +572,12 @@ function CheckoutSummaryComponent({ context: _context }: { context: BlockContext
       {/* Immediate swap highlights: concise proration summary */}
       {isImmediateSwap && subscriptionPreview && (
         (() => {
-          const lines = (subscriptionPreview as any)?.invoice_preview?.lines as any[] | undefined;
+          const preview = subscriptionPreview as unknown as { invoice_preview?: { lines?: Array<{ amount?: number; proration?: boolean }> }, delta?: { total_due_at_effective?: number } };
+          const lines = preview?.invoice_preview?.lines as Array<{ amount?: number; proration?: boolean }> | undefined;
           const proration = Array.isArray(lines) ? lines.filter(l => l?.proration) : [];
           const credit = proration.find(l => (l?.amount ?? 0) < 0);
           const charge = proration.find(l => (l?.amount ?? 0) > 0);
-          const dueNow = (swapAmount ?? (subscriptionPreview as any)?.delta?.total_due_at_effective) as number | undefined;
-          const nextPeriod = (subscriptionPreview as any)?.invoice_preview?.next_period as any | undefined;
+          const dueNow = (swapAmount ?? preview?.delta?.total_due_at_effective) as number | undefined;
 
           return (
             <div className="space-y-2 text-sm">
@@ -644,13 +665,13 @@ function CheckoutSummaryComponent({ context: _context }: { context: BlockContext
       {/* Order Summary Calculations */}
       {!isImmediateSwap && (showSubtotal ||
         (showShipping && session.shipping > 0) ||
-        (showTaxes && session.inclusive_taxes > 0 && session.subtotal > 0 && !isTrialCheckout && !isTrialExpansionCheckout && !isPeriodEndSwap) ||
+        (showTaxes && session.inclusive_taxes > 0 && session.subtotal > 0 && !isTrialCheckoutUI && !isTrialExpansionCheckout && !isPeriodEndSwap) ||
         (session.discounts && session.discounts.length > 0)
       ) && (
         <div className="space-y-2 text-sm flex flex-col" style={summaryContainerStyle}>
           {showSubtotal && <div className="flex justify-between">
             <span style={summaryTextStyle}>Subtotal</span>
-            <span style={summaryTextStyle}>{formatMoney(isTrialCheckout || isTrialExpansionCheckout || isPeriodEndSwap ? 0 : session.subtotal, currency)}</span>
+            <span style={summaryTextStyle}>{formatMoney(isTrialCheckoutUI || isTrialExpansionCheckout || isPeriodEndSwap ? 0 : session.subtotal, currency)}</span>
           </div>}
 
           {showShipping && session.shipping > 0 && (
@@ -661,7 +682,7 @@ function CheckoutSummaryComponent({ context: _context }: { context: BlockContext
           )}
 
 
-          {showTaxes && (session.inclusive_taxes) > 0 && session.subtotal > 0 && !isTrialCheckout && !isTrialExpansionCheckout && !isPeriodEndSwap && (
+          {showTaxes && (session.inclusive_taxes) > 0 && session.subtotal > 0 && !isTrialCheckoutUI && !isTrialExpansionCheckout && !isPeriodEndSwap && (
             <div className="flex justify-between">
               <span style={summaryTextStyle}>{taxesLabel}</span>
               <span style={summaryTextStyle}>
@@ -691,7 +712,7 @@ function CheckoutSummaryComponent({ context: _context }: { context: BlockContext
       <div className="flex flex-col gap-1">
         <div className="flex justify-between font-semibold text-lg">
           <span style={totalTextStyle}>
-            {isTrialCheckout || isTrialExpansionCheckout ? 'Total Due Today' :
+            {isTrialCheckoutUI || isTrialExpansionCheckout ? 'Total Due Today' :
              isPeriodEndSwap ? 'Total Due Today' :
              isImmediateSwap ? 'Total Due Now' :
              isSkipTrial ? 'Total Due Now' :
@@ -700,7 +721,7 @@ function CheckoutSummaryComponent({ context: _context }: { context: BlockContext
           </span>
           <span style={totalTextStyle}>
             {formatMoney(
-              isTrialCheckout || isTrialExpansionCheckout || isPeriodEndSwap
+              isTrialCheckoutUI || isTrialExpansionCheckout || isPeriodEndSwap
                 ? 0
                 : (isImmediateSwap && swapAmount !== undefined ? swapAmount : session.total),
               currency

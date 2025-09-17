@@ -105,6 +105,9 @@ class CheckoutController extends Controller
             'fonts' => FontResource::collection(FontElement::cases()),
             'offer' => new OfferResource($offer),
             'checkoutSession' => new CheckoutSessionResource($checkoutSession),
+            'preview' => Inertia::defer(function () use ($checkoutSession) {
+                return app(PreviewSubscriptionChangeAction::class)($checkoutSession);
+            }),
             'subscriptionPreview' => Inertia::defer(function () use ($checkoutSession) {
                 return app(PreviewSubscriptionChangeAction::class)($checkoutSession);
             }),
@@ -214,6 +217,11 @@ class CheckoutController extends Controller
 
             // calculation ?
             'checkoutSession' => new CheckoutSessionResource($session),
+
+            // General preview for new or existing sessions
+            'preview' => Inertia::defer(function () use ($session) {
+                return app(PreviewSubscriptionChangeAction::class)($session);
+            }),
 
             // Deferred preview for subscription upgrade/swap deltas
             'subscriptionPreview' => Inertia::defer(function () use ($session) {

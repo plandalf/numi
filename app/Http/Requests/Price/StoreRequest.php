@@ -39,7 +39,7 @@ class StoreRequest extends FormRequest
             'lookup_key' => [
                 'string',
                 'max:255',
-                Rule::unique('catalog_prices')->where(function ($query) use ($organizationId, $product) {
+                Rule::unique('catalog_prices')->where(function ($query) use ($organizationId) {
                     return $query->where('organization_id', $organizationId);
                 }),
             ],
@@ -91,6 +91,7 @@ class StoreRequest extends FormRequest
                 'min:1',
             ],
             'cancel_after_cycles' => ['nullable', 'integer', 'min:1'],
+            'trial_period_days' => ['nullable', 'integer', 'min:1'],
             'properties' => ['nullable', 'array'],
             // Normalized tier structure (direct array of tiers)
             'properties.*.up_to' => ['nullable', 'integer', 'min:1'],
@@ -122,6 +123,7 @@ class StoreRequest extends FormRequest
                 'renew_interval' => null,
                 'recurring_interval_count' => null,
                 'billing_anchor' => null,
+                'trial_period_days' => null,
                 // cancel_after_cycles might apply to non-recurring, keep as is
             ]);
         }
@@ -130,7 +132,7 @@ class StoreRequest extends FormRequest
         $type = $this->input('type');
         if (in_array($type, ['tiered', 'volume', 'graduated', 'package'])) {
             $properties = $this->input('properties');
-            
+
             // For tier-based pricing (tiered, volume, graduated)
             if (in_array($type, ['tiered', 'volume', 'graduated']) && $properties) {
                 // Support both legacy {tiers: []} and normalized direct array []
@@ -142,13 +144,17 @@ class StoreRequest extends FormRequest
                     $normalized = [];
                     $lastUpTo = 0;
                     foreach ($properties as $index => $tier) {
-                        if (!is_array($tier)) continue;
+                        if (! is_array($tier)) {
+                            continue;
+                        }
                         // Allow from/to or up_to; convert to up_to only
                         $upTo = $tier['up_to'] ?? ($tier['to'] ?? null);
                         // Determine unit/flat amounts
                         $unitAmount = $tier['unit_amount'] ?? null;
                         $flatAmount = $tier['flat_amount'] ?? null;
-                        if (!is_numeric($unitAmount) && !is_numeric($flatAmount)) continue;
+                        if (! is_numeric($unitAmount) && ! is_numeric($flatAmount)) {
+                            continue;
+                        }
                         // Ensure monotonic up_to
                         if ($upTo !== null && is_numeric($upTo)) {
                             $upTo = (int) $upTo;
@@ -170,18 +176,19 @@ class StoreRequest extends FormRequest
                     usort($normalized, function ($a, $b) {
                         $aU = $a['up_to'] ?? PHP_INT_MAX;
                         $bU = $b['up_to'] ?? PHP_INT_MAX;
+
                         return $aU <=> $bU;
                     });
 
                     $this->merge(['properties' => $normalized]);
                 }
             }
-            
+
             // For package pricing
             if ($type === 'package' && $properties) {
                 if (isset($properties['package']) && is_array($properties['package'])) {
                     $package = $properties['package'];
-                    if (isset($package['size'], $package['unit_amount']) && 
+                    if (isset($package['size'], $package['unit_amount']) &&
                         is_numeric($package['size']) && is_numeric($package['unit_amount'])) {
                         $this->merge(['properties' => ['package' => $package]]);
                     } else {

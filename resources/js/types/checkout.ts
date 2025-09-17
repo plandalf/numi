@@ -86,6 +86,39 @@ export interface CheckoutSession {
 
   subscriptionPreview?: SubscriptionPreview;
 
+  preview?: {
+    enabled: boolean;
+    scenario?: string;
+    effective?: {
+      strategy: string;
+      at: string;
+      is_future: boolean;
+    } | null;
+    current?: unknown | null;
+    proposed?: {
+      trial_end?: string | null;
+      base_item?: {
+        amount?: number;
+        interval?: string | null;
+        quantity?: number;
+        product?: { id?: string | null; name?: string | null };
+      };
+    } | null;
+    delta?: {
+      proration_subtotal: number;
+      total_due_at_effective: number;
+      currency: string;
+      can_prorate?: boolean;
+    };
+    invoice_preview?: {
+      next_period?: {
+        amount: number;
+        period?: { interval?: string | null };
+        currency: string;
+      } | null;
+    };
+  };
+
   payment_method?: {
     id: number;
     type: string;
@@ -145,6 +178,8 @@ export type SubscriptionPreview = {
     period_end?: string;
   };
   proposed: {
+    trial_end?: string;
+    period_end?: string;
     base_item: {
       price_id: number;
       stripe_price: string;
@@ -180,6 +215,12 @@ export type SubscriptionPreview = {
         product?: { id?: string | null; name?: string | null };
       };
     }>;
+    next_period?: {
+      amount: number;
+      period?: { start?: number; end?: number } | null;
+      currency: string | null;
+      price_id?: string | null;
+    } | null;
   };
 };
 
@@ -190,6 +231,7 @@ export interface CheckoutPageProps {
   embedDomain?: string;
   environment?: string;
   checkoutSession: CheckoutSession;
+  preview?: SubscriptionPreview;
   subscriptionPreview?: SubscriptionPreview;
   signedShowUrl?: string;
 }

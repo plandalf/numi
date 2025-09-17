@@ -48,13 +48,12 @@ class UpdateRequest extends FormRequest
                 'nullable',
                 'string',
                 'max:255',
-                Rule::unique('catalog_prices')->where(function ($query) use ($organizationId, $product) {
+                Rule::unique('catalog_prices')->where(function ($query) use ($organizationId) {
                     return $query->where('organization_id', $organizationId);
                 })->ignore($price->id),
             ],
             // Immutable fields: scope, type, currency? Typically shouldn't change after creation.
             'scope' => ['sometimes', Rule::in(['list', 'custom', 'variant'])],
-            
 
             'amount' => ['sometimes', 'required', 'integer', 'min:0'],
             'parent_list_price_id' => [
@@ -99,6 +98,7 @@ class UpdateRequest extends FormRequest
                 'min:1',
             ],
             'cancel_after_cycles' => ['sometimes', 'nullable', 'integer'],
+            'trial_period_days' => ['sometimes', 'nullable', 'integer', 'min:1'],
             'properties' => ['sometimes', 'nullable', 'array'],
             'properties.*.up_to' => ['sometimes', 'nullable', 'integer', 'min:1'],
             'properties.*.unit_amount' => ['sometimes', 'integer', 'min:0'],
@@ -131,6 +131,7 @@ class UpdateRequest extends FormRequest
                 'renew_interval' => null,
                 'recurring_interval_count' => null,
                 'billing_anchor' => null,
+                'trial_period_days' => null,
             ]);
         }
 
@@ -146,11 +147,15 @@ class UpdateRequest extends FormRequest
                     $normalized = [];
                     $lastUpTo = 0;
                     foreach ($properties as $index => $tier) {
-                        if (!is_array($tier)) continue;
+                        if (! is_array($tier)) {
+                            continue;
+                        }
                         $upTo = $tier['up_to'] ?? ($tier['to'] ?? null);
                         $unitAmount = $tier['unit_amount'] ?? null;
                         $flatAmount = $tier['flat_amount'] ?? null;
-                        if (!is_numeric($unitAmount) && !is_numeric($flatAmount)) continue;
+                        if (! is_numeric($unitAmount) && ! is_numeric($flatAmount)) {
+                            continue;
+                        }
                         if ($upTo !== null && is_numeric($upTo)) {
                             $upTo = (int) $upTo;
                             if ($upTo <= $lastUpTo) {
@@ -169,6 +174,7 @@ class UpdateRequest extends FormRequest
                     usort($normalized, function ($a, $b) {
                         $aU = $a['up_to'] ?? PHP_INT_MAX;
                         $bU = $b['up_to'] ?? PHP_INT_MAX;
+
                         return $aU <=> $bU;
                     });
                     $this->merge(['properties' => $normalized]);

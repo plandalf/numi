@@ -38,6 +38,7 @@ class PriceResource extends JsonResource
             'renew_interval' => $this->renew_interval,
             'billing_anchor' => $this->billing_anchor,
             'recurring_interval_count' => $this->recurring_interval_count,
+            'trial_period_days' => $this->trial_period_days,
             'cancel_after_cycles' => $this->cancel_after_cycles,
             'gateway_provider' => $this->gateway_provider ?? 'plandalf',
             'gateway_price_id' => $this->gateway_price_id,
