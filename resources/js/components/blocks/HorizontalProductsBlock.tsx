@@ -8,7 +8,6 @@ import { MarkdownText } from "../ui/markdown-text";
 
 // Define interfaces for the item structure
 interface ProductItemType {
-  key: string;
   title: string;
   value: string;
   description: string;
@@ -21,21 +20,18 @@ function HorizontalProductsComponent({ context }: { context: BlockContextType })
   const theme = Numi.useTheme();
 
   const defaultValue = [{
-    key: 'basic',
     title: 'Basic Plan',
     value: 'basic',
     description: 'Perfect for getting started',
     features: '- Feature 1\n- Feature 2\n- Feature 3',
     buttonText: 'Get Started',
   }, {
-    key: 'pro',
     title: 'Pro Plan',
     value: 'pro',
     description: 'For growing businesses',
     features: '- All Basic features\n- Pro feature 1\n- Pro feature 2\n- Priority support',
     buttonText: 'Choose Pro',
   }, {
-    key: 'enterprise',
     title: 'Enterprise',
     value: 'enterprise',
     description: 'For large organizations',
@@ -46,14 +42,27 @@ function HorizontalProductsComponent({ context }: { context: BlockContextType })
   const blockContext = useContext(BlockContext);
   const options = (blockContext?.blockConfig?.content?.items ?? defaultValue) as ProductItemType[];
 
+  // Helper: simple template evaluator for strings like {{ checkout.items[0].renewal_interval }}
+  const isTemplate = Numi.isTemplate;
+
   const [selectedProduct, setSelectedProduct, updateSelectedProductHook] = Numi.useStateEnumeration({
     name: 'value',
-    initialValue: options[0]?.key ?? undefined,
-    options: Array.isArray(options) ? options?.filter((item) => item.key).map((item) => item.key) : [],
+    initialValue: options[0]?.value ?? undefined,
+    options: Array.isArray(options) ? options?.filter((item) => item.value).map((item) => item.value) : [],
     inspector: 'select',
     label: 'Default (Selected Product)',
     asState: true,
   });
+
+  // Compute resolved selection if the configured value is a template string
+  const resolvedSelectedProduct = Numi.useEvaluatedTemplate(selectedProduct);
+
+  // Ensure the value used is one of the option values
+  const productValue = useMemo(() => {
+    const values = Array.isArray(options) ? options.map(o => o.value) : [];
+    if (resolvedSelectedProduct && values.includes(resolvedSelectedProduct)) return resolvedSelectedProduct;
+    return options[0]?.value;
+  }, [resolvedSelectedProduct, options]);
 
   const [items] = Numi.useStateJsonSchema({
     name: 'items',
@@ -65,9 +74,6 @@ function HorizontalProductsComponent({ context }: { context: BlockContextType })
       items: {
         type: "object",
         properties: {
-          key: {
-            type: "string",
-          },
           title: {
             title: "Label",
             type: "string"
@@ -90,7 +96,7 @@ function HorizontalProductsComponent({ context }: { context: BlockContextType })
             type: "string"
           }
         },
-        required: ["key", "title", "value", "description", "features"]
+        required: ["title", "value", "description", "features"]
       }
     } as unknown) as JSONSchemaValue
   });
@@ -289,7 +295,7 @@ function HorizontalProductsComponent({ context }: { context: BlockContextType })
   }, [style.activeBackgroundColor, style.buttonFont, theme, buttonVars]);
 
   const interactionElements = useMemo(() => {
-    return Array.isArray(items) ? items.filter(item => item.key).map(item => ({ value: item.key, label: item.title })) : [];
+    return Array.isArray(items) ? items.filter(item => item.value).map(item => ({ value: item.value, label: item.title })) : [];
   }, [items]);
 
   const { executeCallbacks, updateHook: updateEventCallbackHook } = Numi.useEventCallback({
@@ -302,10 +308,23 @@ function HorizontalProductsComponent({ context }: { context: BlockContextType })
   });
 
   const handleProductSelect = useCallback((value: string) => {
+    if (value === productValue) {
+      return;
+    }
     setSelectedProduct(value);
     executeCallbacks(Event.onClick, value);
     updateSessionProperties(context.blockId, value);
-  }, [executeCallbacks, updateSessionProperties, context.blockId, setSelectedProduct]);
+  }, [executeCallbacks, updateSessionProperties, context.blockId, setSelectedProduct, productValue]);
+
+  // If the stored value is a template, sync the evaluated value to session properties once
+  const appliedTemplateDefaultRef = useRef(false);
+  useEffect(() => {
+    if (appliedTemplateDefaultRef.current) return;
+    if (!isTemplate(selectedProduct)) return;
+    if (!productValue) return;
+    appliedTemplateDefaultRef.current = true;
+    updateSessionProperties(context.blockId, productValue);
+  }, [selectedProduct, productValue, updateSessionProperties, context.blockId, isTemplate]);
 
   const prevItemsRef = useRef(items);
 
@@ -315,7 +334,7 @@ function HorizontalProductsComponent({ context }: { context: BlockContextType })
     const prevItems = prevItemsRef.current;
     // Only update if the items have actually changed
     if (JSON.stringify(items) !== JSON.stringify(prevItems)) {
-      updateSelectedProductHook({ options: items });
+      updateSelectedProductHook({ options: Array.isArray(items) ? items.filter(i => i.value).map(i => i.value) : [] });
       updateEventCallbackHook({ options: interactionElements });
 
       prevItemsRef.current = items;
@@ -326,14 +345,14 @@ function HorizontalProductsComponent({ context }: { context: BlockContextType })
     <div className="w-full" style={containerStyle}>
       <div className="grid gap-4" style={{ gridTemplateColumns: `repeat(${items?.length || 1}, 1fr)` }}>
         {Array.isArray(items) && items.map((item) => {
-          const isSelected = item.key === selectedProduct;
+          const isSelected = item.value === productValue;
           
           return (
             <div
-              key={item.key}
+              key={item.value}
               className="flex flex-col rounded-xl hover:bg-black/5 dark:hover:bg-white/5 hover:shadow-sm transition-all relative"
               style={isSelected ? (selectedItemStyle as React.CSSProperties) : (itemStyle as React.CSSProperties)}
-              onClick={() => handleProductSelect(item.key)}
+              onClick={() => handleProductSelect(item.value)}
             >
               {/* Tag badge */}
               { (item as { tag?: string }).tag && (
@@ -428,7 +447,7 @@ function HorizontalProductsComponent({ context }: { context: BlockContextType })
                 data-disabled={isSelected ? true : undefined}
                 onClick={(e) => {
                   e.stopPropagation();
-                  handleProductSelect(item.key);
+                  handleProductSelect(item.value);
                 }}
               >
                 {isSelected ? 'Selected' : (item.buttonText || 'Select Plan')}
