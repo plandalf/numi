@@ -17,7 +17,8 @@ interface ProductItemType {
 }
 
 function HorizontalProductsComponent({ context }: { context: BlockContextType }) {
-  const { updateSessionProperties } = Numi.useCheckout({});
+  const checkout = Numi.useCheckout({});
+  const { updateSessionProperties } = checkout;
   const theme = Numi.useTheme();
 
   const defaultValue = [{
@@ -45,11 +46,17 @@ function HorizontalProductsComponent({ context }: { context: BlockContextType })
 
   const blockContext = useContext(BlockContext);
   const options = (blockContext?.blockConfig?.content?.items ?? defaultValue) as ProductItemType[];
+  const configuredSelected = (blockContext?.blockConfig?.content as unknown as { value?: string })?.value;
+  const resolvedConfiguredSelected = Numi.useEvaluatedTemplate(configuredSelected);
   console.debug('[HorizontalProducts] init', {
     blockId: context?.blockId,
     options,
     optionKeys: Array.isArray(options) ? options.map(o => o.key) : [],
+    configuredSelected,
+    configuredSelectedIsTemplate: Numi.isTemplate(configuredSelected),
+    resolvedConfiguredSelected,
   });
+  console.debug('[HorizontalProducts] checkout snapshot', checkout);
 
   // Helper: simple template evaluator for strings like {{ checkout.items[0].renewal_interval }}
   const isTemplate = Numi.isTemplate;
@@ -481,6 +488,7 @@ function HorizontalProductsComponent({ context }: { context: BlockContextType })
                   'w-full justify-center',
                   isSelected ? 'opacity-80 cursor-default' : '',
                 ].join(' ')}
+                type="button"
                 style={{ ...(isSelected ? activeButtonVars : buttonVars), padding: String(appearance.buttonPadding ?? '7px'), minHeight: '40px' }}
                 data-disabled={isSelected ? true : undefined}
                 onClick={(e) => {
