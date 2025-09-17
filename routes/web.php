@@ -1,13 +1,11 @@
 <?php
 
-use App\Apps\Kajabi\KajabiApp;
-use App\Apps\Kajabi\Requests\CreateContactRequest;
-use App\Apps\Kajabi\Requests\FindContactByEmailRequest;
 use App\Http\Controllers\Api\CheckoutSessionController;
 use App\Http\Controllers\ApiKeysController;
 use App\Http\Controllers\Billing\BillingController as BillingCheckoutController;
 use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\Client\BillingPortalController;
+use App\Http\Controllers\Client\SubscriptionCancellationController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\FeedbackController;
 use App\Http\Controllers\ImpersonationController;
@@ -31,7 +29,64 @@ use App\Http\Controllers\ThemeController;
 use App\Http\Controllers\WebhookController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
-use App\Http\Controllers\Client\SubscriptionCancellationController;
+
+Route::get('dev/test-checkout-jwt', function (\Illuminate\Http\Request $request) {
+    abort_unless(auth()->check(), 403);
+
+    $user = auth()->user();
+    $organization = method_exists($user, 'currentOrganization') ? $user->currentOrganization : ($user->currentOrganization ?? null);
+    abort_unless($organization, 400, 'No current organization');
+
+    // Find first active API key for the organization
+    /** @var \App\Models\ApiKey|null $apiKey */
+    $apiKey = \App\Models\ApiKey::query()
+        ->where('organization_id', $organization->id)
+        ->active()
+        ->orderBy('id')
+        ->first();
+    abort_unless($apiKey, 404, 'No API key found for org');
+
+    // Build JWT similar to BillingPortalController format
+    $payload = [
+        'iss' => config('app.url'),
+        'sub' => (string) $user->id,
+        //        'grp' => (string) $organization->id,
+        'customer' => 'cus_Sx7zBCgAFAnmvj',
+        'subscription' => 'sub_1S6O9VFmvUKqVS2H156ckW67',
+        'email' => $user->email,
+        //        'iat' => time(),
+        'exp' => time() + 3600,
+    ];
+
+    $headers = ['kid' => $apiKey->id];
+
+    $token = \Firebase\JWT\JWT::encode($payload, $apiKey->key, 'HS256', null, $headers);
+
+    // Find a recent published offer in this organization
+    /** @var \App\Models\Store\Offer|null $offer */
+    $offer = \App\Models\Store\Offer::query()
+        ->where('organization_id', $organization->id)
+        ->latest()
+        ->first();
+    abort_unless($offer, 404, 'No offer found');
+
+    $url = route('offers.show', ['offer' => $offer, 'environment' => 'test']);
+    // Pre-fill a specific price with quantity=4 for testing
+    $priceLookup = $offer->offerItems()->whereNotNull('default_price_id')->first()?->defaultPrice?->lookup_key;
+    $query = [
+        'customer' => $token,
+        // items=[{lookup_key, quantity}]
+        'items' => $priceLookup ? [['lookup_key' => $priceLookup, 'quantity' => 4]] : [],
+    ];
+    $testUrl = $url.'?'.http_build_query($query);
+
+    return Inertia::render('dev/test-checkout', [
+        'offerId' => $offer->getRouteKey(),
+        'jwt' => $token,
+        'url' => $testUrl,
+        'payload' => $payload,
+    ]);
+})->name('dev.test-checkout-jwt');
 
 Route::redirect('/', '/dashboard')->name('home');
 

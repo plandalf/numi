@@ -40,10 +40,10 @@ use Parental\HasChildren;
  * @property string|null $billing_anchor Billing anchor (e.g., start_of_month)
  * @property int|null $recurring_interval_count Number of intervals between renewals
  * @property int|null $cancel_after_cycles Number of cycles before cancellation
+ * @property int|null $trial_period_days Number of trial days for new subscriptions
  * @property string|null $gateway_provider Payment gateway provider (e.g., stripe)
  * @property string|null $gateway_price_id ID of the price on the payment gateway
  * @property bool $is_active Whether the price is currently active
- *
  * @property Carbon|null $archived_at
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
@@ -63,7 +63,7 @@ class Price extends Model
     protected static function boot()
     {
         parent::boot();
-        
+
         // Validate that child prices have the same type as their parent
         static::saving(function ($price) {
             if ($price->parent_list_price_id && $price->isDirty(['parent_list_price_id', 'type'])) {
@@ -97,6 +97,7 @@ class Price extends Model
         'billing_anchor',
         'recurring_interval_count',
         'cancel_after_cycles',
+        'trial_period_days',
 
         // gateway?
         'gateway_provider',
@@ -106,7 +107,7 @@ class Price extends Model
         'archived_at',
 
         'integration_id',
-        'deleted_at'
+        'deleted_at',
     ];
 
     protected $casts = [
@@ -120,6 +121,7 @@ class Price extends Model
 
         'recurring_interval_count' => 'integer',
         'cancel_after_cycles' => 'integer',
+        'trial_period_days' => 'integer',
     ];
 
     protected array $childTypes = [

@@ -5,7 +5,6 @@ namespace App\Actions\Order;
 use App\Actions\Fulfillment\AutoFulfillOrderAction;
 use App\Actions\Fulfillment\SendOrderNotificationAction;
 use App\Enums\ChargeType;
-use App\Enums\CheckoutSessionStatus;
 use App\Enums\OrderStatus;
 use App\Enums\RenewInterval;
 use App\Exceptions\CheckoutException;
@@ -15,19 +14,17 @@ use App\Models\Checkout\CheckoutSession;
 use App\Models\Customer;
 use App\Models\Order\Order;
 use App\Models\Order\OrderItem;
-use App\Models\PaymentMethod;
-use App\Modules\Integrations\Contracts\CanCreateSubscription;
-use App\Modules\Integrations\Contracts\CanSetupIntent;
-use App\Modules\Integrations\Stripe\Stripe;
 use App\Services\PaymentValidationService;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 
 class ProcessOrderAction
 {
     protected PaymentValidationService $paymentValidationService;
+
     protected AutoFulfillOrderAction $autoFulfillOrderAction;
+
     protected SendOrderNotificationAction $sendOrderNotificationAction;
+
     private \Stripe\StripeClient $stripeClient;
 
     public function __construct(
@@ -60,7 +57,7 @@ class ProcessOrderAction
         $order->customer()->associate($customer);
 
         // if Payment
-        $paidOrder = match($this->session->intent_type) {
+        $paidOrder = match ($this->session->intent_type) {
             'free' => $this->processFreeOrder($order),
             'payment' => $this->processPaymentIntent($order),
             'setup' => $this->processSetupIntent($order),
@@ -175,10 +172,19 @@ class ProcessOrderAction
             ],
         ];
 
+        // If all items are recurring and base price defines a trial, set trial on subscription
+        $firstRecurring = $groupedItems->get('recurring', collect())->first();
+        if ($firstRecurring && isset($firstRecurring['price'])) {
+            $trialDays = $firstRecurring['price']['trial_period_days'] ?? null;
+            if (is_numeric($trialDays) && (int) $trialDays > 0) {
+                $subscriptionData['trial_period_days'] = (int) $trialDays;
+            }
+        }
+
         $discounts = $this->session->discounts;
 
         // Add discounts if any
-        if (!empty($discounts)) {
+        if (! empty($discounts)) {
             $promotionCodes = [];
             foreach ($discounts as $discount) {
                 try {
@@ -186,7 +192,7 @@ class ProcessOrderAction
                     $promotionCode = $this->stripeClient->promotionCodes->all([
                         'code' => $discount['id'],
                         'active' => true,
-                        'limit' => 1
+                        'limit' => 1,
                     ])->data[0] ?? null;
 
                     if ($promotionCode) {
@@ -202,13 +208,13 @@ class ProcessOrderAction
                 } catch (\Exception $e) {
                     logger()->warning(logname('fail.discount-apply'), [
                         'discount_id' => $discount['id'],
-                        'error' => $e->getMessage()
+                        'error' => $e->getMessage(),
                     ]);
                 }
             }
 
             // Add promotion codes if any were found
-            if (!empty($promotionCodes)) {
+            if (! empty($promotionCodes)) {
                 $subscriptionData['promotion_code'] = $promotionCodes[0]; // Use first promotion code
             }
         }
@@ -225,7 +231,6 @@ class ProcessOrderAction
 
         return $order;
     }
-
 
     public function getAutoCancelationTimestamp(Price $price)
     {
@@ -255,7 +260,8 @@ class ProcessOrderAction
     /**
      * Ensure customer exists for the order, creating one if necessary
      */
-    private function ensureCustomerExists(Order $order, CheckoutSession $session): Customer {
+    private function ensureCustomerExists(Order $order, CheckoutSession $session): Customer
+    {
 
         if ($order->customer) {
             return $order->customer;
@@ -293,6 +299,7 @@ class ProcessOrderAction
             ]);
         }
     }
+
     private function orderAlreadyCompleted(Order $order)
     {
         Log::warning('Attempted to process already completed order', [
@@ -300,6 +307,7 @@ class ProcessOrderAction
             'order_status' => $order->status->value,
             'completed_at' => $order->completed_at,
         ]);
+
         return $order;
     }
 }
