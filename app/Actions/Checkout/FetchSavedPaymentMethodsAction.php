@@ -13,17 +13,17 @@ class FetchSavedPaymentMethodsAction
         try {
             $checkoutSession->loadMissing(['customer']);
             $customer = $checkoutSession->customer;
-            if (! $customer) {
-                Log::info('savedPaymentMethods: no local customer', [
-                    'checkout_session_id' => $checkoutSession->id,
-                ]);
-                return [];
-            }
-            $defaultLocalId = $customer->default_payment_method_id;
-            $methods = PaymentMethod::query()
+            // if (! $customer) {
+            //     Log::info('savedPaymentMethods: no local customer', [
+            //         'checkout_session_id' => $checkoutSession->id,
+            //     ]);
+            //     return [];
+            // }
+            $defaultLocalId = $customer?->default_payment_method_id;
+            $methods = $customer ? PaymentMethod::query()
                 ->where('customer_id', $customer->id)
                 ->orderByDesc('id')
-                ->get();
+                ->get() : collect();
 
             Log::info('savedPaymentMethods: local count', [
                 'checkout_session_id' => $checkoutSession->id,
@@ -103,7 +103,7 @@ class FetchSavedPaymentMethodsAction
                 ];
             })->all();
         } catch (\Throwable $e) {
-            Log::warning('Local saved payment methods fetch failed', ['error' => $e->getMessage()]);
+            Log::warning(logname('failed'), ['error' => $e->getMessage()]);
             return [];
         }
     }

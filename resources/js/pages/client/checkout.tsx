@@ -426,7 +426,7 @@ const CheckoutController = ({ offer, session }: { offer: OfferConfiguration, ses
 };
 
 
-export default function CheckoutPage({ offer, error, checkoutSession, subscriptionPreview, signedShowUrl }: CheckoutPageProps) {
+export default function CheckoutPage({ offer, error, checkoutSession, preview: subscriptionPreview, signedShowUrl }: CheckoutPageProps) {
   const { url: inertiaUrl } = usePage();
   const currentUrl = typeof window === 'undefined' ? (inertiaUrl as string) : window.location.href;
   const firstPage = offer.view.pages[offer.view.first_page];

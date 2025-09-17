@@ -19,6 +19,7 @@ use App\Services\FontExtractionService;
 use App\Traits\HandlesLandingPageDomains;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Pipeline;
 use Illuminate\Support\Facades\URL;
 use Inertia\Inertia;
 
@@ -35,9 +36,11 @@ class CheckoutController extends Controller
     {
         $offer->loadMissing('organization');
         $jwtContext = null;
+
         if ($token = $request->customerToken()) {
             $jwtContext = $this->customerTokenService->decode($token);
         }
+
 
         // Resolve currency at the request level (prefer explicit, else CF fallback)
         $currency = $request->currencyOverride();
@@ -57,8 +60,6 @@ class CheckoutController extends Controller
 
         $checkoutSession = $action->execute($request, $jwtContext);
 
-        // All JWT subject/metadata persisted during session creation in the action
-
         $this->handleInvalidDomain($request, $checkoutSession);
 
         $params = array_filter(array_merge([
@@ -68,8 +69,6 @@ class CheckoutController extends Controller
         if ($request->has('redirect_url')) {
             $params['redirect_url'] = $request->get('redirect_url');
         }
-
-        $signedShowUrl = URL::signedRoute('checkouts.show', $params, now()->addDays(5));
 
         // Derive a simple selected_option (e.g., 'sm'|'md') based on chosen product name if available
         $checkoutSession->loadMissing(['lineItems.price.product']);
@@ -97,10 +96,6 @@ class CheckoutController extends Controller
         $json['page_history'] = data_get($checkoutSession->metadata, 'page_history', []);
         $offer->view = $json;
 
-        // Extract fonts for preloading
-        $customFonts = $this->fontExtractionService->extractAllFontsForOffer($offer);
-        $googleFontsUrl = $this->fontExtractionService->buildGoogleFontsUrl($customFonts);
-
         return Inertia::render('client/checkout', [
             'fonts' => FontResource::collection(FontElement::cases()),
             'offer' => new OfferResource($offer),
@@ -108,16 +103,13 @@ class CheckoutController extends Controller
             'preview' => Inertia::defer(function () use ($checkoutSession) {
                 return app(PreviewSubscriptionChangeAction::class)($checkoutSession);
             }),
-            'subscriptionPreview' => Inertia::defer(function () use ($checkoutSession) {
-                return app(PreviewSubscriptionChangeAction::class)($checkoutSession);
-            }),
             'savedPaymentMethods' => Inertia::defer(function () use ($checkoutSession, $offer) {
                 return app(FetchSavedPaymentMethodsAction::class)($checkoutSession);
             }),
-            'signedShowUrl' => $signedShowUrl,
+            'signedShowUrl' => URL::signedRoute('checkouts.show', $params, now()->addDays(5)),
         ])->with([
-            'customFonts' => $customFonts,
-            'googleFontsUrl' => $googleFontsUrl,
+            'customFonts' =>  $customFonts = $this->fontExtractionService->extractAllFontsForOffer($offer),
+            'googleFontsUrl' => $this->fontExtractionService->buildGoogleFontsUrl($customFonts),
         ]);
     }
 

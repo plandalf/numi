@@ -3,6 +3,7 @@
 namespace App\Actions\Checkout;
 
 use App\Enums\CheckoutSessionStatus;
+use App\Enums\SignalID;
 use App\Exceptions\CheckoutException;
 use App\Models\Checkout\CheckoutSession;
 use App\Modules\Integrations\Contracts\SupportsChangePreview;
@@ -26,10 +27,14 @@ class CommitSubscriptionChangeAction
             throw CheckoutException::message('Integration does not support subscription changes');
         }
 
+        $signal = match($preview['signal']) {
+            'Expansion' => SignalID::Expansion,
+        };
+
         // Create ChangePreview object from the preview data
         $changePreview = new \App\Modules\Billing\Changes\ChangePreview(
             enabled: $preview['enabled'],
-            signal: \App\Enums\SignalID::from($preview['signal']),
+            signal: $signal ?? SignalID::Convert,
             effective: $preview['effective'] ?? [],
             totals: $preview['totals'] ?? [],
             lines: $preview['lines'] ?? [],

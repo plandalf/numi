@@ -383,7 +383,8 @@ class Stripe extends AbstractIntegration implements AcceptsDiscount, CanCreateSu
             'trial_end' => $d['trial_end'] ?? null,
         ]);
 
-        $updated = $this->stripeClient->subscriptions->update($d['subscription_id'], $update);
+        $updated = $this->stripeClient->subscriptions
+            ->update($d['subscription_id'], $update);
 
         return new ChangeResult(
             signal: $preview->signal,

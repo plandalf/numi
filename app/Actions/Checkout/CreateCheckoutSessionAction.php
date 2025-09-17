@@ -61,6 +61,7 @@ class CreateCheckoutSessionAction
             ], fn ($v) => ! is_null($v));
         }
 
+
         $checkoutSession = CheckoutSession::query()->create([
             'organization_id' => $offer->organization_id,
             'offer_id' => $offer->id,
@@ -72,6 +73,16 @@ class CreateCheckoutSessionAction
             'subject' => ($request->subject() ?: ($auth?->userId)) ? (string) ($request->subject() ?: ($auth?->userId)) : null,
             'metadata' => !empty($metadata) ? $metadata : null,
         ]);
+
+
+        $customer = $offer->organization
+            ->customers()
+            ->where([
+                'reference_id' => $auth?->stripeCustomerId
+            ])
+            ->first();
+
+        $checkoutSession->customer_id = $customer?->id;
 
         // If no explicit checkout items provided, use offer's default items
         if (empty($checkoutItems)) {
