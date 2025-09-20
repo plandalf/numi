@@ -459,6 +459,70 @@ ${spinAnimationStyles}
             }
         } catch (_) {}
     };
+    const emitClosedAndMaybeCancel = (embedId, cancelReason) => {
+        try {
+            const session = window.plandalf?.offers?._sessions?.get(embedId);
+            if (!session) return;
+            if (!session.isCompleted && !session.isCancelled && cancelReason) {
+                session._triggerEvent('cancel', { cancelReason, embedId, sessionId: session.id });
+            }
+            session._triggerEvent('closed', { embedType: session.embedType, wasCompleted: session.isCompleted, embedId, sessionId: session.id });
+        } catch (_) {}
+    };
+    const closeOverlayByEmbedId = (embedId, after) => {
+        let afterInvoked = false;
+        try {
+            const iframes = document.querySelectorAll('iframe[src*="embed-id"], iframe[src*="numi-embed-id"]');
+            for (const iframe of iframes) {
+                try {
+                    const srcUrl = new URL(iframe.src, window.location.origin);
+                    const id = srcUrl.searchParams.get('embed-id') || srcUrl.searchParams.get('numi-embed-id');
+                    if (id !== embedId) continue;
+                } catch (_) { continue; }
+
+                const container = iframe.closest('.numi-embed-popup, .numi-embed-dynamic-popup, .numi-embed-slider, .numi-embed-dynamic-slider, .numi-embed-fullscreen-modal');
+                if (!container) continue;
+
+                try { plandalf.log && plandalf.log('[Plandalf] closeOverlayByEmbedId', { embedId, containerClass: container.className }); } catch (_) {}
+                try { document.body.classList.remove('noscroll'); } catch (_) {}
+
+                if (container.classList.contains('numi-embed-popup') || container.classList.contains('numi-embed-dynamic-popup')) {
+                    try { plandalf.log && plandalf.log('[Plandalf] closing popup'); } catch (_) {}
+                    container.classList.add('closing');
+                    setTimeout(() => { try { container.remove(); } catch (_) {} finally { try { if (after) { after(); afterInvoked = true; } } catch (_) {} } }, 300);
+                } else if (container.classList.contains('numi-embed-slider') || container.classList.contains('numi-embed-dynamic-slider')) {
+                    const iframeContainer = container.querySelector('.numi-embed-iframe-container');
+                    if (iframeContainer) {
+                        try {
+                            const isLeft = (iframeContainer.style && iframeContainer.style.left === '0px');
+                            iframeContainer.style.transform = isLeft ? 'translateX(-100%)' : 'translateX(100%)';
+                        } catch (_) {}
+                    }
+                    try { plandalf.log && plandalf.log('[Plandalf] closing slider'); } catch (_) {}
+                    setTimeout(() => { try { container.remove(); } catch (_) {} finally { try { if (after) { after(); afterInvoked = true; } } catch (_) {} } }, 350);
+                } else if (container.classList.contains('numi-embed-fullscreen-modal')) {
+                    try { plandalf.log && plandalf.log('[Plandalf] closing fullscreen'); } catch (_) {}
+                    try { container.style.opacity = '0'; } catch (_) {}
+                    setTimeout(() => { try { container.remove(); } catch (_) {} finally { try { if (after) { after(); afterInvoked = true; } } catch (_) {} } }, 250);
+                } else {
+                    try { container.remove(); } catch (_) {} finally { try { if (after) { after(); afterInvoked = true; } } catch (_) {} }
+                }
+            }
+        } catch (_) {}
+        clearActiveOverlayIf(embedId);
+        try {
+            if (!afterInvoked && after) {
+                after();
+                afterInvoked = true;
+            }
+        } catch (_) {}
+        try {
+            if (window.plandalf && window.plandalf.offers && window.plandalf.offers._sessions) {
+                window.plandalf.offers._sessions.delete(embedId);
+                try { plandalf.log && plandalf.log('[Plandalf] removed session', { embedId }); } catch (_) {}
+            }
+        } catch (_) {}
+    };
     // On script (re)load, detect any existing open popup/slider and restore the lock
     try {
         const openOverlayEl = document.querySelector('[data-numi-embed-id][data-numi-embed-type="popup"], [data-numi-embed-id][data-numi-embed-type="slider"]');
@@ -1018,78 +1082,8 @@ ${spinAnimationStyles}
         }
         // close handlers
         const closePopup = () => {
-            // Fire cancel event before closing if there's an active session
-            // Use embedId from closure scope since it's not set on iframe
-            if (embedId && window.plandalf?.offers?._sessions?.has(embedId)) {
-                const session = window.plandalf.offers._sessions.get(embedId);
-                if (session) {
-                    // Fire checkout_closed event for popup/slider closures
-                    if (window.location.href.includes('PLANDALF_DEBUG') || window.PLANDALF_DEBUG) {
-                        plandalf.log(`[Plandalf] Firing closed event for embedId: ${embedId}, completed: ${session.isCompleted}`);
-                    }
-                    session._triggerEvent('closed', {
-                        embedType: session.embedType,
-                        wasCompleted: session.isCompleted,
-                        embedId: embedId,
-                        sessionId: session.id
-                    });
-
-                    // Also fire cancel event if not completed
-                    if (!session.isCompleted && !session.isCancelled) {
-                        if (window.location.href.includes('PLANDALF_DEBUG') || window.PLANDALF_DEBUG) {
-                            plandalf.log(`[Plandalf] Firing cancel event for embedId: ${embedId}`);
-                        }
-                        session._triggerEvent('cancel', {
-                            cancelReason: 'popup_closed',
-                            embedId: embedId,
-                            sessionId: session.id
-                        });
-                    }
-                } else if (window.location.href.includes('PLANDALF_DEBUG') || window.PLANDALF_DEBUG) {
-                    plandalf.log(`[Plandalf] Session not found for embedId: ${embedId}`);
-                }
-            } else if (window.location.href.includes('PLANDALF_DEBUG') || window.PLANDALF_DEBUG) {
-                plandalf.log(`[Plandalf] No active sessions found for embedId: ${embedId}`, {
-                    embedId,
-                    sessions: window.plandalf?.offers?._sessions,
-                    hasSession: window.plandalf?.offers?._sessions?.has(embedId),
-                    sessionKeys: Array.from(window.plandalf?.offers?._sessions?.keys() || [])
-                });
-            }
-
-            document.body.classList.remove('noscroll');
-            if (embedType === 'popup') {
-                // Add closing class to trigger CSS exit animations
-                popupContainer.classList.add('closing');
-          } else if (embedType === 'slider') {
-                if (sliderDirection === 'left') {
-                    iframeContainer.style.transform = 'translateX(-100%)';
-            } else {
-                    iframeContainer.style.transform = 'translateX(100%)';
-                }
-            }
-            // Updated timing for enhanced animations: popup uses 300ms, slider uses 350ms
-            const timeout = embedType === 'popup' ? 300 : 350;
-            setTimeout(() => {
-                // before removing it, reset the styles for everything so that they
-                // work nicely out of the box when it comes back up (since we're
-                // reusing the same container
-                popupLoading.style.display = 'block';
-                closeIcon.style.opacity = '0';
-                // Reset iframe class to ensure clean state for next popup
-                iframe.classList.remove('loaded');
-                // Remove closing class to ensure clean state for next popup
-                popupContainer.classList.remove('closing');
-                // Reset the target's initialized state so it can be opened again
-                target.removeAttribute('data-numi-initialized');
-                // Clean up embed tracking
-                target.removeAttribute('data-numi-embed-id');
-                embedTypeRegistry.delete(embedId);
-                popupContainer.remove();
-                // Clear global active overlay guard
-                clearActiveOverlayIf(embedId);
-                // we give enough time for the animation to finish
-            }, timeout);
+            // Centralized close: animate/remove and then emit cancel+closed coherently
+            closeOverlayByEmbedId(embedId, () => emitClosedAndMaybeCancel(embedId, 'popup_closed'));
         };
         // onclick here, we also close the container (either the X or clicking
         // outside is fine).
@@ -2220,6 +2214,7 @@ ${spinAnimationStyles}
                 offerId: offerId,
                 embedId: embedId
             };
+            try { plandalf.log && plandalf.log('[Plandalf] session init', { embedId, checkoutId }); } catch (_) {}
             session._triggerEvent('init', eventData);
 
             // If an overlay is already active and does not match this embed, reject this session early.
@@ -2260,6 +2255,7 @@ ${spinAnimationStyles}
                 'checkout_complete': 'complete',
                 'checkout_cancel': 'cancel',
                 'checkout_closed': 'closed',
+                'close': 'closed',
                 'checkout_lineitem_changed': 'lineitem_change',
                 'form_resized': 'resize',
                 // Optional error channel if emitted by the iframe
@@ -2280,10 +2276,33 @@ ${spinAnimationStyles}
 
             // logging disabled
 
+            // Special handling: iframe requests SDK-initiated close
+            if (type === 'close') {
+                try { plandalf.log && plandalf.log('[Plandalf] received iframe close', { embedId, hasSession: !!session }); } catch (_) {}
+                // Close the overlay first, then emit 'closed' to consumers
+                closeOverlayByEmbedId(embedId, () => {
+                    try { session._triggerEvent('closed', eventData); } catch (_) {}
+                });
+                return;
+            }
+
+            // For complete from iframe, DO NOT auto-close. Let host decide or iframe send explicit "close".
+            if (eventType === 'complete') {
+                try { plandalf.log && plandalf.log('[Plandalf] received complete (no auto-close)', { embedId }); } catch (_) {}
+                session._triggerEvent(eventType, eventData);
+                return;
+            }
+            // For cancel from iframe, DO NOT auto-close. Let host decide or wait for explicit "close".
+            if (eventType === 'cancel') {
+                try { plandalf.log && plandalf.log('[Plandalf] received cancel (no auto-close)', { embedId }); } catch (_) {}
+                session._triggerEvent(eventType, eventData);
+                return;
+            }
+
             session._triggerEvent(eventType, eventData);
-            // Release overlay when closed/complete/cancel for this embed
-            if (eventType === 'closed' || eventType === 'complete' || eventType === 'cancel') {
-                clearActiveOverlayIf(embedId);
+            if (eventType === 'closed') {
+                try { plandalf.log && plandalf.log('[Plandalf] received closed', { embedId }); } catch (_) {}
+                closeOverlayByEmbedId(embedId);
             }
         } else {
             plandalf.warn(`⚠️ No session found for embedId: ${embedId}`);
@@ -2321,94 +2340,43 @@ ${spinAnimationStyles}
     const processGlobalConfig = () => {
         const config = window.plandalfConfig || {};
 
-        // Set up global event listeners from config
-        if (config.onInit) {
-            plandalf.offers.get('*').onCheckout((checkout) => {
-                checkout.onInit(config.onInit);
-            });
-        }
-        // Alias onReady -> init for convenience
-        if (config.onReady) {
-            plandalf.offers.get('*').onCheckout((checkout) => {
-                checkout.onInit(config.onReady);
-            });
-        }
+        // Map config keys to checkout session methods
+        const handlerBindings = {
+            onInit: 'onInit',
+            onReady: 'onInit',
+            onSuccess: 'onSuccess',
+            onComplete: 'onComplete',
+            onSubmit: 'onSubmit',
+            onPageChange: 'onPageChange',
+            onCancel: 'onCancel',
+            onLineItemChange: 'onLineItemChange',
+            onClosed: 'onClosed',
+            onShown: 'onShown',
+            onError: 'onError',
+            onExit: 'onClosed',
+        };
 
-        if (config.onSuccess) {
-            plandalf.offers.get('*').onCheckout((checkout) => {
-                checkout.onSuccess(config.onSuccess);
+        const bindHandlers = (selector, handlers) => {
+            if (!handlers || typeof handlers !== 'object') return;
+            Object.keys(handlerBindings).forEach((key) => {
+                const callback = handlers[key];
+                if (typeof callback !== 'function') return;
+                const method = handlerBindings[key];
+                try {
+                    plandalf.offers.get(selector).onCheckout((checkout) => {
+                        try { checkout[method] && checkout[method](callback); } catch (_) {}
+                    });
+                } catch (_) {}
             });
-        }
+        };
 
-        if (config.onComplete) {
-            plandalf.offers.get('*').onCheckout((checkout) => {
-                checkout.onComplete(config.onComplete);
-            });
-        }
+        // Global handlers
+        bindHandlers('*', config);
 
-        if (config.onSubmit) {
-            plandalf.offers.get('*').onCheckout((checkout) => {
-                checkout.onSubmit(config.onSubmit);
-            });
-        }
-
-        if (config.onPageChange) {
-            plandalf.offers.get('*').onCheckout((checkout) => {
-                checkout.onPageChange(config.onPageChange);
-            });
-        }
-
-        if (config.onCancel) {
-            plandalf.offers.get('*').onCheckout((checkout) => {
-                checkout.onCancel(config.onCancel);
-            });
-        }
-
-        if (config.onLineItemChange) {
-            plandalf.offers.get('*').onCheckout((checkout) => {
-                checkout.onLineItemChange(config.onLineItemChange);
-            });
-        }
-
-        if (config.onClosed) {
-            plandalf.offers.get('*').onCheckout((checkout) => {
-                checkout.onClosed(config.onClosed);
-            });
-        }
-        // Additional convenience hooks
-        if (config.onShown) {
-            plandalf.offers.get('*').onCheckout((checkout) => {
-                checkout.onShown(config.onShown);
-            });
-        }
-        if (config.onError) {
-            plandalf.offers.get('*').onCheckout((checkout) => {
-                checkout.onError(config.onError);
-            });
-        }
-        if (config.onExit) {
-            plandalf.offers.get('*').onCheckout((checkout) => {
-                checkout.onClosed(config.onExit);
-            });
-        }
-
-        // Per-offer configuration
-        if (config.offers) {
+        // Per-offer handlers
+        if (config.offers && typeof config.offers === 'object') {
             Object.entries(config.offers).forEach(([offerId, offerConfig]) => {
-                plandalf.offers.get(offerId).onCheckout((checkout) => {
-                    if (offerConfig.onInit) checkout.onInit(offerConfig.onInit);
-                    if (offerConfig.onReady) checkout.onInit(offerConfig.onReady);
-                    if (offerConfig.onSuccess) checkout.onSuccess(offerConfig.onSuccess);
-                    if (offerConfig.onComplete) checkout.onComplete(offerConfig.onComplete);
-                    if (offerConfig.onSubmit) checkout.onSubmit(offerConfig.onSubmit);
-                    if (offerConfig.onPageChange) checkout.onPageChange(offerConfig.onPageChange);
-                    if (offerConfig.onCancel) checkout.onCancel(offerConfig.onCancel);
-                    if (offerConfig.onClosed) checkout.onClosed(offerConfig.onClosed);
-                    if (offerConfig.onLineItemChange) checkout.onLineItemChange(offerConfig.onLineItemChange);
-                    if (offerConfig.onShown) checkout.onShown(offerConfig.onShown);
-                    if (offerConfig.onError) checkout.onError(offerConfig.onError);
-                    if (offerConfig.onExit) checkout.onClosed(offerConfig.onExit);
-                });
+                bindHandlers(offerId, offerConfig || {});
             });
         }
     };

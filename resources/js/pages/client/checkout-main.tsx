@@ -22,6 +22,7 @@ import { CheckoutCancel } from '@/events/CheckoutCancel';
 import { CheckoutLineItemChanged } from '@/events/CheckoutLineItemChanged';
 import { updateSessionLineItems } from '@/utils/editor-session';
 import { isEvaluatedVisible } from '@/lib/blocks';
+import { CheckoutClosed } from '@/events/CheckoutClosed';
 // Form and validation context
 
 type FormData = Record<string, any>;
@@ -305,7 +306,14 @@ export function GlobalStateProvider({ offer, offerItems, session: defaultSession
       const currentPage = offer.view.pages[pageId];
       const action = currentPage.type === 'payment' ? 'commit' : 'setFields';
       const nextPageId = handleNavigationLogic(currentPage, fields);
-      console.log('submitPage', { pageId, action, nextPageId });
+      console.log('checkout-main@submitPage:init', {
+        pageId,
+        currentPageType: currentPage?.type,
+        action,
+        nextPageId,
+        hasSubmissionProps: !!submissionProps,
+        sessionId: session?.id
+      });
 
       let params: Record<string, any> = {
         action,
@@ -322,13 +330,14 @@ export function GlobalStateProvider({ offer, offerItems, session: defaultSession
 
         const body = (await submissionProps?.() ?? {}) as { error?: string, confirmation_token?: string };
 
-        if (body.type && body.type === 'intercept') {
-          console.log("INTERCEPTING SUBMISSION");
+        if ((body as any).type && (body as any).type === 'intercept') {
+          console.log('checkout-main@submitPage:intercept', body);
           setSubmitError(body.error);
           return false;
         }
 
         if (body.error) {
+          console.log('checkout-main@submitPage:error', body.error);
           setSubmitError(body.error);
           return false;
         }
@@ -354,13 +363,25 @@ export function GlobalStateProvider({ offer, offerItems, session: defaultSession
       }
 
       if (!nextPageId) {
-        // Check for redirect_url in URL params
-        const urlParams = new URLSearchParams(window.location.search);
-        const redirectUrl = urlParams.get('redirect_url');
-        // TODO: append the checkout session token to the redirect url
-        if (redirectUrl) {
-          window.location.href = redirectUrl;
+        // Only close if the current page is explicitly an ending page
+        if (currentPage?.type === 'ending') {
+          const urlParams = new URLSearchParams(window.location.search);
+          const redirectUrl = urlParams.get('redirect_url');
+
+          if (redirectUrl) {
+            console.log('checkout-main@submitPage:ending_redirect', { redirectUrl, sessionId: session?.id });
+            // TODO: append the checkout session token to the redirect url if needed
+            window.location.href = redirectUrl;
+            return true;
+          }
+
+          console.log('checkout-main@submitPage:ending_emit_close', { sessionId: session?.id });
+          // No redirect URL provided; emit close event so the host can dismiss
+          sendMessage(new CheckoutClosed(session));
+          setSubmitting(false);
           return true;
+        } else {
+          console.log('checkout-main@submitPage:no_next_but_not_ending', { pageId, currentPageType: currentPage?.type });
         }
       }
 
@@ -368,7 +389,6 @@ export function GlobalStateProvider({ offer, offerItems, session: defaultSession
 
       return true;
     } catch (error) {
-
       console.error('checkout-main@submitPage error:', error);
 
       if (axios.isAxiosError(error)) {
@@ -380,7 +400,7 @@ export function GlobalStateProvider({ offer, offerItems, session: defaultSession
 
       return false;
     } finally {
-      console.log("FINALLY BRUH");
+      
     }
   };
 

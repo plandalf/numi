@@ -104,9 +104,7 @@ function PaymentMethodBlock() {
   })();
 
   const addDebug = (msg: string) => {
-    // Collate simple debug bread crumbs and console.log
-    try { console.log('[PaymentMethodBlock]', msg); } catch { /* noop */ }
-    setDebugMessages((prev) => [...prev, `${new Date().toISOString().slice(11, 19)} ${msg}`]);
+    
   };
 
   // Toggle address collection on/off from block settings

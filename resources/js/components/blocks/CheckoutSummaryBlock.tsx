@@ -377,13 +377,16 @@ function CheckoutSummaryComponent({ context: _context }: { context: BlockContext
     // await this here,
     if (discountCode.trim()) {
       setIsDiscountSubmitting(true);
-      addDiscount(discountCode).then((status: boolean) => {
-        if (status) {
+      addDiscount(discountCode).then((status: { success: boolean, message: string }) => {
+        console.log('addDiscount', status);
+        if (status && status.success) {
           setDiscountCode('');
           setErrors({ ...errors, discount: '' });
         } else {
-          setErrors({ discount: 'Failed to apply discount' });
+          setErrors({ discount: status.message || 'Failed to apply discount' });
         }
+      }).catch(e => {
+        console.error('addDiscount error', e);
       }).finally(() => {
         setIsDiscountSubmitting(false);
       });
